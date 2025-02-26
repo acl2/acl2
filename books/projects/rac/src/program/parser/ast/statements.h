@@ -20,8 +20,10 @@ public:
   virtual void display(std::ostream &os, unsigned indent = 0) = 0;
   virtual void displayAsRightBranch(std::ostream &os, unsigned indent = 0);
   virtual void displayWithinBlock(std::ostream &os, unsigned indent = 0);
+
   virtual Block *blockify();
   virtual Block *blockify(Statement *s);
+
   virtual Sexpression *ACL2Expr() = 0;
 
   inline NodesId id() const { return id_; }
@@ -63,7 +65,7 @@ public:
   }
   const Type *get_original_type() { return original_type_; }
 
-  virtual bool isStaticallyEvaluable();
+  virtual bool isStaticallyEvaluable() const;
   int evalConst();
 
   virtual Sexpression *ACL2SymExpr();
@@ -81,7 +83,7 @@ public:
   // TODO indent.
   void display(std::ostream &os, unsigned) override;
   void displaySimple(std::ostream &os) override { display(os, 0); }
-  bool isStaticallyEvaluable() override;
+  bool isStaticallyEvaluable() const override;
 
   // Enum are not translate to ACL2 (we use directly the underlying values).
   Sexpression *ACL2Expr() override { UNREACHABLE(); }
@@ -98,7 +100,7 @@ public:
   Sexpression *ACL2Expr() override;
   Sexpression *ACL2SymExpr() override;
 
-  bool isStaticallyEvaluable() const {
+  virtual bool isStaticallyEvaluable() const override {
     return get_type()->isConst() && isIntegerType(get_type());
   }
 
@@ -121,7 +123,7 @@ public:
 class TempParamDec final : public SymDec {
 public:
   TempParamDec(Location loc, const char *n, const Type *t);
-  bool isStaticallyEvaluable() override;
+  bool isStaticallyEvaluable() const override;
   Sexpression *ACL2SymExpr() override;
 
   // TODO
@@ -226,15 +228,22 @@ public:
 
 class ForStmt final : public Statement {
 public:
-  SimpleStatement *init;
-  Expression *test;
-  Assignment *update;
-  Statement *body;
-
   ForStmt(Location loc, SimpleStatement *v, Expression *t, Assignment *u,
           Statement *b);
+
+  SimpleStatement *init() { return init_; }
+  Expression *test() { return test_; }
+  Assignment *update() { return update_; }
+  Statement *body() { return body_; }
+
   void display(std::ostream &os, unsigned indent = 0) override;
   Sexpression *ACL2Expr() override;
+
+private:
+  SimpleStatement *init_;
+  Expression *test_;
+  Assignment *update_;
+  Statement *body_;
 };
 
 class Case final : public Statement {
@@ -251,7 +260,7 @@ public:
   std::vector<Statement *> action;
 };
 
-class SwitchStmt : public Statement {
+class SwitchStmt final : public Statement {
 public:
   SwitchStmt(Location loc, Expression *t, std::vector<Case *> c);
   void display(std::ostream &os, unsigned indent = 0) override;

@@ -74,11 +74,11 @@ Location Type::get_original_location() const {
 // class PrimType : public Symbol, public Type (Primitive type)
 // ------------------------------------------------------------
 
-PrimType boolType = PrimType::Bool();
-PrimType intType = PrimType::Int();
-PrimType uintType = PrimType::Uint();
-PrimType int64Type = PrimType::Int64();
-PrimType uint64Type = PrimType::Uint64();
+PrimType *boolType = PrimType::Bool();
+PrimType *intType = PrimType::Int();
+PrimType *uintType = PrimType::Uint();
+PrimType *int64Type = PrimType::Int64();
+PrimType *uint64Type = PrimType::Uint64();
 
 Sexpression *PrimType::cast(Expression *rval) const {
 

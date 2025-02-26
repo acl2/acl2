@@ -543,16 +543,16 @@ bool RecursiveASTVisitor<Derived>::TraverseForStmt(ForStmt *s) {
     if (!derived().WalkUpForStmt(s))
       return false;
 
-  if (!derived().TraverseStatement(s->init))
+  if (!derived().TraverseStatement(s->init()))
     return false;
 
-  if (!derived().TraverseExpression(s->test))
+  if (!derived().TraverseExpression(s->test()))
     return false;
 
-  if (!derived().TraverseStatement(s->update))
+  if (!derived().TraverseStatement(s->update()))
     return false;
 
-  if (!derived().TraverseStatement(s->body))
+  if (!derived().TraverseStatement(s->body()))
     return false;
 
   if (!derived().postfixTraversal())
@@ -627,34 +627,6 @@ bool RecursiveASTVisitor<Derived>::TraverseFunDef(FunDef *s) {
 
   if (derived().postfixTraversal())
     if (!derived().WalkUpFunDef(s))
-      return false;
-
-  return true;
-}
-
-template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseBuiltin(Builtin *s) {
-
-  if (!derived().postfixTraversal())
-    if (!derived().WalkUpBuiltin(s))
-      return false;
-
-  bool b = true;
-  for(auto s : s->params()) {
-    if (b && !derived().TraverseStatement(s))
-      b = false;
-  }
-  if (!b)
-    return false;
-
-  if (!derived().TraverseStatement(s->body()))
-    return false;
-
-  if (!derived().TraverseType(s->returnType()))
-    return false;
-
-  if (derived().postfixTraversal())
-    if (!derived().WalkUpBuiltin(s))
       return false;
 
   return true;

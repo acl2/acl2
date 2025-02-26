@@ -169,11 +169,11 @@ public:
   bool signed_;
 };
 
-extern PrimType boolType;
-extern PrimType intType;
-extern PrimType uintType;
-extern PrimType int64Type;
-extern PrimType uint64Type;
+extern PrimType *boolType;
+extern PrimType *intType;
+extern PrimType *uintType;
+extern PrimType *int64Type;
+extern PrimType *uint64Type;
 
 class DefinedType final : public Symbol, public Type {
 public:

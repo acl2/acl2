@@ -91,7 +91,7 @@ void SymDec::displaySymDec(std::ostream &os) const {
   }
 }
 
-bool SymDec::isStaticallyEvaluable() {
+bool SymDec::isStaticallyEvaluable() const {
   return false;
 } // overridden by EnumConstDec and ConstDec
 
@@ -110,7 +110,7 @@ SymDec::ACL2SymExpr() { // Sexpression for a reference to this symbol.
 // ----------------------------------
 
 EnumConstDec::EnumConstDec(Location loc, const char *n, Expression *v)
-    : SymDec(idOf(this), loc, n, &intType, v) {}
+    : SymDec(idOf(this), loc, n, intType, v) {}
 
 void EnumConstDec::display(std::ostream &os, unsigned) {
   os << getname();
@@ -120,7 +120,7 @@ void EnumConstDec::display(std::ostream &os, unsigned) {
   }
 }
 
-bool EnumConstDec::isStaticallyEvaluable() { return true; }
+bool EnumConstDec::isStaticallyEvaluable() const { return true; }
 
 Sexpression *EnumConstDec::ACL2SymExpr() {
   return always_cast<const EnumType *>(get_type())->getEnumVal(sym);
@@ -202,7 +202,7 @@ void MulVarDec::displaySimple(std::ostream &os) {
 TempParamDec::TempParamDec(Location loc, const char *n, const Type *t)
     : SymDec(idOf(this), loc, n, t) {}
 
-bool TempParamDec::isStaticallyEvaluable() { return init; }
+bool TempParamDec::isStaticallyEvaluable() const { return init; }
 
 Sexpression *TempParamDec::ACL2SymExpr() {
   return init ? get_type()->cast(init) : sym;
@@ -516,27 +516,27 @@ Sexpression *IfStmt::ACL2Expr() {
 
 ForStmt::ForStmt(Location loc, SimpleStatement *v, Expression *t, Assignment *u,
                  Statement *b)
-    : Statement(idOf(this), loc), init(v), test(t), update(u), body(b) {}
+    : Statement(idOf(this), loc), init_(v), test_(t), update_(u), body_(b) {}
 
 void ForStmt::display(std::ostream &os, unsigned indent) {
   os << "\n" << std::setw(indent) << " " << "for (";
 
-  init->displaySimple(os);
+  init_->displaySimple(os);
   os << "; ";
-  test->display(os);
+  test_->display(os);
   os << "; ";
-  update->displaySimple(os);
+  update_->displaySimple(os);
   os << ")";
-  body->display(os, indent + 2);
+  body_->display(os, indent + 2);
 }
 
 Sexpression *ForStmt::ACL2Expr() {
-  Sexpression *sinit = init->ACL2Expr();
-  Sexpression *stest = test->ACL2Expr();
+  Sexpression *sinit = init_->ACL2Expr();
+  Sexpression *stest = test_->ACL2Expr();
 
-  Sexpression *supdate = ((Plist *)(update->ACL2Expr()))->nth(2);
+  Sexpression *supdate = ((Plist *)(update_->ACL2Expr()))->nth(2);
   return new Plist({&s_for, new Plist({sinit, stest, supdate}),
-                    body->blockify()->ACL2Expr()});
+                    body_->blockify()->ACL2Expr()});
 }
 
 // class Case : public Statement (component of switch statement)

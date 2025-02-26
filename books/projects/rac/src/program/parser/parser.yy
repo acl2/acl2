@@ -154,6 +154,8 @@ while (0)
   std::vector<VarDec *> *vvd;
 }
 
+
+
 %define parse.error verbose
 %define parse.lac full
 
@@ -318,6 +320,8 @@ typedef_type
     | mv_type { $$ = static_cast<const Type *>($1); }       // instantiation of mv class template
     | TYPEID
 {
+  // yyast.getType() is always valid: to output TYPEID, the lexer looks at the
+  // result of getType().
   $$ = yyast.getType($1)->deep_copy();
 }; // name of a previously declared type
 
@@ -539,8 +543,7 @@ funcall
     : ID '(' expr_list ')'
 {
   FunDef *f;
-  if ((f = yyast.getFunDef ($1)) == nullptr
-      && (f = yyast.getBuiltin($1)) == nullptr)
+  if ((f = yyast.getFunDef ($1)) == nullptr)
     {
       yyast.diag()
           .new_error(@$, "Undefined function")
@@ -555,22 +558,12 @@ funcall
 }
     | TEMPLATEID '<' arith_expr_list '>' '(' arith_expr_list ')'
 {
-  Template *f;
-  if ((f = yyast.getTemplate($1)) == nullptr)
-    {
-      // This should be unreachable: to output a TEMPLATEID, the lexer looks if 
-      // the result of yyast.getTemplate().
-      yyast.diag()
-          .new_error(@$, format("Undefined function template `%s`", $1))
-          .report();
-      YYERROR;
-    }
-  else
-    {
-      $$ = new TempCall (@$, f, std::move(*$6), std::move(*$3));
-      delete $6;
-      delete $3;
-    }
+  // yyast.getTemplate() is always valid: : to output a TEMPLATEID, the lexer
+  // looks if the result of yyast.getTemplate().
+  Template *f = yyast.getTemplate($1);
+  $$ = new TempCall (@$, f, std::move(*$6), std::move(*$3));
+  delete $6;
+  delete $3;
 }
     | TEMPLATEID '(' arith_expr_list ')'
 {
@@ -1172,11 +1165,7 @@ r_statement_list
 };
 
 for_statement
-    : FOR
-{
-  symTab.pushFrame ();
-}
-'(' for_init ';' expression ';' assignment ')' statement
+    : FOR { symTab.pushFrame (); } '(' for_init ';' expression ';' assignment ')' statement
 {
   $$ = new ForStmt (@$, (SimpleStatement *)$4, $6, (Assignment *)$8, $10);
   symTab.popFrame ();

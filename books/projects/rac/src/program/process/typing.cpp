@@ -67,15 +67,15 @@ bool TypingAction::VisitInteger(Integer *e) {
   // fit. If the literal is written in decimal, then it is always signed.
   // https://en.cppreference.com/w/cpp/language/integer_literal
   if (!suffix_unsigned && !suffix_long && e->val_.can_fit_inside<int>()) {
-    e->set_type(&intType);
+    e->set_type(intType);
   } else if ((!is_decimal || suffix_unsigned) && !suffix_long &&
              e->val_.can_fit_inside<unsigned>()) {
-    e->set_type(&uintType);
+    e->set_type(uintType);
   } else if (!suffix_unsigned && e->val_.can_fit_inside<long>()) {
-    e->set_type(&int64Type);
+    e->set_type(int64Type);
   } else if ((!is_decimal || suffix_unsigned) &&
              e->val_.can_fit_inside<unsigned long>()) {
-    e->set_type(&uint64Type);
+    e->set_type(uint64Type);
   } else {
     diag_
         .new_error(e->loc(),
@@ -88,7 +88,7 @@ bool TypingAction::VisitInteger(Integer *e) {
 }
 
 bool TypingAction::VisitBoolean(Boolean *e) {
-  e->set_type(&boolType);
+  e->set_type(boolType);
   return true;
 }
 
@@ -243,7 +243,7 @@ bool TypingAction::VisitArrayRef(ArrayRef *e) {
     }
 
   } else {
-    e->set_type(&boolType);
+    e->set_type(boolType);
   }
   return true;
 }
@@ -279,7 +279,7 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
 
   // Convert an unscoped enum (scoped enum are not supported) to int.
   if (isa<const EnumType *>(expr_type)) {
-    expr_type = &intType;
+    expr_type = intType;
   }
 
   // Type primtive type according to section: "Unary arithmetic operators" of
@@ -287,7 +287,7 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
   if (auto t = dynamic_cast<const PrimType *>(expr_type)) {
 
     if (e->op == PrefixExpr::Op::Not) {
-      e->set_type(&boolType);
+      e->set_type(boolType);
     } else {
 
       PrimType *this_type = new PrimType(*t);
@@ -322,7 +322,7 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
                       Boolean::true_v(e->loc())));
       break;
     case PrefixExpr::Op::Not:
-      e->set_type(&boolType);
+      e->set_type(boolType);
       break;
     }
     return true;
@@ -393,10 +393,10 @@ bool TypingAction::VisitBinaryExpr(BinaryExpr *e) {
 
   // Convert an unscoped enum (scoped enum are not supported) to int.
   if (isa<const EnumType *>(t1)) {
-    t1 = &intType;
+    t1 = intType;
   }
   if (isa<const EnumType *>(t2)) {
-    t2 = &intType;
+    t2 = intType;
   }
 
   // Both primtype: we follow those rules:
@@ -417,7 +417,7 @@ bool TypingAction::VisitBinaryExpr(BinaryExpr *e) {
       e->set_type(PrimType::usual_conversions(t1_promoted, t2_promoted));
     } else if (BinaryExpr::isOpCompare(e->op) ||
                BinaryExpr::isOpLogical(e->op)) {
-      e->set_type(&boolType);
+      e->set_type(boolType);
     } else {
       UNREACHABLE();
     }
@@ -559,7 +559,7 @@ bool TypingAction::VisitBinaryExpr(BinaryExpr *e) {
 
     } else if (BinaryExpr::isOpCompare(e->op) ||
                BinaryExpr::isOpLogical(e->op)) {
-      e->set_type(&boolType);
+      e->set_type(boolType);
       return true;
     } else {
       UNREACHABLE();
@@ -700,8 +700,8 @@ bool TypingAction::VisitSwitchStmt(SwitchStmt *s) {
 
   const Type *t = s->test()->get_type();
 
-  bool canBeCastToInt = t->canBeImplicitlyCastTo(&uint64Type) ||
-                        t->canBeImplicitlyCastTo(&int64Type);
+  bool canBeCastToInt = t->canBeImplicitlyCastTo(uint64Type) ||
+                        t->canBeImplicitlyCastTo(int64Type);
 
   if (!isa<const PrimType *>(t) && !canBeCastToInt) {
     diag_
@@ -813,7 +813,7 @@ bool TypingAction::VisitSymDec(SymDec *s) {
     auto sym_type = deref(s->get_type());
 
     if (isa<const EnumType *>(s->get_type())) {
-      sym_type = &intType;
+      sym_type = intType;
 
       if (!s->init->isStaticallyEvaluable()) {
         diag_

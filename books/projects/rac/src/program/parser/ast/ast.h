@@ -30,7 +30,6 @@ public:
   VarDec *getGlobal(const std::string &name);
   Template *getTemplate(const std::string &name);
   FunDef *getFunDef(const std::string &name);
-  Builtin *getBuiltin(const std::string &name);
 
   bool isEmpty() const;
 
@@ -38,7 +37,6 @@ protected:
   std::vector<const DefinedType *> typeDefs_;
   std::vector<VarDec *> globals_;
   std::vector<FunDef *> funDefs_;
-  std::vector<Builtin *> builtins_;
 
   DiagnosticHandler diag_;
 };

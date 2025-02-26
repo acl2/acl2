@@ -9,10 +9,9 @@ AST::AST() {
   globals_.reserve(256);
   //  templates_.reserve(256);
   funDefs_.reserve(256);
-
-  builtins_.push_back(
-      new Builtin(Location::builtin(), "abs", &intType,
-                  {new VarDec(Location::builtin(), "", &intType)}));
+  funDefs_.push_back(
+      new FunDef(Location::builtin(), "abs", intType,
+                  {new VarDec(Location::builtin(), "", intType)}, nullptr));
 }
 
 AST::AST(AST &&other)
@@ -53,12 +52,6 @@ FunDef *AST::getFunDef(const std::string &name) {
   auto it = std::find_if(funDefs_.begin(), funDefs_.end(),
                          [&](FunDef *t) { return name == t->getname(); });
   return it == funDefs_.end() ? nullptr : *it;
-}
-
-Builtin *AST::getBuiltin(const std::string &name) {
-  auto it = std::find_if(builtins_.begin(), builtins_.end(),
-                         [&](Builtin *t) { return name == t->getname(); });
-  return it == builtins_.end() ? nullptr : *it;
 }
 
 bool AST::isEmpty() const { return funDefs_.size() == 0; }

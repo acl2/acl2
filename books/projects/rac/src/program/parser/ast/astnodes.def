@@ -49,5 +49,4 @@ APPLY_STMT( Case, Statement)
 APPLY_STMT( SwitchStmt, Statement )
 
 APPLY_STMT( FunDef, Statement )
-APPLY_STMT( Builtin, FunDef )
 APPLY_STMT( Template, FunDef )

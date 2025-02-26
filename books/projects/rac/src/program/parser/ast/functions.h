@@ -53,10 +53,4 @@ private:
   std::vector<TempParamDec *> tempParams_;
 };
 
-class Builtin final : public FunDef {
-public:
-  Builtin(Location loc, const char *n, const Type *t, std::vector<VarDec *> p)
-      : FunDef(idOf(this), loc, n, t, p, nullptr) {}
-};
-
 #endif // FUNCTIONS_H
