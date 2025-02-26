@@ -1331,7 +1331,7 @@
         (b* (;;could we stay in the world of arrays when doing this? and use the array to compute internal contexts?
              ;;could check here whether nothing changed and not build a new list?
              (dag (drop-non-supporters-array-with-name 'dag-array dag-array renamed-top-node print))
-             ((when (not (dag-fns-include-any dag '(if myif boolif bvif)))) ; no benefit from using contexts
+             ((when (not (dag-fns-include-anyp dag '(if myif boolif bvif)))) ; no benefit from using contexts
               (prog2$ (and print (cw "No IFs to provide context info.)~%"))   ; balances "(Simplifying DAG ...
                       (mv (erp-nil) dag limits state)))
              (- (and print (cw "~%(Simplifying again with internal contexts (~x0 nodes)...~%" dag-len)))
