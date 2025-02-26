@@ -130,3 +130,37 @@
 
 (assert-event (equal (apply-op :times (val-int 0) (val-err "bad"))
                      (val-int 0)))
+
+
+(fty::deflist vallist :elt-type val-p :true-listp t)
+
+(define apply-prim ((op stringp) (vals vallist-p))
+  :returns (res val-p)
+  (multicase
+    ((case*-equal op)
+     ((list val-case v0 v1 v2) vals))
+
+    (("Log2" (:int)) (val-int (1- (integer-length (abs v0.val)))))
+    (("Ite" (:bool & &)) (if v0.val (val-fix v1) (val-fix v2)))
+    (("RoundDown" (:rat)) (val-int (floor v0.val 1)))
+    (-                     (val-err "Bad"))))
+
+
+(assert-event (equal (apply-prim "Ite" (list (val-bool t) (val-int 4) (val-int 3)))
+                     (val-int 4)))
+
+(assert-event (equal (apply-prim "Log2" (list (val-int 7)))
+                     (val-int 2)))
+
+(assert-event (equal (apply-prim "RoundDown" (list (val-rat 7/3)))
+                     (val-int 2)))
+
+(assert-event (equal (apply-prim "Log2" (list (val-int 7) (val-int 3)))
+                     (val-err "Bad")))
+
+(assert-event (equal (apply-prim "Log2" (list (val-rat 7)))
+                     (val-err "Bad")))
+
+(assert-event (equal (apply-prim "Log2" nil)
+                     (val-err "Bad")))
+

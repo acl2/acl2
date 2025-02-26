@@ -103,17 +103,67 @@
        ((mv match & &) (multicase-case-decomp (car cases)))
        ((mv first rest) (multicase-matches-decomp match))
        ((when (or (multicase-wildcard-p first)
-                  (eq first key)))
+                  (equal first key)))
         (cons (case-change-match rest (car cases))
               (filter-key-cases key (cdr cases)))))
     (filter-key-cases key (cdr cases))))
 
 
-  
-(program)
+(defun list-has-consp-cases (cases)
+  (b* (((when (atom cases)) nil)
+       ((mv match & &) (multicase-case-decomp (car cases)))
+       ((mv first &) (multicase-matches-decomp match))
+       ((when (atom first))
+        (list-has-consp-cases (cdr cases))))
+    t))
+
+(defun list-has-endp-cases (cases)
+  (b* (((when (atom cases)) nil)
+       ((mv match & &) (multicase-case-decomp (car cases)))
+       ((mv first &) (multicase-matches-decomp match))
+       ((when (eq first nil))
+        t))
+    (list-has-endp-cases (cdr cases))))
+
+(defun list-process-consp-cases (cases)
+  (b* (((when (atom cases)) nil)
+       ((mv match & &) (multicase-case-decomp (car cases)))
+       ((mv first rest) (multicase-matches-decomp match))
+       ((when (multicase-wildcard-p first))
+        (cons (case-change-match (list* first first rest) (car cases))
+              (list-process-consp-cases (cdr cases))))
+       ((when (atom first))
+        (list-process-consp-cases (cdr cases)))
+       ;; first is a cons. We change e.g.
+       ;; ((:foo :bar) rest)
+       ;; to (:foo (:bar) rest)
+       ;; because we're going to do separate cases on the car and cdr.
+       ((cons first-first rest-first) first))
+    (cons (case-change-match (list* first-first rest-first rest) (car cases))
+          (list-process-consp-cases (cdr cases)))))
+
+(defun list-process-wildcard-cases (cases)
+  (b* (((when (atom cases)) nil)
+       ((mv match & &) (multicase-case-decomp (car cases)))
+       ((mv first rest) (multicase-matches-decomp match))
+       ((when (multicase-wildcard-p first))
+        (cons (case-change-match rest (car cases))
+              (list-process-wildcard-cases (cdr cases)))))
+    (list-process-wildcard-cases (cdr cases))))
+
+(defun list-process-endp-cases (cases)
+  (b* (((when (atom cases)) nil)
+       ((mv match & &) (multicase-case-decomp (car cases)))
+       ((mv first rest) (multicase-matches-decomp match))
+       ((unless (or (multicase-wildcard-p first)
+                    (eq first nil)))
+        (list-process-endp-cases (cdr cases))))
+    (cons (case-change-match rest (car cases))
+          (list-process-endp-cases (cdr cases)))))
+
 (mutual-recursion
  (defun multicase-fn (pairs cases)
-   ;; Pairs is something like ((foo-case x) (bar-case y))
+   ;; Pairs is something like ((foo-case x) (bar-case y) ((list baz-case z0 z1 z2) z))
    ;; Cases is something like (((:foo-kind1 :bar-kind2) (f x.a y.b))
    ;;                          ((&          :bar-kind1) (g x y.c))
    ;;                          ((:foo-kind1 :bar-kind3)
@@ -123,8 +173,34 @@
    (b* (((when (atom pairs))
          ;; Cases should all have empty match fields and only possibly WHEN fields --
          ;; assemble these into an IF.
-        (multicase-empty-cases-assemble cases))
+         (multicase-empty-cases-assemble cases))
         ((list casemacro var) (car pairs))
+        ((mv listp casemacro vars) (case-match casemacro
+                                (('list mac . vars) (mv t mac vars))
+                                (& (if (atom casemacro)
+                                       (mv nil casemacro nil)
+                                     (prog2$ (er hard? 'multicase-fn "bad casemacro")
+                                             (mv nil nil nil))))))
+        ((when listp)
+         (b* ((has-cons (list-has-consp-cases cases))
+              (has-end  (list-has-endp-cases cases))
+              (end-cases (list-process-endp-cases cases))
+              (check-consp (or has-cons has-end)))
+           (if check-consp
+                 `(if (consp ,var)
+                      ,(if has-cons
+                           (b* ((cons-cases (list-process-consp-cases cases)))
+                             `(let* ((,(car vars) (car ,var))
+                                     (multicase-tmp (cdr ,var)))
+                                (declare (ignorable multicase-tmp ,(car vars)))
+                                ,(multicase-fn (list* `(,casemacro ,(car vars))
+                                                      `((list ,casemacro . ,(cdr vars)) multicase-tmp)
+                                                      (cdr pairs))
+                                               cons-cases)))
+                         (b* ((wild-cases (list-process-wildcard-cases cases)))
+                           (multicase-fn (cdr pairs) wild-cases)))
+                    ,(multicase-fn (cdr pairs) end-cases))
+             (multicase-fn (cdr pairs) end-cases))))
         (match-keys (cases-collect-leading-keys cases))
         (has-wildcard (member-eq :otherwise match-keys))
         (non-wildcard-keys (remove-eq :otherwise match-keys)))
@@ -257,3 +333,36 @@
 (defmacro def-enumcase (name enum)
   `(make-event
     (def-enumcase-fn ',name ',enum (w state))))
+
+
+
+(defun case*-keyvals-to-cases (keyvals)
+  (if (atom keyvals)
+      nil
+    (cons (cond ((eq (car keyvals) :otherwise*) `(t ,(cadr keyvals)))
+                ((booleanp (car keyvals)) `((,(car keyvals)) ,(cadr keyvals)))
+                (t `(,(car keyvals) ,(cadr keyvals))))
+          (case*-keyvals-to-cases (cddr keyvals)))))
+
+(defun case*-fn (var keyvals)
+  `(case ,var
+     . ,(case*-keyvals-to-cases keyvals)))
+
+(defmacro case* (var &rest keyvals)
+  (case*-fn var keyvals))
+
+(defun case*-equal-keyvals-to-cond (var keyvals)
+  (if (atom keyvals)
+      nil
+    (cons (if (eq (car keyvals) :otherwise*)
+              `(t ,(cadr keyvals))
+            `((equal ,var ,(car keyvals))
+              ,(cadr keyvals)))
+          (case*-equal-keyvals-to-cond var (cddr keyvals)))))
+
+(defun case*-equal-fn (var keyvals)
+ `(cond . ,(case*-equal-keyvals-to-cond var keyvals)))
+
+(defmacro case*-equal (var &rest keyvals)
+  (case*-equal-fn var keyvals))
+
