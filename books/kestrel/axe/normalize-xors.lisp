@@ -1,7 +1,7 @@
 ; A tool to normalize XOR nests in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -100,21 +100,23 @@
 
 ;move
 ; can help when backchaining
-(defthmd <-of-+-of-1-when-integerp
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (< x (+ 1 y))
-                  (<= x y))))
+;dup?
+;; (defthmd <-of-+-of-1-when-integerp
+;;   (implies (and (integerp x)
+;;                 (integerp y))
+;;            (equal (< x (+ 1 y))
+;;                   (<= x y))))
 
-(defthm consp-of-nth-forward-to-consp
-  (implies (consp (nth n x))
-           (consp x))
-  :rule-classes :forward-chaining)
+;; (defthmd consp-of-nth-forward-to-consp
+;;   (implies (consp (nth n x))
+;;            (consp x))
+;;   :rule-classes :forward-chaining)
 
-;move
-(defthm <-of-maxelem-and-maxelem-of-cdr
+;move?
+(local
+ (defthm <-of-maxelem-and-maxelem-of-cdr
   (implies (consp (cdr x))
-           (not (< (maxelem x) (maxelem (cdr x))))))
+           (not (< (maxelem x) (maxelem (cdr x)))))))
 
 ;defforall could do these too?
 (defthm all-integerp-of-mv-nth-0-of-split-list-fast-aux
@@ -1431,18 +1433,19 @@
                               (<= (* 2 (len dag)) *max-1d-array-length*) ;todo
                               )
                   :guard-hints (("Goal" :in-theory (e/d (top-nodenum-of-dag) (pseudo-dag-arrayp natp quotep))))))
-  (if (not (intersection-eq '(bitxor bvxor) (dag-fns dag))) ;; TODO: Optimize this check
+  (if (not (dag-fns-include-anyp dag '(bitxor bvxor)))
       ;; nothing to do (TODO: We could do a bit better by selecting this case if there are bvxors but all are of non-constant size)
       ;; What if there is just one xor?
       ;; And what if there are xors but they are not nested?  I suppose we still might need to commute arguments?
       (mv (erp-nil) dag nil)
-    (let* ( ;;convert dag to an array:
+    (let* (;; Convert the (old) dag to an array:
            (old-dag-len (len dag))
            (old-top-nodenum (top-nodenum-of-dag dag))
            (old-dag-array-name 'normalize-xors-old-array)
            (old-dag-array (make-dag-into-array old-dag-array-name dag 0)) ; add slack space?
            ;; Even though the old dag won't change, we need to check parents of nodes in normalize-xors-aux
            (old-dag-parent-array (make-dag-parent-array-with-name2 old-dag-len old-dag-array-name old-dag-array 'normalize-xors-old-parent-array))
+           ;; Initialize the new dag:
            (new-dag-size (* 2 old-dag-len)) ;none of the nodes are valid
            (new-dag-array-name 'normalize-xors-new-array)
            (new-dag-array (make-empty-array new-dag-array-name new-dag-size)) ;will get expanded if it needs to be bigger
