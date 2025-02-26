@@ -24,7 +24,7 @@
 
 (defxdoc+ proposed-author-self
   :parents (correctness)
-  :short "Invariant that the author of a pending proposal
+  :short "Invariant that the author of each pending proposal
           in each validator state
           is always the validator itself."
   :long
