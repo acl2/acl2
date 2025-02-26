@@ -86,9 +86,8 @@
   :hints(("Goal" :in-theory (enable put-assoc-equal))))
 
 (defthm put-assoc-equal-redundant
-  (implies (hons-assoc-equal k1 x)
-           (equal (put-assoc-equal k1 v1 (put-assoc-equal k1 v3 x))
-                  (put-assoc-equal k1 v1 x)))
+  (equal (put-assoc-equal k1 v1 (put-assoc-equal k1 v2 x))
+         (put-assoc-equal k1 v1 x))
   :hints(("Goal" :in-theory (enable put-assoc-equal))))
 
 
