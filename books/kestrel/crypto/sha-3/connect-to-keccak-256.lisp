@@ -23,6 +23,7 @@
 (acl2::unroll-spec-basic *sha-3-keccak-256-256bit*
                    `(sha3::keccak-256 ,(acl2::symbolic-list 'in 256))
                    :rules :auto
+                   :memoizep nil ; for speed
                    :extra-rules '(acl2::len-of-cdr
                                   acl2::car-of-nthcdr
                                   acl2::update-nth-of-cons
