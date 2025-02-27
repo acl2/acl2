@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-(include-book "unambiguity")
+(include-book "formalized")
 
 (include-book "../language/abstract-syntax")
 
@@ -49,7 +49,18 @@
     " when we encounter constructs that do not map
      (due to the language definition abstract syntax being a subset).
      So the mapping functions can be used also to check whether
-     the syntax is within the subset of the language definition."))
+     the syntax is within the subset of the language definition.")
+   (xdoc::p
+    "We accompany these mapping functions with theorems showing that
+     the functions always succeed (i.e. never return errors)
+     on constructs in the subset of C with formal dynamic semantics,
+     as characterized by the @(see formalized-subset).
+     Recall that the subset of C with formal dynamic semantics
+     is a strict subset of the subset of C
+     over which the mapping functions succeed.
+     Some mapping functions have no accompanying theorems,
+     because the constructs they operate on are never
+     in the subset of C with formal dynamic semantics."))
   :order-subtopics t
   :default-parent t)
 
@@ -68,7 +79,14 @@
        ((unless (stringp string))
         (reterr (msg "Unsupported identifier with non-string ~x0." string))))
     (retok (c::ident string)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-ident-ok-when-ident-formalp
+    (not erp)
+    :hyp (ident-formalp ident)
+    :hints (("Goal" :in-theory (enable ident-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -157,7 +175,14 @@
      :enum (b* (((erp ident1) (ldm-ident const.unwrap)))
              (retok (c::const-enum ident1)))
      :char (reterr (msg "Unsupported character constant ~x0." const.unwrap))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-const-ok-when-const-formalp
+    (not erp)
+    :hyp (const-formalp const)
+    :hints (("Goal" :in-theory (enable const-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -323,7 +348,21 @@
            ((erp ident1) (ldm-ident ident)))
         (retok (c::make-tyspecseq-typedef :name ident1))))
      (t (reterr (msg "Unsupported type specifier sequence ~x0." tyspecs)))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-type-spec-list-ok-when-type-spec-list-integer-formalp
+    (not erp)
+    :hyp (type-spec-list-integer-formalp tyspecs)
+    :hints (("Goal" :in-theory (enable type-spec-list-integer-formalp))))
+
+  (defret ldm-type-spec-list-ok-when-type-spec-list-formalp
+    (not erp)
+    :hyp (type-spec-list-formalp tyspecs)
+    :hints (("Goal" :in-theory (enable type-spec-list-formalp
+                                       type-spec-list-integer-formalp
+                                       check-strunispec-no-members)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -346,7 +385,14 @@
      (t
       (reterr (msg "Unsupported storage class specifier sequence ~x0."
                    stor-specs)))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-stor-spec-list-ok-when-stor-spec-list-formalp
+    (not erp)
+    :hyp (stor-spec-list-formalp stor-specs)
+    :hints (("Goal" :in-theory (enable stor-spec-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -406,7 +452,19 @@
                  (dirdeclor-fix dirdeclor))))
   :measure (dirdeclor-count dirdeclor)
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-dirdeclor-obj-ok-when-dirdeclor-obj-formalp
+    (not erp)
+    :hyp (dirdeclor-obj-formalp dirdeclor)
+    :hints (("Goal" :in-theory (enable dirdeclor-obj-formalp))))
+
+  (defret ldm-dirdeclor-obj-ok-when-dirdeclor-block-formalp
+    (not erp)
+    :hyp (dirdeclor-block-formalp dirdeclor)
+    :hints (("Goal" :in-theory (enable dirdeclor-block-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -445,7 +503,26 @@
                         (typequal/attribspec-list-fix tyqualattribs))))
           ((erp declor2) (ldm-declor-obj-loop declor1 (cdr pointers))))
        (retok (c::obj-declor-pointer declor2)))
-     :hooks (:fix))))
+     :hooks (:fix)
+
+     ///
+
+     (defret ldm-declor-obj-loop-ok-when-pointers-formalp
+       (not erp)
+       :hyp (pointers-formalp pointers)
+       :hints (("Goal" :induct t :in-theory (enable pointers-formalp))))))
+
+  ///
+
+  (defret ldm-declor-obj-ok-when-declor-obj-formalp
+    (not erp)
+    :hyp (declor-obj-formalp declor)
+    :hints (("Goal" :in-theory (enable declor-obj-formalp))))
+
+  (defret ldm-declor-obj-ok-when-declor-block-formalp
+    (not erp)
+    :hyp (declor-block-formalp declor)
+    :hints (("Goal" :in-theory (enable declor-block-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -538,7 +615,14 @@
                         (typequal/attribspec-list-fix tyquals))))
           ((erp adeclor2) (ldm-absdeclor-obj-loop adeclor1 (cdr pointers))))
        (retok (c::obj-adeclor-pointer adeclor2)))
-     :hooks (:fix))))
+     :hooks (:fix)
+
+     ///
+
+     (defret ldm-absdeclor-obj-loop-ok-when-pointers-formalp
+       (not erp)
+       :hyp (pointers-formalp pointers)
+       :hints (("Goal" :in-theory (enable pointers-formalp)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -565,7 +649,14 @@
        ((erp adeclor1) (ldm-absdeclor-obj tyname.decl?)))
     (retok (c::make-tyname :tyspec tyspecseq
                            :declor adeclor1)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-tyname-ok-when-tyname-formalp
+    (not erp)
+    :hyp (tyname-formalp tyname)
+    :hints (("Goal" :in-theory (enable tyname-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -707,7 +798,39 @@
 
   ///
 
-  (fty::deffixequiv-mutual ldm-exprs))
+  (fty::deffixequiv-mutual ldm-exprs)
+
+  (defret-mutual ldm-exprs-ok-when-exprs-formalp
+    (defret ldm-expr-ok-when-expr-pure-formalp
+      (not erp)
+      :hyp (expr-pure-formalp expr)
+      :fn ldm-expr)
+    (defret ldm-expr-list-ok-when-expr-list-pure-formalp
+      (not erp)
+      :hyp (expr-list-pure-formalp exprs)
+      :fn ldm-expr-list)
+    :hints (("Goal"
+             :expand (expr-pure-formalp expr)
+             :in-theory (enable expr-pure-formalp
+                                expr-list-pure-formalp))))
+
+  (defret ldm-expr-ok-when-expr-call-formalp
+    (not erp)
+    :hyp (expr-call-formalp expr)
+    :fn ldm-expr
+    :hints (("Goal"
+             :in-theory (enable expr-call-formalp
+                                check-expr-ident)
+             :expand (ldm-expr expr))))
+
+  (defret ldm-expr-ok-when-expr-asg-formalp
+    (not erp)
+    :hyp (expr-asg-formalp expr)
+    :fn ldm-expr
+    :hints (("Goal"
+             :in-theory (enable expr-asg-formalp
+                                expr-pure-formalp)
+             :expand (ldm-expr expr)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -721,7 +844,19 @@
      expr?
      :some (ldm-expr expr?.val)
      :none (retok nil)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-expr-option-ok-when-expr-pure-formalp
+    (not erp)
+    :hyp (expr-pure-formalp expr?)
+    :hints (("Goal" :in-theory (enable expr-option-some->val))))
+
+  (defret ldm-expr-option-ok-when-expr-call-formalp
+    (not erp)
+    :hyp (expr-call-formalp expr?)
+    :hints (("Goal" :in-theory (enable expr-option-some->val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -780,7 +915,15 @@
                       in structure declaration ~x0."
                      (structdecl-fix structdecl)))))
     (retok (c::make-struct-declon :tyspec tyspecseq :declor objdeclor)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-structdecl-ok-when-structdecl-formalp
+    (not erp)
+    :hyp (structdecl-formalp structdecl)
+    :hints (("Goal" :in-theory (enable structdecl-formalp
+                                       structdeclor-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -794,7 +937,14 @@
        ((erp structdecl1) (ldm-structdecl (car structdecls)))
        ((erp structdecls1) (ldm-structdecl-list (cdr structdecls))))
     (retok (cons structdecl1 structdecls1)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-structdecl-list-ok-when-structdecl-list-formalp
+    (not erp)
+    :hyp (structdecl-list-formalp structdecls)
+    :hints (("Goal" :induct t :in-theory (enable structdecl-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -894,7 +1044,15 @@
     (reterr (msg "Unsupported type specifier ~x0 ~
                   for tag (i.e. structure/union/enumeration) declaration."
                  tyspec)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-decl-tag-ok-when-decl-struct-formalp
+    (not erp)
+    :hyp (decl-struct-formalp decl)
+    :hints (("Goal" :in-theory (enable decl-struct-formalp
+                                       strunispec-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -920,7 +1078,14 @@
         (prog2$ (impossible) (reterr t)))
        (declor (paramdeclor-declor->unwrap paramdeclor)))
     (ldm-declor-obj declor))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-paramdeclor-ok-when-paramdeclor-formalp
+    (not erp)
+    :hyp (paramdeclor-formalp paramdeclor)
+    :hints (("Goal" :in-theory (enable paramdeclor-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -949,7 +1114,14 @@
        ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((erp objdeclor) (ldm-paramdeclor declor)))
     (retok (c::make-param-declon :tyspec tyspecseq :declor objdeclor)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-paramdecl-ok-when-paramdecl-formalp
+    (not erp)
+    :hyp (paramdecl-formalp paramdecl)
+    :hints (("Goal" :in-theory (enable paramdecl-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -963,7 +1135,14 @@
        ((erp paramdecl1) (ldm-paramdecl (car paramdecls)))
        ((erp paramdecls1) (ldm-paramdecl-list (cdr paramdecls))))
     (retok (cons paramdecl1 paramdecls1)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-paramdecl-list-ok-when-paramdecl-list-formalp
+    (not erp)
+    :hyp (paramdecl-list-formalp paramdecls)
+    :hints (("Goal" :in-theory (enable paramdecl-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1007,7 +1186,14 @@
        ((erp ident1) (ldm-ident ident))
        ((erp params1) (ldm-paramdecl-list params)))
     (retok (c::make-fun-declor-base :name ident1 :params params1)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-dirdeclor-fun-ok-when-dirdeclor-fun-formalp
+    (not erp)
+    :hyp (dirdeclor-fun-formalp dirdeclor)
+    :hints (("Goal" :in-theory (enable dirdeclor-fun-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1044,7 +1230,21 @@
                         (typequal/attribspec-list-fix tyquals))))
           ((erp declor2) (ldm-declor-fun-loop declor1 (cdr pointers))))
        (retok (c::fun-declor-pointer declor2)))
-     :hooks (:fix))))
+     :hooks (:fix)
+
+     ///
+
+     (defret ldm-declor-fun-loop-ok-when-pointers-formalp
+       (not erp)
+       :hyp (pointers-formalp pointers)
+       :hints (("Goal" :induct t :in-theory (enable pointers-formalp))))))
+
+  ///
+
+  (defret ldm-declor-fun-ok-when-declor-fun-formalp
+    (not erp)
+    :hyp (declor-fun-formalp declor)
+    :hints (("Goal" :in-theory (enable declor-fun-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1103,7 +1303,15 @@
                      initdeclor.attribs)))
        ((erp fundeclor) (ldm-declor-fun initdeclor.declor)))
     (retok (c::make-fun-declon :tyspec tyspecseq :declor fundeclor)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-decl-fun-ok-when-decl-fun-formalp
+    (not erp)
+    :hyp (decl-fun-formalp decl)
+    :hints (("Goal" :in-theory (enable decl-fun-formalp
+                                       initdeclor-fun-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1124,7 +1332,14 @@
        ((unless (initer-case desiniter.initer :single))
         (reterr (msg "Unsupported nested initializer ~x0." desiniter.initer))))
     (ldm-expr (initer-single->expr desiniter.initer)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-desiniter-ok-when-desiniter-formalp
+    (not erp)
+    :hyp (desiniter-formalp desiniter)
+    :hints (("Goal" :in-theory (enable desiniter-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1138,7 +1353,14 @@
        ((erp expr1) (ldm-desiniter (car desiniters)))
        ((erp exprs1) (ldm-desiniter-list (cdr desiniters))))
     (retok (cons expr1 exprs1)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-desiniter-list-ok-when-desiniter-list-formalp
+    (not erp)
+    :hyp (desiniter-list-formalp desiniters)
+    :hints (("Goal" :in-theory (enable desiniter-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1154,7 +1376,14 @@
                (retok (c::initer-single expr1)))
      :list (b* (((erp exprs1) (ldm-desiniter-list initer.elems)))
              (retok (c::initer-list exprs1)))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-initer-ok-when-initer-formalp
+    (not erp)
+    :hyp (initer-formalp initer)
+    :hints (("Goal" :in-theory (enable initer-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1220,7 +1449,25 @@
                                :tyspec tyspecseq
                                :declor objdeclor
                                :init? init)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-decl-obj-ok-when-decl-obj-formalp
+    (not erp)
+    :hyp (decl-obj-formalp decl)
+    :hints (("Goal" :in-theory (enable decl-obj-formalp
+                                       initdeclor-obj-formalp))))
+
+  (defret ldm-decl-obj-ok-when-decl-block-formalp
+    (not erp)
+    :hyp (decl-block-formalp decl)
+    :hints
+    (("Goal"
+      :in-theory
+      (enable decl-block-formalp
+              initdeclor-block-formalp
+              check-decl-spec-list-all-typespec/stoclass-when-all-typespec)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1337,7 +1584,27 @@
 
   ///
 
-  (fty::deffixequiv-mutual ldm-stmts/blocks))
+  (fty::deffixequiv-mutual ldm-stmts/blocks)
+
+  (defret-mutual ldm-stmts/blocks-ok-when-stmts/blocks-formalp
+    (defret ldm-stmt-ok-when-stmt-formalp
+      (not erp)
+      :hyp (stmt-formalp stmt)
+      :fn ldm-stmt)
+    (defret ldm-block-item-ok-when-block-item-formalp
+      (not erp)
+      :hyp (block-item-formalp item)
+      :fn ldm-block-item)
+    (defret ldm-block-item-list-ok-when-block-item-list-formalp
+      (not erp)
+      :hyp (block-item-list-formalp items)
+      :fn ldm-block-item-list)
+    :hints (("Goal"
+             :expand (stmt-formalp stmt)
+             :in-theory (enable stmt-formalp
+                                block-item-formalp
+                                block-item-list-formalp
+                                expr-option-some->val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1385,7 +1652,15 @@
     (retok (c::make-fundef :tyspec tyspecseq
                            :declor fundeclor
                            :body (c::stmt-compound->items body))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-fundef-ok-when-fundef-formalp
+    (not erp)
+    :hyp (fundef-formalp fundef)
+    :hints (("Goal" :in-theory (enable fundef-formalp
+                                       ldm-stmt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1426,7 +1701,14 @@
         (retok (c::ext-declon-tag-declon tagdeclon))))
     (reterr (msg "Unsupported external declaration ~x0."
                  (extdecl-fix extdecl))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-extdecl-ok-when-extdecl-formalp
+    (not erp)
+    :hyp (extdecl-formalp extdecl)
+    :hints (("Goal" :in-theory (enable extdecl-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1439,7 +1721,14 @@
        ((erp extdecl1) (ldm-extdecl (car extdecls)))
        ((erp extdecls1) (ldm-extdecl-list (cdr extdecls))))
     (retok (cons extdecl1 extdecls1)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-extdecl-list-ok-when-extdecl-list-formalp
+    (not erp)
+    :hyp (extdecl-list-formalp extdecls)
+    :hints (("Goal" :induct t :in-theory (enable extdecl-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1458,7 +1747,14 @@
        (extdecls (transunit->decls tunit))
        ((erp extdecls1) (ldm-extdecl-list extdecls)))
     (retok (c::make-file :declons extdecls1)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-transunit-ok-when-transunit-formalp
+    (not erp)
+    :hyp (transunit-formalp tunit)
+    :hints (("Goal" :in-theory (enable transunit-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1491,4 +1787,11 @@
                             :dot-h nil
                             :dot-c file)))
   :guard-hints (("Goal" :in-theory (enable omap::unfold-equal-size-const)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-transunit-ensemble-ok-when-transunit-ensemble-formalp
+    (not erp)
+    :hyp (transunit-ensemble-formalp tunits)
+    :hints (("Goal" :in-theory (enable transunit-ensemble-formalp)))))
