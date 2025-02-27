@@ -18,6 +18,7 @@
 (include-book "rewriter-basic")
 (include-book "dag-to-term")
 (include-book "make-term-into-dag-simple")
+(include-book "make-equality-dag-basic")
 (include-book "std/testing/assert-bang-stobj" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
 
@@ -745,3 +746,27 @@
    (and (not erp) ;no error
         ;; resulting term is (FOO X):
         (equal term '(len (binary-append '(1 2 3) y))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Test :compact xor normalization:
+
+(include-book "basic-rules") ; for equal-same
+
+(def-simplified-dag-basic *result1*
+  (acl2::make-equality-dag-basic! '(bvxor 32 6 (bvxor 32 x (bvxor 32 y 5)))
+                                  '(bvxor 32 x (bvxor 32 (bvxor 32 5 y) 6))
+                                  nil (w state))
+  :rules '(equal-same)
+  :normalize-xors :compact)
+
+(must-be-redundant (defconst *result1* ''t))
+
+(def-simplified-dag-basic *result2*
+  (acl2::make-equality-dag-basic! '(bitxor 0 (bitxor x (bitxor y 1)))
+                                  '(bitxor x (bitxor (bitxor 1 y) 0))
+                                  nil (w state))
+  :rules '(equal-same)
+  :normalize-xors :compact)
+
+(must-be-redundant (defconst *result2* ''t))

@@ -21,7 +21,7 @@
 (include-book "dag-or-term-to-dag-basic")
 
 ;; Returns (mv erp dag).
-(defund make-equality-dag-gen-basic (dag-or-term1 dag-or-term2 different-vars-ok wrld)
+(defund make-equality-dag-basic (dag-or-term1 dag-or-term2 different-vars-ok wrld)
   (declare (xargs :mode :program ; todo
                   ))
   (b* (((mv erp dag1) (dag-or-term-to-dag-basic dag-or-term1 wrld)) ; todo: try dag-or-term-to-dag-basic?
@@ -38,15 +38,15 @@
                (cw "NOTE: The two dags have different variables.~%")))
        ((when (and different-varsp
                    (not different-vars-ok)))
-        (mv (er hard? 'make-equality-dag-gen-basic "The two dags have different variables.  Consider supplying :DIFFERENT-VARS-OK t." nil)
+        (mv (er hard? 'make-equality-dag-basic "The two dags have different variables.  Consider supplying :DIFFERENT-VARS-OK t." nil)
             nil)))
     (make-equality-dag dag1 dag2)))
 
-(defund make-equality-dag-gen-basic! (dag-or-term1 dag-or-term2 different-vars-ok wrld)
+(defund make-equality-dag-basic! (dag-or-term1 dag-or-term2 different-vars-ok wrld)
   (declare (xargs :mode :program ; todo
                   ))
   (mv-let (erp dag)
-    (make-equality-dag-gen-basic dag-or-term1 dag-or-term2 different-vars-ok wrld)
+    (make-equality-dag-basic dag-or-term1 dag-or-term2 different-vars-ok wrld)
     (if erp
-        (er hard? 'make-equality-dag-gen-basic! "Error: ~x0." erp)
+        (er hard? 'make-equality-dag-basic! "Error: ~x0." erp)
       dag)))
