@@ -384,6 +384,7 @@
           step-increment
           t ; memoizep (nil allows internal contexts)
           rules-to-monitor
+          t ; todo: normalize-xors: try :compact?  maybe not worth it when not equivalence checking
           count-hits
           print
           10 ; print-base (todo: consider 16)
