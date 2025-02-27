@@ -89,7 +89,7 @@ Verify @(see guard)s efficiently by using a previous guard theorem."
  started at the beginning of the second and third proof attempts, if any.</p>
 
  <p>For a few small examples, see community book
- @('kestrel/utilities/proof-builder-macros-tests.lisp.')</p>
+ @('kestrel/utilities/proof-builder-macros-tests.lisp').</p>
 
  <p>For a way to use lemma instances other than guard theorems, see @(see
  acl2-pc::fancy-use).</p>
@@ -146,7 +146,7 @@ Prove termination efficiently by using a previous termination theorem."
  started at the beginning of the second and third proof attempts, if any.</p>
 
  <p>For a few small examples, see community book
- @('kestrel/utilities/proof-builder-macros-tests.lisp.')</p>
+ @('kestrel/utilities/proof-builder-macros-tests.lisp').</p>
 
  <p>For a way to use lemma instances other than termination theorems, see @(see
  acl2-pc::fancy-use).</p>
@@ -203,7 +203,7 @@ Use one or more previously-proved theorems efficiently."
  by use of the proof-builder command, @(':quiet').</p>
 
  <p>For a few small examples, see community book
- @('kestrel/utilities/proof-builder-macros-tests.lisp.')</p>
+ @('kestrel/utilities/proof-builder-macros-tests.lisp').</p>
 
  <p>For convenient shortcuts in the case of using guard or termination
  theorems, see @(see acl2-pc::prove-guard) and @(see
