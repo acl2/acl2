@@ -1,7 +1,7 @@
 ; Utilities to merge terms into dags (and to convert terms into dags).
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,8 +12,10 @@
 
 (in-package "ACL2")
 
-;; The functions in this book use the basic evaluator to evaluate ground terms.
+;; This version uses the basic evaluator to evaluate ground terms.
+;; This version does attempt to resolve IFs.
 ;; This version does not handle embedded dags.
+
 ;; See also merge-term-into-dag-array.
 ;; See also merge-term-into-dag-array-simple.lisp.
 
@@ -136,7 +138,7 @@
            (mv (erp-nil) term dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
          ;; term is a function call:
          (let* ((args (fargs term)))
-           (if (and (eq 'if fn) ;fixme handle other IFs?
+           (if (and (eq 'if fn) ; todo: handle other IFs?
                     ;; ensure there are enough args:
                     (consp (cdr (cdr args))))
                (mv-let (erp test-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -253,6 +255,7 @@
     :flag merge-terms-into-dag-array-basic)
   :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
 
+;drop?
 (defthm-flag-merge-term-into-dag-array-basic
   (defthm integerp-of-mv-nth-3-of-merge-term-into-dag-array-basic
     (implies (integerp dag-len)

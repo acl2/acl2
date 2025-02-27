@@ -1,7 +1,7 @@
 ; Utilities to make terms into dags
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,13 +12,13 @@
 
 (in-package "ACL2")
 
+;; This version does not handle embedded dags, resolve ifs, or evaluate ground terms.
+;; See also make-term-into-dag-basic.lisp.
+
 (include-book "make-term-into-dag-array-simple")
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
-;; This utility does not evaluate ground terms.
-;; See also make-term-into-dag-basic.lisp.
-
-;; Returns (mv erp dag-or-quotep).  Returns a dagp (a list) but uses arrays to do the work.
+;; Returns (mv erp dag-or-quotep).  The dag returned is a list, but this uses arrays to do the work.
 (defund make-term-into-dag-simple (term)
   (declare (xargs :guard (pseudo-termp term)
                   :guard-hints (("Goal" :use (:instance wf-dagp-of-make-term-into-dag-array-simple

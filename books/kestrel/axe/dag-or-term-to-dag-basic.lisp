@@ -1,7 +1,7 @@
 ; A utility to term a DAG or term into a DAG.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; This version uses make-term-into-dag-basic, so, for term inputs, it
+;; - uses the basic evaluator to evaluate ground terms
+;; - does attempt to resolve IFs.
+;; - does not handle embedded dags.
 
 (include-book "make-term-into-dag-basic")
 (include-book "kestrel/utilities/translate" :dir :system)
