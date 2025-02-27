@@ -1,7 +1,7 @@
 ; The tactic-based prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -23,6 +23,7 @@
 ;; See also the provers created by make-prover-simple (they are more
 ;; lightweight and do not depend on skip-proofs).
 
+(include-book "make-equality-dag-gen")
 (include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
 (include-book "dag-size")
@@ -1149,25 +1150,7 @@
         (mv nil '(value-triple :invisible) state))
        (assumptions (translate-terms assumptions 'prove-equal-with-tactics-fn (w state))) ; throws an error on bad input
        (- (check-assumptions assumptions)) ; may throw an error
-       ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 (w state))) ; todo: try dag-or-term-to-dag-basic?
-       ((when erp) (mv erp nil state))
-       ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 (w state))) ; todo: try dag-or-term-to-dag-basic?
-       ((when erp) (mv erp nil state))
-       (vars1 (merge-sort-symbol< (dag-vars dag1)))
-       (- (cw "Variables in DAG1: ~x0~%" vars1))
-       (vars2 (merge-sort-symbol< (dag-vars dag2)))
-       (- (cw "Variables in DAG2: ~x0~%" vars2))
-       (different-varsp (not (perm vars1 vars2)))
-       (- (and different-varsp
-               different-vars-ok
-               (cw "NOTE: The two dags have different variables.~%")))
-       ((when (and different-varsp
-                   (not different-vars-ok)))
-        (mv (hard-error 'prove-equal-with-tactics-fn "The two dags have different variables.  Consider supplying :DIFFERENT-VARS-OK t." nil)
-            nil state ;rand
-            ))
-       ;; Make the equality DAG to be proved:
-       ((mv erp dag) (make-equality-dag dag1 dag2))
+       ((mv erp dag) (make-equality-dag-gen dag-or-term1 dag-or-term2 different-vars-ok (w state)))
        ((when erp) (mv erp nil state))
        ;; Make the rule-alist:
        ((mv erp rule-alist) (make-rule-alist rules (w state)))
