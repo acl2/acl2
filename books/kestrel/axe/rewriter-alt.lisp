@@ -862,7 +862,7 @@
  ) ;end mutual-recursion
 
 ;; rewrites nodenum and all supporting nodes
-;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist state result-array-stobj)
+;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist state)
   ;; Extends the DAG but doesn't change any existing nodes?
 (defun rewrite-nodenum (nodenum rewrite-objective
                                 dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -870,9 +870,10 @@
                                 refined-assumption-alist
                                 equality-array
                                 print monitored-symbols
-                                normalize-xors state result-array-stobj)
-  (declare (xargs :mode :program :stobjs (state result-array-stobj)))
-  (let* ((result-array-stobj (clear-result-array-stobj result-array-stobj)))
+                                normalize-xors state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (with-local-stobj result-array-stobj
     (mv-let (erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj)
       (rewrite-dag-core (push-new-stack nodenum rewrite-objective
                                         nil ;empty stack
@@ -886,22 +887,23 @@
                         (if (null print) (no-hit-counting) (if (eq :brief print) (zero-hits) (empty-hit-counts)))
                         (if (print-level-at-least-verbosep print) (zero-tries) nil) ; nil means not counting tries
                         normalize-xors state result-array-stobj)
+      ;; Cannot access result-array-stobj after this point:
       (progn$ (maybe-print-hit-counts hit-counts ;; (append (rules-from-rule-alist rule-alist)
                                       ;;   ;; do these get counted?
                                       ;;   (rules-from-rule-alist oi-rule-alist))
                                       )
               (and print (cw "Total tries: ~x0.~%" tries))
-              (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist state result-array-stobj)))))
+              (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist state)))))
 
 ;; todo: rename
-;;returns (mv erp dag-lst-or-quotep state result-array-stobj)
+;;returns (mv erp dag-lst-or-quotep state)
 ;;fixme allow this to take assumptions as nodenums in some array (should this function be allowed to destroy that array?  can there be irrelevant nodes supporting the nodes?)
 (defun rewrite-dag-lst (dag-lst-or-quotep rewrite-objective interpreted-function-alist rule-alist oi-rule-alist
                                           assumptions ;terms to assume
-                                          print monitored-symbols normalize-xors state result-array-stobj)
-  (declare (xargs :mode :program :stobjs (state result-array-stobj)))
+                                          print monitored-symbols normalize-xors state)
+  (declare (xargs :mode :program :stobjs (state)))
   (if (quotep dag-lst-or-quotep)
-      (mv (erp-nil) dag-lst-or-quotep state result-array-stobj)
+      (mv (erp-nil) dag-lst-or-quotep state)
     (b* ((assumptions (get-conjuncts-list assumptions))
          (dag-array (make-into-array 'dag-array dag-lst-or-quotep))
          (top-nodenum (top-nodenum dag-lst-or-quotep))
@@ -919,7 +921,7 @@
                                                 'dag-array
                                                 'dag-parent-array
                                                 nil))
-         ((when erp) (mv erp nil state result-array-stobj))
+         ((when erp) (mv erp nil state))
          (equality-pairs (make-equality-pairs assumptions (w state))) ;dotted pairs of terms (fixme don't bother to make these: just populate the array directly?) fixme will there be enough equalities to justify using an array?
          ((mv erp equality-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
           (if equality-pairs
@@ -928,35 +930,35 @@
                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
             ;;there are no equalities:
             (mv (erp-nil) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)))
-         ((when erp) (mv erp nil state result-array-stobj))
+         ((when erp) (mv erp nil state))
          ;;make this more directly?  btw, what about duplicate assumptions?
          (refined-assumption-alist (make-refined-assumption-alist refined-assumption-exprs)) ;todo: move up
-         ((mv erp final-result dag-array dag-len & & & state result-array-stobj)
+         ((mv erp final-result dag-array dag-len & & & state)
           (rewrite-nodenum top-nodenum rewrite-objective
                            dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                            interpreted-function-alist rule-alist oi-rule-alist
                            refined-assumption-alist
                            equality-array
                            print monitored-symbols
-                           normalize-xors state result-array-stobj))
-         ((when erp) (mv erp nil state result-array-stobj)))
+                           normalize-xors state))
+         ((when erp) (mv erp nil state)))
       (if (quotep final-result) ;check consp?
-          (mv (erp-nil) final-result state result-array-stobj)
+          (mv (erp-nil) final-result state)
         (prog2$
          (and (eq print :verbose!)
               (prog2$ (cw "array before crunching:~%")
                       (print-array-vals (+ -1 dag-len) 0 'dag-array dag-array)))
          (mv (erp-nil)
              (drop-non-supporters-array-with-name 'dag-array dag-array final-result nil)
-             state result-array-stobj))))))
+             state))))))
 
-;; Returns (mv erp dag-lst-or-quotep state result-array-stobj)
+;; Returns (mv erp dag-lst-or-quotep state)
 (defun rewrite-dag-fn (dag-lst rewrite-objective assumptions interpreted-function-alist
                                rules rule-alist
                                oi-rules oi-rule-alist
-                               priorities print monitored-symbols normalize-xors state result-array-stobj)
+                               priorities print monitored-symbols normalize-xors state)
   (declare (xargs :mode :program
-                  :stobjs (state result-array-stobj)))
+                  :stobjs (state)))
   (progn$
    (and monitored-symbols (cw "(Monitoring: ~x0.)~%" monitored-symbols))
    (print-missing-rules monitored-symbols rule-alist)
@@ -965,10 +967,10 @@
                     (extend-rule-alist rules t priorities rule-alist) ;could use different priorities for the two kinds of rules..
                     (extend-rule-alist oi-rules t priorities oi-rule-alist)
                     assumptions
-                    print monitored-symbols normalize-xors state result-array-stobj)))
+                    print monitored-symbols normalize-xors state)))
 
 ; Calls the new rewriter.
-;; Returns (mv erp dag-lst-or-quotep state result-array-stobj)
+;; Returns (mv erp dag-lst-or-quotep state)
 ;things to consider adding: remove-duplicate-rulesp, use-internal-contextsp, context-array (really an assumptions array)?, work-hard-when-instructedp
 (defmacro rewrite-dag (dag-lst &key
                                (rewrite-objective ''?)
@@ -990,39 +992,39 @@
                    ,rule-alist
                    ,(if oi-runes `(append (make-axe-rules! ,oi-runes (w state)) ,oi-rules) oi-rules)
                    ,oi-rule-alist
-                   ,priorities ,print ,monitored-symbols ,normalize-xors state result-array-stobj))
+                   ,priorities ,print ,monitored-symbols ,normalize-xors state))
 
-;; Returns (mv erp dag-lst-or-quotep state result-array-stobj)
+;; Returns (mv erp dag-lst-or-quotep state)
 (defun rewrite-term-fn (term rewrite-objective assumptions interpreted-function-alist
                              runes
                              rules ;drop?
                              rule-alist
                              oi-runes oi-rules oi-rule-alist
-                             priorities print monitored-symbols normalize-xors state result-array-stobj)
+                             priorities print monitored-symbols normalize-xors state)
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-term-listp assumptions)
                               (symbol-listp runes)
                               (axe-rule-listp rules))
                   :mode :program
-                  :stobjs (state result-array-stobj)))
+                  :stobjs (state)))
   (b* (((mv erp rules0) (make-axe-rules runes (w state)))
-       ((when erp) (mv erp nil state result-array-stobj))
+       ((when erp) (mv erp nil state))
        (rules (append rules0 rules))
        ((mv erp oi-rules0) (make-axe-rules oi-runes (w state)))
-       ((when erp) (mv erp nil state result-array-stobj))
+       ((when erp) (mv erp nil state))
        (oi-rules (append oi-rules0 oi-rules))
        ((mv erp dag-lst) (make-term-into-dag term interpreted-function-alist))
-       ((when erp) (mv erp nil state result-array-stobj)))
+       ((when erp) (mv erp nil state)))
     (rewrite-dag-lst dag-lst
                      rewrite-objective
                      interpreted-function-alist
                      (extend-rule-alist rules t priorities rule-alist) ;could use different priorities for the two kinds of rules..
                      (extend-rule-alist oi-rules t priorities oi-rule-alist)
                      assumptions
-                     print monitored-symbols normalize-xors state result-array-stobj)))
+                     print monitored-symbols normalize-xors state)))
 
 ; Calls the new rewriter.
-;; Returns (mv erp dag-lst-or-quotep state result-array-stobj)
+;; Returns (mv erp dag-lst-or-quotep state)
 (defmacro rewrite-term (term &key
                              (rewrite-objective ''?)
                              (assumptions 'nil)
@@ -1044,21 +1046,21 @@
                     ,rule-alist
                     ,oi-runes
                     ,oi-rules
-                    ,oi-rule-alist ,priorities ,print ,monitored-symbols ,normalize-xors state result-array-stobj))
+                    ,oi-rule-alist ,priorities ,print ,monitored-symbols ,normalize-xors state))
 
-;returns (mv erp dag state result-array-stobj) where theorem-name has been proved in state
+;returns (mv erp dag state) where theorem-name has been proved in state
 (defun rewrite-term-and-prove-theorem (term theorem-name assumptions runes interpreted-function-alist
                                             ;;fixme what other options to rewrite-term should we pass in?
-                                            normalize-xors rule-classes state result-array-stobj)
-  (declare (xargs :mode :program :stobjs (state result-array-stobj)))
-  (mv-let (erp dag state result-array-stobj)
+                                            normalize-xors rule-classes state)
+  (declare (xargs :mode :program :stobjs (state)))
+  (mv-let (erp dag state)
     (rewrite-term term
                   :assumptions assumptions
                   :runes runes
                   :normalize-xors normalize-xors
                   :interpreted-function-alist interpreted-function-alist)
     (if erp
-        (mv erp nil state result-array-stobj)
+        (mv erp nil state)
       (let ((state (submit-event-quiet ;pass in a quiet flag?
                     `(skip-proofs
                       ;;this is correct if the rewriter operates correctly:
@@ -1079,32 +1081,32 @@
                                                                     )))
                         :rule-classes ,rule-classes))
                     state)))
-        (mv (erp-nil) dag state result-array-stobj)))))
+        (mv (erp-nil) dag state)))))
 
-;returns (mv erp dags state result-array-stobj)
-(defun rewrite-terms-with-assumptions (terms assumptions acc state result-array-stobj)
-  (declare (xargs :mode :program :stobjs (state result-array-stobj)))
+;returns (mv erp dags state)
+(defun rewrite-terms-with-assumptions (terms assumptions acc state)
+  (declare (xargs :mode :program :stobjs (state)))
   (if (endp terms)
-      (mv (erp-nil) (reverse acc) state result-array-stobj)
-    (mv-let (erp result state result-array-stobj)
+      (mv (erp-nil) (reverse acc) state)
+    (mv-let (erp result state)
       (rewrite-term (first terms) :runes (lookup-rules) :assumptions assumptions)
       (if erp
-          (mv erp nil state result-array-stobj)
-        (rewrite-terms-with-assumptions (rest terms) assumptions (cons result acc) state result-array-stobj)))))
+          (mv erp nil state)
+        (rewrite-terms-with-assumptions (rest terms) assumptions (cons result acc) state)))))
 
 
-;returns (mv erp dags state result-array-stobj)
+;returns (mv erp dags state)
 ;fixme add options? maybe use a macro
-(defun rewrite-terms (terms acc state result-array-stobj)
-  (declare (xargs :mode :program :stobjs (state result-array-stobj)))
+(defun rewrite-terms (terms acc state)
+  (declare (xargs :mode :program :stobjs (state)))
   (if (endp terms)
-      (mv (erp-nil) (reverse-list acc) state result-array-stobj)
+      (mv (erp-nil) (reverse-list acc) state)
     (let* ((term (first terms)))
-      (mv-let (erp dag state result-array-stobj)
+      (mv-let (erp dag state)
         (rewrite-term term :runes (lookup-rules))
         (if erp
-            (mv erp nil state result-array-stobj)
-          (rewrite-terms (rest terms) (cons dag acc) state result-array-stobj))))))
+            (mv erp nil state)
+          (rewrite-terms (rest terms) (cons dag acc) state))))))
 
 ;; fixme use outside-in rules?
 
@@ -1112,15 +1114,15 @@
 ;; (check-test (equivalent-dags-or-quoteps (rewrite-term 'x) (make-term-into-dag 'x nil)))
 ;; (check-test (not (equivalent-dags-or-quoteps (rewrite-term 'x) (make-term-into-dag 'y nil))))
 
-;; Returns (mv erp value state result-array-stobj)
+;; Returns (mv erp value state)
 (defun check-rewrite-fn (term-in term-out
                                  runes
                                  oi-runes
                                  interpreted-function-alist
                                  assumptions
-                                 rewrite-objective print state result-array-stobj)
-  (declare (xargs :mode :program :stobjs (state result-array-stobj)))
-  (mv-let (erp result state result-array-stobj)
+                                 rewrite-objective print state)
+  (declare (xargs :mode :program :stobjs (state)))
+  (mv-let (erp result state)
     (rewrite-term term-in
                   :rewrite-objective rewrite-objective
                   :assumptions assumptions
@@ -1130,16 +1132,16 @@
                   :print print
                   )
     (if erp
-        (mv erp nil state result-array-stobj)
+        (mv erp nil state)
       (mv-let (erp dag)
         (make-term-into-dag term-out nil)
         (if erp
-            (mv erp nil state result-array-stobj)
+            (mv erp nil state)
           (if (equivalent-dags-or-quoteps dag result)
-              (mv (erp-nil) '(progn) state result-array-stobj)
-            (mv (erp-t) :failed state result-array-stobj)))))))
+              (mv (erp-nil) '(progn) state)
+            (mv (erp-t) :failed state)))))))
 
-;; Returns (mv erp value state result-array-stobj)
+;; Returns (mv erp value state)
 (defmacro check-rewrite (term-in term-out &key
                                  (runes 'nil)
                                  (oi-runes 'nil)
@@ -1147,4 +1149,4 @@
                                  (assumptions 'nil)
                                  (rewrite-objective ''?)
                                  (print ''t))
-  `(make-event (check-rewrite-fn ,term-in ,term-out ,runes ,oi-runes ,interpreted-function-alist ,assumptions ,rewrite-objective ,print state result-array-stobj)))
+  `(make-event (check-rewrite-fn ,term-in ,term-out ,runes ,oi-runes ,interpreted-function-alist ,assumptions ,rewrite-objective ,print state)))

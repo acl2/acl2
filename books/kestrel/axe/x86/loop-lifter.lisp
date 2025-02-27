@@ -326,7 +326,7 @@
 ;; used to introduce the pther vars.
 
 ;; ;; Repeatedly advance the state and lift loops.
-;; ;; Returns (mv erp event state result-array-stobj)
+;; ;; Returns (mv erp event state)
 ;; ;; The state should already be stepped past the loop header (because we stop symbolic execution when we hit the loop header again?)
 ;; (defun lift-code-segment-aux (state-dag ;over the var x86 and perhaps other vars representing inputs (see the Essay on Variables)
 ;;                               segment-pcs ;PCs of the code segment to lift (should not include the header of the current loop)
@@ -338,7 +338,7 @@
 ;;                               loop-headers
 ;;                               print
 ;;                               state
-;;                               result-array-stobj)
+;;                              )
 
 ;; ;work around a lambda in the formula of acl2::member-of-cons
 ;; (defthm acl2::member-equal-of-cons
