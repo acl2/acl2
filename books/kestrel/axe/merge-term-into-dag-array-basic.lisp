@@ -255,24 +255,23 @@
     :flag merge-terms-into-dag-array-basic)
   :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
 
-;drop?
-(defthm-flag-merge-term-into-dag-array-basic
-  (defthm integerp-of-mv-nth-3-of-merge-term-into-dag-array-basic
-    (implies (integerp dag-len)
-             (integerp (mv-nth 3 (merge-term-into-dag-array-basic
-                              term var-replacement-alist dag-array dag-len dag-parent-array
-                              dag-constant-alist dag-variable-alist
-                              dag-array-name dag-parent-array-name
-                              interpreted-function-alist))))
-    :flag merge-term-into-dag-array-basic)
-  (defthm integerp-of-mv-nth-3-of-merge-terms-into-dag-array-basic
-    (implies (integerp dag-len)
-             (integerp (mv-nth 3 (merge-terms-into-dag-array-basic
-                              terms var-replacement-alist
-                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                              interpreted-function-alist))))
-    :flag merge-terms-into-dag-array-basic)
-  :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
+;; (defthm-flag-merge-term-into-dag-array-basic
+;;   (defthm integerp-of-mv-nth-3-of-merge-term-into-dag-array-basic
+;;     (implies (integerp dag-len)
+;;              (integerp (mv-nth 3 (merge-term-into-dag-array-basic
+;;                               term var-replacement-alist dag-array dag-len dag-parent-array
+;;                               dag-constant-alist dag-variable-alist
+;;                               dag-array-name dag-parent-array-name
+;;                               interpreted-function-alist))))
+;;     :flag merge-term-into-dag-array-basic)
+;;   (defthm integerp-of-mv-nth-3-of-merge-terms-into-dag-array-basic
+;;     (implies (integerp dag-len)
+;;              (integerp (mv-nth 3 (merge-terms-into-dag-array-basic
+;;                               terms var-replacement-alist
+;;                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+;;                               interpreted-function-alist))))
+;;     :flag merge-terms-into-dag-array-basic)
+;;   :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
 
 (defthm-flag-merge-term-into-dag-array-basic
   (defthm dag-variable-alistp-of-mv-nth-6-of-merge-term-into-dag-array-basic

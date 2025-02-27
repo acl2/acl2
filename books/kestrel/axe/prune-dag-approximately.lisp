@@ -509,7 +509,7 @@
                               (ilks-plist-worldp (w state)))
                   :guard-hints (("Goal" :in-theory (enable car-of-car-when-pseudo-dagp)))
                   :stobjs state))
-  (b* ((prunep (if check-fnsp (dag-fns-include-any dag '(if myif boolif bvif)) t))
+  (b* ((prunep (if check-fnsp (dag-fns-include-anyp dag '(if myif boolif bvif)) t))
        ((when (not prunep))
         (cw "(Note: No pruning to do.)~%")
         (mv (erp-nil) dag state))
@@ -628,7 +628,7 @@
   (b* (((when (not prune-branches))
         ;; don't even print anything in this case, as we've been told not to prune
         (mv nil dag state))
-       ((when (not (dag-fns-include-any dag '(if myif boolif bvif))))
+       ((when (not (dag-fns-include-anyp dag '(if myif boolif bvif))))
         (cw "(Note: No pruning to do.)~%")
         (mv nil dag state))
        ((when (and (natp prune-branches) ; it's a limit on the size

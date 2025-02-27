@@ -87,6 +87,7 @@
                           symbol-pseudoeventform-alistp
                           table-alist+
                           unsigned-byte-listp
+                          fty::okf
                           fty::reserrf
                           fty::reserrf-push
                           fty::reserrp
@@ -95,6 +96,7 @@
                           std::define-sk
                           str::downcase-char
                           str::downcase-charlist
+                          str::str-fix
                           str::upcase-char))
                 '(closure
                   rule

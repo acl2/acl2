@@ -55,6 +55,7 @@
 (include-book "strip-cars")
 (include-book "strip-cdrs")
 (include-book "pairlis")
+(include-book "put-assoc-equal")
 (include-book "remove-assocs")
 (include-book "remove-assoc-equal")
 (include-book "alist-map-keys")

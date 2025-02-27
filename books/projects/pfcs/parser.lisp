@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,13 +14,11 @@
 (include-book "grammar")
 
 (include-book "kestrel/fty/defresult" :dir :system)
-(include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
-(include-book "abnf-generator-utilities")
-
-(include-book "unicode/read-utf8" :dir :system)
-(include-book "std/util/defines" :dir :system)
-
 (include-book "kestrel/utilities/user-interface" :dir :system)
+(include-book "projects/abnf/constructor-utilities" :dir :system)
+(include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
+(include-book "std/util/defines" :dir :system)
+(include-book "unicode/read-utf8" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

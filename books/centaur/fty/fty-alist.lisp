@@ -84,6 +84,7 @@
         (raise "Malformed flexalist: ~x0: name must be a symbol" x))
        ((mv pre-/// post-///) (std::split-/// name args))
        ((mv kwd-alist rest)   (extract-keywords name *flexalist-keywords* pre-/// nil))
+       (kwd-alist (append kwd-alist (table-alist 'defalist-defaults (w state))))
        ((when rest)
         (raise "Malformed flexalist: ~x0: after kind should be a keyword/value list." name))
        (key-type (getarg :key-type nil kwd-alist))

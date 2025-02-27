@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -35,4 +35,26 @@
     (equal (set::emptyp (omap::keys map))
            (omap::emptyp map))
     :induct t
-    :enable omap::keys))
+    :enable omap::keys)
+
+  (defruled omap::keys-of-delete
+    (equal (omap::keys (omap::delete key map))
+           (set::delete key (omap::keys map)))
+    :induct t
+    :enable (omap::delete
+             set::expensive-rules))
+
+  (defrule omap::assoc-of-delete
+    (equal (omap::assoc key1 (omap::delete key map))
+           (if (equal key1 key)
+               nil
+             (omap::assoc key1 map)))
+    :induct t
+    :enable omap::delete)
+
+  (defrule omap::lookup-of-delete
+    (equal (omap::lookup key1 (omap::delete key map))
+           (if (equal key1 key)
+               nil
+             (omap::lookup key1 map)))
+    :enable omap::lookup))

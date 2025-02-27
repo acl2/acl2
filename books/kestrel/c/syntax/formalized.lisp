@@ -221,9 +221,10 @@
       (and (consp tyspecs)
            (endp (cdr tyspecs))
            (type-spec-case (car tyspecs) :struct)
-           (check-strunispec-no-members
-            (type-spec-struct->spec (car tyspecs)))
-           t))
+           (b* ((strunispec (type-spec-struct->spec (car tyspecs))))
+             (and (check-strunispec-no-members strunispec)
+                  (ident-formalp (strunispec->name strunispec))))))
+  :guard-hints (("Goal" :in-theory (enable check-strunispec-no-members)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -317,8 +318,10 @@
    :arrsub (and (expr-pure-formalp expr.arg1)
                 (expr-pure-formalp expr.arg2))
    :funcall nil
-   :member (expr-pure-formalp expr.arg)
-   :memberp (expr-pure-formalp expr.arg)
+   :member (and (expr-pure-formalp expr.arg)
+                (ident-formalp expr.name))
+   :memberp (and (expr-pure-formalp expr.arg)
+                 (ident-formalp expr.name))
    :complit nil
    :unary (unop-case
            expr.op
@@ -347,7 +350,7 @@
    :cond (and (expr-pure-formalp expr.test)
               (expr-option-case expr.then
                                 :some (expr-pure-formalp expr.then.val)
-                                :none t)
+                                :none nil)
               (expr-pure-formalp expr.else))
    :comma nil
    :cast/call-ambig (impossible)
@@ -392,6 +395,7 @@
      and the arguments must be supported pure expressions."))
   (and (expr-case expr :funcall)
        (expr-case (expr-funcall->fun expr) :ident)
+       (ident-formalp (expr-ident->ident (expr-funcall->fun expr)))
        (expr-list-pure-formalp (expr-funcall->args expr)))
   :hooks (:fix))
 
@@ -415,8 +419,9 @@
   (and (expr-case expr :binary)
        (binop-case (expr-binary->op expr) :asg)
        (if (expr-case (expr-binary->arg1 expr) :ident)
-           (or (expr-pure-formalp (expr-binary->arg2 expr))
-               (expr-call-formalp (expr-binary->arg2 expr)))
+           (and (ident-formalp (expr-ident->ident (expr-binary->arg1 expr)))
+                (or (expr-pure-formalp (expr-binary->arg2 expr))
+                    (expr-call-formalp (expr-binary->arg2 expr))))
          (and (expr-pure-formalp (expr-binary->arg1 expr))
               (expr-pure-formalp (expr-binary->arg2 expr)))))
   :hooks (:fix))
@@ -516,7 +521,8 @@
      the declaration case requires an object (not function) declarator
      that is not an array declarator.
      So we can only have an identifier."))
-  (dirdeclor-case dirdeclor :ident)
+  (and (dirdeclor-case dirdeclor :ident)
+       (ident-formalp (dirdeclor-ident->unwrap dirdeclor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -874,11 +880,11 @@
               (consp decl.specs)
               (endp (cdr decl.specs))
               (decl-spec-case (car decl.specs) :typespec)
-              (type-spec-case (decl-spec-typespec->spec (car decl.specs))
-                              :struct)
-              (strunispec-formalp (type-spec-struct->spec
-                                   (decl-spec-typespec->spec (car decl.specs))))
-              (endp decl.init))
+              (b* ((tyspec (decl-spec-typespec->spec (car decl.specs))))
+                (and (type-spec-case tyspec :struct)
+                     (b* ((strunispec (type-spec-struct->spec tyspec)))
+                       (and (strunispec-formalp strunispec)
+                            (endp decl.init))))))
    :statassert nil)
   :hooks (:fix))
 

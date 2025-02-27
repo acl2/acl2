@@ -1,7 +1,7 @@
 ; Another book about the built-in function mod.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -272,8 +272,6 @@
   :hints (("Goal" :use ((:instance same-remainder-when-close-helper3)
                         (:instance same-remainder-when-close-helper3 (i j) (j i)))
            :in-theory (disable same-remainder-when-close-helper3))))
-
-(local (in-theory (enable mod-=-0))) ;todo
 
 ;rename?
 (defthm same-remainder-when-close-lemma

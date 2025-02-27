@@ -65,7 +65,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection round-after-last-of-next
+(defsection round-after-last-p-of-next
   :short "Preservation of the invariant by single transitions."
 
   (defruled round-after-last-p-of-propose-next

@@ -111,7 +111,8 @@
      which is made in the documentation of @(tsee propose-possiblep)."))
   (b* ((msg (make-message-proposal :proposal prop :destination endor))
        ((unless (set::in msg (get-network-state systate))) nil)
-       ((unless (set::in (address-fix endor) (correct-addresses systate))) t)
+       ((when (not (set::in (address-fix endor) (correct-addresses systate))))
+        t)
        ((proposal prop) prop)
        ((validator-state vstate) (get-validator-state endor systate))
        (commtt (active-committee-at-round prop.round vstate.blockchain))
@@ -203,7 +204,7 @@
                             (validator-state->endorsed
                              (get-validator-state val systate)))
              (validator-state->endorsed (get-validator-state val systate)))))
-  (in-theory (disable validator-state->proposed-of-endorse-next))
+  (in-theory (disable validator-state->endorsed-of-endorse-next))
 
   (defret validator-state->last-of-endorse-next
     (equal (validator-state->last (get-validator-state val new-systate))

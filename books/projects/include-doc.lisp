@@ -37,6 +37,7 @@
      (include-book "aleobft/top")
      (include-book "leo/top")
      (include-book "abnf/top")
+     (include-book "bls12-377-curves/top")
 
      (defxdoc projects
        :parents (top)

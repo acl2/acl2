@@ -1,12 +1,9 @@
-; Primes Library: Scalar Field prime for BLS12-377
+; bls12-377-curves Library: Scalar Field prime for BLS12-377
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Aleo Systems Inc. (https://www.aleo.org)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
-;
-; Main Author: Eric Smith (eric.smith@kestrel.edu)
-; Contributing Authors: Eric McCarthy (mccarthy@kestrel.edu)
-;                       Alessandro Coglio (coglio@kestrel.edu)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,7 +77,7 @@
         r = x^4 - x^2 + 1
       ])")
    (xdoc::p
-    "Figure 16 lists its value in hexadecimal:")
+    "Figure 16 of the Zexe paper lists its value in hexadecimal:")
    (xdoc::codeblock
     "0x12ab655e9a2ca55660b44d1e5c37b00159aa76fed00000010a11800000000001")))
 

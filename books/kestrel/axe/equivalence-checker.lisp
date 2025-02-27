@@ -8207,20 +8207,23 @@
     (+ (len (cdr (car alist)))
        (sum-of-cdr-lens (cdr alist)))))
 
+;; todo: see dag-is-purep
 (defun miter-is-purep-aux (index len miter-array-name miter-array)
   (declare (xargs :guard (and (pseudo-dag-arrayp miter-array-name miter-array len)
                               (natp index)
                               (<= index len))
+                  :guard-hints (("Goal" :in-theory (enable expr-is-purep)))
                   :measure (nfix (- len index))))
   (if (or (>= index len)
           (not (natp index))
           (not (natp len)))
       t
-    (if (expr-is-purep (aref1 miter-array-name miter-array index))
-        (miter-is-purep-aux (+ 1 index) len miter-array-name miter-array)
-      (prog2$ (cw "(Node ~x0 is not pure.)~%" index)
-              nil))))
-
+    (let ((expr (aref1 miter-array-name miter-array index)))
+      (if (expr-is-purep expr)
+          (miter-is-purep-aux (+ 1 index) len miter-array-name miter-array)
+        (prog2$ (cw "(Node ~x0 is not pure (call of ~x1).)~%" index (car expr) ; must be a cons since vars are pure
+                    )
+                nil)))))
 
 ; todo: ;use property lists?
 ;ffixme check indices, sizes, and shift amounts, etc.!
@@ -8295,7 +8298,8 @@
                   :hints (("Goal" :do-not '(generalize eliminate-destructors)
                            :in-theory (e/d (not-<-of-car-when-all-< ; drop?
                                             <-OF-CAR-WHEN-ALL-<
-                                            <-OF-+-OF-1-WHEN-INTEGERP)
+                                            ;<-OF-+-OF-1-WHEN-INTEGERP
+                                            )
                                            (natp))))))
   (if (or (endp worklist)
           ;; for termination:

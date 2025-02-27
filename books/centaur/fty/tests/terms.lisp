@@ -451,14 +451,18 @@
   (:unary ((fn symbol) (arg xtree)))
   :layout :alist)
 
+(local (table fty::deftagsum-defaults :layout :tree))
+
 (deftagsum ytree
   (:leaf ((val natp)))
   (:pair ((left ytree-p) (right ytree-p)))
-  (:unary ((fn symbol) (arg ytree)))
-  :layout :tree)
+  (:unary ((fn symbol) (arg ytree))))
+
 
 (std::assert-guard-verified remake-ytree-leaf)
 (std::assert-guard-verified remake-ytree-pair)
+
+(local (table fty::deftagsum-defaults nil nil :clear))
 
 #||
 ;; Making sure the change macro is invoking the remake function.

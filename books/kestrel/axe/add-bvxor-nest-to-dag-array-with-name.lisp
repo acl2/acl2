@@ -1,7 +1,7 @@
 ; Adding a nest of bvxors to the DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,7 +21,7 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(local (in-theory (disable myquotep)))
+(local (in-theory (disable myquotep natp)))
 
 ;; KEEP IN SYNC WITH ADD-BITXOR-NEST-TO-DAG-ARRAY-WITH-NAME-AUX
 ;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
