@@ -132,6 +132,8 @@
 (include-book "make-dag-indices")
 (include-book "make-dag-variable-alist")
 (include-book "make-equality-dag")
+(include-book "make-equality-dag-gen")
+(include-book "make-equality-dag-basic")
 (include-book "make-evaluator-common")
 (include-book "make-evaluator")
 (include-book "make-evaluator-simple")
