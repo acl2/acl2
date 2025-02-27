@@ -658,7 +658,24 @@
                   (cons (decl-spec-stoclass->spec declspec) stor-specs))
             (mv nil nil nil)))))
     (mv nil nil nil))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled check-decl-spec-list-all-typespec/stoclass-when-all-typespec
+    (implies (mv-nth 0 (check-decl-spec-list-all-typespec
+                        declspecs))
+             (and (mv-nth 0 (check-decl-spec-list-all-typespec/stoclass
+                             declspecs))
+                  (equal (mv-nth 1 (check-decl-spec-list-all-typespec/stoclass
+                                    declspecs))
+                         (mv-nth 1 (check-decl-spec-list-all-typespec
+                                    declspecs)))
+                  (equal (mv-nth 2 (check-decl-spec-list-all-typespec/stoclass
+                                    declspecs))
+                         nil)))
+    :induct t
+    :enable check-decl-spec-list-all-typespec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
