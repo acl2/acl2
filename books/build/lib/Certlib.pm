@@ -1694,6 +1694,10 @@ sub process_labels_and_targets {
 	    } else {
 		print STDERR "Bad path for target: $str\n";
 	    }
+	} elsif (substr($str, 0, 3) eq '-g ') {
+	    # Image.
+	    my $imgname = substr($str,3);
+	    push (@images, $imgname);
 	} elsif (substr($str, -1, 1) eq ':') {
 	    # label.
 	    my $label = substr($str,0,-1); # everything but the :
