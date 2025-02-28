@@ -463,7 +463,11 @@
          (call-of-simplify-dag `(,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))
          (call-of-simplify-dag-core `(,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))
          )
-    `(encapsulate ()
+    `(progn
+       (include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
+       (include-book "kestrel/axe/dag-info" :dir :system) ; for print-dag-info
+       (include-book "kestrel/axe/pure-dags" :dir :system) ; for dag-is-purep-aux
+      (encapsulate ()
 
        (local (include-book "kestrel/lists-light/cdr" :dir :system))
        (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -484,6 +488,7 @@
        (local (include-book "kestrel/axe/rewriter-support" :dir :system))
        (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; reduce?
        (local (include-book "kestrel/utilities/mv-nth" :dir :system))
+       (local (include-book "kestrel/utilities/read-run-time" :dir :system)) ; for get-real-time, below
 
        (local (in-theory (disable mv-nth
                                   wf-dagp wf-dagp-expander
@@ -6150,7 +6155,8 @@
                                   (consp whole-form)
                                   (symbolp (car whole-form))
                                   (ilks-plist-worldp (w state)))
-                      :stobjs state))
+                      :stobjs state
+                      :guard-hints (("Goal" :in-theory (disable w)))))
       (b* (((when (command-is-redundantp whole-form state)) ; will check the table named (pack$ def-simplified-dag-name '-table)
             (mv nil '(value-triple :invisible) state))
            ((when (not (starts-and-ends-with-starsp name))) ; todo: stricter check?
@@ -6159,13 +6165,27 @@
            ((when (getpropc name 'const nil (w state))) ; todo: factor out
             (er hard? ',def-simplified-dag-fn-name "The name ~x0 is already in use as a constant." name)
             (mv :name-in-use nil state))
+           ((mv start-time state) (get-real-time state))
+           (- (cw "~%(Creating ~x0:~%" name))
            (known-booleans (known-booleans (w state)))
            ((mv erp rule-alist) (make-rule-alist rules (w state)))
            ((when erp) (mv erp nil state))
            ;; Simplify the DAG:
            ((mv erp dag-or-quotep &) ; todo: use the limits?
             ,call-of-simplify-dag)
-           ((when erp) (mv erp nil state)))
+           ((when erp) (mv erp nil state))
+           ((mv end-time state) (get-real-time state))
+           ;; Print info about the DAG:
+           (- (print-dag-info dag-or-quotep name nil))
+           (- (if (myquotep dag-or-quotep)
+                  nil ; skip the purity check if we have constant
+                (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
+                    (cw "~x0 is a pure dag.~%" name)
+                  (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" name))))
+           (- (progn$ (cw "~%SIMPLIFICATION FINISHED (")
+                      (print-to-hundredths (- end-time start-time))
+                      (cw "s).)~%") ; s = seconds, second paren matches "(Creating ..." above
+                      )))
         (mv (erp-nil)
             `(progn (defconst ,name ',dag-or-quotep)
                (with-output :off :all (table ,',(pack$ def-simplified-dag-name '-table) ',whole-form ':fake))
@@ -6191,7 +6211,7 @@
                                         (monitored-symbols 'nil)
                                         (fns-to-elide 'nil))
       `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitored-symbols ,fns-to-elide ',whole-form state)))
-    ) ; end of the generated encapsulate
+    )) ; end of the generated encapsulate and progn
     ))
 
 ;; Makes a version of the (simple) Axe Rewriter, given an evaluator, a syntaxp evaluator, and an axe-bind-free evaluator.
