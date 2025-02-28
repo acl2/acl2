@@ -18,6 +18,8 @@
 (include-book "evaluator-basic")
 (include-book "axe-syntaxp-evaluator-basic")
 (include-book "axe-bind-free-evaluator-basic")
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 ;; Create a "basic" rewriter.  Here, "basic" refers to the set of functions to
 ;; evaluate and to the sets of axe-syntaxp and axe-bind-free functions that the
@@ -29,6 +31,13 @@
                       axe-evaluator-basic
                       basic
                       basic)
+
+;dup
+(local
+ (defthm pseudo-term-listp-of-reverse-list
+   (equal (pseudo-term-listp (reverse-list acc))
+          (pseudo-term-listp (true-list-fix acc)))
+   :hints (("Goal" :in-theory (enable pseudo-term-listp reverse-list)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -14,6 +14,7 @@
 
 (include-book "translation-array")
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
