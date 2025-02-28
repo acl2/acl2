@@ -100,9 +100,18 @@
      The signers of the certificate must be members of the committee,
      and must form a quorum in that committee.")
    (xdoc::p
-    "Finally, the validator's DAG must already contain
+    "The validator's DAG must already contain
      all the previous certificates referenced by the new certificate,
-     unless the round is 1."))
+     unless the round is 1.")
+   (xdoc::p
+    "The validator's DAG must not already contain
+     a certificate with the same author and round.
+     Certificates created by correct validators are unique,
+     and are sent at most once to each validator;
+     however, faulty validators may create and send
+     multiple certificates with the same proposal
+     and with different signing quora
+     (see @(see transitions-certify))."))
   (b* ((msg (make-message-certificate :certificate cert :destination val))
        ((unless (set::in msg (get-network-state systate))) nil)
        ((unless (set::in (address-fix val) (correct-addresses systate))) nil)
@@ -121,6 +130,9 @@
        ((unless (set::subset prop.previous
                              (cert-set->author-set
                               (certs-with-round (1- prop.round) vstate.dag))))
+        nil)
+       ((unless (set::emptyp
+                 (certs-with-author+round prop.author prop.round vstate.dag)))
         nil))
     t)
   :guard-hints (("Goal" :in-theory (enable posp)))
