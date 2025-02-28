@@ -88,7 +88,7 @@
              round-after-last-p-necc))
 
   (defruled round-after-last-p-of-certify-next
-    (implies (and (certify-possiblep cert systate)
+    (implies (and (certify-possiblep cert dests systate)
                   (round-after-last-p systate))
              (round-after-last-p (certify-next cert dests systate)))
     :enable (round-after-last-p

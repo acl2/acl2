@@ -122,7 +122,7 @@
              last-blockchain-round-p-necc))
 
   (defruled last-blockchain-round-p-of-certify-next
-    (implies (and (certify-possiblep cert systate)
+    (implies (and (certify-possiblep cert dests systate)
                   (last-blockchain-round-p systate))
              (last-blockchain-round-p (certify-next cert dests systate)))
     :enable (last-blockchain-round-p
