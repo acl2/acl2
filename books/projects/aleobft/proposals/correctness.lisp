@@ -20,6 +20,7 @@
 (include-book "certificate-to-other")
 (include-book "proposed-endorser-other")
 (include-book "proposal-in-author")
+(include-book "endorsement-in-author")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -42,6 +43,7 @@
                     endorsement-from-other
                     certificate-to-other
                     proposed-endorser-other
-                    proposal-in-author))
+                    proposal-in-author
+                    endorsement-in-author))
 
 ; TODO: continue
