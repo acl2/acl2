@@ -187,7 +187,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('props') and @('dests') parameters of this function
+    "The @('prop') and @('dests') parameters of this function
      are the corresponding components of the @('propose') event.")
    (xdoc::p
     "If the author of the proposal is faulty,
