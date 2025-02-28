@@ -82,6 +82,7 @@
 (include-book "rewrite-stobj")
 (include-book "rewrite-stobj2")
 (include-book "cars-increasing-by-1")
+(include-book "kestrel/lists-light/reverse-list" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
