@@ -4824,7 +4824,7 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (new-normal-form-rules64) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
+  (append ;(new-normal-form-rules64) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 
