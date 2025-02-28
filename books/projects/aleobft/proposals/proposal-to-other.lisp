@@ -155,7 +155,8 @@
     (implies (and (event-possiblep event systate)
                   (proposal-to-other-p systate))
              (proposal-to-other-p (event-next event systate)))
-    :enable (event-possiblep event-next)))
+    :enable (event-possiblep
+             event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

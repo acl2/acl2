@@ -157,7 +157,8 @@
     (implies (and (event-possiblep event systate)
                   (certificate-to-other-p systate))
              (certificate-to-other-p (event-next event systate)))
-    :enable (event-possiblep event-next)))
+    :enable (event-possiblep
+             event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

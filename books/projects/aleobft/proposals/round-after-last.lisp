@@ -122,7 +122,8 @@
     (implies (and (event-possiblep event systate)
                   (round-after-last-p systate))
              (round-after-last-p (event-next event systate)))
-    :enable (event-possiblep event-next)))
+    :enable (event-possiblep
+             event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
