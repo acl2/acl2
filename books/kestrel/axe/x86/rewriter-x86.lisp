@@ -53,7 +53,7 @@
 ;; evaluate and to the sets of axe-syntaxp and axe-bind-free functions that the
 ;; rewriter "knows" about.  To understand what gets generated, see
 ;; make-rewriter-simple-fn.  The main interface functions are
-;; simplify-term-x86, simp-term-x86, simp-terms-x86, simplify-dag-x86,
+;; simplify-dag-x86, simplify-term-x86, simplify-term-to-term-x86, simplify-terms-to-terms-x86,
 ;; and def-simplified-dag-x86.
 (make-rewriter-simple x86
                       axe-evaluator-x86
