@@ -36,8 +36,6 @@
 ;; TODO: give an error if there are not base rules and unroll rules (something
 ;; went wrong trying to analyze the body)
 
-;; TODO: Verify guards
-
 (include-book "world") ; for fn-body
 (include-book "kestrel/terms-light/expr-calls-fn" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)

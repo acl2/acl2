@@ -1,6 +1,6 @@
 ; Use with-supporters to just get the code of the Basic Axe Rewriter
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,5 +17,5 @@
 
 (with-supporters
  (local (include-book "rewriter-basic"))
- :names (simp-term-basic
+ :names (simplify-term-to-term-basic
          make-rule-alist!))
