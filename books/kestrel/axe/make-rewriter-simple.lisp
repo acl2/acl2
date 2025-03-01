@@ -336,10 +336,10 @@
          (simplify-dag-expr-name (pack$ 'simplify-dag-expr- suffix))
          (simplify-dag-aux-name (pack$ 'simplify-dag-aux- suffix)) ; rename simplify-dag-nodes...
          (simplify-dag-core-name (pack$ 'simplify-dag-core- suffix))
-         (simplify-dag-name (pack$ 'simplify-dag- suffix))
+         (simplify-dag-name (pack$ 'simplify-dag- suffix)) ; produces a DAG
          (simplify-term-name (pack$ 'simplify-term- suffix)) ; produces a DAG
-         (simp-term-name (pack$ 'simp-term- suffix))         ; produces a term
-         (simp-terms-name (pack$ 'simp-terms- suffix)) ; produces a list of terms
+         (simplify-term-to-term-name (pack$ 'simplify-term-to-term- suffix))         ; produces a term
+         (simplify-terms-to-terms-name (pack$ 'simplify-terms-to-terms- suffix)) ; produces a list of terms
          (def-simplified-dag-fn-name (pack$ 'def-simplified-dag-fn- suffix))
          (def-simplified-dag-name (pack$ 'def-simplified-dag- suffix))
 
@@ -4635,8 +4635,9 @@
                    ;;(and stable-under-simplificationp '(:cases (memoizep)))
                    ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+         ;; Simplifies a single dag-expr, e.g., when traversing all the nodes in a DAG, simplifying each expr.
          ;; Returns (mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array).
          (defund ,simplify-dag-expr-name (expr
                                           old-nodenum ; just for guards
@@ -4993,7 +4994,7 @@
            :hints (("Goal" :use (:instance ,(pack$ simplify-dag-expr-name '-return-type))
                     :in-theory (disable ,(pack$ simplify-dag-expr-name '-return-type)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
          ;; For each node in REV-DAG, fix up its args (if any) according to the renumbering-stobj, then add its simplified form to the dag-array and add its new nodenum or quotep to the renumbering-stobj.
          ;; Returns (mv erp rewrite-stobj2 memoization hit-counts tries limits node-replacement-array renumbering-stobj).
@@ -5380,7 +5381,7 @@
            :hints (("Goal" :use (:instance ,(pack$ simplify-dag-aux-name '-return-type))
                     :in-theory (disable ,(pack$ simplify-dag-aux-name '-return-type)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
          ;; Returns (mv erp dag-or-quotep limits).
          ;; This optionally takes an internal-context-array, but if one is given, memoizep can't be non-nil.
@@ -5584,6 +5585,8 @@
            :hints (("Goal" :use ,(pack$ simplify-dag-core-name '-return-type)
                     :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap) (,(pack$ simplify-dag-core-name '-return-type))))))
 
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
          ;; Returns (mv erp dag-or-quotep limits).
          ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
          ;; Only the first 5 arguments affect soundness.
@@ -5771,7 +5774,7 @@
            :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
                     :in-theory (disable ,(pack$ simplify-dag-name '-return-type)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
          ;; Simplify a term and return an equivalent DAG.  Returns (mv erp dag-or-quotep).
          ;; TODO: add support for multiple rule-alists.
@@ -5994,22 +5997,22 @@
                     (myquotep (mv-nth 1 ,call-of-simplify-term)))
            :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
          ;; Simplify a term and return a term (not a DAG).  Returns (mv erp term).
          ;; WARNING: The term returned might be huge!
-         (defund ,simp-term-name (term
-                                  assumptions
-                                  rule-alist
-                                  interpreted-function-alist
-                                  known-booleans
-                                  normalize-xors
-                                  limits
-                                  memoizep
-                                  count-hits
-                                  print ;; todo: add context array and other args?
-                                  monitored-symbols
-                                  fns-to-elide)
+         (defund ,simplify-term-to-term-name (term
+                                              assumptions
+                                              rule-alist
+                                              interpreted-function-alist
+                                              known-booleans
+                                              normalize-xors
+                                              limits
+                                              memoizep
+                                              count-hits
+                                              print ;; todo: add context array and other args?
+                                              monitored-symbols
+                                              fns-to-elide)
            (declare (xargs :guard (and (pseudo-termp term)
                                        (pseudo-term-listp assumptions)
                                        (rule-alistp rule-alist)
@@ -6033,7 +6036,7 @@
                                dag
                              (dag-to-term dag)))))
 
-         (defthm ,(pack$ 'pseudo-termp-of-mv-nth-1-of- simp-term-name)
+         (defthm ,(pack$ 'pseudo-termp-of-mv-nth-1-of- simplify-term-to-term-name)
            (implies (and (pseudo-termp term)
                          (pseudo-term-listp assumptions)
                          (rule-alistp rule-alist)
@@ -6046,31 +6049,31 @@
                          (normalize-xors-optionp normalize-xors)
                          (symbol-listp known-booleans)
                          (rule-limitsp limits))
-                    (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))))
+                    (pseudo-termp (mv-nth 1 (,simplify-term-to-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))))
            :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name))
                     :do-not '(generalize eliminate-destructors)
                     :do-not-induct t
-                    :in-theory (e/d (,simp-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
+                    :in-theory (e/d (,simplify-term-to-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
          ;; Simplify a list of terms, returning a list of the simplified terms (not
          ;; DAGs).  Returns (mv erp new-terms), where the new-terms correspond 1-to-1
          ;; to the original TERMS.
-         (defun ,simp-terms-name (terms
-                                  assumptions
-                                  rule-alist
-                                  interpreted-function-alist
-                                  known-booleans
-                                  normalize-xors
-                                  limits
-                                  memoizep
-                                  count-hits
-                                  print
-                                  monitored-symbols
-                                  fns-to-elide
-                                  ;; todo: add context array and other args?
-                                  )
+         (defun ,simplify-terms-to-terms-name (terms
+                                               assumptions
+                                               rule-alist
+                                               interpreted-function-alist
+                                               known-booleans
+                                               normalize-xors
+                                               limits
+                                               memoizep
+                                               count-hits
+                                               print
+                                               monitored-symbols
+                                               fns-to-elide
+                                               ;; todo: add context array and other args?
+                                               )
            (declare (xargs :guard (and (pseudo-term-listp terms)
                                        (pseudo-term-listp assumptions)
                                        (rule-alistp rule-alist)
@@ -6086,24 +6089,24 @@
            (if (endp terms)
                (mv (erp-nil) nil)
              (b* (((mv erp first-res)
-                   (,simp-term-name (first terms) assumptions rule-alist interpreted-function-alist
-                                    known-booleans normalize-xors limits memoizep
-                                    count-hits print monitored-symbols fns-to-elide))
+                   (,simplify-term-to-term-name (first terms) assumptions rule-alist interpreted-function-alist
+                                                known-booleans normalize-xors limits memoizep
+                                                count-hits print monitored-symbols fns-to-elide))
                   ((when erp) (mv erp nil))
                   ((mv erp rest-res)
-                   (,simp-terms-name (rest terms) assumptions rule-alist interpreted-function-alist
-                                     known-booleans normalize-xors limits memoizep
-                                     count-hits print monitored-symbols fns-to-elide))
+                   (,simplify-terms-to-terms-name (rest terms) assumptions rule-alist interpreted-function-alist
+                                                  known-booleans normalize-xors limits memoizep
+                                                  count-hits print monitored-symbols fns-to-elide))
                   ((when erp) (mv erp nil)))
                (mv (erp-nil)
                    (cons first-res rest-res)))))
 
-         (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- simp-terms-name)
-           (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide)))
+         (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- simplify-terms-to-terms-name)
+           (true-listp (mv-nth 1 (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide)))
            :rule-classes :type-prescription
-           :hints (("Goal" :in-theory (enable ,simp-terms-name))))
+           :hints (("Goal" :in-theory (enable ,simplify-terms-to-terms-name))))
 
-         (defthm ,(pack$ 'pseudo-term-listp-of-mv-nth-1-of- simp-terms-name)
+         (defthm ,(pack$ 'pseudo-term-listp-of-mv-nth-1-of- simplify-terms-to-terms-name)
            (implies (and (pseudo-term-listp terms)
                          (pseudo-term-listp assumptions)
                          (rule-alistp rule-alist)
@@ -6116,10 +6119,10 @@
                          (normalize-xors-optionp normalize-xors)
                          (symbol-listp known-booleans)
                          (rule-limitsp limits))
-                    (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))))
-           :hints (("Goal" :in-theory (enable ,simp-terms-name))))
+                    (pseudo-term-listp (mv-nth 1 (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))))
+           :hints (("Goal" :in-theory (enable ,simplify-terms-to-terms-name))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
          ;; Macro helper function for ,def-simplified-dag-name
          ;; Returns (mv erp event state).
