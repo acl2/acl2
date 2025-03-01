@@ -6128,7 +6128,7 @@
          ;; Returns (mv erp event state).
          ;; TODO: Perhaps add an option to take a rule-alist.
          ;; TODO: Allow passing a term instead of a DAG.
-         (defund ,def-simplified-dag-fn-name (name ; the name of the constant to create
+         (defund ,def-simplified-dag-fn-name (defconst-name ; the name of the constant to create
                                               dag
                                               assumptions
                                               rules
@@ -6143,7 +6143,7 @@
                                               fns-to-elide
                                               whole-form
                                               state)
-           (declare (xargs :guard (and (symbolp name)
+           (declare (xargs :guard (and (symbolp defconst-name)
                                        (pseudo-dagp dag)
                                        (pseudo-term-listp assumptions)
                                        (symbol-listp rules)
@@ -6162,14 +6162,14 @@
                            :guard-hints (("Goal" :in-theory (disable w)))))
            (b* (((when (command-is-redundantp whole-form state)) ; will check the table named (pack$ def-simplified-dag-name '-table)
                  (mv nil '(value-triple :invisible) state))
-                ((when (not (starts-and-ends-with-starsp name))) ; todo: stricter check?
-                 (er hard? ',def-simplified-dag-fn-name "The name ~x0 is not a legal constant name." name)
+                ((when (not (starts-and-ends-with-starsp defconst-name))) ; todo: stricter check?
+                 (er hard? ',def-simplified-dag-fn-name "The name ~x0 is not a legal constant name." defconst-name)
                  (mv :bad-name nil state))
-                ((when (getpropc name 'const nil (w state))) ; todo: factor out
-                 (er hard? ',def-simplified-dag-fn-name "The name ~x0 is already in use as a constant." name)
+                ((when (getpropc defconst-name 'const nil (w state))) ; todo: factor out
+                 (er hard? ',def-simplified-dag-fn-name "The name ~x0 is already in use as a constant." defconst-name)
                  (mv :name-in-use nil state))
                 ((mv start-time state) (get-real-time state))
-                (- (cw "~%(Creating ~x0:~%" name))
+                (- (cw "~%(Creating ~x0:~%" defconst-name))
                 (known-booleans (known-booleans (w state)))
                 ((mv erp rule-alist) (make-rule-alist rules (w state)))
                 ((when erp) (mv erp nil state))
@@ -6179,28 +6179,28 @@
                 ((when erp) (mv erp nil state))
                 ((mv end-time state) (get-real-time state))
                 ;; Print info about the DAG:
-                (- (print-dag-info dag-or-quotep name nil))
+                (- (print-dag-info dag-or-quotep defconst-name nil))
                 (- (if (myquotep dag-or-quotep)
                        nil ; skip the purity check if we have constant
                      (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
-                         (cw "~x0 is a pure dag.~%" name)
-                       (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" name))))
+                         (cw "~x0 is a pure dag.~%" defconst-name)
+                       (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
                 (- (progn$ (cw "~%SIMPLIFICATION FINISHED (")
                            (print-to-hundredths (- end-time start-time))
                            (cw "s).)~%") ; s = seconds, second paren matches "(Creating ..." above
                            )))
              (mv (erp-nil)
-                 `(progn (defconst ,name ',dag-or-quotep)
+                 `(progn (defconst ,defconst-name ',dag-or-quotep)
                     (with-output :off :all (table ,',(pack$ def-simplified-dag-name '-table) ',whole-form ':fake))
-                    (value-triple ',name) ; print the name
+                    (value-triple ',defconst-name) ; print the name
                     )
                  state)))
 
          ;; A utility to simplify a DAG and name the resulting DAG.
-         ;; Creates a constant named NAME, whose value is a DAG representing the simplified form of DAG.
+         ;; Creates a constant named DEFCONST-NAME, whose value is a DAG representing the simplified form of DAG.
          ;; See def-simplified.lisp for a version of this for terms (todo: add that to this generator)
          (defmacro ,def-simplified-dag-name (&whole whole-form
-                                                    name
+                                                    defconst-name ;; The name of the dag to create
                                                     dag
                                                     &key
                                                     (assumptions 'nil)
@@ -6213,7 +6213,7 @@
                                                     (print ':brief)
                                                     (monitored-symbols 'nil)
                                                     (fns-to-elide 'nil))
-           `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitored-symbols ,fns-to-elide ',whole-form state)))
+           `(make-event-quiet (,',def-simplified-dag-fn-name ',defconst-name ,dag ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitored-symbols ,fns-to-elide ',whole-form state)))
          )) ; end of the generated encapsulate and progn
     ))
 
