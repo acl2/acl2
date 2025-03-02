@@ -419,7 +419,21 @@
                                 val1 (commit-next val systate))))
             (:instance
              validator-committees-fault-tolerant-p-of-commit-next-lemma
-             (vstate (get-validator-state val1 (commit-next val systate)))))))))
+             (vstate (get-validator-state val1 (commit-next val systate))))))))
+
+  (defret validator-committees-fault-tolerant-p-of-event-next
+    (implies (validator-committees-fault-tolerant-p
+              (get-validator-state val new-systate) new-systate)
+             (validator-committees-fault-tolerant-p
+              (get-validator-state val systate) systate))
+    :hyp (and (event-possiblep event systate)
+              (set::in val (correct-addresses systate))
+              (last-blockchain-round-p systate)
+              (ordered-even-p systate))
+    :fn event-next
+    :hints (("Goal" :in-theory (e/d (event-possiblep
+                                     event-next)
+                                    (validator-committees-fault-tolerant-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -501,7 +515,18 @@
       :in-theory (enable system-committees-fault-tolerant-p-necc)
       :use (:instance validator-committees-fault-tolerant-p-of-commit-next
                       (val1 (system-committees-fault-tolerant-p-witness
-                             systate)))))))
+                             systate))))))
+
+  (defret system-committees-fault-tolerant-p-of-event-next
+    (implies (system-committees-fault-tolerant-p new-systate)
+             (system-committees-fault-tolerant-p systate))
+    :hyp (and (event-possiblep event systate)
+              (last-blockchain-round-p systate)
+              (ordered-even-p systate))
+    :fn event-next
+    :hints (("Goal" :in-theory (e/d (event-possiblep
+                                     event-next)
+                                    (system-committees-fault-tolerant-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
