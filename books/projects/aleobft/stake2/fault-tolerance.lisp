@@ -403,10 +403,9 @@
     :fn commit-next
     :hints
     (("Goal"
-      :expand (validator-committees-fault-tolerant-p
-               (get-validator-state val systate) systate)
       :in-theory
-      (e/d (commit-possiblep
+      (e/d (validator-committees-fault-tolerant-p
+            commit-possiblep
             validator-state->blockchain-of-commit-next
             active-committee-at-round-of-extend-blockchain-no-change
             ordered-even-p-necc-fixing
