@@ -32,7 +32,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A validator creates a proposal only if its DAG containt
+    "A validator creates a proposal only if its DAG contains
      all the previous certificates referenced in the proposal.
      That is the case if the round of the proposal is not 1.
      If the round is 1, the validator creates a proposal
