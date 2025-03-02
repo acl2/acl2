@@ -93,7 +93,6 @@
                     (prop (mv-nth 1 (proposed-has-previous-p-witness
                                      (propose-next prop dests systate)))))
     :enable (proposed-has-previous-p
-             proposed-has-previous-p-necc
              validator-state->dag-of-propose-next
              validator-state->proposed-of-propose-next
              propose-possiblep ))
