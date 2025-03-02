@@ -25,6 +25,7 @@
 (include-book "endorsed-in-author")
 (include-book "certificate-in-author")
 (include-book "proposed-has-previous")
+(include-book "endorsed-has-previous")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,6 +53,7 @@
                     endorsement-in-endorser
                     endorsed-in-author
                     certificate-in-author
-                    proposed-has-previous))
+                    proposed-has-previous
+                    endorsed-has-previous))
 
 ; TODO: continue
