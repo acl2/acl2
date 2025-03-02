@@ -174,7 +174,13 @@
      Or, equivalently,
      when the total stake of the correct members in the committee
      is at least the quorum stake of the committee;
-     we prove this equivalent definition as a theorem."))
+     we prove this equivalent definition as a theorem.")
+   (xdoc::p
+    "The fault tolerance of a committee does not change
+     as the system transitions from one state to the next,
+     because the dependency on the system state is only on
+     the addresses of correct vs. faulty validators,
+     which do not change as the system evolves."))
   (<= (committee-members-stake (committee-faulty-members commtt systate)
                                commtt)
       (committee-max-faulty-stake commtt))
