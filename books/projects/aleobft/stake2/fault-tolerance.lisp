@@ -193,7 +193,36 @@
              committee-quorum-stake
              committee-total-stake
              committee-members-stake-of-difference
-             committee-members-stake-of-union)))
+             committee-members-stake-of-union))
+
+  (defret committee-fault-tolerant-p-of-create-next
+    (equal (committee-fault-tolerant-p commtt new-systate)
+           (committee-fault-tolerant-p commtt systate))
+    :fn create-next)
+
+  (defret committee-fault-tolerant-p-of-accept-next
+    (equal (committee-fault-tolerant-p commtt new-systate)
+           (committee-fault-tolerant-p commtt systate))
+    :hyp (accept-possiblep msg systate)
+    :fn accept-next)
+
+  (defret committee-fault-tolerant-p-of-advance-next
+    (equal (committee-fault-tolerant-p commtt new-systate)
+           (committee-fault-tolerant-p commtt systate))
+    :hyp (advance-possiblep val systate)
+    :fn advance-next)
+
+  (defret committee-fault-tolerant-p-of-commit-next
+    (equal (committee-faulty-members commtt new-systate)
+           (committee-faulty-members commtt systate))
+    :hyp (commit-possiblep val systate)
+    :fn commit-next)
+
+  (defret committee-fault-tolerant-p-of-event-next
+    (equal (committee-faulty-members commtt new-systate)
+           (committee-faulty-members commtt systate))
+    :hyp (event-possiblep event systate)
+    :fn event-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
