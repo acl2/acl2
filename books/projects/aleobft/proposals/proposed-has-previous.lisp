@@ -94,7 +94,7 @@
                                      (propose-next prop dests systate)))))
     :enable (proposed-has-previous-p
              validator-state->proposed-of-propose-next
-             propose-possiblep ))
+             propose-possiblep))
 
   (defruled proposed-has-previous-p-of-endorse-next
     (implies (proposed-has-previous-p systate)
