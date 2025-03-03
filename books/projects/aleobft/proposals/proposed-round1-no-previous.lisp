@@ -24,8 +24,8 @@
 
 (defxdoc+ proposed-round1-no-previous
   :parents (correctness)
-  :short "Invariant that each pending proposal in round 1
-          from a correct validator
+  :short "Invariant that each proposal in round 1
+          in the pending proposals of a correct validator
           has no references to previous certificates."
   :long
   (xdoc::topstring
