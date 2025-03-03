@@ -24,6 +24,7 @@
 (include-book "endorsement-in-endorser")
 (include-book "endorsed-in-author")
 (include-book "certificate-in-author")
+(include-book "proposed-round1-no-previous")
 (include-book "proposed-has-previous")
 (include-book "endorsed-has-previous")
 
@@ -53,6 +54,7 @@
                     endorsement-in-endorser
                     endorsed-in-author
                     certificate-in-author
+                    proposed-round1-no-previous
                     proposed-has-previous
                     endorsed-has-previous))
 
