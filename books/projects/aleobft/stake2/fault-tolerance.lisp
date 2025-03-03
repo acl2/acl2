@@ -337,6 +337,12 @@
                                vstate systate))
                              (systate (commit-next val systate))))))
 
+  (in-theory
+   (disable validator-committees-fault-tolerant-p-of-create-next-lemma
+            validator-committees-fault-tolerant-p-of-accept-next-lemma
+            validator-committees-fault-tolerant-p-of-advance-next-lemma
+            validator-committees-fault-tolerant-p-of-commit-next-lemma))
+
   (defret validator-committees-fault-tolerant-p-of-create-next
     (implies (validator-committees-fault-tolerant-p
               (get-validator-state val new-systate) new-systate)
@@ -344,6 +350,9 @@
               (get-validator-state val systate) systate))
     :fn create-next
     :hints (("Goal"
+             :in-theory
+             (enable
+              validator-committees-fault-tolerant-p-of-create-next-lemma)
              :use (:instance validator-committees-fault-tolerant-p-necc
                              (round
                               (validator-committees-fault-tolerant-p-witness
@@ -360,6 +369,9 @@
     :hyp (accept-possiblep msg systate)
     :fn accept-next
     :hints (("Goal"
+             :in-theory
+             (enable
+              validator-committees-fault-tolerant-p-of-accept-next-lemma)
              :use (:instance validator-committees-fault-tolerant-p-necc
                              (round
                               (validator-committees-fault-tolerant-p-witness
@@ -376,6 +388,9 @@
     :hyp (advance-possiblep val systate)
     :fn advance-next
     :hints (("Goal"
+             :in-theory
+             (enable
+              validator-committees-fault-tolerant-p-of-advance-next-lemma)
              :use (:instance validator-committees-fault-tolerant-p-necc
                              (round
                               (validator-committees-fault-tolerant-p-witness
@@ -409,8 +424,7 @@
             collect-anchors-above-last-committed-round
             posp
             evenp)
-           (validator-committees-fault-tolerant-p
-            validator-committees-fault-tolerant-p-of-commit-next-lemma))
+           (validator-committees-fault-tolerant-p))
       :use ((:instance validator-committees-fault-tolerant-p-necc
                        (round (validator-committees-fault-tolerant-p-witness
                                (get-validator-state val1 systate)
@@ -433,7 +447,13 @@
     :fn event-next
     :hints (("Goal" :in-theory (e/d (event-possiblep
                                      event-next)
-                                    (validator-committees-fault-tolerant-p))))))
+                                    (validator-committees-fault-tolerant-p)))))
+
+  (in-theory (disable validator-committees-fault-tolerant-p-of-create-next
+                      validator-committees-fault-tolerant-p-of-accept-next
+                      validator-committees-fault-tolerant-p-of-advance-next
+                      validator-committees-fault-tolerant-p-of-commit-next
+                      validator-committees-fault-tolerant-p-of-event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -544,7 +564,14 @@
                         (system-committees-fault-tolerant-p systate))))
     :induct t
     :enable (events-possiblep
-             events-next)))
+             events-next))
+
+  (in-theory (disable system-committees-fault-tolerant-p-of-create-next
+                      system-committees-fault-tolerant-p-of-accept-next
+                      system-committees-fault-tolerant-p-of-advance-next
+                      system-committees-fault-tolerant-p-of-commit-next
+                      system-committees-fault-tolerant-p-of-event-next
+                      system-committees-fault-tolerant-p-of-events-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
