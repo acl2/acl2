@@ -517,7 +517,7 @@
      (and (not erp)
           (equal (dag-to-term res) '(if (< x y) (if (< y z) 't blah) blah2))))))
 
-;;; test (DEF-SIMPLIFIED-DAG-BASIC *foo* '((2 if 1 0 '3) (1 . 't) (0 . x)))
+;;; test (DEF-SIMPLIFIED-BASIC *foo* '((2 if 1 0 '3) (1 . 't) (0 . x)))
 
 ;;; tests with xor:
 
@@ -753,7 +753,7 @@
 
 (include-book "basic-rules") ; for equal-same
 
-(def-simplified-dag-basic *result1*
+(def-simplified-basic *result1*
   (acl2::make-equality-dag-basic! '(bvxor 32 6 (bvxor 32 x (bvxor 32 y 5)))
                                   '(bvxor 32 x (bvxor 32 (bvxor 32 5 y) 6))
                                   nil (w state))
@@ -762,7 +762,7 @@
 
 (must-be-redundant (defconst *result1* ''t))
 
-(def-simplified-dag-basic *result2*
+(def-simplified-basic *result2*
   (acl2::make-equality-dag-basic! '(bitxor 0 (bitxor x (bitxor y 1)))
                                   '(bitxor x (bitxor (bitxor 1 y) 0))
                                   nil (w state))
@@ -770,3 +770,12 @@
   :normalize-xors :compact)
 
 (must-be-redundant (defconst *result2* ''t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Test of simplifying a term
+(def-simplified-basic *result3* '(equal x x)
+    :rules '(equal-same)
+  :normalize-xors :compact)
+
+(must-be-redundant (defconst *result3* ''t))

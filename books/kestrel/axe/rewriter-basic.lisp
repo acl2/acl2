@@ -26,7 +26,7 @@
 ;; rewriter "knows" about.  To understand what gets generated, see
 ;; make-rewriter-simple-fn.  The main interface functions are
 ;; simplify-dag-basic, simplify-term-basic, simplify-term-to-term-basic,
-;; simplify-terms-to-terms-basic, and def-simplified-dag-basic.
+;; simplify-terms-to-terms-basic, and def-simplified-basic.
 (make-rewriter-simple basic
                       axe-evaluator-basic
                       basic

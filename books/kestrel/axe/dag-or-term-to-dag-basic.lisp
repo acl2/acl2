@@ -1,4 +1,4 @@
-; A utility to term a DAG or term into a DAG.
+; A utility to convert a DAG or term into a DAG.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2025 Kestrel Institute

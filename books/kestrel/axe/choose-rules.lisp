@@ -1,6 +1,6 @@
 ; A tool to choose which rules to apply in a proof
 ;
-; Copyright (C) 2022 Kestrel Technology, LLC
+; Copyright (C) 2022-2025 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -46,7 +46,7 @@
                               )))
   (b* ( ;; ((when (and (not (eq :auto rules))
        ;;             (not (eq :auto rule-lists))))
-       ;;  (er hard? 'def-simplified-fn ":rules and :rule-lists should not both be given.")
+       ;;  (er hard? 'choose-rules ":rules and :rule-lists should not both be given.")
        ;;  (mv (erp-t) nil))
        (rule-list ;; (if (not (eq :auto rule-lists))
         ;;     rule-lists
