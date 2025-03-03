@@ -451,7 +451,14 @@
      it is not just an invariant property of the system
      given that it holds in the initial state,
      as would be the case with static committees
-     in AleoBFT and other systems."))
+     in AleoBFT and other systems.")
+   (xdoc::p
+    "We show that if this predicate holds after a state transition,
+     it also holds before the state transition.
+     We use the similar theorems proved for
+     @(tsee validator-committees-fault-tolerant-p),
+     to prove these theorems.
+     We also extend it to sequences of events."))
   (forall (val)
           (implies (set::in val (correct-addresses systate))
                    (validator-committees-fault-tolerant-p
@@ -526,7 +533,18 @@
     :fn event-next
     :hints (("Goal" :in-theory (e/d (event-possiblep
                                      event-next)
-                                    (system-committees-fault-tolerant-p))))))
+                                    (system-committees-fault-tolerant-p)))))
+
+  (defruled system-committees-fault-tolerant-p-of-events-next
+    (implies (and (last-blockchain-round-p systate)
+                  (ordered-even-p systate)
+                  (events-possiblep events systate))
+             (b* ((new-systate (events-next events systate)))
+               (implies (system-committees-fault-tolerant-p new-systate)
+                        (system-committees-fault-tolerant-p systate))))
+    :induct t
+    :enable (events-possiblep
+             events-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
