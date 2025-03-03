@@ -64,7 +64,7 @@
                    :remove-rules '(bit-to-bool bool-to-bit) ; todo, these rules interfer with pushing these functions to do conversions
                    )
 
-(def-simplified-dag-basic *aes-128-encrypt-spec-dag-bit-blasted-as-boolean*
+(def-simplified-basic *aes-128-encrypt-spec-dag-bit-blasted-as-boolean*
   *aes-128-encrypt-spec-dag*
 ;  :monitored-symbols '(ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED2)
   :rules (append '(bv-array-read-blast-one-step-better
