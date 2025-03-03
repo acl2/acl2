@@ -478,7 +478,8 @@
      We use the similar theorems proved for
      @(tsee validator-committees-fault-tolerant-p),
      to prove these theorems.
-     We also extend it to sequences of events."))
+     We also extend it to sequences of events.
+     These properties are conditional on two already proved invariants."))
   (forall (val)
           (implies (set::in val (correct-addresses systate))
                    (validator-committees-fault-tolerant-p
@@ -555,6 +556,12 @@
                                      event-next)
                                     (system-committees-fault-tolerant-p)))))
 
+  (in-theory (disable system-committees-fault-tolerant-p-of-create-next
+                      system-committees-fault-tolerant-p-of-accept-next
+                      system-committees-fault-tolerant-p-of-advance-next
+                      system-committees-fault-tolerant-p-of-commit-next
+                      system-committees-fault-tolerant-p-of-event-next))
+
   (defruled system-committees-fault-tolerant-p-of-events-next
     (implies (and (last-blockchain-round-p systate)
                   (ordered-even-p systate)
@@ -564,14 +571,8 @@
                         (system-committees-fault-tolerant-p systate))))
     :induct t
     :enable (events-possiblep
-             events-next))
-
-  (in-theory (disable system-committees-fault-tolerant-p-of-create-next
-                      system-committees-fault-tolerant-p-of-accept-next
-                      system-committees-fault-tolerant-p-of-advance-next
-                      system-committees-fault-tolerant-p-of-commit-next
-                      system-committees-fault-tolerant-p-of-event-next
-                      system-committees-fault-tolerant-p-of-events-next)))
+             events-next
+             system-committees-fault-tolerant-p-of-event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -600,14 +601,35 @@
      If there are no events, there is no other requirement.
      Otherwise, we execute the event
      and we recursively call this predicate with the resulting state:
-     this covers all the states in the execution."))
+     this covers all the states in the execution.")
+   (xdoc::p
+    "We show that this predicate holds if
+     the final state is fault-tolerant
+     and the initial state satisfies two invariants
+     about blockchain rounds."))
   (b* (((unless (system-committees-fault-tolerant-p systate)) nil)
        ((when (endp events)) t))
     (all-system-committees-fault-tolerant-p (event-next (car events) systate)
                                             (cdr events)))
   :measure (acl2-count events)
   :guard-hints (("Goal" :in-theory (enable events-possiblep)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled all-system-committees-fault-tolerant-p-when-final
+    (implies (and (last-blockchain-round-p systate)
+                  (ordered-even-p systate)
+                  (events-possiblep events systate))
+             (b* ((new-systate (events-next events systate)))
+               (implies (system-committees-fault-tolerant-p new-systate)
+                        (all-system-committees-fault-tolerant-p systate
+                                                                events))))
+    :induct t
+    :enable (all-system-committees-fault-tolerant-p
+             events-possiblep
+             events-next)
+    :hints ('(:use system-committees-fault-tolerant-p-of-events-next))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
