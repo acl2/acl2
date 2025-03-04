@@ -383,6 +383,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-var-hyps ((vars ident-setp))
+  :returns (hyps true-listp)
+  :short "Generate variable hypotheses for certain theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input of this function comes from
+     the @('vars') component of @(tsee simpadd0-gout).
+     For each such variable, we add a hypothesis about it saying that
+     the variable can be read from the computation state
+     and it contains an @('int') value."))
+  (b* (((when (set::emptyp vars)) nil)
+       (var (set::head vars))
+       (hyp `(b* ((var (mv-nth 1 (c$::ldm-ident
+                                  (ident ,(ident->unwrap var)))))
+                  (objdes (c::objdesign-of-var var compst))
+                  (val (c::read-object objdes compst)))
+               (and objdes
+                    (c::valuep val)
+                    (c::value-case val :sint))))
+       (hyps (simpadd0-gen-var-hyps (set::tail vars))))
+    (cons hyp hyps)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-gen-expr-pure-thm ((old exprp)
                                     (new exprp)
                                     (hyps true-listp)
@@ -451,31 +476,6 @@
            ,formula
            :hints ,hints)))
     (mv (list thm-event) thm-name thm-index)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define simpadd0-gen-var-hyps ((vars ident-setp))
-  :returns (hyps true-listp)
-  :short "Generate variable hypotheses for certain theorems."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The input of this function comes from
-     the @('vars') component of @(tsee simpadd0-gout).
-     For each such variable, we add a hypothesis about it saying that
-     the variable can be read from the computation state
-     and it contains an @('int') value."))
-  (b* (((when (set::emptyp vars)) nil)
-       (var (set::head vars))
-       (hyp `(b* ((var (mv-nth 1 (c$::ldm-ident
-                                  (ident ,(ident->unwrap var)))))
-                  (objdes (c::objdesign-of-var var compst))
-                  (val (c::read-object objdes compst)))
-               (and objdes
-                    (c::valuep val)
-                    (c::value-case val :sint))))
-       (hyps (simpadd0-gen-var-hyps (set::tail vars))))
-    (cons hyp hyps)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
