@@ -1,6 +1,6 @@
 ; Rules about the R1CS formalization
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,7 @@
 
 ;(acl2::defopeners constraints-have-lengthp)
 
-(acl2::defopeners make-constraint-vector)
+(in-theory (enable make-constraint-vector))
 
 (acl2::defopeners dot-product)
 

@@ -1,6 +1,6 @@
 ; A variant of make-event that inhibits all output (except errors).
 ;
-; Copyright (C) 2017 Kestrel Institute
+; Copyright (C) 2017-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,11 +14,10 @@
   `(with-output
      :off :all
      ;; Keep errors and stuff printed using CW (which can be suppressed by
-     ;; simply not calling CW):
+     ;; making the call of CW conditional on some verbosity setting):
      :on (comment error)
      :gag-mode nil
      (make-event ,@args)))
-
 
 ;; test:
 (local (make-event-quiet '(defun f (x) x)))

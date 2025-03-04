@@ -34,6 +34,8 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/typed-lists-light/true-list-listp" :dir :system))
 
+(in-theory (disable mv-nth))
+
 (local (defthm integerp-when-unsigned-byte-p-32
          (implies (unsigned-byte-p 32 x)
                   (integerp x))))
