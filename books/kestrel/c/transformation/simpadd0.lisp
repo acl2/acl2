@@ -416,7 +416,7 @@
                                     (hints true-listp))
   :guard (and (expr-unambp old)
               (expr-unambp new))
-  :returns (mv (events pseudo-event-form-listp)
+  :returns (mv (event? maybe-pseudo-event-formp)
                (name symbolp)
                (updated-thm-index posp))
   :short "Generate a theorem saying that two pure expressions are equivalent."
@@ -424,17 +424,9 @@
   (xdoc::topstring
    (xdoc::p
     "The theorem is generated only if the two expressions differ and
-     are both in the C subset covered by our formal dynamic formalization.
-     Otherwise, we return @('nil') as the theorem name.
-     We return a list of events for flexibility,
-     in case in the future we may split the theorem into multiple events;
-     the list is empty if no theorem is generated,
-     i.e. if the returned name is @('nil').")
-   (xdoc::p
-    "The name of the theorem is generated using the index passed as input,
-     along with the @(':const-new') input to the transformation.
-     If the theorem is generated, we return the updated index;
-     if no theorem is generated, we return the index unchanged.")
+     are both in the C subset covered by our formal dynamic formalization;
+     in this case, we return a theorem event and its name.
+     Otherwise, we return no event, and @('nil') as the theorem name.")
    (xdoc::p
     "This function also takes as input a set of identifiers,
      coming from the @('var') component of @(tsee simpadd0-gout).")
@@ -478,7 +470,13 @@
         `(defthmd ,thm-name
            ,formula
            :hints ,hints)))
-    (mv (list thm-event) thm-name thm-index)))
+    (mv thm-event thm-name thm-index))
+
+  ///
+
+  (defret pseudo-event-formp-of-simpadd0-gen-expr-pure-thm.event?-when-name
+    (implies name
+             (pseudo-event-formp event?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -561,7 +559,7 @@
                       :in-theory '((:e c$::expr-pure-formalp)
                                    (:e c$::ldm-expr))
                       :use ,gout-inner.thm-name)))
-                  ((mv thm-events thm-name thm-index)
+                  ((mv thm-event thm-name thm-index)
                    (simpadd0-gen-expr-pure-thm (expr-fix expr)
                                                new-expr
                                                gout-inner.vars
@@ -571,7 +569,7 @@
                (mv new-expr
                    (make-simpadd0-gout
                     :events (append gout-inner.events
-                                    thm-events)
+                                    (and thm-name (list thm-event)))
                     :thm-name thm-name
                     :thm-index thm-index
                     :names-to-avoid (append gout-inner.names-to-avoid
@@ -785,7 +783,7 @@
                                                 :leading-zeros 1
                                                 :value 0)
                                                :suffix? nil))))))))
-                  ((mv thm-events thm-name thm-index)
+                  ((mv thm-event thm-name thm-index)
                    (simpadd0-gen-expr-pure-thm (expr-fix expr)
                                                new-arg1
                                                vars
@@ -796,7 +794,7 @@
                    (make-simpadd0-gout
                     :events (append gout-arg1.events
                                     gout-arg2.events
-                                    thm-events)
+                                    (and thm-name (list thm-event)))
                     :thm-name thm-name
                     :thm-index thm-index
                     :names-to-avoid (append gout-arg2.names-to-avoid
