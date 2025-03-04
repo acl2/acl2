@@ -496,6 +496,22 @@
       "Identifiers, constants, and string literals undergo no transformation.
        No theorems are generated for them, since there is no change.")
      (xdoc::p
+      "When we encounter a parenthesized expression,
+       we recursively transform the inner expression,
+       we parenthesize the transformed inner expression,
+       and we return that.
+       We generate a theorem if the two inner expressions differ
+       (in which case the parenthesized expressions differ as well)
+       and a theorem for the inner expressions' transformation was generated
+       (which we can tell based on whether
+       there is a theorem name for the inner expressions).
+       Since @(tsee c$::ldm-expr) maps parenthesized expressions
+       to the same as what the inner expressions are mapped to,
+       the proof of the generated theorem is straightforward,
+       but we supply the executable counterparts of
+       @(tsee c$::expr-pure-formalp) and @(tsee c$::ldm-expr)
+       so that they can be applied to the parenthesized expressions.")
+     (xdoc::p
       "When we encounter an expression @('x + 0') that we transform into @('x'),
        we also generate a theorem saying that
        executing the two expressions give equivalent results.
@@ -531,14 +547,42 @@
                                        :diffp nil))
        :paren
        (b* (((mv new-inner (simpadd0-gout gout-inner))
-             (simpadd0-expr expr.inner gin state)))
-         (mv (expr-paren new-inner)
-             (make-simpadd0-gout :events gout-inner.events
-                                 :thm-name nil
-                                 :thm-index gout-inner.thm-index
-                                 :names-to-avoid gout-inner.names-to-avoid
-                                 :vars gout-inner.vars
-                                 :diffp gout-inner.diffp)))
+             (simpadd0-expr expr.inner gin state))
+            ((unless (mbt (expr-unambp new-inner)))
+             (mv (irr-expr) (irr-simpadd0-gout)))
+            (new-expr (expr-paren new-inner)))
+         (if (and gout-inner.diffp
+                  gout-inner.thm-name)
+             (b* ((hyps (simpadd0-gen-var-hyps gout-inner.vars))
+                  (hints
+                   `(("Goal"
+                      :in-theory '((:e c$::expr-pure-formalp)
+                                   (:e c$::ldm-expr))
+                      :use ,gout-inner.thm-name)))
+                  ((mv thm-events thm-name thm-index)
+                   (simpadd0-gen-expr-pure-thm (expr-fix expr)
+                                               new-expr
+                                               hyps
+                                               gin.const-new
+                                               gout-inner.thm-index
+                                               hints)))
+               (mv new-expr
+                   (make-simpadd0-gout
+                    :events (append gout-inner.events
+                                    thm-events)
+                    :thm-name thm-name
+                    :thm-index thm-index
+                    :names-to-avoid (append gout-inner.names-to-avoid
+                                            (list thm-name))
+                    :vars gout-inner.vars
+                    :diffp t)))
+           (mv new-expr
+               (make-simpadd0-gout :events gout-inner.events
+                                   :thm-name nil
+                                   :thm-index gout-inner.thm-index
+                                   :names-to-avoid gout-inner.names-to-avoid
+                                   :vars gout-inner.vars
+                                   :diffp gout-inner.diffp))))
        :gensel
        (b* (((mv new-control (simpadd0-gout gout-control))
              (simpadd0-expr expr.control gin state))
@@ -3024,7 +3068,7 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
-  :verify-guards :after-returns
+  :verify-guards nil ; done after the unambiguity proofs
 
   ///
 
@@ -3234,7 +3278,11 @@
                                        irr-paramdeclor
                                        irr-type-spec
                                        irr-stmt
-                                       irr-block-item)))))
+                                       irr-block-item))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards simpadd0-expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
