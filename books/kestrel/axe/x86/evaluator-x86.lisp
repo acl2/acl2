@@ -37,6 +37,9 @@
                       x86isa::canonical-address-p$inline
                       bvle)))
 
+(in-theory (disable acl2::posp-redefinition ; yuck, from std/basic/arith-equivs
+                    ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund integer-range-p-unguarded (lower upper x)

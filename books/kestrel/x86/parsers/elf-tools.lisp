@@ -104,7 +104,6 @@
                                          acc)))))
 
 (defopeners get-elf-symbol-address-aux)
-(defopeners get-elf-symbol-address)
 
 (defund parsed-elf-symbol-table (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)))
