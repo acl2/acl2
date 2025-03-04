@@ -483,6 +483,12 @@
 (defines simpadd0-exprs/decls/stmts
   :short "Transform expressions, declarations, statements,
           and related entities."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only generate theorems for certain kinds of expressions.
+     We are in the process of extending the implementation to generate theorems
+     for additional kinds of expressions and for other constructs."))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -495,7 +501,14 @@
     (xdoc::topstring
      (xdoc::p
       "Identifiers, constants, and string literals undergo no transformation.
-       No theorems are generated for them, since there is no change.")
+       No theorems are generated for them, since there is no change.
+       These are the only non-recursive cases of expressions.")
+     (xdoc::p
+      "When we encounter constructs unsupported in the formal dynamic semnatics,
+       we do not generate a theorem.
+       Currently we also do not generate a theorem also for supported constructs
+       for which we have not implemented theorem generation yet:
+       we are in the process of extending the implementation.")
      (xdoc::p
       "When we encounter a parenthesized expression,
        we recursively transform the inner expression,
