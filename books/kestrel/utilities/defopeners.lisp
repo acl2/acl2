@@ -18,7 +18,7 @@
 ;; produced for each top-level IF branch in the function (where an IF branch
 ;; can be considered top-level even if there are lambdas around it).
 
-;; Unlike the tool in books/misc/defopener, this one doesn't do any
+;; Unlike the tool in books/misc/defopener, this one doesn't do much
 ;; simplification.
 
 ;; Terminology: The "opener" rules for a function include the "unroll" rules
@@ -37,12 +37,12 @@
 ;; went wrong trying to analyze the body)
 
 (include-book "world") ; for fn-body
+(include-book "forms") ; for call-of
 (include-book "kestrel/terms-light/expr-calls-fn" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "symbol-term-alistp")
-;(include-book "terms")
 (include-book "pack")
-(include-book "conjunctions")
+;(include-book "conjunctions")
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "user-interface") ;for control-screen-output
 (include-book "defthm-forms")
@@ -53,10 +53,7 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
-(local (in-theory (disable mv-nth
-                           w
-                           true-listp
-                           PLIST-WORLDP)))
+(local (in-theory (disable mv-nth w true-listp plist-worldp)))
 
 ;; This prevents us from having to include state.lisp
 (local
@@ -70,7 +67,69 @@
            (symbol-listp (strip-cadrs forms)))
   :hints (("Goal" :in-theory (enable defthm-form-listp defthm-formp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Print theorems with CW (with hints elided)
+(defun cw-theorems (thms)
+  (declare (xargs :guard (defthm-form-listp thms)
+                  :guard-hints (("Goal" :in-theory (enable defthm-form-listp)))))
+  (if (endp thms)
+      nil
+    (let* ((thm (first thms))
+           (elided-thm (clean-up-defthm thm)))
+      (prog2$ (cw "~x0~%" elided-thm)
+              (cw-theorems (rest thms))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; move
+(defund switch-package (symbol existing-symbol)
+  (declare (xargs :guard (and (symbolp symbol)
+                              (symbolp existing-symbol))))
+  (intern-in-package-of-symbol (symbol-name symbol) existing-symbol))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; lets us call strip-cadrs on a list of defthms
+;move?
+(local
+  (defthmd all->=-len-when-defthm-form-listp
+    (implies (defthm-form-listp forms)
+             (all->=-len forms 2))
+    :hints (("Goal" :in-theory (enable defthm-form-listp defthm-formp >=-len)))))
+
 (local (in-theory (enable symbol-listp-of-strip-cadrs-when-defthm-form-listp)))
+
+(local
+ (defthm pseudo-term-listp-of-strip-cdrs-when-symbol-term-alistp
+   (implies (symbol-term-alistp alist)
+            (pseudo-term-listp (strip-cdrs alist)))))
+
+(local
+  (defthm pseudo-term-listp-of-strip-cdrs-of-keep-pairs
+    (implies (pseudo-term-listp (strip-cdrs alist))
+             (pseudo-term-listp (strip-cdrs (keep-pairs keys alist))))))
+
+;move
+;; Removes any pair which binds a key to itself.
+;todo name clash if the "2" is removed
+(defund remove-trivial-bindings2 (alist)
+  (declare (xargs :guard (alistp alist)))
+  (if (endp alist)
+      nil
+    (let* ((pair (first alist))
+           (key (car pair))
+           (val (cdr pair)))
+      (if (equal key val)
+          ;; drop this pair
+          (remove-trivial-bindings2 (rest alist))
+        (cons pair (remove-trivial-bindings2 (rest alist)))))))
+
+(defthm symbol-term-alistp-of-remove-trivial-bindings2
+  (implies (symbol-term-alistp alist)
+           (symbol-term-alistp (remove-trivial-bindings2 alist)))
+  :hints (("Goal" :in-theory (enable symbol-term-alistp
+                                     remove-trivial-bindings2))))
 
 ;; end of library stuff
 
@@ -110,6 +169,8 @@
 ;;                               (pseudo-termp term))))
 ;;   (count-and-recursive-cases-bases-aux fn term 0 0))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; (defund add-hyp-to-claim (hyp claim)
 ;;   (declare (xargs :guard t))
 ;;   (if (and (consp claim)
@@ -135,10 +196,11 @@
 ;;     (let ((claim (add-hyp-to-claim (first hyps) claim)))
 ;;       (add-hyps-to-claim (rest hyps) claim))))
 
-;move
+;move?
 ;; Conjoin the CONJUNCTS with UTERM.
 ;; TODO: What if UTERM is an IF that represents an AND?
-(defun add-conjuncts-to-uterm-at-front (conjuncts uterm)
+;; Only preserves IFF.
+(defund add-conjuncts-to-uterm-at-front (conjuncts uterm)
   (declare (xargs :guard (true-listp conjuncts)))
   (if (endp conjuncts)
       uterm
@@ -146,24 +208,24 @@
         `(and ,@conjuncts ,@(fargs uterm))
       `(and ,@conjuncts ,uterm))))
 
-;; Returns an untranslated term
-(defun add-hyps-to-claim (hyps claim)
+;; Returns an untranslated term.
+(defund add-hyps-to-claim (hyps claim)
   (declare (xargs :guard (true-listp hyps)))
-  (if (and (consp claim)
-           (eq 'implies (ffn-symb claim))
-           (consp (cdr claim))
-           (consp (cdr (cdr claim))))
-      (let ((hyp (farg1 claim))
-            (conc (farg2 claim)))
-        `(implies ,(add-conjuncts-to-uterm-at-front hyps hyp) ,conc))
-    ;; not an implies:
-    `(implies (and ,@hyps) ,claim)))
+  (if (endp hyps) ; unlikely for defopeners
+      claim
+    (if (and (consp claim)
+             (eq 'implies (ffn-symb claim))
+             (consp (fargs claim))
+             (consp (cdr (fargs claim))))
+        ;; claim is already an implies:
+        (let ((hyp (farg1 claim))
+              (conc (farg2 claim)))
+          `(implies ,(add-conjuncts-to-uterm-at-front hyps hyp) ,conc))
+      ;; not an implies:
+      `(implies (and ,@hyps) ,claim))))
 
-;; (defthm pseudo-termp-of-add-hyps-to-claim
-;;   (implies (and (pseudo-term-listp hyps)
-;;                 (pseudo-termp claim))
-;;            (pseudo-termp (add-hyps-to-claim hyps claim))))
-
+;; Adds the HYPS to each of the CLAIMS.
+;; Returns a list of untranslated terms.
 (defund add-hyps-to-claims (hyps claims)
   (declare (xargs :guard (and (true-listp hyps)
                               (true-listp claims))))
@@ -172,16 +234,11 @@
     (cons (add-hyps-to-claim hyps (first claims))
           (add-hyps-to-claims hyps (rest claims)))))
 
-(defthm len-of-add-hyps-to-claims
-  (equal (len (add-hyps-to-claims hyps claims))
-         (len claims))
-  :hints (("Goal" :in-theory (enable add-hyps-to-claims))))
-
-;; (defthm pseudo-termp-of-add-hyps-to-claims
-;;   (implies (and (pseudo-term-listp hyps)
-;;                 (pseudo-term-listp claims))
-;;            (pseudo-term-listp (add-hyps-to-claims hyps claims)))
-;;   :hints (("Goal" :in-theory (enable add-hyps-to-claims))))
+(local
+  (defthm len-of-add-hyps-to-claims
+    (equal (len (add-hyps-to-claims hyps claims))
+           (len claims))
+    :hints (("Goal" :in-theory (enable add-hyps-to-claims)))))
 
 ;; ;finds free vars in a term
 ;; (mutual-recursion
@@ -280,7 +337,7 @@
 ;;                        (len lambda-actuals)))
 ;;            (pseudo-term-listp (wrap-lambda-around-claims claims lambda-formals lambda-actuals))))
 
-;; There is already a function call symbol-term-alistp
+;; todo: use symbol-term-alist-listp?
 (defun renamingsp (renamings)
   (declare (xargs :guard t))
   (if (atom renamings)
@@ -288,14 +345,7 @@
     (and (symbol-term-alistp (first renamings))
          (renamingsp (rest renamings)))))
 
-(local
- (defthm pseudo-term-listp-of-strip-cdrs-when-symbol-term-alistp
-   (implies (symbol-term-alistp alist)
-            (pseudo-term-listp (strip-cdrs alist)))))
-
-(defthm pseudo-term-listp-of-strip-cdrs-of-keep-pairs
-  (implies (pseudo-term-listp (strip-cdrs alist))
-           (pseudo-term-listp (strip-cdrs (keep-pairs keys alist)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv term term-vars).  TERM may be untranslated (may contain
 ;; LETs). TERM-VARS should be the free vars in TERM.
@@ -332,8 +382,9 @@
     (cons (make-lets-around-term (first terms) renamings (free-vars-in-term (first terms)))
           (make-lets-around-terms (rest terms) renamings))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The hyps should have already been renamed.
-;; Even though the result may contain AND, it is still a pseudo-term.
 (defund make-opener-claim (fn-call term rev-hyps renamings)
   (declare (xargs :guard (and (pseudo-termp fn-call)
                               (pseudo-termp term)
@@ -356,26 +407,6 @@
 ;;                 (renamingsp renamings))
 ;;            (pseudo-termp (make-opener-claim fn-call term rev-hyps renamings)))
 ;;   :hints (("Goal" :in-theory (enable make-opener-claim))))
-
-;move
-;todo name clash if the "2" is removed
-(defund remove-trivial-bindings2 (alist)
-  (declare (xargs :guard (alistp alist)))
-  (if (endp alist)
-      nil
-    (let* ((pair (first alist))
-           (key (car pair))
-           (val (cdr pair)))
-      (if (equal key val)
-          ;; drop this pair
-          (remove-trivial-bindings2 (rest alist))
-        (cons pair (remove-trivial-bindings2 (rest alist)))))))
-
-(defthm symbol-term-alistp-of-remove-trivial-bindings2
-  (implies (symbol-term-alistp alist)
-           (symbol-term-alistp (remove-trivial-bindings2 alist)))
-  :hints (("Goal" :in-theory (enable symbol-term-alistp
-                                     remove-trivial-bindings2))))
 
 ;; Returns (mv base-claims unroll-claims), where the claims are terms (TODO: translated or untranslated?).
 (defun make-unroll-and-base-claims-aux (term
@@ -422,7 +453,7 @@
         (let ((lambda-formals (second (ffn-symb term)))
               (lambda-body (third (ffn-symb term)))
               (lambda-actuals (fargs term)))
-          ;; FIXME: Think about this:  If there is a recursive call in one of the args, we just consider the whole term a recursive case:
+          ;; FIXME: Think about this:  If there is a recursive call in one of the args, we just consider the whole term a recursive case (think about ruler-extenders):
           (if (some-expr-calls-some-fn fns lambda-actuals)
               (mv nil ; no base-claims
                   (list (make-opener-claim fn-call term rev-hyps renamings)))
@@ -463,29 +494,17 @@
 ;;                 (pseudo-term-listp rev-hyps))
 ;;            (pseudo-term-listp (mv-nth 1 (make-unroll-and-base-claims-aux term fns fn-call rev-hyps renamings)))))
 
-(defthm true-listp-of-mv-nth-0-of-make-unroll-and-base-claims-aux
-  (true-listp (mv-nth 0 (make-unroll-and-base-claims-aux term fns fn-call rev-hyps renamings))))
+(local
+  (defthm true-listp-of-mv-nth-0-of-make-unroll-and-base-claims-aux
+    (true-listp (mv-nth 0 (make-unroll-and-base-claims-aux term fns fn-call rev-hyps renamings)))))
 
-(defthm true-listp-of-mv-nth-1-of-make-unroll-and-base-claims-aux
-  (true-listp (mv-nth 1 (make-unroll-and-base-claims-aux term fns fn-call rev-hyps renamings))))
+(local
+  (defthm true-listp-of-mv-nth-1-of-make-unroll-and-base-claims-aux
+    (true-listp (mv-nth 1 (make-unroll-and-base-claims-aux term fns fn-call rev-hyps renamings)))))
 
 (verify-guards make-unroll-and-base-claims-aux)
 
-;; ;;Result is an untranslated term
-;; (defun clean-up-hyps-in-claim (claim)
-;;   (declare (xargs :guard (pseudo-termp claim)))
-;;   (if (not (and (call-of 'implies claim)
-;;                 (= 2 (len (fargs claim)))))
-;;       claim
-;;     (let ((hyp (farg1 claim))
-;;           (body (farg2 claim)))
-;;       (let ((hyp-conjuncts (get-conjuncts hyp)))
-;;         (if (= 1 (len hyp-conjuncts))
-;;             ;; only one conjunct, so no need to insert an AND:
-;;             `(implies ,(first hyp-conjuncts)
-;;                       ,body)
-;;           `(implies (and ,@hyp-conjuncts)
-;;                     ,body))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun make-base-theorems (claims num totalnum defthmnameprefix fn formals disable)
   (declare (xargs :guard (and (natp num)
@@ -509,10 +528,13 @@
                                                   (theory 'minimal-theory)))))
             (make-base-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable)))))
 
-(defthm defthm-form-listp-of-make-base-theorems
-  (implies (symbolp defthmnameprefix)
-           (defthm-form-listp (make-base-theorems claims num totalnum defthmnameprefix fn formals disable)))
-  :hints (("Goal" :in-theory (enable make-base-theorems defthm-form-listp defthm-formp))))
+(local
+  (defthm defthm-form-listp-of-make-base-theorems
+    (implies (symbolp defthmnameprefix)
+             (defthm-form-listp (make-base-theorems claims num totalnum defthmnameprefix fn formals disable)))
+    :hints (("Goal" :in-theory (enable make-base-theorems defthm-form-listp defthm-formp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun make-unroll-theorems (claims num totalnum defthmnameprefix fn formals disable)
   (declare (xargs :guard (and (natp num)
@@ -536,11 +558,13 @@
                                                   (theory 'minimal-theory)))))
             (make-unroll-theorems (rest claims) (+ 1 num) totalnum defthmnameprefix fn formals disable)))))
 
-(defthm defthm-form-listp-of-make-unroll-theorems
-  (implies (symbolp defthmnameprefix)
-           (defthm-form-listp (make-unroll-theorems claims num totalnum defthmnameprefix fn formals disable)))
-  :hints (("Goal" :in-theory (enable make-unroll-theorems defthm-form-listp defthm-formp))))
+(local
+  (defthm defthm-form-listp-of-make-unroll-theorems
+    (implies (symbolp defthmnameprefix)
+             (defthm-form-listp (make-unroll-theorems claims num totalnum defthmnameprefix fn formals disable)))
+    :hints (("Goal" :in-theory (enable make-unroll-theorems defthm-form-listp defthm-formp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;         (mv (cons `(defthm ,(if (> total-unroll-count 1)
 ;;                                 ;throughout, we use the package of fn for the names of the base and opener rules
@@ -558,49 +582,6 @@
 ;;                   theorems-acc)
 ;;             base-count-acc
 ;;             (+ 1 unroll-count-acc))
-
-;; (defthm natp-of-val-1-of-make-unroll-and-base-theorems-aux
-;;   (implies (natp base-count-acc)
-;;            (natp (mv-nth 1 (make-unroll-and-base-theorems-aux term fn formals path-conjuncts total-base-count total-unroll-count base-count-acc unroll-count-acc theorems-acc)))))
-
-;; (defthm natp-of-val-2-of-make-unroll-and-base-theorems-aux
-;;   (implies (natp unroll-count-acc)
-;;            (natp (mv-nth 2 (make-unroll-and-base-theorems-aux term fn formals path-conjuncts total-base-count total-unroll-count base-count-acc unroll-count-acc theorems-acc)))))
-
-;(verify-guards make-unroll-and-base-theorems-aux)
-
-(defun clear-keyword-in-keyword-value-list (key l)
-  (declare (xargs :guard (and (symbolp key)
-                              (keyword-value-listp l))))
-  (if (endp l)
-      nil
-    (if (eq key (first l)) ;skip the key and its value
-        (clear-keyword-in-keyword-value-list key (cddr l))
-      (cons key
-            (cons (second l)
-                  (clear-keyword-in-keyword-value-list key (cddr l)))))))
-
-;; Print theorems with CW (with hints elided)
-(defun cw-theorems (thms)
-  (declare (xargs :guard (defthm-form-listp thms)
-                  :guard-hints (("Goal" :in-theory (enable defthm-form-listp)))))
-  (if (endp thms)
-      nil
-    (let* ((thm (first thms))
-           (elided-thm (clean-up-defthm thm)))
-      (prog2$ (cw "~x0~%" elided-thm)
-              (cw-theorems (rest thms))))))
-
-(defund switch-package (symbol existing-symbol)
-  (declare (xargs :guard (and (symbolp symbol)
-                              (symbolp existing-symbol))))
-  (intern-in-package-of-symbol (symbol-name symbol) existing-symbol))
-
-;; lets us call strip-cadrs on a list of defthms
-(defthmd all->=-len-when-defthm-form-listp
-  (implies (defthm-form-listp forms)
-           (all->=-len forms 2))
-  :hints (("Goal" :in-theory (enable defthm-form-listp defthm-formp >=-len))))
 
 ;; Returns (mv event generated-names).
 (defund make-unroll-and-base-theorems (fn all-fns-in-nest hyps disable suffix verbose wrld)
@@ -624,6 +605,7 @@
       (b* (;; Now add the user hyps to the claims:
            (base-claims (add-hyps-to-claims hyps base-claims))
            (unroll-claims (add-hyps-to-claims hyps unroll-claims))
+           ;; Choose root names for the theorems, to be extended:
            (base-theorems-name-root (pack$ fn '-base)) ;todo: use add-suffix to get this in the same package as fn?  also below...
            (base-theorems-name-root (if suffix
                                         (pack$ base-theorems-name-root suffix)
@@ -634,14 +616,11 @@
                                           (pack$ unroll-theorems-name-root suffix)
                                         unroll-theorems-name-root))
            (unroll-theorems-name-root (switch-package unroll-theorems-name-root fn))
-           (base-theorems (make-base-theorems base-claims 1
-                                              (len base-claims)
-                                              base-theorems-name-root
-                                              fn formals disable))
-           (unroll-theorems (make-unroll-theorems unroll-claims 1
-                                                  (len unroll-claims)
-                                                  unroll-theorems-name-root
-                                                  fn formals disable))
+           ;; Make the final base-case theorems:
+           (base-theorems (make-base-theorems base-claims 1 (len base-claims) base-theorems-name-root fn formals disable))
+           ;; Make the final unrolling theorems:
+           (unroll-theorems (make-unroll-theorems unroll-claims 1 (len unroll-claims) unroll-theorems-name-root fn formals disable))
+           ;; Strip out the names, for printing with value-triple:
            (base-theorem-names (strip-cadrs base-theorems))
            (unroll-theorem-names (strip-cadrs unroll-theorems))
            (- (and verbose
@@ -657,18 +636,21 @@
                     (value-triple ',(append base-theorem-names unroll-theorem-names)))
             (append base-theorem-names unroll-theorem-names))))))
 
-(defthm true-listp-of-mv-nth-1-of-make-unroll-and-base-theorems
-  (true-listp (mv-nth 1 (make-unroll-and-base-theorems fn all-fns-in-nest hyps disable suffix verbose wrld)))
-  :hints (("Goal" :in-theory (enable make-unroll-and-base-theorems))))
+(local
+  (defthm true-listp-of-mv-nth-1-of-make-unroll-and-base-theorems
+    (true-listp (mv-nth 1 (make-unroll-and-base-theorems fn all-fns-in-nest hyps disable suffix verbose wrld)))
+    :hints (("Goal" :in-theory (enable make-unroll-and-base-theorems)))))
 
-(defthm symbol-listp-of-mv-nth-1-of-make-unroll-and-base-theorems
-  (symbol-listp (mv-nth 1 (make-unroll-and-base-theorems fn all-fns-in-nest hyps disable suffix verbose wrld)))
-  :hints (("Goal" :in-theory (enable make-unroll-and-base-theorems))))
+(local
+  (defthm symbol-listp-of-mv-nth-1-of-make-unroll-and-base-theorems
+    (symbol-listp (mv-nth 1 (make-unroll-and-base-theorems fn all-fns-in-nest hyps disable suffix verbose wrld)))
+    :hints (("Goal" :in-theory (enable make-unroll-and-base-theorems)))))
 
-;TODO: If fn is non-recursive, just make a single rule...    or should it be an error to call defopeners?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns an event.
 ;; KEEP IN SYNC WITH DEFOPENERS-NAMES-FN.
+;; It is somewhat unusual for FN to be non-recursive, but we allow it
 (defun defopeners-fn (fn hyps disable suffix verbose state)
   (declare (xargs :guard (and (symbolp fn)
                               (not (eq 'quote fn))
@@ -677,13 +659,21 @@
                   :stobjs state))
   ;; Would like to call get-clique instead of fn-recursive-partners, but it's
   ;; in :program mode (but see kestrel-acl2/community/verify-termination.lisp):
-  (let ((clique (if (fn-mutually-recursivep fn state)
-                    (fn-recursive-partners fn (w state))
-                  (list fn))))
-    (mv-let (event names)
-      (make-unroll-and-base-theorems fn clique hyps disable suffix verbose (w state))
-      (declare (ignore names))
-      event)))
+  (let ((clique (recursivep fn nil (w state))
+                ;; (if (fn-mutually-recursivep fn state)
+                ;;     (fn-recursive-partners fn (w state))
+                ;;   (list fn))
+                ))
+    (if (not (symbol-listp clique))
+        (er hard? 'defopeners-fn "Bad result from recursivep applied to ~x0: ~x1." fn clique)
+      (prog2$
+        (and (not clique) ; non-recursive
+             (not hyps)
+             (cw "Warning: Defopeners not needed for non-recursive function ~x0.  Just use the definition.~%" fn))
+        (mv-let (event names)
+          (make-unroll-and-base-theorems fn clique hyps disable suffix verbose (w state))
+          (declare (ignore names))
+          event)))))
 
 ;hyps should be a list of terms over the formals of the function (can include syntaxp, etc.)
 ;; KEEP IN SYNC WITH DEFOPENERS-NAMES.
