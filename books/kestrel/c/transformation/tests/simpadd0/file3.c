@@ -4,8 +4,13 @@ int f() {
 }
 
 int g(int y) {
-  int z = y + 0;
+  int z = (y + 0);
   return z;
+}
+
+int h() {
+  int w = 1;
+  int u = ((w + 0));
 }
 
 int main() {
