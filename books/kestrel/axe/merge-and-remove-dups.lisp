@@ -1,7 +1,7 @@
 ; Merging sorted lists of nodenums and removing pairs of duplicates
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -41,4 +41,11 @@
 (defthm true-listp-of-merge-and-remove-dups
   (implies (true-listp acc)
            (true-listp (merge-and-remove-dups lst1 lst2 acc)))
+  :hints (("Goal" :in-theory (enable merge-and-remove-dups))))
+
+(defthm nat-listp-of-merge-and-remove-dups
+  (implies (and (nat-listp acc)
+                (nat-listp lst1)
+                (nat-listp lst2))
+           (nat-listp (merge-and-remove-dups lst1 lst2 acc)))
   :hints (("Goal" :in-theory (enable merge-and-remove-dups))))

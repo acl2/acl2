@@ -189,13 +189,13 @@
 ;; todo: don't return state
 ;reorder params
 ;drop this wrapper?
-(defun acl2::simp-term-to-term (term assumptions rule-alist monitor wrld)
+(defun acl2::simplify-term-to-term-to-term (term assumptions rule-alist monitor wrld)
   (declare (xargs :guard (and (pseudo-termp term)
                               (acl2::rule-alistp rule-alist)
                               (pseudo-term-listp assumptions)
                               (symbol-listp monitor)
                               (acl2::ilks-plist-worldp wrld))))
-  (acl2::simp-term-x86 term
+  (acl2::simplify-term-to-term-x86 term
                        assumptions
                        rule-alist
                        nil
@@ -326,7 +326,7 @@
 ;; used to introduce the pther vars.
 
 ;; ;; Repeatedly advance the state and lift loops.
-;; ;; Returns (mv erp event state result-array-stobj)
+;; ;; Returns (mv erp event state)
 ;; ;; The state should already be stepped past the loop header (because we stop symbolic execution when we hit the loop header again?)
 ;; (defun lift-code-segment-aux (state-dag ;over the var x86 and perhaps other vars representing inputs (see the Essay on Variables)
 ;;                               segment-pcs ;PCs of the code segment to lift (should not include the header of the current loop)
@@ -338,7 +338,7 @@
 ;;                               loop-headers
 ;;                               print
 ;;                               state
-;;                               result-array-stobj)
+;;                              )
 
 ;; ;work around a lambda in the formula of acl2::member-of-cons
 ;; (defthm acl2::member-equal-of-cons
@@ -619,7 +619,7 @@
             state))
     ;; loop-body-term should be an x86 state.  Test whether it has exited the loop:
     (b* (((mv erp exitp)
-          (acl2::simp-term-to-term ;; `(if (stack-height-decreased-wrt ,loop-body-term ,loop-top-rsp-term)
+          (acl2::simplify-term-to-term-to-term ;; `(if (stack-height-decreased-wrt ,loop-body-term ,loop-top-rsp-term)
            ;;     't
            ;;   (if (stack-height-increased-wrt ,loop-body-term ,loop-top-rsp-term)
            ;;       'nil
@@ -667,7 +667,7 @@
             (prog2$ (er hard 'analyze-loop-body "There appear to be no branches that exit the loop.")
                     (mv (erp-t) nil nil nil state))
           (b* (((mv erp exit-test-term)
-                (acl2::simp-term-to-term exit-test-term
+                (acl2::simplify-term-to-term-to-term exit-test-term
                                          nil
                                          (acl2::make-rule-alist!
                                            (append lifter-rules
@@ -880,7 +880,7 @@
          (address-unchanged-term
           `(equal ,address-term ,(acl2::sublis-var-simple (acons state-var one-rep-term nil) address-term)))
          ((mv erp result)
-          (acl2::simp-term-x86 address-unchanged-term nil ; assumptions
+          (acl2::simplify-term-to-term-x86 address-unchanged-term nil ; assumptions
                                rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
          ((when erp) (mv erp nil state)))
       (if (equal result *t*)
@@ -1122,7 +1122,7 @@
          (- (and (acl2::print-level-at-least-tp print) (cw "(Assumptions to use: ~x0.)~%" assumptions)))
          ;; Try to prove the invariant by rewriting:
          ((mv erp simplified-invariant)
-          (acl2::simp-term-x86 term-to-prove assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil
+          (acl2::simplify-term-to-term-x86 term-to-prove assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil
                                nil nil
                                '(x86isa::xr-of-xw-diff) ; rules-to-monitor
                                nil))
@@ -1711,7 +1711,7 @@
         (loop-function-call-term `(,loop-fn ,@initial-params-terms))
         ;; Simplify it (applies read over write rules):
         ((mv erp loop-function-call-dag)
-         ;;(acl2::simp-term loop-function-call-term :rules (append (extra-loop-lifter-rules) lifter-rules))
+         ;;(acl2::simplify-term-to-term loop-function-call-term :rules (append (extra-loop-lifter-rules) lifter-rules))
          (acl2::simplify-term-x86 loop-function-call-term
                                   nil ; assumptions
                                   (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))

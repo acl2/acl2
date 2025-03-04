@@ -1,7 +1,7 @@
 ; More rules about floor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -239,7 +239,7 @@
            :in-theory (e/d (;floor-in-terms-of-mod
                             ;mod
                             )
-                           ( ;floor-bounded-by-/
+                           (;floor-bounded-by-/
                             floor-bound-lemma2 floor-bound-lemma3
                                           ;<-*-/-LEFT
                                           ;<-*-/-RIGHT
@@ -291,9 +291,9 @@
    :otf-flg t
    :hints (("Goal" :use (:instance helper-lemmm (m m ;17
                                                    ))
-            :in-theory (e/d ( mod
+            :in-theory (e/d (mod
                              natp)
-                            ( ;MOD-=-0 ;MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
+                            (;MOD-=-0 ;MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
                              ;;FLOOR-=-X/Y
                              FLOOR-WHEN-DIVISIBLE
                              ;; for speed:
@@ -341,7 +341,7 @@
 ;;  (implies (posp n)
 ;;           (equal (equal (mod (floor n 4) 16) 0)  ;;says that n mod 64 is in [0,3]??
 ;;                  (< (mod n 64) 4)))
-;;  :hints (("Goal" :in-theory (e/d (mod)( MOD-=-0 MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
+;;  :hints (("Goal" :in-theory (e/d (mod)(MOD-=-0 MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
 ;;                                                 FLOOR-=-X/Y
 ;;                                                 FLOOR-WHEN-DIVISIBLE)))))
 

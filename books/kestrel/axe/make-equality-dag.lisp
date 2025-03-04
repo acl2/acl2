@@ -1,7 +1,7 @@
 ; Making equality dags
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -89,7 +89,10 @@
   :rule-classes (:type-prescription :rewrite)
   :hints (("Goal" :in-theory (enable make-equality-dag))))
 
-;;todo: deprecate but used in many examples
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;todo: deprecate? but used in many examples
+;; This version may throw an error but does not return an error.
 (defund make-equality-dag! (dag1 dag2)
   (declare (xargs :guard (and (or (quotep dag1)
                                   (and (pseudo-dagp dag1)

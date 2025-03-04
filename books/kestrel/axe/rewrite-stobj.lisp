@@ -21,8 +21,17 @@
 
 ;; See also rewrite-stobj2.lisp, for a stobj that includes fields that do change.
 
-;; TODO: Consider adding more things to this?
+(defund normalize-xors-optionp (n)
+  (declare (xargs :guard t))
+  (member-eq n '(t nil :compact)))
 
+; todo: eventually remove?
+(defthm normalize-xors-optionp-when-booleanp
+  (implies (booleanp x)
+           (normalize-xors-optionp x))
+  :hints (("Goal" :in-theory (enable normalize-xors-optionp booleanp))))
+
+;; TODO: Consider adding more things to this?
 (defstobj+ rewrite-stobj
   ;; Functions that are known to be boolean in the current world:
   (known-booleans :type (satisfies symbol-listp) :initially nil)
@@ -31,7 +40,7 @@
   ;; How much to print while rewriting:
   (print :type (satisfies print-levelp) :initially nil)
   ;; Whether to use our special-purpose code to normalize nests of XORs:
-  (normalize-xors :type (satisfies booleanp) :initially nil)
+  (normalize-xors :type (satisfies normalize-xors-optionp) :initially nil)
   ;; Definitions of functions not built into the evaluator:
   ;; TODO: Require this alist to be complete?
   (interpreted-function-alist :type (satisfies interpreted-function-alistp) :initially nil)
@@ -86,6 +95,18 @@
              (rewrite-stobjp (rule-db-clear rewrite-stobj)))
     :hints (("Goal" :in-theory (enable rule-db-clear rewrite-stobjp)))))
 
+;todo: auto-generate
+(defthm get-normalize-xors-of-rule-db-put
+  (equal (get-normalize-xors (rule-db-put k v rewrite-stob))
+         (get-normalize-xors rewrite-stob))
+  :hints (("Goal" :in-theory (enable rule-db-put get-normalize-xors))))
+
+;todo: auto-generate
+(defthm get-normalize-xors-of-rule-db-clear
+  (equal (get-normalize-xors (rule-db-clear rewrite-stob))
+         (get-normalize-xors rewrite-stob))
+  :hints (("Goal" :in-theory (enable rule-db-clear get-normalize-xors))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; In case we turn off tau.
@@ -129,6 +150,12 @@
              (rewrite-stobjp (load-rule-db-aux rule-alist rewrite-stobj)))
     :hints (("Goal" :in-theory (enable load-rule-db-aux rule-alistp)))))
 
+(local
+  (defthm get-normalize-xors-of-load-rule-db-aux
+    (equal (get-normalize-xors (load-rule-db-aux rule-alist rewrite-stob))
+           (get-normalize-xors rewrite-stob))
+    :hints (("Goal" :in-theory (enable  load-rule-db-aux)))))
+
 ;; Loads the RULE-ALIST into the stobj.
 ;; The clearing may not always be needed.
 (defund load-rule-db (rule-alist rewrite-stobj)
@@ -142,4 +169,9 @@
   (implies (and (rule-alistp rule-alist)
                 (rewrite-stobjp rewrite-stobj))
            (rewrite-stobjp (load-rule-db rule-alist rewrite-stobj)))
+  :hints (("Goal" :in-theory (enable load-rule-db))))
+
+(defthm get-normalize-xors-of-load-rule-db
+  (equal (get-normalize-xors (load-rule-db rule-alist rewrite-stob))
+         (get-normalize-xors rewrite-stob))
   :hints (("Goal" :in-theory (enable load-rule-db))))

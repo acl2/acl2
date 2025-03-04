@@ -785,13 +785,13 @@
 ;kill the version for 4
 (defthmd <-of-constant-and-floor
   (implies (and (syntaxp (and (quotep k) (quotep j)))
+                (integerp k) ;gen?
                 (rationalp i)
                 (rationalp j)
-                (< 0 j)
-                (integerp k) ;gen?
-                )
+                (< 0 j))
            (equal (< k (floor i j))
-                  (<= (* j (+ 1 k)) i)))
+                  (<= (* j (+ 1 k)) ; gets computed
+                      i)))
   :hints (("Goal" :use <-of-floor-arg2)))
 
 (defthm <-of-0-and-floor

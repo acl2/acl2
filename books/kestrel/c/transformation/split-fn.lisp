@@ -209,7 +209,8 @@
                (new-fn fundefp
                        "The new function definition."))
   (b* (((reterr) nil (c$::irr-fundef))
-       (idents (free-vars-block-item-list items nil))
+       ((mv idents -)
+        (free-vars-block-item-list items nil))
        (decls (ident-paramdecls-map-filter decls idents))
        (idents (omap::keys decls))
        ;; We use strip-cdrs instead of omap::values because we need these in

@@ -282,7 +282,7 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
-(defun repeatedly-run (steps-left step-increment dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune  count-hits print print-base untranslatep memoizep total-steps state)
+(defun repeatedly-run (steps-left step-increment dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune normalize-xors count-hits print print-base untranslatep memoizep total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
@@ -295,6 +295,7 @@
                               (or (eq nil prune)
                                   (eq t prune)
                                   (natp prune))
+                              (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
@@ -346,7 +347,7 @@
                                       rule-alist
                                       nil ; interpreted-function-alist
                                       (acl2::known-booleans (w state))
-                                      t             ; normalize-xors
+                                      normalize-xors
                                       limits
                                       memoizep
                                       count-hits
@@ -440,7 +441,7 @@
                                             rule-alist
                                             nil ; interpreted-function-alist
                                             (acl2::known-booleans (w state))
-                                            t ; normalize-xors
+                                            normalize-xors
                                             limits
                                             memoizep
                                             count-hits
@@ -485,7 +486,7 @@
                    state)))
           (repeatedly-run (- steps-left steps-for-this-iteration)
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune normalize-xors count-hits print print-base untranslatep memoizep
                           total-steps
                           state))))))
 
@@ -564,6 +565,7 @@
                              step-increment
                              memoizep
                              monitor
+                             normalize-xors
                              count-hits
                              print
                              print-base
@@ -591,6 +593,7 @@
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
+                              (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
@@ -685,7 +688,7 @@
                  ((mv erp assumptions assumption-rules state)
                   (if extra-assumptions
                       ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules  64-bitp count-hits state)
+                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
                     (mv nil assumptions nil state)))
                  ((when erp) (mv erp nil nil nil nil state)))
               (mv nil assumptions
@@ -835,7 +838,7 @@
        ((when erp) (mv erp nil nil nil nil nil state))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune normalize-xors count-hits print print-base untranslatep memoizep 0 state))
        ((when erp) (mv erp nil nil nil nil nil state))
        (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
@@ -872,6 +875,7 @@
                         step-increment
                         memoizep
                         monitor
+                        normalize-xors
                         count-hits
                         print
                         print-base
@@ -906,6 +910,7 @@
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
+                              (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
@@ -938,7 +943,7 @@
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules remove-assumption-rules
-          step-limit step-increment memoizep monitor count-hits print print-base untranslatep state))
+          step-limit step-increment memoizep monitor normalize-xors count-hits print print-base untranslatep state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -1090,6 +1095,7 @@
                                   (step-increment '100)
                                   (memoizep 't)
                                   (monitor 'nil)
+                                  (normalize-xors 'nil)
                                   (count-hits 'nil)
                                   (print ':brief)             ;how much to print
                                   (print-base '10)
@@ -1122,6 +1128,7 @@
       ',step-increment
       ',memoizep
       ,monitor ; gets evaluated since not quoted
+      ',normalize-xors
       ',count-hits
       ',print
       ',print-base
@@ -1157,6 +1164,7 @@
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
          (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
+         (normalize-xors "Whether to normalize BITXOR and BVXOR nodes when rewriting (t, nil, or :compact).")
          (count-hits "Whether to count rule hits during rewriting (t means count hits for every rule, :total means just count the total number of hits, nil means don't count hits)")
          (print "Verbosity level.") ; todo: values
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")

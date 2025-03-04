@@ -14,7 +14,7 @@
 (include-book "x86-rules")
 (include-book "std/testing/assert-bang" :dir :system)
 
-(defmacro simp-term-x86-wrapper (term
+(defmacro simplify-term-to-term-x86-wrapper (term
                                   &key
                                   (assumptions 'nil)
                                   (rule-alist 'nil)
@@ -27,7 +27,7 @@
                                   (print 't)
                                   (monitored-symbols 'nil)
                                   (fns-to-elide 'nil))
-  `(acl2::simp-term-x86 ,term
+  `(acl2::simplify-term-to-term-x86 ,term
                         ,assumptions
                         ,rule-alist
                         ,interpreted-function-alist
@@ -42,7 +42,7 @@
 
 (acl2::assert!
   (mv-let (erp term)
-    (simp-term-x86-wrapper
+    (simplify-term-to-term-x86-wrapper
       '(write '1 '1000 xval (write '2 '2000 yval (write '1 '1000 other-val x86)))
       :rule-alist (acl2::make-rule-alist! '(write-becomes-write-of-clear-extend-axe
                                             clear-extend-of-write-continue-axe

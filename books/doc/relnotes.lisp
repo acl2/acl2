@@ -666,7 +666,7 @@ to merge it with a smaller node.")
 
    (xdoc::p
      "The @('unroll-spec-basic') tool now uses a better set of rules, and the
-@(':assumptions') argument can now be @(':bytes') or @(':bits,') meaning to
+@(':assumptions') argument can now be @(':bytes') or @(':bits'), meaning to
 assume all variables have those types.")
 
    (xdoc::p
@@ -786,8 +786,8 @@ organization was improved. Some definitions were split into separate books, to
 support including them without all of the corresponding rules.")
 
    (xdoc::p
-     "Functions @('bvxor2'), @('bvor2,') and @('bvand2') have been renamed to
-      @('bvxorn'), @('bvorn,') and @('bvandn').")
+     "Functions @('bvxor2'), @('bvor2'), and @('bvand2') have been renamed to
+      @('bvxorn'), @('bvorn'), and @('bvandn').")
 
    (xdoc::p
      "New functions @('bitxor$'), @('bitand$'), and @('bitor$') have been
@@ -8129,7 +8129,7 @@ found in the change log.</p>")
  @(':short (cat ...)').</li>
 
  <li>Tweaked @(see defsection) so that you can give @(':extension (foo)')
- instead of just @(':extension foo.')</li>
+ instead of just @(':extension foo').</li>
 
  <li>Better error handling on @(see xdoc::xdoc-extend) and @(see
  xdoc::xdoc-prepend).</li>

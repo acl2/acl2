@@ -76,7 +76,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The reason why use the @(':expand') hint,
+    "The reason why use the @(':expand') hint in some of the proofs,
      instead of just enabling @(tsee endorsement-from-other-p),
      is that, if we do the latter,
      the @('endorsement-from-other-p-necc') rule does not fire,
@@ -169,7 +169,8 @@
                   (proposal-to-other-p systate)
                   (endorsement-from-other-p systate))
              (endorsement-from-other-p (event-next event systate)))
-    :enable (event-possiblep event-next)))
+    :enable (event-possiblep
+             event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -8,7 +8,7 @@ static void foo(void) {
   main();
 
   // Not resolved
-  *(&foo)();
+  (*(&foo))();
 }
 
 int main(void) {

@@ -263,7 +263,7 @@
                            assumptions ; untranslated terms
                            extra-rules extra-lift-rules extra-proof-rules
                            remove-rules remove-lift-rules remove-proof-rules
-                           count-hits print monitor
+                           normalize-xors count-hits print monitor
                            step-limit step-increment
                            prune tactics
                            max-conflicts  ;a number of conflicts, or nil for no max
@@ -282,6 +282,7 @@
                                   (symbol-listp monitor))
                               (natp step-limit)
                               (natp step-increment)
+                              (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
                               (or (eq nil prune)
                                   (eq t prune)
@@ -384,6 +385,7 @@
           step-increment
           t ; memoizep (nil allows internal contexts)
           rules-to-monitor
+          normalize-xors
           count-hits
           print
           10 ; print-base (todo: consider 16)
@@ -490,7 +492,7 @@
                          assumptions
                          extra-rules extra-lift-rules extra-proof-rules
                          remove-rules remove-lift-rules remove-proof-rules
-                         count-hits print monitor
+                         normalize-xors count-hits print monitor
                          step-limit step-increment
                          prune tactics
                          max-conflicts inputs-disjoint-from stack-slots
@@ -504,6 +506,7 @@
                               (symbol-listp remove-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
+                              (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
                               (or (eq :debug monitor)
                                   (symbol-listp monitor))
@@ -545,7 +548,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-lift-rules remove-proof-rules
-                            count-hits print monitor step-limit step-increment prune tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
+                            normalize-xors count-hits print monitor step-limit step-increment prune tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -574,6 +577,7 @@
                          (remove-rules 'nil)
                          (remove-lift-rules 'nil)
                          (remove-proof-rules 'nil)
+                         (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
                          (count-hits 'nil)
                          (print 'nil)
                          (monitor 'nil)
@@ -596,6 +600,7 @@
                                              ,remove-rules ; gets evaluated
                                              ,remove-lift-rules ; gets evaluated
                                              ,remove-proof-rules ; gets evaluated
+                                             ',normalize-xors
                                              ',count-hits
                                              ',print
                                              ,monitor ; gets evaluated
@@ -609,7 +614,7 @@
                               assumptions-alist
                               extra-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-lift-rules remove-proof-rules
-                              count-hits
+                              normalize-xors count-hits
                               print monitor step-limit step-increment prune
                               tactics max-conflicts
                               inputs-disjoint-from
@@ -628,6 +633,7 @@
                               (symbol-listp remove-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
+                              (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
                               (or (eq :debug monitor)
                                   (symbol-listp monitor))
@@ -656,7 +662,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-lift-rules remove-proof-rules
-                              count-hits print monitor step-limit step-increment prune tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
+                              normalize-xors count-hits print monitor step-limit step-increment prune tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -667,7 +673,7 @@
       (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
                              extra-rules extra-lift-rules extra-proof-rules
                              remove-rules remove-lift-rules remove-proof-rules
-                             count-hits print monitor step-limit step-increment prune
+                             normalize-xors count-hits print monitor step-limit step-increment prune
                              tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
                              expected-failures
                              (acons function-name (list result expected-result elapsed) result-alist)
@@ -681,7 +687,7 @@
                           assumptions
                           extra-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-lift-rules remove-proof-rules
-                          count-hits print monitor step-limit step-increment prune
+                          normalize-xors count-hits print monitor step-limit step-increment prune
                           tactics max-conflicts inputs-disjoint-from stack-slots position-independent
                           expected-failures
                           state)
@@ -696,6 +702,7 @@
                           (symbol-listp remove-rules)
                           (symbol-listp remove-lift-rules)
                           (symbol-listp remove-proof-rules)
+                          (acl2::normalize-xors-optionp normalize-xors)
                           (acl2::count-hits-argp count-hits)
                           (or (eq :debug monitor)
                               (symbol-listp monitor))
@@ -782,7 +789,7 @@
                                assumption-alist
                                extra-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-lift-rules remove-proof-rules
-                               count-hits print monitor step-limit step-increment prune
+                               normalize-xors count-hits print monitor step-limit step-increment prune
                                tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
@@ -811,6 +818,7 @@
                           (remove-rules 'nil)
                           (remove-lift-rules 'nil)
                           (remove-proof-rules 'nil)
+                          (normalize-xors 't)
                           (count-hits 'nil)
                           (print 'nil)
                           (monitor 'nil)
@@ -835,6 +843,7 @@
                                               ,remove-rules ; gets evaluated
                                               ,remove-lift-rules ; gets evaluated
                                               ,remove-proof-rules ; gets evaluated
+                                              ',normalize-xors
                                               ',count-hits
                                               ',print
                                               ,monitor ; gets evaluated
@@ -858,6 +867,7 @@
                      (remove-rules 'nil)
                      (remove-lift-rules 'nil)
                      (remove-proof-rules 'nil)
+                     (normalize-xors 't)
                      (count-hits 'nil)
                      (print 'nil)
                      (monitor 'nil)
@@ -882,6 +892,7 @@
                                               ,remove-rules ; gets evaluated
                                               ,remove-lift-rules ; gets evaluated
                                               ,remove-proof-rules ; gets evaluated
+                                              ',normalize-xors
                                               ',count-hits ',print
                                               ,monitor ; gets evaluated
                                               ',step-limit ',step-increment ',prune

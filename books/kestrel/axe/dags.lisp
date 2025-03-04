@@ -709,7 +709,7 @@
 ;; Checks whether the functions that appear in DAG include any of the
 ;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
 ;; of all fns found.
-(defund dag-fns-include-any (dag fns)
+(defund dag-fns-include-anyp (dag fns)
   (declare (xargs :guard (and (weak-dagp-aux dag)
                               (symbol-listp fns)
                               (not (member-eq 'quote fns)))
@@ -723,7 +723,7 @@
                ;; implies that (ffn-symb expr) can't be 'quote, since FNS should not include 'quote:
                (member-eq (ffn-symb expr) fns))
           t
-        (dag-fns-include-any (rest dag) fns)))))
+        (dag-fns-include-anyp (rest dag) fns)))))
 
 ;; ;; Checks whether the functions that appear in DAG-OR-QUOTEP include any of the
 ;; ;; FNS.  Stops as soon as it finds any of the FNS.  Does not cons up the list
@@ -735,7 +735,7 @@
 ;;                               (not (member-eq 'quote fns)))))
 ;;   (if (quotep dag-or-quotep)
 ;;       nil
-;;     (dag-fns-include-any dag-or-quotep fns)))
+;;     (dag-fns-include-anyp dag-or-quotep fns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -25,7 +25,8 @@
                (set-difference-eq *std-pkg-symbols*
                                   '())
                c$::*abstract-syntax-symbols*
-               '(constant-symbolp
+               '(bool
+                 constant-symbolp
                  constant-value
                  defirrelevant
                  defxdoc+
@@ -34,6 +35,7 @@
                  impossible
                  index-of
                  packn-pos
+                 maybe-pseudo-event-formp
                  pseudo-event-formp
                  pseudo-event-form-list
                  pseudo-event-form-listp

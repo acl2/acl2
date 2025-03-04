@@ -230,6 +230,50 @@
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->round-in-cert-set->round-set))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define cert-set->prop-set ((certs certificate-setp))
+  :returns (props proposal-setp)
+  :short "Lift @(tsee certificate->proposal) to sets."
+  (cond ((set::emptyp (certificate-set-fix certs)) nil)
+        (t (set::insert (certificate->proposal (set::head certs))
+                        (cert-set->prop-set (set::tail certs)))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defrule emptyp-of-cert-set->prop-set
+    (equal (set::emptyp (cert-set->prop-set certs))
+           (set::emptyp (certificate-set-fix certs)))
+    :induct t)
+
+  (defruled certificate->proposal-in-cert-set->prop-set
+    (implies (and (certificate-setp certs)
+                  (set::in cert certs))
+             (set::in (certificate->proposal cert)
+                      (cert-set->prop-set certs)))
+    :induct t)
+
+  (defruled cert-set->prop-set-monotone
+    (implies (and (certificate-setp certs2)
+                  (set::subset certs1 certs2))
+             (set::subset (cert-set->prop-set certs1)
+                          (cert-set->prop-set certs2)))
+    :induct t
+    :enable (set::subset
+             certificate->proposal-in-cert-set->prop-set))
+
+  (defruled cert-set->prop-set-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (equal (cert-set->prop-set (set::insert cert certs))
+                    (set::insert (certificate->proposal cert)
+                                 (cert-set->prop-set certs))))
+    :induct (set::weak-insert-induction cert certs)
+    :enable certificate->proposal-in-cert-set->prop-set))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define certs-with-author+round ((author addressp)

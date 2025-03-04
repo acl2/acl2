@@ -118,4 +118,4 @@
            (equal (ceiling-of-lg (* 1/2 n))
                   (+ -1 (ceiling-of-lg n))))
   :hints (("Goal"
-           :in-theory (e/d (integer-length-of-+-of--1 ceiling-of-lg expt-of-+) ()))))
+           :in-theory (enable integer-length-of-+-of--1 ceiling-of-lg expt-of-+))))

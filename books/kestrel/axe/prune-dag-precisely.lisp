@@ -39,7 +39,7 @@
                               (print-levelp print))
                   :stobjs state))
   (let (;; Refrain from pruning if there are no functions that cause pruning attempts:
-        (prunep (if check-fnsp (dag-fns-include-any dag '(if myif boolif bvif)) t)))
+        (prunep (if check-fnsp (dag-fns-include-anyp dag '(if myif boolif bvif)) t)))
     (if (not prunep)
         (mv (erp-nil) dag state)
       (b* ( ;; TODO: Consider first doing a pruning as a DAG, using only approximate contexts (or would that not do anything that rewriting doesn't already do?)
@@ -103,7 +103,7 @@
         (if (not (eq :none rule-alist))
             (mv (erp-nil) rule-alist)
           (if (not (eq :none rules))
-              (make-rule-alist rules (w state)) ; todo: avoid this if the dag-fns-include-any check will fail
+              (make-rule-alist rules (w state)) ; todo: avoid this if the dag-fns-include-anyp check will fail
             (mv (erp-nil) nil))))
        ((when erp) (mv erp nil state)))
     (prune-dag-precisely-with-rule-alist dag assumptions rule-alist
@@ -165,7 +165,7 @@
         (mv nil dag state))
        ((when (not (<= (len dag) *max-1d-array-length*)))
         (mv :dag-too-big nil state))
-       ((when (not (dag-fns-include-any dag '(if myif boolif bvif))))
+       ((when (not (dag-fns-include-anyp dag '(if myif boolif bvif))))
         (cw "(Note: No pruning to do.)~%")
         (mv nil dag state))
        ((when (and (natp prune-branches) ; it's a limit on the size

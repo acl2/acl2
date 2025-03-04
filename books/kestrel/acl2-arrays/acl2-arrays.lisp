@@ -1,7 +1,7 @@
 ; A library for reasoning about ACL2 arrays (aref1, aset1, etc.)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,6 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/lists-light/reverse-list" :dir :system) ;make local?
 (include-book "bounded-nat-alists")
 (include-book "alen1")
 (include-book "aref1")
@@ -27,6 +26,7 @@
 (include-book "maximum-length") ; make local?
 (include-book "make-empty-array")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/utilities/assoc-keyword" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -139,17 +139,19 @@
 (local (in-theory (enable revappend-becomes-append-of-reverse-list)))
 
 ;use list fix in concl?
-(defthm bounded-integer-alistp-of-reverse-list
-  (implies (true-listp x)
-           (equal (bounded-integer-alistp (reverse-list x) n)
-                  (bounded-integer-alistp x n)))
-  :hints (("Goal" :in-theory (enable bounded-integer-alistp reverse-list))))
+(local
+  (defthm bounded-integer-alistp-of-reverse-list
+    (implies (true-listp x)
+             (equal (bounded-integer-alistp (reverse-list x) n)
+                    (bounded-integer-alistp x n)))
+    :hints (("Goal" :in-theory (enable bounded-integer-alistp reverse-list)))))
 
-(defthmd assoc-equal-when-assoc-equal-of-reverse-list
-  (implies (and (assoc-equal key (reverse-list alist))
-                (alistp alist))
-           (assoc-equal key alist))
-  :hints (("Goal" :in-theory (enable assoc-equal reverse-list))))
+(local
+  (defthmd assoc-equal-when-assoc-equal-of-reverse-list
+    (implies (and (assoc-equal key (reverse-list alist))
+                  (alistp alist))
+             (assoc-equal key alist))
+    :hints (("Goal" :in-theory (enable assoc-equal reverse-list)))))
 
 ;; ;might be better to strip the keys and call NO-DUPLICATESP?
 (defun myduplicate-keysp (alist)
@@ -158,13 +160,14 @@
          t)
         (t (myduplicate-keysp (cdr alist)))))
 
-(defthm assoc-equal-of-reverse-list
-  (implies (and (not (myduplicate-keysp alist))
-                (alistp alist))
-           (equal (assoc-equal key (reverse-list alist))
-                  (assoc-equal key alist)))
-  :hints (("Goal" :in-theory (enable assoc-equal reverse-list
-                                     assoc-equal-when-assoc-equal-of-reverse-list))))
+(local
+  (defthm assoc-equal-of-reverse-list
+    (implies (and (not (myduplicate-keysp alist))
+                  (alistp alist))
+             (equal (assoc-equal key (reverse-list alist))
+                    (assoc-equal key alist)))
+    :hints (("Goal" :in-theory (enable assoc-equal reverse-list
+                                       assoc-equal-when-assoc-equal-of-reverse-list)))))
 
 
 ;; ;can be expensive?

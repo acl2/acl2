@@ -244,8 +244,7 @@
 
 (defthm bvchop-list-when-unsigned-byte-listp
   (implies (and (unsigned-byte-listp size lst)
-                (natp size)
-                (true-listp lst))
+                (natp size))
            (equal (bvchop-list size lst)
                   lst))
   :hints (("Goal" :in-theory (enable bvchop-list all-unsigned-byte-p))))

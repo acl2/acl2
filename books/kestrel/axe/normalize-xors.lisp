@@ -1,7 +1,7 @@
 ; A tool to normalize XOR nests in DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -83,6 +83,13 @@
                           rationalp-when-integerp
                           )))
 
+(local
+  (defthm nat-listp-of-true-list-fix-when-all-natp
+    (implies (all-natp x)
+             (nat-listp (true-list-fix x)))
+    :hints (("Goal" :in-theory (enable all-natp nat-listp)))
+    ))
+
 (defthmd integer-listp-rewrite
   (equal (integer-listp x)
          (and (all-integerp x)
@@ -100,21 +107,23 @@
 
 ;move
 ; can help when backchaining
-(defthmd <-of-+-of-1-when-integerp
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (< x (+ 1 y))
-                  (<= x y))))
+;dup?
+;; (defthmd <-of-+-of-1-when-integerp
+;;   (implies (and (integerp x)
+;;                 (integerp y))
+;;            (equal (< x (+ 1 y))
+;;                   (<= x y))))
 
-(defthm consp-of-nth-forward-to-consp
-  (implies (consp (nth n x))
-           (consp x))
-  :rule-classes :forward-chaining)
+;; (defthmd consp-of-nth-forward-to-consp
+;;   (implies (consp (nth n x))
+;;            (consp x))
+;;   :rule-classes :forward-chaining)
 
-;move
-(defthm <-of-maxelem-and-maxelem-of-cdr
+;move?
+(local
+ (defthm <-of-maxelem-and-maxelem-of-cdr
   (implies (consp (cdr x))
-           (not (< (maxelem x) (maxelem (cdr x))))))
+           (not (< (maxelem x) (maxelem (cdr x)))))))
 
 ;defforall could do these too?
 (defthm all-integerp-of-mv-nth-0-of-split-list-fast-aux
@@ -240,6 +249,7 @@
 ;list should be sorted in decreasing order
 ;the bitxor/bvxor of everything in the return value should be equal to the bitxor/bvxor of ITEM and everything in LIST
 ;slow? not sure i can get around it.  could we use a btree?
+;todo: rename to clarify that we remove duplicate *pairs*
 (defund insert-into-sorted-list-and-remove-dups (item list)
   (declare (xargs :guard (and (integerp item)
                               (integer-listp list)
@@ -525,10 +535,10 @@
 ;throughout the run, a node actually gets added to the pending-list only once (because the list never contains duplicates and after a node is removed it can't be added again later because some larger parent would have to be present in the list, but we only process a node when it is the largest node in the list)
 ; fixme could the acc ever contain duplicates? (if not, don't take time to remove dups)
 ;returns (mv nodenum-leaves accumulated-constant) where the bitxor of nodenum-leaves and accumulated-constant is equal to nodenum
-(defund bitxor-nest-leaves-aux (pending-list dag-array dag-len acc accumulated-constant)
+(defund bitxor-nest-leaves-aux (pending-list dag-array-name dag-array dag-len acc accumulated-constant)
   (declare (xargs :guard (and (nat-listp pending-list)
                               (decreasingp pending-list)
-                              (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-< pending-list dag-len)
                               (integerp accumulated-constant))
                   :measure (if (endp pending-list)
@@ -541,20 +551,20 @@
   (if (or (endp pending-list)
           (not (mbt (all-natp pending-list)))
           (not (mbt (decreasingp pending-list))) ;for termination
-          (not (mbt (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)))
+          (not (mbt (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
           (not (mbt (natp dag-len)))
           (not (mbt (all-< pending-list dag-len)))
           )
       (mv acc accumulated-constant)
     (let* ((highest-node (first pending-list))
-           (expr (aref1 'normalize-xors-old-array dag-array highest-node)))
+           (expr (aref1 dag-array-name dag-array highest-node)))
       (if (not (consp expr))
           ;;add the node to the result, since it's not a bitxor:
-          (bitxor-nest-leaves-aux (rest pending-list) dag-array dag-len (cons highest-node acc) accumulated-constant)
+          (bitxor-nest-leaves-aux (rest pending-list) dag-array-name dag-array dag-len (cons highest-node acc) accumulated-constant)
         (let ((fn (ffn-symb expr)))
           (if (eq 'quote fn)
               ;; it's a constant, so xor it into the accumulated constant:
-              (bitxor-nest-leaves-aux (rest pending-list) dag-array dag-len acc (bitxor (ifix (unquote expr)) accumulated-constant))
+              (bitxor-nest-leaves-aux (rest pending-list) dag-array-name dag-array dag-len acc (bitxor (ifix (unquote expr)) accumulated-constant))
             (if (eq 'bitxor fn)
                 ;; it is a bitxor, so handle the children:
                 (let ((args (dargs expr)))
@@ -574,26 +584,29 @@
                                (accumulated-constant (if (consp left-child) (bitxor (ifix (unquote left-child)) accumulated-constant) accumulated-constant))
                                (accumulated-constant (if (consp right-child) (bitxor (ifix (unquote right-child)) accumulated-constant) accumulated-constant))
                                )
-                          (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))))
+                          (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))))
               ;;add the node to the result, since it's not a bitxor:
-              (bitxor-nest-leaves-aux (rest pending-list) dag-array dag-len (cons highest-node acc) accumulated-constant))))))))
+              (bitxor-nest-leaves-aux (rest pending-list) dag-array-name dag-array dag-len (cons highest-node acc) accumulated-constant))))))))
 
-(local
- (defthm all-natp-of-mv-nth-0-of-bitxor-nest-leaves-aux
+(defthm all-natp-of-mv-nth-0-of-bitxor-nest-leaves-aux
    (implies (all-natp acc)
-            (all-natp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
-   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
+            (all-natp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))
+  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
 
-(local
- (defthm true-listp-of-mv-nth-0-of-bitxor-nest-leaves-aux
-   (implies (true-listp acc)
-            (true-listp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
-   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
+(defthm nat-listp-of-mv-nth-0-of-bitxor-nest-leaves-aux
+   (implies (nat-listp acc)
+            (nat-listp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))
+   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
+
+(defthm true-listp-of-mv-nth-0-of-bitxor-nest-leaves-aux
+  (implies (true-listp acc)
+           (true-listp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))
+  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
 
 (local
  (defthm all-<-of-mv-nth-0-of-bitxor-nest-leaves-aux
    (implies (all-< acc dag-len)
-            (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
+            (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))
                    dag-len))
    :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
 
@@ -601,7 +614,7 @@
  (defthm all-<-of-mv-nth-0-of-bitxor-nest-leaves-aux-gen
    (implies (and (all-< acc bound)
                  (<= dag-len bound))
-            (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
+            (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))
                    bound))
    :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux)
                                    (pseudo-dag-arrayp))))))
@@ -634,14 +647,14 @@
    (implies (and (all-natp pending-list)
                  (decreasingp pending-list)
                  (all-< pending-list dag-len)
-                 (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;                (integerp accumulated-constant)
                  (all-<= acc bound)
                  (natp bound)
                  (if (consp pending-list)
                      (<= (car pending-list) bound)
                    t))
-            (all-<= (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
+            (all-<= (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))
                     bound))
    :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux all-myquotep)
                                    (pseudo-dag-arrayp quotep))))))
@@ -668,29 +681,28 @@
                  (all-natp acc)
                  (decreasingp pending-list)
                  (all-< pending-list dag-len)
-                 (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;                (integerp accumulated-constant)
                  (all-< acc bound)
                  (natp bound)
                  (if (consp pending-list)
                      (< (car pending-list) bound)
                    t))
-            (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
+            (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))
                    bound))
    :hints (("Goal" :use (:instance all-<=-of-mv-nth-0-of-bitxor-nest-leaves-aux-new (bound (+ -1 bound)))
             :in-theory (e/d (BITXOR-NEST-LEAVES-AUX ALL-INTEGERP-WHEN-ALL-NATP)
                             (all-<=-of-mv-nth-0-of-bitxor-nest-leaves-aux-new))))))
 
-(local
- (defthm integerp-of-mv-nth-1-of-bitxor-nest-leaves-aux
-   (implies (integerp accumulated-constant)
-            (integerp (mv-nth 1 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
-   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (quotep pseudo-dag-arrayp))))))
+(defthm integerp-of-mv-nth-1-of-bitxor-nest-leaves-aux
+  (implies (integerp accumulated-constant)
+           (integerp (mv-nth 1 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))
+  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (quotep pseudo-dag-arrayp)))))
 
 (local
  (defthm bitp-of-mv-nth-1-of-bitxor-nest-leaves-aux
    (implies (bitp accumulated-constant)
-            (bitp (mv-nth 1 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
+            (bitp (mv-nth 1 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))
    :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (quotep pseudo-dag-arrayp))))))
 
 
@@ -709,7 +721,7 @@
                   :guard-hints (("Goal" :in-theory (enable integer-listp-rewrite ALL-RATIONALP-WHEN-ALL-NATP ALL-INTEGERP-WHEN-ALL-NATP)))))
   (b* ( ;; Extract the xor leaves of this node from the old-dag:
        ((mv nodenum-leaves combined-constant)
-        (bitxor-nest-leaves-aux (list nodenum) dag-array dag-len nil 0) ;;TODO: consider this: (bitxor-nest-leaves-for-node nodenum 'normalize-xors-old-array dag-array)
+        (bitxor-nest-leaves-aux (list nodenum) 'normalize-xors-old-array dag-array dag-len nil 0) ;;TODO: consider this: (bitxor-nest-leaves-for-node nodenum 'normalize-xors-old-array dag-array)
         )
        ;; Translate to get their nodenums in the new-dag we are constructing:
        ((mv nodenum-leaves combined-constant)
@@ -939,23 +951,26 @@
            (all-nodes-are-bvxorsp (rest nodenums) quoted-size dag-array dag-len)))))
 
 ;we always want to go to nth of dargs
-(defthm nth-of-0-and-cddr-of-dargs
-  (equal (nth 0 (cddr (dargs expr)))
-         (nth 2 (dargs expr)))
-  :hints (("Goal" :in-theory (enable nth-of-cdr))))
+(local
+  (defthm nth-of-0-and-cddr-of-dargs
+    (equal (nth 0 (cddr (dargs expr)))
+           (nth 2 (dargs expr)))
+    :hints (("Goal" :in-theory (enable nth-of-cdr)))))
 
-(defthm nth-of-0-and-cdr-of-dargs
-  (equal (nth 0 (cdr (dargs expr)))
-         (nth 1 (dargs expr)))
-  :hints (("Goal" :in-theory (enable nth-of-cdr))))
+(local
+  (defthm nth-of-0-and-cdr-of-dargs
+    (equal (nth 0 (cdr (dargs expr)))
+           (nth 1 (dargs expr)))
+    :hints (("Goal" :in-theory (enable nth-of-cdr)))))
 
-(defthm not-equal-of-nth-0-and-nth-1-when-decreasingp
-  (implies (and (decreasingp x)
-                (all-integerp x)
-                (consp x))
-           (not (EQUAL (NTH 1 x)
-                       (NTH 0 x))))
-  :hints (("Goal" :in-theory (enable DECREASINGP ALL-INTEGERP))))
+(local
+  (defthm not-equal-of-nth-0-and-nth-1-when-decreasingp
+    (implies (and (decreasingp x)
+                  (all-integerp x)
+                  (consp x))
+             (not (EQUAL (NTH 1 x)
+                         (NTH 0 x))))
+    :hints (("Goal" :in-theory (enable DECREASINGP ALL-INTEGERP)))))
 
 ;; sweep down the dag, always processing the highest node first
 ;; list of nodes to handle (never contains duplicates)
@@ -975,10 +990,10 @@
 ;the acc returned will be sorted in increasing order
 (defund bvxor-nest-leaves-aux (pending-list
                                size ;the unquoted size
-                               dag-array dag-len acc accumulated-constant)
+                               dag-array-name dag-array dag-len acc accumulated-constant)
   (declare (xargs :guard (and (nat-listp pending-list)
                               (decreasingp pending-list)
-                              (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-< pending-list dag-len)
                               (integerp accumulated-constant)
                               (natp size))
@@ -992,12 +1007,12 @@
   (if (or (endp pending-list)
           (not (mbt (all-natp pending-list)))
           (not (mbt (decreasingp pending-list))) ;for termination
-          (not (mbt (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)))
+          (not (mbt (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
           (not (mbt (natp dag-len)))
           (not (mbt (all-< pending-list dag-len))))
       (mv acc accumulated-constant)
     (let* ((highest-node (first pending-list))
-           (expr (aref1 'normalize-xors-old-array dag-array highest-node)))
+           (expr (aref1 dag-array-name dag-array highest-node)))
       (if (or (not (consp expr))
               (not (eq 'bvxor (ffn-symb expr)))
               (not (= 3 (len (dargs expr))))
@@ -1005,8 +1020,8 @@
               (not (eql size (unquote (darg1 expr)))))
           ;;add the node to the result, since it's not a bvxor of the right size:
           (if (quotep expr) ;slow?
-              (bvxor-nest-leaves-aux (rest pending-list) size dag-array dag-len acc (bvxor size (ifix (unquote expr)) accumulated-constant))
-            (bvxor-nest-leaves-aux (rest pending-list) size dag-array dag-len (cons highest-node acc) accumulated-constant))
+              (bvxor-nest-leaves-aux (rest pending-list) size dag-array-name dag-array dag-len acc (bvxor size (ifix (unquote expr)) accumulated-constant))
+            (bvxor-nest-leaves-aux (rest pending-list) size dag-array-name dag-array dag-len (cons highest-node acc) accumulated-constant))
         ;; it is a bvxor of the right size, so handle the children:
         (let* ((dargs (dargs expr))
                (left-child (second dargs))
@@ -1021,44 +1036,46 @@
                    (pending-list (if (consp right-child) pending-list (insert-into-sorted-list-and-remove-dups right-child pending-list)))
                    (accumulated-constant (if (consp left-child) (bvxor size (ifix (unquote left-child)) accumulated-constant) accumulated-constant))
                    (accumulated-constant (if (consp right-child) (bvxor size (ifix (unquote right-child)) accumulated-constant) accumulated-constant)))
-              (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))))))
+              (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))))))
 
-(local
- (defthm all-natp-of-mv-nth-0-of-bvxor-nest-leaves-aux
-   (implies (all-natp acc)
-            (all-natp (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
-   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
+(defthm all-natp-of-mv-nth-0-of-bvxor-nest-leaves-aux
+  (implies (all-natp acc)
+           (all-natp (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))
+  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
 
-(local
- (defthm true-listp-of-mv-nth-0-of-bvxor-nest-leaves-aux
-   (implies (true-listp acc)
-            (true-listp (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
-   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
+(defthm nat-listp-of-mv-nth-0-of-bvxor-nest-leaves-aux
+  (implies (nat-listp acc)
+           (nat-listp (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))
+  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
+
+(defthm true-listp-of-mv-nth-0-of-bvxor-nest-leaves-aux
+  (implies (true-listp acc)
+           (true-listp (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))
+  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
 
 (local
  (defthm all-<-of-mv-nth-0-of-bvxor-nest-leaves-aux
    (implies (all-< acc dag-len)
-            (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant)) dag-len))
+            (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant)) dag-len))
    :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
 
 (local
  (defthm all-<-of-mv-nth-0-of-bvxor-nest-leaves-aux-gen
    (implies (and (all-< acc bound)
                  (<= dag-len bound))
-            (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant)) bound))
+            (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant)) bound))
    :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
                                    (pseudo-dag-arrayp))))))
 
-(local
- (defthm integer-of-mv-nth-1-of-bvxor-nest-leaves-aux
-   (implies (integerp accumulated-constant)
-            (integerp (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
-   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp))))))
+(defthm integer-of-mv-nth-1-of-bvxor-nest-leaves-aux
+  (implies (integerp accumulated-constant)
+           (integerp (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))
+  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp)))))
 
 (local
  (defthm unsigned-byte-p-of-mv-nth-1-of-bvxor-nest-leaves-aux
    (implies (unsigned-byte-p size accumulated-constant)
-            (unsigned-byte-p size (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
+            (unsigned-byte-p size (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))
    :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp))))))
 
 (local
@@ -1066,14 +1083,14 @@
    (implies (and (all-natp pending-list)
                  (decreasingp pending-list)
                  (all-< pending-list dag-len)
-                 (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;                (integerp accumulated-constant)
                  (all-<= acc bound)
                  (natp bound)
                  (if (consp pending-list)
                      (<= (car pending-list) bound)
                    t))
-            (all-<= (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))
+            (all-<= (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))
                     bound))
    :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
                                    (pseudo-dag-arrayp quotep))))))
@@ -1084,14 +1101,14 @@
                  (all-natp acc)
                  (decreasingp pending-list)
                  (all-< pending-list dag-len)
-                 (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;                (integerp accumulated-constant)
                  (all-< acc bound)
                  (natp bound)
                  (if (consp pending-list)
                      (< (car pending-list) bound)
                    t))
-            (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))
+            (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))
                    bound))
    :hints (("Goal" :use (:instance all-<=-of-mv-nth-0-of-bvxor-nest-leaves-aux-new (bound (+ -1 bound)))
             :in-theory (e/d (BvXOR-NEST-LEAVES-AUX ALL-INTEGERP-WHEN-ALL-NATP)
@@ -1113,7 +1130,7 @@
                   :guard-hints (("Goal" :in-theory (enable integer-listp-rewrite ALL-RATIONALP-WHEN-ALL-NATP ALL-INTEGERP-WHEN-ALL-NATP)))))
   (b* (;; Extract the xor leaves of this node from the old dag:
        ((mv nodenum-leaves combined-constant)
-        (bvxor-nest-leaves-aux (list nodenum) size dag-array dag-len nil 0))
+        (bvxor-nest-leaves-aux (list nodenum) size 'normalize-xors-old-array dag-array dag-len nil 0))
        ;; Translate to get their nodenums in the dag we are constructing:
        ((mv nodenum-leaves combined-constant) ;nodenum-leaves here may contain duplicates, due to the translation/renumbering (two leaves that map to the same nodenum after the xors they themselves are supported by get normalized?)
         (translate-nodenums-for-xor-rev nodenum-leaves translation-array dag-len size nil combined-constant))
@@ -1221,8 +1238,9 @@
                                           translation-array print)
                     ;; this is the top node of a bvxor nest (some parent is not a bvxor or we are handling the top node), so we have to handle the nest rooted at this node:
                     (b* ((rev-leaves ; ascending
-                          ;; may have 0 or just 1 leaf:
-                          ;; todo: avoid the reverse by doing the merge-sort in bvxor-nest-leaves by the opposite order..
+                           ;; may have 0 or just 1 leaf:
+                           ;; todo: avoid the reverse by doing the merge-sort in bvxor-nest-leaves by the opposite order..
+                           ;; We must use the old-dag here, because the node's children may not have been added to the new-dag yet (if they were not top nodes of xor nests)
                            (reverse-list (bvxor-nest-leaves n ;avoid making this list?
                                                             (unquote (darg1 expr))
                                                             old-dag-array
@@ -1428,18 +1446,19 @@
                               (<= (* 2 (len dag)) *max-1d-array-length*) ;todo
                               )
                   :guard-hints (("Goal" :in-theory (e/d (top-nodenum-of-dag) (pseudo-dag-arrayp natp quotep))))))
-  (if (not (intersection-eq '(bitxor bvxor) (dag-fns dag))) ;; TODO: Optimize this check
+  (if (not (dag-fns-include-anyp dag '(bitxor bvxor)))
       ;; nothing to do (TODO: We could do a bit better by selecting this case if there are bvxors but all are of non-constant size)
       ;; What if there is just one xor?
       ;; And what if there are xors but they are not nested?  I suppose we still might need to commute arguments?
       (mv (erp-nil) dag nil)
-    (let* ( ;;convert dag to an array:
+    (let* (;; Convert the (old) dag to an array:
            (old-dag-len (len dag))
            (old-top-nodenum (top-nodenum-of-dag dag))
            (old-dag-array-name 'normalize-xors-old-array)
            (old-dag-array (make-dag-into-array old-dag-array-name dag 0)) ; add slack space?
            ;; Even though the old dag won't change, we need to check parents of nodes in normalize-xors-aux
            (old-dag-parent-array (make-dag-parent-array-with-name2 old-dag-len old-dag-array-name old-dag-array 'normalize-xors-old-parent-array))
+           ;; Initialize the new dag:
            (new-dag-size (* 2 old-dag-len)) ;none of the nodes are valid
            (new-dag-array-name 'normalize-xors-new-array)
            (new-dag-array (make-empty-array new-dag-array-name new-dag-size)) ;will get expanded if it needs to be bigger

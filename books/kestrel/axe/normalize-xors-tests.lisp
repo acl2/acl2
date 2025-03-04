@@ -30,7 +30,7 @@
       (if (consp nodenum-or-quotep) ;test for quotep
           (list (unquote nodenum-or-quotep) nil)
         (mv-let (acc acc-constant)
-          (bitxor-nest-leaves-aux (list nodenum-or-quotep) dag-array dag-len nil 0)
+          (bitxor-nest-leaves-aux (list nodenum-or-quotep) 'normalize-xors-old-array dag-array dag-len nil 0)
           (list acc-constant (dag-to-term-aux-lst-array 'normalize-xors-old-array dag-array acc)))))))
 
 (assert-equal (bitxor-nest-leaves-of-term '(bitxor x y))
