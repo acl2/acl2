@@ -1,7 +1,7 @@
 ; Versions of built-in functions with guards of t
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,9 +14,6 @@
 
 ;; This book defines functions that are equivalent to ACL2 built-in functions
 ;; but have guards of t (for use in evaluators).
-
-;; Disable certification of this book in ACL2(r), due to differences in FLOOR:
-; cert_param: (non-acl2r)
 
 (include-book "unguarded-primitives")
 (include-book "kestrel/arithmetic-light/unguarded-built-ins" :dir :system)
