@@ -35,6 +35,7 @@
                  impossible
                  index-of
                  packn-pos
+                 maybe-pseudo-event-formp
                  pseudo-event-formp
                  pseudo-event-form-list
                  pseudo-event-form-listp
