@@ -47,7 +47,8 @@
 
 ;; TODO: Add checks (or guards?) that interpreted-function-alists are complete.
 
-;; TODO: Consider making a separate version for when we are not memoizing.
+;; TODO: Consider making a separate version for when we are not memoizing, and perhaps
+;; when other options, such as hit counting, are turned off.
 
 ;; TODO: Consider adding special handling for bv-array-if.
 
@@ -343,11 +344,11 @@
          (simplify-trees-and-add-to-dag-name (pack$ 'simplify-trees-and-add-to-dag- suffix))
          ;; functions after the mutual-recursion:
          (simplify-dag-expr-name (pack$ 'simplify-dag-expr- suffix))
-         (simplify-dag-nodes-name (pack$ 'simplify-dag-nodes- suffix)) ; rename simplify-dag-nodes...
+         (simplify-dag-nodes-name (pack$ 'simplify-dag-nodes- suffix))
          (simplify-dag-core-name (pack$ 'simplify-dag-core- suffix))
          (simplify-dag-name (pack$ 'simplify-dag- suffix)) ; produces a DAG
          (simplify-term-name (pack$ 'simplify-term- suffix)) ; produces a DAG
-         (simplify-term-to-term-name (pack$ 'simplify-term-to-term- suffix))         ; produces a term
+         (simplify-term-to-term-name (pack$ 'simplify-term-to-term- suffix)) ; produces a term
          (simplify-terms-to-terms-name (pack$ 'simplify-terms-to-terms- suffix)) ; produces a list of terms
          (def-simplified-fn-core-name (pack$ 'def-simplified-fn-core- suffix))
          (def-simplified-fn-name (pack$ 'def-simplified-fn- suffix))

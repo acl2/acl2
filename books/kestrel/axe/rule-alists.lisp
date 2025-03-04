@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "make-axe-rules")
+(include-book "make-axe-rules") ; todo: reduce?
 (include-book "stored-rules")
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system) ; move this book
