@@ -47,7 +47,8 @@
 
 ;; TODO: Add checks (or guards?) that interpreted-function-alists are complete.
 
-;; TODO: Consider making a separate version for when we are not memoizing.
+;; TODO: Consider making a separate version for when we are not memoizing, and perhaps
+;; when other options, such as hit counting, are turned off.
 
 ;; TODO: Consider adding special handling for bv-array-if.
 
