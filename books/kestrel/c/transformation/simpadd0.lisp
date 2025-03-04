@@ -55,9 +55,8 @@
    via things like generalized `folds' over the abstract syntax."
 
   "We are extending these functions
-   to also return correctness theorems.
-   The plan is to generate these theorems in a bottom-up way,
-   and eventually replace the top-level theorems,
+   to also return correctness theorems in a bottom-up fashion.
+   We will eventually replace the top-level theorems,
    which are currently very specific and brittle,
    with robust ones that emerge from the bottom-up generation.
    This is one of a few different or slightly different approaches
