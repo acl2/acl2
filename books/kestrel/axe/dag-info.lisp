@@ -1,7 +1,7 @@
 ; Computing information and statistics about DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -162,6 +162,8 @@
   (declare (xargs :guard (weak-dagp dag)))
   (tabulate-dag-fns-aux dag nil))
 
+;; TODO: Instead of the print-size option, consider trying to print the size
+;; but giving up if it is too big (and thus would take too long to compute)
 (defun print-dag-info (dag name print-size)
   (declare (xargs :guard (and (or (myquotep dag)
                                   (and (pseudo-dagp dag)

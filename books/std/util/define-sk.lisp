@@ -993,9 +993,10 @@ so execution differences don't matter.</p>")
                   '(value-triple :invisible)))))
 
       ,@(and verify-guards
-             `((verify-guards ,guts.name-fn
-                 ,@(and guard-hints `(:hints ,guard-hints))
-                 ,@(and guard-debug `(:guard-debug ,guard-debug)))))
+             `((with-output :stack :pop
+                 (verify-guards ,guts.name-fn
+                   ,@(and guard-hints `(:hints ,guard-hints))
+                   ,@(and guard-debug `(:guard-debug ,guard-debug))))))
 
       ;; BOZO pe table?
 

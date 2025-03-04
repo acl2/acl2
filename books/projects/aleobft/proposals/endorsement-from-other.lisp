@@ -169,7 +169,8 @@
                   (proposal-to-other-p systate)
                   (endorsement-from-other-p systate))
              (endorsement-from-other-p (event-next event systate)))
-    :enable (event-possiblep event-next)))
+    :enable (event-possiblep
+             event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

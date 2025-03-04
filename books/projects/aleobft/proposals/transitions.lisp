@@ -80,7 +80,7 @@
    :propose (propose-possiblep event.proposal event.destinations systate)
    :endorse (endorse-possiblep event.proposal event.endorser systate)
    :augment (augment-possiblep event.proposal event.endorser systate)
-   :certify (certify-possiblep event.certificate systate)
+   :certify (certify-possiblep event.certificate event.destinations systate)
    :accept (accept-possiblep event.validator event.certificate systate)
    :advance (advance-possiblep event.validator systate)
    :commit (commit-possiblep event.validator systate))

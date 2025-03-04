@@ -27,7 +27,7 @@
                                         (introduce-bv-array-rules)) ; turns nth into bv-array-read
                    )
 
-(def-simplified-dag-basic *aes-128-encrypt-spec-dag-bit-blasted*
+(def-simplified-basic *aes-128-encrypt-spec-dag-bit-blasted*
   *aes-128-encrypt-spec-dag*
   :rules (append '(bv-array-read-blast-one-step-better
                    bif-rewrite ;bif

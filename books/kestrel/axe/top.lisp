@@ -70,6 +70,7 @@
 (include-book "dag-constant-alist")
 (include-book "dag-exprs")
 (include-book "dag-info")
+(include-book "dag-or-term-to-dag-simple")
 (include-book "dag-or-term-to-dag-basic")
 (include-book "dag-parent-array")
 (include-book "dag-parent-arrayp")

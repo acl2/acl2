@@ -14,9 +14,10 @@
 
 ;; This tool simplifies a term and stores the resulting DAG as a defconst.
 
-;; See also unroll-spec-basic.  That one involves skip-proofs but can embed the DAG in a function (and state a theorem).
+;; See also the generated def-simplified-xxx functions (see make-rewriter-simple.lisp).
+;; TODO: Deprecate this file in favor of def-simplified-basic.
 
-;; TODO: Add -basic to the name of this file and the things defined here.
+;; See also unroll-spec-basic.  That one involves skip-proofs but can embed the DAG in a function (and state a theorem).
 
 (include-book "rewriter-basic")
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
@@ -90,7 +91,7 @@
 (local (in-theory (disable ilks-plist-worldp)))
 
 ;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
-;; TODO: Compare to the generated ,def-simplified-dag-name.
+;; TODO: Compare to the generated ,def-simplified-name.
 ;; Returns an error triple, (mv erp event state).
 ;; This core function is in :logic mode, unlike the wrapper function.
 (defund def-simplified-fn-core (defconst-name ;should begin and end with *

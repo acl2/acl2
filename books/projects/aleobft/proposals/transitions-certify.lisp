@@ -40,9 +40,14 @@
      from that correct validator that endorses the proposal.
      Since faulty validators have no internal state in our model,
      we model certificate creation by faulty validators as an atomic event,
-     which consumes zero or more endorsing messages from the network,
+     which uses zero or more endorsing messages from the network,
      and puts their signatures (represented as the endorsing addresses)
-     into the certificate.")
+     into the certificate.
+     Importantly, the endorsing messages are not consumed:
+     this way, we can model the fact that a faulty validator
+     may create different certificates with the same proposal
+     but with different sets of endorsers,
+     chosen among the ones available in endorsing messages.")
    (xdoc::p
     "Either way, the certificate is broadcast to a set of validators.
      For certain properties like blockchain nonforking,
@@ -54,15 +59,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define certify-possiblep ((cert certificatep)
+                           (dests address-setp)
                            (systate system-statep))
   :returns (yes/no booleanp)
   :short "Check if a @('certify') event is possible."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('cert') parameter of this function
-     is the corresponding component of the @('certify') event.
-     The other component of the event is not needed in this predicate.")
+    "The @('cert') and @('dests') parameters of this function
+     are the corresponding components of the @('certify') event.")
    (xdoc::p
     "The validator in question is the author of the certificate.")
    (xdoc::p
@@ -73,7 +78,7 @@
      As a special case, if the certificate has no endorsers,
      no such message is required to be in the network:
      nothing prevents a faulty validator from authoring a proposal
-     and immediately certifying with no additional signatures;
+     and then certifying it with no additional signatures;
      the certificate will not be accepted by correct validators,
      but the certificate can still be generated.")
    (xdoc::p
@@ -85,12 +90,18 @@
      the proposal of the certificate is a pending one in the validator state,
      the endorsers are the ones associated to the proposal in the map,
      and the signers (author and endorsers) form a quorum
-     in the active committee for the proposal's round."))
+     in the active committee for the proposal's round.
+     Since the validator already has the certificate,
+     it does not send it to itself;
+     but as discussed in @(see transitions-certify),
+     we do not put any constraints on which other validators
+     the certificate is sent to."))
   (b* (((certificate cert) cert)
        ((proposal prop) cert.proposal)
        ((when (not (set::in prop.author (correct-addresses systate))))
         (set::subset (make-endorsement-messages prop cert.endorsers)
                      (get-network-state systate)))
+       ((when (set::in prop.author (address-set-fix dests))) nil)
        ((validator-state vstate) (get-validator-state prop.author systate))
        (prop+endors (omap::assoc prop vstate.proposed))
        ((unless prop+endors) nil)
@@ -103,15 +114,14 @@
 (define certify-next ((cert certificatep)
                       (dests address-setp)
                       (systate system-statep))
-  :guard (certify-possiblep cert systate)
+  :guard (certify-possiblep cert dests systate)
   :returns (new-systate system-statep)
   :short "New system state resulting from a @('certify') event."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If the validator is faulty,
-     the endorsement messages are removed from the network,
-     because they are consumed.")
+    "The @('cert') and @('dests') parameters of this function
+     are the corresponding components of the @('certify') event.")
    (xdoc::p
     "If the validator is correct,
      the proposal is removed from the map of pending proposals,
@@ -124,20 +134,16 @@
        ((proposal prop) cert.proposal)
        (network (get-network-state systate))
        (new-msgs (make-certificate-messages cert dests))
+       (new-network (set::union new-msgs network))
+       (systate (update-network-state new-network systate))
        ((when (not (set::in prop.author (correct-addresses systate))))
-        (b* ((old-msgs (make-endorsement-messages prop cert.endorsers))
-             (new-network
-              (set::union new-msgs (set::difference network old-msgs)))
-             (systate (update-network-state new-network systate)))
-          systate))
+        systate)
        ((validator-state vstate) (get-validator-state prop.author systate))
        (new-proposed (omap::delete prop vstate.proposed))
        (new-dag (set::insert (certificate-fix cert) vstate.dag))
        (new-vstate
         (change-validator-state vstate :proposed new-proposed :dag new-dag))
-       (systate (update-validator-state prop.author new-vstate systate))
-       (new-network (set::union new-msgs network))
-       (systate (update-network-state new-network systate)))
+       (systate (update-validator-state prop.author new-vstate systate)))
     systate)
   :hooks (:fix)
 
@@ -194,13 +200,7 @@
 
   (defret get-network-state-of-certify-next
     (equal (get-network-state new-systate)
-           (if (set::in (certificate->author cert) (correct-addresses systate))
-               (set::union (make-certificate-messages cert dests)
-                           (get-network-state systate))
-             (set::union (make-certificate-messages cert dests)
-                         (set::difference (get-network-state systate)
-                                          (make-endorsement-messages
-                                           (certificate->proposal cert)
-                                           (certificate->endorsers cert))))))
+           (set::union (make-certificate-messages cert dests)
+                       (get-network-state systate)))
     :hints (("Goal" :in-theory (enable certificate->author))))
   (in-theory (disable get-network-state-of-certify-next)))

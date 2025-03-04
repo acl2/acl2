@@ -25,8 +25,8 @@
 ;; evaluate and to the sets of axe-syntaxp and axe-bind-free functions that the
 ;; rewriter "knows" about.  To understand what gets generated, see
 ;; make-rewriter-simple-fn.  The main interface functions are
-;; simplify-term-basic, simp-term-basic, simp-terms-basic, simplify-dag-basic,
-;; and def-simplified-dag-basic.
+;; simplify-dag-basic, simplify-term-basic, simplify-term-to-term-basic,
+;; simplify-terms-to-terms-basic, and def-simplified-basic.
 (make-rewriter-simple basic
                       axe-evaluator-basic
                       basic
@@ -68,7 +68,7 @@
       (mv (erp-nil) (reverse done-conjuncts) againp)
     (b* ((term (first conjuncts))
          ((mv erp result-term)
-          (simp-term-basic term ; todo: in theory, this could blow up
+          (simplify-term-to-term-basic term ; todo: in theory, this could blow up
                            ;; Can assume all the other conjuncts, because, if any is false, the whole conjunction is false:
                            (append (rest conjuncts) done-conjuncts) ; the assumptions; note that we don't use the term to simplify itself!
                            rule-alist
