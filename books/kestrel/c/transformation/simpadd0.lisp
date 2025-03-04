@@ -493,6 +493,9 @@
     :long
     (xdoc::topstring
      (xdoc::p
+      "Identifiers, constants, and string literals undergo no transformation.
+       No theorems are generated for them, since there is no change.")
+     (xdoc::p
       "When we encounter an expression @('x + 0') that we transform into @('x'),
        we also generate a theorem saying that
        executing the two expressions give equivalent results.
