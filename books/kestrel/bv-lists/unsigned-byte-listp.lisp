@@ -1,6 +1,6 @@
 ; A lightweight book connecting unsigned-byte-listp to all-unsigned-byte-p.
 ;
-; Copyright (C) 2019-2022 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ; For unsigned-byte-listp, see the copyright for books/std.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -68,6 +68,15 @@
          (and (unsigned-byte-listp width (true-list-fix x))
               (unsigned-byte-listp width y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp append))))
+
+;; avoids name clash with std
+(defthm unsigned-byte-listp-of-update-nth-2
+  (implies (unsigned-byte-listp width x)
+           (equal (unsigned-byte-listp width (update-nth n val x))
+                  (and (unsigned-byte-p width val)
+                       (<= (nfix n) (len x)) ; can be one past the last element
+                       )))
+  :hints (("Goal" :in-theory (enable update-nth unsigned-byte-listp))))
 
 (defthm unsigned-byte-listp-of-revappend
   (equal (unsigned-byte-listp width (revappend x y))
