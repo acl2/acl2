@@ -55,9 +55,8 @@
    via things like generalized `folds' over the abstract syntax."
 
   "We are extending these functions
-   to also return correctness theorems.
-   The plan is to generate these theorems in a bottom-up way,
-   and eventually replace the top-level theorems,
+   to also return correctness theorems in a bottom-up fashion.
+   We will eventually replace the top-level theorems,
    which are currently very specific and brittle,
    with robust ones that emerge from the bottom-up generation.
    This is one of a few different or slightly different approaches
@@ -384,6 +383,103 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-var-hyps ((vars ident-setp))
+  :returns (hyps true-listp)
+  :short "Generate variable hypotheses for certain theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input of this function comes from
+     the @('vars') component of @(tsee simpadd0-gout).
+     For each such variable, we add a hypothesis about it saying that
+     the variable can be read from the computation state
+     and it contains an @('int') value."))
+  (b* (((when (set::emptyp vars)) nil)
+       (var (set::head vars))
+       (hyp `(b* ((var (mv-nth 1 (c$::ldm-ident
+                                  (ident ,(ident->unwrap var)))))
+                  (objdes (c::objdesign-of-var var compst))
+                  (val (c::read-object objdes compst)))
+               (and objdes
+                    (c::valuep val)
+                    (c::value-case val :sint))))
+       (hyps (simpadd0-gen-var-hyps (set::tail vars))))
+    (cons hyp hyps)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-gen-expr-pure-thm ((old exprp)
+                                    (new exprp)
+                                    (vars ident-setp)
+                                    (const-new symbolp)
+                                    (thm-index posp)
+                                    (hints true-listp))
+  :guard (and (expr-unambp old)
+              (expr-unambp new))
+  :returns (mv (event? maybe-pseudo-event-formp)
+               (name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem saying that two pure expressions are equivalent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem is generated only if the two expressions differ and
+     are both in the C subset covered by our formal dynamic formalization;
+     in this case, we return a theorem event and its name.
+     Otherwise, we return no event, and @('nil') as the theorem name.")
+   (xdoc::p
+    "This function also takes as input a set of identifiers,
+     coming from the @('var') component of @(tsee simpadd0-gout).")
+   (xdoc::p
+    "The hints to prove the theorem are passed as input too,
+     since the proof generally varies depending on the kind of expression.")
+   (xdoc::p
+    "The theorem says that the two expressions are in the formalized subset,
+     and that the execution of the two expressions gives the same result,
+     assuming that the old expression's result is not an error.
+     More precisely, here we equate the value components of
+     the expression values returned by expression execution;
+     for our current purposes this is adequate,
+     but we may generalize this in the future.
+     Note that the calls of @(tsee c$::ldm-expr) are known to succeed
+     (i.e. not return any error),
+     given that @(tsee c$::expr-pure-formalp)."))
+  (b* (((unless (and (not (c$::expr-equiv old new))
+                     (c$::expr-pure-formalp old)
+                     (c$::expr-pure-formalp new)))
+        (mv nil nil (pos-fix thm-index)))
+       (hyps (simpadd0-gen-var-hyps vars))
+       (formula
+        `(b* ((old ',old)
+              (new ',new))
+           (and (c$::expr-pure-formalp old)
+                (c$::expr-pure-formalp new)
+                (b* ((old-formal (mv-nth 1 (c$::ldm-expr old)))
+                     (new-formal (mv-nth 1 (c$::ldm-expr new)))
+                     (old-result (c::expr-value->value
+                                  (c::exec-expr-pure old-formal compst)))
+                     (new-result (c::expr-value->value
+                                  (c::exec-expr-pure new-formal compst))))
+                  (implies (and ,@hyps
+                                (not (c::errorp old-result)))
+                           (equal old-result new-result))))))
+       (thm-name
+        (packn-pos (list const-new '-thm- thm-index) const-new))
+       (thm-index (1+ (pos-fix thm-index)))
+       (thm-event
+        `(defthmd ,thm-name
+           ,formula
+           :hints ,hints)))
+    (mv thm-event thm-name thm-index))
+
+  ///
+
+  (defret pseudo-event-formp-of-simpadd0-gen-expr-pure-thm.event?-when-name
+    (implies name
+             (pseudo-event-formp event?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines simpadd0-exprs/decls/stmts
   :short "Transform expressions, declarations, statements,
           and related entities."
@@ -397,6 +493,25 @@
     :short "Transform an expression."
     :long
     (xdoc::topstring
+     (xdoc::p
+      "Identifiers, constants, and string literals undergo no transformation.
+       No theorems are generated for them, since there is no change.")
+     (xdoc::p
+      "When we encounter a parenthesized expression,
+       we recursively transform the inner expression,
+       we parenthesize the transformed inner expression,
+       and we return that.
+       We generate a theorem if the two inner expressions differ
+       (in which case the parenthesized expressions differ as well)
+       and a theorem for the inner expressions' transformation was generated
+       (which we can tell based on whether
+       there is a theorem name for the inner expressions).
+       Since @(tsee c$::ldm-expr) maps parenthesized expressions
+       to the same as what the inner expressions are mapped to,
+       the proof of the generated theorem is straightforward,
+       but we supply the executable counterparts of
+       @(tsee c$::expr-pure-formalp) and @(tsee c$::ldm-expr)
+       so that they can be applied to the parenthesized expressions.")
      (xdoc::p
       "When we encounter an expression @('x + 0') that we transform into @('x'),
        we also generate a theorem saying that
@@ -433,14 +548,41 @@
                                        :diffp nil))
        :paren
        (b* (((mv new-inner (simpadd0-gout gout-inner))
-             (simpadd0-expr expr.inner gin state)))
-         (mv (expr-paren new-inner)
-             (make-simpadd0-gout :events gout-inner.events
-                                 :thm-name nil
-                                 :thm-index gout-inner.thm-index
-                                 :names-to-avoid gout-inner.names-to-avoid
-                                 :vars gout-inner.vars
-                                 :diffp gout-inner.diffp)))
+             (simpadd0-expr expr.inner gin state))
+            ((unless (mbt (expr-unambp new-inner)))
+             (mv (irr-expr) (irr-simpadd0-gout)))
+            (new-expr (expr-paren new-inner)))
+         (if (and gout-inner.diffp
+                  gout-inner.thm-name)
+             (b* ((hints
+                   `(("Goal"
+                      :in-theory '((:e c$::expr-pure-formalp)
+                                   (:e c$::ldm-expr))
+                      :use ,gout-inner.thm-name)))
+                  ((mv thm-event thm-name thm-index)
+                   (simpadd0-gen-expr-pure-thm (expr-fix expr)
+                                               new-expr
+                                               gout-inner.vars
+                                               gin.const-new
+                                               gout-inner.thm-index
+                                               hints)))
+               (mv new-expr
+                   (make-simpadd0-gout
+                    :events (append gout-inner.events
+                                    (and thm-name (list thm-event)))
+                    :thm-name thm-name
+                    :thm-index thm-index
+                    :names-to-avoid (append gout-inner.names-to-avoid
+                                            (list thm-name))
+                    :vars gout-inner.vars
+                    :diffp t)))
+           (mv new-expr
+               (make-simpadd0-gout :events gout-inner.events
+                                   :thm-name nil
+                                   :thm-index gout-inner.thm-index
+                                   :names-to-avoid gout-inner.names-to-avoid
+                                   :vars gout-inner.vars
+                                   :diffp gout-inner.diffp))))
        :gensel
        (b* (((mv new-control (simpadd0-gout gout-control))
              (simpadd0-expr expr.control gin state))
@@ -605,48 +747,15 @@
                   (b* (((c$::var-info info)
                         (c$::coerce-var-info
                          (c$::expr-ident->info new-arg1))))
-                    (c$::type-case info.type :sint)))
+                    (c$::type-case info.type :sint))
+                  (equal new-arg1 expr.arg1)
+                  (equal new-arg2 expr.arg2))
              ;; Transform the expression and generate a theorem.
-             (b* ((var-name (c$::ident->unwrap
-                             (c$::expr-ident->ident new-arg1)))
-                  (thm-name
-                   (packn-pos (list gin.const-new '-thm- gin.thm-index)
-                              gin.const-new))
-                  (thm-index (1+ gout-arg2.thm-index))
-                  (thm-event
-                   `(defruled ,thm-name
-                      (b* ((expr-var (c$::expr-ident (c$::ident,var-name) nil))
-                           (expr-zero (c$::expr-const
-                                       (c$::const-int
-                                        (c$::make-iconst
-                                         :core (c$::make-dec/oct/hex-const-oct
-                                                :leading-zeros 1
-                                                :value 0)
-                                         :suffix? nil))))
-                           (expr-var+zero (c$::make-expr-binary
-                                           :op (c$::binop-add)
-                                           :arg1 expr-var
-                                           :arg2 expr-zero))
-                           (var (mv-nth 1 (c$::ldm-ident
-                                           (c$::ident ,var-name))))
-                           (val (c::read-object
-                                 (c::objdesign-of-var var compst) compst)))
-                        (and (not (mv-nth 0 (c$::ldm-expr expr-var+zero)))
-                             (not (mv-nth 0 (c$::ldm-expr expr-var)))
-                             (not (mv-nth 0 (c$::ldm-ident
-                                             (c$::ident ,var-name))))
-                             (implies
-                              (and (c::objdesign-of-var var compst)
-                                   (c::valuep val)
-                                   (c::value-case val :sint))
-                              (equal (c::expr-value->value
-                                      (c::exec-expr-pure
-                                       (mv-nth 1 (c$::ldm-expr expr-var+zero))
-                                       compst))
-                                     (c::expr-value->value
-                                      (c::exec-expr-pure
-                                       (mv-nth 1 (c$::ldm-expr expr-var))
-                                       compst))))))
+             (b* ((var (expr-ident->ident new-arg1))
+                  (vars (set::insert var (set::union gout-arg1.vars
+                                                     gout-arg2.vars)))
+                  (hints
+                   `(("Goal"
                       :in-theory '((:e c::expr-binary)
                                    (:e c::expr-ident)
                                    (:e c::binop-add)
@@ -659,11 +768,13 @@
                                    (:e c$::expr-zerop)
                                    (:e c$::iconst)
                                    (:e c$::ident)
+                                   (:e c$::expr-pure-formalp)
                                    (:e c$::ldm-expr)
                                    (:e c$::ldm-ident))
                       :use (:instance simpadd0-supporting-lemma
                                       (var (mv-nth 1 (c$::ldm-ident
-                                                      (c$::ident ,var-name))))
+                                                      (c$::ident
+                                                       ,(ident->unwrap var)))))
                                       (zero (c$::expr-const
                                              (c$::const-int
                                               (c$::make-iconst
@@ -672,18 +783,23 @@
                                                 :leading-zeros 1
                                                 :value 0)
                                                :suffix? nil))))))))
+                  ((mv thm-event thm-name thm-index)
+                   (simpadd0-gen-expr-pure-thm (expr-fix expr)
+                                               new-arg1
+                                               vars
+                                               gin.const-new
+                                               gin.thm-index
+                                               hints)))
                (mv new-arg1
                    (make-simpadd0-gout
                     :events (append gout-arg1.events
                                     gout-arg2.events
-                                    (list thm-event))
+                                    (and thm-name (list thm-event)))
                     :thm-name thm-name
                     :thm-index thm-index
                     :names-to-avoid (append gout-arg2.names-to-avoid
                                             (list thm-name))
-                    :vars (set::insert (expr-ident->ident new-arg1)
-                                       (set::union gout-arg1.vars
-                                                   gout-arg2.vars))
+                    :vars vars
                     :diffp t)))
            ;; Do not transform the expression.
            (mv (make-expr-binary :op expr.op :arg1 new-arg1 :arg2 new-arg2)
@@ -2951,7 +3067,7 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
-  :verify-guards :after-returns
+  :verify-guards nil ; done after the unambiguity proofs
 
   ///
 
@@ -3161,7 +3277,11 @@
                                        irr-paramdeclor
                                        irr-type-spec
                                        irr-stmt
-                                       irr-block-item)))))
+                                       irr-block-item))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards simpadd0-expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
