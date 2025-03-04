@@ -410,7 +410,7 @@
 
 (define simpadd0-gen-expr-pure-thm ((old exprp)
                                     (new exprp)
-                                    (hyps true-listp)
+                                    (vars ident-setp)
                                     (const-new symbolp)
                                     (thm-index posp)
                                     (hints true-listp))
@@ -436,9 +436,11 @@
      If the theorem is generated, we return the updated index;
      if no theorem is generated, we return the index unchanged.")
    (xdoc::p
-    "This function also takes as input zero or more hypotheses,
-     which are put into the theorem,
-     and hints to prove the theorem.")
+    "This function also takes as input a set of identifiers,
+     coming from the @('var') component of @(tsee simpadd0-gout).")
+   (xdoc::p
+    "The hints to prove the theorem are passed as input too,
+     since the proof generally varies depending on the kind of expression.")
    (xdoc::p
     "The theorem says that the two expressions are in the formalized subset,
      and that the execution of the two expressions gives the same result,
@@ -454,6 +456,7 @@
                      (c$::expr-pure-formalp old)
                      (c$::expr-pure-formalp new)))
         (mv nil nil (pos-fix thm-index)))
+       (hyps (simpadd0-gen-var-hyps vars))
        (formula
         `(b* ((old ',old)
               (new ',new))
@@ -553,8 +556,7 @@
             (new-expr (expr-paren new-inner)))
          (if (and gout-inner.diffp
                   gout-inner.thm-name)
-             (b* ((hyps (simpadd0-gen-var-hyps gout-inner.vars))
-                  (hints
+             (b* ((hints
                    `(("Goal"
                       :in-theory '((:e c$::expr-pure-formalp)
                                    (:e c$::ldm-expr))
@@ -562,7 +564,7 @@
                   ((mv thm-events thm-name thm-index)
                    (simpadd0-gen-expr-pure-thm (expr-fix expr)
                                                new-expr
-                                               hyps
+                                               gout-inner.vars
                                                gin.const-new
                                                gout-inner.thm-index
                                                hints)))
@@ -752,7 +754,8 @@
                   (equal new-arg2 expr.arg2))
              ;; Transform the expression and generate a theorem.
              (b* ((var (expr-ident->ident new-arg1))
-                  (hyps (simpadd0-gen-var-hyps (set::insert var nil)))
+                  (vars (set::insert var (set::union gout-arg1.vars
+                                                     gout-arg2.vars)))
                   (hints
                    `(("Goal"
                       :in-theory '((:e c::expr-binary)
@@ -785,7 +788,7 @@
                   ((mv thm-events thm-name thm-index)
                    (simpadd0-gen-expr-pure-thm (expr-fix expr)
                                                new-arg1
-                                               hyps
+                                               vars
                                                gin.const-new
                                                gin.thm-index
                                                hints)))
@@ -798,9 +801,7 @@
                     :thm-index thm-index
                     :names-to-avoid (append gout-arg2.names-to-avoid
                                             (list thm-name))
-                    :vars (set::insert (expr-ident->ident new-arg1)
-                                       (set::union gout-arg1.vars
-                                                   gout-arg2.vars))
+                    :vars vars
                     :diffp t)))
            ;; Do not transform the expression.
            (mv (make-expr-binary :op expr.op :arg1 new-arg1 :arg2 new-arg2)
