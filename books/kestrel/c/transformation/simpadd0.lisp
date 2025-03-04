@@ -437,13 +437,13 @@
                 (c$::expr-pure-formalp new)
                 (b* ((old-formal (mv-nth 1 (c$::ldm-expr old)))
                      (new-formal (mv-nth 1 (c$::ldm-expr new)))
-                     (old-outcome (c::expr-value->value
-                                   (c::exec-expr-pure old-formal compst)))
-                     (new-outcome (c::expr-value->value
-                                   (c::exec-expr-pure new-formal compst))))
+                     (old-result (c::expr-value->value
+                                  (c::exec-expr-pure old-formal compst)))
+                     (new-result (c::expr-value->value
+                                  (c::exec-expr-pure new-formal compst))))
                   (implies (and ,@hyps
-                                (not (c::errorp old-outcome)))
-                           (equal old-outcome new-outcome))))))
+                                (not (c::errorp old-result)))
+                           (equal old-result new-result))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
