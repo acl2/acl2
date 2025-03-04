@@ -394,7 +394,7 @@
      For each such variable, we add a hypothesis about it saying that
      the variable can be read from the computation state
      and it contains an @('int') value."))
-  (b* (((when (set::emptyp vars)) nil)
+  (b* (((when (set::emptyp (ident-set-fix vars))) nil)
        (var (set::head vars))
        (hyp `(b* ((var (mv-nth 1 (c$::ldm-ident
                                   (ident ,(ident->unwrap var)))))
@@ -404,7 +404,9 @@
                     (c::valuep val)
                     (c::value-case val :sint))))
        (hyps (simpadd0-gen-var-hyps (set::tail vars))))
-    (cons hyp hyps)))
+    (cons hyp hyps))
+  :prepwork ((local (in-theory (enable c$::emptyp-of-ident-set-fix))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -416,20 +418,22 @@
                                     (hints true-listp))
   :guard (and (expr-unambp old)
               (expr-unambp new))
-  :returns (mv (event? maybe-pseudo-event-formp)
-               (name symbolp)
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
                (updated-thm-index posp))
   :short "Generate a theorem saying that two pure expressions are equivalent."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The theorem is generated only if the two expressions differ and
-     are both in the C subset covered by our formal dynamic formalization;
-     in this case, we return a theorem event and its name.
-     Otherwise, we return no event, and @('nil') as the theorem name.")
+    "This function takes the old and new expressions as inputs,
+     which should always satisfy @(tsee c$::expr-pure-formalp),
+     although currently we do not enforce that in the guard.
+     But the generated theorem (see below) states those conditions.
+     The two expressions should also be different,
+     but again the guard does not require that.")
    (xdoc::p
     "This function also takes as input a set of identifiers,
-     coming from the @('var') component of @(tsee simpadd0-gout).")
+     coming from the @('vars') component of @(tsee simpadd0-gout).")
    (xdoc::p
     "The hints to prove the theorem are passed as input too,
      since the proof generally varies depending on the kind of expression.")
@@ -443,15 +447,12 @@
      but we may generalize this in the future.
      Note that the calls of @(tsee c$::ldm-expr) are known to succeed
      (i.e. not return any error),
-     given that @(tsee c$::expr-pure-formalp)."))
-  (b* (((unless (and (not (c$::expr-equiv old new))
-                     (c$::expr-pure-formalp old)
-                     (c$::expr-pure-formalp new)))
-        (mv nil nil (pos-fix thm-index)))
-       (hyps (simpadd0-gen-var-hyps vars))
+     given that @(tsee c$::expr-pure-formalp) holds,
+     as ensured by the first two conjuncts of the theorem."))
+  (b* ((hyps (simpadd0-gen-var-hyps vars))
        (formula
-        `(b* ((old ',old)
-              (new ',new))
+        `(b* ((old ',(expr-fix old))
+              (new ',(expr-fix new)))
            (and (c$::expr-pure-formalp old)
                 (c$::expr-pure-formalp new)
                 (b* ((old-formal (mv-nth 1 (c$::ldm-expr old)))
@@ -471,12 +472,9 @@
            ,formula
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
-
   ///
-
-  (defret pseudo-event-formp-of-simpadd0-gen-expr-pure-thm.event?-when-name
-    (implies name
-             (pseudo-event-formp event?))))
+  (fty::deffixequiv simpadd0-gen-expr-pure-thm
+    :args ((old exprp) (new exprp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -573,7 +571,7 @@
                                    (:e c$::ldm-expr))
                       :use ,gout-inner.thm-name)))
                   ((mv thm-event thm-name thm-index)
-                   (simpadd0-gen-expr-pure-thm (expr-fix expr)
+                   (simpadd0-gen-expr-pure-thm expr
                                                new-expr
                                                gout-inner.vars
                                                gin.const-new
@@ -582,7 +580,7 @@
                (mv new-expr
                    (make-simpadd0-gout
                     :events (append gout-inner.events
-                                    (and thm-name (list thm-event)))
+                                    (list thm-event))
                     :thm-name thm-name
                     :thm-index thm-index
                     :names-to-avoid (append gout-inner.names-to-avoid
@@ -797,7 +795,7 @@
                                                 :value 0)
                                                :suffix? nil))))))))
                   ((mv thm-event thm-name thm-index)
-                   (simpadd0-gen-expr-pure-thm (expr-fix expr)
+                   (simpadd0-gen-expr-pure-thm expr
                                                new-arg1
                                                vars
                                                gin.const-new
@@ -807,7 +805,7 @@
                    (make-simpadd0-gout
                     :events (append gout-arg1.events
                                     gout-arg2.events
-                                    (and thm-name (list thm-event)))
+                                    (list thm-event))
                     :thm-name thm-name
                     :thm-index thm-index
                     :names-to-avoid (append gout-arg2.names-to-avoid
