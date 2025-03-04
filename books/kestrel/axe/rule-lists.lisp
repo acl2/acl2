@@ -740,6 +740,7 @@
      bvnot-becomes-bvxor ;new! fri jan 28 13:08:38 2011
 
      equal-of-0-and-bvxor
+     ;; equal-of-0-and-bitxor
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
 
      bitxor-of-unary-minus-arg1 ;fixme lots of others like this, or use trim!
@@ -2571,7 +2572,7 @@
 
      equal-of-bvplus-cancel-arg2 ;drop?
 
-     equal-of-0-and-bitxor
+     equal-of-0-and-bitxor ; tried moving this to core-rules-bv, but that caused problems.  we need bitxor cancellation rules.  (why doesn't the same thing happen for bvxor?)
      equal-of-bool-to-bit-split
      iff ;causes a split (todo: consider opening iff to equal of bool-fixes)
      bvlt-of-bvplus-of-bvuminus
