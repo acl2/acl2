@@ -44,7 +44,7 @@
 (include-book "pack")
 ;(include-book "conjunctions")
 (include-book "misc/install-not-normalized" :dir :system)
-(include-book "user-interface") ;for control-screen-output
+(include-book "make-event-quiet")
 (include-book "defthm-forms")
 (include-book "kestrel/alists-light/keep-pairs" :dir :system)
 (include-book "remove-guard-holders")
@@ -683,9 +683,10 @@
                          (verbose 'nil)
                          (suffix 'nil) ;nil or a symbol to add to the unroll and base rule names
                          )
-  (control-screen-output
-   (if (member-eq verbose '(t 't)) t nil) ;verbose
-   `(make-event (defopeners-fn ',fn ',hyps ',disable ',suffix ',verbose state))))
+  (let ((form `(defopeners-fn ',fn ',hyps ',disable ',suffix ',verbose state)))
+    (if (member-eq verbose '(t 't))
+        `(make-event ,form)
+      `(make-event-quiet ,form))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
