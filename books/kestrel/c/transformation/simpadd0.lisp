@@ -384,6 +384,102 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-expr-pure-thm ((old exprp)
+                                    (new exprp)
+                                    (hyps true-listp)
+                                    (const-new symbolp)
+                                    (thm-index posp)
+                                    (hints true-listp))
+  :guard (and (expr-unambp old)
+              (expr-unambp new))
+  :returns (mv (events pseudo-event-form-listp)
+               (name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem saying that two pure expressions are equivalent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem is generated only if the two expressions differ and
+     are both in the C subset covered by our formal dynamic formalization.
+     Otherwise, we return @('nil') as the theorem name.
+     We return a list of events for flexibility,
+     in case in the future we may split the theorem into multiple events;
+     the list is empty if no theorem is generated,
+     i.e. if the returned name is @('nil').")
+   (xdoc::p
+    "The name of the theorem is generated using the index passed as input,
+     along with the @(':const-new') input to the transformation.
+     If the theorem is generated, we return the updated index;
+     if no theorem is generated, we return the index unchanged.")
+   (xdoc::p
+    "This function also takes as input zero or more hypotheses,
+     which are put into the theorem,
+     and hints to prove the theorem.")
+   (xdoc::p
+    "The theorem says that the two expressions are in the formalized subset,
+     and that the execution of the two expressions gives the same result,
+     assuming that the old expression's result is not an error.
+     More precisely, here we equate the value components of
+     the expression values returned by expression execution;
+     for our current purposes this is adequate,
+     but we may generalize this in the future.
+     Note that the calls of @(tsee c$::ldm-expr) are known to succeed
+     (i.e. not return any error),
+     given that @(tsee c$::expr-pure-formalp)."))
+  (b* (((unless (and (not (c$::expr-equiv old new))
+                     (c$::expr-pure-formalp old)
+                     (c$::expr-pure-formalp new)))
+        (mv nil nil (pos-fix thm-index)))
+       (formula
+        `(b* ((old ',old)
+              (new ',new))
+           (and (c$::expr-pure-formalp old)
+                (c$::expr-pure-formalp new)
+                (b* ((old-formal (mv-nth 1 (c$::ldm-expr old)))
+                     (new-formal (mv-nth 1 (c$::ldm-expr new)))
+                     (old-outcome (c::expr-value->value
+                                   (c::exec-expr-pure old-formal compst)))
+                     (new-outcome (c::expr-value->value
+                                   (c::exec-expr-pure new-formal compst))))
+                  (implies (and ,@hyps
+                                (not (c::errorp old-outcome)))
+                           (equal old-outcome new-outcome))))))
+       (thm-name
+        (packn-pos (list const-new '-thm- thm-index) const-new))
+       (thm-index (1+ (pos-fix thm-index)))
+       (thm-event
+        `(defthmd ,thm-name
+           ,formula
+           :hints ,hints)))
+    (mv (list thm-event) thm-name thm-index)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-gen-var-hyps ((vars ident-setp))
+  :returns (hyps true-listp)
+  :short "Generate variable hypotheses for certain theorems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input of this function comes from
+     the @('vars') component of @(tsee simpadd0-gout).
+     For each such variable, we add a hypothesis about it saying that
+     the variable can be read from the computation state
+     and it contains an @('int') value."))
+  (b* (((when (set::emptyp vars)) nil)
+       (var (set::head vars))
+       (hyp `(b* ((var (mv-nth 1 (c$::ldm-ident
+                                  (ident ,(ident->unwrap var)))))
+                  (objdes (c::objdesign-of-var var compst))
+                  (val (c::read-object objdes compst)))
+               (and objdes
+                    (c::valuep val)
+                    (c::value-case val :sint))))
+       (hyps (simpadd0-gen-var-hyps (set::tail vars))))
+    (cons hyp hyps)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines simpadd0-exprs/decls/stmts
   :short "Transform expressions, declarations, statements,
           and related entities."
@@ -605,48 +701,14 @@
                   (b* (((c$::var-info info)
                         (c$::coerce-var-info
                          (c$::expr-ident->info new-arg1))))
-                    (c$::type-case info.type :sint)))
+                    (c$::type-case info.type :sint))
+                  (equal new-arg1 expr.arg1)
+                  (equal new-arg2 expr.arg2))
              ;; Transform the expression and generate a theorem.
-             (b* ((var-name (c$::ident->unwrap
-                             (c$::expr-ident->ident new-arg1)))
-                  (thm-name
-                   (packn-pos (list gin.const-new '-thm- gin.thm-index)
-                              gin.const-new))
-                  (thm-index (1+ gout-arg2.thm-index))
-                  (thm-event
-                   `(defruled ,thm-name
-                      (b* ((expr-var (c$::expr-ident (c$::ident,var-name) nil))
-                           (expr-zero (c$::expr-const
-                                       (c$::const-int
-                                        (c$::make-iconst
-                                         :core (c$::make-dec/oct/hex-const-oct
-                                                :leading-zeros 1
-                                                :value 0)
-                                         :suffix? nil))))
-                           (expr-var+zero (c$::make-expr-binary
-                                           :op (c$::binop-add)
-                                           :arg1 expr-var
-                                           :arg2 expr-zero))
-                           (var (mv-nth 1 (c$::ldm-ident
-                                           (c$::ident ,var-name))))
-                           (val (c::read-object
-                                 (c::objdesign-of-var var compst) compst)))
-                        (and (not (mv-nth 0 (c$::ldm-expr expr-var+zero)))
-                             (not (mv-nth 0 (c$::ldm-expr expr-var)))
-                             (not (mv-nth 0 (c$::ldm-ident
-                                             (c$::ident ,var-name))))
-                             (implies
-                              (and (c::objdesign-of-var var compst)
-                                   (c::valuep val)
-                                   (c::value-case val :sint))
-                              (equal (c::expr-value->value
-                                      (c::exec-expr-pure
-                                       (mv-nth 1 (c$::ldm-expr expr-var+zero))
-                                       compst))
-                                     (c::expr-value->value
-                                      (c::exec-expr-pure
-                                       (mv-nth 1 (c$::ldm-expr expr-var))
-                                       compst))))))
+             (b* ((var (expr-ident->ident new-arg1))
+                  (hyps (simpadd0-gen-var-hyps (set::insert var nil)))
+                  (hints
+                   `(("Goal"
                       :in-theory '((:e c::expr-binary)
                                    (:e c::expr-ident)
                                    (:e c::binop-add)
@@ -659,11 +721,13 @@
                                    (:e c$::expr-zerop)
                                    (:e c$::iconst)
                                    (:e c$::ident)
+                                   (:e c$::expr-pure-formalp)
                                    (:e c$::ldm-expr)
                                    (:e c$::ldm-ident))
                       :use (:instance simpadd0-supporting-lemma
                                       (var (mv-nth 1 (c$::ldm-ident
-                                                      (c$::ident ,var-name))))
+                                                      (c$::ident
+                                                       ,(ident->unwrap var)))))
                                       (zero (c$::expr-const
                                              (c$::const-int
                                               (c$::make-iconst
@@ -672,11 +736,18 @@
                                                 :leading-zeros 1
                                                 :value 0)
                                                :suffix? nil))))))))
+                  ((mv thm-events thm-name thm-index)
+                   (simpadd0-gen-expr-pure-thm (expr-fix expr)
+                                               new-arg1
+                                               hyps
+                                               gin.const-new
+                                               gin.thm-index
+                                               hints)))
                (mv new-arg1
                    (make-simpadd0-gout
                     :events (append gout-arg1.events
                                     gout-arg2.events
-                                    (list thm-event))
+                                    thm-events)
                     :thm-name thm-name
                     :thm-index thm-index
                     :names-to-avoid (append gout-arg2.names-to-avoid
