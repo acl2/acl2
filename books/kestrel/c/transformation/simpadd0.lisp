@@ -620,9 +620,10 @@
                   :thm-index gout-arg1.thm-index
                   :names-to-avoid gout-arg1.names-to-avoid))
             ((mv new-arg2 (simpadd0-gout gout-arg2))
-             (simpadd0-expr expr.arg2 gin state)))
-         (mv (make-expr-arrsub :arg1 new-arg1
-                               :arg2 new-arg2)
+             (simpadd0-expr expr.arg2 gin state))
+            (new-expr (make-expr-arrsub :arg1 new-arg1
+                                        :arg2 new-arg2)))
+         (mv new-expr
              (make-simpadd0-gout
               :events (append gout-arg1.events gout-arg2.events)
               :thm-name nil
