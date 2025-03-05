@@ -31,6 +31,10 @@
   (equal (len (map-unpackbv-little num size bvs))
          (len bvs)))
 
+(defthm consp-of-map-unpackbv-little
+  (equal (consp (map-unpackbv-little num size bvs))
+         (consp bvs)))
+
 (defthm items-have-len-of-map-unpackbv-little
   (implies (natp num)
            (items-have-len num (map-unpackbv-little num size bvs))))
