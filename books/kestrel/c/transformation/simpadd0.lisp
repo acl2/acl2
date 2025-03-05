@@ -426,11 +426,8 @@
   (xdoc::topstring
    (xdoc::p
     "This function takes the old and new expressions as inputs,
-     which should always satisfy @(tsee c$::expr-pure-formalp),
-     although currently we do not enforce that in the guard.
-     But the generated theorem (see below) states those conditions.
-     The two expressions should also be different,
-     but again the guard does not require that.")
+     which must always satisfy @(tsee c$::expr-pure-formalp).
+     The two expressions should also be different.")
    (xdoc::p
     "This function also takes as input a set of identifiers,
      coming from the @('vars') component of @(tsee simpadd0-gout).")
@@ -449,20 +446,27 @@
      (i.e. not return any error),
      given that @(tsee c$::expr-pure-formalp) holds,
      as ensured by the first two conjuncts of the theorem."))
-  (b* ((hyps (simpadd0-gen-var-hyps vars))
+  (b* ((old (expr-fix old))
+       (new (expr-fix new))
+       ((unless (c$::expr-pure-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (c$::expr-pure-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       ((when (equal old new))
+        (raise "Internal error: the two expressions are both ~x0." old)
+        (mv '(_) nil 1))
+       (hyps (simpadd0-gen-var-hyps vars))
        (formula
-        `(b* ((old ',(expr-fix old))
-              (new ',(expr-fix new)))
-           (and (c$::expr-pure-formalp old)
-                (c$::expr-pure-formalp new)
-                (b* ((old-formal (mv-nth 1 (c$::ldm-expr old)))
-                     (new-formal (mv-nth 1 (c$::ldm-expr new)))
-                     (old-result (c::exec-expr-pure old-formal compst))
-                     (new-result (c::exec-expr-pure new-formal compst)))
-                  (implies (and ,@hyps
-                                (not (c::errorp old-result)))
-                           (equal (c::expr-value->value old-result)
-                                  (c::expr-value->value new-result)))))))
+        `(b* ((old-expr (mv-nth 1 (c$::ldm-expr ',old)))
+              (new-expr (mv-nth 1 (c$::ldm-expr ',new)))
+              (old-result (c::exec-expr-pure old-expr compst))
+              (new-result (c::exec-expr-pure new-expr compst)))
+           (implies (and ,@hyps
+                         (not (c::errorp old-result)))
+                    (equal (c::expr-value->value old-result)
+                           (c::expr-value->value new-result)))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
