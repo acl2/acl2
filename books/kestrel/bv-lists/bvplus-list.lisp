@@ -31,3 +31,8 @@
   (equal (len (bvplus-list n items1 items2))
          (len items1))
   :hints (("Goal" :in-theory (enable bvplus-list))))
+
+(defthm consp-of-bvplus-list
+  (equal (consp (bvplus-list n items1 items2))
+         (consp items1))
+  :hints (("Goal" :in-theory (enable bvplus-list))))
