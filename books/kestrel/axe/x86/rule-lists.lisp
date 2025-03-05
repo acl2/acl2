@@ -2371,7 +2371,7 @@
      acl2::get-elf-section-header-base-1
      acl2::get-elf-section-header-base-2
      acl2::get-elf-section-header-unroll
-     acl2::get-elf-symbol-address-base
+     acl2::get-elf-symbol-address
      acl2::get-elf-symbol-address-aux-base-1
      acl2::get-elf-symbol-address-aux-base-2
      acl2::get-elf-symbol-address-aux-unroll

@@ -1,7 +1,7 @@
 ; Distinguishing between different ways to represent rule sets
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,13 +12,17 @@
 
 (in-package "ACL2")
 
-(include-book "make-axe-rules")
+(include-book "axe-rule-lists") ; reduce?
 (include-book "rule-alists")
 
 ;;;
 ;;; tagged-rule-setp
 ;;;
 
+;; Recognizes one of the following
+;;  (:rule-names <rule-name_1> ... <rule-name_n>)
+;;  (:rules <axe-rule_1> ... <axe-rule_n>)
+;;  (:rule-alist . <rule-alist>)
 (defun tagged-rule-setp (tagged-rule-set)
   (declare (xargs :guard t))
   (and (consp tagged-rule-set)
@@ -68,7 +72,7 @@
         (er hard? ctx "ERROR: No :rules, :rule-alist, or :rule-alists given!") ;todo: make this a warning?
         )
        ((when (< 1 number-of-ways-rules-given)) ;todo: consider combining them
-        (er hard? ctx "ERROR: Only one of :rule, :rule-alist, and :rule-alists be given!")
+        (er hard? ctx "ERROR: Only one of :rule, :rule-alist, and :rule-alists can be given!")
         ))
     t))
 
