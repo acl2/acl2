@@ -42,7 +42,14 @@
     "Either way, the proposal is broadcast to other validators.
      A correct validator sends it exactly to
      all the other members of the active committee;
-     a faulty validator may send it to any validators.")
+     a faulty validator may send it to any validators.
+     However, in order to model the possibility that
+     a faulty validator in the committee
+     forwards the proposal to a faulty validator not in the committee,
+     so that the latter might endorse the proposal
+     and send the endorsement back to the proposer,
+     we relax our model of proposal broadcasting by allowing
+     a proposal to be sent also to faulty validators not in the committee.")
    (xdoc::p
     "If the validator is correct,
      it stores the proposal into its internal state,
@@ -130,10 +137,12 @@
      correct validators cannot create new certificates.")
    (xdoc::p
     "A correct validator broadcasts the proposal to
-     exactly all the other validators in the active committee,
+     all the other validators in the active committee,
      which it calculates as already mentioned above.
      These may include both correct and faulty validators:
-     the proposal author cannot distinguish them.")
+     the proposal author cannot distinguish them.
+     Additionally, we allow additional messages to other faulty validators,
+     for the modeling reason described in @(see transitions-propose).")
    (xdoc::p
     "A faulty validator may send the proposal to any set of validators,
      correct or faulty, whether part of (any) committees or not.")
@@ -150,8 +159,14 @@
        (commtt (active-committee-at-round prop.round vstate.blockchain))
        ((unless commtt) nil)
        ((unless (set::in prop.author (committee-members commtt))) nil)
-       ((unless (equal (address-set-fix dests)
-                       (set::delete prop.author (committee-members commtt))))
+       ((unless (set::subset (set::delete prop.author
+                                          (committee-members commtt))
+                             (address-set-fix dests)))
+        nil)
+       ((when (set::in prop.author (address-set-fix dests))) nil)
+       ((unless (set::subset (set::intersect (address-set-fix dests)
+                                             (correct-addresses systate))
+                             (committee-members commtt)))
         nil)
        ((unless (set::emptyp
                  (certs-with-author+round prop.author prop.round vstate.dag)))
