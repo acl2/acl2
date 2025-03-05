@@ -105,7 +105,7 @@ push (@orig_cmd_line_args, @ARGV);
 my $base_path = 0;
 
 my @user_targets = ();
-my $jobs = 1;
+my $jobs = 0;
 my $no_build = 0;
 my $no_makefile = 0;
 my $no_boilerplate = 0;
@@ -1465,7 +1465,8 @@ unless ($no_makefile) {
     close($smf);
 
     unless ($no_build) {
-        my $make_cmd = join(' ', ("$make -j $jobs -f $mf_name --no-builtin-rules ",
+        my $make_cmd = join(' ', ("$make -f $mf_name --no-builtin-rules ",
+				  ($jobs ? " -j $jobs" : ""),
                                   ($keep_going ? " -k" : ""),
                                   @make_args,
                                   "all-cert-pl-certs all-cert-pl-images"));
