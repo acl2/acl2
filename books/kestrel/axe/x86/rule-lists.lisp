@@ -2371,7 +2371,7 @@
      acl2::get-elf-section-header-base-1
      acl2::get-elf-section-header-base-2
      acl2::get-elf-section-header-unroll
-     acl2::get-elf-symbol-address-base
+     acl2::get-elf-symbol-address
      acl2::get-elf-symbol-address-aux-base-1
      acl2::get-elf-symbol-address-aux-base-2
      acl2::get-elf-symbol-address-aux-unroll
@@ -4824,7 +4824,7 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (new-normal-form-rules64) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
+  (append ;(new-normal-form-rules64) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 

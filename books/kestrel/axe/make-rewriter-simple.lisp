@@ -47,7 +47,8 @@
 
 ;; TODO: Add checks (or guards?) that interpreted-function-alists are complete.
 
-;; TODO: Consider making a separate version for when we are not memoizing.
+;; TODO: Consider making a separate version for when we are not memoizing, and perhaps
+;; when other options, such as hit counting, are turned off.
 
 ;; TODO: Consider adding special handling for bv-array-if.
 
@@ -343,11 +344,11 @@
          (simplify-trees-and-add-to-dag-name (pack$ 'simplify-trees-and-add-to-dag- suffix))
          ;; functions after the mutual-recursion:
          (simplify-dag-expr-name (pack$ 'simplify-dag-expr- suffix))
-         (simplify-dag-nodes-name (pack$ 'simplify-dag-nodes- suffix)) ; rename simplify-dag-nodes...
+         (simplify-dag-nodes-name (pack$ 'simplify-dag-nodes- suffix))
          (simplify-dag-core-name (pack$ 'simplify-dag-core- suffix))
          (simplify-dag-name (pack$ 'simplify-dag- suffix)) ; produces a DAG
          (simplify-term-name (pack$ 'simplify-term- suffix)) ; produces a DAG
-         (simplify-term-to-term-name (pack$ 'simplify-term-to-term- suffix))         ; produces a term
+         (simplify-term-to-term-name (pack$ 'simplify-term-to-term- suffix)) ; produces a term
          (simplify-terms-to-terms-name (pack$ 'simplify-terms-to-terms- suffix)) ; produces a list of terms
          (def-simplified-fn-core-name (pack$ 'def-simplified-fn-core- suffix))
          (def-simplified-fn-name (pack$ 'def-simplified-fn- suffix))
@@ -378,7 +379,7 @@
                                        rewrite-stobj count))
          (call-of-simplify-fun-call-and-add-to-dag `(,simplify-fun-call-and-add-to-dag-name
                                                      fn
-                                                     args
+                                                     dargs
                                                      trees-equal-to-tree
                                                      rewrite-stobj2 memoization hit-counts tries limits
                                                      node-replacement-array node-replacement-count refined-assumption-alist
@@ -939,19 +940,19 @@
                              (,try-to-apply-rules-name (rest stored-rules)
                                                        args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))))))))
 
-           ;; Simplifies the application of FN to the ARGS where FN is a symbol and the ARGS are simplified.
+           ;; Simplifies the application of FN to its simplified DARGS, where FN is a function symbol.
            ;; Returns (mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array).
            ;; No special handling if FN is an IF (of any type).  No evaluation of ground terms.
-           (defund ,simplify-fun-call-and-add-to-dag-name (fn ;;a function symbol
-                                                           args ;these are simplified (so these are nodenums or quoteps)
-                                                           trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to FN applied to ARGS (to be added to the memoization) ;todo: rename
+           (defund ,simplify-fun-call-and-add-to-dag-name (fn ; a function symbol
+                                                           dargs ; these are simplified (so these are nodenums or quoteps)
+                                                           trees-equal-to-tree ;a list of the successive RHSes, all of which are equivalent to FN applied to DARGS (to be added to the memoization) ;todo: rename
                                                            rewrite-stobj2 memoization hit-counts tries limits
                                                            node-replacement-array node-replacement-count refined-assumption-alist
                                                            rewrite-stobj count)
              (declare (xargs :guard (and (wf-rewrite-stobj2p rewrite-stobj2)
                                          (symbolp fn)
                                          (not (equal 'quote fn))
-                                         (bounded-darg-listp args (get-dag-len rewrite-stobj2))
+                                         (bounded-darg-listp dargs (get-dag-len rewrite-stobj2))
                                          (trees-to-memoizep trees-equal-to-tree)
                                          (maybe-bounded-memoizationp memoization (get-dag-len rewrite-stobj2))
                                          (hit-countsp hit-counts)
@@ -968,8 +969,8 @@
                       (type (unsigned-byte 60) count))
              (b* (((when (or (not (mbt (natp count))) (= 0 count)))
                    (mv :count-exceeded nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
-                  (expr (cons fn args)) ;todo: save this cons, or use below?
-                  ;;Try looking it up in the memoization (note that the args are now simplified):
+                  (expr (cons fn dargs)) ;todo: save this cons, or use below?
+                  ;;Try looking it up in the memoization (note that the dargs are now simplified):
                   (memo-match (and memoization (lookup-in-memoization expr memoization))) ; todo: use a more specialized version of lookup-in-memoization, since we know the shape of expr (also avoid the cons for expr here)?
                   ((when memo-match)
                    (let ((memoization (add-pairs-to-memoization trees-equal-to-tree
@@ -979,7 +980,7 @@
                   ;; Next, try to apply rules:
                   ((mv erp rhs-or-nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                    (,try-to-apply-rules-name (rule-db-get fn rewrite-stobj) ;; (get-rules-for-fn fn (get-rule-alist rewrite-stobj))
-                                             args
+                                             dargs
                                              rewrite-stobj2 memoization hit-counts tries limits
                                              node-replacement-array node-replacement-count refined-assumption-alist
                                              rewrite-stobj (+ -1 count)))
@@ -988,7 +989,7 @@
                    ;;A rule fired, so simplify the instantiated right-hand-side:
                    ;; This is a tail call, which allows long chains of rewrites:
                    (,simplify-tree-and-add-to-dag-name rhs-or-nil
-                                                       ;;in the common case in which simplifying the args had no effect, the car of trees-equal-to-tree will be the same as (cons fn args), so don't add it twice
+                                                       ;;in the common case in which simplifying the args had no effect, the car of trees-equal-to-tree will be the same as (cons fn dargs), so don't add it twice
                                                        (and memoization
                                                             (cons-if-not-equal-car expr ;could save this and similar conses in the function
                                                                                    trees-equal-to-tree))
@@ -997,7 +998,7 @@
                                                        rewrite-stobj (+ -1 count))
                  ;; No rule fired, so no simplification can be done.  Add the expression to the dag, but perhaps normalize nests of certain functions:
                  (b* (((mv erp nodenum-or-quotep rewrite-stobj2)
-                       (add-and-maybe-normalize-expr fn args rewrite-stobj rewrite-stobj2))
+                       (add-and-maybe-normalize-expr fn dargs rewrite-stobj rewrite-stobj2))
                       ((when erp) (mv erp nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
                       ;; See if the nodenum returned is equated to anything:
                       ;; Result is not rewritten (we could rewrite all such items (that replacements can introduce) outside the main clique)
@@ -2816,7 +2817,7 @@
               (implies (and (wf-rewrite-stobj2p rewrite-stobj2)
                             (symbolp fn)
                             (not (equal 'quote fn))
-                            (bounded-darg-listp args (get-dag-len rewrite-stobj2))
+                            (bounded-darg-listp dargs (get-dag-len rewrite-stobj2))
                             (not erp)
                             (maybe-bounded-memoizationp memoization (get-dag-len rewrite-stobj2))
                             (trees-to-memoizep trees-equal-to-tree)
@@ -3279,7 +3280,7 @@
                          (wf-rewrite-stobj2p rewrite-stobj2)
                          (symbolp fn)
                          (not (equal 'quote fn))
-                         (bounded-darg-listp args (get-dag-len rewrite-stobj2))
+                         (bounded-darg-listp dargs (get-dag-len rewrite-stobj2))
                          (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
                          (maybe-bounded-memoizationp memoization (get-dag-len rewrite-stobj2))
                          (trees-to-memoizep trees-equal-to-tree)
@@ -3851,7 +3852,7 @@
            (implies (and (wf-rewrite-stobj2p rewrite-stobj2)
                          (symbolp fn)
                          (not (equal 'quote fn))
-                         (bounded-darg-listp args (get-dag-len rewrite-stobj2))
+                         (bounded-darg-listp dargs (get-dag-len rewrite-stobj2))
                          (not (mv-nth 0 ,call-of-simplify-fun-call-and-add-to-dag))
                          (maybe-bounded-memoizationp memoization (get-dag-len rewrite-stobj2))
                          (trees-to-memoizep trees-equal-to-tree)
