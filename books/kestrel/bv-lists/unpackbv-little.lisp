@@ -1,7 +1,7 @@
 ; A little-endian version of unpackbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,4 +37,8 @@
 
 (defthm byte-listp-of-unpackbv-little
   (byte-listp (unpackbv-little num 8 bv))
+  :hints (("Goal" :in-theory (enable unpackbv-little))))
+
+(defthm all-integerp-of-unpackbv-little
+  (all-integerp (unpackbv-little num size bv))
   :hints (("Goal" :in-theory (enable unpackbv-little))))
