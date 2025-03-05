@@ -194,17 +194,20 @@
                         (c::objdesign-of-var var compst) compst)))
                (implies (and (c::valuep val)
                              (c::value-case val :sint))
-                        (equal (c::expr-value->value
-                                (c::exec-expr-pure
-                                 (c::expr-binary
-                                  (c::binop-add)
-                                  (c::expr-ident var)
-                                  (mv-nth 1 (c$::ldm-expr zero)))
-                                 compst))
-                               (c::expr-value->value
-                                (c::exec-expr-pure
-                                 (c::expr-ident var)
-                                 compst))))))
+                        (b* ((var+zero-result
+                              (c::exec-expr-pure
+                               (c::expr-binary
+                                (c::binop-add)
+                                (c::expr-ident var)
+                                (mv-nth 1 (c$::ldm-expr zero)))
+                               compst))
+                             (var-result
+                              (c::exec-expr-pure
+                               (c::expr-ident var)
+                               compst)))
+                          (and (not (c::errorp var-result))
+                               (equal (c::expr-value->value var+zero-result)
+                                      (c::expr-value->value var-result)))))))
     :enable (c::exec-expr-pure
              c::exec-binary-strict-pure
              c::eval-binary-strict-pure
@@ -465,8 +468,9 @@
               (new-result (c::exec-expr-pure new-expr compst)))
            (implies (and ,@hyps
                          (not (c::errorp old-result)))
-                    (equal (c::expr-value->value old-result)
-                           (c::expr-value->value new-result)))))
+                    (and (not (c::errorp new-result))
+                         (equal (c::expr-value->value old-result)
+                                (c::expr-value->value new-result))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
