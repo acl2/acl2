@@ -465,12 +465,14 @@
         `(b* ((old-expr (mv-nth 1 (c$::ldm-expr ',old)))
               (new-expr (mv-nth 1 (c$::ldm-expr ',new)))
               (old-result (c::exec-expr-pure old-expr compst))
-              (new-result (c::exec-expr-pure new-expr compst)))
+              (new-result (c::exec-expr-pure new-expr compst))
+              (old-value (c::expr-value->value old-result))
+              (new-value (c::expr-value->value new-result)))
            (implies (and ,@hyps
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
-                         (equal (c::expr-value->value old-result)
-                                (c::expr-value->value new-result))))))
+                         (equal old-value
+                                new-value)))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
