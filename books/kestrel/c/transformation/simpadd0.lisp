@@ -523,8 +523,7 @@
        Since @(tsee c$::ldm-expr) maps parenthesized expressions
        to the same as what the inner expressions are mapped to,
        the proof of the generated theorem is straightforward,
-       but we supply the executable counterparts of
-       @(tsee c$::expr-pure-formalp) and @(tsee c$::ldm-expr)
+       but we supply the executable counterpart of @(tsee c$::ldm-expr)
        so that they can be applied to the parenthesized expressions.")
      (xdoc::p
       "When we encounter an expression @('x + 0') that we transform into @('x'),
@@ -570,8 +569,7 @@
                   gout-inner.thm-name)
              (b* ((hints
                    `(("Goal"
-                      :in-theory '((:e c$::expr-pure-formalp)
-                                   (:e c$::ldm-expr))
+                      :in-theory '((:e c$::ldm-expr))
                       :use ,gout-inner.thm-name)))
                   ((mv thm-event thm-name thm-index)
                    (simpadd0-gen-expr-pure-thm expr
@@ -783,7 +781,6 @@
                                    (:e c$::expr-zerop)
                                    (:e c$::iconst)
                                    (:e c$::ident)
-                                   (:e c$::expr-pure-formalp)
                                    (:e c$::ldm-expr)
                                    (:e c$::ldm-ident))
                       :use (:instance simpadd0-supporting-lemma
