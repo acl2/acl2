@@ -411,6 +411,12 @@
 
      (:@append :fields
       (:@ :fix
+       (:@ :arrayp
+        (defthm <recognizer>-implies-pred-nth
+          (implies (and (<recognizer> x)
+                        (< (nfix i) (len x)))
+                   (<pred> (nth i x)))
+          :hints(("Goal" :in-theory (enable <recognizer> nth)))))
        (define <access> ((:@ :arrayp (i natp)) <stobjname>)
          (:@ :arrayp :guard (< i (<stobjname>-><field>-length <stobjname>)))
          :inline t
