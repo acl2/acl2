@@ -92,4 +92,5 @@
                     atc
                     c$::syntax-for-tools
                     c2c::transformation-tools
-                    pack))
+                    pack
+                    insertion-sort))
