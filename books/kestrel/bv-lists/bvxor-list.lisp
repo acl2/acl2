@@ -79,3 +79,13 @@
            (equal (nthcdr n (bvxor-list size x y))
                   (bvxor-list size (nthcdr n x) (nthcdr n y))))
   :hints (("Goal" :in-theory (enable nthcdr bvxor-list))))
+
+(defthm bvxor-list-of-true-list-fix-arg2
+  (equal (bvxor-list size (true-list-fix x) y)
+         (bvxor-list size x y))
+  :hints (("Goal" :in-theory (enable bvxor-list))))
+
+(defthm bvxor-list-of-true-list-fix-arg3
+  (equal (bvxor-list size x (true-list-fix y))
+         (bvxor-list size x y))
+  :hints (("Goal" :in-theory (enable bvxor-list))))
