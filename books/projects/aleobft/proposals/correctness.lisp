@@ -21,6 +21,14 @@
 (include-book "proposed-endorser-other")
 (include-book "proposal-in-author")
 (include-book "endorsement-in-author")
+(include-book "endorsement-in-endorser")
+(include-book "endorsed-in-author")
+(include-book "certificate-in-author")
+(include-book "proposed-round1-no-previous")
+(include-book "endorsed-round1-no-previous")
+(include-book "proposed-previous-closed")
+(include-book "endorsed-previous-closed")
+(include-book "dag-previous-closed")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,6 +52,14 @@
                     certificate-to-other
                     proposed-endorser-other
                     proposal-in-author
-                    endorsement-in-author))
+                    endorsement-in-author
+                    endorsement-in-endorser
+                    endorsed-in-author
+                    certificate-in-author
+                    proposed-round1-no-previous
+                    endorsed-round1-no-previous
+                    proposed-previous-closed
+                    endorsed-previous-closed
+                    dag-previous-closed))
 
 ; TODO: continue

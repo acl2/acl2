@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-PROPOSALS")
 
 (include-book "system-states")
+(include-book "committees")
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 
@@ -31,7 +32,9 @@
     "Here we define the system state changes caused by @('augment') events.")
    (xdoc::p
     "When a correct validator receives an endorsement from another validator,
-     it records the endorsement, associated with the pending proposal.")
+     it records the endorsement, associated with the pending proposal.
+     The endorsement must come from a validator
+     in the active committee for the proposal's round.")
    (xdoc::p
     "This kind of events only makes sense for correct validators.
      Faulty validators do not have an explicit internal state in our model,
@@ -64,14 +67,29 @@
      (which is thus isomorphic to the event).")
    (xdoc::p
     "The validator must have that proposal pending,
-     in its finite map from proposals to endorsing addresses."))
+     in its finite map from proposals to endorsing addresses.")
+   (xdoc::p
+    "The validator must be able to calculate
+     the active committee for the proposal's round,
+     so it can check that the endorsement comes from a member of the committee.
+     As explained in @(see transitions-propose),
+     although a correct validator only sends proposals to committee members,
+     our model allows it to send proposals
+     also to faulty validators outside the committee,
+     in order to model the possibility that a faulty validator in the committee
+     shares the proposal with a faulty validator outside the committee,
+     and that the latter validator, for whichever reason,
+     endorses it, sending the endorsement to the proposer."))
   (b* (((proposal prop) prop)
        ((unless (set::in prop.author (correct-addresses systate))) nil)
        (msg (make-message-endorsement :proposal prop :endorser endor))
        ((unless (set::in msg (get-network-state systate))) nil)
        ((validator-state vstate) (get-validator-state prop.author systate))
        (prop+endors (omap::assoc (proposal-fix prop) vstate.proposed))
-       ((unless prop+endors) nil))
+       ((unless prop+endors) nil)
+       (commtt (active-committee-at-round prop.round vstate.blockchain))
+       ((unless commtt) nil)
+       ((unless (set::in (address-fix endor) (committee-members commtt))) nil))
     t)
   :hooks (:fix))
 

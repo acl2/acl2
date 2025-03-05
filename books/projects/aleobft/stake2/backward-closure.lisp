@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -11,8 +11,7 @@
 
 (in-package "ALEOBFT-STAKE2")
 
-(include-book "initialization")
-(include-book "transitions")
+(include-book "reachability")
 (include-book "dags")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -172,21 +171,32 @@
              (backward-closed-p (event-next event systate)))
     :enable (event-possiblep event-next)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled backward-closed-p-of-events-next
+  :short "Preservation of the invariant by multiple transitions."
+  (implies (and (events-possiblep events systate)
+                (backward-closed-p systate))
+           (backward-closed-p (events-next events systate)))
+  :induct t
+  :enable (events-possiblep
+           events-next))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection backward-closed-p-always
-  :short "The invariant holds in every state
-          reachable from an initial state via a sequence of events."
-
-  (defruled backward-closed-p-of-events-next
-    (implies (and (backward-closed-p systate)
-                  (events-possiblep events systate))
-             (backward-closed-p (events-next events systate)))
-    :induct t
-    :enable (events-possiblep
-             events-next))
-
-  (defruled backward-closed-p-when-reachable
-    (implies (and (system-initp systate)
-                  (events-possiblep events systate))
-             (backward-closed-p (events-next events systate)))))
+(defruled backward-closed-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  (implies (system-state-reachablep systate)
+           (backward-closed-p systate))
+  :enable (system-state-reachablep
+           backward-closed-p-when-init)
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (system-state-reachable-from-p systate from)
+                   (backward-closed-p from))
+              (backward-closed-p systate))
+     :use (:instance
+           backward-closed-p-of-events-next
+           (events (system-state-reachable-from-p-witness systate from))
+           (systate from))
+     :enable system-state-reachable-from-p)))
