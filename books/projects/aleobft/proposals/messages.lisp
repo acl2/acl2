@@ -52,7 +52,13 @@
      it broadcasts it to other validators,
      one message per validator,
      with the same proposal but different destination (i.e. receiver).
-     In a proposal message, the sender is the author of the proposal.")
+     In a proposal message, the sender is the author of the proposal.
+     The latter assertion does not quite apply to
+     the extra proposal messages to faulty validators not in the committee
+     discussed in @(see transitions-propose):
+     these extra messages are just a device to provide faulty validators
+     with the ability to endorse proposals from the correct validators
+     even when the faulty validators are not in the committee.")
    (xdoc::p
     "An endorsement message consists of a proposal and an endorser address.
      When a validator receives a valid proposal from another validator,

@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -15,6 +15,7 @@
 (include-book "events")
 (include-book "initialization")
 (include-book "transitions")
+(include-book "reachability")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,4 +36,5 @@
   :order-subtopics (states
                     events
                     initialization
-                    transitions))
+                    transitions
+                    reachability))
