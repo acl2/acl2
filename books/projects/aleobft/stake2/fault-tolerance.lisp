@@ -12,8 +12,12 @@
 (in-package "ALEOBFT-STAKE2")
 
 (include-book "transitions")
+(include-book "last-blockchain-round")
+(include-book "ordered-even-blocks")
 
 (local (include-book "../library-extensions/oset-theorems"))
+
+(local (include-book "arithmetic-3/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -174,7 +178,13 @@
      Or, equivalently,
      when the total stake of the correct members in the committee
      is at least the quorum stake of the committee;
-     we prove this equivalent definition as a theorem."))
+     we prove this equivalent definition as a theorem.")
+   (xdoc::p
+    "The fault tolerance of a committee does not change
+     as the system transitions from one state to the next,
+     because the dependency on the system state is only on
+     the addresses of correct vs. faulty validators,
+     which do not change as the system evolves."))
   (<= (committee-members-stake (committee-faulty-members commtt systate)
                                commtt)
       (committee-max-faulty-stake commtt))
@@ -193,7 +203,36 @@
              committee-quorum-stake
              committee-total-stake
              committee-members-stake-of-difference
-             committee-members-stake-of-union)))
+             committee-members-stake-of-union))
+
+  (defret committee-fault-tolerant-p-of-create-next
+    (equal (committee-fault-tolerant-p commtt new-systate)
+           (committee-fault-tolerant-p commtt systate))
+    :fn create-next)
+
+  (defret committee-fault-tolerant-p-of-accept-next
+    (equal (committee-fault-tolerant-p commtt new-systate)
+           (committee-fault-tolerant-p commtt systate))
+    :hyp (accept-possiblep msg systate)
+    :fn accept-next)
+
+  (defret committee-fault-tolerant-p-of-advance-next
+    (equal (committee-fault-tolerant-p commtt new-systate)
+           (committee-fault-tolerant-p commtt systate))
+    :hyp (advance-possiblep val systate)
+    :fn advance-next)
+
+  (defret committee-fault-tolerant-p-of-commit-next
+    (equal (committee-fault-tolerant-p commtt new-systate)
+           (committee-fault-tolerant-p commtt systate))
+    :hyp (commit-possiblep val systate)
+    :fn commit-next)
+
+  (defret committee-fault-tolerant-p-of-event-next
+    (equal (committee-faulty-members commtt new-systate)
+           (committee-faulty-members commtt systate))
+    :hyp (event-possiblep event systate)
+    :fn event-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,7 +249,34 @@
      This predicate checks whether a validator (represented by its state)
      calculates committees that are fault tolerant,
      for all the rounds for which it can calculate a committee,
-     given the validator's current blockchain."))
+     given the validator's current blockchain.")
+   (xdoc::p
+    "For each state transition,
+     if this predicate holds on a validator's state after the transition,
+     then it also holds on the validator's state before the transition.
+     This is because the committees that
+     a validator can calculate before the transition
+     are a subset of the ones that
+     the validator can calculate after the transition.
+     They are in fact the same for all transitions except @('commit'),
+     because the other transitions do not change any blockchains.
+     For a @('commit') transition,
+     only the blockchain of the target validator changes,
+     but in a way that does not affect
+     the calculation of committees at earlier rounds.
+     The key rule for this is
+     @('active-committee-at-round-of-extend-blockchain-no-change'),
+     along with other rules to relieve hypotheses,
+     as done in other proofs that involve similar reasoning.
+     But we need to assume two already proved invariants.")
+   (xdoc::p
+    "First we prove four lemmas involving
+     just the @('systate') argument of the predicate,
+     which follow directly from
+     the preservation of @(tsee committee-fault-tolerant-p)
+     proved earlier.
+     The lemmas are then used to prove four theorems
+     involving both arguments of the predicate."))
   (forall (round)
           (implies (posp round)
                    (b* ((commtt (active-committee-at-round
@@ -218,9 +284,176 @@
                                  (validator-state->blockchain vstate))))
                      (implies commtt
                               (committee-fault-tolerant-p commtt systate)))))
+
   ///
+
   (fty::deffixequiv-sk validator-committees-fault-tolerant-p
-    :args ((vstate validator-statep) (systate system-statep))))
+    :args ((vstate validator-statep) (systate system-statep)))
+
+  (defret validator-committees-fault-tolerant-p-of-create-next-lemma
+    (implies (validator-committees-fault-tolerant-p vstate new-systate)
+             (validator-committees-fault-tolerant-p vstate systate))
+    :fn create-next
+    :hints (("Goal"
+             :use (:instance validator-committees-fault-tolerant-p-necc
+                             (round
+                              (validator-committees-fault-tolerant-p-witness
+                               vstate systate))
+                             (systate (create-next cert systate))))))
+
+  (defret validator-committees-fault-tolerant-p-of-accept-next-lemma
+    (implies (validator-committees-fault-tolerant-p vstate new-systate)
+             (validator-committees-fault-tolerant-p vstate systate))
+    :hyp (accept-possiblep msg systate)
+    :fn accept-next
+    :hints (("Goal"
+             :use (:instance validator-committees-fault-tolerant-p-necc
+                             (round
+                              (validator-committees-fault-tolerant-p-witness
+                               vstate systate))
+                             (systate (accept-next msg systate))))))
+
+  (defret validator-committees-fault-tolerant-p-of-advance-next-lemma
+    (implies (validator-committees-fault-tolerant-p vstate new-systate)
+             (validator-committees-fault-tolerant-p vstate systate))
+    :hyp (advance-possiblep val systate)
+    :fn advance-next
+    :hints (("Goal"
+             :use (:instance validator-committees-fault-tolerant-p-necc
+                             (round
+                              (validator-committees-fault-tolerant-p-witness
+                               vstate systate))
+                             (systate (advance-next val systate))))))
+
+  (defret validator-committees-fault-tolerant-p-of-commit-next-lemma
+    (implies (validator-committees-fault-tolerant-p vstate new-systate)
+             (validator-committees-fault-tolerant-p vstate systate))
+    :hyp (commit-possiblep val systate)
+    :fn commit-next
+    :hints (("Goal"
+             :use (:instance validator-committees-fault-tolerant-p-necc
+                             (round
+                              (validator-committees-fault-tolerant-p-witness
+                               vstate systate))
+                             (systate (commit-next val systate))))))
+
+  (in-theory
+   (disable validator-committees-fault-tolerant-p-of-create-next-lemma
+            validator-committees-fault-tolerant-p-of-accept-next-lemma
+            validator-committees-fault-tolerant-p-of-advance-next-lemma
+            validator-committees-fault-tolerant-p-of-commit-next-lemma))
+
+  (defret validator-committees-fault-tolerant-p-of-create-next
+    (implies (validator-committees-fault-tolerant-p
+              (get-validator-state val new-systate) new-systate)
+             (validator-committees-fault-tolerant-p
+              (get-validator-state val systate) systate))
+    :fn create-next
+    :hints (("Goal"
+             :in-theory
+             (enable
+              validator-committees-fault-tolerant-p-of-create-next-lemma)
+             :use (:instance validator-committees-fault-tolerant-p-necc
+                             (round
+                              (validator-committees-fault-tolerant-p-witness
+                               (get-validator-state val systate)
+                               systate))
+                             (vstate (get-validator-state
+                                      val (create-next cert systate)))))))
+
+  (defret validator-committees-fault-tolerant-p-of-accept-next
+    (implies (validator-committees-fault-tolerant-p
+              (get-validator-state val new-systate) new-systate)
+             (validator-committees-fault-tolerant-p
+              (get-validator-state val systate) systate))
+    :hyp (accept-possiblep msg systate)
+    :fn accept-next
+    :hints (("Goal"
+             :in-theory
+             (enable
+              validator-committees-fault-tolerant-p-of-accept-next-lemma)
+             :use (:instance validator-committees-fault-tolerant-p-necc
+                             (round
+                              (validator-committees-fault-tolerant-p-witness
+                               (get-validator-state val systate)
+                               systate))
+                             (vstate (get-validator-state
+                                      val (accept-next msg systate)))))))
+
+  (defret validator-committees-fault-tolerant-p-of-advance-next
+    (implies (validator-committees-fault-tolerant-p
+              (get-validator-state val1 new-systate) new-systate)
+             (validator-committees-fault-tolerant-p
+              (get-validator-state val1 systate) systate))
+    :hyp (advance-possiblep val systate)
+    :fn advance-next
+    :hints (("Goal"
+             :in-theory
+             (enable
+              validator-committees-fault-tolerant-p-of-advance-next-lemma)
+             :use (:instance validator-committees-fault-tolerant-p-necc
+                             (round
+                              (validator-committees-fault-tolerant-p-witness
+                               (get-validator-state val1 systate)
+                               systate))
+                             (vstate (get-validator-state
+                                      val1 (advance-next val systate)))))))
+
+  (defret validator-committees-fault-tolerant-p-of-commit-next
+    (implies (validator-committees-fault-tolerant-p
+              (get-validator-state val1 new-systate) new-systate)
+             (validator-committees-fault-tolerant-p
+              (get-validator-state val1 systate) systate))
+    :hyp (and (commit-possiblep val systate)
+              (set::in val1 (correct-addresses systate))
+              (last-blockchain-round-p systate)
+              (ordered-even-p systate))
+    :fn commit-next
+    :hints
+    (("Goal"
+      :expand (validator-committees-fault-tolerant-p
+               (get-validator-state val1 systate) systate)
+      :in-theory
+      (e/d (commit-possiblep
+            validator-state->blockchain-of-commit-next
+            active-committee-at-round-of-extend-blockchain-no-change
+            ordered-even-p-necc-fixing
+            blocks-ordered-even-p-of-extend-blockchain
+            certificates-ordered-even-p-of-collect-anchors
+            last-blockchain-round-p-necc-fixing
+            collect-anchors-above-last-committed-round
+            posp
+            evenp)
+           (validator-committees-fault-tolerant-p))
+      :use ((:instance validator-committees-fault-tolerant-p-necc
+                       (round (validator-committees-fault-tolerant-p-witness
+                               (get-validator-state val1 systate)
+                               systate))
+                       (vstate (get-validator-state
+                                val1 (commit-next val systate))))
+            (:instance
+             validator-committees-fault-tolerant-p-of-commit-next-lemma
+             (vstate (get-validator-state val1 (commit-next val systate))))))))
+
+  (defret validator-committees-fault-tolerant-p-of-event-next
+    (implies (validator-committees-fault-tolerant-p
+              (get-validator-state val new-systate) new-systate)
+             (validator-committees-fault-tolerant-p
+              (get-validator-state val systate) systate))
+    :hyp (and (event-possiblep event systate)
+              (set::in val (correct-addresses systate))
+              (last-blockchain-round-p systate)
+              (ordered-even-p systate))
+    :fn event-next
+    :hints (("Goal" :in-theory (e/d (event-possiblep
+                                     event-next)
+                                    (validator-committees-fault-tolerant-p)))))
+
+  (in-theory (disable validator-committees-fault-tolerant-p-of-create-next
+                      validator-committees-fault-tolerant-p-of-accept-next
+                      validator-committees-fault-tolerant-p-of-advance-next
+                      validator-committees-fault-tolerant-p-of-commit-next
+                      validator-committees-fault-tolerant-p-of-event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -238,15 +471,108 @@
      it is not just an invariant property of the system
      given that it holds in the initial state,
      as would be the case with static committees
-     in AleoBFT and other systems."))
+     in AleoBFT and other systems.")
+   (xdoc::p
+    "We show that if this predicate holds after a state transition,
+     it also holds before the state transition.
+     We use the similar theorems proved for
+     @(tsee validator-committees-fault-tolerant-p),
+     to prove these theorems.
+     We also extend it to sequences of events.
+     These properties are conditional on two already proved invariants."))
   (forall (val)
           (implies (set::in val (correct-addresses systate))
                    (validator-committees-fault-tolerant-p
                     (get-validator-state val systate)
                     systate)))
+
   ///
+
   (fty::deffixequiv-sk system-committees-fault-tolerant-p
-    :args ((systate system-statep))))
+    :args ((systate system-statep)))
+
+  (defret system-committees-fault-tolerant-p-of-create-next
+    (implies (system-committees-fault-tolerant-p new-systate)
+             (system-committees-fault-tolerant-p systate))
+    :hyp (create-possiblep cert systate)
+    :fn create-next
+    :hints
+    (("Goal"
+      :in-theory (enable system-committees-fault-tolerant-p
+                         system-committees-fault-tolerant-p-necc)
+      :use (:instance validator-committees-fault-tolerant-p-of-create-next
+                      (val (system-committees-fault-tolerant-p-witness
+                            systate))))))
+
+  (defret system-committees-fault-tolerant-p-of-accept-next
+    (implies (system-committees-fault-tolerant-p new-systate)
+             (system-committees-fault-tolerant-p systate))
+    :hyp (accept-possiblep msg systate)
+    :fn accept-next
+    :hints
+    (("Goal"
+      :in-theory (enable system-committees-fault-tolerant-p
+                         system-committees-fault-tolerant-p-necc)
+      :use (:instance validator-committees-fault-tolerant-p-of-accept-next
+                      (val (system-committees-fault-tolerant-p-witness
+                            systate))))))
+
+  (defret system-committees-fault-tolerant-p-of-advance-next
+    (implies (system-committees-fault-tolerant-p new-systate)
+             (system-committees-fault-tolerant-p systate))
+    :hyp (advance-possiblep val systate)
+    :fn advance-next
+    :hints
+    (("Goal"
+      :expand (system-committees-fault-tolerant-p systate)
+      :in-theory (enable system-committees-fault-tolerant-p-necc)
+      :use (:instance validator-committees-fault-tolerant-p-of-advance-next
+                      (val1 (system-committees-fault-tolerant-p-witness
+                             systate))))))
+
+  (defret system-committees-fault-tolerant-p-of-commit-next
+    (implies (system-committees-fault-tolerant-p new-systate)
+             (system-committees-fault-tolerant-p systate))
+    :hyp (and (commit-possiblep val systate)
+              (last-blockchain-round-p systate)
+              (ordered-even-p systate))
+    :fn commit-next
+    :hints
+    (("Goal"
+      :expand (system-committees-fault-tolerant-p systate)
+      :in-theory (enable system-committees-fault-tolerant-p-necc)
+      :use (:instance validator-committees-fault-tolerant-p-of-commit-next
+                      (val1 (system-committees-fault-tolerant-p-witness
+                             systate))))))
+
+  (defret system-committees-fault-tolerant-p-of-event-next
+    (implies (system-committees-fault-tolerant-p new-systate)
+             (system-committees-fault-tolerant-p systate))
+    :hyp (and (event-possiblep event systate)
+              (last-blockchain-round-p systate)
+              (ordered-even-p systate))
+    :fn event-next
+    :hints (("Goal" :in-theory (e/d (event-possiblep
+                                     event-next)
+                                    (system-committees-fault-tolerant-p)))))
+
+  (in-theory (disable system-committees-fault-tolerant-p-of-create-next
+                      system-committees-fault-tolerant-p-of-accept-next
+                      system-committees-fault-tolerant-p-of-advance-next
+                      system-committees-fault-tolerant-p-of-commit-next
+                      system-committees-fault-tolerant-p-of-event-next))
+
+  (defruled system-committees-fault-tolerant-p-of-events-next
+    (implies (and (last-blockchain-round-p systate)
+                  (ordered-even-p systate)
+                  (events-possiblep events systate))
+             (b* ((new-systate (events-next events systate)))
+               (implies (system-committees-fault-tolerant-p new-systate)
+                        (system-committees-fault-tolerant-p systate))))
+    :induct t
+    :enable (events-possiblep
+             events-next
+             system-committees-fault-tolerant-p-of-event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,14 +601,35 @@
      If there are no events, there is no other requirement.
      Otherwise, we execute the event
      and we recursively call this predicate with the resulting state:
-     this covers all the states in the execution."))
+     this covers all the states in the execution.")
+   (xdoc::p
+    "We show that this predicate holds if
+     the final state is fault-tolerant
+     and the initial state satisfies two invariants
+     about blockchain rounds."))
   (b* (((unless (system-committees-fault-tolerant-p systate)) nil)
        ((when (endp events)) t))
     (all-system-committees-fault-tolerant-p (event-next (car events) systate)
                                             (cdr events)))
   :measure (acl2-count events)
   :guard-hints (("Goal" :in-theory (enable events-possiblep)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled all-system-committees-fault-tolerant-p-when-final
+    (implies (and (last-blockchain-round-p systate)
+                  (ordered-even-p systate)
+                  (events-possiblep events systate))
+             (b* ((new-systate (events-next events systate)))
+               (implies (system-committees-fault-tolerant-p new-systate)
+                        (all-system-committees-fault-tolerant-p systate
+                                                                events))))
+    :induct t
+    :enable (all-system-committees-fault-tolerant-p
+             events-possiblep
+             events-next)
+    :hints ('(:use system-committees-fault-tolerant-p-of-events-next))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

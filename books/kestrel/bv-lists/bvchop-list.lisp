@@ -250,8 +250,10 @@
   :hints (("Goal" :in-theory (enable bvchop-list all-unsigned-byte-p))))
 
 (defthm unsigned-byte-listp-of-bvchop-list
-  (implies (natp size)
-           (unsigned-byte-listp size (bvchop-list size lst)))
+  (implies (and (<= size2 size1)
+                (integerp size1)
+                (natp size2))
+           (unsigned-byte-listp size1 (bvchop-list size2 lst)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp-rewrite))))
 
 (defthm bvchop-list-of-update-nth
