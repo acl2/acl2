@@ -1180,7 +1180,7 @@
          (remove-rules "Rules to turn off.")
          (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
          (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
-         (step-limit "Limit on the total number of model steps (instruction executions) to allow.")
+         (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
          (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
