@@ -415,7 +415,7 @@
          ((when nothing-changedp)
           (cw "Note: Stopping the run because nothing changed.~%")
           (mv (erp-nil) dag state)) ; todo: return an error?
-         (run-completedp (not (member-eq 'run-until-stack-shorter-than dag-fns))) ;; stop if the run is done
+         (run-completedp (not (intersection-eq '(run-until-stack-shorter-than run-until-stack-shorter-than-or-reach-pc) dag-fns))) ;; stop if the run is done
          (- (and run-completedp (cw "(The run has completed.)~%")))
          )
       (if run-completedp
@@ -563,6 +563,7 @@
                              remove-assumption-rules
                              step-limit
                              step-increment
+                             stop-pcs
                              memoizep
                              monitor
                              normalize-xors
@@ -590,6 +591,7 @@
                               (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (acl2::step-incrementp step-increment)
+                              (nat-listp stop-pcs)
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
@@ -629,6 +631,7 @@
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil nil state))
        (- (if position-independentp (cw "Using position-independent lifting.~%") (cw "Using non-position-independent lifting.~%")))
+       (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
                                         ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
                                         (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
@@ -807,7 +810,12 @@
                                                                 )))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
-       (term-to-simulate '(run-until-return x86))
+       (- (and stop-pcs
+               position-independentp
+               (er hard? 'unroll-x86-code-core ":stop-pcs are not supported with position-independentp.")))
+       (term-to-simulate (if stop-pcs
+                             `(run-until-return-or-reach-pc ',stop-pcs x86)
+                           '(run-until-return x86)))
        (term-to-simulate (wrap-in-output-extractor output term-to-simulate)) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the unrolling to ~x0 steps.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
@@ -818,6 +826,9 @@
         (mv :unexpected-quotep nil nil nil nil nil state))
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
+       (lifter-rules (if stop-pcs
+                         (append (symbolic-execution-rules-with-stop-pcs) lifter-rules)
+                       lifter-rules))
        ;; Add any extra-rules:
        (- (let ((intersection (intersection-eq extra-rules lifter-rules))) ; todo: optimize (sort and then compare, and also use sorted lists below...)
             (and intersection
@@ -873,6 +884,7 @@
                         remove-assumption-rules
                         step-limit
                         step-increment
+                        stop-pcs
                         memoizep
                         monitor
                         normalize-xors
@@ -907,6 +919,7 @@
                               (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (acl2::step-incrementp step-increment)
+                              (nat-listp stop-pcs)
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
@@ -943,7 +956,7 @@
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules remove-assumption-rules
-          step-limit step-increment memoizep monitor normalize-xors count-hits print print-base untranslatep state))
+          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -975,7 +988,8 @@
        ;; (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
        ;;            (set-print-base-radix print-base state)
        ;;          state)) ; todo: do this better
-       ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return)))
+       ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return
+                                                run-until-stack-shorter-than-or-reach-pc run-until-return-or-reach-pc)))
         (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
                     (cw "~X01" (let ((term (dag-to-term result-dag)))
@@ -1045,6 +1059,10 @@
                                t)))
        (defthms ; either nil or a singleton list
          (and produce-theorem
+              (if stop-pcs
+                  (prog2$ (cw "Suppressing theorem because :stop-pcs were given.~%")
+                          nil)
+                t)
               (let* ((defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
                                 (implies (and ,@assumptions)
                                          (equal (run-until-return x86)
@@ -1093,6 +1111,7 @@
                                   (remove-assumption-rules 'nil)
                                   (step-limit '1000000)
                                   (step-increment '100)
+                                  (stop-pcs 'nil)
                                   (memoizep 't)
                                   (monitor 'nil)
                                   (normalize-xors 'nil)
@@ -1126,6 +1145,7 @@
       ,remove-assumption-rules ; gets evaluated since not quoted
       ',step-limit
       ',step-increment
+      ,stop-pcs
       ',memoizep
       ,monitor ; gets evaluated since not quoted
       ',normalize-xors
@@ -1162,6 +1182,7 @@
          (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
          (step-limit "Limit on the total number of model steps (instruction executions) to allow.")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
+         (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
          (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
          (normalize-xors "Whether to normalize BITXOR and BVXOR nodes when rewriting (t, nil, or :compact).")

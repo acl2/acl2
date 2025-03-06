@@ -1649,6 +1649,16 @@
     run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
     ))
 
+;; Extra rules to support the :stop-pcs option:
+(defund symbolic-execution-rules-with-stop-pcs ()
+  (declare (xargs :guard t))
+  '(run-until-return-or-reach-pc ; we always open this, to expose run-until-stack-shorter-than
+    run-until-stack-shorter-than-or-reach-pc-opener-axe ; not for IFs
+    run-until-stack-shorter-than-or-reach-pc-base-axe ; not for IFs
+    ;; stack-shorter-thanp
+    run-until-stack-shorter-than-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    ))
+
 (defun separate-rules ()
   (declare (xargs :guard t))
   '(x86isa::separate-normalize-r-w-x-1
