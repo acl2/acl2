@@ -88,6 +88,13 @@
            (all-unsigned-byte-p size (bv-array-write element-size len key val lst)))
   :hints (("Goal" :in-theory (enable bv-array-write))))
 
+(defthm unsigned-byte-listp-of-bv-array-write
+  (implies (and (<= size2 size1)
+                (integerp size1)
+                (natp size2))
+           (unsigned-byte-listp size1 (bv-array-write size2 len index val data)))
+  :hints (("Goal" :in-theory (enable bv-array-write))))
+
 (defthm bv-array-write-iff
   (iff (bv-array-write element-size len index val data)
        (posp len))
