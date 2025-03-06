@@ -434,6 +434,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod uinteger-format
+  :short "Fixtype of formats of unsigned integer objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for unsigned integer objects
+     other than those of type @('unsigned char'),
+     which are covered by @(tsee uchar-format).
+     See [C17:6.2.6.2./1].")
+   (xdoc::p
+    "The format definition includes a list of bit roles,
+     which should be thought as the juxtaposition of
+     the bytes that form the unsigned integer object,
+     in little endian order, i.e. from lower to higher address.
+     The length of the list of bit roles
+     must be a mulitple of @('CHAR_BIT'),
+     which we capture in @(tsee uchar-format):
+     we express this constraint elsewhere,
+     because we do not have that value available here.
+     The list of bit roles must be well-formed.")
+   (xdoc::p
+    "We also include a placeholder component meant to define
+     which bit values are trap representations [C17:6.2.6.2/5].
+     We plan to flesh this out in the future."))
+  ((bits uinteger-bit-role-listp
+         :reqfix (if (uinteger-bit-roles-wfp bits)
+                     bits
+                   (list (uinteger-bit-role-value 0))))
+   traps)
+  :require (uinteger-bit-roles-wfp bits)
+  :pred uinteger-formatp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
@@ -443,9 +477,9 @@
      but we plan to add more components.
      In particular, we plan to add components for
      the formats of other integer types,
-     which will make use of
-     @(tsee uinteger-bit-role-list) and @(tsee sinteger-bit-role-list),
-     with appropriate well-formedness constraints."))
+     which will make use of @(tsee uinteger-format)
+     and of a similar fixtype for signed integer formats,
+     which we still have to formalize."))
   ((uchar-format uchar-format)
    (schar-format schar-format)
    (char-format char-format))
