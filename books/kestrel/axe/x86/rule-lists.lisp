@@ -185,7 +185,7 @@
             x86isa::ror-spec-8
             x86isa::ror-spec-16
             x86isa::ror-spec-32
-            x86isa::ror-spec-64
+            ror-spec-64-alt-def ; x86isa::ror-spec-64
 
             x86isa::x86-operand-to-xmm/mem
 

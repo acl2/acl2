@@ -1,6 +1,6 @@
 ; Some changes to the open-source x86 model
 ;
-; Copyright (C) 2022-2024 Kestrel Technology, LLC
+; Copyright (C) 2022-2025 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "X86ISA")
+
+;; See also alt-defs.lisp
 
 (include-book "rflags-spec-sub")
 (include-book "projects/x86isa/machine/instructions/sub-spec" :dir :system)

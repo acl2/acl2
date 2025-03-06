@@ -40,6 +40,7 @@
 (include-book "read-bytes-and-write-bytes")
 (include-book "bytes-loadedp")
 (include-book "support2")
+(include-book "alt-defs")
 
 (include-book "assumptions")
 (include-book "assumptions32")
