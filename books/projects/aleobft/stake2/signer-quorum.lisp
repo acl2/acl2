@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -347,25 +347,38 @@
     :enable (event-possiblep
              event-next)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled signer-quorum-p-of-events-next
+  :short "Preservation of the invariant by multiple transitions."
+  (implies (and (events-possiblep events systate)
+                (last-blockchain-round-p systate)
+                (ordered-even-p systate)
+                (signer-quorum-p systate))
+           (signer-quorum-p (events-next events systate)))
+  :induct t
+  :enable (events-possiblep
+           events-next))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection signer-quorum-p-always
-  :short "The invariant holds in every state
-          reachable from an initial state via a sequence of events."
-
-  (defruled signer-quorum-p-of-events-next
-    (implies (and (signer-quorum-p systate)
-                  (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
-                  (events-possiblep events systate))
-             (and (signer-quorum-p (events-next events systate))
-                  (last-blockchain-round-p (events-next events systate))
-                  (ordered-even-p (events-next events systate))))
-    :induct t
-    :enable (events-possiblep
-             events-next))
-
-  (defruled signer-quorum-p-when-reachable
-    (implies (and (system-initp systate)
-                  (events-possiblep events systate))
-             (signer-quorum-p (events-next events systate)))))
+(defruled signer-quorum-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  (implies (system-state-reachablep systate)
+           (signer-quorum-p systate))
+  :enable (system-state-reachablep
+           signer-quorum-p-when-init
+           ordered-even-p-when-init
+           last-blockchain-round-p-when-init)
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (system-state-reachable-from-p systate from)
+                   (last-blockchain-round-p from)
+                   (ordered-even-p from)
+                   (signer-quorum-p from))
+              (signer-quorum-p systate))
+     :use (:instance
+           signer-quorum-p-of-events-next
+           (events (system-state-reachable-from-p-witness systate from))
+           (systate from))
+     :enable system-state-reachable-from-p)))
