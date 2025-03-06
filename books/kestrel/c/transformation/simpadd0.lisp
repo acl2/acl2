@@ -487,6 +487,91 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-expr-ident ((ident identp)
+                             (info acl2::any-p)
+                             (gin simpadd0-ginp))
+  :returns (mv (new-ident identp)
+               (new-info acl2::any-p)
+               (gout simpadd0-goutp))
+  :short "Transform an identifier expression (i.e. a variable)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This undergoes no actual transformation,
+     but we introduce it for uniformity,
+     also because we may eventually evolve the @(tsee simpadd0) implementation
+     into a much more general transformation.
+     Thus, the output identifier and validation information
+     are always the same as the inputs one.
+     However, if the variable has type @('int'),
+     which we check in the validation information,
+     then we generate a theorem saying that the expression,
+     when executed, yields a value of type @('int')."))
+  (b* ((ident (ident-fix ident))
+       ((simpadd0-gin gin) gin)
+       ((c$::var-info info) (c$::coerce-var-info info))
+       ((unless (c$::type-case info.type :sint))
+        (mv ident
+            info
+            (make-simpadd0-gout :events nil
+                                :thm-name nil
+                                :thm-index gin.thm-index
+                                :names-to-avoid gin.names-to-avoid
+                                :vars nil
+                                :diffp nil)))
+       (vars (set::insert ident nil))
+       (hyps (simpadd0-gen-var-hyps vars))
+       (thm-name
+        (packn-pos (list gin.const-new '-thm- gin.thm-index) gin.const-new))
+       (thm-index (1+ gin.thm-index))
+       (thm-formula
+        `(b* ((expr (mv-nth 1 (c$::ldm-expr ',(c$::expr-ident ident info))))
+              (expr-result (c::exec-expr-pure expr compst))
+              (expr-value (c::expr-value->value expr-result)))
+           (implies ,@hyps
+                    (equal (c::value-kind expr-value) :sint))))
+       (thm-hints `(("Goal"
+                     :in-theory '((:e c$::expr-ident)
+                                  (:e c$::expr-pure-formalp)
+                                  (:e c$::ident))
+                     :use (:instance simpadd0-expr-ident-support-lemma
+                                     (ident ',ident)
+                                     (info ',info)))))
+       (thm-event `(defthmd ,thm-name
+                     ,thm-formula
+                     :hints ,thm-hints)))
+    (mv ident
+        info
+        (make-simpadd0-gout :events (list thm-event)
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (list thm-name)
+                            :vars vars
+                            :diffp nil)))
+  :prepwork ((local (in-theory (enable identity))))
+  :hooks (:fix)
+
+  ///
+
+  (defruled simpadd0-expr-ident-support-lemma
+    (b* ((expr (mv-nth 1 (c$::ldm-expr (c$::expr-ident ident info))))
+         (expr-result (c::exec-expr-pure expr compst))
+         (expr-value (c::expr-value->value expr-result)))
+      (implies (and (c$::expr-pure-formalp (c$::expr-ident ident info))
+                    (b* ((var (mv-nth 1 (c$::ldm-ident ident)))
+                         (objdes (c::objdesign-of-var var compst))
+                         (val (c::read-object objdes compst)))
+                      (and objdes
+                           (c::valuep val)
+                           (c::value-case val :sint))))
+               (equal (c::value-kind expr-value) :sint)))
+    :enable (c::exec-expr-pure
+             c::exec-ident
+             c$::ldm-expr
+             c$::expr-pure-formalp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines simpadd0-exprs/decls/stmts
   :short "Transform expressions, declarations, statements,
           and related entities."
@@ -507,9 +592,11 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Identifiers, constants, and string literals undergo no transformation.
-       No theorems are generated for them, since there is no change.
-       These are the only non-recursive cases of expressions.")
+      "Variables (i.e. identifier expressions)
+       are handled by a separate function.")
+     (xdoc::p
+      "Constants and string literals undergo no transformation.
+       No theorems are generated for them, since there is no change.")
      (xdoc::p
       "When we encounter constructs unsupported in the formal dynamic semnatics,
        we do not generate a theorem.
@@ -544,13 +631,9 @@
     (b* (((simpadd0-gin gin) gin))
       (expr-case
        expr
-       :ident (mv (expr-fix expr)
-                  (make-simpadd0-gout :events nil
-                                      :thm-name nil
-                                      :thm-index gin.thm-index
-                                      :names-to-avoid gin.names-to-avoid
-                                      :vars nil
-                                      :diffp nil))
+       :ident (b* (((mv ident info gout)
+                    (simpadd0-expr-ident expr.ident expr.info gin)))
+                (mv (make-expr-ident :ident ident :info info) gout))
        :const (mv (expr-fix expr)
                   (make-simpadd0-gout :events nil
                                       :thm-name nil
@@ -806,7 +889,7 @@
                                                new-arg1
                                                vars
                                                gin.const-new
-                                               gin.thm-index
+                                               gout-arg2.thm-index
                                                hints)))
                (mv new-arg1
                    (make-simpadd0-gout
