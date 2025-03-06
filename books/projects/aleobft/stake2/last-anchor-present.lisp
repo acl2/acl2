@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -256,25 +256,38 @@
     :enable (event-possiblep
              event-next)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled last-anchor-present-p-of-events-next
+  :short "Preservation of the invariant by multiple transitions."
+  (implies (and (events-possiblep events systate)
+                (last-blockchain-round-p systate)
+                (ordered-even-p systate)
+                (last-anchor-present-p systate))
+           (last-anchor-present-p (events-next events systate)))
+  :induct t
+  :enable (events-possiblep
+           events-next))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection last-anchor-present-p-always
-  :short "The invariant holds in every state
-          reachable from an initial state via a sequence of events."
-
-  (defruled last-anchor-present-p-of-events-next
-    (implies (and (last-anchor-present-p systate)
-                  (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
-                  (events-possiblep events systate))
-             (and (last-anchor-present-p (events-next events systate))
-                  (last-blockchain-round-p (events-next events systate))
-                  (ordered-even-p (events-next events systate))))
-    :induct t
-    :enable (events-possiblep
-             events-next))
-
-  (defruled last-anchor-present-p-when-reachable
-    (implies (and (system-initp systate)
-                  (events-possiblep events systate))
-             (last-anchor-present-p (events-next events systate)))))
+(defruled last-anchor-present-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  (implies (system-state-reachablep systate)
+           (last-anchor-present-p systate))
+  :enable (system-state-reachablep
+           last-anchor-present-p-when-init
+           ordered-even-p-when-init
+           last-blockchain-round-p-when-init)
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (system-state-reachable-from-p systate from)
+                   (last-blockchain-round-p from)
+                   (ordered-even-p from)
+                   (last-anchor-present-p from))
+              (last-anchor-present-p systate))
+     :use (:instance
+           last-anchor-present-p-of-events-next
+           (events (system-state-reachable-from-p-witness systate from))
+           (systate from))
+     :enable system-state-reachable-from-p)))
