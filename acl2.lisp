@@ -754,6 +754,51 @@
 
 )
 
+#+lispworks
+(when (and (string>= (lisp-implementation-version) "8.1.0")
+
+; Starting with Version 8.1.0 of Lispworks, characters 223 and 255 are treated
+; as lower-case but their upper-casing produces a non-ACL2 character, e.g.,
+; (char-code (char-upcase (code-char 223))) evalutes to 7838.  We fix that
+; issue here.
+
+; The following conjunct avoids running this code twice (just in case somehow
+; acl2.lisp is loaded twice).
+
+           (not (boundp '*char-223*)))
+  (defconstant *char-223* (code-char 223))
+  (defconstant *char-255* (code-char 255))
+  (defconstant *lower-case-p-old* (symbol-function 'lower-case-p))
+  (defconstant *char-upcase-old* (symbol-function 'char-upcase))
+  (defconstant *string-upcase-old* (symbol-function 'string-upcase))
+  (defun lower-case-p-new (c)
+    (declare (type character c))
+    (if (or (eql c *char-223*) (eql c *char-255*))
+        nil
+      (funcall *lower-case-p-old* c)))
+  (defun char-upcase-new (c)
+    (declare (type character c))
+    (if (or (eql c *char-223*) (eql c *char-255*))
+        c
+      (funcall *char-upcase-old* c)))
+  (defun string-upcase-new (s)
+    (declare (type string s))
+    (if (or (position *char-223* s) (position *char-255* s))
+        (coerce (loop for i from 0 to (1- (length s))
+                      collect (char-upcase-new (char s i)))
+                'string)
+      (funcall *string-upcase-old* s)))
+  (compile 'char-upcase-new)
+  (compile 'lower-case-p-new)
+  (compile 'string-upcase-new)
+  (let ((*handle-warn-on-redefinition* nil))
+    (setf (symbol-function 'lower-case-p)
+          (symbol-function 'lower-case-p-new))
+    (setf (symbol-function 'char-upcase)
+          (symbol-function 'char-upcase-new))
+    (setf (symbol-function 'string-upcase)
+          (symbol-function 'string-upcase-new))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2709,10 +2754,11 @@ You are using version ~s.~s.~s."
               135 136 137 138 139 140 141 142 143 144
               145 146 147 148 149 150 151 152 153 154
               155 156 157 158 159 160 168 170 175 178
-              179 180 181 184 185 186 188 189 190 224
-              225 226 227 228 229 230 231 232 233 234
-              235 236 237 238 239 240 241 242 243 244
-              245 246 248 249 250 251 252 253 254 255)
+              179 180 181 184 185 186 188 189 190 223
+              224 225 226 227 228 229 230 231 232 233
+              234 235 236 237 238 239 240 241 242 243
+              244 245 246 248 249 250 251 252 253 254
+              255)
           do
           (setf (aref ar i)
                 t))
