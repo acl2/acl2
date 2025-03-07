@@ -1268,7 +1268,8 @@
 (fty::deftypes exprs/decls/stmts
   :short "Fixtypes of expressions, declarations, statements,
           and related entities
-          [C17:6.5] [C17:6.6] [C17:6.7] [C17:6.8] [C17:A.2.1] [C17:A.2.2] [C17:A.2.3]."
+          [C17:6.5] [C17:6.6] [C17:6.7] [C17:6.8]
+          [C17:A.2.1] [C17:A.2.2] [C17:A.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
