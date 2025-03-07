@@ -466,6 +466,46 @@
   :require (uinteger-bit-roles-wfp bits)
   :pred uinteger-formatp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod sinteger-format
+  :short "Fixtype of formats of signed integer objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for signed integer objects
+     other than those of type @('signed char'),
+     which are covered by @(tsee schar-format).
+     See [C17:6.2.6.2./2].")
+   (xdoc::p
+    "The format definition includes a list of bit roles,
+     which should be thought as the juxtaposition of
+     the bytes that form the unsigned integer object,
+     in little endian order, i.e. from lower to higher address.
+     The length of the list of bit roles
+     must be a mulitple of @('CHAR_BIT'),
+     which we capture in @(tsee uchar-format):
+     we express this constraint elsewhere,
+     because we do not have that value available here.
+     The list of bit roles must be well-formed.")
+   (xdoc::p
+    "The format description also identifies one of the three signed formats.
+     It is not clear from [C17] whether all the signed integer type,
+     within an implementation, use that same signed format,
+     but out model allows them to differ.")
+   (xdoc::p
+    "We also include a placeholder component meant to define
+     which bit values are trap representations [C17:6.2.6.2/5].
+     We plan to flesh this out in the future."))
+  ((bits sinteger-bit-role-listp
+         :reqfix (if (sinteger-bit-roles-wfp bits)
+                     bits
+                   (list (sinteger-bit-role-sign) (sinteger-bit-role-value 0))))
+   (signed signed-format)
+   traps)
+  :require (sinteger-bit-roles-wfp bits)
+  :pred sinteger-formatp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod ienv
