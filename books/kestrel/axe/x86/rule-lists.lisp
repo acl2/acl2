@@ -112,26 +112,26 @@
 
             x86isa::div-spec$inline ; just a dispatch on the size
             ;; These recharacterize divide in terms of bvops:
-            x86isa::mv-nth-0-of-div-spec-8
-            x86isa::mv-nth-1-of-div-spec-8
-            x86isa::mv-nth-2-of-div-spec-8
-            x86isa::mv-nth-0-of-div-spec-16
-            x86isa::mv-nth-1-of-div-spec-16
-            x86isa::mv-nth-2-of-div-spec-16
-            x86isa::mv-nth-0-of-div-spec-32
-            x86isa::mv-nth-1-of-div-spec-32
-            x86isa::mv-nth-2-of-div-spec-32
-            x86isa::mv-nth-0-of-div-spec-64
-            x86isa::mv-nth-1-of-div-spec-64
-            x86isa::mv-nth-2-of-div-spec-64
+            mv-nth-0-of-div-spec-8
+            mv-nth-1-of-div-spec-8
+            mv-nth-2-of-div-spec-8
+            mv-nth-0-of-div-spec-16
+            mv-nth-1-of-div-spec-16
+            mv-nth-2-of-div-spec-16
+            mv-nth-0-of-div-spec-32
+            mv-nth-1-of-div-spec-32
+            mv-nth-2-of-div-spec-32
+            mv-nth-0-of-div-spec-64
+            mv-nth-1-of-div-spec-64
+            mv-nth-2-of-div-spec-64
 
             x86isa::idiv-spec$inline
             ;;X86ISA::IDIV-SPEC-64 ;need to re-characterize this as something nice
             x86isa::idiv-spec-64-trim-arg1-axe-all
-            x86isa::mv-nth-0-of-idiv-spec-32 ; more?
-            x86isa::mv-nth-1-of-idiv-spec-32
-            x86isa::mv-nth-0-of-idiv-spec-64
-            x86isa::mv-nth-1-of-idiv-spec-64
+            mv-nth-0-of-idiv-spec-32 ; more?
+            mv-nth-1-of-idiv-spec-32
+            mv-nth-0-of-idiv-spec-64
+            mv-nth-1-of-idiv-spec-64
 
             x86isa::shr-spec$inline ;; dispatches based on size
             ;; x86isa::shr-spec-8
