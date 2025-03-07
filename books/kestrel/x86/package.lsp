@@ -407,6 +407,11 @@
     x86isa::imul-spec-32
     x86isa::imul-spec-64
 
+    x86isa::div-spec-8
+    x86isa::div-spec-16
+    x86isa::div-spec-32
+    x86isa::div-spec-64
+
     x86isa::idiv-spec-8
     x86isa::idiv-spec-16
     x86isa::idiv-spec-32
@@ -1023,6 +1028,8 @@
 
     x86isa::i48p$inline  ;todo: more like this
 
+    x86isa::n64-to-i64  ;todo: more like this
+
     x86isa::code-segment-descriptor-attributesbits->d
     x86isa::code-segment-descriptor-attributesbits->d$inline
     x86isa::code-segment-descriptor-attributesbits->p
@@ -1035,6 +1042,10 @@
     ;; error values:
     x86isa::rime-size-opt-error
     ;; there is no wime-size-opt-error
+    x86isa::quotient
+    x86isa::remainder
+    x86isa::quotient-int
+    x86isa::remainder-int
 
     x86isa::rr32$inline
     x86isa::reg-index$inline
@@ -1432,6 +1443,7 @@
     axe-syntaxp
     axe-bind-free
     dag-array ; for axe-syntaxp
+    def-simplified-x86
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
     pseudo-dag-arrayp
@@ -1638,6 +1650,9 @@
     x86isa::reg
     x86isa::rex
     x86isa::qword
+
+    x86isa::result
+    x86isa::raw-result
 ))
 
 ;; TODO: Think about this...
