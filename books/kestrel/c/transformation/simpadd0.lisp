@@ -511,10 +511,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-expr-ident ((ident identp)
-                             (info acl2::any-p)
+                             (info c$::var-infop)
                              (gin simpadd0-ginp))
   :returns (mv (new-ident identp)
-               (new-info acl2::any-p)
+               (new-info c$::var-infop)
                (gout simpadd0-goutp))
   :short "Transform an identifier expression (i.e. a variable)."
   :long
@@ -525,9 +525,9 @@
      also because we may eventually evolve the @(tsee simpadd0) implementation
      into a much more general transformation.
      Thus, the output identifier and validation information
-     are always the same as the inputs one.")
+     are always the same as the input ones.")
    (xdoc::p
-    "However, if the variable has type @('int'),
+    "If the variable has type @('int'),
      which we check in the validation information,
      then we generate a theorem saying that the expression,
      when executed, yields a value of type @('int').")
@@ -543,8 +543,9 @@
     "The generated theorem is proved via a general supporting lemma,
      which is proved below."))
   (b* ((ident (ident-fix ident))
+       (info (c$::var-info-fix info))
        ((simpadd0-gin gin) gin)
-       ((c$::var-info info) (c$::coerce-var-info info))
+       ((c$::var-info info) info)
        ((unless (c$::type-case info.type :sint))
         (mv ident
             info
@@ -665,7 +666,9 @@
       (expr-case
        expr
        :ident (b* (((mv ident info gout)
-                    (simpadd0-expr-ident expr.ident expr.info gin)))
+                    (simpadd0-expr-ident expr.ident
+                                         (c$::coerce-var-info expr.info)
+                                         gin)))
                 (mv (make-expr-ident :ident ident :info info) gout))
        :const (mv (expr-fix expr)
                   (make-simpadd0-gout :events nil
