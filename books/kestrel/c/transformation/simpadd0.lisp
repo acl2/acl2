@@ -525,11 +525,23 @@
      also because we may eventually evolve the @(tsee simpadd0) implementation
      into a much more general transformation.
      Thus, the output identifier and validation information
-     are always the same as the inputs one.
-     However, if the variable has type @('int'),
+     are always the same as the inputs one.")
+   (xdoc::p
+    "However, if the variable has type @('int'),
      which we check in the validation information,
      then we generate a theorem saying that the expression,
-     when executed, yields a value of type @('int')."))
+     when executed, yields a value of type @('int').")
+   (xdoc::p
+    "Under the assumption that the variable is in scope,
+     which is included in the generated theorem,
+     the execution of a variable never results in an error,
+     so we pass @('nil') as the @('falliblep') flag
+     to the theorem generation function,
+     and we set to @('nil') the @('falliblep') component
+     of @(tsee simpadd0-gout).")
+   (xdoc::p
+    "The generated theorem is proved via a general supporting lemma,
+     which is proved below."))
   (b* ((ident (ident-fix ident))
        ((simpadd0-gin gin) gin)
        ((c$::var-info info) (c$::coerce-var-info info))
