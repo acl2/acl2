@@ -1066,7 +1066,10 @@
   :types (ident
           ident-list
           ident-option
+          iconst
+          iconst-option
           const
+          const-option
           attrib-name
           exprs/decls/stmts
           fundef
@@ -1079,7 +1082,8 @@
   :default t
   :combine and
   :override
-  ((expr :ident (var-infop expr.info))
+  ((iconst (iconst-infop (iconst->info iconst)))
+   (expr :ident (var-infop expr.info))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
