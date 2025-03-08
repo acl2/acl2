@@ -354,9 +354,13 @@
      As mentioned in @(tsee dec/oct/hex-const),
      our fixtypes are factored slightly differently.
      An integer constant consists of a decimal, octal, or hexadecimal constant,
-     and of an optional integer suffix."))
+     and of an optional integer suffix.")
+   (xdoc::p
+    "Integer constants may be accompanied by some additional information,
+     such as the value calculated during validation."))
   ((core dec/oct/hex-const)
-   (suffix? isuffix-option))
+   (suffix? isuffix-option)
+   (iconst any))
   :pred iconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
