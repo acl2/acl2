@@ -3924,6 +3924,37 @@
           (introduce-bv-array-rules)  ;todo: duplicated above!
           ))
 
+;; todo: avoid trimming down things like xors (possibly to multiple different sizes)?
+(defun unroll-spec-basic-rules ()
+  (set-difference-eq
+   (append (base-rules)
+           (amazing-rules-bv)
+           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
+           (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
+           ;; (introduce-bv-array-rules)
+           ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
+           (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
+           ;; Handle nth of a 2-d array:
+           '(nth-becomes-nth-to-unroll-for-2d-array
+             nth-to-unroll-opener
+             collect-constants-over-<-2
+             ;; group-base group-unroll ; I guess we get these automatically from calling opener-rules-for-fns
+             len-of-group ;; these are not needed if we unroll group/ungroup
+             consp-of-group
+             nth-of-group
+             ungroup-of-cons)
+           ;; (bv-array-rules-simple)
+           ;; (list-to-bv-array-rules)
+           ;; (set-difference-eq (core-rules-bv)
+           ;;                    ;; these are kind of like trim rules, and can make the result worse:
+           ;;                    '(;BVCHOP-OF-BVPLUS
+           ;;                      BVCHOP-OF-bvuminus
+           ;;                      ))
+           ;; (unsigned-byte-p-forced-rules)
+           )
+   ;; can lead to blowup in lifting md5:
+   (bvplus-rules)))
+
 ;outside-in rules.  Only used in rewriter-alt.lisp.
 (defun oi-rules ()
   (declare (xargs :guard t))
