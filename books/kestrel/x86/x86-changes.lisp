@@ -1,6 +1,6 @@
 ; Some changes to the open-source x86 model
 ;
-; Copyright (C) 2022-2024 Kestrel Technology, LLC
+; Copyright (C) 2022-2025 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,8 @@
 
 (in-package "X86ISA")
 
+;; See also alt-defs.lisp
+
 (include-book "rflags-spec-sub")
 (include-book "projects/x86isa/machine/instructions/sub-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/add-spec" :dir :system)
@@ -17,7 +19,6 @@
 (include-book "projects/x86isa/machine/instructions/and-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/or-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/xor-spec" :dir :system)
-(include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/signextend" :dir :system) ; brings in ttags
 (include-book "kestrel/bv/bvshl" :dir :system)
 (include-book "kestrel/bv/bvshr" :dir :system)
@@ -2343,194 +2344,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; this value is whether it overflows
-(defthm mv-nth-0-of-div-spec-8
-  (equal (mv-nth 0 (DIV-SPEC-8 dst src))
-         (if (acl2::bvlt 16
-                   (+ -1 (expt 2 8))
-                   (acl2::bvdiv 16 DST (ACL2::BVCHOP 8 SRC)))
-             (LIST (CONS 'QUOTIENT
-                         (acl2::bvdiv 16 dst (acl2::bvchop 8 src)))
-                   (CONS 'REMAINDER
-                         (acl2::bvmod 16 dst (acl2::bvchop 8 src))))
-           nil))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-8
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;; this value is the quotient
-(defthm mv-nth-1-of-div-spec-8
-  (equal (mv-nth 1 (DIV-SPEC-8 dst src))
-         (if (acl2::bvlt 16
-                   (+ -1 (expt 2 8))
-                   (acl2::bvdiv 16 DST (ACL2::BVCHOP 8 SRC)))
-             0
-           (acl2::bvdiv 16 dst (acl2::bvchop 8 src))))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-8
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;; this value is the remainder
-(defthm mv-nth-2-of-div-spec-8
-  (equal (mv-nth 2 (DIV-SPEC-8 dst src))
-         (if (acl2::bvlt 16
-                   (+ -1 (expt 2 8))
-                   (acl2::bvdiv 16 DST (ACL2::BVCHOP 8 SRC)))
-             0
-           (acl2::bvmod 16 dst (acl2::bvchop 8 src))))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-8
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; this value is whether it overflows
-(defthm mv-nth-0-of-div-spec-16
-  (equal (mv-nth 0 (DIV-SPEC-16 dst src))
-         (if (acl2::bvlt 64
-                   (+ -1 (expt 2 16))
-                   (acl2::bvdiv 32 DST (ACL2::BVCHOP 16 SRC)))
-             (LIST (CONS 'QUOTIENT
-                         (acl2::bvdiv 32 dst (acl2::bvchop 16 src)))
-                   (CONS 'REMAINDER
-                         (acl2::bvmod 32 dst (acl2::bvchop 16 src))))
-           nil))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-16
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;; this value is the quotient
-(defthm mv-nth-1-of-div-spec-16
-  (equal (mv-nth 1 (DIV-SPEC-16 dst src))
-         (if (acl2::bvlt 32
-                   (+ -1 (expt 2 16))
-                   (acl2::bvdiv 32 DST (ACL2::BVCHOP 16 SRC)))
-             0
-           (acl2::bvdiv 32 dst (acl2::bvchop 16 src))))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-16
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;; this value is the remainder
-(defthm mv-nth-2-of-div-spec-16
-  (equal (mv-nth 2 (DIV-SPEC-16 dst src))
-         (if (acl2::bvlt 32
-                   (+ -1 (expt 2 16))
-                   (acl2::bvdiv 32 DST (ACL2::BVCHOP 16 SRC)))
-             0
-           (acl2::bvmod 32 dst (acl2::bvchop 16 src))))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-16
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; this value is whether it overflows
-(defthm mv-nth-0-of-div-spec-32
-  (equal (mv-nth 0 (DIV-SPEC-32 dst src))
-         (if (acl2::bvlt 64
-                   (+ -1 (expt 2 32))
-                   (acl2::bvdiv 64 DST (ACL2::BVCHOP 32 SRC)))
-             (LIST (CONS 'QUOTIENT
-                         (acl2::bvdiv 64 dst (acl2::bvchop 32 src)))
-                   (CONS 'REMAINDER
-                         (acl2::bvmod 64 dst (acl2::bvchop 32 src))))
-           nil))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-32
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;; this value is the quotient
-(defthm mv-nth-1-of-div-spec-32
-  (equal (mv-nth 1 (DIV-SPEC-32 dst src))
-         (if (acl2::bvlt 64
-                   (+ -1 (expt 2 32))
-                   (acl2::bvdiv 64 DST (ACL2::BVCHOP 32 SRC)))
-             0
-           (acl2::bvdiv 64 dst (acl2::bvchop 32 src))))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-32
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;; this value is the remainder
-(defthm mv-nth-2-of-div-spec-32
-  (equal (mv-nth 2 (DIV-SPEC-32 dst src))
-         (if (acl2::bvlt 64
-                   (+ -1 (expt 2 32))
-                   (acl2::bvdiv 64 DST (ACL2::BVCHOP 32 SRC)))
-             0
-           (acl2::bvmod 64 dst (acl2::bvchop 32 src))))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-32
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; this value is whether it overflows
-(defthm mv-nth-0-of-div-spec-64
-  (equal (mv-nth 0 (DIV-SPEC-64 dst src))
-         (if (acl2::bvlt 128
-                   (+ -1 (expt 2 64))
-                   (acl2::bvdiv 128 DST (ACL2::BVCHOP 64 SRC)))
-             (LIST (CONS 'QUOTIENT
-                         (acl2::bvdiv 128 dst (acl2::bvchop 64 src)))
-                   (CONS 'REMAINDER
-                         (acl2::bvmod 128 dst (acl2::bvchop 64 src))))
-           nil))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-64
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;; this value is the quotient
-(defthm mv-nth-1-of-div-spec-64
-  (equal (mv-nth 1 (DIV-SPEC-64 dst src))
-         (if (acl2::bvlt 128
-                   (+ -1 (expt 2 64))
-                   (acl2::bvdiv 128 DST (ACL2::BVCHOP 64 SRC)))
-             0
-           (acl2::bvdiv 128 dst (acl2::bvchop 64 src))))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-64
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;; this value is the remainder
-(defthm mv-nth-2-of-div-spec-64
-  (equal (mv-nth 2 (DIV-SPEC-64 dst src))
-         (if (acl2::bvlt 128
-                   (+ -1 (expt 2 64))
-                   (acl2::bvdiv 128 DST (ACL2::BVCHOP 64 SRC)))
-             0
-           (acl2::bvmod 128 dst (acl2::bvchop 64 src))))
-  :hints (("Goal" :in-theory (e/d (DIV-SPEC-64
-                                   acl2::bvdiv
-                                   acl2::bvmod
-                                   acl2::bvlt)
-                                  (ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; There are only 2 of these
 (defthm shlx-spec-32-alt-def
   (equal (shlx-spec-32 src cnt)
@@ -2611,78 +2424,7 @@
 
 ;(in-theory (disable <-WHEN-CANONICAL-ADDRESS-P-IMPOSSIBLE <-WHEN-CANONICAL-ADDRESS-P)) ;todo bad
 
-(defthm acl2::logext-of-truncate
-  (implies (and (signed-byte-p acl2::size acl2::i)
-                (posp acl2::size)
-                (integerp acl2::j))
-           (equal (logext acl2::size (truncate acl2::i acl2::j))
-                  (if (and (equal (- (expt 2 (+ -1 acl2::size)))
-                                  acl2::i)
-                           (equal -1 acl2::j))
-                      (- (expt 2 (+ -1 acl2::size)))
-                    (truncate acl2::i acl2::j)))))
 
-;todo: add versions for other sizes
-(defthm mv-nth-1-of-idiv-spec-32
-  (equal (mv-nth 1 (idiv-spec-32 dst src))
-         (let ((res (acl2::sbvdiv 64 dst (acl2::bvsx 64 32 src))))
-           (if (acl2::sbvlt 64 res -2147483648)
-               0
-             (if (acl2::sbvlt 64 2147483647 res)
-                 0
-               (acl2::bvchop 32 res)))))
-  :hints (("Goal" :in-theory (e/d (idiv-spec-32 acl2::sbvdiv acl2::sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
-
-(defthm mv-nth-0-of-idiv-spec-32
-  (equal (mv-nth 0 (idiv-spec-32 dst src))
-         (let ((res (acl2::sbvdiv 64 dst (acl2::bvsx 64 32 src))))
-           (if (acl2::sbvlt 64 res -2147483648)
-               (LIST (CONS 'QUOTIENT-INT
-                           (TRUNCATE (LOGEXT 64 DST)
-                                     (LOGEXT 32 SRC)))
-                     (CONS 'REMAINDER-INT
-                           (REM (LOGEXT 64 DST) (LOGEXT 32 SRC))))
-             (if (acl2::sbvlt 64 2147483647 res)
-                 (LIST (CONS 'QUOTIENT-INT
-                             (TRUNCATE (LOGEXT 64 DST)
-                                       (LOGEXT 32 SRC)))
-                       (CONS 'REMAINDER-INT
-                             (REM (LOGEXT 64 DST) (LOGEXT 32 SRC))))
-               nil))))
-  :hints (("Goal" :in-theory (e/d (idiv-spec-32 acl2::sbvdiv acl2::sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
-
-;todo: add versions for other sizes
-(defthm mv-nth-1-of-idiv-spec-64
-  (equal (mv-nth 1 (idiv-spec-64 dst src))
-         (let ((res (acl2::sbvdiv 128 dst (acl2::bvsx 128 64 src))))
-           (if (acl2::sbvlt 128 res (- (expt 2 63)))
-               0
-             (if (acl2::sbvlt 128 (+ -1 (expt 2 63)) res)
-                 0
-               (acl2::bvchop 64 res)))))
-  :hints (("Goal" :in-theory (e/d (idiv-spec-64 acl2::sbvdiv acl2::sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
-
-(defthm mv-nth-0-of-idiv-spec-64
-  (equal (mv-nth 0 (idiv-spec-64 dst src))
-         (let ((res (acl2::sbvdiv 128 dst (acl2::bvsx 128 64 src))))
-           (if (acl2::sbvlt 128 res (- (expt 2 63)))
-               (LIST (CONS 'QUOTIENT-INT
-                           (TRUNCATE (LOGEXT 128 DST)
-                                     (LOGEXT 64 SRC)))
-                     (CONS 'REMAINDER-INT
-                           (REM (LOGEXT 128 DST) (LOGEXT 64 SRC))))
-             (if (acl2::sbvlt 128 (+ -1 (expt 2 63)) res)
-                 (LIST (CONS 'QUOTIENT-INT
-                             (TRUNCATE (LOGEXT 128 DST)
-                                       (LOGEXT 64 SRC)))
-                       (CONS 'REMAINDER-INT
-                             (REM (LOGEXT 128 DST) (LOGEXT 64 SRC))))
-               nil))))
-  :hints (("Goal" :in-theory (e/d (idiv-spec-64 acl2::sbvdiv acl2::sbvlt)
-                                  (acl2::sbvlt-rewrite)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3130,7 +2872,7 @@
                     (zf-spec result)))
               (sf (the (unsigned-byte 1)
                     (sf-spec64 result)))
-              (of (the (unsigned-byte 1)
+              (of (the (unsigned-byte 1) ; todo: can we do better here?
                     (of-spec64 signed-raw-result)))
               (output-rflags
                 (!rflagsbits->cf
@@ -3160,7 +2902,7 @@
 ;todo: more!  and see the better ones too
 (defthm GPR-add-SPEC-8-alt-def
   (equal (gpr-add-spec-8 dst src input-rflags)
-         ;; proposed new body for GPR-SUB-SPEC-1:
+         ;; proposed new body for GPR-ADD-SPEC-8:
          (b* ((dst (mbe :logic (n-size 64 dst) :exec dst))
               (src (mbe :logic (n-size 64 src) :exec src))
               (input-rflags (mbe :logic (n32 input-rflags)
@@ -3185,7 +2927,7 @@
                     (zf-spec result)))
               (sf (the (unsigned-byte 1)
                     (sf-spec64 result)))
-              (of (the (unsigned-byte 1)
+              (of (the (unsigned-byte 1) ; todo: can we do better here?
                     (of-spec64 signed-raw-result)))
               (output-rflags
                 (!rflagsbits->cf

@@ -13,7 +13,8 @@
 
 ;; This book provides a nice interface (set-flag and get-flag) to dealing with x86 processor flags.
 
-(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system)
+(include-book "projects/x86isa/machine/state" :dir :system)
+;(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/bv/bvchop" :dir :system)
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
@@ -392,37 +393,121 @@
                                      rflagsbits->id
                                      rflagsbits-fix))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm rflagsbits->cf$inline-of-bvchop-32
   (equal (rflagsbits->cf$inline (bvchop 32 rflags))
          (rflagsbits->cf$inline rflags))
   :hints (("Goal" :in-theory (enable rflagsbits->cf rflagsbits-fix))))
 
-(defthm rflagsbits->af$inline-of-bvchop-32
-  (equal (rflagsbits->af$inline (bvchop 32 rflags))
-         (rflagsbits->af$inline rflags))
-  :hints (("Goal" :in-theory (enable rflagsbits->af rflagsbits-fix))))
+(defthm rflagsbits->res1-of-bvchop-32
+  (equal (rflagsbits->res1 (bvchop 32 input-rflags))
+         (rflagsbits->res1 input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->res1 rflagsbits-fix))))
 
 (defthm rflagsbits->pf$inline-of-bvchop-32
   (equal (rflagsbits->pf$inline (bvchop 32 rflags))
          (rflagsbits->pf$inline rflags))
   :hints (("Goal" :in-theory (enable rflagsbits->pf rflagsbits-fix))))
 
-(defthm rflagsbits->of$inline-of-bvchop-32
-  (equal (rflagsbits->of$inline (bvchop 32 rflags))
-         (rflagsbits->of$inline rflags))
-  :hints (("Goal" :in-theory (enable rflagsbits->of rflagsbits-fix))))
+(defthm rflagsbits->res2-of-bvchop-32
+  (equal (rflagsbits->res2 (bvchop 32 input-rflags))
+         (rflagsbits->res2 input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->res2 rflagsbits-fix))))
 
-(defthm rflagsbits->sf$inline-of-bvchop-32
-  (equal (rflagsbits->sf$inline (bvchop 32 rflags))
-         (rflagsbits->sf$inline rflags))
-  :hints (("Goal" :in-theory (enable rflagsbits->sf rflagsbits-fix))))
+(defthm rflagsbits->af$inline-of-bvchop-32
+  (equal (rflagsbits->af$inline (bvchop 32 rflags))
+         (rflagsbits->af$inline rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->af rflagsbits-fix))))
+
+(defthm rflagsbits->res3-of-bvchop-32
+  (equal (rflagsbits->res3 (bvchop 32 input-rflags))
+         (rflagsbits->res3 input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->res3 rflagsbits-fix))))
 
 (defthm rflagsbits->zf$inline-of-bvchop-32
   (equal (rflagsbits->zf$inline (bvchop 32 rflags))
          (rflagsbits->zf$inline rflags))
   :hints (("Goal" :in-theory (enable rflagsbits->zf rflagsbits-fix))))
 
-;;;
+(defthm rflagsbits->sf$inline-of-bvchop-32
+  (equal (rflagsbits->sf$inline (bvchop 32 rflags))
+         (rflagsbits->sf$inline rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->sf rflagsbits-fix))))
+
+(defthm rflagsbits->tf-of-bvchop-32
+  (equal (rflagsbits->tf (bvchop 32 input-rflags))
+         (rflagsbits->tf input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->tf rflagsbits-fix))))
+
+(defthm intflagsbits->intf-of-bvchop-32
+  (equal (rflagsbits->intf (bvchop 32 input-rflags))
+         (rflagsbits->intf input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->intf rflagsbits-fix))))
+
+(defthm rflagsbits->df-of-bvchop-32
+  (equal (rflagsbits->df (bvchop 32 input-rflags))
+         (rflagsbits->df input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->df rflagsbits-fix))))
+
+(defthm rflagsbits->of$inline-of-bvchop-32
+  (equal (rflagsbits->of$inline (bvchop 32 rflags))
+         (rflagsbits->of$inline rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->of rflagsbits-fix))))
+
+(defthm rflagsbits->iopl-of-bvchop-32
+  (equal (rflagsbits->iopl (bvchop 32 input-rflags))
+         (rflagsbits->iopl input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->iopl rflagsbits-fix))))
+
+(defthm rflagsbits->nt-of-bvchop-32
+  (equal (rflagsbits->nt (bvchop 32 input-rflags))
+         (rflagsbits->nt input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->nt rflagsbits-fix))))
+
+(defthm rflagsbits->res4-of-bvchop-32
+  (equal (rflagsbits->res4 (bvchop 32 input-rflags))
+         (rflagsbits->res4 input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->res4 rflagsbits-fix))))
+
+(defthm rflagsbits->rf-of-bvchop-32
+  (equal (rflagsbits->rf (bvchop 32 input-rflags))
+         (rflagsbits->rf input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->rf rflagsbits-fix))))
+
+(defthm rflagsbits->vm-of-bvchop-32
+  (equal (rflagsbits->vm (bvchop 32 input-rflags))
+         (rflagsbits->vm input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->vm rflagsbits-fix))))
+
+(defthm rflagsbits->ac-of-bvchop-32
+  (equal (rflagsbits->ac (bvchop 32 input-rflags))
+         (rflagsbits->ac input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->ac rflagsbits-fix))))
+
+(defthm rflagsbits->vif-of-bvchop-32
+  (equal (rflagsbits->vif (bvchop 32 input-rflags))
+         (rflagsbits->vif input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->vif rflagsbits-fix))))
+
+(defthm rflagsbits->vip-of-bvchop-32
+  (equal (rflagsbits->vip (bvchop 32 input-rflags))
+         (rflagsbits->vip input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->vip rflagsbits-fix))))
+
+(defthm rflagsbits->id-of-bvchop-32
+  (equal (rflagsbits->id (bvchop 32 input-rflags))
+         (rflagsbits->id input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->id rflagsbits-fix))))
+
+(defthm rflagsbits->res5-of-bvchop-32
+  (equal (rflagsbits->res5 (bvchop 32 input-rflags))
+         (rflagsbits->res5 input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->res5 rflagsbits-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; todo: rename all of these:
 
 (defthm flags-af-af
   (equal (rflagsbits->af$inline (!rflagsbits->af$inline val rflags))

@@ -49,10 +49,11 @@
            (all-< (strip-cars (cdr alist)) bound))
   :hints (("Goal" :in-theory (enable strip-cars)))))
 
-(defthm strip-cars-of-reverse-list
-  (equal (strip-cars (reverse-list dag))
-         (reverse-list (strip-cars dag)))
-  :hints (("Goal" :in-theory (enable reverse-list strip-cars))))
+(local
+  (defthm strip-cars-of-reverse-list
+    (equal (strip-cars (reverse-list dag))
+           (reverse-list (strip-cars dag)))
+    :hints (("Goal" :in-theory (enable reverse-list strip-cars)))))
 
 ;;;
 ;;; make-size-array-for-rev-dag-aux
@@ -87,40 +88,42 @@
                                                 ;; todo: bake in the size array name to a version of this:
                                                 (add-darg-sizes (dargs expr) size-array 1)))))))
 
-(defthm size-arrayp-of-make-size-array-for-rev-dag-aux
-  (implies (and (weak-dagp-aux rev-dag)
-                (size-arrayp 'size-array size-array (if (consp rev-dag)
-                                                            (car (car rev-dag))
-                                                          0))
-                (all-< (strip-cars rev-dag) (alen1 'size-array size-array))
-                (consecutivep (strip-cars rev-dag))
-                (<= bound (if (consp rev-dag)
-                              (+ 1 (car (car (last rev-dag))))
-                            0))
-                (natp bound))
-           (size-arrayp 'size-array
-                        (make-size-array-for-rev-dag-aux rev-dag size-array)
-                        bound))
-  :hints (("Goal" :expand ((weak-dagp-aux rev-dag))
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (enable make-size-array-for-rev-dag-aux
-                              caar-of-cdr-when-consecutivep-of-strip-cars
-                              <-of-car-of-car-when-all-<-of-strip-cars))))
+(local
+  (defthm size-arrayp-of-make-size-array-for-rev-dag-aux
+    (implies (and (weak-dagp-aux rev-dag)
+                  (size-arrayp 'size-array size-array (if (consp rev-dag)
+                                                          (car (car rev-dag))
+                                                        0))
+                  (all-< (strip-cars rev-dag) (alen1 'size-array size-array))
+                  (consecutivep (strip-cars rev-dag))
+                  (<= bound (if (consp rev-dag)
+                                (+ 1 (car (car (last rev-dag))))
+                              0))
+                  (natp bound))
+             (size-arrayp 'size-array
+                          (make-size-array-for-rev-dag-aux rev-dag size-array)
+                          bound))
+    :hints (("Goal" :expand ((weak-dagp-aux rev-dag))
+             :do-not '(generalize eliminate-destructors)
+             :in-theory (enable make-size-array-for-rev-dag-aux
+                                caar-of-cdr-when-consecutivep-of-strip-cars
+                                <-of-car-of-car-when-all-<-of-strip-cars)))))
 
-(defthm alen1-of-make-size-array-for-rev-dag-aux
-  (implies (and (weak-dagp-aux rev-dag)
-                (array1p 'size-array size-array)
-                (all-< (strip-cars rev-dag) (alen1 'size-array size-array))
-                (consecutivep (strip-cars rev-dag)))
-           (equal (alen1 'size-array (make-size-array-for-rev-dag-aux rev-dag size-array))
-                  (alen1 'size-array size-array)))
-  :hints (("Goal" :expand ((weak-dagp-aux rev-dag)
-                           (weak-dagp-aux (cdr rev-dag)))
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (make-size-array-for-rev-dag-aux
-                            caar-of-cdr-when-consecutivep-of-strip-cars
-                            <-of-car-of-car-when-all-<-of-strip-cars)
-                           (natp)))))
+(local
+  (defthm alen1-of-make-size-array-for-rev-dag-aux
+    (implies (and (weak-dagp-aux rev-dag)
+                  (array1p 'size-array size-array)
+                  (all-< (strip-cars rev-dag) (alen1 'size-array size-array))
+                  (consecutivep (strip-cars rev-dag)))
+             (equal (alen1 'size-array (make-size-array-for-rev-dag-aux rev-dag size-array))
+                    (alen1 'size-array size-array)))
+    :hints (("Goal" :expand ((weak-dagp-aux rev-dag)
+                             (weak-dagp-aux (cdr rev-dag)))
+             :do-not '(generalize eliminate-destructors)
+             :in-theory (e/d (make-size-array-for-rev-dag-aux
+                              caar-of-cdr-when-consecutivep-of-strip-cars
+                              <-of-car-of-car-when-all-<-of-strip-cars)
+                             (natp))))))
 
 ;;;
 ;;; make-size-array-for-dag
@@ -135,26 +138,28 @@
   (make-size-array-for-rev-dag-aux (reverse-list dag)
                                    (make-empty-array 'size-array (+ 1 (top-nodenum-of-dag dag)))))
 
-(defthm size-arrayp-of-make-size-array-for-dag
-  (implies (and (pseudo-dagp dag)
-                (< (top-nodenum-of-dag dag) *max-1d-array-length*)
-                (<= bound (len dag))
-                (natp bound))
-           (size-arrayp 'size-array
-                        (make-size-array-for-dag dag)
-                        bound))
-  :hints (("Goal" :cases ((= bound (len dag)))
-           :in-theory (enable make-size-array-for-dag
-                              car-of-car-when-pseudo-dagp-cheap))))
+(local
+  (defthm size-arrayp-of-make-size-array-for-dag
+    (implies (and (pseudo-dagp dag)
+                  (< (top-nodenum-of-dag dag) *max-1d-array-length*)
+                  (<= bound (len dag))
+                  (natp bound))
+             (size-arrayp 'size-array
+                          (make-size-array-for-dag dag)
+                          bound))
+    :hints (("Goal" :cases ((= bound (len dag)))
+             :in-theory (enable make-size-array-for-dag
+                                car-of-car-when-pseudo-dagp-cheap)))))
 
-(defthm alen1-of-make-size-array-for-dag
+(local
+  (defthm alen1-of-make-size-array-for-dag
   (implies (and (pseudo-dagp dag)
                 (< (top-nodenum-of-dag dag) *max-1d-array-length*))
            (equal (alen1 'size-array (make-size-array-for-dag dag))
                   (len dag)))
   :hints (("Goal" :in-theory (enable make-size-array-for-dag
                                      top-nodenum-when-pseudo-dagp
-                                     car-of-car-when-pseudo-dagp-cheap))))
+                                     car-of-car-when-pseudo-dagp-cheap)))))
 
 ;;;
 ;;; dag-size-fast
@@ -213,7 +218,7 @@
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) *max-1d-array-length*)
                               (natp limit))))
-  (if (<= limit (len dag)) ;todo: avoid doing the whole len once limit items are found
+  (if (<= limit (len dag)) ;todo: avoid doing the whole len once limit items are found ; todo: just check the top nodenum
       ;; Avoid any size computation for huge dags (assumes the dag is reduced
       ;; in that non-supporters have been dropped) because we know the size
       ;; exceeds the limit:
