@@ -12,8 +12,8 @@
 
 (include-book "abstract-syntax")
 (include-book "implementation-environments")
-(include-book "defpred")
 
+(include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
@@ -1028,38 +1028,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpred annop
+(fty::deffold-reduce annop
   :short "Definition of the predicates that check whether
           the abstract syntax is annotated with validation information."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We use @(tsee defpred) to define these predicates concisely.")
+    "We use @(tsee fty::deffold-reduce) to define these predicates concisely.")
    (xdoc::p
     "The @(':default') value is @('t'),
      meaning that there are no constraints by default.")
    (xdoc::p
-    "For now the only annotations added by the validator consist of
-     a type in the information field of variables.
-     As we extend the validator to generate more annotations,
+    "The @(':combine') operator is @(tsee and),
+     because we need to check all the constructs, recursively.")
+   (xdoc::p
+    "We only need to override the predicate for
+     identifier expressions and
+     translation unit ensembles.
+     These are the only constructs with validation information for now;
+     as we extend the validator to generate more annotations,
      we will extend these predicates accordingly.")
    (xdoc::p
     "Since for now the validator accepts GCC attribute and other extensions
      without actually checking them and their constituents,
-     we also have the annotation predicates accept those constructs.
-     These are the cases overridden to return @('t')
-     in the @(tsee defpred) for the ambiguity predicates.")
+     we also have the annotation predicates accept those constructs,
+     by overriding those cases to return @('t').")
    (xdoc::p
     "The validator operates on unambiguous abstract syntax,
      which satisfies the @(see unambiguity) predicates.
      Ideally, the annotation predicates should use
      the unambiguity predicates as guards,
-     but @(tsee defpred) does not support that feature yet.
+     but @(tsee fty::deffold-reduce) does not support that feature yet.
      Thus, for now we add run-time checks, in the form of @(tsee raise),
      for the cases in which the unambiguity predicates do not hold;
      note that @(tsee raise) is logically @('nil'),
      so the annotation predicates are false on ambiguous constructs."))
+  :types (ident
+          ident-list
+          ident-option
+          const
+          attrib-name
+          exprs/decls/stmts
+          fundef
+          extdecl
+          extdecl-list
+          transunit
+          filepath-transunit-map
+          transunit-ensemble)
+  :result booleanp
   :default t
+  :combine and
   :override
   ((expr :ident (var-infop expr.info))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
@@ -1099,3 +1117,28 @@
                          (amb-decl/stmt-fix amb-decl/stmt)))
    (transunit (and (extdecl-list-annop (transunit->decls transunit))
                    (transunit-infop (transunit->info transunit))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled transunit-annop-of-head-when-filepath-transunit-map-annop
+  (implies (and (filepath-transunit-mapp map)
+                (filepath-transunit-map-annop map)
+                (not (omap::emptyp map)))
+           (transunit-annop (mv-nth 1 (omap::head map))))
+  :induct t
+  :enable filepath-transunit-map-annop)
+
+(add-to-ruleset abstract-syntax-annop-rules
+                '(transunit-annop-of-head-when-filepath-transunit-map-annop))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled filepath-transunit-map-annop-of-tail
+  (implies (and (filepath-transunit-mapp map)
+                (filepath-transunit-map-annop map))
+           (filepath-transunit-map-annop (omap::tail map)))
+  :induct t
+  :enable filepath-transunit-map-annop)
+
+(add-to-ruleset abstract-syntax-annop-rules
+                '(filepath-transunit-map-annop-of-tail))
