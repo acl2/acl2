@@ -1545,6 +1545,7 @@
     deftest
 
     ruleset
+    e/d*
 
     defconst-computed-simple))
 
