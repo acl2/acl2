@@ -16,6 +16,8 @@
 
 (include-book "std/util/defirrelevant" :dir :system)
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -907,6 +909,46 @@
   :short "An irrelevant validation table."
   :type valid-tablep
   :body (valid-table nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod iconst-info
+  :short "Fixtype of validation information for integer constants."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to integer constants,
+     i.e. the @(tsee iconst) constructs.
+     The information consists of the type of the constant
+     (which for now we do not constrain to be an integer type),
+     and the numeric value of the constant, as an ACL2 natural number."))
+  ((type type)
+   (value nat))
+  :pred iconst-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-iconst-info
+  :short "An irrelevant validation information for integer constants."
+  :type iconst-infop
+  :body (make-iconst-info :type (irr-type)
+                          :value 0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-iconst-info (x)
+  :returns (info iconst-infop)
+  :short "Coerce a valud to @(tsee iconst-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (iconst-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy ICONST-INFOP." x)
+            (irr-iconst-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
