@@ -78,7 +78,7 @@
             x86isa::gpr-xor-spec-1-alt-def
             x86isa::gpr-xor-spec-2-alt-def
             x86isa::gpr-xor-spec-4-alt-def
-            x86isa::gpr-xor-spec-8-alt-def
+            gpr-xor-spec-8-alt-def-axe
 
             x86isa::gpr-add-spec-1-alt-def
             x86isa::gpr-add-spec-2-alt-def

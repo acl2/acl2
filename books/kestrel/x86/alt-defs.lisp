@@ -18,9 +18,10 @@
 (include-book "portcullis")
 (include-book "projects/x86isa/machine/instructions/rotates-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
+(include-book "projects/x86isa/machine/instructions/xor-spec" :dir :system)
 ;(include-book "centaur/bitops/fast-rotate" :dir :system)
 ;(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
-;(include-book "flags")
+(local (include-book "flags"))
 ;(include-book "kestrel/bv-lists/packbv" :dir :system)
 ;(include-book "kestrel/bv/bvshr" :dir :system)
 ;(include-book "kestrel/bv/bvchop" :dir :system)
@@ -393,3 +394,29 @@
                (bvchop 64 res)))))
   :hints (("Goal" :in-theory (e/d (idiv-spec-64 acl2::sbvdiv acl2::sbvlt)
                                   (acl2::sbvlt-rewrite)))))
+
+;; reduces the number of rules needed for symbolic execution of a single xor from ~220 to ~200
+(defthm gpr-xor-spec-8-alt-def-axe
+  (equal (x86isa::gpr-xor-spec-8 dst src input-rflags)
+         (b* (;(dst (bvchop 64 dst))
+              ;(src (bvchop 64 src))
+              ;(input-rflags (bvchop 32 input-rflags))
+              (result (bvxor 64 dst src))
+              (cf 0)
+              (pf (pf-spec64 result))
+              (zf (zf-spec result))
+              (sf (sf-spec64 result))
+              (of 0)
+              ;; doesn't really matter how we phrase this, as write-user-rflags will extract the relevant flags:
+              ;; todo: some better way to deal with this, avoiding a term whose size is proportional to the number of flags?
+              (x86isa::output-rflags (change-rflagsbits input-rflags
+                                                        :cf cf
+                                                        :pf pf
+                                                        :zf zf
+                                                        :sf sf
+                                                        :of of))
+              (x86isa::undefined-flags 16 ;(!rflagsbits->af 1 0)
+                                       ))
+           (mv result x86isa::output-rflags x86isa::undefined-flags)))
+  :hints (("Goal" :in-theory (acl2::e/d* (x86isa::gpr-xor-spec-8 x86isa::rflag-rows-enables bvxor)
+                                         ((tau-system))))))
