@@ -401,7 +401,16 @@
     (equal (uinteger-bit-roles-value-count roles)
            (len (uinteger-bit-roles-exponents roles)))
     :induct t
-    :enable (uinteger-bit-roles-exponents len)))
+    :enable (uinteger-bit-roles-exponents len))
+
+  (more-returns
+   (n posp
+      :hyp (uinteger-bit-roles-wfp roles)
+      :rule-classes (:rewrite :type-prescription)
+      :hints (("Goal"
+               :in-theory (e/d (uinteger-bit-roles-wfp
+                                uinteger-bit-roles-value-count-alt-def)
+                               (uinteger-bit-roles-value-count)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -428,7 +437,16 @@
     (equal (sinteger-bit-roles-value-count roles)
            (len (sinteger-bit-roles-exponents roles)))
     :induct t
-    :enable (sinteger-bit-roles-exponents len)))
+    :enable (sinteger-bit-roles-exponents len))
+
+  (more-returns
+   (m posp
+      :hyp (sinteger-bit-roles-wfp roles)
+      :rule-classes (:rewrite :type-prescription)
+      :hints (("Goal"
+               :in-theory (e/d (sinteger-bit-roles-wfp
+                                sinteger-bit-roles-value-count-alt-def)
+                               (sinteger-bit-roles-value-count)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
