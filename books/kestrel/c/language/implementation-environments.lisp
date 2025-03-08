@@ -332,52 +332,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define uinteger-sinteger-bit-roles-wfp ((uroles uinteger-bit-role-listp)
-                                         (sroles sinteger-bit-role-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of roles of unsigned integer bits
-          and a list of roles of signed integer bits
-          are mutually consistent."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "[C17:6.2.6.2/2] says each signed integer value bit
-     must be the same as the corresponding unsigned integer value bit;
-     but the unsigned integer type may have more value bits.
-     We check this by going through the two lists of bits,
-     and making sure that, every time we encounter a signed value bit,
-     the corresponding unsigned value bit is for the same exponent.")
-   (xdoc::p
-    "[C17:6.2.5/6] says that corresponding signed and unsigned integer types
-     take the same amount of storage.
-     In our model, it means that they must have the same number of bits.
-     We check this requirement in this recursive predicate,
-     by ensuring that the two lists end at the same time."))
-  (b* (((when (endp uroles)) (endp sroles))
-       ((when (endp sroles)) nil)
-       (srole (car sroles))
-       ((unless (sinteger-bit-role-case srole :value))
-        (uinteger-sinteger-bit-roles-wfp (cdr uroles) (cdr sroles)))
-       (urole (car uroles))
-       ((unless (and (uinteger-bit-role-case urole :value)
-                     (equal (uinteger-bit-role-value->exp urole)
-                            (sinteger-bit-role-value->exp srole))))
-        nil))
-    (uinteger-sinteger-bit-roles-wfp (cdr uroles) (cdr sroles)))
-  :hooks (:fix)
-
-  ///
-
-  (defruled same-len-when-uinteger-sinteger-bit-roles-wfp
-    (implies (uinteger-sinteger-bit-roles-wfp uroles sroles)
-             (equal (len uroles)
-                    (len sroles)))
-    :rule-classes (:rewrite :forward-chaining)
-    :induct t
-    :enable len))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define uinteger-bit-roles-value-count ((roles uinteger-bit-role-listp))
   :returns (n natp)
   :short "Number of value bit roles in
@@ -447,6 +401,52 @@
                :in-theory (e/d (sinteger-bit-roles-wfp
                                 sinteger-bit-roles-value-count-alt-def)
                                (sinteger-bit-roles-value-count)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uinteger-sinteger-bit-roles-wfp ((uroles uinteger-bit-role-listp)
+                                         (sroles sinteger-bit-role-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of roles of unsigned integer bits
+          and a list of roles of signed integer bits
+          are mutually consistent."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[C17:6.2.6.2/2] says each signed integer value bit
+     must be the same as the corresponding unsigned integer value bit;
+     but the unsigned integer type may have more value bits.
+     We check this by going through the two lists of bits,
+     and making sure that, every time we encounter a signed value bit,
+     the corresponding unsigned value bit is for the same exponent.")
+   (xdoc::p
+    "[C17:6.2.5/6] says that corresponding signed and unsigned integer types
+     take the same amount of storage.
+     In our model, it means that they must have the same number of bits.
+     We check this requirement in this recursive predicate,
+     by ensuring that the two lists end at the same time."))
+  (b* (((when (endp uroles)) (endp sroles))
+       ((when (endp sroles)) nil)
+       (srole (car sroles))
+       ((unless (sinteger-bit-role-case srole :value))
+        (uinteger-sinteger-bit-roles-wfp (cdr uroles) (cdr sroles)))
+       (urole (car uroles))
+       ((unless (and (uinteger-bit-role-case urole :value)
+                     (equal (uinteger-bit-role-value->exp urole)
+                            (sinteger-bit-role-value->exp srole))))
+        nil))
+    (uinteger-sinteger-bit-roles-wfp (cdr uroles) (cdr sroles)))
+  :hooks (:fix)
+
+  ///
+
+  (defruled same-len-when-uinteger-sinteger-bit-roles-wfp
+    (implies (uinteger-sinteger-bit-roles-wfp uroles sroles)
+             (equal (len uroles)
+                    (len sroles)))
+    :rule-classes (:rewrite :forward-chaining)
+    :induct t
+    :enable len))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
