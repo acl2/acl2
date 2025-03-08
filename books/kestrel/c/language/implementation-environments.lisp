@@ -332,6 +332,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define uinteger-bit-roles-value-count ((roles uinteger-bit-role-listp))
+  :returns (n natp)
+  :short "Number of value bit roles in
+          a list of roles of unsigned integer bits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the list of bit roles is well-formed
+     (see @(tsee uinteger-bit-roles-wfp)),
+     this is the number @('N') of value bits [C17:6.2.6.2/1],
+     whose associated exponents go from @('0') to @('N-1')."))
+  (cond ((endp roles) 0)
+        ((uinteger-bit-role-case (car roles) :value)
+         (1+ (uinteger-bit-roles-value-count (cdr roles))))
+        (t (uinteger-bit-roles-value-count (cdr roles))))
+  :hooks (:fix)
+
+  ///
+
+  (defruled uinteger-bit-roles-value-count-alt-def
+    (equal (uinteger-bit-roles-value-count roles)
+           (len (uinteger-bit-roles-exponents roles)))
+    :induct t
+    :enable (uinteger-bit-roles-exponents len))
+
+  (more-returns
+   (n posp
+      :hyp (uinteger-bit-roles-wfp roles)
+      :rule-classes (:rewrite :type-prescription)
+      :hints (("Goal"
+               :in-theory (e/d (uinteger-bit-roles-wfp
+                                uinteger-bit-roles-value-count-alt-def)
+                               (uinteger-bit-roles-value-count)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sinteger-bit-roles-value-count ((roles sinteger-bit-role-listp))
+  :returns (m natp)
+  :short "Number of value bit roles in
+          a list of roles of signed integer bits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the list of bit roles is well-formed
+     (see @(tsee sinteger-bit-roles-wfp)),
+     this is the number @('M') of value bits [C17:6.2.6.2/2],
+     whose associated exponents go from @('0') to @('M-1')."))
+  (cond ((endp roles) 0)
+        ((sinteger-bit-role-case (car roles) :value)
+         (1+ (sinteger-bit-roles-value-count (cdr roles))))
+        (t (sinteger-bit-roles-value-count (cdr roles))))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-value-count-alt-def
+    (equal (sinteger-bit-roles-value-count roles)
+           (len (sinteger-bit-roles-exponents roles)))
+    :induct t
+    :enable (sinteger-bit-roles-exponents len))
+
+  (more-returns
+   (m posp
+      :hyp (sinteger-bit-roles-wfp roles)
+      :rule-classes (:rewrite :type-prescription)
+      :hints (("Goal"
+               :in-theory (e/d (sinteger-bit-roles-wfp
+                                sinteger-bit-roles-value-count-alt-def)
+                               (sinteger-bit-roles-value-count)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define uinteger-sinteger-bit-roles-wfp ((uroles uinteger-bit-role-listp)
                                          (sroles sinteger-bit-role-listp))
   :returns (yes/no booleanp)
@@ -375,44 +447,6 @@
     :rule-classes (:rewrite :forward-chaining)
     :induct t
     :enable len))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uinteger-bit-roles-value-count ((roles uinteger-bit-role-listp))
-  :returns (n natp)
-  :short "Number of value bit roles in
-          a list of roles of unsigned integer bits."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the list of bit roles is well-formed
-     (see @(tsee uinteger-bit-roles-wfp)),
-     this is the number @('N') of value bits [C17:6.2.6.2/1],
-     whose associated exponents go from @('0') to @('N-1')."))
-  (cond ((endp roles) 0)
-        ((uinteger-bit-role-case (car roles) :value)
-         (1+ (uinteger-bit-roles-value-count (cdr roles))))
-        (t (uinteger-bit-roles-value-count (cdr roles))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sinteger-bit-roles-value-count ((roles sinteger-bit-role-listp))
-  :returns (m natp)
-  :short "Number of value bit roles in
-          a list of roles of signed integer bits."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the list of bit roles is well-formed
-     (see @(tsee sinteger-bit-roles-wfp)),
-     this is the number @('M') of value bits [C17:6.2.6.2/2],
-     whose associated exponents go from @('0') to @('M-1')."))
-  (cond ((endp roles) 0)
-        ((sinteger-bit-role-case (car roles) :value)
-         (1+ (sinteger-bit-roles-value-count (cdr roles))))
-        (t (sinteger-bit-roles-value-count (cdr roles))))
-  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -465,6 +499,46 @@
    traps)
   :require (uinteger-bit-roles-wfp bits)
   :pred uinteger-formatp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod sinteger-format
+  :short "Fixtype of formats of signed integer objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is for signed integer objects
+     other than those of type @('signed char'),
+     which are covered by @(tsee schar-format).
+     See [C17:6.2.6.2./2].")
+   (xdoc::p
+    "The format definition includes a list of bit roles,
+     which should be thought as the juxtaposition of
+     the bytes that form the unsigned integer object,
+     in little endian order, i.e. from lower to higher address.
+     The length of the list of bit roles
+     must be a mulitple of @('CHAR_BIT'),
+     which we capture in @(tsee uchar-format):
+     we express this constraint elsewhere,
+     because we do not have that value available here.
+     The list of bit roles must be well-formed.")
+   (xdoc::p
+    "The format description also identifies one of the three signed formats.
+     It is not clear from [C17] whether all the signed integer type,
+     within an implementation, use that same signed format,
+     but out model allows them to differ.")
+   (xdoc::p
+    "We also include a placeholder component meant to define
+     which bit values are trap representations [C17:6.2.6.2/5].
+     We plan to flesh this out in the future."))
+  ((bits sinteger-bit-role-listp
+         :reqfix (if (sinteger-bit-roles-wfp bits)
+                     bits
+                   (list (sinteger-bit-role-sign) (sinteger-bit-role-value 0))))
+   (signed signed-format)
+   traps)
+  :require (sinteger-bit-roles-wfp bits)
+  :pred sinteger-formatp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
