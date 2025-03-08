@@ -393,7 +393,15 @@
         ((uinteger-bit-role-case (car roles) :value)
          (1+ (uinteger-bit-roles-value-count (cdr roles))))
         (t (uinteger-bit-roles-value-count (cdr roles))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled uinteger-bit-roles-value-count-alt-def
+    (equal (uinteger-bit-roles-value-count roles)
+           (len (uinteger-bit-roles-exponents roles)))
+    :induct t
+    :enable (uinteger-bit-roles-exponents len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -412,7 +420,15 @@
         ((sinteger-bit-role-case (car roles) :value)
          (1+ (sinteger-bit-roles-value-count (cdr roles))))
         (t (sinteger-bit-roles-value-count (cdr roles))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-value-count-alt-def
+    (equal (sinteger-bit-roles-value-count roles)
+           (len (sinteger-bit-roles-exponents roles)))
+    :induct t
+    :enable (sinteger-bit-roles-exponents len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
