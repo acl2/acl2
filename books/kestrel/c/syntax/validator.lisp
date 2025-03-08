@@ -318,7 +318,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-iconst ((iconst iconstp) (ienv ienvp))
-  :returns (mv erp (type typep))
+  :returns (mv erp (new-iconst iconstp) (type typep))
   :short "Validate an integer constant."
   :long
   (xdoc::topstring
@@ -328,76 +328,86 @@
      We formalize that table here, and we return the type of the constant.
      If the constant is too large,
      it does not have a type, and it is invalid."))
-  (b* (((reterr) (irr-type))
+  (b* (((reterr) (irr-iconst) (irr-type))
        ((iconst iconst) iconst)
-       (value (valid-dec/oct/hex-const iconst.core)))
-    (cond
-     ((not iconst.suffix?)
-      (if (dec/oct/hex-const-case iconst.core :dec)
-          (cond ((sint-rangep value ienv) (retok (type-sint)))
-                ((slong-rangep value ienv) (retok (type-slong)))
-                ((sllong-rangep value ienv) (retok (type-sllong)))
-                (t (reterr (msg "The constant ~x0 is too large."
-                                (iconst-fix iconst)))))
-        (cond ((sint-rangep value ienv) (retok (type-sint)))
-              ((uint-rangep value ienv) (retok (type-uint)))
-              ((slong-rangep value ienv) (retok (type-slong)))
-              ((ulong-rangep value ienv) (retok (type-ulong)))
-              ((sllong-rangep value ienv) (retok (type-sllong)))
-              ((ullong-rangep value ienv) (retok (type-ullong)))
-              (t (reterr (msg "The constant ~x0 is too large."
-                              (iconst-fix iconst)))))))
-     ((isuffix-case iconst.suffix? :u)
-      (cond ((uint-rangep value ienv) (retok (type-uint)))
-            ((ulong-rangep value ienv) (retok (type-ulong)))
-            ((ullong-rangep value ienv) (retok (type-ullong)))
-            (t (reterr (msg "The constant ~x0 is too large."
-                            (iconst-fix iconst))))))
-     ((isuffix-case iconst.suffix? :l)
-      (cond ((member-eq (lsuffix-kind (isuffix-l->length iconst.suffix?))
-                        '(:locase-l :upcase-l))
-             (if (dec/oct/hex-const-case iconst.core :dec)
-                 (cond ((slong-rangep value ienv) (retok (type-slong)))
-                       ((sllong-rangep value ienv) (retok (type-sllong)))
-                       (t (reterr (msg "The constant ~x0 is too large."
-                                       (iconst-fix iconst)))))
-               (cond ((slong-rangep value ienv) (retok (type-slong)))
-                     ((ulong-rangep value ienv) (retok (type-ulong)))
-                     ((sllong-rangep value ienv) (retok (type-sllong)))
-                     ((ullong-rangep value ienv) (retok (type-ullong)))
-                     (t (reterr (msg "The constant ~x0 is too large."
-                                     (iconst-fix iconst)))))))
-            ((member-eq (lsuffix-kind (isuffix-l->length iconst.suffix?))
-                        '(:locase-ll :upcase-ll))
-             (if (dec/oct/hex-const-case iconst.core :dec)
-                 (cond ((sllong-rangep value ienv) (retok (type-sllong)))
-                       (t (reterr (msg "The constant ~x0 is too large."
-                                       (iconst-fix iconst)))))
-               (cond ((sllong-rangep value ienv) (retok (type-sllong)))
-                     ((ullong-rangep value ienv) (retok (type-ullong)))
-                     (t (reterr (msg "The constant ~x0 is too large."
-                                     (iconst-fix iconst)))))))
-            (t (prog2$ (impossible) (reterr t)))))
-     ((or (and (isuffix-case iconst.suffix? :ul)
-               (member-eq (lsuffix-kind (isuffix-ul->length iconst.suffix?))
-                          '(:locase-l :upcase-l)))
-          (and (isuffix-case iconst.suffix? :lu)
-               (member-eq (lsuffix-kind (isuffix-lu->length iconst.suffix?))
-                          '(:locase-l :upcase-l))))
-      (cond ((ulong-rangep value ienv) (retok (type-ulong)))
-            ((ullong-rangep value ienv) (retok (type-ullong)))
-            (t (reterr (msg "The constant ~x0 is too large."
-                            (iconst-fix iconst))))))
-     ((or (and (isuffix-case iconst.suffix? :ul)
-               (member-eq (lsuffix-kind (isuffix-ul->length iconst.suffix?))
-                          '(:locase-ll :upcase-ll)))
-          (and (isuffix-case iconst.suffix? :lu)
-               (member-eq (lsuffix-kind (isuffix-lu->length iconst.suffix?))
-                          '(:locase-ll :upcase-ll))))
-      (cond ((ullong-rangep value ienv) (retok (type-ullong)))
-            (t (reterr (msg "The constant ~x0 is too large."
-                            (iconst-fix iconst))))))
-     (t (prog2$ (impossible) (reterr t)))))
+       (value (valid-dec/oct/hex-const iconst.core))
+       ((erp type)
+        (b* (((reterr) (irr-type)))
+          (cond
+           ((not iconst.suffix?)
+            (if (dec/oct/hex-const-case iconst.core :dec)
+                (cond ((sint-rangep value ienv) (retok (type-sint)))
+                      ((slong-rangep value ienv) (retok (type-slong)))
+                      ((sllong-rangep value ienv) (retok (type-sllong)))
+                      (t (reterr (msg "The constant ~x0 is too large."
+                                      (iconst-fix iconst)))))
+              (cond ((sint-rangep value ienv) (retok (type-sint)))
+                    ((uint-rangep value ienv) (retok (type-uint)))
+                    ((slong-rangep value ienv) (retok (type-slong)))
+                    ((ulong-rangep value ienv) (retok (type-ulong)))
+                    ((sllong-rangep value ienv) (retok (type-sllong)))
+                    ((ullong-rangep value ienv) (retok (type-ullong)))
+                    (t (reterr (msg "The constant ~x0 is too large."
+                                    (iconst-fix iconst)))))))
+           ((isuffix-case iconst.suffix? :u)
+            (cond ((uint-rangep value ienv) (retok (type-uint)))
+                  ((ulong-rangep value ienv) (retok (type-ulong)))
+                  ((ullong-rangep value ienv) (retok (type-ullong)))
+                  (t (reterr (msg "The constant ~x0 is too large."
+                                  (iconst-fix iconst))))))
+           ((isuffix-case iconst.suffix? :l)
+            (cond
+             ((member-eq (lsuffix-kind (isuffix-l->length iconst.suffix?))
+                         '(:locase-l :upcase-l))
+              (if (dec/oct/hex-const-case iconst.core :dec)
+                  (cond ((slong-rangep value ienv) (retok (type-slong)))
+                        ((sllong-rangep value ienv) (retok (type-sllong)))
+                        (t (reterr (msg "The constant ~x0 is too large."
+                                        (iconst-fix iconst)))))
+                (cond ((slong-rangep value ienv) (retok (type-slong)))
+                      ((ulong-rangep value ienv) (retok (type-ulong)))
+                      ((sllong-rangep value ienv) (retok (type-sllong)))
+                      ((ullong-rangep value ienv) (retok (type-ullong)))
+                      (t (reterr (msg "The constant ~x0 is too large."
+                                      (iconst-fix iconst)))))))
+             ((member-eq (lsuffix-kind (isuffix-l->length iconst.suffix?))
+                         '(:locase-ll :upcase-ll))
+              (if (dec/oct/hex-const-case iconst.core :dec)
+                  (cond ((sllong-rangep value ienv) (retok (type-sllong)))
+                        (t (reterr (msg "The constant ~x0 is too large."
+                                        (iconst-fix iconst)))))
+                (cond ((sllong-rangep value ienv) (retok (type-sllong)))
+                      ((ullong-rangep value ienv) (retok (type-ullong)))
+                      (t (reterr (msg "The constant ~x0 is too large."
+                                      (iconst-fix iconst)))))))
+             (t (prog2$ (impossible) (reterr t)))))
+           ((or (and (isuffix-case iconst.suffix? :ul)
+                     (member-eq (lsuffix-kind
+                                 (isuffix-ul->length iconst.suffix?))
+                                '(:locase-l :upcase-l)))
+                (and (isuffix-case iconst.suffix? :lu)
+                     (member-eq (lsuffix-kind
+                                 (isuffix-lu->length iconst.suffix?))
+                                '(:locase-l :upcase-l))))
+            (cond ((ulong-rangep value ienv) (retok (type-ulong)))
+                  ((ullong-rangep value ienv) (retok (type-ullong)))
+                  (t (reterr (msg "The constant ~x0 is too large."
+                                  (iconst-fix iconst))))))
+           ((or (and (isuffix-case iconst.suffix? :ul)
+                     (member-eq (lsuffix-kind
+                                 (isuffix-ul->length iconst.suffix?))
+                                '(:locase-ll :upcase-ll)))
+                (and (isuffix-case iconst.suffix? :lu)
+                     (member-eq (lsuffix-kind
+                                 (isuffix-lu->length iconst.suffix?))
+                                '(:locase-ll :upcase-ll))))
+            (cond ((ullong-rangep value ienv) (retok (type-ullong)))
+                  (t (reterr (msg "The constant ~x0 is too large."
+                                  (iconst-fix iconst))))))
+           (t (prog2$ (impossible) (reterr t))))))
+       (info (make-iconst-info :type type :value value))
+       (new-iconst (change-iconst iconst :info info)))
+    (retok new-iconst type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -727,18 +737,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-const ((const constp) (table valid-tablep) (ienv ienvp))
-  :returns (mv erp (type typep))
+  :returns (mv erp (new-const constp) (type typep))
   :short "Validate a constant."
   :long
   (xdoc::topstring
    (xdoc::p
     "If validation is successful, we return the type of the constant."))
-  (const-case
-   const
-   :int (valid-iconst const.unwrap ienv)
-   :float (retok (valid-fconst const.unwrap))
-   :enum (valid-enum-const const.unwrap table)
-   :char (valid-cconst const.unwrap))
+  (b* (((reterr) (irr-const) (irr-type)))
+    (const-case
+     const
+     :int (b* (((erp iconst type) (valid-iconst const.unwrap ienv)))
+            (retok (const-int iconst) type))
+     :float (b* ((type (valid-fconst const.unwrap)))
+              (retok (const-fix const) type))
+     :enum (b* (((erp type) (valid-enum-const const.unwrap table)))
+             (retok (const-fix const) type))
+     :char (b* (((erp type) (valid-cconst const.unwrap)))
+             (retok (const-fix const) type))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2068,8 +2083,8 @@
                        type
                        nil
                        (valid-table-fix table)))
-       :const (b* (((erp type) (valid-const expr.const table ienv)))
-                (retok (expr-fix expr) type nil (valid-table-fix table)))
+       :const (b* (((erp const type) (valid-const expr.const table ienv)))
+                (retok (expr-const const) type nil (valid-table-fix table)))
        :string (b* (((erp type) (valid-stringlit-list expr.strings)))
                  (retok (expr-fix expr) type nil (valid-table-fix table)))
        :paren (b* (((erp new-inner type types table)
