@@ -360,7 +360,7 @@
      such as the value calculated during validation."))
   ((core dec/oct/hex-const)
    (suffix? isuffix-option)
-   (iconst any))
+   (info any))
   :pred iconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
