@@ -64,6 +64,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled simpadd-exec-binary-strict-pure-when-add-alt
+  :short "Alternative symbolic execution theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in the function equivalence proofs.")
+   (xdoc::p
+    "It is a temporary rule, just like the current function equivalence proofs,
+     which we are in the process of replacing with
+     more robust proofs generated bottom-up."))
+  (implies (and (equal c::op (c::binop-add))
+                (equal c::y (c::expr-value->value eval))
+                (equal c::objdes-y (c::expr-value->object eval))
+                (not (equal (c::value-kind c::x) :array))
+                (not (equal (c::value-kind c::y) :array))
+                (equal c::val (c::add-values c::x c::y))
+                (c::valuep c::val))
+           (equal (c::exec-binary-strict-pure
+                   c::op
+                   (c::expr-value c::x c::objdes-x)
+                   eval)
+                  (c::expr-value c::val nil)))
+  :use c::exec-binary-strict-pure-when-add)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection simpadd0-supporting-lemma
   :parents (simpadd0-implementation)
   :short "Supporting lemma for @(tsee simpadd0)."
@@ -215,32 +241,6 @@
              c::apconvert-expr-value
              c::add-values-of-sint-and-sint0
              ldm-expr-when-expr-zerop)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled simpadd-exec-binary-strict-pure-when-add-alt
-  :short "Alternative symbolic execution theorem."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in the function equivalence proofs.")
-   (xdoc::p
-    "It is a temporary rule, just like the current function equivalence proofs,
-     which we are in the process of replacing with
-     more robust proofs generated bottom-up."))
-  (implies (and (equal c::op (c::binop-add))
-                (equal c::y (c::expr-value->value eval))
-                (equal c::objdes-y (c::expr-value->object eval))
-                (not (equal (c::value-kind c::x) :array))
-                (not (equal (c::value-kind c::y) :array))
-                (equal c::val (c::add-values c::x c::y))
-                (c::valuep c::val))
-           (equal (c::exec-binary-strict-pure
-                   c::op
-                   (c::expr-value c::x c::objdes-x)
-                   eval)
-                  (c::expr-value c::val nil)))
-  :use c::exec-binary-strict-pure-when-add)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
