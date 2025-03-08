@@ -17,6 +17,8 @@
 ;; In general, we import function names, but not theorem names, from other
 ;; packages into this package.
 
+;; TODO: Combine some of these lists
+
 ;(include-book "std/portcullis" :dir :system)
 (include-book "projects/x86isa/portcullis/portcullis" :dir :system)
 (include-book "rtl/rel11/portcullis" :dir :system)
@@ -1379,6 +1381,16 @@
     log2
     power-of-2p
 
+    ;; list and bv-list stuff:
+    prefixp
+    ;; byte-listp ; todo: clash!
+    all-integerp
+    all-all-unsigned-byte-p
+    all-true-listp
+    items-have-len
+    all-unsigned-byte-p
+    bit-to-bool
+
     farg1
     farg2
     farg3
@@ -1442,7 +1454,10 @@
     dagify-term2
     axe-syntaxp
     axe-bind-free
-    dag-array ; for axe-syntaxp
+    axe-binding-hyp
+    work-hard ; may not be needed
+    axe-rewrite-objective ; may not be needed
+    dag-array ; for calls of axe-syntaxp functions
     def-simplified-x86
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
@@ -1653,6 +1668,8 @@
 
     x86isa::result
     x86isa::raw-result
+
+    x86isa::low-nibble
 ))
 
 ;; TODO: Think about this...
