@@ -354,9 +354,13 @@
      As mentioned in @(tsee dec/oct/hex-const),
      our fixtypes are factored slightly differently.
      An integer constant consists of a decimal, octal, or hexadecimal constant,
-     and of an optional integer suffix."))
+     and of an optional integer suffix.")
+   (xdoc::p
+    "Integer constants may be accompanied by some additional information,
+     such as the value calculated during validation."))
   ((core dec/oct/hex-const)
-   (suffix? isuffix-option))
+   (suffix? isuffix-option)
+   (info any))
   :pred iconstp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1268,7 +1272,8 @@
 (fty::deftypes exprs/decls/stmts
   :short "Fixtypes of expressions, declarations, statements,
           and related entities
-          [C17:6.5] [C17:6.6] [C17:6.7] [C17:6.8] [C17:A.2.1] [C17:A.2.2] [C17:A.2.3]."
+          [C17:6.5] [C17:6.6] [C17:6.7] [C17:6.8]
+          [C17:A.2.1] [C17:A.2.2] [C17:A.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p

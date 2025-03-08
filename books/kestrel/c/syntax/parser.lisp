@@ -3651,7 +3651,8 @@
                    :core (make-dec/oct/hex-const-hex
                           :prefix hprefix
                           :digits hexdigs)
-                   :suffix? nil))
+                   :suffix? nil
+                   :info nil))
                  hexdigs-last-pos
                  parstate))
          ((= char (char-code #\.)) ; 0 x/X hexdigs .
@@ -3733,7 +3734,8 @@
                      :core (make-dec/oct/hex-const-hex
                             :prefix hprefix
                             :digits hexdigs)
-                     :suffix? isuffix?))
+                     :suffix? isuffix?
+                     :info nil))
                    (cond (isuffix? suffix-last/next-pos)
                          (t hexdigs-last-pos))
                    parstate))))))))
@@ -3817,7 +3819,8 @@
                :core (make-dec/oct/hex-const-dec
                       :value (str::dec-digit-chars-value
                               (cons first-digit decdigs)))
-               :suffix? nil))
+               :suffix? nil
+               :info nil))
              (cond (decdigs decdigs-last-pos)
                    (t (position-fix first-pos)))
              parstate))
@@ -3897,7 +3900,8 @@
                  :core (make-dec/oct/hex-const-dec
                         :value (str::dec-digit-chars-value
                                 (cons first-digit decdigs)))
-                 :suffix? isuffix?))
+                 :suffix? isuffix?
+                 :info nil))
                (cond (isuffix? suffix-last/next-pos)
                      (decdigs decdigs-last-pos)
                      (t (position-fix first-pos)))
@@ -4110,7 +4114,8 @@
                  :core (make-dec/oct/hex-const-oct
                         :leading-zeros (1+ (oct-iconst-leading-zeros digits))
                         :value (str::oct-digit-chars-value digits))
-                 :suffix? nil))
+                 :suffix? nil
+                 :info nil))
                (cond (digits digits-last-pos)
                      (t (position-fix zero-pos)))
                parstate))
@@ -4199,7 +4204,8 @@
                    :core (make-dec/oct/hex-const-oct
                           :leading-zeros (1+ (oct-iconst-leading-zeros digits))
                           :value (str::oct-digit-chars-value digits))
-                   :suffix? isuffix?))
+                   :suffix? isuffix?
+                   :info nil))
                  (cond (isuffix? suffix-last/next-pos)
                        (digits digits-last-pos)
                        (t (position-fix zero-pos)))
@@ -4270,7 +4276,8 @@
                    :core (make-dec/oct/hex-const-oct
                           :leading-zeros 1
                           :value 0)
-                   :suffix? nil))
+                   :suffix? nil
+                   :info nil))
                  (position-fix first-pos)
                  parstate))
          ((or (= char (char-code #\x)) ; 0 x
