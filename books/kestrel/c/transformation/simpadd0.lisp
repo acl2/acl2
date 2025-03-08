@@ -65,6 +65,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled simpadd-exec-binary-strict-pure-when-add-alt
+  :parents (simpadd0-implementation)
   :short "Alternative symbolic execution theorem."
   :long
   (xdoc::topstring
