@@ -17,6 +17,8 @@
 ;; In general, we import function names, but not theorem names, from other
 ;; packages into this package.
 
+;; TODO: Combine some of these lists
+
 ;(include-book "std/portcullis" :dir :system)
 (include-book "projects/x86isa/portcullis/portcullis" :dir :system)
 (include-book "rtl/rel11/portcullis" :dir :system)
@@ -406,6 +408,11 @@
     x86isa::imul-spec-16
     x86isa::imul-spec-32
     x86isa::imul-spec-64
+
+    x86isa::div-spec-8
+    x86isa::div-spec-16
+    x86isa::div-spec-32
+    x86isa::div-spec-64
 
     x86isa::idiv-spec-8
     x86isa::idiv-spec-16
@@ -1023,6 +1030,8 @@
 
     x86isa::i48p$inline  ;todo: more like this
 
+    x86isa::n64-to-i64  ;todo: more like this
+
     x86isa::code-segment-descriptor-attributesbits->d
     x86isa::code-segment-descriptor-attributesbits->d$inline
     x86isa::code-segment-descriptor-attributesbits->p
@@ -1035,6 +1044,10 @@
     ;; error values:
     x86isa::rime-size-opt-error
     ;; there is no wime-size-opt-error
+    x86isa::quotient
+    x86isa::remainder
+    x86isa::quotient-int
+    x86isa::remainder-int
 
     x86isa::rr32$inline
     x86isa::reg-index$inline
@@ -1368,6 +1381,16 @@
     log2
     power-of-2p
 
+    ;; list and bv-list stuff:
+    prefixp
+    ;; byte-listp ; todo: clash!
+    all-integerp
+    all-all-unsigned-byte-p
+    all-true-listp
+    items-have-len
+    all-unsigned-byte-p
+    bit-to-bool
+
     farg1
     farg2
     farg3
@@ -1431,7 +1454,11 @@
     dagify-term2
     axe-syntaxp
     axe-bind-free
-    dag-array ; for axe-syntaxp
+    axe-binding-hyp
+    work-hard ; may not be needed
+    axe-rewrite-objective ; may not be needed
+    dag-array ; for calls of axe-syntaxp functions
+    def-simplified-x86
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
     pseudo-dag-arrayp
@@ -1518,6 +1545,7 @@
     deftest
 
     ruleset
+    e/d*
 
     defconst-computed-simple))
 
@@ -1638,6 +1666,11 @@
     x86isa::reg
     x86isa::rex
     x86isa::qword
+
+    x86isa::result
+    x86isa::raw-result
+
+    x86isa::low-nibble
 ))
 
 ;; TODO: Think about this...
