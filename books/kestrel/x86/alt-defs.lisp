@@ -85,7 +85,8 @@
 (defthm ror-spec-64-alt-def
   (equal (ror-spec-64 x n rflags)
          (let* ((n (bvchop 6 n))
-                (result-value (rightrotate 64 n x)))
+                (result-value (rightrotate 64 n x)) ; todo: pass the unchopped n here (look at how rightrotate chops)
+                )
            (mv result-value
                ;; output flags:
                (if (equal n 0)
@@ -95,7 +96,6 @@
                      (!rflagsbits->cf
                        (getbit 0 x) ;(getbit 63 (rightrotate 64 1 x))
                        (!rflagsbits->of
-                         ;; simplify?:
                          (bitxor (getbit 0 x) ; (getbit 63 (rightrotate 64 1 x))
                                  (getbit 63 x) ; (getbit 62 (rightrotate 64 1 x))
                                  )
