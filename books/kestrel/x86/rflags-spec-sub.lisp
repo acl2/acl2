@@ -495,3 +495,17 @@
   :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; not sure if we want this
+(defthm sub-zf-spec64-when-not-equal-1
+  (implies (not (equal dst src))
+           (equal (sub-zf-spec64 dst src)
+                  0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec64))))
+
+;; not sure if we want this
+(defthm sub-zf-spec64-when-not-equal-2
+  (implies (not (equal src dst))
+           (equal (sub-zf-spec64 dst src)
+                  0))
+  :hints (("Goal" :in-theory (enable sub-zf-spec64))))
