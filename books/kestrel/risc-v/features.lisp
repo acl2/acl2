@@ -77,6 +77,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define feat-32p ((feat featp))
+  :returns (yes/no booleanp)
+  :short "Check if the features indicate 32 bits."
+  (feat-bits-case (feat->bits feat) :32)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-64p ((feat featp))
+  :returns (yes/no booleanp)
+  :short "Check if the features indicate 64 bits."
+  (feat-bits-case (feat->bits feat) :64)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define feat->xlen ((feat featp))
   :returns (xlen posp :rule-classes (:rewrite :type-prescription))
   :short "The @('XLEN') parameter [ISA:1.3]."
@@ -94,11 +110,13 @@
 
   (defret feat->xlen-when-32-bits
     (equal xlen 32)
-    :hyp (feat-bits-case (feat->bits feat) :32))
+    :hyp (feat-32p feat)
+    :hints (("Goal" :in-theory (enable feat-32p))))
 
   (defret feat->xlen-when-64-bits
     (equal xlen 64)
-    :hyp (feat-bits-case (feat->bits feat) :64)))
+    :hyp (feat-64p feat)
+    :hints (("Goal" :in-theory (enable feat-64p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

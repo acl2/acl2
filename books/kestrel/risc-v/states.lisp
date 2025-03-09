@@ -143,7 +143,7 @@
 
   (defrule ubyte32-listp-of-stat->xregs
     (implies (and (stat-validp stat feat)
-                  (feat-bits-case (feat->bits feat) :32))
+                  (feat-32p feat))
              (ubyte32-listp (stat->xregs stat)))
     :hints
     (("Goal"
@@ -151,7 +151,7 @@
 
   (defrule ubyte64-listp-of-stat->xregs
     (implies (and (stat-validp stat feat)
-                  (feat-bits-case (feat->bits feat) :64))
+                  (feat-64p feat))
              (ubyte64-listp (stat->xregs stat)))
     :hints
     (("Goal"
@@ -170,13 +170,13 @@
 
   (defrule ubyte32p-of-stat->pc
     (implies (and (stat-validp stat feat)
-                  (feat-bits-case (feat->bits feat) :32))
+                  (feat-32p feat))
              (ubyte32p (stat->pc stat)))
     :hints (("Goal" :in-theory (enable ubyte32p))))
 
   (defrule ubyte64p-of-stat->pc
     (implies (and (stat-validp stat feat)
-                  (feat-bits-case (feat->bits feat) :64))
+                  (feat-64p feat))
              (ubyte64p (stat->pc stat)))
     :hints (("Goal" :in-theory (enable ubyte64p))))
 
@@ -220,13 +220,13 @@
   (defret ubyte32p-of-read-xreg-unsigned
     (ubyte32p val)
     :hyp (and (stat-validp stat feat)
-              (feat-bits-case (feat->bits feat) :32)
+              (feat-32p feat)
               (< (lnfix reg) (feat->xnum feat))))
 
   (defret ubyte64p-of-read-xreg-unsigned
     (ubyte64p val)
     :hyp (and (stat-validp stat feat)
-              (feat-bits-case (feat->bits feat) :64)
+              (feat-64p feat)
               (< (lnfix reg) (feat->xnum feat)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -252,11 +252,11 @@
   (defret sbyte32p-of-read-xreg-signed
     (sbyte32p val)
     :hyp (and (stat-validp stat feat)
-              (feat-bits-case (feat->bits feat) :32)
+              (feat-32p feat)
               (< (lnfix reg) (feat->xnum feat))))
 
   (defret sbyte64p-of-read-xreg-signed
     (sbyte64p val)
     :hyp (and (stat-validp stat feat)
-              (feat-bits-case (feat->bits feat) :64)
+              (feat-64p feat)
               (< (lnfix reg) (feat->xnum feat)))))
