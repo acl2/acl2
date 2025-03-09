@@ -1316,6 +1316,8 @@
     true-listp-of-cons
     len-update-nth ;pretty aggressive
     true-listp-of-update-nth-2
+    cdr-of-update-nth
+    car-of-update-nth
     nthcdr-of-nil
     nth-of-take-2-gen ;quite aggressive
     repeat-becomes-repeat-tail
@@ -1340,7 +1342,7 @@
     consp-of-append
     append-of-nil-arg1
     append-of-nil-arg2
-    consp-of-update-nth
+    consp-of-update-nth ;move up
     true-listp-of-true-list-fix2
     len-of-true-list-fix
     true-list-fix-when-true-listp
@@ -1783,8 +1785,7 @@
 ;    logext-list-of-logext-list
 
     ;; bvchop-of-bvnth
-    cdr-of-update-nth
-    car-of-update-nth))
+    ))
 
 ;fixme a few of these are -all rules...
 ;ffixme we shouldn't use these without the trim-helpers  - add them to this?
