@@ -1287,6 +1287,9 @@
     not-equal-of-nil-and-update-nth
     consp-of-update-nth))
 
+;; One goal of this rule-list is to be able to simplify terms involving the
+;; special functions that unroll-spec-basic has been instructed NOT to unroll
+;; when :rules is :auto.
 (defun list-rules ()
   (declare (xargs :guard t))
   '(;; Simple opener rules:
@@ -1341,6 +1344,11 @@
     true-listp-of-update-nth-2
     ;; should we have a rule for take-of-update-nth ?
 
+    ;; Rules about firstn:
+    car-of-firstn
+    len-of-firstn ;sun feb  6 11:16:17 2011
+    ;; todo: more (see lists above)
+
     take-of-0 ;take-when-zp-n
     take-does-nothing ; introduces true-list-fix
     take-of-true-list-fix ; more like this, but lower priority?
@@ -1383,7 +1391,7 @@
     len-non-negative
     nthcdr-of-append-gen
     firstn-of-append ;todo: do we prefer firstn or take?  are rules about both needed?
-    firstn-becomes-take-gen
+    firstn-becomes-take-gen ;try this first?
     consp-of-reverse-list
     nth-of-reverse-list ;sat dec  4 13:20:17 2010
     reverse-list-of-cons
@@ -1392,7 +1400,7 @@
     len-of-reverse-list ;sun feb  6 11:15:00 2011
 
     nth-of-append ;may be bad if we can't resolve the if test?
-    len-of-firstn ;sun feb  6 11:16:17 2011
+
     equal-cons-nil-1
     equal-cons-nil-2
     consp-of-myif-strong))
@@ -1652,7 +1660,7 @@
   (append
    (bv-array-rules-simple)
    '(bv-array-write-of-bvxor             ;use a trim rule?
-     len-of-bv-array-write                         ;a bv-list rule
+     len-of-bv-array-write
      all-unsigned-byte-p-of-bv-array-write
      true-listp-of-bv-array-write
 ;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays-alt
@@ -2021,7 +2029,7 @@
           (bv-array-rules) ;todo: drop?
           (type-rules)
           (core-rules-bv)
-          (core-rules-non-bv) ;fixme remove these?
+          (core-rules-non-bv) ; todo: remove these?
           (bvif-rules)
           (unsigned-byte-p-rules)
           ;; probably more stuff needs to be added to this??  list stuff from more-rules / more-rules-yuck / jvm-rules-jvm?
@@ -3970,7 +3978,7 @@
            '(nth-becomes-nth-to-unroll-for-2d-array
              nth-to-unroll-opener
              collect-constants-over-<-2
-             ;; group-base group-unroll ; I guess we get these automatically from calling opener-rules-for-fns
+             ;; group-base group-unroll ; I guess we get these automatically from calling opener-rules-for-fns (but not with :rules :standard, so try adding these back here)
              len-of-group ;; these are not needed if we unroll group/ungroup
              consp-of-group
              nth-of-group
