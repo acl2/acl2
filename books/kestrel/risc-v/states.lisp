@@ -16,6 +16,7 @@
 
 (include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
 
+(local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
@@ -224,6 +225,38 @@
 
   (defret ubyte64p-of-read-xreg-unsigned
     (ubyte64p val)
+    :hyp (and (stat-validp stat feat)
+              (feat-bits-case (feat->bits feat) :64)
+              (< (lnfix reg) (feat->xnum feat)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-xreg-signed ((reg natp) (stat statp) (feat featp))
+  :guard (and (stat-validp stat feat)
+              (< (lnfix reg) (feat->xnum feat)))
+  :returns (val (signed-byte-p (feat->xlen feat) val)
+                :hints (("Goal" :in-theory (enable feat->xlen))))
+  :short "Read a signed integer from an @('x') register."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read an unsigned integer,
+     and we convert it to signed according to @('XLEN')."))
+  (logext (feat->xlen feat)
+          (read-xreg-unsigned reg stat feat))
+  :hooks (:fix)
+  :type-prescription (integerp (read-xreg-signed reg stat feat))
+
+  ///
+
+  (defret sbyte32p-of-read-xreg-signed
+    (sbyte32p val)
+    :hyp (and (stat-validp stat feat)
+              (feat-bits-case (feat->bits feat) :32)
+              (< (lnfix reg) (feat->xnum feat))))
+
+  (defret sbyte64p-of-read-xreg-signed
+    (sbyte64p val)
     :hyp (and (stat-validp stat feat)
               (feat-bits-case (feat->bits feat) :64)
               (< (lnfix reg) (feat->xnum feat)))))
