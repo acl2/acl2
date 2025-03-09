@@ -301,3 +301,75 @@
   (logext 32 (read-xreg-unsigned reg stat feat))
   :hooks (:fix)
   :type-prescription (integerp (read-xreg-signed32 reg stat feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-xreg ((reg natp) (val integerp) (stat statp) (feat featp))
+  :guard (and (stat-validp stat feat)
+              (< (lnfix reg) (feat->xnum feat)))
+  :returns (new-stat statp)
+  :short "Write an integer to an @('x') register."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The integer may have any size:
+     we only keep its low @('XLEN') bits,
+     and write those to the register.")
+   (xdoc::p
+    "The index must be less than the number @('n') of registers,
+     so that the registers @('x0') to @('x<n>') can be indexed.")
+   (xdoc::p
+    "As explained in @(tsee stat),
+     @('x0') is not modeled explicitly, since it is hardwired to 0.
+     Thus, the 0 index is treated separately;
+     the other cases are handled by decrementing the index by 1."))
+  (b* ((reg (lnfix reg)))
+    (if (= reg 0)
+        (stat-fix stat)
+      (change-stat stat :xregs (update-nth (1- reg)
+                                           (loghead (feat->xlen feat)
+                                                    (acl2::lifix val))
+                                           (stat->xregs stat)))))
+  :hooks (:fix)
+
+  ///
+
+  (defret stat-validp-of-write-xreg
+    (stat-validp new-stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix reg) (feat->xnum feat)))
+    :hints (("Goal" :in-theory (enable stat-validp fix max)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-xreg-32 ((reg natp) (val integerp) (stat statp) (feat featp))
+  :guard (and (stat-validp stat feat)
+              (feat-64p feat)
+              (< (lnfix reg) (feat->xnum feat)))
+  :returns (new-stat statp)
+  :short "Write an integer to the low 32 bit of a 64-bit @('x') register,
+          sign-extending to the high 32 bits of the register."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is is only defined when @('XLEN') is 64;
+     when it is 32, @(tsee write-xreg) already writes all 32 bits.
+     When @('XLEN') is 64,
+     several instructions write to the low 32 bits of a register,
+     sign-extending to the high 32 bits;
+     so it is useful to introduce this abbreviation,
+     which takes an integer of any size,
+     keeps the low 32 bits,
+     and writes their sign extension to the register."))
+  (write-xreg reg
+              (logext 32 (acl2::lifix val))
+              stat
+              feat)
+  :hooks (:fix)
+
+  ///
+
+  (defret stat-validp-of-write-xreg-32
+    (stat-validp new-stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix reg) (feat->xnum feat)))))
