@@ -190,8 +190,7 @@
 (define read-xreg-unsigned ((reg natp) (stat statp) (feat featp))
   :guard (and (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
-  :returns (val (unsigned-byte-p (feat->xlen feat) val)
-                :hints (("Goal" :in-theory (enable feat->xlen))))
+  :returns (val (unsigned-byte-p (feat->xlen feat) val))
   :short "Read an unsigned integer from an @('x') register."
   :long
   (xdoc::topstring
@@ -234,8 +233,7 @@
 (define read-xreg-signed ((reg natp) (stat statp) (feat featp))
   :guard (and (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
-  :returns (val (signed-byte-p (feat->xlen feat) val)
-                :hints (("Goal" :in-theory (enable feat->xlen))))
+  :returns (val (signed-byte-p (feat->xlen feat) val))
   :short "Read a signed integer from an @('x') register."
   :long
   (xdoc::topstring
