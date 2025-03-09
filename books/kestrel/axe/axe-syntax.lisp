@@ -1,7 +1,7 @@
 ; Utilities to support Axe's version of syntaxp, bind-free, etc.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -60,6 +60,7 @@
   t)
 
 ;; TODO: Document.
+;; Only supported by rewriter-alt?  Add support in other rewriters?
 ;leaving this enabled, so that it vanishes during proofs
 (defun axe-rewrite-objective (x)
   (declare (ignore x))
