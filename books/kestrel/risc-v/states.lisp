@@ -213,6 +213,9 @@
 
   ///
 
+  (more-returns
+   (val natp :rule-classes :type-prescription))
+
   (defret ubyte32p-of-read-xreg-unsigned
     (ubyte32p val)
     :hyp (and (stat-validp stat feat)
