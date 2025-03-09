@@ -200,6 +200,7 @@
                                 '(x86isa::x86-cbw/cwd/cdqe
                                   x86isa::x86-cwd/cdq/cqo))))
 
+;; todo: can we just use list-rules?
 (defun list-rules-x86 ()
   (declare (xargs :guard t))
   '(atom ;open to expose consp

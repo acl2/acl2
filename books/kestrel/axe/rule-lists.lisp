@@ -1289,35 +1289,66 @@
 
 (defun list-rules ()
   (declare (xargs :guard t))
-  '(
-    ;; simple opener rules:
-    atom ; opens to expose CONSP ;thu mar  4 22:01:54 2010
-    endp ; opens to expore ATOM (todo: go directly?) ;fri dec 24 16:32:13 2010
-    ;; what do we want to do about LISTP (not used very much)?
-    ;; rules about take:
-    take-of-0 ;take-when-zp-n ;sun feb 20 00:29:56 2011
-    take-of-append
-    len-of-take
-    consp-of-take
-    car-of-take-strong
-    cdr-of-take
-    take-of-cons
-    true-listp-of-take
-    take-of-take
-    take-does-nothing ; introduces true-list-fix
-    take-of-true-list-fix ; more like this, but lower priority?
-    ;; rules about cdr:
-    true-listp-of-cdr
-    ;; rules about cons:
+  '(;; Simple opener rules:
+    atom ; opens to expose CONSP
+    endp ; opens to expore ATOM (todo: go directly?)
+
+    ;; Rules about cons:
     car-cons
     cdr-cons
     consp-of-cons ;also elsewhere?
-    ;; mixed rules:
+    len-of-cons
     true-listp-of-cons
-    len-update-nth ;pretty aggressive
-    true-listp-of-update-nth-2
-    cdr-of-update-nth
+    take-of-cons
+
+    ;; Rules about cdr:
+    ;; todo: rule for car-of-cdr?
+    ;; todo: cdr-of-cdr-becomes-nthcdr
+    ;; todo: consp-of-cdr
+    ;; todo: len-of-cdr
+    true-listp-of-cdr
+    ;; todo: rule for take-of-cdr?
+
+    ;; Rules about take:
+    car-of-take-strong
+    cdr-of-take
+    consp-of-take
+    len-of-take
+    true-listp-of-take
+    take-of-take
+
+    ;; Rules about append:
+    car-of-append
+    cdr-of-append
+    consp-of-append
+    len-of-append
+    true-listp-of-append
+    take-of-append
+
+    ;; Rules about nthcdr:
+    ;; todo: car-of-nthcdr? ; introduces nth
+    cdr-of-nthcdr ; combines the cdr and the nthcdr
+    consp-of-nthcdr
+    len-of-nthcdr
+    true-listp-of-nthcdr-2
+    ;; should we have a take-of-nthcdr rule?  would have to go to subrange?  or move the take inside...
+
+    ;; Rules about update-nth:
     car-of-update-nth
+    cdr-of-update-nth
+    consp-of-update-nth
+    len-update-nth ;pretty aggressive, todo: rename?  but this is built in
+    true-listp-of-update-nth-2
+    ;; should we have a rule for take-of-update-nth ?
+
+    take-of-0 ;take-when-zp-n
+    take-does-nothing ; introduces true-list-fix
+    take-of-true-list-fix ; more like this, but lower priority?
+
+    ;; what do we want to do about LISTP (not used very much)?
+
+    ;; mixed rules:
+
     nthcdr-of-nil
     nth-of-take-2-gen ;quite aggressive
     repeat-becomes-repeat-tail
@@ -1328,27 +1359,24 @@
     equal-of-nil-and-nthcdr
     cdr-of-cdr-becomes-nthcdr ;these nthcdr rules are new
     nthcdr-of-cdr-combine
-    cdr-of-nthcdr
-    consp-of-nthcdr
-    len-of-nthcdr
     nth-of-nthcdr
     nthcdr-of-1
     nthcdr-of-0
     nthcdr-when-not-posp ;drop?
     firstn-when-zp-cheap
     nth-update-nth-safe
-    true-listp-of-append
+
     append-of-cons-arg1
-    consp-of-append
+
     append-of-nil-arg1
     append-of-nil-arg2
-    consp-of-update-nth ;move up
+
     true-listp-of-true-list-fix2
     len-of-true-list-fix
     true-list-fix-when-true-listp
     true-listp-of-repeat
     len-of-repeat  ;since initializing an array calls repeat
-    len-of-cons
+
     nth-of-cons-constant-version
     integerp-of-len
     natp-of-len
@@ -1362,7 +1390,7 @@
     car-of-reverse-list ;sun feb  6 11:15:00 2011
     cdr-of-reverse-list ;sun feb  6 11:15:00 2011
     len-of-reverse-list ;sun feb  6 11:15:00 2011
-    len-of-append
+
     nth-of-append ;may be bad if we can't resolve the if test?
     len-of-firstn ;sun feb  6 11:16:17 2011
     equal-cons-nil-1
