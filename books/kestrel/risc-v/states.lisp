@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,8 +34,9 @@
    (xdoc::p
     "Currently we have two similar but slightly different models,
      one for RV32I and one for RV64I.
-     We plan to consolidate them into one model for both;
-     towards that end, we also provide a more generic definition here."))
+     We are in the process of consolidating them into one model for both;
+     towards that end, we also provide
+     a more generic definition of states here."))
   :default-parent t
   :order-subtopics (states32
                     states64
@@ -55,20 +56,20 @@
      whose number and size depends on the choice of base.
      The size in bits is @('XLEN') [ISA:1.3],
      which is 32 in RV32I/RV32E, or 64 in RV64I/RV64E;
-     it is 128 in the upcoming RV128I [ISA:5].
+     it is 128 in the upcoming RV128I [ISA:5] (which we do not model yet).
      The number of registers is 32 or 16,
      based on whether the base is RV32I/RV64I or RV32R/RV64E.
      In @(tsee stat-validp),
      we constrain this state component to be
      a list of appropriate type and appropriate length;
-     thus, here we do not need to constrain it at all.")
+     thus, we do not need to constrain it at all here.")
    (xdoc::p
     "The program counter @('pc') has the same size @('XLEN')
      as the @('x') registers.
      In @(tsee stat-validp),
      we constrain this state component to be
      an integer in the appropriate range;
-     thus, here we do not need to constrain it at all.")
+     thus, we do not need to constrain it at all here.")
    (xdoc::p
     "The memory component models the whole addressable space,
      which consists of @('2^XLEN') bytes [ISA:1.4].
@@ -105,13 +106,13 @@
     "For now, the only features we model are
      whether the base is RV32I or RV64I.
      This dictates the size @('XLEN') of the registers, either 32 or 64 bits;
-     so we use contrain them to form a list of 32-bit or 64-bit unsigned values.
+     so we constrain them to form a list of 32-bit or 64-bit unsigned values.
      The number of registers is @(tsee feat->xnum).
      However, since @('x0') is hardwired to 0 [ISA:2.1],
      we do not model that register explicitly:
      we only model @('x1'), @('x2'), etc.;
      so we constrain the length of the list to be
-     one less than the number of registers.")
+     one less than the actual number of registers.")
    (xdoc::p
     "Based on @('XLEN'), we constrain the program counter
      to be either 32 or 64 bits.")
