@@ -242,7 +242,8 @@
      and we convert it to signed according to @('XLEN').")
    (xdoc::p
     "This is a convenience operation, to interpret registers as signed,
-     even though their representation in the state is always unsigned."))
+     even though their representation in the state is always unsigned.
+     Several instructions interpret registers as signed."))
   (logext (feat->xlen feat)
           (read-xreg-unsigned reg stat feat))
   :hooks (:fix)
@@ -261,3 +262,42 @@
     :hyp (and (stat-validp stat feat)
               (feat-64p feat)
               (< (lnfix reg) (feat->xnum feat)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-xreg-unsigned32 ((reg natp) (stat statp) (feat featp))
+  :guard (and (stat-validp stat feat)
+              (feat-64p feat)
+              (< (lnfix reg) (feat->xnum feat)))
+  :returns (val ubyte32p)
+  :short "Read an unsigned 32-bit integer from a 64-bit @('x') register."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is only defined when @('XLEN') is 64;
+     when it is 32, @(tsee read-xreg-unsigned) already returns a 32-bit integer.
+     When @('XLEN') is 64,
+     several instructions read the low 32 bits of a register;
+     so it is useful to introduce this abbreviation,
+     which reads the whole integer and keeps the low 32 bits."))
+  (loghead 32 (read-xreg-unsigned reg stat feat))
+  :hooks (:fix)
+  :type-prescription (natp (read-xreg-unsigned32 reg stat feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-xreg-signed32 ((reg natp) (stat statp) (feat featp))
+  :guard (and (stat-validp stat feat)
+              (feat-64p feat)
+              (< (lnfix reg) (feat->xnum feat)))
+  :returns (val sbyte32p)
+  :short "Read a signed 32-bit integer from a 64-bit @('x') register."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee read-xreg-unsigned32) in purpose,
+     but it is useful when the 32 bits of the register
+     are treated as a signed integer instead of unsigned."))
+  (logext 32 (read-xreg-unsigned reg stat feat))
+  :hooks (:fix)
+  :type-prescription (integerp (read-xreg-signed32 reg stat feat)))
