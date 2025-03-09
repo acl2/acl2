@@ -16,6 +16,7 @@
 
 (include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
 
+(local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
@@ -456,3 +457,157 @@
   (defret stat-validp-of-inc4-pc
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-memory-unsigned8 ((addr integerp) (stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (val ubyte8p)
+  :short "Read an unsigned 8-bit integer from memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The address is an integer of arbitrary size,
+     of which we consider only the low @('XLEN') bits,
+     as an unsigned address.
+     Allowing any integer is convenient for callers.
+     We return the byte at that address.")
+   (xdoc::p
+    "Since we read a single byte,
+     there is no difference between little and big endian."))
+  (b* ((addr (loghead (feat->xlen feat) (lifix addr))))
+    (ubyte8-fix (nth addr (stat->memory stat))))
+  :prepwork ((local (in-theory (enable loghead))))
+  :guard-hints (("Goal" :in-theory (enable ifix stat-validp)))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (val natp :rule-classes :type-prescription))
+
+  (defret read-memory-unsigned8-upper-bound
+    (<= val 255)
+    :rule-classes :linear
+    :hints (("Goal"
+             :use ubyte8p-of-read-memory-unsigned8
+             :in-theory (disable read-memory-unsigned8
+                                 ubyte8p-of-read-memory-unsigned8)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-memory-unsigned16 ((addr integerp) (stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (val ubyte16p
+                :hints (("Goal" :in-theory (enable ubyte16p
+                                                   unsigned-byte-p
+                                                   integer-range-p))))
+  :short "Read an unsigned 16-bit integer from memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The memory address is the one of the first byte;
+     we read that, and the subsequent byte.
+     For now we only support little endian memory,
+     so the first byte is the lowest one.")
+   (xdoc::p
+    "As in @(tsee read-memory-unsigned8),
+     we let the address be any integer.
+     We use @(tsee read-memory-unsigned8) twice.
+     Note that if @('addr') is @('2^XLEN - 1'),
+     then @('addr + 1') becomes address 0."))
+  (b* ((addr (lifix addr))
+       (b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ addr 1) stat feat)))
+    (+ b0
+       (ash b1 8)))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (val natp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-memory-unsigned32 ((addr integerp) (stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (val ubyte32p
+                :hints (("Goal" :in-theory (enable ubyte32p
+                                                   unsigned-byte-p
+                                                   integer-range-p))))
+  :short "Read an unsigned 32-bit integer from memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The memory address is the one of the first byte;
+     we read that, and the subsequent bytes.
+     For now we only support little endian memory,
+     so the first byte is the lowest one.")
+   (xdoc::p
+    "As in @(tsee read-memory-unsigned8),
+     we let the address be any integer.
+     We use @(tsee read-memory-unsigned8) four times.
+     Note that if @('addr') is close to @('2^XLEN - 1'),
+     then the subsequent addresses may wrap around."))
+  (b* ((addr (lifix addr))
+       (b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ addr 3) stat feat)))
+    (+ b0
+       (ash b1 8)
+       (ash b2 16)
+       (ash b3 24)))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (val natp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-memory-unsigned64 ((addr integerp) (stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (val ubyte64p
+                :hints (("Goal" :in-theory (enable ubyte64p
+                                                   unsigned-byte-p
+                                                   integer-range-p))))
+  :short "Read an unsigned 64-bit integer from memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The memory address is the one of the first byte;
+     we read that, and the subsequent bytes.
+     For now we only support little endian memory,
+     so the first byte is the lowest one.")
+   (xdoc::p
+    "As in @(tsee read-memory-unsigned8),
+     we let the address be any integer.
+     We use @(tsee read-memory-unsigned8) four times.
+     Note that if @('addr') is close to @('2^XLEN - 1'),
+     then the subsequent addresses may wrap around."))
+  (b* ((addr (lifix addr))
+       (b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ addr 3) stat feat))
+       (b4 (read-memory-unsigned8 (+ addr 4) stat feat))
+       (b5 (read-memory-unsigned8 (+ addr 5) stat feat))
+       (b6 (read-memory-unsigned8 (+ addr 6) stat feat))
+       (b7 (read-memory-unsigned8 (+ addr 7) stat feat)))
+    (+ b0
+       (ash b1 8)
+       (ash b2 16)
+       (ash b3 24)
+       (ash b4 32)
+       (ash b5 40)
+       (ash b6 48)
+       (ash b7 56)))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (val natp :rule-classes :type-prescription)))
