@@ -461,23 +461,11 @@
 ;;   (equal (PERM X (LIST (NTH 0 X)))
 ;;          (equal 1 (len x))))
 
-;move
-(defthm car-of-firstn
-  (implies (posp n)
-           (equal (car (firstn n x))
-                  (car x))))
-
 ;; or go from (NTHCDR (LEN X) X) to finalcdr
 (defthm append-of-nthcdr-of-len-same
   (equal (APPEND (NTHCDR (LEN X) X) Y)
          y)
   :hints (("Goal" :in-theory (enable equal-of-append))))
-
-(DEFTHMd FIRSTN-WHEN-Zp
-  (IMPLIES (ZP N)
-           (EQUAL (FIRSTN N X)
-                  NIL))
-  :HINTS (("Goal" :IN-THEORY (ENABLE FIRSTN))))
 
 ;only do this if there are whole chunks to cut off..
 (defthmd group-of-append-1

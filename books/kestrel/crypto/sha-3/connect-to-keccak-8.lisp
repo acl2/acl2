@@ -30,7 +30,6 @@
                                   acl2::car-of-nthcdr
                                   acl2::update-nth-of-cons
                                   acl2::car-becomes-nth-of-0
-                                  acl2::cdr-of-append
                                   acl2::consp-when-len-equal-constant
                                   acl2::consp-when-len-equal-constant-alt
                                   acl2::consp-of-cdr
@@ -44,7 +43,6 @@
                                         acl2::car-of-nthcdr
                                         acl2::update-nth-of-cons
                                         acl2::car-becomes-nth-of-0
-                                        acl2::cdr-of-append
                                         acl2::consp-when-len-equal-constant
                                         acl2::consp-when-len-equal-constant-alt
                                         acl2::consp-of-cdr
