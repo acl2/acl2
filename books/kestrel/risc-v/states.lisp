@@ -207,8 +207,8 @@
   (b* ((reg (lnfix reg)))
     (if (= reg 0)
         0
-      (acl2::unsigned-byte-fix (feat->xlen feat)
-                               (nth (1- reg) (stat->xregs stat)))))
+      (unsigned-byte-fix (feat->xlen feat)
+                         (nth (1- reg) (stat->xregs stat)))))
   :hooks (:fix)
 
   ///
