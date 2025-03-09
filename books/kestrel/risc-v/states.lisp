@@ -373,3 +373,86 @@
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-pc ((stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (pc (unsigned-byte-p (feat->xlen feat) pc))
+  :short "Read the program counter."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result is always an unsigned @('XLEN')-bit integer,
+     which is an address in memory;
+     recall that the memory address space goes from 0 to @('2^XLEN - 1'),
+     as explained in @(tsee stat)."))
+  (unsigned-byte-fix (feat->xlen feat)
+                     (stat->pc stat))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (pc natp :rule-classes :type-prescription))
+
+  (defret ubyte32p-of-read-pc
+    (ubyte32p pc)
+    :hyp (and (stat-validp stat feat)
+              (feat-32p feat)))
+
+  (defret ubyte64p-of-read-pc
+    (ubyte64p pc)
+    :hyp (and (stat-validp stat feat)
+              (feat-64p feat))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-pc ((pc natp) (stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (new-stat statp)
+  :short "Write the program counter."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pass an unsigned integer of arbitrary size,
+     of which only the low @('XLEN') bits are kept,
+     and written to the program counter register.")
+   (xdoc::p
+    "[ISA:1.4] says that address computations wrap around ignoring overflow,
+     i.e. the last address in the address space is adjacent to address 0.
+     This function handles the wrapping around,
+     see e.g. @(tsee inc4-pc)."))
+  (change-stat stat :pc (loghead (feat->xlen feat) (lnfix pc)))
+  :hooks (:fix)
+
+  ///
+
+  (defret stat-validp-of-write-pc
+    (stat-validp new-stat feat)
+    :hyp (stat-validp stat feat)
+    :hints (("Goal" :in-theory (enable stat-validp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define inc4-pc ((stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (new-stat statp)
+  :short "Increment the program counter by 4."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the normal instruction encodings, instructions take 32 bits each.
+     Thus, it is common to increment the program counter by 4 (bytes),
+     which this function provides a concise way to do.")
+   (xdoc::p
+    "We read the program counter, we add 4, and we write the result.
+     Recall that @(tsee write-pc) wraps around if needed [ISA:1.4]."))
+  (write-pc (+ (read-pc stat feat) 4) stat feat)
+  :hooks (:fix)
+
+  ///
+
+  (defret stat-validp-of-inc4-pc
+    (stat-validp new-stat feat)
+    :hyp (stat-validp stat feat)))
