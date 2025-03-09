@@ -328,7 +328,7 @@
         (stat-fix stat)
       (change-stat stat :xregs (update-nth (1- reg)
                                            (loghead (feat->xlen feat)
-                                                    (acl2::lifix val))
+                                                    (lifix val))
                                            (stat->xregs stat)))))
   :hooks (:fix)
 
@@ -362,7 +362,7 @@
      keeps the low 32 bits,
      and writes their sign extension to the register."))
   (write-xreg reg
-              (logext 32 (acl2::lifix val))
+              (logext 32 (lifix val))
               stat
               feat)
   :hooks (:fix)
