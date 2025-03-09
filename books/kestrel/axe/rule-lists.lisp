@@ -1299,10 +1299,13 @@
     take-of-append
     len-of-take
     consp-of-take
+    car-of-take-strong
+    cdr-of-take
     take-of-cons
     true-listp-of-take
     take-of-take
     take-does-nothing ; introduces true-list-fix
+    take-of-true-list-fix ; more like this, but lower priority?
     ;; rules about cdr:
     true-listp-of-cdr
     ;; rules about cons:
