@@ -58,37 +58,37 @@
                (items-have-len n y)))
   :hints (("Goal" :in-theory (enable myif))))
 
-(defthmd integerp-of-small-helper
-  (implies (and (< x n)
-                (posp x)
-                (posp n))
-           (not (integerp (* (/ n) x))))
-  :hints (("Goal" :in-theory (enable)
-           :cases ((< (* (/ n) x) 0)
-                   (<= 1 (* (/ n) x))))))
+;; (defthmd integerp-of-small-helper
+;;   (implies (and (< x n)
+;;                 (posp x)
+;;                 (posp n))
+;;            (not (integerp (* (/ n) x))))
+;;   :hints (("Goal" :in-theory (enable)
+;;            :cases ((< (* (/ n) x) 0)
+;;                    (<= 1 (* (/ n) x))))))
 
-;make an alt rule
-;simplify the rhs more?
-(defthm integerp-of-small-helper-2
-  (implies (and (< x n)
-                (natp x)
-                (posp n))
-           (equal (integerp (* (/ n) x))
-                  (equal 0 (* (/ n) x))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
-  :hints (("Goal" :in-theory (enable integerp-squeeze)
-           :cases ((< (* (/ n) x) 0)
-                   (<= 1 (* (/ n) x))))))
+;; ;make an alt rule
+;; ;simplify the rhs more?
+;; (defthmd integerp-of-small-helper-2
+;;   (implies (and (< x n)
+;;                 (natp x)
+;;                 (posp n))
+;;            (equal (integerp (* (/ n) x))
+;;                   (equal 0 (* (/ n) x))))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
+;;   :hints (("Goal" :in-theory (enable integerp-squeeze)
+;;            :cases ((< (* (/ n) x) 0)
+;;                    (<= 1 (* (/ n) x))))))
 
-;limit?
-(defthm integerp-of-small
-  (implies (and (< x n)
-                (natp x)
-                (posp n))
-           (equal (integerp (* (/ n) x))
-                  (equal x 0)))
-  :hints (("Goal" :use integerp-of-small-helper
-           :in-theory (disable integerp-of-small-helper))))
+;; ;limit?
+;; ;rename
+;; (defthmd integerp-of-small
+;;   (implies (and (< x n)
+;;                 (natp x)
+;;                 (posp n))
+;;            (equal (integerp (* (/ n) x))
+;;                   (equal x 0)))
+;;   :hints (("Goal" :use integerp-of-small-helper)))
 
 (defthm <-of-/-same
   (implies (and (< 0 x)
