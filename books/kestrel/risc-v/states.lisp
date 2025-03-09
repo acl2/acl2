@@ -241,7 +241,10 @@
   (xdoc::topstring
    (xdoc::p
     "We read an unsigned integer,
-     and we convert it to signed according to @('XLEN')."))
+     and we convert it to signed according to @('XLEN').")
+   (xdoc::p
+    "This is a convenience operation, to interpret registers as signed,
+     even though their representation in the state is always unsigned."))
   (logext (feat->xlen feat)
           (read-xreg-unsigned reg stat feat))
   :hooks (:fix)
