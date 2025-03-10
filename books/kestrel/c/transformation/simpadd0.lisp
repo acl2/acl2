@@ -608,8 +608,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-expr-const ((const constp) (gin simpadd0-ginp))
-  :returns (mv (new-const constp)
-               (gout simpadd0-goutp))
+  :returns (mv (new-const constp) (gout simpadd0-goutp))
   :short "Transform a constant."
   :long
   (xdoc::topstring
