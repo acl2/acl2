@@ -1,7 +1,7 @@
-; Tests of map-packbv
+; Tests of map-packbv (and map-unpackbv)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "map-packbv")
+(include-book "map-unpackbv")
 (include-book "std/testing/assert-equal" :dir :system)
 
 ;; map packbv over a list of items.  Each item has 4 single bits

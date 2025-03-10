@@ -1,7 +1,7 @@
-; Functions to map packbv and unpack BV over lists
+; Mapping packbv over a list.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,6 @@
 (in-package "ACL2")
 
 (include-book "packbv")
-(include-book "unpackbv") ;todo: separate
 (include-book "all-unsigned-byte-p2")
 (include-book "all-all-unsigned-byte-p")
 (include-book "../typed-lists-light/all-all-integerp")
@@ -21,8 +20,6 @@
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/sequences/defmap" :dir :system)
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
-(include-book "packbv-and-unpackbv")
 (local (include-book "packbv-theorems"))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -33,27 +30,6 @@
                                 (all-true-listp items-lst)
                                 (all-all-integerp items-lst)
                                 ))))
-
-;; TODO: Split into separate file?
-(defmap map-unpackbv (itemcount itemsize bv-lst) (unpackbv itemcount itemsize bv-lst) :fixed (itemcount itemsize)
-  :declares ((xargs :guard (and (integer-listp bv-lst)
-                                         (natp itemcount)
-                                         (natp itemsize)))))
-
-(defthm all-true-listp-of-map-unpackbv
-  (implies (natp itemcount)
-           (all-true-listp (map-unpackbv itemcount itemsize bv-lst)))
-  :hints (("Goal" :in-theory (enable map-unpackbv))))
-
-(defthm items-have-len-of-map-unpackbv
-  (implies (natp itemcount)
-           (items-have-len itemcount (map-unpackbv itemcount itemsize bv-lst)))
-  :hints (("Goal" :in-theory (enable map-unpackbv items-have-len))))
-
-(defthm all-all-unsigned-byte-p-of-map-unpackbv
-  (implies (natp size)
-           (all-all-unsigned-byte-p size (map-unpackbv itemcount size bvs)))
-  :hints (("Goal" :in-theory (enable map-unpackbv))))
 
 ;; (defun packbv-induct (n count ;size
 ;;                         bvs)
@@ -69,49 +45,11 @@
          (equal 0 (len c)))
   :hints (("Goal" :in-theory (enable map-packbv))))
 
-(defthm map-packbv-of-map-unpackbv
-  (implies (and (natp itemcount)
-                (posp itemsize))
-           (equal (map-packbv itemcount itemsize (map-unpackbv itemcount itemsize bvs))
-                  (bvchop-list (* itemcount itemsize) bvs)))
-  :hints (("Goal" :in-theory (enable packbv map-packbv map-unpackbv))))
-
-(defmap map-reverse-list (items) (reverse-list items)
-  :declares ((xargs :guard (all-true-listp items))))
-
-(defthm all-true-listp-of-map-reverse-list
-  (all-true-listp (map-reverse-list x))
-  :hints (("Goal" :in-theory (enable map-reverse-list all-true-listp))))
-
-(defthm items-have-len-of-map-reverse-list
-  (equal (items-have-len len (map-reverse-list x))
-         (items-have-len len x))
-  :hints (("Goal" :in-theory (enable map-reverse-list items-have-len))))
-
-;fixme gen to any double-mapped predicate somehow??
-(defthm all-all-unsigned-byte-p-of-map-reverse-list
-  (equal (all-all-unsigned-byte-p width (map-reverse-list x))
-         (all-all-unsigned-byte-p width x))
-  :hints (("Goal" :in-theory (enable map-reverse-list all-all-unsigned-byte-p))))
-
 (local
  (defun double-cdr-induct (x y)
    (if (endp x)
        (list x y)
        (double-cdr-induct (cdr x) (cdr y)))))
-
-;move hyps to conclusion?
-(defthm equal-of-map-reverse-list-and-map-reverse-list
-  (implies (and (all-true-listp x)
-                (all-true-listp y)
-                (true-listp x)
-                (true-listp y)
-                )
-           (equal (equal (map-reverse-list x) (map-reverse-list y))
-                  (equal x y)))
-  :hints (("Goal" :induct (double-cdr-induct x y)
-           :in-theory (enable MAP-REVERSE-LIST))))
-
 
 ;move?
 ;move hyps to conclusion?
@@ -146,15 +84,6 @@
            (all-unsigned-byte-p n (map-packbv count size items)))
   :hints (("Goal" :in-theory (enable map-packbv))))
 
-(defthm all-all-integerp-of-map-reverse-list
-  (implies (all-all-integerp x)
-           (all-all-integerp (map-reverse-list x)))
-  :hints (("Goal" :in-theory (enable all-all-integerp))))
-
 (defthm all-integerp-of-map-packbv
   (all-integerp (map-packbv itemcount itemsize items-lst))
   :hints (("Goal" :in-theory (enable map-packbv))))
-
-(defthm true-list-listp-of-map-reverse-list
-  (true-list-listp (map-reverse-list x))
-  :hints (("Goal" :in-theory (enable map-reverse-list))))
