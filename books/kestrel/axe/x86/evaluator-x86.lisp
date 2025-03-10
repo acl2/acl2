@@ -17,7 +17,6 @@
 (include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; for reg-index$inline, has ttag :UNDEF-FLG
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for x86isa::x86-decode-sib-p, 64-bit-mode-one-byte-opcode-modr/m-p, x86isa::get-one-byte-prefix-array-code-unguarded, etc.
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::check-instruction-length$inline, has ttag :OTHER-NON-DET
-(include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))

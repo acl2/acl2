@@ -11684,7 +11684,6 @@
 ;why?
 (in-theory (disable small-int-hack ;natp-when-integerp-cheap
                     usb-plus-from-bounds
-                    ;integerp-of-small
                     ;floor-bounded-by-/
                     bvlt-add-to-both-sides-constant-lemma-alt-no-split
                     ;collect-constants-over-<  ;remove?
