@@ -1,7 +1,7 @@
 ; Rules about group, group2, etc.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -287,8 +287,6 @@
                   (cons (firstn n x)
                         (group n (nthcdr n x)))))
   :hints (("Goal" :in-theory (enable group))))
-
-(in-theory (disable integerp-of-small))
 
 ;this can probably loop!
 (defthmd nth-when-equal-of-take
