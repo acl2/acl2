@@ -26,9 +26,6 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable true-list-fix))))
 
-(defthm true-listp-of-true-list-fix
-  (true-listp (true-list-fix x)))
-
 (defthm len-of-true-list-fix
   (equal (len (true-list-fix x))
          (len x))
