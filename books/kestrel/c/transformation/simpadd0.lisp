@@ -703,7 +703,8 @@
        are handled by separate functions.")
      (xdoc::p
       "String literals undergo no transformation.
-       No theorems are generated for them, since there is no change.")
+       No theorems are generated for them,
+       since our formal dynamic semantics does not cover them yet.")
      (xdoc::p
       "When we encounter constructs unsupported in the formal dynamic semnatics,
        we do not generate a theorem.
