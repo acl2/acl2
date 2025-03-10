@@ -827,7 +827,7 @@
      bvif-of-getbit-arg3
      bvif-of-getbit-arg4
 
-     bvlt-self
+     not-bvlt-self
      bvlt-of-bvmod-false
      bvlt-transitive-1-a
      bvlt-transitive-1-b
@@ -2186,7 +2186,7 @@
     equal-of-bvplus-and-bvplus-hack-sha1
     equal-of-slice-and-slice-of-bvplus-of-1
     bvplus-of-bvuminus-of-bvmult-of-slice-same
-    bvlt-self ;drop
+    not-bvlt-self ;drop
     bvlt-of-bvcat-arg3-bvmult-version
     bvdiv-31-4
 
@@ -2392,8 +2392,8 @@
 ;     equal-of-myif-same
      ;;<-becomes-bvlt-alt
      <-becomes-bvlt-axe-bind-free-and-bind-free
-     equal-when-bvlt
-     equal-when-bvlt-alt
+     not-equal-when-bvlt
+     not-equal-when-bvlt-alt
      bvplus-of-bvuminus-tighten-gen-no-split-dag
      ;;turn-equal-around-axe3 ;this seemed to loop with the ...4 version
      unsigned-byte-p-of-bvplus-wider-9-10
@@ -2435,8 +2435,8 @@
      bvlt-when-bit-2-1-hack
      bvlt-of-4-hack
 
-;                        equal-of-constant-when-bvlt-constant-1-alt
-;                       equal-of-constant-when-bvlt-constant-2-alt
+;                        not-equal-of-constant-when-bvlt-constant-1-alt
+;                       not-equal-of-constant-when-bvlt-constant-2-alt
 
      bvplus-minus-13-tighten-32
      bvlt-of-bvmult5-4-13
@@ -3220,10 +3220,10 @@
              bitxor-when-equal-of-constant-and-bvchop-arg2
              <-of-+-cancel-1-2+  ; todo: also add commutativity of plus?
              getbit-when-equal-of-constant-and-bvchop
-             equal-of-constant-when-not-bvlt-constant-1
-             equal-of-constant-when-not-bvlt-constant-2
-             equal-of-constant-when-bvlt-constant-1
-             equal-of-constant-when-bvlt-constant-2
+             not-equal-of-constant-when-not-bvlt-constant-1
+             not-equal-of-constant-when-not-bvlt-constant-2
+             not-equal-of-constant-when-bvlt-constant-1
+             not-equal-of-constant-when-bvlt-constant-2
 
              bv-array-read-of-unary-minus-32-2 ;new
              bvuminus-of-myif-arg2
@@ -4116,7 +4116,7 @@
 ;want this to fire before the more general rules about boolif of constants:
 (set-axe-rule-priority boolif-of-nil-and-t -1)
 
-(set-axe-rule-priority BVLT-SELF -1) ;may fix a loop on (BVLT '32 (BVUMINUS '32 x) (BVUMINUS '32 x)) ??
+(set-axe-rule-priority not-bvlt-self -1) ;may fix a loop on (BVLT '32 (BVUMINUS '32 x) (BVUMINUS '32 x)) ??
 
 (set-axe-rule-priority equal-same -1) ;new
 
