@@ -513,9 +513,7 @@
 (define simpadd0-expr-ident ((ident identp)
                              (info c$::var-infop)
                              (gin simpadd0-ginp))
-  :returns (mv (new-ident identp)
-               (new-info c$::var-infop)
-               (gout simpadd0-goutp))
+  :returns (mv (new-expr exprp) (gout simpadd0-goutp))
   :short "Transform an identifier expression (i.e. a variable)."
   :long
   (xdoc::topstring
@@ -524,8 +522,8 @@
      but we introduce it for uniformity,
      also because we may eventually evolve the @(tsee simpadd0) implementation
      into a much more general transformation.
-     Thus, the output identifier and validation information
-     are always the same as the input ones.")
+     Thus, the output expression consists of
+     the identifier and validation information passed as inputs.")
    (xdoc::p
     "If the variable has type @('int'),
      which we check in the validation information,
@@ -543,12 +541,11 @@
     "The generated theorem is proved via a general supporting lemma,
      which is proved below."))
   (b* ((ident (ident-fix ident))
-       (info (c$::var-info-fix info))
+       ((c$::var-info info) (c$::var-info-fix info))
        ((simpadd0-gin gin) gin)
-       ((c$::var-info info) info)
+       (expr (make-expr-ident :ident ident :info info))
        ((unless (c$::type-case info.type :sint))
-        (mv ident
-            info
+        (mv expr
             (make-simpadd0-gout :events nil
                                 :thm-name nil
                                 :thm-index gin.thm-index
@@ -557,7 +554,6 @@
                                 :diffp nil
                                 :falliblep nil)))
        (vars (set::insert ident nil))
-       (expr (c$::expr-ident ident info))
        (hints `(("Goal"
                  :in-theory '((:e c$::expr-ident)
                               (:e c$::expr-pure-formalp)
@@ -574,8 +570,7 @@
                                     gin.const-new
                                     gin.thm-index
                                     hints)))
-    (mv ident
-        info
+    (mv expr
         (make-simpadd0-gout :events (list thm-event)
                             :thm-name thm-name
                             :thm-index thm-index
@@ -587,6 +582,9 @@
   :hooks (:fix)
 
   ///
+
+  (defret expr-unambp-of-simpadd0-expr-ident
+    (expr-unambp new-expr))
 
   (defruled simpadd0-expr-ident-support-lemma
     (b* ((expr (mv-nth 1 (c$::ldm-expr (c$::expr-ident ident info))))
@@ -738,11 +736,9 @@
     (b* (((simpadd0-gin gin) gin))
       (expr-case
        expr
-       :ident (b* (((mv ident info gout)
-                    (simpadd0-expr-ident expr.ident
-                                         (c$::coerce-var-info expr.info)
-                                         gin)))
-                (mv (make-expr-ident :ident ident :info info) gout))
+       :ident (simpadd0-expr-ident expr.ident
+                                   (c$::coerce-var-info expr.info)
+                                   gin)
        :const (b* (((mv const gout) (simpadd0-expr-const expr.const gin)))
                 (mv (expr-const const) gout))
        :string (mv (expr-fix expr)
