@@ -572,7 +572,7 @@
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
-   (bvchop-of-bv-rules)
+   (bvchop-of-bv-rules) ; todo: consider dropping these
    (unsigned-byte-p-rules)
    (bv-constant-chop-rules)
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
