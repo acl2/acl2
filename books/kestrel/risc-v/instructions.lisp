@@ -344,14 +344,14 @@
   (b* (((feat feat) feat))
     (instr-case instr
                 :op-imm t
-                :op-imms32 (feat-bits-case feat.bits :32)
-                :op-imms64 (feat-bits-case feat.bits :64)
-                :op-imm-32 (feat-bits-case feat.bits :64)
-                :op-imms-32 (feat-bits-case feat.bits :64)
+                :op-imms32 (feat-32p feat)
+                :op-imms64 (feat-64p feat)
+                :op-imm-32 (feat-64p feat)
+                :op-imms-32 (feat-64p feat)
                 :lui t
                 :auipc t
                 :op t
-                :op-32 (feat-bits-case feat.bits :64)
+                :op-32 (feat-64p feat)
                 :jal t
                 :jalr t
                 :branch t
@@ -361,11 +361,11 @@
                                        :lh t
                                        :lhu t
                                        :lw t
-                                       :lwu (feat-bits-case feat.bits :64)
-                                       :ld (feat-bits-case feat.bits :64))
+                                       :lwu (feat-64p feat)
+                                       :ld (feat-64p feat))
                 :store (store-funct-case instr.funct
                                          :sb t
                                          :sh t
                                          :sw t
-                                         :sd (feat-bits-case feat.bits :64))))
+                                         :sd (feat-64p feat))))
   :hooks (:fix))

@@ -22,6 +22,7 @@
                         '(bool
                           defxdoc+
                           impossible
+                          lifix
                           lnfix
                           logext
                           loghead
