@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -317,25 +317,38 @@
     :enable (event-possiblep
              event-next)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled unequivocal-signed-certs-p-of-events-next
+  :short "Preservation of the invariant by multiple transitions."
+  (implies (and (events-possiblep events systate)
+                (signer-records-p systate)
+                (no-self-endorsed-p systate)
+                (unequivocal-signed-certs-p systate))
+           (unequivocal-signed-certs-p (events-next events systate)))
+  :induct t
+  :enable (events-possiblep
+           events-next))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection unequivocal-signed-certs-p-always
-  :short "The invariant holds in every state
-          reachable from an initial state via a sequence of events."
-
-  (defruled unequivocal-signed-certs-p-of-events-next
-    (implies (and (unequivocal-signed-certs-p systate)
-                  (signer-records-p systate)
-                  (no-self-endorsed-p systate)
-                  (events-possiblep events systate))
-             (and (unequivocal-signed-certs-p (events-next events systate))
-                  (signer-records-p (events-next events systate))
-                  (no-self-endorsed-p (events-next events systate))))
-    :induct t
-    :enable (events-possiblep
-             events-next))
-
-  (defruled unequivocal-signed-certs-p-when-reachable
-    (implies (and (system-initp systate)
-                  (events-possiblep events systate))
-             (unequivocal-signed-certs-p (events-next events systate)))))
+(defruled unequivocal-signed-certs-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  (implies (system-state-reachablep systate)
+           (unequivocal-signed-certs-p systate))
+  :enable (system-state-reachablep
+           unequivocal-signed-certs-p-when-init
+           signer-records-p-when-init
+           no-self-endorsed-p-when-init)
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (system-state-reachable-from-p systate from)
+                   (signer-records-p from)
+                   (no-self-endorsed-p from)
+                   (unequivocal-signed-certs-p from))
+              (unequivocal-signed-certs-p systate))
+     :use (:instance
+           unequivocal-signed-certs-p-of-events-next
+           (events (system-state-reachable-from-p-witness systate from))
+           (systate from))
+     :enable system-state-reachable-from-p)))

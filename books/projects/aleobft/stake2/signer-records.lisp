@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -11,6 +11,7 @@
 
 (in-package "ALEOBFT-STAKE2")
 
+(include-book "reachability")
 (include-book "signed-certificates")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -306,21 +307,32 @@
     :enable (event-possiblep
              event-next)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled signer-records-p-of-events-next
+  :short "Preservation of the invariant by multiple transitions."
+  (implies (and (events-possiblep events systate)
+                (signer-records-p systate))
+           (signer-records-p (events-next events systate)))
+  :induct t
+  :enable (events-possiblep
+           events-next))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection signer-records-p-always
-  :short "The invariant holds in every state
-          reachable from an initial state via a sequence of events."
-
-  (defruled signer-records-p-of-events-next
-    (implies (and (signer-records-p systate)
-                  (events-possiblep events systate))
-             (signer-records-p (events-next events systate)))
-    :induct t
-    :enable (events-possiblep
-             events-next))
-
-  (defruled signer-records-p-when-reachable
-    (implies (and (system-initp systate)
-                  (events-possiblep events systate))
-             (signer-records-p (events-next events systate)))))
+(defruled signer-records-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  (implies (system-state-reachablep systate)
+           (signer-records-p systate))
+  :enable (system-state-reachablep
+           signer-records-p-when-init)
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (system-state-reachable-from-p systate from)
+                   (signer-records-p from))
+              (signer-records-p systate))
+     :use (:instance
+           signer-records-p-of-events-next
+           (events (system-state-reachable-from-p-witness systate from))
+           (systate from))
+     :enable system-state-reachable-from-p)))
