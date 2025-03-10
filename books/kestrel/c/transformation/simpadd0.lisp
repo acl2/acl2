@@ -606,7 +606,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-expr-const ((const constp) (gin simpadd0-ginp))
-  :returns (mv (new-const constp) (gout simpadd0-goutp))
+  :returns (mv (new-expr exprp) (gout simpadd0-goutp))
   :short "Transform a constant."
   :long
   (xdoc::topstring
@@ -615,7 +615,7 @@
      but we introduce it for uniformity,
      also because we may eventually evolve the @(tsee simpadd0) implementation
      into a much more general transformation.
-     Thus, the output constant is always the same as the input one.")
+     Thus, the output expression consists of the constant passed as input.")
    (xdoc::p
     "If the constant is an integer one and has type @('int'),
      and under the additional condition described shortly,
@@ -631,6 +631,7 @@
      Until we extend our dynamic semantics to be more general,
      we need this additional condition for proof generation."))
   (b* (((simpadd0-gin gin) gin)
+       (expr (expr-const const))
        (no-thm-gout (make-simpadd0-gout :events nil
                                         :thm-name nil
                                         :thm-index gin.thm-index
@@ -638,12 +639,12 @@
                                         :vars nil
                                         :diffp nil
                                         :falliblep nil))
-       ((unless (const-case const :int)) (mv (const-fix const) no-thm-gout))
+       ((unless (const-case const :int)) (mv expr no-thm-gout))
        ((iconst iconst) (const-int->unwrap const))
        ((c$::iconst-info info) (c$::coerce-iconst-info iconst.info))
        ((unless (and (c$::type-case info.type :sint)
                      (<= info.value (c::sint-max))))
-        (mv (const-fix const) no-thm-gout))
+        (mv expr no-thm-gout))
        (expr (c$::expr-const const))
        (hints `(("Goal" :in-theory '(c::exec-expr-pure
                                      (:e c$::ldm-expr)
@@ -664,7 +665,7 @@
                                     gin.const-new
                                     gin.thm-index
                                     hints)))
-    (mv (const-fix const)
+    (mv expr
         (make-simpadd0-gout :events (list thm-event)
                             :thm-name thm-name
                             :thm-index thm-index
@@ -672,7 +673,12 @@
                             :vars vars
                             :diffp nil
                             :falliblep falliblep)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-simpadd0-expr-const
+    (expr-unambp new-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -739,8 +745,7 @@
        :ident (simpadd0-expr-ident expr.ident
                                    (c$::coerce-var-info expr.info)
                                    gin)
-       :const (b* (((mv const gout) (simpadd0-expr-const expr.const gin)))
-                (mv (expr-const const) gout))
+       :const (simpadd0-expr-const expr.const gin)
        :string (mv (expr-fix expr)
                    (make-simpadd0-gout :events nil
                                        :thm-name nil
