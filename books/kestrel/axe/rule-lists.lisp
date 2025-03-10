@@ -3965,9 +3965,9 @@
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
           (introduce-bv-array-rules)
           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
-          (introduce-bv-array-rules)  ;todo: duplicated above!
           ))
 
+;; todo: compare to unroll-spec-rules above
 ;; todo: avoid trimming down things like xors (possibly to multiple different sizes)?
 (defun unroll-spec-basic-rules ()
   (set-difference-eq
@@ -3975,7 +3975,7 @@
            (amazing-rules-bv)
            (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
            (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
-           ;; (introduce-bv-array-rules)
+           ;; (introduce-bv-array-rules) ; todo: consider these
            ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
            (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
            ;; Handle nth of a 2-d array:
