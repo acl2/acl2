@@ -1,7 +1,7 @@
 ; Lists of rule names (JVM-related)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1460,8 +1460,9 @@
             integerp-implies-acl2-numberp
             )))
 
-;fixme get rid of this? used in lifter.
+;; todo: get rid of this? used in lifter.
 ;todo: this contains some duplicates (other rule lists in this file may too)
+;; todo: better name
 (defun rule-list-1001 ()
   (declare (xargs :guard t))
   (append (lookup-rules) ;new!

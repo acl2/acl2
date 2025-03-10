@@ -1,6 +1,6 @@
 ; A lightweight book about firstn.
 ;
-; Copyright (C) 2018-2023 Kestrel Institute
+; Copyright (C) 2018-2025 Kestrel Institute
 ; See books/coi/lists/basic.lisp for the copyright on firstn itself.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -45,6 +45,12 @@
                   nil))
   :hints (("Goal" :in-theory (enable firstn))))
 
+(defthmd firstn-when-zp
+  (implies (zp n)
+           (equal (firstn n x)
+                  nil))
+  :hints (("Goal" :in-theory (enable firstn))))
+
 ;; disabled since firstn-when-zp-cheap should suffice
 (defthmd firstn-of-0
   (equal (firstn 0 x)
@@ -53,6 +59,12 @@
 (defthm len-of-firstn
   (equal (len (firstn n l))
          (min (nfix n) (len l))))
+
+(defthm car-of-firstn
+  (equal (car (firstn n l))
+         (if (posp n)
+             (car l)
+           nil)))
 
 (defthm firstn-of-singleton
   (implies (and (syntaxp (quotep n))
