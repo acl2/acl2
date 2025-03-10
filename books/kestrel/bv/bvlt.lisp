@@ -33,18 +33,16 @@
 (defthm booleanp-of-bvlt
   (booleanp (bvlt size x y)))
 
-;rename
-(defthm bvlt-self
+;rename?
+(defthm not-bvlt-self
   (not (bvlt size x x))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-;rename
-(defthm equal-when-bvlt
+(defthm not-equal-when-bvlt
   (implies (bvlt freesize x y)
            (not (equal x y))))
 
-;rename
-(defthm equal-when-bvlt-alt
+(defthm not-equal-when-bvlt-alt
   (implies (bvlt freesize y x)
            (not (equal x y))))
 
@@ -508,7 +506,9 @@
   :hints (("Goal" :use (:instance bvlt-transitive-free2-back (free2 free))
            :in-theory (disable bvlt-transitive-free2-back))))
 
-(defthm equal-of-constant-when-bvlt-constant-1
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm not-equal-of-constant-when-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize free x)
                 (syntaxp (quotep free))
@@ -516,7 +516,7 @@
                 (bvle freesize const free))
            (not (equal const x))))
 
-(defthm equal-of-constant-when-bvlt-constant-2
+(defthm not-equal-of-constant-when-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize x free)
                 (syntaxp (quotep free))
@@ -524,7 +524,7 @@
                 (bvle freesize free const))
            (not (equal const x))))
 
-(defthm equal-of-constant-when-not-bvlt-constant-1
+(defthm not-equal-of-constant-when-not-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
                 (not (bvlt freesize x free))
                 (syntaxp (quotep freesize))
@@ -532,7 +532,7 @@
                 (bvlt freesize const free))
            (not (equal const x))))
 
-(defthm equal-of-constant-when-not-bvlt-constant-2
+(defthm not-equal-of-constant-when-not-bvlt-constant-2
   (implies (and (syntaxp (quotep const))
                 (not (bvlt freesize free x))
                 (syntaxp (quotep freesize))
@@ -540,9 +540,9 @@
                 (bvlt freesize free const))
            (not (equal const x))))
 
-; can we drop the -alt rules?
+; can we drop the -alt rules?  or add 2 more?
 
-(defthm equal-of-constant-when-bvlt-constant-1-alt
+(defthm not-equal-of-constant-when-bvlt-constant-1-alt
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize free x)
                 (syntaxp (quotep free))
@@ -550,13 +550,15 @@
                 (bvle freesize const free))
            (not (equal x const))))
 
-(defthm equal-of-constant-when-bvlt-constant-2-alt
+(defthm not-equal-of-constant-when-bvlt-constant-2-alt
   (implies (and (syntaxp (quotep const))
                 (bvlt freesize x free)
                 (syntaxp (quotep free))
                 (syntaxp (quotep freesize))
                 (bvle freesize free const))
            (not (equal x const))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm equal-of-bvchop-and-constant-when-bvlt-constant-1
   (implies (and (syntaxp (quotep const))
@@ -597,6 +599,8 @@
                 (bvlt freesize free const)
                 (integerp size))
            (not (equal const (bvchop size x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm bvlt-of-bvchop-arg3-same
   (equal (bvlt size x (bvchop size y))
