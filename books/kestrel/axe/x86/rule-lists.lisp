@@ -2500,8 +2500,8 @@
             acl2::<-of-bvplus-same-gen
             acl2::+-of-bvplus-of-x-and-minus-x
             acl2::<-of-minus-and-constant
-            acl2::equal-of-constant-when-bvlt-constant-1
-            acl2::equal-of-constant-when-bvlt-constant-2
+            acl2::not-equal-of-constant-when-bvlt-constant-1
+            acl2::not-equal-of-constant-when-bvlt-constant-2
             acl2::acl2-numberp-when-unsigned-byte-p
             acl2::integerp-when-unsigned-byte-p-free
             x86isa::32-bit-mode-one-byte-opcode-modr/m-p-rewrite-quotep
