@@ -424,7 +424,10 @@
      take the same amount of storage.
      In our model, it means that they must have the same number of bits.
      We check this requirement in this recursive predicate,
-     by ensuring that the two lists end at the same time."))
+     by ensuring that the two lists end at the same time.")
+   (xdoc::p
+    "We show that this predicate guarantees
+     the inequality @('M <= N') mentioned in [C17:6.2.6.2/2]."))
   (b* (((when (endp uroles)) (endp sroles))
        ((when (endp sroles)) nil)
        (srole (car sroles))
@@ -446,25 +449,15 @@
                     (len sroles)))
     :rule-classes (:rewrite :forward-chaining)
     :induct t
-    :enable len))
+    :enable len)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled sinteger-value-bits-leq-uinteger-value-bits
-  :short "The number of signed integer value bits
-          is less than or equal to
-          the number of unsigned integer value bits."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the inequality @('M <= N') mentioned in [C17:6.2.6.2/2]."))
-  (implies (uinteger-sinteger-bit-roles-wfp uroles sroles)
-           (<= (sinteger-bit-roles-value-count sroles)
-               (uinteger-bit-roles-value-count uroles)))
-  :induct t
-  :enable (uinteger-sinteger-bit-roles-wfp
-           sinteger-bit-roles-value-count
-           uinteger-bit-roles-value-count))
+  (defruled sinteger-value-bits-leq-uinteger-value-bits
+    (implies (uinteger-sinteger-bit-roles-wfp uroles sroles)
+             (<= (sinteger-bit-roles-value-count sroles)
+                 (uinteger-bit-roles-value-count uroles)))
+    :induct t
+    :enable (sinteger-bit-roles-value-count
+             uinteger-bit-roles-value-count)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
