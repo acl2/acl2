@@ -26,27 +26,20 @@
                    `(sha3::keccak-256 ,(acl2::symbolic-list 'in 8))
                    :rules :auto
                    :memoizep nil ; for speed
-                   :extra-rules '(acl2::len-of-cdr
-                                  acl2::car-of-nthcdr
-                                  acl2::update-nth-of-cons
+                   :extra-rules '(acl2::update-nth-of-cons
                                   acl2::car-becomes-nth-of-0
                                   acl2::consp-when-len-equal-constant
                                   acl2::consp-when-len-equal-constant-alt
-                                  acl2::consp-of-cdr
-                                  acl2::nth-of-cdr))
+                                  ))
 
 ;; Assumes an 8-bit message
 (acl2::unroll-spec-basic *keccak-256-8bit*
                          `(keccak::keccak-256 ,(acl2::symbolic-list 'in 8))
                          :rules :auto
-                         :extra-rules '(acl2::len-of-cdr
-                                        acl2::car-of-nthcdr
-                                        acl2::update-nth-of-cons
+                         :extra-rules '(acl2::update-nth-of-cons
                                         acl2::car-becomes-nth-of-0
                                         acl2::consp-when-len-equal-constant
                                         acl2::consp-when-len-equal-constant-alt
-                                        acl2::consp-of-cdr
-                                        acl2::nth-of-cdr
                                         acl2::leftrotate))
 
 (acl2::prove-equivalence *sha-3-keccak-256-8bit*
