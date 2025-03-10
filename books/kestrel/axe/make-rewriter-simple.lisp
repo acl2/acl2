@@ -6264,9 +6264,9 @@
                                                 (memoize 't) ; not memoizep, since this is user-facing
                                                 (count-hits 'nil)
                                                 (print ':brief)
-                                                (monitored-symbols 'nil)
+                                                (monitor 'nil)
                                                 (fns-to-elide 'nil))
-           `(make-event-quiet (,',def-simplified-fn-name ',defconst-name ,dag-or-term ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitored-symbols ,fns-to-elide ',whole-form state)))
+           `(make-event-quiet (,',def-simplified-fn-name ',defconst-name ,dag-or-term ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitor ,fns-to-elide ',whole-form state)))
          )) ; end of the generated encapsulate and progn
     ))
 
