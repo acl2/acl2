@@ -64,6 +64,7 @@
 (include-book "kestrel/lists-light/repeat-tail" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/lists-light/cons" :dir :system)
+(include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/rules" :dir :system) ; for CONS-EQUAL-REWRITE-CONSTANT-VERSION
 (include-book "kestrel/lists-light/rules2" :dir :system) ;for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
 (include-book "kestrel/lists-light/ungroup" :dir :system)

@@ -1303,6 +1303,7 @@
     len-of-cons
     true-listp-of-cons
     take-of-cons
+    nth-of-cons-constant-version
 
     ;; Rules about cdr:
     ;; todo: rule for car-of-cdr?
@@ -1311,6 +1312,7 @@
     len-of-cdr
     true-listp-of-cdr
     ;; todo: rule for take-of-cdr?
+    nth-of-cdr
 
     ;; Rules about take:
     car-of-take-strong
@@ -1319,6 +1321,7 @@
     len-of-take
     true-listp-of-take
     take-of-take
+    nth-of-take-2-gen ;quite aggressive
 
     ;; Rules about append:
     car-of-append
@@ -1327,6 +1330,7 @@
     len-of-append
     true-listp-of-append
     take-of-append
+    nth-of-append ;may be bad if we can't resolve the if test?
 
     ;; Rules about nthcdr:
     car-of-nthcdr ; introduces nth
@@ -1344,7 +1348,7 @@
     len-update-nth ;pretty aggressive, todo: rename?  but this is built in
     true-listp-of-update-nth-2
     ;; should we have a rule for take-of-update-nth ?
-    nth-of-cdr
+    nth-update-nth-safe
 
     ;; Rules about firstn (or we can always convert it to take -- todo: try that rule first?):
     car-of-firstn
@@ -1355,17 +1359,43 @@
     ;; todo: take-of-firstn?
     nth-of-firstn
 
-    take-of-0 ;take-when-zp-n
-    take-does-nothing ; introduces true-list-fix
+    ;; Rules about true-list-fix
+    car-of-true-list-fix
+    cdr-of-true-list-fix
+    consp-of-true-list-fix
+    len-of-true-list-fix
+    true-listp-of-true-list-fix
     take-of-true-list-fix ; more like this, but lower priority?
+    nth-of-true-list-fix
 
-    ;; what do we want to do about LISTP (not used very much)?
+    ;; Rules about reverse-list
+    car-of-reverse-list
+    cdr-of-reverse-list
+    consp-of-reverse-list
+    len-of-reverse-list
+    true-listp-of-reverse-list
+    ;; todo: take-of-reverse-list
+    nth-of-reverse-list
+
+    ;; Rules about repeat
+    car-of-repeat
+    cdr-of-repeat
+    consp-of-repeat
+    len-of-repeat  ;since initializing an array calls repeat
+    true-listp-of-repeat
+    take-of-repeat-2 ; todo: take-of-repeat
+    nth-of-repeat
 
     ;; mixed rules:
 
+    take-of-0 ;take-when-zp-n
+    take-does-nothing ; introduces true-list-fix
+
+    ;; what do we want to do about LISTP (not used very much)?
+
     nthcdr-of-nil
-    nth-of-take-2-gen ;quite aggressive
     repeat-becomes-repeat-tail
+    repeat-of-0
     nthcdr-of-cons
     equal-cons-nth-0-self
     equal-of-nthcdr-and-cons-of-nth
@@ -1378,34 +1408,21 @@
     nthcdr-of-0
     nthcdr-when-not-posp ;drop?
     firstn-when-zp-cheap
-    nth-update-nth-safe
 
     append-of-cons-arg1
 
     append-of-nil-arg1
     append-of-nil-arg2
 
-    true-listp-of-true-list-fix2
-    len-of-true-list-fix
     true-list-fix-when-true-listp
-    true-listp-of-repeat
-    len-of-repeat  ;since initializing an array calls repeat
 
-    nth-of-cons-constant-version
     integerp-of-len
     natp-of-len
     len-non-negative
     nthcdr-of-append-gen
     firstn-of-append ;todo: do we prefer firstn or take?  are rules about both needed?
     firstn-becomes-take-gen ;try this first?
-    consp-of-reverse-list
-    nth-of-reverse-list ;sat dec  4 13:20:17 2010
     reverse-list-of-cons
-    car-of-reverse-list ;sun feb  6 11:15:00 2011
-    cdr-of-reverse-list ;sun feb  6 11:15:00 2011
-    len-of-reverse-list ;sun feb  6 11:15:00 2011
-
-    nth-of-append ;may be bad if we can't resolve the if test?
 
     equal-cons-nil-1
     equal-cons-nil-2
@@ -1445,7 +1462,7 @@
             append-of-take-and-subrange-alt
             equal-of-cons
             cdr-iff
-            car-becomes-nth-of-0
+            car-becomes-nth-of-0 ; aggressive, try last?
             nthcdr-iff
             +-combine-constants
             <-of-+-arg2-when-negative-constant
