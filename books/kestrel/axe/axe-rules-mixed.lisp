@@ -18,7 +18,7 @@
 
 (include-book "rules1")
 (include-book "kestrel/bv/rules6" :dir :system)
-(include-book "rules3") ;drop? ;for BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-no-split
+(local (include-book "rules3")) ;drop? ;for BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-no-split
 (include-book "axe-syntax-functions")
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/lists-light/all-same" :dir :system)
