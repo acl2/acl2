@@ -572,7 +572,7 @@
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
-   (bvchop-of-bv-rules)
+   (bvchop-of-bv-rules) ; todo: consider dropping these
    (unsigned-byte-p-rules)
    (bv-constant-chop-rules)
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
@@ -1307,8 +1307,8 @@
     ;; Rules about cdr:
     ;; todo: rule for car-of-cdr?
     ;; todo: cdr-of-cdr-becomes-nthcdr
-    ;; todo: consp-of-cdr
-    ;; todo: len-of-cdr
+    consp-of-cdr ; introduces len
+    len-of-cdr
     true-listp-of-cdr
     ;; todo: rule for take-of-cdr?
 
@@ -1329,12 +1329,13 @@
     take-of-append
 
     ;; Rules about nthcdr:
-    ;; todo: car-of-nthcdr? ; introduces nth
+    car-of-nthcdr ; introduces nth
     cdr-of-nthcdr ; combines the cdr and the nthcdr
     consp-of-nthcdr
     len-of-nthcdr
     true-listp-of-nthcdr-2
     ;; should we have a take-of-nthcdr rule?  would have to go to subrange?  or move the take inside...
+    nth-of-nthcdr
 
     ;; Rules about update-nth:
     car-of-update-nth
@@ -1343,11 +1344,16 @@
     len-update-nth ;pretty aggressive, todo: rename?  but this is built in
     true-listp-of-update-nth-2
     ;; should we have a rule for take-of-update-nth ?
+    nth-of-cdr
 
-    ;; Rules about firstn:
+    ;; Rules about firstn (or we can always convert it to take -- todo: try that rule first?):
     car-of-firstn
-    len-of-firstn ;sun feb  6 11:16:17 2011
-    ;; todo: more (see lists above)
+    ;; todo: cdr-of-firstn?
+    consp-of-firstn
+    len-of-firstn
+    true-listp-of-firstn
+    ;; todo: take-of-firstn?
+    nth-of-firstn
 
     take-of-0 ;take-when-zp-n
     take-does-nothing ; introduces true-list-fix
@@ -1367,7 +1373,7 @@
     equal-of-nil-and-nthcdr
     cdr-of-cdr-becomes-nthcdr ;these nthcdr rules are new
     nthcdr-of-cdr-combine
-    nth-of-nthcdr
+
     nthcdr-of-1
     nthcdr-of-0
     nthcdr-when-not-posp ;drop?
@@ -1403,7 +1409,10 @@
 
     equal-cons-nil-1
     equal-cons-nil-2
-    consp-of-myif-strong))
+    consp-of-myif-strong
+
+    consp-when-len-equal-constant
+    consp-when-len-equal-constant-alt))
 
 ;; TODO: Move some of these into list-rules.
 (defun list-rules2 ()
@@ -1411,10 +1420,9 @@
   (append (list-rules)
           '(finalcdr-iff
             ;;consp-of-finalcdr ;wed sep 22 17:46:19 2010
-            nth-of-firstn               ;sun sep  5 23:11:14 2010
+
             cons-equal-rewrite-constant-version ;sun sep  5 05:09:23 2010
             nthcdr-of-nthcdr                    ;sun sep  5 05:01:31 2010
-            consp-of-firstn                     ;fri sep  3 04:06:54 2010
             ;;list::nthcdr-of-len-or-more ;make a cheap version?
 
             equal-of-subrange-opener ;not in the usual rule set
@@ -1423,12 +1431,11 @@
 
             equal-of-take-and-firstn
             firstn-when-<=-of-len
-            nth-of-take-2
+            ;; nth-of-take-2
             append-of-firstn-and-cons-when-nth
             append-of-firstn-of-cons-of-nth
             cons-nth-onto-subrange-alt
             equal-subrange-nthcdr-rewrite
-            true-listp-of-firstn
 
             ;;firstn-of-cdr-becomes-subrange ; drop?
             append-of-take-and-cons-when-nth ;could be expensive
@@ -1439,9 +1446,6 @@
             equal-of-cons
             cdr-iff
             car-becomes-nth-of-0
-            nth-of-cdr
-            consp-of-cdr
-            len-of-cdr
             nthcdr-iff
             +-combine-constants
             <-of-+-arg2-when-negative-constant
