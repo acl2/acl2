@@ -515,7 +515,7 @@
      we let the address be any integer.
      We use @(tsee read-memory-unsigned8) twice.
      Note that if @('addr') is @('2^XLEN - 1'),
-     then @('addr + 1') becomes address 0."))
+     then @('addr + 1') wraps around to address 0."))
   (b* ((addr (lifix addr))
        (b0 (read-memory-unsigned8 addr stat feat))
        (b1 (read-memory-unsigned8 (+ addr 1) stat feat)))
@@ -549,7 +549,7 @@
      we let the address be any integer.
      We use @(tsee read-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
-     then the subsequent addresses may wrap around."))
+     then the subsequent addresses may wrap around to addres 0."))
   (b* ((addr (lifix addr))
        (b0 (read-memory-unsigned8 addr stat feat))
        (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
@@ -587,7 +587,7 @@
      we let the address be any integer.
      We use @(tsee read-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
-     then the subsequent addresses may wrap around."))
+     then the subsequent addresses may wrap around to address 0."))
   (b* ((addr (lifix addr))
        (b0 (read-memory-unsigned8 addr stat feat))
        (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
@@ -611,3 +611,172 @@
 
   (more-returns
    (val natp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-memory-unsigned8 ((addr integerp)
+                                (val ubyte8p)
+                                (stat statp)
+                                (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (new-stat statp)
+  :short "Write an unsigned 8-bit integer to memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The address is an integer of arbitrary size,
+     of which we consider only the low @('XLEN') bits,
+     as an unsigned address.
+     Allowing any integer is convenient for callers.
+     We write the byte at that address.")
+   (xdoc::p
+    "Since we write a single byte,
+     there is no difference between little and big endian."))
+  (b* ((addr (loghead (feat->xlen feat) (lifix addr))))
+    (change-stat stat :memory (update-nth addr
+                                          (ubyte8-fix val)
+                                          (stat->memory stat))))
+  :hooks (:fix)
+
+  ///
+
+  (defret stat-validp-of-write-memory-unsigned8
+    (stat-validp new-stat feat)
+    :hyp (stat-validp stat feat)
+    :hints (("Goal" :in-theory (enable stat-validp max)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-memory-unsigned16 ((addr integerp)
+                                 (val ubyte16p)
+                                 (stat statp)
+                                 (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (new-stat statp)
+  :short "Write an unsigned 16-bit integer to memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The memory address is the one of the first byte;
+     we write that, and the subsequent byte.
+     For now we only support little endian memory,
+     so the first byte is the lowest one.")
+   (xdoc::p
+    "As in @(tsee write-memory-unsigned8),
+     we let the address be any integer.
+     We use @(tsee write-memory-unsigned8) twice.
+     Note that if @('addr') is @('2^XLEN - 1'),
+     then @('addr + 1') wraps around to address 0."))
+  (b* ((addr (lifix addr))
+       (val (ubyte16-fix val))
+       (b0 (logand val #xff))
+       (b1 (ash val -8))
+       (stat (write-memory-unsigned8 addr b0 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 1) b1 stat feat)))
+    stat)
+  :guard-hints (("Goal" :in-theory (enable ubyte8p
+                                           unsigned-byte-p
+                                           integer-range-p)))
+  :hooks (:fix)
+
+  ///
+
+  (defret stat-validp-of-write-memory-unsigned16
+    (stat-validp new-stat feat)
+    :hyp (stat-validp stat feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-memory-unsigned32 ((addr integerp)
+                                 (val ubyte32p)
+                                 (stat statp)
+                                 (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (new-stat statp)
+  :short "Write an unsigned 32-bit integer to memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The memory address is the one of the first byte;
+     we write that, and the subsequent bytes.
+     For now we only support little endian memory,
+     so the first byte is the lowest one.")
+   (xdoc::p
+    "As in @(tsee write-memory-unsigned8),
+     we let the address be any integer.
+     We use @(tsee write-memory-unsigned8) twice.
+     Note that if @('addr') is close to @('2^XLEN - 1'),
+     then the subsequent addresses may wrap around to address 0."))
+  (b* ((addr (lifix addr))
+       (val (ubyte32-fix val))
+       (b0 (logand val #xff))
+       (b1 (logand (ash val -8) #xff))
+       (b2 (logand (ash val -16) #xff))
+       (b3 (ash val -24))
+       (stat (write-memory-unsigned8 addr b0 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 1) b1 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 2) b2 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 3) b3 stat feat)))
+    stat)
+  :guard-hints (("Goal" :in-theory (enable ubyte8p
+                                           unsigned-byte-p
+                                           integer-range-p)))
+  :hooks (:fix)
+
+  ///
+
+  (defret stat-validp-of-write-memory-unsigned32
+    (stat-validp new-stat feat)
+    :hyp (stat-validp stat feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define write-memory-unsigned64 ((addr integerp)
+                                 (val ubyte64p)
+                                 (stat statp)
+                                 (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (new-stat statp)
+  :short "Write an unsigned 64-bit integer to memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The memory address is the one of the first byte;
+     we write that, and the subsequent bytes.
+     For now we only support little endian memory,
+     so the first byte is the lowest one.")
+   (xdoc::p
+    "As in @(tsee write-memory-unsigned8),
+     we let the address be any integer.
+     We use @(tsee write-memory-unsigned8) four times.
+     Note that if @('addr') is close to @('2^XLEN - 1'),
+     then the subsequent addresses may wrap around to address 0."))
+  (b* ((addr (lifix addr))
+       (val (ubyte64-fix val))
+       (b0 (logand val #xff))
+       (b1 (logand (ash val -8) #xff))
+       (b2 (logand (ash val -16) #xff))
+       (b3 (logand (ash val -24) #xff))
+       (b4 (logand (ash val -32) #xff))
+       (b5 (logand (ash val -40) #xff))
+       (b6 (logand (ash val -48) #xff))
+       (b7 (ash val -56))
+       (stat (write-memory-unsigned8 addr b0 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 1) b1 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 2) b2 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 3) b3 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 4) b4 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 5) b5 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 6) b6 stat feat))
+       (stat (write-memory-unsigned8 (+ addr 7) b7 stat feat)))
+    stat)
+  :guard-hints (("Goal" :in-theory (enable ubyte8p
+                                           unsigned-byte-p
+                                           integer-range-p)))
+  :hooks (:fix)
+
+  ///
+
+  (defret stat-validp-of-write-memory-unsigned64
+    (stat-validp new-stat feat)
+    :hyp (stat-validp stat feat)))
