@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -126,7 +126,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled signed-previous-quorum-p-when-system-initp
+(defruled signed-previous-quorum-p-when-init
   :short "Establishment of the invariant:
           the invariant holds in any initial system state."
   :long
@@ -300,25 +300,38 @@
     :enable (event-possiblep
              event-next)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled signed-previous-quorum-p-of-events-next
+  :short "Preservation of the invariant by multiple transitions."
+  (implies (and (events-possiblep events systate)
+                (last-blockchain-round-p systate)
+                (ordered-even-p systate)
+                (signed-previous-quorum-p systate))
+           (signed-previous-quorum-p (events-next events systate)))
+  :induct t
+  :enable (events-possiblep
+           events-next))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection signed-previous-quorum-p-always
-  :short "The invariant holds in every state
-          reachable from an initial state via a sequence of events."
-
-  (defruled signed-previous-quorum-p-of-events-next
-    (implies (and (signed-previous-quorum-p systate)
-                  (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
-                  (events-possiblep events systate))
-             (and (signed-previous-quorum-p (events-next events systate))
-                  (last-blockchain-round-p (events-next events systate))
-                  (ordered-even-p (events-next events systate))))
-    :induct t
-    :enable (events-possiblep
-             events-next))
-
-  (defruled signed-previous-quorum-p-when-reachable
-    (implies (and (system-initp systate)
-                  (events-possiblep events systate))
-             (signed-previous-quorum-p (events-next events systate)))))
+(defruled signed-previous-quorum-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  (implies (system-state-reachablep systate)
+           (signed-previous-quorum-p systate))
+  :enable (system-state-reachablep
+           signed-previous-quorum-p-when-init
+           ordered-even-p-when-init
+           last-blockchain-round-p-when-init)
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (system-state-reachable-from-p systate from)
+                   (last-blockchain-round-p from)
+                   (ordered-even-p from)
+                   (signed-previous-quorum-p from))
+              (signed-previous-quorum-p systate))
+     :use (:instance
+           signed-previous-quorum-p-of-events-next
+           (events (system-state-reachable-from-p-witness systate from))
+           (systate from))
+     :enable system-state-reachable-from-p)))
