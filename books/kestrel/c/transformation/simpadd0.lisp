@@ -565,10 +565,11 @@
                  :use (:instance simpadd0-expr-ident-support-lemma
                                  (ident ',ident)
                                  (info ',info)))))
+       (falliblep nil)
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr
-                                    nil
+                                    falliblep
                                     vars
                                     gin.const-new
                                     gin.thm-index
@@ -581,7 +582,7 @@
                             :names-to-avoid (list thm-name)
                             :vars vars
                             :diffp nil
-                            :falliblep nil)))
+                            :falliblep falliblep)))
   :prepwork ((local (in-theory (enable identity))))
   :hooks (:fix)
 
@@ -606,6 +607,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-expr-const ((const constp) (gin simpadd0-ginp))
+  :returns (mv (new-const constp)
+               (gout simpadd0-goutp))
+  :short "Transform a constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This undergoes no actual transformation,
+     but we introduce it for uniformity,
+     also because we may eventually evolve the @(tsee simpadd0) implementation
+     into a much more general transformation.
+     Thus, the output constant is always the same as the input one.")
+   (xdoc::p
+    "If the constant is an integer one and has type @('int'),
+     and under the additional condition described shortly,
+     we generate a theorem saying that the exprssion,
+     when executed, yields a value of type @('int').
+     The additional condition is that
+     the value of the constant fits in 32 bits.
+     The reason is that
+     our current dynamic semantics assumes that @('int') has 32 bits,
+     while our validator is more general
+     (@(tsee valid-iconst) takes an implementation environment as input,
+     which specifies, among other things, the size of @('int')).
+     Until we extend our dynamic semantics to be more general,
+     we need this additional condition for proof generation."))
+  (b* (((simpadd0-gin gin) gin)
+       (no-thm-gout (make-simpadd0-gout :events nil
+                                        :thm-name nil
+                                        :thm-index gin.thm-index
+                                        :names-to-avoid gin.names-to-avoid
+                                        :vars nil
+                                        :diffp nil
+                                        :falliblep nil))
+       ((unless (const-case const :int)) (mv (const-fix const) no-thm-gout))
+       ((iconst iconst) (const-int->unwrap const))
+       ((c$::iconst-info info) (c$::coerce-iconst-info iconst.info))
+       ((unless (and (c$::type-case info.type :sint)
+                     (<= info.value (c::sint-max))))
+        (mv (const-fix const) no-thm-gout))
+       (expr (c$::expr-const const))
+       (hints `(("Goal" :in-theory '(c::exec-expr-pure
+                                     (:e c$::ldm-expr)
+                                     (:e c::expr-const)
+                                     (:e c::expr-fix)
+                                     (:e c::expr-kind)
+                                     (:e c::expr-const->get)
+                                     (:e c::exec-const)
+                                     (:e c::expr-value->value)
+                                     (:e c::value-kind)))))
+       (vars nil)
+       (falliblep nil)
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-expr-pure-thm expr
+                                    expr
+                                    falliblep
+                                    vars
+                                    gin.const-new
+                                    gin.thm-index
+                                    hints)))
+    (mv (const-fix const)
+        (make-simpadd0-gout :events (list thm-event)
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (list thm-name)
+                            :vars vars
+                            :diffp nil
+                            :falliblep falliblep)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines simpadd0-exprs/decls/stmts
   :short "Transform expressions, declarations, statements,
           and related entities."
@@ -626,10 +699,10 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Variables (i.e. identifier expressions)
-       are handled by a separate function.")
+      "Variables (i.e. identifier expressions) and constants
+       are handled by separate functions.")
      (xdoc::p
-      "Constants and string literals undergo no transformation.
+      "String literals undergo no transformation.
        No theorems are generated for them, since there is no change.")
      (xdoc::p
       "When we encounter constructs unsupported in the formal dynamic semnatics,
@@ -670,14 +743,8 @@
                                          (c$::coerce-var-info expr.info)
                                          gin)))
                 (mv (make-expr-ident :ident ident :info info) gout))
-       :const (mv (expr-fix expr)
-                  (make-simpadd0-gout :events nil
-                                      :thm-name nil
-                                      :thm-index gin.thm-index
-                                      :names-to-avoid gin.names-to-avoid
-                                      :vars nil
-                                      :diffp nil
-                                      :falliblep nil))
+       :const (b* (((mv const gout) (simpadd0-expr-const expr.const gin)))
+                (mv (expr-const const) gout))
        :string (mv (expr-fix expr)
                    (make-simpadd0-gout :events nil
                                        :thm-name nil
