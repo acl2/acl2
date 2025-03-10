@@ -1409,7 +1409,10 @@
 
     equal-cons-nil-1
     equal-cons-nil-2
-    consp-of-myif-strong))
+    consp-of-myif-strong
+
+    consp-when-len-equal-constant
+    consp-when-len-equal-constant-alt))
 
 ;; TODO: Move some of these into list-rules.
 (defun list-rules2 ()

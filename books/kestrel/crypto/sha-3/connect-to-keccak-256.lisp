@@ -26,8 +26,6 @@
                    :memoizep nil ; for speed
                    :extra-rules '(acl2::update-nth-of-cons
                                   acl2::car-becomes-nth-of-0
-                                  acl2::consp-when-len-equal-constant
-                                  acl2::consp-when-len-equal-constant-alt
                                   ))
 
 ;; Assumes a 256-bit message
@@ -36,8 +34,6 @@
                          :rules :auto
                          :extra-rules '(acl2::update-nth-of-cons
                                         acl2::car-becomes-nth-of-0
-                                        acl2::consp-when-len-equal-constant
-                                        acl2::consp-when-len-equal-constant-alt
                                         acl2::leftrotate))
 
 (acl2::prove-equivalence *sha-3-keccak-256-256bit*
