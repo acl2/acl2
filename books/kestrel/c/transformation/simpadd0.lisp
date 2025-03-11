@@ -642,7 +642,7 @@
      The reason is that
      our current dynamic semantics assumes that @('int') has 32 bits,
      while our validator is more general
-     (@(tsee valid-iconst) takes an implementation environment as input,
+     (@(tsee c$::valid-iconst) takes an implementation environment as input,
      which specifies, among other things, the size of @('int')).
      Until we extend our dynamic semantics to be more general,
      we need this additional condition for proof generation."))
