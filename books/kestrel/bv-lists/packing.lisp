@@ -1,7 +1,7 @@
 ; Mixed rules about packing and grouping
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,8 +19,9 @@
 (include-book "kestrel/lists-light/group-and-ungroup" :dir :system)
 (include-book "kestrel/lists-light/rules2" :dir :system) ; for list-split
 (include-book "kestrel/lists-light/group-rules" :dir :system) ;to introduce group2
-(include-book "packbv")
+;(include-book "packbv")
 (include-book "map-packbv")
+(include-book "map-unpackbv")
 (include-book "bytes-to-bits")
 (include-book "kestrel/arithmetic-light/floor2" :dir :system) ;todo make local
 (local (include-book "kestrel/lists-light/nth" :dir :system))
