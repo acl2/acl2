@@ -715,16 +715,20 @@
   (xdoc::topstring
    (xdoc::p
     "For now this only contains a few components,
-     but we plan to add more components.
-     In particular, we plan to add components for
-     the formats of other integer types,
-     which will make use of @(tsee uinteger-format)
-     and of a similar fixtype for signed integer formats,
-     which we still have to formalize."))
+     but we plan to add more components.")
+   (xdoc::p
+    "Currently we include the format of the three character types,
+     and the standard signed integer types and their unsigned counterparts.
+     We still need to add constraints on the numbers of bits,
+     and on the maximum and minimum values,
+     of the non-character integer formats."))
   ((uchar-format uchar-format)
    (schar-format schar-format)
-   (char-format char-format))
-  :tag :ienv
+   (char-format char-format)
+   (short-format integer-format)
+   (int-format integer-format)
+   (long-format integer-format)
+   (llong-format integer-format))
   :pred ienvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
