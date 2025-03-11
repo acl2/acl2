@@ -529,7 +529,7 @@
 (define simpadd0-expr-ident ((ident identp)
                              (info c$::var-infop)
                              (gin simpadd0-ginp))
-  :returns (mv (new-expr exprp) (gout simpadd0-goutp))
+  :returns (mv (expr exprp) (gout simpadd0-goutp))
   :short "Transform an identifier expression (i.e. a variable)."
   :long
   (xdoc::topstring
@@ -600,7 +600,7 @@
   ///
 
   (defret expr-unambp-of-simpadd0-expr-ident
-    (expr-unambp new-expr))
+    (expr-unambp expr))
 
   (defruled simpadd0-expr-ident-support-lemma
     (b* ((expr (mv-nth 1 (c$::ldm-expr (c$::expr-ident ident info))))
@@ -622,7 +622,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-expr-const ((const constp) (gin simpadd0-ginp))
-  :returns (mv (new-expr exprp) (gout simpadd0-goutp))
+  :returns (mv (expr exprp) (gout simpadd0-goutp))
   :short "Transform a constant."
   :long
   (xdoc::topstring
@@ -694,7 +694,82 @@
   ///
 
   (defret expr-unambp-of-simpadd0-expr-const
-    (expr-unambp new-expr)))
+    (expr-unambp expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-expr-paren ((inner exprp)
+                             (inner-new exprp)
+                             (inner-events pseudo-event-form-listp)
+                             (inner-thm-name symbolp)
+                             (inner-vars ident-setp)
+                             (inner-diffp booleanp)
+                             (inner-falliblep booleanp)
+                             (gin simpadd0-ginp))
+  :guard (and (expr-unambp inner)
+              (expr-unambp inner-new))
+  :returns (mv (expr exprp) (gout simpadd0-goutp))
+  :short "Transform a parenthesized expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The caller of this ACL2 function
+     recursively transforms the inner expression,
+     and passes to this function
+     the possibly transformed expression,
+     along with some of the @(tsee simpadd0-gout) components
+     resulting from that transformation;
+     it also passes a @(tsee simpadd0-gin)
+     whose components have been updated
+     from the aforementioned @(tsee simpadd0-gout).")
+   (xdoc::p
+    "The resulting expression is obtained by
+     parenthesizing the possibly transformed inner expression.
+     We generate a theorem iff
+     a theorem was generated for the inner expression,
+     which we see from whether the theorem name is @('nil') or not.
+     The function @(tsee c$::ldm-expr) maps
+     a parenthesized expression to the same as the inner expression.
+     Thus, the theorem for the parenthesized expression
+     follow directly from the one for the inner expression."))
+  (b* ((expr (expr-paren inner))
+       (expr-new (expr-paren inner-new))
+       ((simpadd0-gin gin) gin)
+       ((unless inner-thm-name)
+        (mv expr-new
+            (make-simpadd0-gout :events inner-events
+                                :thm-name nil
+                                :thm-index gin.thm-index
+                                :names-to-avoid gin.names-to-avoid
+                                :vars inner-vars
+                                :diffp inner-diffp
+                                :falliblep inner-falliblep)))
+       (hints `(("Goal"
+                 :in-theory '((:e c$::ldm-expr))
+                 :use ,inner-thm-name)))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-expr-pure-thm expr
+                                    expr-new
+                                    inner-falliblep
+                                    inner-vars
+                                    gin.const-new
+                                    gin.thm-index
+                                    hints)))
+    (mv expr-new
+        (make-simpadd0-gout :events (append inner-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+                            :vars inner-vars
+                            :diffp inner-diffp
+                            :falliblep inner-falliblep)))
+
+  ///
+
+  (defret expr-unambp-of-simpadd0-expr-paren
+    (expr-unambp expr)
+    :hyp (expr-unambp inner-new)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -773,42 +848,15 @@
        :paren
        (b* (((mv new-inner (simpadd0-gout gout-inner))
              (simpadd0-expr expr.inner gin state))
-            ((unless (mbt (expr-unambp new-inner)))
-             (mv (irr-expr) (irr-simpadd0-gout)))
-            (new-expr (expr-paren new-inner)))
-         (if (and gout-inner.diffp
-                  gout-inner.thm-name)
-             (b* ((hints
-                   `(("Goal"
-                      :in-theory '((:e c$::ldm-expr))
-                      :use ,gout-inner.thm-name)))
-                  ((mv thm-event thm-name thm-index)
-                   (simpadd0-gen-expr-pure-thm expr
-                                               new-expr
-                                               t
-                                               gout-inner.vars
-                                               gin.const-new
-                                               gout-inner.thm-index
-                                               hints)))
-               (mv new-expr
-                   (make-simpadd0-gout
-                    :events (append gout-inner.events
-                                    (list thm-event))
-                    :thm-name thm-name
-                    :thm-index thm-index
-                    :names-to-avoid (append gout-inner.names-to-avoid
-                                            (list thm-name))
-                    :vars gout-inner.vars
-                    :diffp t
-                    :falliblep gout-inner.falliblep)))
-           (mv new-expr
-               (make-simpadd0-gout :events gout-inner.events
-                                   :thm-name nil
-                                   :thm-index gout-inner.thm-index
-                                   :names-to-avoid gout-inner.names-to-avoid
-                                   :vars gout-inner.vars
-                                   :diffp gout-inner.diffp
-                                   :falliblep gout-inner.falliblep))))
+            (gin (simpadd0-gin-update gin gout-inner)))
+         (simpadd0-expr-paren expr.inner
+                              new-inner
+                              gout-inner.events
+                              gout-inner.thm-name
+                              gout-inner.vars
+                              gout-inner.diffp
+                              gout-inner.falliblep
+                              gin))
        :gensel
        (b* (((mv new-control (simpadd0-gout gout-control))
              (simpadd0-expr expr.control gin state))
