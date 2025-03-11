@@ -14,7 +14,7 @@
 ;stuff about the function group, which chops a list into segments
 ;; TODO: harvest good lemmas from this book
 
-(include-book "kestrel/utilities/myif" :dir :system) ;drop?
+(include-book "kestrel/utilities/myif-def" :dir :system) ;drop?
 (include-book "firstn-def")
 (include-book "subrange-def")
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
@@ -162,9 +162,7 @@
            :use (my-FLOOR-UPPER-BOUND
                  ;(:instance <-*-/-LEFT (x i) (a 2) (y j))
                  )
-           :in-theory (disable my-FLOOR-UPPER-BOUND
-                               my-FLOOR-UPPER-BOUND
-                               ))))
+           :in-theory (disable my-floor-upper-bound))))
 
 ;gen the 1 !
 (defthmd floor-bound-hack-2
@@ -175,10 +173,7 @@
   :hints (("Goal"
            :use (;(:instance FLOOR-UPPER-BOUND-better (x i) (y j))
                  my-FLOOR-lower-BOUND)
-           :in-theory (disable my-FLOOR-UPPER-BOUND
-                               my-FLOOR-UPPER-BOUND
-                               ))))
-
+           :in-theory (disable my-floor-upper-bound))))
 
 (defthm floor-bound-hack-3
   (implies (and (posp j)
@@ -196,7 +191,6 @@
            :in-theory (disable floor-bound-hack-3))))
 
 (local (in-theory (enable floor-must-be-1)))
-
 
 ;;(EQUAL (FIRSTN N X) (LIST (NTH 0 X)))
 
@@ -283,11 +277,11 @@
   :hints (("Goal" :in-theory (enable group))))
 
 ;drop?
-(defthm endp-of-group
-  (implies (posp n)
-           (equal (endp (group n list))
-                  (endp list)))
-  :hints (("Goal" :in-theory (enable endp))))
+;; (defthm endp-of-group
+;;   (implies (posp n)
+;;            (equal (endp (group n list))
+;;                   (endp list)))
+;;   :hints (("Goal" :in-theory (enable endp))))
 
 (defthm cdr-of-group
   (implies (posp n)
@@ -327,10 +321,11 @@
                             )))))
 
 ;remove n?
-(defun firstn-of-group-induct (x n m)
-  (if (zp m)
-      (list x n m)
-    (firstn-of-group-induct (nthcdr n x) n (+ -1 m))))
+(local
+  (defun firstn-of-group-induct (x n m)
+    (if (zp m)
+        (list x n m)
+      (firstn-of-group-induct (nthcdr n x) n (+ -1 m)))))
 
 (local (in-theory (disable NTHCDR-OF-TRUE-LIST-FIX)))
 
@@ -462,10 +457,11 @@
 ;;          (equal 1 (len x))))
 
 ;; or go from (NTHCDR (LEN X) X) to finalcdr
-(defthm append-of-nthcdr-of-len-same
-  (equal (APPEND (NTHCDR (LEN X) X) Y)
-         y)
-  :hints (("Goal" :in-theory (enable equal-of-append))))
+(local
+  (defthm append-of-nthcdr-of-len-same
+    (equal (APPEND (NTHCDR (LEN X) X) Y)
+           y)
+    :hints (("Goal" :in-theory (enable equal-of-append)))))
 
 ;only do this if there are whole chunks to cut off..
 (defthmd group-of-append-1
@@ -578,7 +574,8 @@
                   (equal 0 (mod (len x) n))))
   :hints (("Goal" :in-theory (enable GROUP items-have-len))))
 
-(defthm true-listp-of-group
+;; Should only be needed by Axe, since ACL2 knows this by :type-prescription
+(defthmd true-listp-of-group
   (true-listp (group n x)))
 
 (defthm all-true-listp-of-group
