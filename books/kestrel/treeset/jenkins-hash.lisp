@@ -68,9 +68,14 @@
       (xdoc::ul
         (xdoc::li
           (xdoc::a
+            :href
+            "https://en.wikipedia.org/wiki/Jenkins_hash_function#one_at_a_time"
             "https://en.wikipedia.org/wiki/Jenkins_hash_function#one_at_a_time"))
         (xdoc::li
-          (xdoc::a "https://burtleburtle.net/bob/hash/doobs.html")))))
+          (xdoc::a
+            :href
+            "https://burtleburtle.net/bob/hash/doobs.html"
+            "https://burtleburtle.net/bob/hash/doobs.html")))))
   :order-subtopics t
   :default-parent t)
 

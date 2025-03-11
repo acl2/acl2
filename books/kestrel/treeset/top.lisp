@@ -33,6 +33,7 @@
 (include-book "union")
 (include-book "intersect")
 (include-book "diff")
+(include-book "fty")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -133,7 +134,10 @@
       "References"
       (xdoc::ul
         (xdoc::li
-          (xdoc::a "https://www.cs.cmu.edu/~scandal/papers/treaps-spaa98.pdf"))
+          (xdoc::a
+            :href "https://www.cs.cmu.edu/~scandal/papers/treaps-spaa98.pdf"
+            "https://www.cs.cmu.edu/~scandal/papers/treaps-spaa98.pdf"))
         (xdoc::li
-          (xdoc::a "https://en.wikipedia.org/wiki/Treap")))))
+          (xdoc::a :href "https://en.wikipedia.org/wiki/Treap"
+                   "https://en.wikipedia.org/wiki/Treap")))))
   :order-subtopics t)
