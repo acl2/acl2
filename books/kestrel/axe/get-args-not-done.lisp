@@ -1,7 +1,7 @@
 ; Get nodenums with no result in the result-array
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,6 +19,7 @@
 (include-book "keep-nodenum-dargs")
 (include-book "bounded-dag-exprs")
 (include-book "dag-arrays") ;for pseudo-dag-arrayp-list
+(local (include-book "rational-lists"))
 
 ;either returns nil (no args are untagged) or extends acc with the untagged args
 ;; See also extend-with-not-done-args (different behavior when no args are untagged) and get-args-not-done-array.

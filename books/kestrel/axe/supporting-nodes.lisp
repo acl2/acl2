@@ -1,7 +1,7 @@
 ; Computing sets of DAG nodes that support DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,6 +26,7 @@
 (include-book "kestrel/acl2-arrays/aref1-list" :dir :system)
 (include-book "kestrel/acl2-arrays/aset1-list" :dir :system)
 (include-book "kestrel/typed-lists-light/all-greater" :dir :system)
+(local (include-book "rational-lists"))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/arithmetic-light/less-than" :dir :system))
