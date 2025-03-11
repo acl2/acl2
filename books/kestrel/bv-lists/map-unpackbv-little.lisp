@@ -14,7 +14,7 @@
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/typed-lists-light/all-all-integerp" :dir :system)
 
-;; Splits each of the BVS into list of NUM items, each with SIZE bits.
+;; Splits each of the BVS into a list of NUM items, each with SIZE bits.
 ;; The result is a list of lists, one list for each of the original BVS.
 ;; Unpacking is done in little-endian fashion, so the least significant chunk of
 ;; each BV comes first in the corresponding list.

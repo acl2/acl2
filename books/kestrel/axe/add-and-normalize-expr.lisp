@@ -1,7 +1,7 @@
 ; A utility for adding a node but normalizing its xors first.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -22,6 +22,7 @@
 (include-book "rewrite-stobj")
 (include-book "rewrite-stobj2")
 (include-book "normalize-xors")
+(local (include-book "rational-lists"))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))

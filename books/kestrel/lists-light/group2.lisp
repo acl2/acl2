@@ -77,11 +77,11 @@
          (group2 n x))
   :hints (("Goal" :in-theory (enable group2))))
 
-;dup
-(defun firstn-of-group-induct (x n m)
-  (if (zp m)
-      (list x n m)
-    (firstn-of-group-induct (nthcdr n x) n (+ -1 m))))
+(local
+  (defun firstn-of-group-induct (x n m)
+    (if (zp m)
+        (list x n m)
+      (firstn-of-group-induct (nthcdr n x) n (+ -1 m)))))
 
 (defthm nthcdr-of-group2
   (implies (and (posp n)

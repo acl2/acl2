@@ -15,6 +15,7 @@
 ;; See also dag-or-term-to-dag-basic.lisp
 
 (include-book "make-term-into-dag-simple")
+(include-book "kestrel/utilities/translate" :dir :system)
 
 ;; ITEM is a dag or an (untranslated) term.  If a term, it is converted to a dag (or quotep).
 ;; Returns (mv erp dag-or-quotep).
