@@ -77,7 +77,25 @@
    which are currently very specific and brittle,
    with robust ones that emerge from the bottom-up generation.
    This is one of a few different or slightly different approaches
-   to proof generation, which we are exploring."))
+   to proof generation, which we are exploring."
+
+  "For a growing number of constructs,
+   we have ACL2 functions that do most of the transformation of the construct,
+   including theorem generation when applicable,
+   and these ACL2 function are outside the large mutual recursion.
+   The recursive functions recursively transform the sub-constructs,
+   and then call the separate non-recursive functions
+   with the results from transforming the sub-constructs.
+   An example is @(tsee simpadd0-expr-paren),
+   which is called by @(tsee simpadd-expr):
+   the caller recursively transforms the inner expression,
+   and passes to the callee
+   the possibly transformed expression,
+   along with some of the @(tsee simpadd0-gout) components
+   resulting from that transformation;
+   it also passes a @(tsee simpadd0-gin)
+   whose components have been updated
+   from the aforementioned @(tsee simpadd0-gout)."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -718,16 +736,6 @@
   :short "Transform a parenthesized expression."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "The caller of this ACL2 function
-     recursively transforms the inner expression,
-     and passes to this function
-     the possibly transformed expression,
-     along with some of the @(tsee simpadd0-gout) components
-     resulting from that transformation;
-     it also passes a @(tsee simpadd0-gin)
-     whose components have been updated
-     from the aforementioned @(tsee simpadd0-gout).")
    (xdoc::p
     "The resulting expression is obtained by
      parenthesizing the possibly transformed inner expression.
