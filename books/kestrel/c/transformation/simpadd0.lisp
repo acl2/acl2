@@ -495,12 +495,12 @@
        (formula
         (if equalp
             `(b* ((expr (mv-nth 1 (c$::ldm-expr ',old)))
-                  (expr-result (c::exec-expr-pure expr compst))
-                  (expr-value (c::expr-value->value expr-result)))
+                  (result (c::exec-expr-pure expr compst))
+                  (value (c::expr-value->value result)))
                (implies (and ,@hyps
                              ,@(and falliblep
-                                    '((not (c::errorp expr-result)))))
-                        (equal (c::value-kind expr-value) :sint)))
+                                    '((not (c::errorp result)))))
+                        (equal (c::value-kind value) :sint)))
           `(b* ((old-expr (mv-nth 1 (c$::ldm-expr ',old)))
                 (new-expr (mv-nth 1 (c$::ldm-expr ',new)))
                 (old-result (c::exec-expr-pure old-expr compst))
@@ -604,8 +604,8 @@
 
   (defruled simpadd0-expr-ident-support-lemma
     (b* ((expr (mv-nth 1 (c$::ldm-expr (c$::expr-ident ident info))))
-         (expr-result (c::exec-expr-pure expr compst))
-         (expr-value (c::expr-value->value expr-result)))
+         (result (c::exec-expr-pure expr compst))
+         (value (c::expr-value->value result)))
       (implies (and (c$::expr-pure-formalp (c$::expr-ident ident info))
                     (b* ((var (mv-nth 1 (c$::ldm-ident ident)))
                          (objdes (c::objdesign-of-var var compst))
@@ -613,7 +613,7 @@
                       (and objdes
                            (c::valuep val)
                            (c::value-case val :sint))))
-               (equal (c::value-kind expr-value) :sint)))
+               (equal (c::value-kind value) :sint)))
     :enable (c::exec-expr-pure
              c::exec-ident
              c$::ldm-expr
