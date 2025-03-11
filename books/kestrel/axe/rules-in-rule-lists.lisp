@@ -26,6 +26,7 @@
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe")
 (include-book "list-rules") ; for EQUAL-CONS-NTH-0-SELF and maybe others
+(include-book "kestrel/bv-lists/map-packbv-and-map-unpackbv" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/booleans/not" :dir :system)

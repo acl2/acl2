@@ -38,6 +38,13 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 
+;remove n?
+(local
+  (defun firstn-of-group-induct (x n m)
+    (if (zp m)
+        (list x n m)
+      (firstn-of-group-induct (nthcdr n x) n (+ -1 m)))))
+
 (defthm group-becomes-group2
   (implies (and (equal 0 (mod (len x) n))
                 (posp n))
