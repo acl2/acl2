@@ -1,6 +1,6 @@
 ; Utilities to extract data from zip files
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -539,7 +539,7 @@
   (if (zp num-headers)
       (mv (erp-nil) (reverse acc)) ; could skip the reverse if desired
     (b* (                            ;; Read the next central directory header:
-         ((mv erp header index) (read-central-directory-header index byte-array-stobj)) ; todo: we could proces less than the whole header, but they are variable size
+         ((mv erp header index) (read-central-directory-header index byte-array-stobj)) ; todo: we could process less than the whole header, but they are variable size
          ((when erp) (mv erp nil))
          ;; Get the file path:
          (filename (lookup-eq :file-name header)) ; really a whole path
