@@ -36,6 +36,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; It is not recommended to include this book. Instead, the defs.lisp book
+;; should be included and then any additional theorems books as needed (perhaps
+;; only locally included.)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ set
   :parents (acl2::kestrel-books)
   :short "A tree-based implementation of finite sets."

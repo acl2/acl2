@@ -29,3 +29,8 @@
 (include-book "union-defs")
 (include-book "intersect-defs")
 (include-book "diff-defs")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This books contains all the relevant treeset definitions without the
+;; theorems.
