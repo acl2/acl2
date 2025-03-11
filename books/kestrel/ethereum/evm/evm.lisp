@@ -1,6 +1,6 @@
 ; A formal model of the EVM (Ethereum Virtual Machine)
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -114,9 +114,7 @@
 
 (defthm n256p-of-bvminus
   (n256p (acl2::bvminus 256 x y))
-  :hints (("Goal" :in-theory (enable n256p
-                                     acl2::bvminus ;todo
-                                     ))))
+  :hints (("Goal" :in-theory (enable n256p))))
 
 ;; (defthm n256p-of-bvchop
 ;;   (n256p (acl2::bvchop 256 x))
