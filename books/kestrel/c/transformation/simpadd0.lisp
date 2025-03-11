@@ -808,18 +808,7 @@
      (xdoc::p
       "When we encounter a parenthesized expression,
        we recursively transform the inner expression,
-       we parenthesize the transformed inner expression,
-       and we return that.
-       We generate a theorem if the two inner expressions differ
-       (in which case the parenthesized expressions differ as well)
-       and a theorem for the inner expressions' transformation was generated
-       (which we can tell based on whether
-       there is a theorem name for the inner expressions).
-       Since @(tsee c$::ldm-expr) maps parenthesized expressions
-       to the same as what the inner expressions are mapped to,
-       the proof of the generated theorem is straightforward,
-       but we supply the executable counterpart of @(tsee c$::ldm-expr)
-       so that they can be applied to the parenthesized expressions.")
+       and then we use a separate function to do the rest.")
      (xdoc::p
       "When we encounter an expression @('x + 0') that we transform into @('x'),
        we also generate a theorem saying that
