@@ -500,7 +500,7 @@
           (srole (car sroles))
           (urole (sinteger-bit-role-case
                   srole
-                  :sign (uinteger-bit-role-value (acl2::pos-fix m))
+                  :sign (uinteger-bit-role-value (pos-fix m))
                   :value (uinteger-bit-role-value srole.exp)
                   :padding (uinteger-bit-role-padding)))
           (uroles
@@ -548,7 +548,7 @@
           (urole (car uroles))
           (srole (uinteger-bit-role-case
                   urole
-                  :value (if (equal urole.exp (1- (acl2::pos-fix n)))
+                  :value (if (equal urole.exp (1- (pos-fix n)))
                              (sinteger-bit-role-sign)
                            (sinteger-bit-role-value urole.exp))
                   :padding (uinteger-bit-role-padding)))
