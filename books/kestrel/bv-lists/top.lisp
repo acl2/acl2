@@ -63,7 +63,10 @@
 (include-book "packbv-and-unpackbv")
 (include-book "map-packbv")
 (include-book "map-packbv-little")
+(include-book "map-unpackbv")
 (include-book "map-unpackbv-little")
+(include-book "map-packbv-and-map-unpackbv")
+(include-book "map-reverse-list")
 (include-book "packing0")
 (include-book "packing")
 
