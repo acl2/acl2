@@ -510,7 +510,8 @@
              (implies (and ,@hyps
                            ,@(and falliblep
                                   '((not (c::errorp old-result)))))
-                      (and (equal old-value new-value)
+                      (and (not (c::errorp new-result))
+                           (equal old-value new-value)
                            (equal (c::value-kind old-value) :sint))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
