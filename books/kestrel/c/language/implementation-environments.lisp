@@ -633,6 +633,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod uinteger+sinteger-format
+  :short "Fixtype of pairs consisting of
+          a format of unsigned integer objects
+          and a format of signed integer objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This just puts together an unsigned format with a signed format.
+     It is a preliminary definition used for @(tsee integer-format)."))
+  ((unsigned uinteger-format)
+   (signed sinteger-format))
+  :pred uinteger+sinteger-formatp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod integer-format
+  :short "Fixtype of formats of (signed and unsigned) integer objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each signed integer type has a corresponding unsigned integer type
+     [C17:6.2.5/6].
+     There are constraints between the representations of
+     two corresponding signed and unsigned integer types
+     [C17:6.2.6.2/2].
+     Thus, we introduce a notion for the format of
+     corresponding unsigned and signed integer types.
+     This is for @('signed short') and @('unsigned short'),
+     or for @('signed int') and @('unsigned int'),
+     etc.
+     This consists of a an unsigned and a signed integer format,
+     constrained to be well-formed relative to each other.")
+   (xdoc::p
+    "The reason for introducing and using
+     the ``intermediate'' fixtype @(tsee uinteger+sinteger-format),
+     as opposed to directly define this @('integer-format') fixtype
+     to consists of the two components of that intermediate type
+     is the following.
+     We want this @('integer-format') fixtype to require (in @(':require'))
+     the consistency between the unsigned and signed integer formats
+     (i.e. @(tsee uinteger-sinteger-bit-roles-wfp)).
+     But if we have two separate components,
+     we need separate fixers (in @(':reqfix') for the two components:
+     we plan to use @(tsee uinteger-bit-roles-for-sinteger-bit-roles)
+     and @(tsee sinteger-bit-roles-for-uinteger-bit-roles) for that,
+     but we still need to prove the needed properties of those functions,
+     since they take a little bit of work.
+     Once we have the proofs,
+     we will eliminate the intermediate fixtype @(tsee uinteger+sinteger-format)
+     and have two components and two fixers in this fixtype here."))
+  ((pair uinteger+sinteger-format
+         :reqfix (if (uinteger-sinteger-bit-roles-wfp
+                      (uinteger-format->bits
+                       (uinteger+sinteger-format->unsigned pair))
+                      (sinteger-format->bits
+                       (uinteger+sinteger-format->signed pair)))
+                     pair
+                   (make-uinteger+sinteger-format
+                    :unsigned (make-uinteger-format
+                               :bits (list (uinteger-bit-role-value 0)
+                                           (uinteger-bit-role-value 1))
+                               :traps nil)
+                    :signed (make-sinteger-format
+                             :bits (list (sinteger-bit-role-value 0)
+                                         (sinteger-bit-role-sign))
+                             :signed (signed-format-twos-complement)
+                             :traps nil)))))
+  :require (uinteger-sinteger-bit-roles-wfp
+            (uinteger-format->bits
+             (uinteger+sinteger-format->unsigned pair))
+            (sinteger-format->bits
+             (uinteger+sinteger-format->signed pair)))
+  :pred integer-formatp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
