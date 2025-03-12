@@ -18945,7 +18945,7 @@
                                   (eq tactic :rewrite-and-sweep))
                               (natp test-case-count)
                               (test-case-type-alistp var-type-alist)
-                              (no-duplicatesp (strip-cars var-type-alist)) ;could check that the cdrs are valid types..
+                              (no-duplicatesp (strip-cars var-type-alist))
                               (not (assoc-eq nil var-type-alist)) ;consider relaxing this?
                               (not (assoc-eq t var-type-alist)) ;consider relaxing this?
                               (extra-stuff-okayp extra-stuff)
