@@ -52,7 +52,7 @@
 ;; in a separate pass before calling the STP translation code.
 
 (include-book "type-inference")
-(include-book "depth-array")
+;(include-book "depth-array")
 (include-book "stp-counterexamples")
 (include-book "call-axe-script") ; has ttags
 (include-book "pure-dags")

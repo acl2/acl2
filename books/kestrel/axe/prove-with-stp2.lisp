@@ -1,7 +1,7 @@
 ; Calling STP to prove things about DAGs and terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,7 @@
 
 ; These functions are only used by the equivalence-checker.  They notably each take a var-type-alist.
 
+(include-book "depth-array")
 (include-book "translate-dag-to-stp") ; has ttags, for add-assert-if-a-mult (move that here?)
 (include-book "type-inference") ; for maybe-get-type-of-function-call, reduce?
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)

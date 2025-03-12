@@ -91,6 +91,7 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 
 (local (in-theory (e/d (true-listp-when-nat-listp-rewrite)
@@ -7690,7 +7691,7 @@
                                                                                             MITER-ARRAY-NAME
                                                                                             MITER-ARRAY MITER-LEN)))
                                                  (NUM-VALID-INDICES (+ 1 LARGER-NODENUM)))
-                                 :in-theory (disable natp natp-of-max-array-elem2-when-depth-arrayp)))
+                                 :in-theory (e/d (integerp-when-natp) (natp natp-of-max-array-elem2-when-depth-arrayp))))
                   :stobjs state))
   (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
        ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array miter-len (list smaller-nodenum larger-nodenum))))

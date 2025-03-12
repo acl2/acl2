@@ -228,6 +228,17 @@
       (make-depth-array-aux (+ -1 n) dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
 
 (local
+  (defthm array1p-of-mv-nth-0-of-make-depth-array-aux
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+;               (<= -1 n)
+                  (< n dag-len)
+                  (depth-arrayp depth-array-name depth-array (+ 1 n))
+                  (< n (alen1 depth-array-name depth-array)))
+             (array1p depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
+    :hints (("Goal" :in-theory (e/d (make-depth-array-aux natp-of-+-of-1) (natp))))))
+
+(local
   (defthm alen1-of-mv-nth-0-of-make-depth-array-aux
     (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                   (integerp n)
@@ -238,17 +249,6 @@
              (equal (alen1 depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth)))
                     (alen1 depth-array-name depth-array)))
     :hints (("Goal" :in-theory (e/d (make-depth-array-aux NATP-OF-+-OF-1) (natp))))))
-
-(local
-  (defthm array1p-of-mv-nth-0-of-make-depth-array-aux
-    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                  (integerp n)
-;               (<= -1 n)
-                  (< n dag-len)
-                  (depth-arrayp depth-array-name depth-array (+ 1 n))
-                  (< n (alen1 depth-array-name depth-array)))
-             (array1p depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
-    :hints (("Goal" :in-theory (e/d (make-depth-array-aux natp-of-+-of-1) (natp))))))
 
 (local
   (defthm depth-arrayp-of-mv-nth-0-of-make-depth-array-aux
@@ -264,13 +264,13 @@
                              (natp))))))
 
 (local
-  (defthm integerp-of-mv-nth-1-of-make-depth-array-aux
+  (defthm natp-of-mv-nth-1-of-make-depth-array-aux
     (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                   (integerp n)
                   (< n dag-len)
                   (depth-arrayp depth-array-name depth-array (+ 1 n))
-                  (integerp largest-depth))
-             (integerp (mv-nth 1 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
+                  (natp largest-depth))
+             (natp (mv-nth 1 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
     :hints (("Goal" :expand (DEPTH-ARRAYP DEPTH-ARRAY-NAME DEPTH-ARRAY N)
              :in-theory (e/d (make-depth-array-aux natp-of-+-of-1 integerp-when-natp)
                              (natp))))))
@@ -291,6 +291,14 @@
          (depth-array (aset1-list 'depth-array depth-array starting-nodes 1)))
     (make-depth-array-aux max-nodenum dag-array-name dag-array dag-len 'depth-array depth-array 1)))
 
+(defthm array1p-of-mv-nth-0-of-make-depth-array-for-nodes
+  (implies (and (nat-listp starting-nodes)
+                (consp starting-nodes)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (all-< starting-nodes dag-len))
+           (array1p 'depth-array (mv-nth 0 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))))
+  :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
+
 (defthm alen1-of-mv-nth-0-of-make-depth-array-for-nodes
   (implies (and (nat-listp starting-nodes)
                 (consp starting-nodes) ;or else the maxelem below is a problem
@@ -300,23 +308,16 @@
                   (+ 1 (maxelem starting-nodes))))
   :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
 
-(defthm array1p-of-mv-nth-0-of-make-depth-array-for-nodes
-  (implies (and (nat-listp starting-nodes)
-                (consp starting-nodes)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (all-< starting-nodes dag-len))
-           (array1p 'depth-array (mv-nth 0 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))))
-  :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
-
-(defthm depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes
-  (implies (and (nat-listp starting-nodes)
-                (consp starting-nodes)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (all-< starting-nodes dag-len))
-           (depth-arrayp 'depth-array
-                         (mv-nth 0 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))
-                         (+ 1 (maxelem starting-nodes))))
-  :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
+(local
+  (defthm depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes
+    (implies (and (nat-listp starting-nodes)
+                  (consp starting-nodes)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (all-< starting-nodes dag-len))
+             (depth-arrayp 'depth-array
+                           (mv-nth 0 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))
+                           (+ 1 (maxelem starting-nodes))))
+    :hints (("Goal" :in-theory (enable make-depth-array-for-nodes)))))
 
 (defthm depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes-gen
   (implies (and (<= len (+ 1 (maxelem starting-nodes)))
@@ -331,10 +332,10 @@
   :hints (("Goal" :use depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes
            :in-theory (disable depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes))))
 
-(defthm integerp-of-mv-nth-1-of-make-depth-array-for-nodes-gen
+(defthm natp-of-mv-nth-1-of-make-depth-array-for-nodes
   (implies (and (nat-listp starting-nodes)
                 (consp starting-nodes)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< starting-nodes dag-len))
-           (integerp (mv-nth 1 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))))
+           (natp (mv-nth 1 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))))
   :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
