@@ -208,22 +208,24 @@
                                  :in-theory (disable TYPE-OF-AREF1-WHEN-DEPTH-ARRAYP)))))
   (if (not (natp n))
       (mv depth-array largest-depth)
-    (let ((expr (aref1 dag-array-name dag-array n)))
-      ;; if its a variable or a quote, its depth was set by its parents (if any), so there is nothing to do
-      (if (or (variablep expr)
-              (fquotep expr))
-          (make-depth-array-aux (+ -1 n) dag-array-name dag-array dag-len depth-array-name depth-array largest-depth)
-        ;;it's a function call, so update the depths of its children:
-        (let ((depth (aref1 depth-array-name depth-array n))) ; todo: do this first?
-          (if (not depth)
-              ;; irrelevant node, so skip it
-              (make-depth-array-aux (+ -1 n) dag-array-name dag-array dag-len depth-array-name depth-array largest-depth)
-            (let ((new-depth (+ 1 depth))) ;subtle point: if all args are constants, there won't actually be a child at depth new-depth (probably not worth checking)
-              (make-depth-array-aux (+ -1 n)
-                                    dag-array-name dag-array dag-len
-                                    depth-array-name
-                                    (set-depths-of-nodenums-if-lower (dargs expr) depth-array-name depth-array (+ 1 n) new-depth)
-                                    (max largest-depth new-depth)))))))))
+    (mv-let (depth-array largest-depth)
+      (let ((depth (aref1 depth-array-name depth-array n)))
+        (if (not depth)
+            ;; irrelevant node, so skip it:
+            (mv depth-array largest-depth)
+          ;; Relevant node (its depth is correct because we've already processed all its parents).  We must update the depths of its children:
+          (let ((expr (aref1 dag-array-name dag-array n)))
+            (if (or (variablep expr)
+                    (fquotep expr))
+                ;; No children, so nothing to do:
+                (mv depth-array largest-depth)
+              ;; it's a function call, so update the depths of its children:
+              (let ((new-depth (+ 1 depth))) ;subtle point: if all args are constants, there won't actually be a child at depth new-depth (probably not worth checking?)
+                (mv (set-depths-of-nodenums-if-lower (dargs expr) depth-array-name depth-array
+                                                     (+ 1 n) ; todo: avoid passing this?
+                                                     new-depth)
+                    (max largest-depth new-depth)))))))
+      (make-depth-array-aux (+ -1 n) dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
 
 (local
   (defthm alen1-of-mv-nth-0-of-make-depth-array-aux
