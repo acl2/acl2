@@ -43,9 +43,9 @@
 
 ;move
 (local
- (defthm all-<-forward-to-posp-when-all-natp
+ (defthm all-<-forward-to-posp-when-nat-listp
    (implies (and (all-< items x)
-                 (all-natp items)
+                 (nat-listp items)
                  (consp items)
                  (integerp x))
             (posp x))
@@ -68,7 +68,7 @@
 
 (defthm all-taggedp-with-name-of-aset1-list
   (implies (and (array1p tag-array-name array)
-                (all-natp nodenums)
+                (nat-listp nodenums)
                 (all-< nodenums (alen1 tag-array-name array)))
            (all-taggedp-with-name nodenums tag-array-name (aset1-list tag-array-name array nodenums 't)))
   :hints (("Goal" :in-theory (enable all-taggedp-with-name aset1-list))))
@@ -77,7 +77,7 @@
   (implies (and (all-taggedp-with-name nodenums tag-array-name tag-array)
                 (natp nodenum)
                 (< nodenum (alen1 tag-array-name tag-array))
-                (all-natp nodenums)
+                (nat-listp nodenums)
                 (all-< nodenums (alen1 tag-array-name tag-array))
                 (array1p tag-array-name tag-array))
            (all-taggedp-with-name nodenums tag-array-name (aset1 tag-array-name tag-array nodenum t)))
@@ -125,7 +125,7 @@
 (defthm all-taggedp-with-name-of-tag-nodenums-with-name-when-all-taggedp-with-name
   (implies (and (all-taggedp-with-name nodenums tag-array-name tag-array)
                 (bounded-darg-listp nodenums2 (alen1 tag-array-name tag-array))
-                (all-natp nodenums)
+                (nat-listp nodenums)
                 (all-< nodenums (alen1 tag-array-name tag-array))
                 (array1p tag-array-name tag-array))
            (all-taggedp-with-name nodenums tag-array-name (tag-nodenums-with-name nodenums2 tag-array-name tag-array)))
@@ -209,7 +209,7 @@
                          (and (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
                               (array1p tag-array-name tag-array)
                               (< n (alen1 tag-array-name tag-array))))
-                (all-natp nodenums)
+                (nat-listp nodenums)
                 (all-< nodenums (alen1 tag-array-name tag-array)))
            (all-taggedp-with-name nodenums tag-array-name (tag-supporters-of-nodes-with-name-aux n dag-array-name dag-array tag-array-name tag-array)))
   :hints (("Goal" :in-theory (enable tag-supporters-of-nodes-with-name-aux NAT-LISTP))))
@@ -227,8 +227,7 @@
                                            tag-array-name ;; the name of the tag array to create
                                            tag-array-length ;; the array length to use  -- if we might look up nodes higher than the nodenums, we can make this larger than (+ 1 (maxelem nodenums)) to prevent errors (todo: do we ever need that?)
                                            )
-  (declare (xargs :guard (and (true-listp nodenums)
-                              (all-natp nodenums)
+  (declare (xargs :guard (and (nat-listp nodenums)
                               (consp nodenums) ;so we can call maxelem
                               (equal max-nodenum (maxelem nodenums))
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
@@ -244,7 +243,7 @@
     tag-array))
 
 (defthm array1p-of-tag-supporters-of-nodes-with-name
-  (implies (and (all-natp nodenums)
+  (implies (and (nat-listp nodenums)
                 (consp nodenums)
                 (equal max-nodenum (maxelem nodenums))
                 (posp tag-array-length)
@@ -256,7 +255,7 @@
   :hints (("Goal" :in-theory (e/d (tag-supporters-of-nodes-with-name) (natp)))))
 
 (defthm alen1-of-tag-supporters-of-nodes-with-name
-  (implies (and (all-natp nodenums)
+  (implies (and (nat-listp nodenums)
                 (consp nodenums)
                 (equal max-nodenum (maxelem nodenums))
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
@@ -270,7 +269,7 @@
 
 ;; the max nodenum gets tagged
 (defthm aref1-of-tag-supporters-of-nodes-with-name-and-maxelem
-  (implies (and (all-natp nodenums)
+  (implies (and (nat-listp nodenums)
                 (consp nodenums)
                 (equal max-nodenum (maxelem nodenums))
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
@@ -285,7 +284,7 @@
 
 ;; all of the nodenums get tagged
 (defthm all-taggedp-with-name-of-tag-supporters-of-nodes-with-name-same
-  (implies (and (all-natp nodenums)
+  (implies (and (nat-listp nodenums)
                 (consp nodenums)
                 (equal max-nodenum (maxelem nodenums))
                 (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenums)))
@@ -447,7 +446,7 @@
                 (implies (consp dag-acc)
                          (< (car (car dag-acc)) dag-len))
                 ;;(PSEUDO-DAGP-AUX dag-acc (car (car dag-acc)))
-                (all-natp (strip-cars dag-acc))
+                (nat-listp (strip-cars dag-acc))
                 )
            (bounded-translation-arrayp-aux top-nodenum
                                            (mv-nth 1 (build-reduced-dag-with-name n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
@@ -484,7 +483,7 @@
                 (implies (consp dag-acc)
                          (< (car (car dag-acc)) dag-len))
                 ;;(PSEUDO-DAGP-AUX dag-acc (car (car dag-acc)))
-                (all-natp (strip-cars dag-acc))
+                (nat-listp (strip-cars dag-acc))
                 )
            (bounded-translation-arrayp-aux top-nodenum
                                            (mv-nth 1 (build-reduced-dag-with-name n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
@@ -661,7 +660,7 @@
 
 (defthm nat-listp-of-aref1-list-aux-of-mv-nth-1-of-build-reduced-dag-with-name-when-all-taggedp-with-name
   (implies (and (all-taggedp-with-name nodenums 'tag-array tag-array)
-                (all-natp nodenums)
+                (nat-listp nodenums)
                 (all-<= nodenums top-nodenum)
                 (all-> nodenums (+ -1 n)) ;use all->= ?
                 (array1p 'translation-array translation-array)
@@ -685,7 +684,7 @@
 
 (defthm nat-listp-of-aref1-list-of-mv-nth-1-of-build-reduced-dag-with-name-when-all-taggedp-with-name
   (implies (and (all-taggedp-with-name nodenums 'tag-array tag-array)
-                (all-natp nodenums)
+                (nat-listp nodenums)
                 (all-<= nodenums top-nodenum)
                 (all-> nodenums (+ -1 n)) ;use all->= ?
                 (array1p 'translation-array translation-array)
@@ -729,7 +728,7 @@
 
 ;; (thm
 ;;  (implies (and (all-taggedp-with-name nodenums 'tag-array tag-array)
-;;                (all-natp nodenums)
+;;                (nat-listp nodenums)
 ;;                (all-< nodenums top-nodenum)
 ;;                (all-> nodenums (+ -1 n))
 ;;                (array1p 'translation-array translation-array)
