@@ -503,6 +503,18 @@
      is with respect to the hypotheses about the variables in @('vars')
      mentioned above.")
    (xdoc::p
+    "If the two expressions are syntactically equal,
+     and the execution of the (one) expression cannot return an error,
+     the generated theorem also says that.
+     This is necessary to use this theorem
+     to prove theorems for expressions that include this one:
+     for instance, @('simpadd0-expr-unary-support-lemma')
+     in @(tsee simpadd0-expr-unary) includes the hypotheses that
+     the expressions do not return errors,
+     so we need to able to relieve those
+     when the argument expression of the unary expression
+     never returns an error.")
+   (xdoc::p
     "The hints to prove the theorem are passed as input too,
      since the proof generally varies depending on the kind of expression."))
   (b* ((old (expr-fix old))
@@ -523,7 +535,9 @@
                (implies (and ,@hyps
                              ,@(and falliblep
                                     '((not (c::errorp result)))))
-                        (equal (c::value-kind value) :sint)))
+                        (and ,@(and (not falliblep)
+                                    '((not (c::errorp result))))
+                             (equal (c::value-kind value) :sint))))
           `(b* ((old-expr (mv-nth 1 (c$::ldm-expr ',old)))
                 (new-expr (mv-nth 1 (c$::ldm-expr ',new)))
                 (old-result (c::exec-expr-pure old-expr compst))
@@ -637,7 +651,8 @@
                       (and objdes
                            (c::valuep val)
                            (c::value-case val :sint))))
-               (equal (c::value-kind value) :sint)))
+               (and (not (c::errorp result))
+                    (equal (c::value-kind value) :sint))))
     :enable (c::exec-expr-pure
              c::exec-ident
              c$::ldm-expr
@@ -694,7 +709,8 @@
                                      (:e c::expr-const->get)
                                      (:e c::exec-const)
                                      (:e c::expr-value->value)
-                                     (:e c::value-kind)))))
+                                     (:e c::value-kind)
+                                     (:e c::errorp)))))
        (vars nil)
        (falliblep nil)
        ((mv thm-event thm-name thm-index)
