@@ -625,7 +625,8 @@
   ((bits sinteger-bit-role-listp
          :reqfix (if (sinteger-bit-roles-wfp bits)
                      bits
-                   (list (sinteger-bit-role-sign) (sinteger-bit-role-value 0))))
+                   (list (sinteger-bit-role-sign)
+                         (sinteger-bit-role-value 0))))
    (signed signed-format)
    traps)
   :require (sinteger-bit-roles-wfp bits)
