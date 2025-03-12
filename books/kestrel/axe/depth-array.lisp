@@ -57,7 +57,7 @@
     (implies (and (depth-arrayp array-name array array-len)
                   (or (natp val) (not val))
                   (all-< indices array-len)
-                  (all-natp indices))
+                  (nat-listp indices))
              (depth-arrayp array-name (aset1-list array-name array indices val) array-len))
     :hints (("Goal" :in-theory (enable aset1-list)))))
 
@@ -281,8 +281,7 @@
 ;; The depth of a node is length of the shortest path to it from one of the designated nodes.
 ;; TODO: Should we use depth 0 instead of 1 for the starting-nodes themselves?
 (defund make-depth-array-for-nodes (starting-nodes dag-array-name dag-array dag-len)
-  (declare (xargs :guard (and (all-natp starting-nodes)
-                              (true-listp starting-nodes)
+  (declare (xargs :guard (and (nat-listp starting-nodes)
                               (consp starting-nodes) ;or else the maxelem below is a problem
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-< starting-nodes dag-len))))
@@ -293,8 +292,7 @@
     (make-depth-array-aux max-nodenum dag-array-name dag-array dag-len 'depth-array depth-array 1)))
 
 (defthm alen1-of-mv-nth-0-of-make-depth-array-for-nodes
-  (implies (and (all-natp starting-nodes)
-                (true-listp starting-nodes)
+  (implies (and (nat-listp starting-nodes)
                 (consp starting-nodes) ;or else the maxelem below is a problem
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< starting-nodes dag-len))
@@ -303,8 +301,7 @@
   :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
 
 (defthm array1p-of-mv-nth-0-of-make-depth-array-for-nodes
-  (implies (and (all-natp starting-nodes)
-                (true-listp starting-nodes)
+  (implies (and (nat-listp starting-nodes)
                 (consp starting-nodes)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< starting-nodes dag-len))
@@ -312,8 +309,7 @@
   :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
 
 (defthm depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes
-  (implies (and (all-natp starting-nodes)
-                (true-listp starting-nodes)
+  (implies (and (nat-listp starting-nodes)
                 (consp starting-nodes)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< starting-nodes dag-len))
@@ -325,8 +321,7 @@
 (defthm depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes-gen
   (implies (and (<= len (+ 1 (maxelem starting-nodes)))
                 (natp len)
-                (all-natp starting-nodes)
-                (true-listp starting-nodes)
+                (nat-listp starting-nodes)
                 (consp starting-nodes)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< starting-nodes dag-len))
@@ -337,8 +332,7 @@
            :in-theory (disable depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes))))
 
 (defthm integerp-of-mv-nth-1-of-make-depth-array-for-nodes-gen
-  (implies (and (all-natp starting-nodes)
-                (true-listp starting-nodes)
+  (implies (and (nat-listp starting-nodes)
                 (consp starting-nodes)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< starting-nodes dag-len))
