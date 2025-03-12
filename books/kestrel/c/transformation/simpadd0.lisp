@@ -787,6 +787,183 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-expr-unary ((op c$::unopp)
+                             (arg exprp)
+                             (arg-new exprp)
+                             (arg-events pseudo-event-form-listp)
+                             (arg-thm-name symbolp)
+                             (arg-vars ident-setp)
+                             (arg-diffp booleanp)
+                             (arg-falliblep booleanp)
+                             (gin simpadd0-ginp))
+  :guard (and (expr-unambp arg)
+              (expr-unambp arg-new))
+  :returns (mv (expr exprp) (gout simpadd0-goutp))
+  :short "Transform a unary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The resulting expression is obtained by
+     combining the unary operator with
+     the possibly transformed argument expression.
+     We generate a theorem iff
+     a theorem was generated for the argument expression,
+     and the unary operator is among @('+'), @('-'), @('~') and @('!').
+     The theorem is proved via a general one that we prove below.
+     The unary expression can return an error iff
+     its argument can or the unary operator is @('-')."))
+  (b* (((simpadd0-gin gin) gin)
+       (expr (make-expr-unary :op op :arg arg))
+       (expr-new (make-expr-unary :op op :arg arg-new))
+       ((unless (and arg-thm-name
+                     (member-eq (c$::unop-kind op)
+                                '(:plus :minus :bitnot :lognot))))
+        (mv expr-new
+            (make-simpadd0-gout :events arg-events
+                                :thm-name nil
+                                :thm-index gin.thm-index
+                                :names-to-avoid gin.names-to-avoid
+                                :vars arg-vars
+                                :diffp arg-diffp
+                                :falliblep t)))
+       (falliblep (or arg-falliblep
+                      (c$::unop-case op :minus)))
+       (hints `(("Goal"
+                 :in-theory '((:e c$::ldm-expr)
+                              (:e c::unop-nonpointerp))
+                 :use (,arg-thm-name
+                       (:instance simpadd0-expr-unary-support-lemma
+                                  (op ',(c$::unop-case
+                                         op
+                                         :plus (c::unop-plus)
+                                         :minus (c::unop-minus)
+                                         :bitnot (c::unop-bitnot)
+                                         :lognot (c::unop-lognot)
+                                         :otherwise (impossible)))
+                                  (old-arg ',arg)
+                                  (new-arg ',arg-new))))))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-expr-pure-thm expr
+                                    expr-new
+                                    falliblep
+                                    arg-vars
+                                    gin.const-new
+                                    gin.thm-index
+                                    hints)))
+    (mv expr-new
+        (make-simpadd0-gout :events (append arg-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+                            :vars arg-vars
+                            :diffp arg-diffp
+                            :falliblep falliblep)))
+
+  ///
+
+  (defret expr-unambp-of-simpadd0-expr-unary
+    (expr-unambp expr)
+    :hyp (expr-unambp arg-new))
+
+  (defruledl c::plus-value-lemma
+    (implies (and (c::valuep val0)
+                  (equal (c::value-kind val0) :sint))
+             (b* ((val (c::plus-value val0)))
+               (and (not (c::errorp val))
+                    (equal (c::value-kind val) :sint))))
+    :enable (c::plus-value
+             c::plus-arithmetic-value
+             c::plus-integer-value
+             c::value-arithmeticp-when-sintp
+             c::promote-value-when-sintp
+             c::sintp-alt-def))
+
+  (defruledl c::bitnot-value-lemma
+    (implies (and (c::valuep val0)
+                  (equal (c::value-kind val0) :sint))
+             (b* ((val (c::bitnot-value val0)))
+               (and (not (c::errorp val))
+                    (equal (c::value-kind val) :sint))))
+    :enable (c::bitnot-value
+             c::bitnot-integer-value
+             c::promote-value-when-sintp
+             c::sintp-alt-def
+             c::value-integer->get-when-sintp
+             c::result-integer-value
+             c::value-integerp
+             c::value-signed-integerp
+             c::integer-type-rangep
+             c::integer-type-max
+             c::integer-type-min
+             c::sint-max
+             c::sint-min
+             ifix
+             lognot))
+
+  (defruledl c::minus-value-lemma
+    (implies (and (c::valuep val0)
+                  (equal (c::value-kind val0) :sint))
+             (b* ((val (c::minus-value val0)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::minus-value
+             c::minus-arithmetic-value
+             c::minus-integer-value
+             c::promote-value-when-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::value-integerp
+             c::value-signed-integerp))
+
+  (defruledl c::lognot-value-lemma
+    (implies (and (c::valuep val0)
+                  (equal (c::value-kind val0) :sint))
+             (b* ((val (c::lognot-value val0)))
+               (and (not (c::errorp val))
+                    (equal (c::value-kind val) :sint))))
+    :enable (c::lognot-value
+             c::lognot-scalar-value
+             c::lognot-integer-value
+             c::value-scalarp
+             c::value-arithmeticp
+             c::value-realp
+             c::value-integerp
+             c::value-signed-integerp))
+
+  (defruled simpadd0-expr-unary-support-lemma
+    (b* ((old (c::expr-unary op old-arg))
+         (new (c::expr-unary op new-arg))
+         (old-arg-result (c::exec-expr-pure old-arg compst))
+         (new-arg-result (c::exec-expr-pure new-arg compst))
+         (old-arg-value (c::expr-value->value old-arg-result))
+         (new-arg-value (c::expr-value->value new-arg-result))
+         (old-result (c::exec-expr-pure old compst))
+         (new-result (c::exec-expr-pure new compst))
+         (old-value (c::expr-value->value old-result))
+         (new-value (c::expr-value->value new-result)))
+      (implies (and (c::unop-nonpointerp op)
+                    (not (c::errorp old-result))
+                    (not (c::errorp new-arg-result))
+                    (equal old-arg-value new-arg-value)
+                    (equal (c::value-kind old-arg-value) :sint))
+               (and (not (c::errorp new-result))
+                    (equal old-value new-value)
+                    (equal (c::value-kind old-value) :sint))))
+    :expand ((c::exec-expr-pure (c::expr-unary op old-arg) compst)
+             (c::exec-expr-pure (c::expr-unary op new-arg) compst))
+    :enable (c::unop-nonpointerp
+             c::exec-unary
+             c::eval-unary
+             c::apconvert-expr-value-when-not-array
+             c::expr-valuep-when-expr-value-resultp-and-not-errorp
+             c::plus-value-lemma
+             c::bitnot-value-lemma
+             c::minus-value-lemma
+             c::lognot-value-lemma)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines simpadd0-exprs/decls/stmts
   :short "Transform expressions, declarations, statements,
           and related entities."
@@ -954,17 +1131,17 @@
               :falliblep t)))
        :unary
        (b* (((mv new-arg (simpadd0-gout gout-arg))
-             (simpadd0-expr expr.arg gin state)))
-         (mv (make-expr-unary :op expr.op
-                              :arg new-arg)
-             (make-simpadd0-gout
-              :events gout-arg.events
-              :thm-name nil
-              :thm-index gout-arg.thm-index
-              :names-to-avoid gout-arg.names-to-avoid
-              :vars gout-arg.vars
-              :diffp gout-arg.diffp
-              :falliblep t)))
+             (simpadd0-expr expr.arg gin state))
+            (gin (simpadd0-gin-update gin gout-arg)))
+         (simpadd0-expr-unary expr.op
+                              expr.arg
+                              new-arg
+                              gout-arg.events
+                              gout-arg.thm-name
+                              gout-arg.vars
+                              gout-arg.diffp
+                              gout-arg.falliblep
+                              gin))
        :sizeof
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin state)))
