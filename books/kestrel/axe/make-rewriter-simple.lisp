@@ -6223,7 +6223,7 @@
                                           state)
            (declare (xargs :guard (and (symbolp defconst-name)
                                        ;; dag-or-term is a dag or an (untranslated) term
-                                       (pseudo-term-listp assumptions)
+                                       ;; assumptions are (untranslated) terms
                                        (symbol-listp rules)
                                        (interpreted-function-alistp interpreted-function-alist)
                                        (normalize-xors-optionp normalize-xors)
