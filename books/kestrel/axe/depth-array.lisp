@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; TODO: Consider using a stobj array for the depth-array
+
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "dag-arrays")
 (include-book "kestrel/acl2-arrays/aset1-list" :dir :system)
@@ -33,11 +35,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; For each node, we get either its depth wrt some starting set of nodes, or
-;; nil meaning it doesn't support the starting set of nodes:
+;; A depth array maps each nodenum to either a natural number, representing its
+;;  depth wrt some starting set of nodes, or nil, meaning that node doesn't
+;;  support the starting set of nodes:
 (def-typed-acl2-array depth-arrayp (or (natp val) (not val)))
 
-;; todo: def-typed-acl2-array could geneate this
+;; todo: def-typed-acl2-array could generate this
 (local
   (defthm depth-arrayp-of-make-empty-array-gen
     (implies (and (<= len2 len)
@@ -54,7 +57,7 @@
     (implies (and (depth-arrayp array-name array array-len)
                   (or (natp val) (not val))
                   (all-< indices array-len)
-                  (all-natp indices))
+                  (nat-listp indices))
              (depth-arrayp array-name (aset1-list array-name array indices val) array-len))
     :hints (("Goal" :in-theory (enable aset1-list)))))
 
@@ -84,7 +87,8 @@
   (implies (and (depth-arrayp array-name array array-len)
                 (< index array-len)
                 (natp index)
-                (aref1 array-name array index))
+                (aref1 array-name array index) ; value is not nil
+                )
            (natp (aref1 array-name array index)))
   :hints (("Goal" :use (:instance type-of-aref1-when-depth-arrayp-aux (top-index (+ -1 array-len)))
            :in-theory (e/d (depth-arrayp)
@@ -102,11 +106,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund set-depths-of-nodenums-if-lower (depth-array-name depth-array depth-array-len dargs new-depth)
-  (declare (xargs :guard (and (natp new-depth)
-                              (natp depth-array-len)
+(defund set-depths-of-nodenums-if-lower (dargs
+                                         depth-array-name depth-array
+                                         depth-array-len ; not really the array len, just a bound?
+                                         new-depth)
+  (declare (xargs :guard (and (natp depth-array-len)
                               (depth-arrayp depth-array-name depth-array depth-array-len)
-                              (bounded-darg-listp dargs depth-array-len))
+                              (bounded-darg-listp dargs depth-array-len)
+                              (natp new-depth))
                   :guard-hints (("Goal"
                                  :use (:instance TYPE-OF-AREF1-WHEN-DEPTH-ARRAYP
                                                  (array-name DEPTH-ARRAY-NAME)
@@ -117,16 +124,16 @@
   (if (endp dargs)
       depth-array
     (let* ((darg (first dargs))
-           (depth-array (if (atom darg)
-                            ;;darg is a nodenum:
-                            (let ((depth (aref1 depth-array-name depth-array darg)))
-                              (if (or (not depth)
-                                      (< new-depth depth))
-                                  (aset1 depth-array-name depth-array darg new-depth)
-                                depth-array))
-                          ;;darg is a quoted constant, so skip it:
-                          depth-array)))
-      (set-depths-of-nodenums-if-lower depth-array-name depth-array depth-array-len (rest dargs) new-depth))))
+           (depth-array (if (consp darg) ; tests for quotep
+                            ;; darg is a quoted constant, so skip it:
+                            depth-array
+                          ;;darg is a nodenum:
+                          (let ((depth (aref1 depth-array-name depth-array darg)))
+                            (if (or (not depth)
+                                    (< new-depth depth))
+                                (aset1 depth-array-name depth-array darg new-depth)
+                              depth-array)))))
+      (set-depths-of-nodenums-if-lower (rest dargs) depth-array-name depth-array depth-array-len new-depth))))
 
 (local
   (defthm depth-arrayp-of-set-depths-of-nodenums-if-lower
@@ -136,7 +143,7 @@
                (natp depth-array-len2)
                (depth-arrayp depth-array-name depth-array depth-array-len)
                (bounded-darg-listp dargs depth-array-len))
-             (depth-arrayp depth-array-name (set-depths-of-nodenums-if-lower depth-array-name depth-array depth-array-len2 dargs new-depth) depth-array-len))
+             (depth-arrayp depth-array-name (set-depths-of-nodenums-if-lower dargs depth-array-name depth-array depth-array-len2 new-depth) depth-array-len))
     :hints (("Goal" :in-theory (enable  set-depths-of-nodenums-if-lower)))))
 
 (local
@@ -148,7 +155,7 @@
                (array1p depth-array-name depth-array)
                (bounded-darg-listp dargs (alen1 depth-array-name depth-array))
                )
-             (array1p depth-array-name (set-depths-of-nodenums-if-lower depth-array-name depth-array depth-array-len2 dargs new-depth)))
+             (array1p depth-array-name (set-depths-of-nodenums-if-lower dargs depth-array-name depth-array depth-array-len2 new-depth)))
     :hints (("Goal" :in-theory (enable bounded-darg-listp set-depths-of-nodenums-if-lower)))))
 
 (local
@@ -157,7 +164,7 @@
                (natp depth-array-len)
                ;;(depth-arrayp depth-array-name depth-array depth-array-len)
                (bounded-darg-listp dargs depth-array-len))
-             (equal (alen1 depth-array-name (set-depths-of-nodenums-if-lower depth-array-name depth-array depth-array-len dargs new-depth))
+             (equal (alen1 depth-array-name (set-depths-of-nodenums-if-lower dargs depth-array-name depth-array depth-array-len new-depth))
                     (alen1 depth-array-name depth-array)))
     :hints (("Goal" :in-theory (enable set-depths-of-nodenums-if-lower)))))
 
@@ -167,7 +174,7 @@
                (natp depth-array-len)
                ;;(depth-arrayp depth-array-name depth-array depth-array-len)
                (bounded-darg-listp dargs depth-array-len))
-             (equal (default depth-array-name (set-depths-of-nodenums-if-lower depth-array-name depth-array depth-array-len dargs new-depth))
+             (equal (default depth-array-name (set-depths-of-nodenums-if-lower dargs depth-array-name depth-array depth-array-len new-depth))
                     (default depth-array-name depth-array)))
     :hints (("Goal" :in-theory (enable set-depths-of-nodenums-if-lower)))))
 
@@ -178,23 +185,20 @@
 ;nodes with no depth are irrelevant (that is, do not support the starting node(s))
 ;the depth of a node is set when processing its parents
 ;; TODO: Consider using a worklist
+;; Once we reach a node, its depth (if any) is correct, since we've already processed all of its parents that support the initial nodes.
 (defund make-depth-array-aux (n
-                              dag-array-name
-                              dag-array
-                              depth-array-name
-                              depth-array
-                              dag-len
-                              ;; num-nodes-to-translate;BOZO could pass this in for efficiency?
-                              largest-depth
-                              )
-  (declare (xargs :measure (nfix (+ 1 n))
-                  :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (integerp n)
+                              dag-array-name dag-array dag-len
+                              depth-array-name depth-array
+                              ;; num-nodes-to-translate ;BOZO could pass this in for efficiency?
+                              largest-depth)
+  (declare (xargs :guard (and (integerp n)
                               (<= -1 n)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< n dag-len)
-                              (depth-arrayp depth-array-name depth-array (+ 1 n))
+                              (depth-arrayp depth-array-name depth-array (+ 1 n)) ; at least n+1 array indices are valid
                               (< n (alen1 depth-array-name depth-array))
-                              (natp LARGEST-DEPTH))
+                              (natp largest-depth))
+                  :measure (nfix (+ 1 n))
                   :guard-hints (("Goal"
                                  :use (:instance TYPE-OF-AREF1-WHEN-DEPTH-ARRAYP
                                                  (array-name DEPTH-ARRAY-NAME)
@@ -204,34 +208,24 @@
                                  :in-theory (disable TYPE-OF-AREF1-WHEN-DEPTH-ARRAYP)))))
   (if (not (natp n))
       (mv depth-array largest-depth)
-    (let ((expr (aref1 dag-array-name dag-array n)))
-      ;; if its a variable or a quote, its depth was set by its parents (if any), so there is nothing to do
-      (if (or (variablep expr)
-              (fquotep expr))
-          (make-depth-array-aux (+ -1 n) dag-array-name dag-array depth-array-name depth-array dag-len largest-depth)
-        ;;it's a function call, so update the depths of its children:
-        (let ((depth (aref1 depth-array-name depth-array n)))
-          (if (not depth)
-              ;; irrelevant node, so skip it
-              (make-depth-array-aux (+ -1 n) dag-array-name dag-array depth-array-name depth-array dag-len largest-depth)
-            (let ((new-depth (+ 1 depth))) ;subtle point: if all args are constants, there won't actually be a child at depth new-depth (probably not worth checking)
-              (make-depth-array-aux (+ -1 n)
-                                    dag-array-name dag-array depth-array-name
-                                    (set-depths-of-nodenums-if-lower depth-array-name depth-array (+ 1 n) (dargs expr) new-depth)
-                                    dag-len
-                                    (max largest-depth new-depth)))))))))
-
-(local
-  (defthm alen1-of-mv-nth-0-of-make-depth-array-aux
-    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                  (integerp n)
-;                (<= -1 n)
-                  (< n dag-len)
-                  (depth-arrayp depth-array-name depth-array (+ 1 n))
-                  (< n (alen1 depth-array-name depth-array)))
-             (equal (alen1 depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array depth-array-name depth-array dag-len largest-depth)))
-                    (alen1 depth-array-name depth-array)))
-    :hints (("Goal" :in-theory (e/d (make-depth-array-aux NATP-OF-+-OF-1) (natp))))))
+    (mv-let (depth-array largest-depth)
+      (let ((depth (aref1 depth-array-name depth-array n)))
+        (if (not depth)
+            ;; irrelevant node, so skip it:
+            (mv depth-array largest-depth)
+          ;; Relevant node (its depth is correct because we've already processed all its parents).  We must update the depths of its children:
+          (let ((expr (aref1 dag-array-name dag-array n)))
+            (if (or (variablep expr)
+                    (fquotep expr))
+                ;; No children, so nothing to do:
+                (mv depth-array largest-depth)
+              ;; it's a function call, so update the depths of its children:
+              (let ((new-depth (+ 1 depth))) ;subtle point: if all args are constants, there won't actually be a child at depth new-depth (probably not worth checking?)
+                (mv (set-depths-of-nodenums-if-lower (dargs expr) depth-array-name depth-array
+                                                     (+ 1 n) ; todo: avoid passing this?
+                                                     new-depth)
+                    (max largest-depth new-depth)))))))
+      (make-depth-array-aux (+ -1 n) dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
 
 (local
   (defthm array1p-of-mv-nth-0-of-make-depth-array-aux
@@ -241,8 +235,20 @@
                   (< n dag-len)
                   (depth-arrayp depth-array-name depth-array (+ 1 n))
                   (< n (alen1 depth-array-name depth-array)))
-             (array1p depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array depth-array-name depth-array dag-len largest-depth))))
+             (array1p depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
     :hints (("Goal" :in-theory (e/d (make-depth-array-aux natp-of-+-of-1) (natp))))))
+
+(local
+  (defthm alen1-of-mv-nth-0-of-make-depth-array-aux
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+;                (<= -1 n)
+                  (< n dag-len)
+                  (depth-arrayp depth-array-name depth-array (+ 1 n))
+                  (< n (alen1 depth-array-name depth-array)))
+             (equal (alen1 depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth)))
+                    (alen1 depth-array-name depth-array)))
+    :hints (("Goal" :in-theory (e/d (make-depth-array-aux NATP-OF-+-OF-1) (natp))))))
 
 (local
   (defthm depth-arrayp-of-mv-nth-0-of-make-depth-array-aux
@@ -252,19 +258,19 @@
                   (depth-arrayp depth-array-name depth-array num)
                   (natp num)
                   (< n num))
-             (depth-arrayp depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array depth-array-name depth-array dag-len largest-depth)) num))
+             (depth-arrayp depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth)) num))
     :hints (("Goal" :expand (DEPTH-ARRAYP DEPTH-ARRAY-NAME DEPTH-ARRAY N)
              :in-theory (e/d (make-depth-array-aux natp-of-+-of-1)
                              (natp))))))
 
 (local
-  (defthm integerp-of-mv-nth-1-of-make-depth-array-aux
+  (defthm natp-of-mv-nth-1-of-make-depth-array-aux
     (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                   (integerp n)
                   (< n dag-len)
                   (depth-arrayp depth-array-name depth-array (+ 1 n))
-                  (integerp largest-depth))
-             (integerp (mv-nth 1 (make-depth-array-aux n dag-array-name dag-array depth-array-name depth-array dag-len largest-depth))))
+                  (natp largest-depth))
+             (natp (mv-nth 1 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
     :hints (("Goal" :expand (DEPTH-ARRAYP DEPTH-ARRAY-NAME DEPTH-ARRAY N)
              :in-theory (e/d (make-depth-array-aux natp-of-+-of-1 integerp-when-natp)
                              (natp))))))
@@ -275,21 +281,26 @@
 ;; The depth of a node is length of the shortest path to it from one of the designated nodes.
 ;; TODO: Should we use depth 0 instead of 1 for the starting-nodes themselves?
 (defund make-depth-array-for-nodes (starting-nodes dag-array-name dag-array dag-len)
-  (declare (xargs :guard (and (all-natp starting-nodes)
-                              (true-listp starting-nodes)
+  (declare (xargs :guard (and (nat-listp starting-nodes)
                               (consp starting-nodes) ;or else the maxelem below is a problem
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              ;(all-< starting-nodes *max-1d-array-length*)
                               (all-< starting-nodes dag-len))))
   (let* ((max-nodenum (maxelem starting-nodes))
          (depth-array (make-empty-array 'depth-array (+ 1 max-nodenum)))
          ;; Set the depth of all the STARTING-NODES to 1:
          (depth-array (aset1-list 'depth-array depth-array starting-nodes 1)))
-    (make-depth-array-aux max-nodenum dag-array-name dag-array 'depth-array depth-array dag-len 1)))
+    (make-depth-array-aux max-nodenum dag-array-name dag-array dag-len 'depth-array depth-array 1)))
+
+(defthm array1p-of-mv-nth-0-of-make-depth-array-for-nodes
+  (implies (and (nat-listp starting-nodes)
+                (consp starting-nodes)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (all-< starting-nodes dag-len))
+           (array1p 'depth-array (mv-nth 0 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))))
+  :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
 
 (defthm alen1-of-mv-nth-0-of-make-depth-array-for-nodes
-  (implies (and (all-natp starting-nodes)
-                (true-listp starting-nodes)
+  (implies (and (nat-listp starting-nodes)
                 (consp starting-nodes) ;or else the maxelem below is a problem
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< starting-nodes dag-len))
@@ -297,31 +308,21 @@
                   (+ 1 (maxelem starting-nodes))))
   :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
 
-(defthm array1p-of-mv-nth-0-of-make-depth-array-for-nodes
-  (implies (and (all-natp starting-nodes)
-                (true-listp starting-nodes)
-                (consp starting-nodes)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (all-< starting-nodes dag-len))
-           (array1p 'depth-array (mv-nth 0 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))))
-  :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
-
-(defthm depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes
-  (implies (and (all-natp starting-nodes)
-                (true-listp starting-nodes)
-                (consp starting-nodes)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (all-< starting-nodes dag-len))
-           (depth-arrayp 'depth-array
-                         (mv-nth 0 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))
-                         (+ 1 (maxelem starting-nodes))))
-  :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
+(local
+  (defthm depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes
+    (implies (and (nat-listp starting-nodes)
+                  (consp starting-nodes)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (all-< starting-nodes dag-len))
+             (depth-arrayp 'depth-array
+                           (mv-nth 0 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))
+                           (+ 1 (maxelem starting-nodes))))
+    :hints (("Goal" :in-theory (enable make-depth-array-for-nodes)))))
 
 (defthm depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes-gen
   (implies (and (<= len (+ 1 (maxelem starting-nodes)))
                 (natp len)
-                (all-natp starting-nodes)
-                (true-listp starting-nodes)
+                (nat-listp starting-nodes)
                 (consp starting-nodes)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< starting-nodes dag-len))
@@ -331,11 +332,10 @@
   :hints (("Goal" :use depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes
            :in-theory (disable depth-arrayp-of-mv-nth-0-of-make-depth-array-for-nodes))))
 
-(defthm integerp-of-mv-nth-1-of-make-depth-array-for-nodes-gen
-  (implies (and (all-natp starting-nodes)
-                (true-listp starting-nodes)
+(defthm natp-of-mv-nth-1-of-make-depth-array-for-nodes
+  (implies (and (nat-listp starting-nodes)
                 (consp starting-nodes)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< starting-nodes dag-len))
-           (integerp (mv-nth 1 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))))
+           (natp (mv-nth 1 (make-depth-array-for-nodes starting-nodes dag-array-name dag-array dag-len))))
   :hints (("Goal" :in-theory (enable make-depth-array-for-nodes))))
