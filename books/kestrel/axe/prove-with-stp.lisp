@@ -1,7 +1,7 @@
 ; Calling STP to prove things about DAGs and terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1524,48 +1524,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; todo: compare to gather-nodes-to-translate-up-to-depth
 ;; Returns (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array) ;the accumulators are extended
-;fixme look for type mismatches..
-;;fixme combine some recursive calls in this function?
+;; fixme: look for type mismatches..
+;; todo: combine some recursive calls in this function?
 ;; When we decide to cut at a node (either because we can't translate it or we've hit the depth limit), we have to select a type for it.
 ;; TODO: Consider returning an error if a bad arity is found.
 (defund process-nodenums-for-translation (worklist ;a list of nodenums to handle (each of these must either have an obvious type, a known-type, or be used in at least one choppable context)
                                           depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
-                                          depth-array
+                                          depth-array ; todo: what nodes have entries in this?
                                           handled-node-array
                                           dag-array dag-len dag-parent-array known-nodenum-type-alist
                                           ;;these are accumulators:
                                           nodenums-to-translate ; every node already in this list should have its flags set in handled-node-array (so we avoid duplicates)
                                           cut-nodenum-type-alist)
-  (declare (xargs ;; The measure is, first the number of unhandled nodes, then, if unchanged, check the length of the worklist.
-            :measure (make-ord 1
-                               (+ 1 ;coeff must be positive
-                                  (if (not (natp (alen1 'handled-node-array handled-node-array)))
-                                      0
-                                    (+ 1 (- (alen1 'handled-node-array handled-node-array)
-                                            (num-handled-nodes 'handled-node-array handled-node-array)))))
-                               (len worklist))
-            :guard (and (nat-listp worklist)
-                        (or (natp depth-limit)
-                            (null depth-limit))
-                        (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                        (nodenum-type-alistp known-nodenum-type-alist)
-                        (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
-                        (equal (alen1 'dag-parent-array dag-parent-array)
-                               (alen1 'dag-array dag-array))
-                        (all-< worklist dag-len)
-                        (all-natp nodenums-to-translate)
-                        (nodenum-type-alistp cut-nodenum-type-alist)
-                        (array1p 'handled-node-array handled-node-array)
-                        (all-< worklist (alen1 'handled-node-array handled-node-array))
-                        (implies depth-limit (array1p 'depth-array depth-array))
-                        (if depth-limit (all-< worklist (alen1 'depth-array depth-array)) t) ;todo: and it contains rationals
-                        )
-            :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) (MYQUOTEP DARGP))
-                           :do-not '(generalize eliminate-destructors)))))
+  (declare (xargs :guard (and (nat-listp worklist)
+                              (or (natp depth-limit)
+                                  (null depth-limit))
+                              (implies depth-limit (array1p 'depth-array depth-array))
+                              (if depth-limit (all-< worklist (alen1 'depth-array depth-array)) t) ;todo: and it contains rationals
+                              (array1p 'handled-node-array handled-node-array)
+                              (all-< worklist (alen1 'handled-node-array handled-node-array))
+                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (all-< worklist dag-len)
+                              (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                              (equal (alen1 'dag-parent-array dag-parent-array)
+                                     (alen1 'dag-array dag-array))
+                              (nodenum-type-alistp known-nodenum-type-alist)
+                              (all-natp nodenums-to-translate)
+                              (nodenum-type-alistp cut-nodenum-type-alist))
+                  ;; The measure is, first the number of unhandled nodes, then, if unchanged, check the length of the worklist.
+                  :measure (make-ord 1
+                                     (+ 1 ;coeff must be positive
+                                        (if (not (natp (alen1 'handled-node-array handled-node-array)))
+                                            0
+                                          (+ 1 (- (alen1 'handled-node-array handled-node-array)
+                                                  (num-handled-nodes 'handled-node-array handled-node-array)))))
+                                     (len worklist))
+                  :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) (MYQUOTEP DARGP))
+                                 :do-not '(generalize eliminate-destructors)))))
   (if (or (endp worklist)
           (not (mbt (and (array1p 'handled-node-array handled-node-array)
                          (nat-listp worklist)
@@ -1940,27 +1937,20 @@
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, or :timedout.
 ;terminates because the difference in depths decreases
 (defund prove-node-disjunction-with-stp-at-depths (min-depth
-                                             max-depth
-                                             depth-array
-                                             known-nodenum-type-alist
-                                             disjuncts ;there must be at least 1 disjunct - enforce this in the callers?! no longer necessary?
-                                             dag-array ;must be named 'dag-array
-                                             dag-len
-                                             dag-parent-array ;must be named 'dag-parent-array
-                                             base-filename    ;a string
-                                             print
-                                             max-conflicts ;a number of conflicts, or nil for no max
-                                             counterexamplep
-                                             print-cex-as-signedp
-                                             state)
-  (declare (xargs :stobjs state
-                  :measure (nfix (+ 1 (- max-depth min-depth)))
-                  :hints (("Goal" :in-theory (e/d (natp)
-                                                  (ceiling-in-terms-of-floor ;disable?
-                                                   ))))
-                  :guard-hints (("Goal" :in-theory (e/d (natp)
-                                                        (ceiling-in-terms-of-floor))))
-                  :guard (and ;(natp min-depth)
+                                                   max-depth
+                                                   depth-array
+                                                   known-nodenum-type-alist
+                                                   disjuncts ;there must be at least 1 disjunct - enforce this in the callers?! no longer necessary?
+                                                   dag-array ;must be named 'dag-array
+                                                   dag-len
+                                                   dag-parent-array ;must be named 'dag-parent-array
+                                                   base-filename    ;a string
+                                                   print
+                                                   max-conflicts ;a number of conflicts, or nil for no max
+                                                   counterexamplep
+                                                   print-cex-as-signedp
+                                                   state)
+  (declare (xargs :guard (and ;(natp min-depth)
                               ;(natp max-depth)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (nodenum-type-alistp known-nodenum-type-alist)
@@ -1977,7 +1967,14 @@
                               (print-levelp print)
                               (or (equal max-conflicts nil) (natp max-conflicts))
                               (booleanp counterexamplep)
-                              (booleanp print-cex-as-signedp))))
+                              (booleanp print-cex-as-signedp))
+                  :stobjs state
+                  :measure (nfix (+ 1 (- max-depth min-depth)))
+                  :hints (("Goal" :in-theory (e/d (natp)
+                                                  (ceiling-in-terms-of-floor ;disable?
+                                                   ))))
+                  :guard-hints (("Goal" :in-theory (e/d (natp)
+                                                        (ceiling-in-terms-of-floor))))))
   (if (or (not (natp min-depth))
           (not (natp max-depth))
           (< max-depth min-depth))

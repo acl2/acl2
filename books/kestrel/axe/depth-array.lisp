@@ -12,6 +12,8 @@
 
 (in-package "ACL2")
 
+;; TODO: Consider using a stobj array for the depth-array
+
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "dag-arrays")
 (include-book "kestrel/acl2-arrays/aset1-list" :dir :system)
@@ -33,11 +35,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; For each node, we get either its depth wrt some starting set of nodes, or
-;; nil meaning it doesn't support the starting set of nodes:
+;; A depth array maps each nodenum to either a natural number, representing its
+;;  depth wrt some starting set of nodes, or nil, meaning that node doesn't
+;;  support the starting set of nodes:
 (def-typed-acl2-array depth-arrayp (or (natp val) (not val)))
 
-;; todo: def-typed-acl2-array could geneate this
+;; todo: def-typed-acl2-array could generate this
 (local
   (defthm depth-arrayp-of-make-empty-array-gen
     (implies (and (<= len2 len)
@@ -84,7 +87,8 @@
   (implies (and (depth-arrayp array-name array array-len)
                 (< index array-len)
                 (natp index)
-                (aref1 array-name array index))
+                (aref1 array-name array index) ; value is not nil
+                )
            (natp (aref1 array-name array index)))
   :hints (("Goal" :use (:instance type-of-aref1-when-depth-arrayp-aux (top-index (+ -1 array-len)))
            :in-theory (e/d (depth-arrayp)
@@ -179,22 +183,19 @@
 ;the depth of a node is set when processing its parents
 ;; TODO: Consider using a worklist
 (defund make-depth-array-aux (n
-                              dag-array-name
-                              dag-array
-                              depth-array-name
-                              depth-array
-                              dag-len
-                              ;; num-nodes-to-translate;BOZO could pass this in for efficiency?
+                              dag-array-name dag-array dag-len
+                              depth-array-name depth-array
+                              ;; num-nodes-to-translate ;BOZO could pass this in for efficiency?
                               largest-depth
                               )
-  (declare (xargs :measure (nfix (+ 1 n))
-                  :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (integerp n)
+  (declare (xargs :guard (and (integerp n)
                               (<= -1 n)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< n dag-len)
                               (depth-arrayp depth-array-name depth-array (+ 1 n))
                               (< n (alen1 depth-array-name depth-array))
-                              (natp LARGEST-DEPTH))
+                              (natp largest-depth))
+                  :measure (nfix (+ 1 n))
                   :guard-hints (("Goal"
                                  :use (:instance TYPE-OF-AREF1-WHEN-DEPTH-ARRAYP
                                                  (array-name DEPTH-ARRAY-NAME)
@@ -208,17 +209,17 @@
       ;; if its a variable or a quote, its depth was set by its parents (if any), so there is nothing to do
       (if (or (variablep expr)
               (fquotep expr))
-          (make-depth-array-aux (+ -1 n) dag-array-name dag-array depth-array-name depth-array dag-len largest-depth)
+          (make-depth-array-aux (+ -1 n) dag-array-name dag-array dag-len depth-array-name depth-array largest-depth)
         ;;it's a function call, so update the depths of its children:
-        (let ((depth (aref1 depth-array-name depth-array n)))
+        (let ((depth (aref1 depth-array-name depth-array n))) ; todo: do this first?
           (if (not depth)
               ;; irrelevant node, so skip it
-              (make-depth-array-aux (+ -1 n) dag-array-name dag-array depth-array-name depth-array dag-len largest-depth)
+              (make-depth-array-aux (+ -1 n) dag-array-name dag-array dag-len depth-array-name depth-array largest-depth)
             (let ((new-depth (+ 1 depth))) ;subtle point: if all args are constants, there won't actually be a child at depth new-depth (probably not worth checking)
               (make-depth-array-aux (+ -1 n)
-                                    dag-array-name dag-array depth-array-name
+                                    dag-array-name dag-array dag-len
+                                    depth-array-name
                                     (set-depths-of-nodenums-if-lower depth-array-name depth-array (+ 1 n) (dargs expr) new-depth)
-                                    dag-len
                                     (max largest-depth new-depth)))))))))
 
 (local
@@ -229,7 +230,7 @@
                   (< n dag-len)
                   (depth-arrayp depth-array-name depth-array (+ 1 n))
                   (< n (alen1 depth-array-name depth-array)))
-             (equal (alen1 depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array depth-array-name depth-array dag-len largest-depth)))
+             (equal (alen1 depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth)))
                     (alen1 depth-array-name depth-array)))
     :hints (("Goal" :in-theory (e/d (make-depth-array-aux NATP-OF-+-OF-1) (natp))))))
 
@@ -241,7 +242,7 @@
                   (< n dag-len)
                   (depth-arrayp depth-array-name depth-array (+ 1 n))
                   (< n (alen1 depth-array-name depth-array)))
-             (array1p depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array depth-array-name depth-array dag-len largest-depth))))
+             (array1p depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
     :hints (("Goal" :in-theory (e/d (make-depth-array-aux natp-of-+-of-1) (natp))))))
 
 (local
@@ -252,7 +253,7 @@
                   (depth-arrayp depth-array-name depth-array num)
                   (natp num)
                   (< n num))
-             (depth-arrayp depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array depth-array-name depth-array dag-len largest-depth)) num))
+             (depth-arrayp depth-array-name (mv-nth 0 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth)) num))
     :hints (("Goal" :expand (DEPTH-ARRAYP DEPTH-ARRAY-NAME DEPTH-ARRAY N)
              :in-theory (e/d (make-depth-array-aux natp-of-+-of-1)
                              (natp))))))
@@ -264,7 +265,7 @@
                   (< n dag-len)
                   (depth-arrayp depth-array-name depth-array (+ 1 n))
                   (integerp largest-depth))
-             (integerp (mv-nth 1 (make-depth-array-aux n dag-array-name dag-array depth-array-name depth-array dag-len largest-depth))))
+             (integerp (mv-nth 1 (make-depth-array-aux n dag-array-name dag-array dag-len depth-array-name depth-array largest-depth))))
     :hints (("Goal" :expand (DEPTH-ARRAYP DEPTH-ARRAY-NAME DEPTH-ARRAY N)
              :in-theory (e/d (make-depth-array-aux natp-of-+-of-1 integerp-when-natp)
                              (natp))))))
@@ -285,7 +286,7 @@
          (depth-array (make-empty-array 'depth-array (+ 1 max-nodenum)))
          ;; Set the depth of all the STARTING-NODES to 1:
          (depth-array (aset1-list 'depth-array depth-array starting-nodes 1)))
-    (make-depth-array-aux max-nodenum dag-array-name dag-array 'depth-array depth-array dag-len 1)))
+    (make-depth-array-aux max-nodenum dag-array-name dag-array dag-len 'depth-array depth-array 1)))
 
 (defthm alen1-of-mv-nth-0-of-make-depth-array-for-nodes
   (implies (and (all-natp starting-nodes)
