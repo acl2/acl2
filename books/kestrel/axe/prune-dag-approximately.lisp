@@ -1,6 +1,6 @@
 ; Pruning irrelevant IF-branches in a DAG
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -239,9 +239,11 @@
 ;; Recreates DAG, pruning as it goes.  May insert calls to ID, BOOL-FIX$INLINE, and BVCHOP but does not change any node numbering.
 ;; The dag-array does not change.
 (defund prune-dag-approximately-aux (dag
-                                     original-dag-len
+                                     original-dag-len ; without the assumptions; the context array only covers nodenums less than this
                                      assumption-nodenums
-                                     dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)
+                                     dag-array dag-len dag-parent-array context-array print max-conflicts
+                                     dag-acc ;reverse order (lower nodenums first)
+                                     state)
   (declare (xargs :guard (and (or (null dag)
                                   (pseudo-dagp dag))
                               (natp original-dag-len)
@@ -294,7 +296,11 @@
                                              assumption-nodenums))
                   ((when (eq (false-context) context))
                    (cw "NOTE: False context encountered for node ~x0 (selecting then-branch).~%" nodenum)
-                   (prune-dag-approximately-aux (rest dag) original-dag-len assumption-nodenums dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(id ,(darg2 expr)) dag-acc) state))
+                   ;; We use a wrapper of ID here (and below) to ensure the node is
+                   ;; still legal (not a naked nodenum) and to preserve the node
+                   ;; numbering (calls to ID will later be removed by rewriting):
+                   (let ((expr `(id ,(darg2 expr))))
+                     (prune-dag-approximately-aux (rest dag) original-dag-len assumption-nodenums dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
                   ;; Try to resolve the IF test:
                   ((mv erp result state)
                    ;; TODO: What if the test is among the context assumptions?
@@ -307,9 +313,6 @@
                                                  max-conflicts
                                                  state))
                   ((when erp) (mv erp nil state))
-                  ;; We use a wrapper of ID here to ensure the node is
-                  ;; still legal (not a naked nodenum) and to preserve the node
-                  ;; numbering (calls to ID will later be removed by rewriting):
                   (expr (if (eq result :true)
                             `(id ,(darg2 expr)) ; the IF/MYIF is equal to its then-branch
                           (if (eq result :false)
@@ -325,7 +328,8 @@
                                              assumption-nodenums))
                   ((when (eq (false-context) context))
                    (cw "NOTE: False context encountered for node ~x0 (selecting then-branch).~%" nodenum)
-                   (prune-dag-approximately-aux (rest dag) original-dag-len assumption-nodenums dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(bool-fix$inline ,(darg2 expr)) dag-acc) state))
+                   (let ((expr `(bool-fix$inline ,(darg2 expr))))
+                     (prune-dag-approximately-aux (rest dag) original-dag-len assumption-nodenums dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
                   ;; Try to resolve the BOOLIF test:
                   ((mv erp result state)
                    ;; TODO: What if the test is among the context assumptions?
@@ -357,7 +361,8 @@
                                              assumption-nodenums))
                   ((when (eq (false-context) context))
                    (cw "NOTE: False context encountered for node ~x0 (selecting then-branch).~%" nodenum)
-                   (prune-dag-approximately-aux (rest dag) original-dag-len assumption-nodenums dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum `(bvchop ,(darg1 expr) ,(darg3 expr)) dag-acc) state))
+                   (let ((expr `(bvchop ,(darg1 expr) ,(darg3 expr))))
+                     (prune-dag-approximately-aux (rest dag) original-dag-len assumption-nodenums dag-array dag-len dag-parent-array context-array print max-conflicts (acons nodenum expr dag-acc) state)))
                   ;; Try to resolve the BVIF test:
                   ((mv erp result state)
                    ;; TODO: What if the test is among the context assumptions?
@@ -487,6 +492,7 @@
 ;; Returns (mv erp dag-or-quotep state).
 ;; Smashes the arrays named 'dag-array, 'temp-dag-array, and 'context-array.
 ;; todo: may need multiple passes, but watch for loops!
+;; todo: optimize in the common case when nothing is changed
 (defund prune-dag-approximately (dag
                                  assumptions
                                  ;; rules ; todo: add support for this
@@ -518,14 +524,14 @@
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; Generate the (approximate) contexts:
        (context-array (make-full-context-array-for-dag dag))
-       ;; Make the dag into an array and make the parent array:
+       ;; Make the dag into an array and make the 3 indices:
        (dag-array (make-into-array 'dag-array dag))
        (original-dag-len (+ 1 (top-nodenum-of-dag dag)))
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices 'dag-array dag-array 'dag-parent-array original-dag-len))
        ;; Add the assumptions:
        ;; TOOD: Consider allowing the result to contain negated nodenums, for assumptions that are negations.
-       ((mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array
+       ((mv erp assumption-nodenums-or-quoteps dag-array dag-len dag-parent-array
             & & ; dag-constant-alist dag-variable-alist
             )
         (merge-terms-into-dag-array-simple assumptions
@@ -533,7 +539,7 @@
                                            dag-array original-dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array))
        ((when erp) (mv erp dag state))
        ;; Filter out constant assumptions:
-       (assumption-nodenums (append-nodenum-dargs nodenums-or-quoteps nil))
+       (assumption-nodenums (append-nodenum-dargs assumption-nodenums-or-quoteps nil))
        ;; Do the pruning:
        ((mv erp dag state) ; cannot be a quotep?
         (prune-dag-approximately-aux dag
@@ -555,7 +561,7 @@
        ;; Get rid of any calls to ID that got introduced during pruning (TODO: skip if there were none):
        ;; Similarly, try to get rid of calls of BVCHOP and BOOL-FIX$INLINE that got introduced.
        ;; And try to propagate successful resolution of tests upward in the DAG.
-       ((mv erp rule-alist) (make-rule-alist (prune-dag-post-rewrite-rules)
+       ((mv erp rule-alist) (make-rule-alist (prune-dag-post-rewrite-rules) ; todo: don't do this over and over!
                                              (w state)))
        ((when erp) (mv erp nil state))
        ((mv erp result-dag-or-quotep &) (simplify-dag-basic dag
@@ -585,8 +591,11 @@
        (result-dag-size (if (not (<= result-dag-len *max-1d-array-length*))
                             "many" ; too big to call dag-or-quotep-size-fast (todo: impossible?)
                           (dag-or-quotep-size-fast result-dag)))
-       (- (cw " Done pruning (~x0 nodes, ~x1 unique)." result-dag-size result-dag-len)
-          (and (equal old-dag result-dag) (cw " No change."))
+       (changep (not (equal old-dag result-dag)))
+       (- (cw " Done pruning ")
+          (if changep
+              (cw "(~x0 nodes, ~x1 unique)." result-dag-size result-dag-len)
+            (cw "(no change)."))
           (cw ")~%")))
     (mv (erp-nil) result-dag-or-quotep state)))
 
