@@ -1,0 +1,8 @@
+This directory supports the paper
+"Extended Abstract: Partial-encapsulate and Its Support for Floating-point Operations in ACL2"
+in ACL2 Workshop 2025, by Matt Kaufmann and J Moore.
+Directory contents are as follows.
+
+fp.lisp    -- Certifiable book introducing some FP operations logically
+fp-raw.lsp -- Lisp redefinitions supporting FP computation
+fp.acl2    -- Certification support for trust tag and dependencies

@@ -133,6 +133,7 @@
                packn
                packn-pos
                pos
+               pos-fix
                pos-listp
                pos-option
                pos-optionp

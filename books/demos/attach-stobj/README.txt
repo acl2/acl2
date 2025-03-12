@@ -1,6 +1,9 @@
 This directory provides an example of the use of attachable stobjs.
 Stobjs are introduced in books as follows.  It assumes familiarity
-with stobjs: concrete, abstract, and nested.
+with stobjs: concrete, abstract, and nested.  Also see the paper
+"Extended Abstract: Mutable Objects with Several Implementations"
+by Matt Kaufmann, Warren Hunt and Yahya Sohail in the 2025 ACL2
+Workshop.
 
 The book mem.lisp introduces the following two stobjs, to model a
 memory using an array.
