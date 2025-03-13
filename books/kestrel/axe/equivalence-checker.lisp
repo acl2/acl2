@@ -9595,7 +9595,7 @@
 
 ;returns (mv erp dag state)
 (defun get-dag-for-expr-no-theorem (expr interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (let* ((is-a-simple-callp (call-of-user-fnp expr))
          (expanded-expr (if (not is-a-simple-callp)
                             (prog2$ nil ;(cw "(Nothing to expand.)~%") ;don't print this?
@@ -9607,7 +9607,7 @@
 
 ;returns (mv erp dags state)
 (defun get-dags-for-exprs-no-theorem (exprs interpreted-function-alist acc state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp exprs)
       (mv (erp-nil) (reverse-list acc) state)
     (mv-let (erp dag state)
@@ -9621,7 +9621,7 @@
 ;ex: (get-dag-for-expr '(STREAM-BYTES-TAIL-NEW-UPDATE-0 NEW-ACC NEW-S-BOX NEW-J NEW-COUNT) .. .. state)
 ;fixme have this return a theorem (maybe rewriting the expr to a call of dag-val... on the resulting dag)
 (defun get-dag-for-expr (expr defthm-name interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   ;;Step 1 expands the function call (if any):
   (let* ((is-a-simple-callp (call-of-user-fnp expr))
          (step-1-defthm-name (packnew defthm-name '-helper1))
@@ -9669,7 +9669,7 @@
 ;make a version that does not make theorems?
 ;returns (mv erp dags state)
 (defun get-dags-for-exprs (exprs acc defthm-names interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp exprs)
       (mv (erp-nil) (reverse-list acc) state)
     (mv-let (erp dag state)
@@ -9693,7 +9693,7 @@
 (defun find-numcdrs-formal-for-tail-rec-consumer (formal-update-expr-alist ;excludes the update for lst-formal (which will just be lst-formal)
                                                   all-exprs-to-check ;excludes the update for lst-formal (uses lst-formal in a non-blessed way) but includes the exit and base exprs
                                                   lst-formal formals interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp formal-update-expr-alist)
       (mv (erp-nil) nil state)
     (let* ((entry (car formal-update-expr-alist))
@@ -9772,7 +9772,7 @@
 ;fn should be a nice tail rec fn
 ;;ex: (tail-rec-consumer 'BVXOR-LIST-SPECIALIZED-TAIL-UNCDRED 'y ..interpreted-function-alist state)
 (defun tail-rec-consumer (fn lst-formal interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (let* ( ;(body (fn-body fn t (w state)))
          (formals (fn-formals fn (w state)))
          (is-a-nice-tail-function-result (is-a-nice-tail-function fn state))
@@ -9831,7 +9831,7 @@
 
 ;; Returns (mv erp result state).
 (defun consumer-numcdrs-parameters-aux (formals fn interpreted-function-alist state acc)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp formals)
       (mv (erp-nil) acc state)
     (mv-let (erp possible-numcdr-parameter state)
@@ -9846,7 +9846,7 @@
 ;returns (mv erp result state)
 ;these are the formals not to try to drop...
 (defun consumer-numcdrs-parameters (fn interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (let* ((formals (fn-formals fn (w state))))
     (consumer-numcdrs-parameters-aux formals fn interpreted-function-alist state nil)))
 
@@ -9856,7 +9856,7 @@
 (defun replace-in-dag (dag
                        alist ;maps terms to the terms that should replace them
                        state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (and (pseudo-term-listp (strip-cars alist))
            (pseudo-term-listp (strip-cdrs alist)))
       (rewrite-dag dag :runes (lookup-rules) :assumptions (make-equalities-from-alist alist) :normalize-xors nil)
@@ -9865,7 +9865,7 @@
 
 ;returns (mv erp dags state)
 (defun replace-in-dags-aux (dags alist acc state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp dags)
       (mv (erp-nil) (reverse-list acc) state)
     (mv-let (erp dag state)
@@ -9877,7 +9877,7 @@
 ;fixme this could return theorems too?
 ;returns (mv erp dags state)
 (defun replace-in-dags (dags alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (replace-in-dags-aux dags alist nil state))
 
 ;fixme use this more?
@@ -9934,7 +9934,7 @@
                                              lst-formal     ; a symbol
                                              interpreted-function-alist
                                              state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (b* ((formals (fn-formals fn (w state)))
        (is-a-nice-tail-function-result (is-a-nice-tail-function fn state))
        ;; (nice-tail-functionp (first is-a-nice-tail-function-result)) should always be true
@@ -10167,7 +10167,7 @@
 
 ;; Returns (mv erp result state) where result is (list new-runes new-fns).
 (defun combine-producer-and-consumer (consumer-fn lst-formal numcdrs-formal producer-fn produced-formal dag-for-value-added-on interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (prog2$
    (cw "combining producer and consumer.  dag for value added on ~x0." dag-for-value-added-on)
    ;;may first need to transform the consumer (if it's numcdrs formal is used in other ways too
@@ -10280,7 +10280,7 @@
 ;ex: (tail-rec-producer 'STREAM-BYTES-TAIL-NEW state)
 ;fixme destroys 'dag-array!
 (defun tail-rec-producer (fn interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (let* ((is-a-nice-tail-function-result (is-a-nice-tail-function fn state)))
     (if (not (first is-a-nice-tail-function-result)) ;tells whether it is a nice tail function
         (mv (erp-nil) nil state)
@@ -10324,7 +10324,7 @@
                                                   fn ;the possible consumer, known to be a nice tail rec fn
                                                   full-formal-arg-alist
                                                   miter-array-name miter-array interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp arg-nodenums-or-quoteps)
       (mv (erp-nil) nil state)
     (let ((arg-nodenum-or-quotep (first arg-nodenums-or-quoteps)))
@@ -10374,7 +10374,7 @@
 ;; Returns (mv erp result state) where result is nil or (list new-runes new-fns).
 (defun handle-producer-consumer-pattern-for-one-side (rec-fn-nodenums ;walks down this looking for a consumer (applied to a producer)
                                                       miter-array-name miter-array interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp rec-fn-nodenums)
       (mv (erp-nil) nil state)
     (let* ((possible-consumer-nodenum (first rec-fn-nodenums))
@@ -10408,7 +10408,7 @@
 
 ;returns (mv erp result state) where result is nil or (list new-runes new-fns)
 (defun handle-producer-consumer-pattern (rec-fn-nodenums1 rec-fn-nodenums2 miter-array-name miter-array interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (mv-let (erp result state)
     (handle-producer-consumer-pattern-for-one-side rec-fn-nodenums1 miter-array-name miter-array interpreted-function-alist state)
     (if erp
@@ -10419,7 +10419,7 @@
 
 ;returns (mv erp dag-lst-or-quotep state)
 (defun rewrite-to-expose-tuple-elements (dag-lst assumptions rewriter-rule-alist analyzed-function-table state)
-    (declare (xargs :mode :program :stobjs (state)))
+    (declare (xargs :mode :program :stobjs state))
     (mv-let (runes-to-expose-tuple-elements state)
             (make-rules-to-expose-tuple-elements dag-lst analyzed-function-table nil state)
             (if runes-to-expose-tuple-elements
@@ -10452,7 +10452,7 @@
                                              dag-len
                                              rewriter-rule-alist assumptions interpreted-function-alist monitored-symbols
                                              work-hard-when-instructedp print tag state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (b* ( ;;Since we are not using the usual entry point to the rewriter we have to set up some stuff first:
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         ;;fixme thread these aux parts of the dag through the sweeping and mitering code?
@@ -10498,7 +10498,7 @@
 (defun simplify-conclusion (conclusion            ;a term
                             connections-of-inputs ;these are terms
                             hyps runes max-conflicts monitored-symbols conclusion-number rule-base fn-invars prover-rule-alist interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (and nil (call-of 'prefixp conclusion)) ;Mon Mar 14 03:56:09 2011 fixme get rid of this stuff
       (let* ((x (farg1 conclusion))
              (y (farg2 conclusion))
@@ -10599,7 +10599,7 @@
 (defun simplify-conclusions (conclusions           ;terms
                              connections-of-inputs ;terms
                              hyps runes max-conflicts monitored-symbols new-conclusions-acc rule-names-acc conclusion-number rule-base fn-invars prover-rule-alist interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp conclusions)
       (mv nil
           (reverse new-conclusions-acc)
@@ -10633,7 +10633,7 @@
 (defun simplify-term-and-prove-theorem (term theorem-name assumptions rule-alist interpreted-function-alist
                                              ;;fixme what other options to simplify-term?
                                              state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (mv-let (erp dag state)
     (simp-term term
                :rule-alist
@@ -10679,7 +10679,7 @@
                                          connection-relation-name
                                          connection-relation-formals
                                          state)
-  (declare (xargs :stobjs (state) :verify-guards nil :mode :program))
+  (declare (xargs :stobjs state :verify-guards nil :mode :program))
   (b* ( ;a subnest (conses and nths) of the corresponding old formal (if the connection holds, this is equal to the old-formal?)
        (new-formal-in-terms-of-old-formals (lookup-eq-safe new-formal new-formals-in-terms-of-old-alist))
 
@@ -10775,7 +10775,7 @@
                                connection-relation-name
                                connection-relation-formals
                                state)
-  (declare (xargs :stobjs (state) :verify-guards nil :mode :program))
+  (declare (xargs :stobjs state :verify-guards nil :mode :program))
   (if (endp new-formals)
       (mv nil nil nil nil state)
     (mv-let (erp new-update-expr first-defthm-name updated-new-formal-in-terms-of-old-formals state)
@@ -10829,7 +10829,7 @@
                                        state)
   ;;fixme if an update-expr calls a function, should we simplify it? do we?
   ;;e.g., an update-fn with an embedded dag -- should we simplify that dag?
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   ;;some duplication here with another function?
   (b* ((- (cw "(Attempting to drop parameters from ~x0.~%" fn))
        (equivalence-lemma-name (packnew fn '--dropping-equivalence-lemma))
@@ -11329,7 +11329,7 @@
   ;; Returns (mv erp result analyzed-function-table state) where result is :error, :failed, or (list new-runes new-fns) - actually no longer returns :error or :failed?
 (defun peel-off-base-case-of-tail-fn (fn interpreted-function-alist analyzed-function-table state)
   (declare (xargs :mode :program
-                  :stobjs (state)))
+                  :stobjs state))
   (let* ( ;;First we combine all the base cases into one:
          (combined-fn (packnew fn '-combined-base-cases))
          (lemma-name (packnew fn '-becomes- combined-fn))
@@ -11533,7 +11533,7 @@
                       facts-to-assume ;also terms
                       rule-alist
                       defthm-name print state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (mv-let (erp simplified-fact state)
     ;;should this call the new rewriter with a rewrite objective?  maybe not, since we also want to rewrite things to t (that might still happen even with an objective of nil)...
     (simp-term fact
@@ -11584,7 +11584,7 @@
 ;fixme print less?
 (defun find-an-invar-to-improve (invars-to-improve all-invars-to-improve unchanged-component-invars rule-alist defthm-base-name defthm-count print ;invariant-name invariant-formals
                                                    state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp invars-to-improve)
       ;;failed to find an invar to improve:
       (mv nil nil nil nil state)
@@ -11617,7 +11617,7 @@
                                              previous-defthm-name
                                              defthm-count
                                              print invariant-name invariant-formals state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (mv-let (erp old-invar new-invar defthm-name state)
     (find-an-invar-to-improve current-invar-set current-invar-set unchanged-component-invars rule-alist defthm-base-name defthm-count print ;invariant-name invariant-formals
                               state)
@@ -11659,7 +11659,7 @@
 (defun improve-invars (regular-invars
                        unchanged-component-invars ;really these don't have to be about unchanged vars?  they are just not simplified like the other invars
                        print invariant-name invariant-formals state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (prog2$ (cw "(Improving invars:~%")
           (let* ((defthm-base-name (packnew invariant-name '-improvement-lemma-))
                  (first-defthm-name (packnew defthm-base-name 0))
@@ -12720,7 +12720,7 @@
  ;;                                                          extra-stuff monitored-symbols
  ;;                                                          miter-depth-to-use
  ;;                                                          defthm-names-acc state)
- ;;     (declare (xargs :stobjs (state) :mode :program))
+ ;;     (declare (xargs :stobjs state :mode :program))
  ;;     (if (endp conjuncts)
  ;;         (mv (reverse defthm-names-acc) state)
  ;;       (let* ((conjunct (first conjuncts))
@@ -12837,7 +12837,7 @@
 
  ;; ;returns (mv result state)
  ;;   (defun make-new-update-expr-for-formal (new-formal update-expr new-components-in-terms-of-old-alist formal-replacement-alist interpreted-function-alist state)
- ;;     (declare (xargs :stobjs (state)
+ ;;     (declare (xargs :stobjs state
  ;;                     :mode :program
  ;;                     :verify-guards nil))
  ;;     (let ((match (lookup-eq new-formal new-components-in-terms-of-old-alist)))
@@ -12873,7 +12873,7 @@
 
  ;; ;returns (mv result state)
  ;;   (defun make-new-update-exprs (new-formals update-exprs new-components-in-terms-of-old-alist formal-replacement-alist interpreted-function-alist state)
- ;;     (declare (xargs :stobjs (state) :verify-guards nil :mode :program))
+ ;;     (declare (xargs :stobjs state :verify-guards nil :mode :program))
  ;;     (if (endp new-formals)
  ;;         (mv nil state)
  ;;       (let* ((new-formal (car new-formals))
@@ -13547,7 +13547,7 @@
  ;;                                    analyzed-function-table
  ;;                                    unroll max-conflicts
  ;;                                    state)
- ;;    (declare (xargs :mode :program :stobjs (state)))
+ ;;    (declare (xargs :mode :program :stobjs state))
  ;;    (let* ((dummy (progn$ (cw "(Proving connection conjunct ~x0 of ~x1:~%~x2.~%" current-conjunct-num conjunct-count conjunct)
  ;;                          (cw "(Extra stuff: ~x0)~%" extra-stuff)
  ;; ;                          (cw "(rewriter-rule-alist:~%")
@@ -13594,7 +13594,7 @@
  ;;                                         analyzed-function-table
  ;;                                         unroll max-conflicts
  ;;                                         state)
- ;;    (declare (xargs :mode :program :stobjs (state)))
+ ;;    (declare (xargs :mode :program :stobjs state))
  ;;    (if (endp conjuncts)
  ;;        (mv defthm-name-acc state)
  ;;      (let ((defthm-name (pack$ base-name current-conjunct-num))
@@ -13637,7 +13637,7 @@
  ;;                                     unroll max-conflicts
  ;;                                     state)
  ;;    (declare (xargs :mode :program
- ;;                    :stobjs (state)))
+ ;;                    :stobjs state))
  ;;    ;;first try to prove all of the conjuncts simultaneously:
  ;;    (let ((defthm-name (pack$ base-name '-all))
  ;;          (conjunction (make-conjunction-from-list conjuncts)))
@@ -17596,7 +17596,7 @@
 ;; ;; returns (mv validp timedoutp state) where validp indicates whether the goal is "Valid."
 ;; (defun check-with-stp-fn (term var-size-alist max-conflicts state)
 ;;   (declare (xargs :mode :program
-;;                   :stobjs (state)
+;;                   :stobjs state
 ;;                   :guard (pseudo-termp term)))
 ;;   (mv-let (nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;;           (make-term-into-dag-array term 'dag-array 'dag-parent-array)
@@ -17680,7 +17680,7 @@
 ;;                                         test-cases-for-formals ;each test case is an alist?
 ;;                                         state)
 ;;   (declare (xargs :mode :program
-;;                   :stobjs (state)))
+;;                   :stobjs state))
 ;;   (if (endp preds)
 ;;       (mv nil runes-acc state)
 ;;     (let* ((pred (car preds))
@@ -17731,7 +17731,7 @@
 ;;   (declare (xargs ;:guard (pseudo-termp term)
 ;;             :verify-guards nil
 ;;             :mode :program
-;;             :stobjs (state)))
+;;             :stobjs state))
 ;;   (mv-let (composed-dag state)
 ;;           (compose-dags main-dag var-to-replace subdag-for-var t state)
 ;;           ;;fixme - just pass in the rules to compose-dags.. - or redo it so it doesn't have to do a full rewrite...
@@ -18532,7 +18532,7 @@
   ;;   ;ffixme does what we do at (cons result all-regular-invars-except-this-one) below prevent loops?
   ;;   ;fixme, might this benefit from multiple passes?
   ;;   (defun improve-invarsold-aux (regular-invars all-regular-invars unchanged-var-invars count fn improved-regular-invars-acc defthm-names-acc state)
-  ;;     (declare (xargs :mode :program :stobjs (state)))
+  ;;     (declare (xargs :mode :program :stobjs state))
   ;;     (if (endp regular-invars)
   ;;         (mv (reverse improved-regular-invars-acc)
   ;;             (reverse defthm-names-acc)
@@ -18563,7 +18563,7 @@
   ;;   ;; Returns (mv improved-regular-invars defthm-names state)
   ;;   ;used the unchanged-var-invars and the regular-invars themselves (!) to improve the regular-invars
   ;;   (defun improve-invarsold (regular-invars unchanged-var-invars fn state)
-  ;;     (declare (xargs :mode :program :stobjs (state)))
+  ;;     (declare (xargs :mode :program :stobjs state))
   ;;     (prog2$ (cw "(Improving (regular) invars:~%")
   ;;             (mv-let (improved-regular-invars defthm-names state)
   ;;                     (improve-invarsold-aux regular-invars regular-invars unchanged-var-invars 0 fn nil nil state)
@@ -18754,7 +18754,7 @@
 ;ffixme what measure to use?  the old measure with any constants put in for unchanged formals?
 ;ffixm handle defuns whose bodies have embedded dags!
 (defun specialize-fn (function-name args state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (prog2$
    (cw "(Trying to specialize ~x0.~%" (cons function-name args))
    (let ((props (getprops function-name 'current-acl2-world (w state))))
@@ -18852,7 +18852,7 @@
 ;; Returns (mv erp new-function-names new-rule-names state).
 ;;caller should use the rules to simplify the dag
 (defun specialize-fns (dag state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp dag)
       (mv (erp-nil) nil nil state)
     (let* ((entry (car dag))
@@ -19179,7 +19179,7 @@
                        print
                        debug-nodes ;do we use this?
                        interpreted-function-alist
-;ffixme allow the use of rule phases?!
+;; todo: allow the use of rule phases?!
                        runes          ;used for both the rewriter and prover
                        rules          ;used for both the rewriter and prover
                        rewriter-runes ;used for the rewriter only (not the prover)
@@ -19221,7 +19221,7 @@
                               (axe-rule-listp rules)
                               (axe-rule-listp initial-rule-set)
                               (all-axe-rule-listp initial-rule-sets)
-;:unroll is either a list of function names to unroll (can be empty), or :all
+                              ;;:unroll is either a list of function names to unroll (can be empty), or :all
                               (or (eq :all unroll)
                                   (symbol-listp unroll))
                               (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
@@ -20038,7 +20038,7 @@
 ;;   ;;repeat in reverse order? do it until it closes?
 ;;   ;;returns (mv facts changep state)
 ;;   (defun simplify-facts-aux (facts facts-acc changep print state)
-;;     (declare (xargs :mode :program :stobjs (state)))
+;;     (declare (xargs :mode :program :stobjs state))
 ;;     (if (endp facts)
 ;;         (mv facts-acc changep state)
 ;;       (let ((fact (first facts)))
@@ -20089,7 +20089,7 @@
 
 ;;   ;; returns (mv facts changep state)
 ;;   (defun simplify-facts-both-ways (facts print state)
-;;     (declare (xargs :mode :program :stobjs (state)))
+;;     (declare (xargs :mode :program :stobjs state))
 ;;     (mv-let (facts changep state)
 ;;             (simplify-facts-aux facts nil nil print state)
 ;;             (mv-let (facts changep2 state)
@@ -20099,7 +20099,7 @@
 
 ;; ;fixme the both-ways thing seems awkward - what if two x and y are needed to simpify z and the order is x z y?
 ;;   (defun simplify-facts (facts print state)
-;;     (declare (xargs :mode :program :stobjs (state)))
+;;     (declare (xargs :mode :program :stobjs state))
 ;;     (mv-let (facts changep state)
 ;;             (simplify-facts-both-ways facts print state)
 ;;             (if changep
@@ -20279,7 +20279,7 @@
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
                               (or (eq types :bits)
-                                  (eq types :bytes)
+                                  (eq types :bytes) ; todo: consider supporting other things, like :u32
                                   (test-case-type-alistp types))
                               (symbolp name)
                               ;; print
@@ -20342,7 +20342,7 @@
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state rand))
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
-       ;; Handle the special values :bits and :bytes for the types:
+       ;; Desugar the special values :bits and :bytes for the types:
        (types (if (eq :bits types)
                   ;; todo: optimize the removal of duplicates (see merge-symbol<-and-remove-dups, or remove from consecutive dup groups):
                   (let ((all-vars (remove-duplicates-equal (merge-symbol< vars1 vars2 nil)))) ; usually the same as just the vars1.
@@ -20425,10 +20425,10 @@
 
 @({
      (prove-equivalence
-         dag1                   ;; The first DAG or term to compare
-         dag2                   ;; The second DAG or term to compare
+         dag-or-term1           ;; The first DAG or term to compare
+         dag-or-term2           ;; The second DAG or term to compare
          [:assumptions]         ;; Assumptions to use when proving equivalence
-         [:types]               ;; An alist from variables to their types, or one of the special values :bits or :bytes.  Used to generate test cases.
+         [:types]               ;; A test-case-type-alist (alist mapping variables to their test-case-types), or one of the special values :bits or :bytes.
          [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
          [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100
          [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
