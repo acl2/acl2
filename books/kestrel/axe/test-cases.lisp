@@ -175,7 +175,7 @@
                                                      list-type-element-type
                                                      list-typep)))))
   (or (myquotep type) ; a quoted constant (type is a singleton set containing that value)
-      (symbolp type) ; look up a previous val -- todo: tag this?
+;      (symbolp type) ; look up a previous val ; deprecated: just use :eval
       (boolean-typep type)
       (bv-typep type)
       (bv-array-typep type)
