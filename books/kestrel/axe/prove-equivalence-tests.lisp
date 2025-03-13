@@ -63,6 +63,15 @@
                      :types :bytes
                      :max-conflicts 1000000))
 
+;; TODO: Guard violation:
+;; ;; Tests the :range type
+;; (deftest ;; turns on extensive guard-checking
+;;   (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
+;;                      (dagify-term! '(bvplus '8 x '7))
+;;                      ;; prevent rewriting from getting it:
+;;                      :initial-rule-sets nil
+;;                      :types (acons 'x '(:range 0 6) nil)))
+
 (must-fail ;the dags have different vars
  (prove-equivalence (dagify-term! '(bvplus '32 x y))
                     (dagify-term! '(bvplus '32 x z))))
