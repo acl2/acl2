@@ -1,7 +1,7 @@
 ; A clause-processor that calls STP
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -35,7 +35,7 @@
         (mv :bad-hint (list clause) state))
        ;; Handle :max-conflicts :
        (max-conflicts-pair (assoc-eq :max-conflicts hint)) ; we use nil if not present in the hint
-       ((when (and max-conflicts-pair
+       ((when (and max-conflicts-pair ; todo: allow an explicit nil? allow :auto?
                    (not (natp (cdr max-conflicts-pair)))))
         (er hard? 'stp-clause-processor "Bad :max-conflicts option, ~x0, in hint ~x1." (cdr max-conflicts-pair) hint)
         (mv :bad-hint (list clause) state))
