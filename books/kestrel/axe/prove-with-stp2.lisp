@@ -17,7 +17,7 @@
 (include-book "depth-array")
 (include-book "translate-dag-to-stp") ; has ttags, for add-assert-if-a-mult (move that here?)
 (include-book "type-inference") ; for maybe-get-type-of-function-call, reduce?
-(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+;(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "supporting-nodes") ;for tag-nodenums-with-name
 (include-book "supporting-vars") ; for vars-that-support-dag-node
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -128,77 +128,94 @@
 ;;only used for probably-constant nodes
 ;;only cuts at variables
 ;FIXME can we clean this up?
-;returns (mv nodenums-to-translate ;decreasing order
-;            cut-nodenum-type-alist)
-;fixme implement increasingly aggressive cuts?
+;; Returns (mv erp nodenums-to-translate cut-nodenum-type-alist) where NODENUMS-TO-TRANSLATE is in decreasing order.
+;; TODO: implement increasingly aggressive cuts?
 ; TODO: Consider using a worklist.
 ;todo: compare to gather-nodes-to-translate-up-to-depth
 ;todo: generate extra asserts for bvmults?
 (defund gather-nodes-for-translation (n ;counts down and stops at -1
                                       dag-array-name dag-array dag-len ; dag-len is only used for the guard
-                                      var-type-alist ;; todo: what about types we can't handle?
+                                      var-type-alist
                                       needed-for-node1-tag-array ; todo: rename this array, since there is only one node
-                                      nodenums-to-translate ;gets extended, in increasing order
-                                      cut-nodenum-type-alist ; gets extended
+                                      nodenums-to-translate-acc ;gets extended, in increasing order
+                                      cut-nodenum-type-alist ; an accumulator, gets extended
                                       )
-  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (integerp n)
+  (declare (xargs :guard (and (integerp n)
                               (<= -1 n)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< n dag-len)
                               (var-type-alistp var-type-alist)
-                              ;; (nodenum-type-alistp cut-nodenum-type-alist) ; todo
                               (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
                               (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
-                              (nat-listp nodenums-to-translate)
-                              )
+                              (nat-listp nodenums-to-translate-acc)
+                              (nodenum-type-alistp cut-nodenum-type-alist))
                   :measure (nfix (+ 1 n))))
   (if (not (natp n))
-      (mv (reverse-list nodenums-to-translate) cut-nodenum-type-alist)
-    (let* ((needed-for-node1 (aref1 'needed-for-node1-tag-array needed-for-node1-tag-array n)))
-      (if needed-for-node1
-          (let ((expr (aref1 dag-array-name dag-array n)))
-            (if (variablep expr)
-                ;; variable; we'll cut:
-                (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist
-                                              needed-for-node1-tag-array
-                                              nodenums-to-translate
-                                              (acons-fast n (lookup-eq-safe expr var-type-alist) cut-nodenum-type-alist))
-              (if (fquotep expr)
-                  ;; constant; we'll translate it:
-                  (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist
-                                                needed-for-node1-tag-array
-                                                (cons n nodenums-to-translate)
-                                                cut-nodenum-type-alist)
-                ;; function call (we'll translate it and mark its children as being needed)
-                (let ((translatep t)) ; todo: simplify
-                  (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist
-                                                (if translatep
-                                                    (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
-                                                  needed-for-node1-tag-array)
-                                                (if translatep
-                                                    (cons n nodenums-to-translate)
-                                                  nodenums-to-translate)
-                                                (if translatep
-                                                    cut-nodenum-type-alist
-                                                  (acons-fast n (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)) cut-nodenum-type-alist)))))))
-        ;; not needed, so skip it
-        (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))))
+      (mv (erp-nil) (reverse-list nodenums-to-translate-acc) cut-nodenum-type-alist)
+    (mv-let (erp needed-for-node1-tag-array nodenums-to-translate-acc cut-nodenum-type-alist)
+      (if (not (aref1 'needed-for-node1-tag-array needed-for-node1-tag-array n))
+          ;; this node is not needed, so skip it:
+          (mv (erp-nil) needed-for-node1-tag-array nodenums-to-translate-acc cut-nodenum-type-alist)
+        (let ((expr (aref1 dag-array-name dag-array n)))
+          (if (variablep expr)
+              ;; variable; we'll cut:
+              (let ((type (lookup-eq expr var-type-alist)))
+                (if (not type)
+                    (prog2$ (cw "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist)
+                            (mv :type-error nil nil nil))
+                  (mv (erp-nil) needed-for-node1-tag-array nodenums-to-translate-acc (acons-fast n type cut-nodenum-type-alist))))
+            (if (fquotep expr)
+                ;; constant; we'll translate it:
+                (mv (erp-nil) needed-for-node1-tag-array (cons n nodenums-to-translate-acc) cut-nodenum-type-alist)
+              ;; function call (we'll translate it and mark its children as being needed):
+              ;; todo: consider cutting!
+              (mv (erp-nil)
+                  (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                  (cons n nodenums-to-translate-acc)
+                  cut-nodenum-type-alist)))))
+      (if erp
+          (mv erp nil nil)
+        (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate-acc cut-nodenum-type-alist)))))
 
-;; todo issue with lookup-eq-safe -- allow returning an error?
-;; (thm
-;;   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-;;                 (integerp n)
-;;                 (<= -1 n)
-;;                 (< n dag-len)
-;;                 (var-type-alistp var-type-alist)
-;;                 (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
-;;                 (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
-;;                 (nat-listp nodenums-to-translate)
-;;                 (nodenum-type-alistp cut-nodenum-type-alist)
-;;                 )
-;;            (nodenum-type-alistp (mv-nth 1 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist))))
-;;   :hints (("Goal" :in-theory (enable gather-nodes-for-translation))))
+(local
+  (defthm gather-nodes-for-translation-return-type-1
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+                  (<= -1 n)
+                  (< n dag-len)
+                  (var-type-alistp var-type-alist)
+                  (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                  (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
+                  (nat-listp nodenums-to-translate)
+                  (nodenum-type-alistp cut-nodenum-type-alist)
+                  (no-nodes-are-variablesp nodenums-to-translate dag-array-name dag-array dag-len)
+                  (all-< nodenums-to-translate dag-len))
+             (and (nat-listp (mv-nth 1 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))
+                  (no-nodes-are-variablesp (mv-nth 1 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist))
+                                           dag-array-name dag-array dag-len)
+                  (all-< (mv-nth 1 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist))
+                         dag-len)))
+    :hints (("Goal" :in-theory (enable gather-nodes-for-translation)))))
 
+(local
+  (defthm gather-nodes-for-translation-return-type-2
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+                  (<= -1 n)
+                  (< n dag-len)
+                  (var-type-alistp var-type-alist)
+                  (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                  (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
+                  (nat-listp nodenums-to-translate)
+                  (nodenum-type-alistp cut-nodenum-type-alist)
+                  (all-< (strip-cars cut-nodenum-type-alist)
+                         dag-len))
+             (and (nodenum-type-alistp (mv-nth 2 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))
+                  (all-< (strip-cars (mv-nth 2 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))
+                         dag-len)))
+    :hints (("Goal" :in-theory (enable gather-nodes-for-translation)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This currently does no cutting.
 ;; Returns (mv result state) where result is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
@@ -211,13 +228,17 @@
                               (print-levelp print)
                               (or (null max-conflicts) (natp max-conflicts))
                               (symbolp miter-name))
-                  :verify-guards nil ; todo: first prove properties of GATHER-NODES-FOR-TRANSLATION
                   :stobjs state))
   (b* ((needed-for-node1-tag-array (make-empty-array 'needed-for-node1-tag-array (+ 1 nodenum))) ; todo: rename the array
        (needed-for-node1-tag-array (aset1 'needed-for-node1-tag-array needed-for-node1-tag-array nodenum t))
        ;; Choose which nodes to translate (no cutting):
-       ((mv nodenums-to-translate cut-nodenum-type-alist)
+       ((mv erp nodenums-to-translate cut-nodenum-type-alist)
         (gather-nodes-for-translation nodenum miter-array-name miter-array miter-len var-type-alist needed-for-node1-tag-array nil nil))
+       ((when (not (consp nodenums-to-translate))) ; todo: can this happen?  should this be an error or a failure? can the node be a constant node?  a var?
+        (cw "ERROR: No nodes to translate.")
+        (mv *error* state))
+       ((when erp)
+        (mv *error* state)) ; or pass back this error?
        ;; Call STP on the proof obligation without replacement:
        ((mv result state)
         (prove-equality-query-with-stp (enquote constant-value)
@@ -267,10 +288,9 @@
                                                               cut-nodenum-type-alist ; todo: make this an array?
                                                               extra-asserts ;an accumulator (a string-tree)
                                                               print)
-  (declare (xargs :measure (nfix (+ 1 n))
-                  :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (integerp n)
+  (declare (xargs :guard (and (integerp n)
                               (<= -1 n)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< n dag-len)
                               (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
                               (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
@@ -280,6 +300,7 @@
                               (nat-listp nodenums-to-translate)
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (string-treep extra-asserts))
+                  :measure (nfix (+ 1 n))
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))))
   (if (not (natp n))
       (mv (erp-nil) (reverse-list nodenums-to-translate) cut-nodenum-type-alist extra-asserts)
@@ -294,8 +315,8 @@
         (let ((expr (aref1 dag-array-name dag-array n)))
           (if (variablep expr)
               ;; if it's a variable, we will cut (the variable generated in STP will be named NODEXXX, so we don't have to worry about the actual name of expr clashing with something) and add info about its type to cut-nodenum-type-alist:
-              (b* ((type (lookup-eq-safe expr var-type-alist))
-                   ((when (not type))
+              (b* ((type (lookup-eq expr var-type-alist))
+                   ((when (not type)) ; should not happen (var-type-alist should assign types to all vars in the dag)
                     (cw "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist)
                     (mv :type-error nil nil extra-asserts)))
                 (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array
@@ -544,34 +565,36 @@
                   nodenums-to-translate
                   state)))))
 
-(defthm nat-listp-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
-  (implies (and (natp smaller-nodenum)
-                (natp larger-nodenum)
-                (<= smaller-nodenum larger-nodenum) ; is equal possible?
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (< smaller-nodenum dag-len)
-                (< larger-nodenum dag-len)
-                (var-type-alistp var-type-alist)
-                (print-levelp print) ; tighter?
-                ;; (natp max-conflicts) ; allow nil?
-                (symbolp miter-name))
-           (nat-listp (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))))
-  :hints (("Goal" :in-theory (enable try-aggressively-cut-equivalence-proof))))
+(local
+  (defthm nat-listp-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
+    (implies (and (natp smaller-nodenum)
+                  (natp larger-nodenum)
+                  (<= smaller-nodenum larger-nodenum) ; is equal possible?
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (< smaller-nodenum dag-len)
+                  (< larger-nodenum dag-len)
+                  (var-type-alistp var-type-alist)
+                  (print-levelp print) ; tighter?
+                  ;; (natp max-conflicts) ; allow nil?
+                  (symbolp miter-name))
+             (nat-listp (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))))
+    :hints (("Goal" :in-theory (enable try-aggressively-cut-equivalence-proof)))))
 
-(defthm all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
-  (implies (and (natp smaller-nodenum)
-                (natp larger-nodenum)
-                (<= smaller-nodenum larger-nodenum) ; is equal possible?
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (< smaller-nodenum dag-len)
-                (< larger-nodenum dag-len)
-                (var-type-alistp var-type-alist)
-                (print-levelp print) ; tighter?
-                ;; (natp max-conflicts) ; allow nil?
-                (symbolp miter-name))
-           (all-< (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
-                  (+ 1 larger-nodenum)))
-  :hints (("Goal" :in-theory (enable try-aggressively-cut-equivalence-proof))))
+(local
+  (defthm all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
+    (implies (and (natp smaller-nodenum)
+                  (natp larger-nodenum)
+                  (<= smaller-nodenum larger-nodenum) ; is equal possible?
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (< smaller-nodenum dag-len)
+                  (< larger-nodenum dag-len)
+                  (var-type-alistp var-type-alist)
+                  (print-levelp print) ; tighter?
+                  ;; (natp max-conflicts) ; allow nil?
+                  (symbolp miter-name))
+             (all-< (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
+                    (+ 1 larger-nodenum)))
+    :hints (("Goal" :in-theory (enable try-aggressively-cut-equivalence-proof)))))
 
 ;; (defthm all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof-gen
 ;;   (implies (and (<= dag-len bound)
@@ -601,7 +624,7 @@
 ;; todo: do guards for functions like this cause expensive checks when we call them from :program mode code?
 ;; All nodes involved (everything tagged in the depth-array and supporters-tag-array) will be pure nodes.
 ;; Instead of returning errors,  suppose we could return most-general-type.
-(defund gather-nodes-to-translate-up-to-depth (n
+(defund gather-nodes-to-translate-up-to-depth (n ;counts down and stops at -1
                                                depth
                                                depth-array
                                                dag-array-name dag-array dag-len ; dag-len is only used for the guard
@@ -635,8 +658,8 @@
         (let ((expr (aref1 dag-array-name dag-array n)))
           (if (variablep expr)
               ;;it's a variable.  we always cut:
-              (b* ((type (lookup-eq-safe expr var-type-alist))
-                   ((when (not type)) ; should not fail (var-type-alist should assign types to all vars in the dag)
+              (b* ((type (lookup-eq expr var-type-alist))
+                   ((when (not type)) ; should not happen (var-type-alist should assign types to all vars in the dag)
                     (cw "ERROR: No type, ~x0, for ~x1 in alist ~x2.~%" type expr var-type-alist)
                     (mv :type-error nil nil extra-asserts)))
                 (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
