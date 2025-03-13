@@ -110,6 +110,14 @@
                   (axe-typep type)
                   (var-type-alistp (rest alist))))))))
 
+
+;; Since nil is not an axe-type (see not-axe-typep-of-nil), nil means no type
+(defthm axe-typep-of-lookup-equal-when-var-type-alistp
+  (implies (var-type-alistp alist)
+           (iff (axe-typep (lookup-equal var alist))
+                (lookup-equal var alist)))
+  :hints (("Goal" :in-theory (enable var-type-alistp))))
+
 ;; Not quite true, because of empty-type and most-general-type:
 ;; (thm
 ;;   (implies (var-type-alistp alist)
