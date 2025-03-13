@@ -14,6 +14,7 @@
 (include-book "jvm/doc")
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 (include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
+(include-book "equivalence-checker")
 
 (defxdoc stp
   :short "An SMT solver used by the Axe toolkit"

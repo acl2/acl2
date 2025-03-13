@@ -1,7 +1,7 @@
 ; Look up a key using EQ, throwing an error if not found.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +11,9 @@
 
 (in-package "ACL2")
 
-;; STATUS: In-progress
-
 (include-book "lookup-equal")
 
+;; Like lookup-eq but throws an error if KEY is not bound in ALIST.
 ;what about when the value is nil?
 (defund lookup-eq-safe (key alist)
   (declare (xargs :guard (if (symbolp key)
@@ -25,10 +24,7 @@
     (if result
         (cdr result)
       ;; (break$)
-      (hard-error
-       'lookup-eq-safe
-       "There is no binding for key ~x0 in the alist ~x1.~%"
-       (acons #\0 key (acons #\1 alist nil))))))
+      (er hard? 'lookup-eq-safe "There is no binding for key ~x0 in the alist ~x1.~%" key alist))))
 
 (defthm lookup-eq-safe-becomes-lookup-equal
   (equal (lookup-eq-safe key alist)

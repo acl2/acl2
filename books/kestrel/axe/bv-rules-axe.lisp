@@ -1408,8 +1408,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd bvxor-of-bvcat-becomes-bvcat-arg2 ; arg2 is the bvcat
+  (implies (and (axe-bind-free (bind-low-zero-count-in-bvcat-nest x 'zeros dag-array) '(zeros))
+                (unsigned-byte-p zeros y) ; the other term fits into the 0 region
+                (equal 0 (bvchop zeros x)) ; guaranteed by bind-low-zero-count-in-bvcat-nest
+                (< zeros size)
+                (natp size)
+                ;; (natp zeros)
+                )
+           (equal (bvxor size x y)
+                  (bvcat (- size zeros) (slice (+ -1 size) zeros x) zeros y)))
+  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
+
+(defthmd bvxor-of-bvcat-becomes-bvcat-arg3 ; arg3 is the bvcat
+  (implies (and (axe-bind-free (bind-low-zero-count-in-bvcat-nest y 'zeros dag-array) '(zeros))
+                (unsigned-byte-p zeros x) ; the other term fits into the 0 region
+                (equal 0 (bvchop zeros y)) ; guaranteed by bind-low-zero-count-in-bvcat-nest
+                (< zeros size)
+                (natp size)
+                ;; (natp zeros)
+                )
+           (equal (bvxor size x y)
+                  (bvcat (- size zeros) (slice (+ -1 size) zeros y) zeros x)))
+  :hints (("Goal" :in-theory (enable slice-too-high-is-0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; in case the small term is a var, might be better to ask how many low 0s there are in the bvcat and then see if the other term fits
 ;rename bvor-disjoint-ones-arg3-axe
+;; deprecate?
 (defthmd bvor-disjoint-ones-arg2-gen
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x ysize dag-array)) ;new
@@ -1417,12 +1444,14 @@
                 (equal 0 (bvchop ysize x))
                 (unsigned-byte-p-forced ysize y)
                 (natp size)
-                (natp ysize))
+                ;; (natp ysize)
+                )
            (equal (bvor size x y)
                   (bvcat (- size ysize) (slice (+ -1 size) ysize x) ysize y)))
   :hints (("Goal" :in-theory (enable bvor slice-too-high-is-0))))
 
 ;rename bvor-disjoint-ones-arg2-axe
+;; deprecate?
 (defthmd bvor-disjoint-ones-arg1-gen
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-syntaxp (bvcat-nest-with-low-zerosp-axe y xsize dag-array)) ;new
@@ -1430,36 +1459,64 @@
                 (equal 0 (bvchop xsize y))
                 (unsigned-byte-p-forced xsize x)
                 (natp size)
-                (natp xsize))
+                ;; (natp xsize)
+                )
            (equal (bvor size x y)
                   (bvcat (- size xsize) (slice (+ -1 size) xsize y) xsize x)))
   :hints (("Goal" :in-theory (enable bvor slice-too-high-is-0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvor-of-bvcat-becomes-bvcat-arg2
+(defthmd bvor-of-bvcat-becomes-bvcat-arg2 ; arg2 is the bvcat
   (implies (and (axe-bind-free (bind-low-zero-count-in-bvcat-nest x 'zeros dag-array) '(zeros))
                 (unsigned-byte-p zeros y) ; the other term fits into the 0 region
-                (equal 0 (bvchop zeros x)) ; could force or something like that
+                (equal 0 (bvchop zeros x)) ; guaranteed by bind-low-zero-count-in-bvcat-nest
                 (< zeros size)
                 (natp size)
-                (natp zeros))
+                ;; (natp zeros)
+                )
            (equal (bvor size x y)
                   (bvcat (- size zeros) (slice (+ -1 size) zeros x) zeros y)))
   :hints (("Goal" :in-theory (enable bvor slice-too-high-is-0))))
 
-(defthmd bvor-of-bvcat-becomes-bvcat-arg3
+(defthmd bvor-of-bvcat-becomes-bvcat-arg3 ; arg3 is the bvcat
   (implies (and (axe-bind-free (bind-low-zero-count-in-bvcat-nest y 'zeros dag-array) '(zeros))
                 (unsigned-byte-p zeros x) ; the other term fits into the 0 region
-                (equal 0 (bvchop zeros y)) ; could force or something like that
+                (equal 0 (bvchop zeros y)) ; guaranteed by bind-low-zero-count-in-bvcat-nest
                 (< zeros size)
                 (natp size)
-                (natp zeros))
+                ;; (natp zeros)
+                )
            (equal (bvor size x y)
                   (bvcat (- size zeros) (slice (+ -1 size) zeros y) zeros x)))
   :hints (("Goal" :in-theory (enable bvor slice-too-high-is-0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvplus-of-bvcat-becomes-bvcat-arg2 ; arg2 is the bvcat
+  (implies (and (axe-bind-free (bind-low-zero-count-in-bvcat-nest x 'zeros dag-array) '(zeros))
+                (unsigned-byte-p zeros y) ; the other term fits into the 0 region
+                (equal 0 (bvchop zeros x)) ; guaranteed by bind-low-zero-count-in-bvcat-nest
+                (< zeros size)
+                (integerp size))
+           (equal (bvplus size x y)
+                  (bvcat (- size zeros) (slice (+ -1 size) zeros x) zeros y)))
+  :hints (("Goal" :in-theory (e/d (slice bvplus slice-too-high-is-0 slice-when-val-is-not-an-integer
+                                         logtail-of-bvchop unsigned-byte-p-forced logtail-of-plus)
+                                  (logtail-of-bvchop-becomes-slice slice-becomes-bvchop bvchop-of-logtail)))))
+
+(defthmd bvplus-of-bvcat-becomes-bvcat-arg3 ; arg3 is the bvcat
+  (implies (and (axe-bind-free (bind-low-zero-count-in-bvcat-nest y 'zeros dag-array) '(zeros))
+                (unsigned-byte-p zeros x) ; the other term fits into the 0 region
+                (equal 0 (bvchop zeros y)) ; guaranteed by bind-low-zero-count-in-bvcat-nest
+                (< zeros size)
+                (integerp size))
+           (equal (bvplus size x y)
+                  (bvcat (- size zeros) (slice (+ -1 size) zeros y) zeros x)))
+  :hints (("Goal" :in-theory (e/d (slice bvplus slice-too-high-is-0 slice-when-val-is-not-an-integer
+                                         logtail-of-bvchop unsigned-byte-p-forced logtail-of-plus)
+                                  (logtail-of-bvchop-becomes-slice slice-becomes-bvchop bvchop-of-logtail)))))
+
 
 ;this fires on (bvor x (bvchop 8 y)) but what if y is an 8-bit var and we drop the loghead from it
 ;might be better to discover that x is a bvcat with 0's at the bottom
@@ -1478,60 +1535,64 @@
 ;;                                    logtail-of-plus)
 ;;                             (logtail-of-bvchop-becomes-slice slice-becomes-bvchop bvchop-of-logtail)))))
 
+;; deprecate?
 (defthmd bvplus-disjoint-ones-arg2-gen
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                (< size2 size)
-                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
-                (equal 0 (bvchop size2 x)) ;; force, or something?
-                (unsigned-byte-p-forced size2 y)
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (< ysize size)
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x ysize dag-array))
+                (equal 0 (bvchop ysize x)) ;; force, or something?
+                (unsigned-byte-p-forced ysize y)
                 (natp size)
-                (natp size2))
+                (natp ysize))
            (equal (bvplus size x y)
-                  (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
-   :hints (("Goal" :expand ((slice (+ -1 size) size2 (+ x y)))
+                  (bvcat (- size ysize) (slice (+ -1 size) ysize x) ysize y)))
+   :hints (("Goal" :expand ((slice (+ -1 size) ysize (+ x y)))
             :in-theory (e/d (slice bvplus slice-too-high-is-0 slice-when-val-is-not-an-integer logtail-of-bvchop unsigned-byte-p-forced
                                    logtail-of-plus)
                             (logtail-of-bvchop-becomes-slice slice-becomes-bvchop bvchop-of-logtail)))))
 
+;; deprecate?
 (defthmd bvplus-disjoint-ones-arg1-gen
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                (< size2 size)
-                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
-                (equal 0 (bvchop size2 x)) ;; force, or something?
-                (unsigned-byte-p-forced size2 y)
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (< ysize size)
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x ysize dag-array))
+                (equal 0 (bvchop ysize x)) ;; force, or something?
+                (unsigned-byte-p-forced ysize y)
                 (natp size)
-                (natp size2))
+                (natp ysize))
            (equal (bvplus size y x)
-                  (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
+                  (bvcat (- size ysize) (slice (+ -1 size) ysize x) ysize y)))
   :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg2-gen)
            :in-theory (disable bvplus-disjoint-ones-arg2-gen)))
   ;; :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg1-gen)
   ;;          :in-theory (e/d (SLICE-TOO-HIGH-IS-0) (bvplus-disjoint-ones-arg1-gen))))
   )
 
+;; improve to be like bvplus-of-bvcat-becomes-bvcat-arg2?
 (defthmd bvplus-disjoint-ones-2
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                (< size2 size)
-                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
-                (equal 0 (bvchop size2 x)) ;; force, or something?
-                (unsigned-byte-p-forced size2 y)
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (< ysize size)
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x ysize dag-array))
+                (equal 0 (bvchop ysize x)) ;; force, or something?
+                (unsigned-byte-p-forced ysize y)
                 ;(natp size)
-                (natp size2))
+                (natp ysize))
            (equal (bvplus size y (bvplus size x z))
-                  (bvplus size (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y) z)))
+                  (bvplus size (bvcat (- size ysize) (slice (+ -1 size) ysize x) ysize y) z)))
   :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg1-gen)
            :in-theory (disable BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt))))
 
+;; improve to be like bvplus-of-bvcat-becomes-bvcat-arg3?
 (defthmd bvplus-disjoint-ones-2-alt
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                (< size2 size)
-                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
-                (equal 0 (bvchop size2 x)) ;; force, or something?
-                (unsigned-byte-p-forced size2 y)
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (< ysize size)
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x ysize dag-array))
+                (equal 0 (bvchop ysize x)) ;; force, or something?
+                (unsigned-byte-p-forced ysize y)
                 ;(natp size)
-                (natp size2))
+                (natp ysize))
            (equal (bvplus size x (bvplus size y z))
-                  (bvplus size (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y) z)))
+                  (bvplus size (bvcat (- size ysize) (slice (+ -1 size) ysize x) ysize y) z)))
   :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg1-gen)
            :in-theory (disable BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt))))
 

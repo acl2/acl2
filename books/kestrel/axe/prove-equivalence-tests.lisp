@@ -1,7 +1,7 @@
 ; Tests of prove-equivalence
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -27,14 +27,50 @@
 ;todo: move these to equivalence-checker.lisp:
 (include-book "kestrel/lists-light/firstn" :dir :system) ;for firstn-when-zp-cheap
 (include-book "kestrel/lists-light/take" :dir :system)
+(include-book "kestrel/utilities/deftest" :dir :system)
 
 (must-fail
  (prove-equivalence (dagify-term! '(bvplus '32 '1 x))
                     (dagify-term! '(bvplus '32 '2 x))))
 
-(prove-equivalence (dagify-term! '(bvplus '32 '7 x))
-                   (dagify-term! '(bvplus '32 x '7)))
+(deftest ;; turns on extensive guard-checking
+  (prove-equivalence (dagify-term! '(bvplus '32 '7 x))
+                     (dagify-term! '(bvplus '32 x '7))))
 
+;; A test where sweeping-and-merging happens:
+(deftest ;; turns on extensive guard-checking
+  (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
+                     (dagify-term! '(bvplus '8 x '7))
+                     ;; prevent rewriting from getting it:
+                     :initial-rule-sets nil
+                     :types :bytes))
+
+;; Tests :max-conflicts nil
+(deftest ;; turns on extensive guard-checking
+  (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
+                     (dagify-term! '(bvplus '8 x '7))
+                     ;; prevent rewriting from getting it:
+                     :initial-rule-sets nil
+                     :types :bytes
+                     :max-conflicts nil))
+
+;; Tests :max-conflicts <nat>
+(deftest ;; turns on extensive guard-checking
+  (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
+                     (dagify-term! '(bvplus '8 x '7))
+                     ;; prevent rewriting from getting it:
+                     :initial-rule-sets nil
+                     :types :bytes
+                     :max-conflicts 1000000))
+
+;; TODO: Guard violation:
+;; ;; Tests the :range type
+;; (deftest ;; turns on extensive guard-checking
+;;   (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
+;;                      (dagify-term! '(bvplus '8 x '7))
+;;                      ;; prevent rewriting from getting it:
+;;                      :initial-rule-sets nil
+;;                      :types (acons 'x '(:range 0 6) nil)))
 
 (must-fail ;the dags have different vars
  (prove-equivalence (dagify-term! '(bvplus '32 x y))
