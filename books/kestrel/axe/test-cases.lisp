@@ -1,7 +1,7 @@
 ; Test cases for the Axe Equivalence Checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -54,11 +54,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;; The :list type:  (:list element-type len-type)
+;; The :list type: (:list element-type len-type)
 ;; TODO: Restrict the element type and length type (this should be mutually recursive with axe-typep?)
 ;; TODO: Disallow the empty list, so that nil is not both a list and a boolean?
-;; TODO: Redo the bv-array type and move this elsewhere.
 (defund list-typep (type)
   (declare (xargs :guard t))
   (and (true-listp type)
@@ -168,6 +166,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Represents the type of a value for testing purposes (see also axe-typep).
+;; Does not allow most-general-type or empty-type.
+;; TODO: Allow most-general-type (would be t, but we allow all symbols below):
 (defund test-case-typep (type)
   (declare (xargs :guard t
                   :hints (("Goal" :in-theory (enable list-type-len-type
@@ -199,6 +199,15 @@
            (true-listp (cdr type)) ; or make the elements the cadr?
            (consp (cdr type)) ; must be at least one element
            )))
+
+;; Sanity check
+(defthmd test-case-typep-when-axe-typep
+  (implies (and (axe-typep ty)
+                (not (most-general-typep ty))
+                (not (empty-typep ty)))
+           (test-case-typep ty))
+  :hints (("Goal" :in-theory (enable test-case-typep
+                                     axe-typep))))
 
 ;; (defthm test-case-typep-of-boolean-type
 ;;   (test-case-typep (boolean-type))
