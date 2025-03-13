@@ -19084,7 +19084,6 @@
            ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
            ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
            (state (submit-event-quiet '(set-inhibit-warnings "double-rewrite" "subsume") state))
-           (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
            ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
            (dag-vars (dag-vars dag))
            (sorted-dag-vars (merge-sort-symbol< dag-vars))
@@ -19129,6 +19128,9 @@
                                  (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
                                          (mv (erp-nil) dag interpreted-function-alist state)))))))))))
            ((when erp) (mv erp nil state rand))
+           ;; Generate test-inputs:
+           ;; TODO: Can we use something like with-local-stobj to isolate the use of rand here?:
+           (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
            ;;fixme rename test-cases test-inputs?
            ((mv erp test-cases rand)
             ;; Make the random test cases (each assigns values to the input vars):
@@ -19136,10 +19138,7 @@
             ;; This drops cases that don't satisfy the assumptions (but what if none survive?):
             (make-test-cases test-case-count var-type-alist assumptions rand))
            ((when erp) (mv erp nil state rand))
-           (analyzed-function-table (empty-analyzed-function-table))
            ;; could move a lot of stuff into these options:
-           (options (s :prove-constants prove-constants
-                       (s :debugp debug nil)))
            ;; todo: should we move any stuff above here into miter-and-merge?
            ((mv erp provedp rand state) ;fixme could just pass the constant to miter-and-merge
             ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
@@ -19155,14 +19154,14 @@
                              test-cases
                              monitored-symbols
                              use-context-when-miteringp
-                             analyzed-function-table
+                             (empty-analyzed-function-table)
                              unroll
                              tests-per-case
                              (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts)
                              t ;must-succeedp=t
                              pre-simplifyp
                              normalize-xors
-                             options
+                             (s :prove-constants prove-constants (s :debugp debug nil))
                              rand state))
            ((when erp) (mv erp nil state rand)))
         (if provedp
@@ -19175,7 +19174,7 @@
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
                        test-case-count ;the total number of tests to generate?  some may not be used
-                       var-type-alist  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from on to the other (when possible), or pass both?
+                       var-type-alist  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from one to the other (when possible), or pass both?
                        print
                        debug-nodes ;do we use this?
                        interpreted-function-alist
