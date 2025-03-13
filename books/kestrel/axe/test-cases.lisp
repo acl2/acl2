@@ -182,10 +182,10 @@
            (test-case-typep (list-type-element-type type))
            ;; todo: must be a scalar type:
            (test-case-typep (list-type-len-type type)))
-      (and (consp type)
+      (and (consp type) ; (:range <low-int> <high-int>)
            (eq :range (ffn-symb type))
-           (consp (fargs type))
-           (consp (cdr (fargs type)))
+           (true-listp type)
+           (= 2 (len (fargs type)))
            (integerp (farg1 type))
            (integerp (farg2 type))
            (< (farg1 type) (farg2 type)) ; low < high
@@ -281,11 +281,11 @@
                 (mv (erp-nil) 0 rand)
               (b* (((mv value rand) (gen-random-bv width rand)))
                 (mv (erp-nil) value rand)))))
-         ;; a value in the given range: should we allow the bounds to be random? ;fixme are the args of this good types? if we allow random endpoints, what if the range is empty?  maybe :range should take a start value and am interval length?
+         ;; a value in the given range: should we allow the bounds to be random? if we allow random endpoints, what if the range is empty?  maybe :range should take a start value and an interval length?
          ((eq :range (car type)) ;here the bounds are both inclusive
-          (let ((low (second type))
-                (high (third type)))
-            (b* (((mv value rand) (gen-random-integer-in-range low (+ 1 high) rand)))
+          (let ((low-int (farg1 type))
+                (high-int (farg2 type)))
+            (b* (((mv value rand) (gen-random-integer-in-range low-int (+ 1 high-int) rand)))
               (mv (erp-nil) value rand))))
          ;;           ((eq :len (car type)) ;the length of something (probably a previously generated var - this is also a dependent type - more general facility for this?):
          ;;            (mv-let (value rand)
