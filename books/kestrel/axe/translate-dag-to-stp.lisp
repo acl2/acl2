@@ -2175,7 +2175,7 @@
        ((when erp)
         (er hard? 'prove-query-with-stp "Unable to write the STP input file: ~s0 before calling STP." stp-input-filename)
         (mv *error* state))
-       ;;clear out the output file (test this)
+       ;;clear the output file:
        ;;this is in case something fails (like permissions) and the attempt to run STP leaves an old .out file in place
        ;;(which might have the wrong answer in it!)
        ((mv erp state)
@@ -2262,9 +2262,7 @@
 (defund prove-equality-query-with-stp (lhs ;a nodenum or quotep
                                        rhs ;a nodenum or quotep
                                        ;;todo: add an extra-string arg
-                                       dag-array-name
-                                       dag-array
-                                       dag-len
+                                       dag-array-name dag-array dag-len
                                        nodenums-to-translate ;sorted in decreasing order
                                        base-filename
                                        cut-nodenum-type-alist
@@ -2289,7 +2287,8 @@
                               (nat-listp nodenums-to-translate)
                               (all-< nodenums-to-translate dag-len)
                               (no-nodes-are-variablesp nodenums-to-translate dag-array-name dag-array dag-len)
-                              (natp max-conflicts)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (all-< (strip-cars cut-nodenum-type-alist) dag-len)
                               (string-treep extra-asserts)

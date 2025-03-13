@@ -7441,15 +7441,15 @@
                               (< larger-nodenum dag-len)
                               (symbol-alistp var-type-alist)
                               (print-levelp print) ; tighter?
-                              (natp max-conflicts) ; allow nil?
+                              (or (null max-conflicts) (natp max-conflicts))
                               (symbolp miter-name))
                   :stobjs state))
   (b* ((- (and print (cw " (Cutting at shared nodes...")))
        (num-nodes-to-consider (+ 1 larger-nodenum))
-       ;;both of these arrays must have length (+ 1 larger-nodenum), since nodes up to larger-nodenum will be looked up?  could skip the array access for nodenums larger that smaller-nodenum (they obviously can't support it)
+       ;;both of these arrays must have length at least (+ 1 larger-nodenum), since nodes up to larger-nodenum will be looked up?  could skip the array access for nodenums larger that smaller-nodenum (they obviously can't support it)
        (needed-for-smaller-nodenum-tag-array (make-empty-array 'needed-for-node1-tag-array num-nodes-to-consider)) ;ffixme rename these arrays (but have to do it everywhere!)
        (needed-for-smaller-nodenum-tag-array (aset1 'needed-for-node1-tag-array needed-for-smaller-nodenum-tag-array smaller-nodenum t))
-       (needed-for-larger-nodenum-tag-array  (make-empty-array 'needed-for-node2-tag-array num-nodes-to-consider))
+       (needed-for-larger-nodenum-tag-array (make-empty-array 'needed-for-node2-tag-array num-nodes-to-consider))
        (needed-for-larger-nodenum-tag-array (aset1 'needed-for-node2-tag-array needed-for-larger-nodenum-tag-array larger-nodenum t))
        ;; Use our heuristic to cut the proof (nodes above the cut are marked for translation, nodes at the cut get entries made in cut-nodenum-type-alist):
        ((mv erp
@@ -7463,8 +7463,8 @@
           needed-for-smaller-nodenum-tag-array
           needed-for-larger-nodenum-tag-array
           nil ;nodenums-to-translate
-          nil ;cut-nodenum-type-alist ;fffixme use an array for this?
-          nil ;extra asserts
+          nil ;cut-nodenum-type-alist ; todo: use an array for this, for speed?
+          nil ;extra-asserts
           print var-type-alist))
        ((when erp)
         (cw "ERROR (~x0) in gathering nodes.~%" erp)
@@ -7518,7 +7518,7 @@
                 (< larger-nodenum dag-len)
                 (symbol-alistp var-type-alist)
                 (print-levelp print) ; tighter?
-                (natp max-conflicts) ; allow nil?
+                ;; (natp max-conflicts) ; allow nil?
                 (symbolp miter-name))
            (nat-listp (mv-nth 2 (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))))
   :hints (("Goal" :in-theory (enable attempt-aggressively-cut-equivalence-proof))))
@@ -7532,7 +7532,7 @@
                 (< larger-nodenum dag-len)
                 (symbol-alistp var-type-alist)
                 (print-levelp print) ; tighter?
-                (natp max-conflicts) ; allow nil?
+                ;; (natp max-conflicts) ; allow nil?
                 (symbolp miter-name))
            (all-< (mv-nth 2 (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
                   (+ 1 larger-nodenum)))
@@ -7548,7 +7548,7 @@
 ;;                 (< larger-nodenum dag-len)
 ;;                 (symbol-alistp var-type-alist)
 ;;                 (print-levelp print) ; tighter?
-;;                 (natp max-conflicts) ; allow nil?
+;;                 ;; (natp max-conflicts) ; allow nil?
 ;;                 (symbolp miter-name))
 ;;            (all-< (mv-nth 2 (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
 ;;                   bound))
@@ -7598,7 +7598,7 @@
                               (< larger-nodenum dag-len)
                               (symbol-alistp var-type-alist) ; strengthen?
                               (print-levelp print) ; tighter?
-                              (natp max-conflicts) ; allow nil?
+                              (or (null max-conflicts) (natp max-conflicts))
                               (stringp base-filename))
                   :measure (nfix (+ 1 (- max-depth min-depth)))
                   :stobjs state))
@@ -7657,12 +7657,13 @@
           (attempt-cut-equivalence-proofs (+ 1 current-depth) max-depth
                                           depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts base-filename state))))))
 
-;fixme: other strategies to consider here: rewriting, using the prover, using contexts (should we cut the context too?  what if the context is huge an unrelated to the goal nodes?)
-;not currently doing any of these things because we want this to be fast
-;returns (mv provedp state)
-;fixme pass in assumptions (e.g., bvlt claims) - should we cut the assumptions too?
+;todo: consider othe proofs methods, like rewriting, using the axe-prover, using contexts (should we cut the context too -- what if the context is huge and unrelated to the goal nodes?), etc.
+;not currently doing any of these things because we want this to be fast.
+;; Returns (mv provedp state).
+;; TTODO: pass in assumptions (e.g., bvlt claims) - should we cut the assumptions too?
+;; TODO: Return the counterexample, if any.
 (defun try-to-prove-pure-nodes-equal (smaller-nodenum
-                                      larger-nodenum ;could one of these have been replaced by a constant?
+                                      larger-nodenum ; could one of these have been replaced by a constant?
                                       miter-array-name miter-array miter-len
                                       var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
                                       print max-conflicts miter-name state)
@@ -7674,7 +7675,7 @@
                               (< larger-nodenum miter-len)
                               (symbol-alistp var-type-alist) ; strengthen?
                               (print-levelp print) ; tighten?
-                              (natp max-conflicts) ; allow nil?
+                              (or (null max-conflicts) (natp max-conflicts))
                               (symbolp miter-name))
                   :guard-hints (("Goal"
                                  :use (:instance natp-of-max-array-elem2-when-depth-arrayp
@@ -12355,7 +12356,7 @@
                               (< nodenum miter-len)
                               (symbol-alistp var-type-alist)
                               (print-levelp print)
-                              (natp max-conflicts)
+                              (or (null max-conflicts) (natp max-conflicts))
                               (symbolp miter-name))
                   :verify-guards nil ; todo: first prove properties of GATHER-NODES-FOR-TRANSLATION
                   :stobjs state))
@@ -12419,7 +12420,8 @@
                        make-theoremp max-conflicts
                        options
                        rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (b* ((- (cw "(Proving conclusion ~x0:~%" defthm-name)) ;fixme check the print arg before printing much?
         (- (and print (prog2$ (print-term-nice conclusion) (cw "~%"))))
         (- (and print (cw "(Hyps: ~x0~%)" hyps))) ;fixme print hyps that can fail
@@ -12530,7 +12532,8 @@
                                  make-theoremp max-conflicts
                                  options
                                  rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (let ((defthm-name (packnew base-theorem-name invar-set-num '-invar-num- invar-num)))
      (mv-let (erp provedp rand state)
        ;;fixme  perhaps pre-simplify first?
@@ -12592,7 +12595,8 @@
                                        invar-set-num invar-num
                                        rewriter-rule-alist prover-rule-alist extra-stuff interpreted-function-alist test-cases-for-formals-and-old-vars miter-depth-to-use
                                        unroll monitored-symbols print acc defthm-names-acc max-conflicts options rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (if (endp invars)
        (mv nil acc defthm-names-acc rand state)
      (let* ((invar (first invars)))
@@ -12625,7 +12629,8 @@
                                                      test-cases-for-formals-and-old-vars
                                                      miter-depth-to-use
                                                      unroll monitored-symbols print max-conflicts options rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (progn$ (cw "(Trying to prove inductive set of length ~x0.~%" (len invars))
            (cw "(Trying to prove them all at once:~%")
            ;;first try proving the conjunct of all the invars (might be much faster than proving each one separately, since nested functions would be analyzed only once..):
@@ -12674,7 +12679,8 @@
                                                      invar-set-num rewriter-rule-alist prover-rule-alist extra-stuff interpreted-function-alist test-cases-for-formals-and-old-vars
                                                      miter-depth-to-use
                                                      unroll monitored-symbols print max-conflicts options rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (mv-let (erp invariants-that-failed defthm-names rand state)
      (try-to-prove-invariant-set-inductive invars base-theorem-name formal-update-expr-alist hyps
                                            invar-set-num rewriter-rule-alist prover-rule-alist
@@ -12904,7 +12910,8 @@
                         unroll miter-depth-to-use monitored-symbols max-conflicts print
                         options
                         rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (let* ((expr (aref1 dag-array-name dag-array nodenum))
           (fn (ffn-symb expr))
           (dummy (cw " (Analyzing rec. fn. ~x0 at nodenum ~x1.~%" fn nodenum)))
@@ -13468,7 +13475,8 @@
                                 dag-array-name dag-array interpreted-function-alist extra-stuff
                                 rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist analyzed-function-table unroll miter-depth-to-use monitored-symbols
                                 max-conflicts print options rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (mv-let (erp result analyzed-function-table rand state)
      (analyze-rec-fn nodenum dag-array-name dag-array interpreted-function-alist
                      extra-stuff rewriter-rule-alist prover-rule-alist
@@ -13498,7 +13506,8 @@
                          dag-array-name dag-array interpreted-function-alist extra-stuff
                          rewriter-rule-alist prover-rule-alist ;fixme pass in a rule-alist instead?
                          test-cases test-case-array-alist analyzed-function-table unroll miter-depth-to-use monitored-symbols max-conflicts print options rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (if (endp nodenums)
        (mv nil nil analyzed-function-table rand state)
      (mv-let (erp car-result analyzed-function-table rand state)
@@ -13726,7 +13735,8 @@
 ;figure out the connection relation between the params and show that the update functions preserve it, given the negations of the exit tests - perhaps also include the invariants??
 ;adapt the connection relation according to which components are actually returned...
    (declare (ignore args1 args2) ;fffixme!
-            (xargs :mode :program :stobjs (rand state)))
+            (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (let*
        ((dummy0 (cw "(Proving connection lemma for nice tail rec fns ~x0 (~x1 traces) and ~x2 (~x3 traces).~%"
                     fn1 (len traces1) fn2 (len traces2) ;(len rewriter-rules)
@@ -14821,7 +14831,9 @@
                                            some-goal-timed-outp nodenums-not-to-unroll
                                            options
                                            rand state)
-   (declare (xargs :mode :program :stobjs (rand state) :guard (not (eq 'dag-array miter-array-name))))
+   (declare (xargs :guard (and (or (null max-conflicts) (natp max-conflicts))
+                               (not (eq 'dag-array miter-array-name)))
+                   :mode :program :stobjs (rand state)))
    (b* ;;Start by trying to rewrite the equality of the two nodes to true:
        ((- (cw " Trying to prove non-pure nodes ~x0 and ~x1 equal.~%" original-nodenum1 original-nodenum2))
         ;;often at this point it's just that stuff is commuted wrong - add rules to handle such cases in the first rule set below?
@@ -15640,7 +15652,8 @@
                                   some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
                                   options
                                   rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (let* ((expr1 (aref1 miter-array-name miter-array smaller-nodenum))
           (expr2 (aref1 miter-array-name miter-array larger-nodenum)))
      ;;first check whether the nodes are calls of the same functions on the same arguments (may be quite common):
@@ -15744,7 +15757,8 @@
                                             extra-stuff monitored-symbols
                                             assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
                                             some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (b* ((- (and (member-eq print '(t :verbose :verbose!)) ;used to print this even for :brief:
                 (prog2$ (cw "  Equating nodes ~x0 and ~x1.~%" smaller-nodenum larger-nodenum)
                         ;; we show the simplified miter - that should contain everything interesting from the dag
@@ -15808,7 +15822,8 @@
                                        assumptions ;terms we can assume non-nil (we can't actually assume them to be 't right?)
                                        monitored-symbols step-num analyzed-function-table miter-depth unroll miter-is-purep
                                        use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (b* ((- (cw "  Trying to prove node ~x0 is the constant ~x1.~%" nodenum constant-value)) ;add parens?
         ;;check for trivial equality (this helps if we had (equal x y) and x
         ;;has since been replaced by y; we'll now have (equal y y). fixme what
@@ -16043,7 +16058,8 @@
                                                    assumptions monitored-symbols step-num
                                                    analyzed-function-table unroll miter-is-purep
                                                    use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (if (eq :unused constant-value)
 ;get rid of this check if it never fires
        (prog2$ (er hard 'try-to-prove-node-is-constant-and-replace "unused node.") ;(cw "  (Skipping node ~x0 because it is unused on any test case.)" nodenum) ;fixme now this should never happen?
@@ -16111,7 +16127,8 @@
                                  some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
                                  options
                                  rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (if (equal *t* (aref1 miter-array-name miter-array top-node)) ; stop when the top node has been replaced with 't
        ;;bozo put in some checks here?  maybe not, since we already made sure the top node is all t's
        (prog2$ (cw "Done replacing nodes.  The miter has been reduced to TRUE!~%")
@@ -16249,7 +16266,9 @@
                                         interpreted-function-alist print
                                         debug-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff monitored-symbols assumptions use-context-when-miteringp
                                         sweep-num analyzed-function-table unroll max-conflicts options rand state)
-   (declare (xargs :guard (not (eq 'dag-array miter-array-name)) :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (and (or (null max-conflicts) (natp max-conflicts))
+                               (not (eq 'dag-array miter-array-name)))
+                   :mode :program :stobjs (rand state)))
    ;;ffixme what if the miter is a constant?? maybe not possible..
    (b* ((- (cw "(Sweep ~x0 (depth ~x1, max-conflicts ~x2) for ~x3 (~x4 nodes).~%" sweep-num miter-depth max-conflicts miter-name miter-len))
         (- (cw "(Assumptions:~%~x0)~%" assumptions))
@@ -16521,7 +16540,7 @@
  ;;repeatedly sweep up the miter
  ;;each sweep either reduces the miter to true or possibly does some merging and then generates some lemmas (and fns), which are used to simplify the dag before the next sweep
  ;;Returns (mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state),
- ;;where if ERP is NIL, then result is :proved-miter, or :done (did all the merging we could [except for max-conflictss etc] and didn't prove the miter)
+ ;;where if ERP is NIL, then result is :proved-miter, or :done (did all the merging we could [except for max-conflicts etc] and didn't prove the miter)
  ;;fixme - check that, if we generated some lemmas, at least one of them fires - is it possible that all we need is to simplify with other lemmas to make progress?
  ;;FIXME - moved the use of the generated lemmas down?
  ;;The reason we may need more than one sweep is that synchronizing transformations may occur.
@@ -16536,7 +16555,8 @@
                                          assumptions extra-stuff monitored-symbols
                                          use-context-when-miteringp sweep-num analyzed-function-table unroll
                                          max-conflicts options rand state)
-   (declare (xargs :mode :program :stobjs (rand state)))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :mode :program :stobjs (rand state)))
    (mv-let (erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state)
      (perform-miter-sweep miter-name miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
                           print debug-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff
@@ -16646,7 +16666,8 @@
                                                      normalize-xors
                                                      proof-name miter-depth options
                                                      rand state)
-   (declare (xargs :stobjs (rand state) :mode :program))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :stobjs (rand state) :mode :program))
    (progn$
     (cw "(Doing pre-simplification sweep ~x0:~%" sweep-count)
     (let ((rec-fn-nodenums (find-unhandled-rec-fn-nodes-simple dag-lst nil state))
@@ -16782,7 +16803,8 @@
                                           proof-name ;fixme pass around as a string?
                                           miter-depth options
                                           rand state)
-   (declare (xargs :stobjs (rand state) :mode :program))
+   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+                   :stobjs (rand state) :mode :program))
    (prog2$
     (cw "(Pre-Simplifying DAG:~%")
     (if (quotep dag-lst)
@@ -16866,12 +16888,14 @@
                          unroll
                          tests-per-case
                          max-conflicts
-                         must-succeedp ;if non-nil, this means we'll increase max-conflictss forever (fixme only do it as long as something is timing out!)
+                         must-succeedp ;if non-nil, this means we'll increase max-conflicts forever (fixme only do it as long as something is timing out!)
                          pre-simplifyp
                          normalize-xors
                          options
                          rand state)
-   (declare (xargs :guard (test-case-type-alistp var-type-alist) ; todo: allows more than we can handle when calling stp
+   (declare (xargs :guard (and (or (null max-conflicts) (natp max-conflicts))
+                               (test-case-type-alistp var-type-alist) ; todo: allows more than we can handle when calling stp
+                               )
                    :mode :program :stobjs (rand state)))
    (if (quotep dag-or-quotep) ;get rid of this and improve pre simp to take a constant?
        (let ((val (unquote dag-or-quotep)))
@@ -18959,7 +18983,7 @@
                               (or (eq :all unroll)
                                   (symbol-listp unroll))
                               (or (eq :auto max-conflicts)
-                                  (null max-conflicts) ; :auto has been desugared
+                                  (null max-conflicts)
                                   (natp max-conflicts))
                               (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
                               )
