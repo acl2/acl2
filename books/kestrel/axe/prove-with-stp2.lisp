@@ -60,7 +60,7 @@
                               (bounded-dag-exprp n expr)
                               (dag-function-call-exprp expr)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
-                              (symbol-alistp var-type-alist)
+                              (var-type-alistp var-type-alist)
                               (string-treep extra-asserts))
                   :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp car-becomes-nth-of-0
                                                            not-<-of-nth-when-bounded-darg-listp-gen
@@ -124,7 +124,7 @@
                               (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
                               (array1p 'needed-for-node2-tag-array needed-for-node2-tag-array)
                               (< n (alen1 'needed-for-node2-tag-array needed-for-node2-tag-array))
-                              (symbol-alistp var-type-alist) ; the cdrs should be axe-types?
+                              (var-type-alistp var-type-alist)
                               (nat-listp nodenums-to-translate)
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (string-treep extra-asserts))
@@ -144,8 +144,8 @@
           (if (variablep expr)
               ;; if it's a variable, we will cut (the variable generated in STP will be named NODEXXX, so we don't have to worry about the actual name of expr clashing with something) and add info about its type to cut-nodenum-type-alist:
               (b* ((type (lookup-eq-safe expr var-type-alist))
-                   ((when (not (axe-typep type)))
-                    (cw "ERROR: Bad type for ~x0 in alist ~x1.~%" expr var-type-alist)
+                   ((when (not type))
+                    (cw "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist)
                     (mv :type-error nil nil extra-asserts)))
                 (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
                                                                       nodenums-to-translate ;not adding n
@@ -277,7 +277,8 @@
                 (integerp n)
                 (<= -1 n)
                 (nat-listp nodenums-to-translate)
-                (nodenum-type-alistp cut-nodenum-type-alist))
+                (nodenum-type-alistp cut-nodenum-type-alist)
+                (var-type-alistp var-type-alist))
            (nodenum-type-alistp (mv-nth 2 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
                                                                                                 nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
@@ -326,7 +327,7 @@
                               (integerp n)
                               (<= -1 n)
                               (< n dag-len)
-                              (symbol-alistp var-type-alist) ; the cdrs should be axe-types?
+                              (var-type-alistp var-type-alist)
                               ;; (nodenum-type-alistp cut-nodenum-type-alist) ; todo
                               (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
                               (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
@@ -413,7 +414,7 @@
                               (< n (alen1 'supporters-tag-array supporters-tag-array))
                               (nat-listp nodenums-to-translate)
                               (nodenum-type-alistp cut-nodenum-type-alist)
-                              (symbol-alistp var-type-alist) ; the cdrs should be axe-types?
+                              (var-type-alistp var-type-alist)
                               (string-treep extra-asserts))
                   :measure (nfix (+ 1 n))))
   (if (not (natp n))
@@ -427,8 +428,8 @@
           (if (variablep expr)
               ;;it's a variable.  we always cut:
               (b* ((type (lookup-eq-safe expr var-type-alist))
-                   ((when (not (axe-typep type))) ; should not fail (var-type-alist should assign types to all vars in the dag)
-                    (cw "ERROR: Bad type, ~x0, for ~x1 in alist ~x2.~%" type expr var-type-alist)
+                   ((when (not type)) ; should not fail (var-type-alist should assign types to all vars in the dag)
+                    (cw "ERROR: No type, ~x0, for ~x1 in alist ~x2.~%" type expr var-type-alist)
                     (mv :type-error nil nil extra-asserts)))
                 (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
                                                        nodenums-to-translate
@@ -481,7 +482,7 @@
                 (< n (alen1 'supporters-tag-array supporters-tag-array))
                 (nat-listp nodenums-to-translate)
                 (nodenum-type-alistp cut-nodenum-type-alist)
-                (symbol-alistp var-type-alist)
+                (var-type-alistp var-type-alist)
                 (string-treep extra-asserts))
            (nat-listp (mv-nth 1 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth))))
@@ -499,7 +500,7 @@
                 (< n (alen1 'supporters-tag-array supporters-tag-array))
                 (nat-listp nodenums-to-translate)
                 (nodenum-type-alistp cut-nodenum-type-alist)
-                (symbol-alistp var-type-alist)
+                (var-type-alistp var-type-alist)
                 (string-treep extra-asserts))
            (no-nodes-are-variablesp (mv-nth 1 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))
                                     dag-array-name dag-array dag-len))
@@ -518,7 +519,7 @@
                 (< n (alen1 'supporters-tag-array supporters-tag-array))
                 (nat-listp nodenums-to-translate)
                 (nodenum-type-alistp cut-nodenum-type-alist)
-                (symbol-alistp var-type-alist)
+                (var-type-alistp var-type-alist)
                 (string-treep extra-asserts))
            (all-< (mv-nth 1 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))
                   dag-len))
@@ -537,7 +538,7 @@
                 (< n (alen1 'supporters-tag-array supporters-tag-array))
                 (nat-listp nodenums-to-translate)
                 (nodenum-type-alistp cut-nodenum-type-alist)
-                (symbol-alistp var-type-alist)
+                (var-type-alistp var-type-alist)
                 (string-treep extra-asserts))
            (nodenum-type-alistp (mv-nth 2 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))))
   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth))))
@@ -555,7 +556,7 @@
                 (< n (alen1 'supporters-tag-array supporters-tag-array))
                 (nat-listp nodenums-to-translate)
                 (nodenum-type-alistp cut-nodenum-type-alist)
-                (symbol-alistp var-type-alist)
+                (var-type-alistp var-type-alist)
                 (string-treep extra-asserts))
            (all-< (strip-cars (mv-nth 2 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts)))
                   dag-len))

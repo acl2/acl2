@@ -1,7 +1,7 @@
 ; The Axe equivalence checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -7439,7 +7439,7 @@
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< smaller-nodenum dag-len)
                               (< larger-nodenum dag-len)
-                              (symbol-alistp var-type-alist)
+                              (var-type-alistp var-type-alist)
                               (print-levelp print) ; tighter?
                               (or (null max-conflicts) (natp max-conflicts))
                               (symbolp miter-name))
@@ -7516,7 +7516,7 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (< smaller-nodenum dag-len)
                 (< larger-nodenum dag-len)
-                (symbol-alistp var-type-alist)
+                (var-type-alistp var-type-alist)
                 (print-levelp print) ; tighter?
                 ;; (natp max-conflicts) ; allow nil?
                 (symbolp miter-name))
@@ -7530,7 +7530,7 @@
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (< smaller-nodenum dag-len)
                 (< larger-nodenum dag-len)
-                (symbol-alistp var-type-alist)
+                (var-type-alistp var-type-alist)
                 (print-levelp print) ; tighter?
                 ;; (natp max-conflicts) ; allow nil?
                 (symbolp miter-name))
@@ -7546,7 +7546,7 @@
 ;;                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;;                 (< smaller-nodenum dag-len)
 ;;                 (< larger-nodenum dag-len)
-;;                 (symbol-alistp var-type-alist)
+;;                 (var-type-alistp var-type-alist)
 ;;                 (print-levelp print) ; tighter?
 ;;                 ;; (natp max-conflicts) ; allow nil?
 ;;                 (symbolp miter-name))
@@ -7596,7 +7596,7 @@
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (<= smaller-nodenum larger-nodenum)
                               (< larger-nodenum dag-len)
-                              (symbol-alistp var-type-alist) ; strengthen?
+                              (var-type-alistp var-type-alist)
                               (print-levelp print) ; tighter?
                               (or (null max-conflicts) (natp max-conflicts))
                               (stringp base-filename))
@@ -7673,7 +7673,7 @@
                               (pseudo-dag-arrayp miter-array-name miter-array miter-len)
                               (< smaller-nodenum miter-len)
                               (< larger-nodenum miter-len)
-                              (symbol-alistp var-type-alist) ; strengthen?
+                              (var-type-alistp var-type-alist)
                               (print-levelp print) ; tighten?
                               (or (null max-conflicts) (natp max-conflicts))
                               (symbolp miter-name))
@@ -12354,7 +12354,7 @@
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp miter-array-name miter-array miter-len)
                               (< nodenum miter-len)
-                              (symbol-alistp var-type-alist)
+                              (var-type-alistp var-type-alist)
                               (print-levelp print)
                               (or (null max-conflicts) (natp max-conflicts))
                               (symbolp miter-name))
@@ -16894,7 +16894,7 @@
                          options
                          rand state)
    (declare (xargs :guard (and (or (null max-conflicts) (natp max-conflicts))
-                               (test-case-type-alistp var-type-alist) ; todo: allows more than we can handle when calling stp
+                               (var-type-alistp var-type-alist) ; todo: allows more than we can handle when calling stp
                                )
                    :mode :program :stobjs (rand state)))
    (if (quotep dag-or-quotep) ;get rid of this and improve pre simp to take a constant?
@@ -18936,7 +18936,7 @@
 (defun prove-miter-core (dag-or-quotep
                          tactic
                          test-case-count ;the total number of tests to generate?  some may not be used
-                         var-type-alist ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
+                         test-case-type-alist ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                          print
                          debug-nodes ;do we use this?
                          user-interpreted-function-alist ;fixme just pass in the fn names and look them up in the state?
@@ -18968,10 +18968,10 @@
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
                               (natp test-case-count)
-                              (test-case-type-alistp var-type-alist)
-                              (no-duplicatesp (strip-cars var-type-alist))
-                              (not (assoc-eq nil var-type-alist)) ;consider relaxing this?
-                              (not (assoc-eq t var-type-alist)) ;consider relaxing this?
+                              (test-case-type-alistp test-case-type-alist)
+                              (no-duplicatesp (strip-cars test-case-type-alist))
+                              (not (assoc-eq nil test-case-type-alist)) ;consider relaxing this?
+                              (not (assoc-eq t test-case-type-alist)) ;consider relaxing this?
                               (extra-stuff-okayp extra-stuff)
                               (symbol-listp monitored-symbols)
                               (symbol-listp runes)
@@ -19084,10 +19084,10 @@
            ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
            ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
            (state (submit-event-quiet '(set-inhibit-warnings "double-rewrite" "subsume") state))
-           ;; Compare the vars in the DAG to the vars given types in VAR-TYPE-ALIST: ;move this check up?
+           ;; Compare the vars in the DAG to the vars given types in TEST-CASE-TYPE-ALIST: ;move this check up?
            (dag-vars (dag-vars dag))
            (sorted-dag-vars (merge-sort-symbol< dag-vars))
-           (vars-given-types (strip-cars var-type-alist))
+           (vars-given-types (strip-cars test-case-type-alist))
            (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
            (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types))
                    ;; (hard-error 'prove-miter-core
@@ -19136,7 +19136,7 @@
             ;; Make the random test cases (each assigns values to the input vars):
             ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
             ;; This drops cases that don't satisfy the assumptions (but what if none survive?):
-            (make-test-cases test-case-count var-type-alist assumptions rand))
+            (make-test-cases test-case-count test-case-type-alist assumptions rand))
            ((when erp) (mv erp nil state rand))
            ;; could move a lot of stuff into these options:
            ;; todo: should we move any stuff above here into miter-and-merge?
@@ -19145,7 +19145,7 @@
             (miter-and-merge dag
                              miter-name
                              0
-                             var-type-alist ; todo: filter out stuff only used for test case gen?
+                             (var-type-alist-from-test-case-type-alist test-case-type-alist) ; removes stuff only used for test case gen? ; todo: some vars may then not have types
                              interpreted-function-alist print debug-nodes
                              rewriter-rule-alist
                              prover-rule-alist
@@ -19174,7 +19174,7 @@
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
                        test-case-count ;the total number of tests to generate?  some may not be used
-                       var-type-alist  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from one to the other (when possible), or pass both?
+                       test-case-type-alist  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from one to the other (when possible), or pass both?
                        print
                        debug-nodes ;do we use this?
                        interpreted-function-alist
@@ -19205,10 +19205,10 @@
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (natp test-case-count)
-                              (test-case-type-alistp var-type-alist)
-                              (no-duplicatesp (strip-cars var-type-alist))
-                              (not (assoc-eq nil var-type-alist)) ;consider relaxing this?
-                              (not (assoc-eq t var-type-alist)) ;consider relaxing this?
+                              (test-case-type-alistp test-case-type-alist)
+                              (no-duplicatesp (strip-cars test-case-type-alist))
+                              (not (assoc-eq nil test-case-type-alist)) ;consider relaxing this?
+                              (not (assoc-eq t test-case-type-alist)) ;consider relaxing this?
                               (if (extra-stuff-okayp extra-stuff)
                                   t
                                 (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff)
@@ -19235,7 +19235,7 @@
         (prove-miter-core dag-or-quotep
                           :rewrite-and-sweep ; todo: pass this in?
                           test-case-count
-                          var-type-alist ;compute this from the hyps?
+                          test-case-type-alist ;compute this from the hyps?
                           print
                           debug-nodes ;do we use this?
                           interpreted-function-alist
@@ -19289,7 +19289,7 @@
 (defmacro prove-miter-aux (&whole whole-form
                                   dag-or-quotep
                                   test-case-count
-                                  var-type-alist ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
+                                  test-case-type-alist ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
                                   &KEY
                                   (name ''unnamedmiter)
                                   (tests-per-case '512)
@@ -19316,7 +19316,7 @@
                                   (debug 'nil) ;if t, the temp dir with STP files is not deleted
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
                                   )
-  `(prove-miter-fn ,dag-or-quotep ,test-case-count ,var-type-alist ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+  `(prove-miter-fn ,dag-or-quotep ,test-case-count ,test-case-type-alist ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                    ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                    ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name
                    ,prove-constants
