@@ -7425,14 +7425,14 @@
 ;            nodenums-translated ;;in decreasing order
 ;            state)
 ;; Assumes that smaller-nodenum and larger-nodenum are pure.
-(defund attempt-aggressively-cut-equivalence-proof (smaller-nodenum
-                                                    larger-nodenum
-                                                    dag-array-name
-                                                    dag-array ;this is the miter-array
-                                                    dag-len
-                                                    var-type-alist ;gives types to the variables in the dag (are these really needed? maybe not if we use induced types?)
-                                                    print max-conflicts miter-name
-                                                    state)
+(defund try-aggressively-cut-equivalence-proof (smaller-nodenum
+                                                larger-nodenum
+                                                dag-array-name
+                                                dag-array ;this is the miter-array
+                                                dag-len
+                                                var-type-alist ;gives types to the variables in the dag (are these really needed? maybe not if we use induced types?)
+                                                print max-conflicts miter-name
+                                                state)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
                               (<= smaller-nodenum larger-nodenum) ; is equal possible?
@@ -7455,24 +7455,23 @@
        ((mv erp
             nodenums-to-translate ;in decreasing order
             cut-nodenum-type-alist extra-asserts)
-        (gather-nodes-to-translate-for-aggressively-cut-proof ; todo: consider a worklist algorithm for this
-          larger-nodenum ;skip everything above larger-nodenum
-          dag-array-name
-          dag-array
-          dag-len
-          needed-for-smaller-nodenum-tag-array
-          needed-for-larger-nodenum-tag-array
-          nil ;nodenums-to-translate
-          nil ;cut-nodenum-type-alist ; todo: use an array for this, for speed?
-          nil ;extra-asserts
-          print var-type-alist))
+         ; todo: consider a worklist algorithm for this:
+        (gather-nodes-to-translate-for-aggressively-cut-proof larger-nodenum ;skip everything above larger-nodenum
+                                                              dag-array-name dag-array dag-len
+                                                              var-type-alist
+                                                              needed-for-smaller-nodenum-tag-array
+                                                              needed-for-larger-nodenum-tag-array
+                                                              nil ;nodenums-to-translate
+                                                              nil ;cut-nodenum-type-alist ; todo: use an array for this, for speed?
+                                                              nil ;extra-asserts
+                                                              print))
        ((when erp)
         (cw "ERROR (~x0) in gathering nodes.~%" erp)
         (mv erp
             nil ; not proved
             nodenums-to-translate
             state))
-       ((when (not (consp nodenums-to-translate))) ; can this happen?
+       ((when (not (consp nodenums-to-translate))) ; can this happen?  two vars? two constants? a var and a constant?
         (cw "ERROR: No nodes to translate.")
         (mv :no-nodes-to-translate
             nil ; not proved
@@ -7498,7 +7497,7 @@
                                        nil
                                        state)))
     (if (eq result *error*)
-        (prog2$ (er hard? 'attempt-aggressively-cut-equivalence-proof "Error calling STP." nil)
+        (prog2$ (er hard? 'try-aggressively-cut-equivalence-proof "Error calling STP." nil)
                 (mv :error-calling-stp
                     nil ;not proved
                     nodenums-to-translate
@@ -7509,7 +7508,7 @@
                   nodenums-to-translate
                   state)))))
 
-(defthm nat-listp-of-mv-nth-2-of-attempt-aggressively-cut-equivalence-proof
+(defthm nat-listp-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
   (implies (and (natp smaller-nodenum)
                 (natp larger-nodenum)
                 (<= smaller-nodenum larger-nodenum) ; is equal possible?
@@ -7520,10 +7519,10 @@
                 (print-levelp print) ; tighter?
                 ;; (natp max-conflicts) ; allow nil?
                 (symbolp miter-name))
-           (nat-listp (mv-nth 2 (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))))
-  :hints (("Goal" :in-theory (enable attempt-aggressively-cut-equivalence-proof))))
+           (nat-listp (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))))
+  :hints (("Goal" :in-theory (enable try-aggressively-cut-equivalence-proof))))
 
-(defthm all-<-of-mv-nth-2-of-attempt-aggressively-cut-equivalence-proof
+(defthm all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
   (implies (and (natp smaller-nodenum)
                 (natp larger-nodenum)
                 (<= smaller-nodenum larger-nodenum) ; is equal possible?
@@ -7534,11 +7533,11 @@
                 (print-levelp print) ; tighter?
                 ;; (natp max-conflicts) ; allow nil?
                 (symbolp miter-name))
-           (all-< (mv-nth 2 (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
+           (all-< (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
                   (+ 1 larger-nodenum)))
-  :hints (("Goal" :in-theory (enable attempt-aggressively-cut-equivalence-proof))))
+  :hints (("Goal" :in-theory (enable try-aggressively-cut-equivalence-proof))))
 
-;; (defthm all-<-of-mv-nth-2-of-attempt-aggressively-cut-equivalence-proof-gen
+;; (defthm all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof-gen
 ;;   (implies (and (<= dag-len bound)
 ;;                 (natp smaller-nodenum)
 ;;                 (natp larger-nodenum)
@@ -7550,10 +7549,10 @@
 ;;                 (print-levelp print) ; tighter?
 ;;                 ;; (natp max-conflicts) ; allow nil?
 ;;                 (symbolp miter-name))
-;;            (all-< (mv-nth 2 (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
+;;            (all-< (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
 ;;                   bound))
-;;   :hints (("Goal" :use all-<-of-mv-nth-2-of-attempt-aggressively-cut-equivalence-proof
-;;            :in-theory (disable all-<-of-mv-nth-2-of-attempt-aggressively-cut-equivalence-proof))))
+;;   :hints (("Goal" :use all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
+;;            :in-theory (disable all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof))))
 
 (defund integer-average-round-up (x y)
   (declare (xargs :guard (and (integerp x)
@@ -7665,7 +7664,7 @@
 (defun try-to-prove-pure-nodes-equal (smaller-nodenum
                                       larger-nodenum ; could one of these have been replaced by a constant?
                                       miter-array-name miter-array miter-len
-                                      var-type-alist ;fixme think hard about using this (btw, do we check that it's pure?)..
+                                      var-type-alist
                                       print max-conflicts miter-name state)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
@@ -7680,7 +7679,7 @@
                   :guard-hints (("Goal"
                                  :use (:instance natp-of-max-array-elem2-when-depth-arrayp
                                                  (indices (MV-NTH 2
-                                                                  (ATTEMPT-AGGRESSIVELY-CUT-EQUIVALENCE-PROOF
+                                                                  (TRY-AGGRESSIVELY-CUT-EQUIVALENCE-PROOF
                                                                     SMALLER-NODENUM
                                                                     LARGER-NODENUM MITER-ARRAY-NAME
                                                                     MITER-ARRAY MITER-LEN VAR-TYPE-ALIST
@@ -7717,7 +7716,7 @@
             provedp
             nodenums-translated ;below we check these to determine the depth of the deepest translated node
             state)
-        (attempt-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state))
+        (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state))
        ((when erp)
         (cw "  ERROR.)~%")
         (mv nil state)) ; todo: or pass back an error?
@@ -7729,15 +7728,14 @@
        ((mv depth-array max-depth)
         (make-depth-array-for-nodes (list smaller-nodenum larger-nodenum) miter-array-name miter-array miter-len) ;todo: any way to avoid rebuilding this?
         )
-       ;;deepest node translated when we tried our heuristic: (attempt-aggressively-cut-equivalence-proof could compute this if we pass it the depth array, but that might be expensive?
+       ;;deepest node translated when we tried our heuristic: (try-aggressively-cut-equivalence-proof could compute this if we pass it the depth array, but that might be expensive?
        (depth-of-deepest-translated-node (max-array-elem2 nodenums-translated
                                                           0 ;fixme think about the 0..
                                                           'depth-array depth-array))
-       ;;fixme we should start this at a depth at least deep enough for every path from the root to end on a shared node?
-       ;;fixme maybe the depth should be measured from the shared-var frontier?
+       ;; todo: maybe the depths here should be measured from the shared-var frontier
        (- (cw "(Attempting cut proofs (min-depth ~x0, max-depth ~x1):~%" depth-of-deepest-translated-node max-depth))
        ((mv success-flg state)
-        (attempt-cut-equivalence-proofs depth-of-deepest-translated-node ;(ffixme should we add 1 to start?)
+        (attempt-cut-equivalence-proofs depth-of-deepest-translated-node ; we could add 1 here, but even without that we might get more nodes translated on the first attempt than were trasnalted above (e.g., shallow nodes on the shared node frontier)
                                         ;;(min max-depth ;(+ 1 (safe-min smaller-nodenum-depth larger-nodenum-depth)) ;starting depth (essentially depth 2; depth1 seems almost always useless to try)
                                         ;;                                                              starting-depth
                                         ;;                                                              )
@@ -15693,7 +15691,7 @@
 
  ;;       (if cut-proofs
  ;;           (mv-let (erp result miter-array state)
- ;;                   (attempt-aggressively-cut-equivalence-proof nodenum1
+ ;;                   (try-aggressively-cut-equivalence-proof nodenum1
  ;;                                                  nodenum2
  ;;                                                  miter-array
  ;;                                                  miter-len
