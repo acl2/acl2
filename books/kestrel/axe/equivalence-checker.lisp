@@ -15242,44 +15242,53 @@
                                   some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
                                   options
                                   rand state)
-   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+   (declare (xargs :guard (and (natp smaller-nodenum)
+                               (< smaller-nodenum miter-len)
+                               (natp larger-nodenum)
+                               (< larger-nodenum miter-len)
+                               (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                               (natp miter-depth)
+                               (var-type-alistp var-type-alist)
+                               ;; ...more...
+                               (or (null max-conflicts) (natp max-conflicts)))
                    :mode :program :stobjs (rand state)))
-   (let* ((expr1 (aref1 miter-array-name miter-array smaller-nodenum))
-          (expr2 (aref1 miter-array-name miter-array larger-nodenum)))
-     ;;first check whether the nodes are calls of the same functions on the same arguments (may be quite common):
-     ;;fixme is identical-exprs-up-to-constant-inlining overkill (shouldn't things below the node already have been merged?)
-     (if (identical-dag-exprs-up-to-constant-inlining expr1 expr2 miter-array-name miter-array miter-len)
-         (prog2$ (and print (cw "  Structural equivalence between ~x0 and ~x1.~%" smaller-nodenum larger-nodenum))
-                 (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state))
-       ;;ffffixme also check here that all supporting vars have bv or array types in the alist? - could cut if they don't?
-       ;;ffixme also check that all necessary indices and sizes are constants (miter-is-purep could reflect that? maybe it does now?)
-       (if (and ;could omit non pure assumptions (but then the proof may fail)? ;do we actually translate the assumptions?
-            (pure-assumptionsp assumptions) ;; TODO: don't recompute this each time ;; TODO: We could drop or cut non-pure ones.
-            (or miter-is-purep
-                (if nil ;(g :treat-as-purep options)
-                    (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil)
-                ;; TODO: Instead of this, consider pre-computing which nodes are pure (updating that info when merging nodes):
-                (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array)
-                ))
-           ;; The relevant part of the miter is pure:
-           ;;should we first make a miter and rewrite it?   pull that code up out of try-to-prove-non-pure-nodes-equal? no?  might be expensive?
-           ;; or just rewrite the top node?
-           (mv-let (success-flg state) ;ffixme handle errors?
-             ;;fffixme pass in and translate assumptions?  they may be tighter than the sizes that are apparent from how the variables are used?
-             ;; TTODO: use (pure) contexts!
-             (try-to-prove-pure-nodes-equal smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
-             (if success-flg
-                 (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state)
-               ;; fixme would like to get a counterexample back and use it try to invalidate more "probable facts":
-               (mv (erp-nil) :failed analyzed-function-table nodenums-not-to-unroll rand state)))
-         ;; TODO: What if we could cut and then get a pure miter?  maybe we should always cut out the non-pure stuff and try it! but then try the non-pure approach too...
-         ;; fixme should we check for and expand any remining user non-recursive functions?
-         (try-to-prove-non-pure-nodes-equal smaller-nodenum larger-nodenum miter-array-name miter-array miter-len
-                                            miter-depth max-conflicts
-                                            print interpreted-function-alist rewriter-rule-alist prover-rule-alist
-                                            extra-stuff monitored-symbols
-                                            assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll
-                                            some-goal-timed-outp nodenums-not-to-unroll options rand state))))) ;fixme pass in miter-name?
+   (b* ((expr1 (aref1 miter-array-name miter-array smaller-nodenum))
+        (expr2 (aref1 miter-array-name miter-array larger-nodenum))
+        ;; First, we check whether the nodes are calls of the same function on the same arguments (may be quite common):
+        ;; todo: is identical-exprs-up-to-constant-inlining overkill (shouldn't things below the node already have been merged?)?
+        ((when (identical-dag-exprs-up-to-constant-inlining expr1 expr2 miter-array-name miter-array miter-len))
+         (and print (cw "  Structural equivalence between ~x0 and ~x1.~%" smaller-nodenum larger-nodenum))
+         (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state)))
+     ;; Next, determine whether everything relevant is pure:
+     ;;ffffixme also check here that all supporting vars have bv or array types in the alist? - could cut if they don't?
+     ;;ffixme also check that all necessary indices and sizes are constants (miter-is-purep could reflect that? maybe it does now?)
+     (if (and ;could omit non pure assumptions (but then the proof may fail)? ;do we actually translate the assumptions?
+           (pure-assumptionsp assumptions) ;; TODO: don't recompute this each time ;; TODO: We could drop or cut non-pure ones.
+           (or miter-is-purep
+               (if nil ;(g :treat-as-purep options)
+                   (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil)
+               ;; TODO: Instead of this, consider pre-computing which nodes are pure (updating that info when merging nodes):
+               (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array)
+               ))
+         ;; The relevant part of the miter is pure:
+         ;;should we first make a miter and rewrite it?   pull that code up out of try-to-prove-non-pure-nodes-equal? no?  might be expensive?
+         ;; or just rewrite the top node?
+         (mv-let (success-flg state) ;ffixme handle errors?
+           ;;fffixme pass in and translate assumptions?  they may be tighter than the sizes that are apparent from how the variables are used?
+           ;; TTODO: use (pure) contexts!
+           (try-to-prove-pure-nodes-equal smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
+           (if success-flg
+               (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state)
+             ;; fixme would like to get a counterexample back and use it try to invalidate more "probable facts":
+             (mv (erp-nil) :failed analyzed-function-table nodenums-not-to-unroll rand state)))
+       ;; TODO: What if we could cut and then get a pure miter?  maybe we should always cut out the non-pure stuff and try it! but then try the non-pure approach too...
+       ;; fixme should we check for and expand any remining user non-recursive functions?
+       (try-to-prove-non-pure-nodes-equal smaller-nodenum larger-nodenum miter-array-name miter-array miter-len
+                                          miter-depth max-conflicts
+                                          print interpreted-function-alist rewriter-rule-alist prover-rule-alist
+                                          extra-stuff monitored-symbols
+                                          assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll
+                                          some-goal-timed-outp nodenums-not-to-unroll options rand state)))) ;fixme pass in miter-name?
 
  ;;       (if cut-proofs
  ;;           (mv-let (erp result miter-array state)
@@ -18288,19 +18297,19 @@
           (acons (first formals) arg (make-formal-constant-alist2 (cdr formals) (cdr args)))
         (make-formal-constant-alist2 (cdr formals) (cdr args))))))
 
-(defun fixup-vars-in-expr-aux (expr)
-  (if (endp expr)
-      nil
-    (cons (if (integerp (car expr))
-              (pack$ 'fake-var (car expr))
-            (car expr))
-          (fixup-vars-in-expr-aux (cdr expr)))))
+;; (defun fixup-vars-in-expr-aux (expr)
+;;   (if (endp expr)
+;;       nil
+;;     (cons (if (integerp (car expr))
+;;               (pack$ 'fake-var (car expr))
+;;             (car expr))
+;;           (fixup-vars-in-expr-aux (cdr expr)))))
 
-(defun fixup-vars-in-expr (expr)
-  (if (and (consp expr)
-           (not (eq 'quote (ffn-symb expr))))
-      (cons (ffn-symb expr) (fixup-vars-in-expr-aux (fargs expr)))
-    expr))
+;; (defun fixup-vars-in-expr (expr)
+;;   (if (and (consp expr)
+;;            (not (eq 'quote (ffn-symb expr))))
+;;       (cons (ffn-symb expr) (fixup-vars-in-expr-aux (fargs expr)))
+;;     expr))
 
 ;;(mypackn (list (nat-to-string nodenum)))
 

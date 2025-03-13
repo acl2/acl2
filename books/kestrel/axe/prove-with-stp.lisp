@@ -2153,6 +2153,167 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Tries to prove that the HYPS imply the CONC.
+;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+(defund prove-implication-with-stp (hyps ; possibly-negated-nodenums
+                                    conc ; a possibly-negated-nodenum
+                                    dag-array ;must be named 'dag-array (todo: generalize?)
+                                    dag-len
+                                    dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
+                                    base-filename    ;a string
+                                    print
+                                    max-conflicts ;a number of conflicts, or nil for no max
+                                    counterexamplep
+                                    print-cex-as-signedp
+                                    state)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (bounded-possibly-negated-nodenump conc dag-len)
+                              (bounded-possibly-negated-nodenumsp hyps dag-len)
+                              (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                              (equal (alen1 'dag-parent-array dag-parent-array)
+                                     (alen1 'dag-array dag-array))
+                              (stringp base-filename)
+                              (print-levelp print)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (booleanp counterexamplep)
+                              (booleanp print-cex-as-signedp))
+                  :stobjs state))
+  ;; we prove (or (not <hyp1>) (not <hyp2>) ... (not <hypn>) conc):
+  (prove-disjunction-with-stp (cons conc (negate-possibly-negated-nodenums hyps))
+                              dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
+
+(local
+  (defthm w-of-mv-nth-1-of-prove-implication-with-stp
+    (equal (w (mv-nth 1 (prove-implication-with-stp hyps conc dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable prove-implication-with-stp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tries to establish that the darg is either known to be true or known to be false.
+;; Returns (mv erp result state), where result is :true (meaning non-nil), :false, or :unknown.
+;; rename to say darg instead of node?
+;; TODO: Also use rewriting?  See also try-to-resolve-test.
+;; TODO: Generalize the printing, which refers to the darg here as a "test".
+(defund try-to-resolve-darg-with-stp (darg
+                                      assumptions ; possibly-negated-nodenums
+                                      ;; rule-alist interpreted-function-alist monitored-rules call-stp
+                                      dag-array ;must be named 'dag-array (todo: generalize?)
+                                      dag-len
+                                      dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
+                                      base-filename    ;a string
+                                      print
+                                      max-conflicts ;a number of conflicts, or nil for no max
+                                      ;; counterexamplep
+                                      state)
+  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                              (equal (alen1 'dag-parent-array dag-parent-array)
+                                     (alen1 'dag-array dag-array))
+                              (dargp-less-than darg dag-len)
+                              (bounded-possibly-negated-nodenumsp assumptions dag-len)
+                              (stringp base-filename)
+                              (print-levelp print)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts)))
+                  :stobjs state))
+  (b* (((when (consp darg)) ; test for quotep
+        (if (unquote darg)
+            (mv (erp-nil) :true state)
+          (mv (erp-nil) :false state)))
+       (nodenum darg)
+       (- (and (print-level-at-least-tp print) (cw "(Attempting to resolve test with STP using ~x0 assumptions.~%" (len assumptions))))
+       ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test).
+       (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test true with STP:~%")))
+       ((mv true-result state)
+        (prove-implication-with-stp assumptions
+                                    nodenum
+                                    dag-array dag-len dag-parent-array
+                                    base-filename print max-conflicts
+                                    nil      ; counterexamplep
+                                    nil      ; print-cex-as-signedp
+                                    state))
+       ((when (eq *error* true-result))
+        (prog2$ (er hard? 'try-to-resolve-darg-with-stp "Error calling STP")
+                (mv :error-calling-stp :unknown state)))
+       ((when (eq *valid* true-result)) ;; STP proved the test
+        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test true.))~%"))
+                (mv (erp-nil) :true state)))
+       (- (and (print-level-at-least-tp print) (cw "STP failed to prove the test true.)~%")))
+       (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test false with STP:~%")))
+       ((mv false-result state)
+        (prove-implication-with-stp assumptions
+                                    `(not ,nodenum)
+                                    dag-array dag-len dag-parent-array
+                                    base-filename print max-conflicts
+                                    nil      ;counterexamplep
+                                    nil      ; print-cex-as-signedp
+                                    state))
+       ((when (eq *error* false-result))
+        (prog2$ (er hard? 'try-to-resolve-darg-with-stp "Error calling STP")
+                (mv :error-calling-stp :unknown state)))
+       ((when (eq *valid* false-result)) ;; STP proved the negation of the test
+        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test false.))~%"))
+                (mv (erp-nil) :false state))))
+    (prog2$ (and (print-level-at-least-tp print) (cw "STP did not resolve the test.))~%"))
+            (mv (erp-nil) :unknown state))))
+
+(defthm w-of-mv-nth-2-of-try-to-resolve-darg-with-stp
+  (equal (w (mv-nth 2 (try-to-resolve-darg-with-stp dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable try-to-resolve-darg-with-stp))))
+
+;; ;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown
+;; ;; Never used!  Similar to try-to-resolve-darg-with-stp.
+;; (defund try-to-resolve-test-with-stp (test       ; a nodenum
+;;                                       assumptions ; possibly-negated-nodenums
+;;                                       dag-array ;must be named 'dag-array (todo: generalize?)
+;;                                       dag-len
+;;                                       dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
+;;                                       base-filename
+;;                                       print
+;;                                       max-conflicts ;a number of conflicts, or nil for no max
+;;                                       ;;counterexamplep
+;;                                       state)
+;;   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+;;                               (natp test)
+;;                               (< test dag-len)
+;;                               (bounded-possibly-negated-nodenumsp assumptions dag-len)
+;;                               (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+;;                               (equal (alen1 'dag-parent-array dag-parent-array)
+;;                                      (alen1 'dag-array dag-array))
+;;                               (stringp base-filename)
+;;                               (print-levelp print)
+;;                               (or (null max-conflicts)
+;;                                   (natp max-conflicts))
+;;                               ;; (booleanp counterexamplep)
+;;                               )
+;;                   :stobjs state))
+;;   (b* (((mv true-result state) (prove-implication-with-stp assumptions
+;;                                                            test
+;;                                                            dag-array dag-len dag-parent-array
+;;                                                            base-filename print max-conflicts
+;;                                                            nil ; counterexamplep (todo: maybe use and return)
+;;                                                            nil ; print-cex-as-signedp
+;;                                                            state))
+;;        ((when (eq :error true-result)) (mv :error-proving-implication :unknown state))
+;;        ((when (eq :valid true-result)) (mv (erp-nil) :true state))
+;;        ((mv false-result state) (prove-implication-with-stp assumptions
+;;                                                             `(not, test)
+;;                                                             dag-array dag-len dag-parent-array
+;;                                                             base-filename print max-conflicts
+;;                                                             nil ; counterexamplep (todo: maybe use and return)
+;;                                                             nil ; print-cex-as-signedp
+;;                                                             state))
+;;        ((when (eq :error false-result)) (mv :error-proving-implication :unknown state))
+;;        ((when (eq :valid false-result)) (mv (erp-nil) :false state)))
+;;     (mv (erp-nil) :unknown state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Functions below this point deal with terms rather than dags:
+
 ;; Attempt to use STP to prove the disjunction of the terms in CLAUSE.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;todo: pass in other options?
@@ -2293,91 +2454,3 @@
   `(translate-and-prove-term-with-stp ,term ',counterexample ',print-cex-as-signedp ,max-conflicts ',print
                                       "USER-QUERY"
                                       state))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Tries to prove that the HYPS imply the CONC.
-;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-;; Used in pruning
-;; todo: remove 'node' from the name
-(defund prove-node-implication-with-stp (hyps ; possibly-negated-nodenums
-                                         conc ; a possibly-negated-nodenum
-                                         dag-array ;must be named 'dag-array (todo: generalize?)
-                                         dag-len
-                                         dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
-                                         base-filename    ;a string
-                                         print
-                                         max-conflicts ;a number of conflicts, or nil for no max
-                                         counterexamplep
-                                         print-cex-as-signedp
-                                         state)
-  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (bounded-possibly-negated-nodenump conc dag-len)
-                              (bounded-possibly-negated-nodenumsp hyps dag-len)
-                              (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
-                              (equal (alen1 'dag-parent-array dag-parent-array)
-                                     (alen1 'dag-array dag-array))
-                              (stringp base-filename)
-                              (print-levelp print)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              (booleanp counterexamplep)
-                              (booleanp print-cex-as-signedp))
-                  :stobjs state))
-  ;; we prove (or (not <hyp1>) (not <hyp2>) ... (not <hypn>) conc):
-  (prove-disjunction-with-stp (cons conc (negate-possibly-negated-nodenums hyps))
-                              dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
-
-(defthm w-of-mv-nth-1-of-prove-node-implication-with-stp
-  (equal (w (mv-nth 1 (prove-node-implication-with-stp hyps conc dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
-         (w state))
-  :hints (("Goal" :in-theory (enable prove-node-implication-with-stp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown
-;; Never used!
-(defund try-to-resolve-test-with-stp (test       ; a nodenum
-                                      assumptions ; possibly-negated-nodenums
-                                      dag-array ;must be named 'dag-array (todo: generalize?)
-                                      dag-len
-                                      dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
-                                      base-filename
-                                      print
-                                      max-conflicts ;a number of conflicts, or nil for no max
-                                      ;;counterexamplep
-                                      state)
-  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (natp test)
-                              (< test dag-len)
-                              (bounded-possibly-negated-nodenumsp assumptions dag-len)
-                              (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
-                              (equal (alen1 'dag-parent-array dag-parent-array)
-                                     (alen1 'dag-array dag-array))
-                              (stringp base-filename)
-                              (print-levelp print)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts))
-                              ;; (booleanp counterexamplep)
-                              )
-                  :stobjs state))
-  (b* (((mv true-result state) (prove-node-implication-with-stp assumptions
-                                                                test
-                                                                dag-array dag-len dag-parent-array
-                                                                base-filename print max-conflicts
-                                                                nil ; counterexamplep (todo: maybe use and return)
-                                                                nil ; print-cex-as-signedp
-                                                                state))
-       ((when (eq :error true-result)) (mv :error-proving-implication :unknown state))
-       ((when (eq :valid true-result)) (mv (erp-nil) :true state))
-       ((mv false-result state) (prove-node-implication-with-stp assumptions
-                                                                 `(not, test)
-                                                                 dag-array dag-len dag-parent-array
-                                                                 base-filename print max-conflicts
-                                                                 nil ; counterexamplep (todo: maybe use and return)
-                                                                 nil ; print-cex-as-signedp
-                                                                 state))
-       ((when (eq :error false-result)) (mv :error-proving-implication :unknown state))
-       ((when (eq :valid false-result)) (mv (erp-nil) :false state)))
-    (mv (erp-nil) :unknown state)))
