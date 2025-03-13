@@ -241,7 +241,7 @@
         (mv *error* state)) ; or pass back this error?
        ;; Call STP on the proof obligation without replacement:
        ((mv result state)
-        (prove-equality-query-with-stp (enquote constant-value)
+        (prove-equality-with-stp (enquote constant-value)
                                        nodenum
                                        miter-array-name miter-array miter-len
                                        nodenums-to-translate
@@ -539,7 +539,7 @@
        (- (and print ;(cw "Proving with STP...~%" nil)
                ))
        ((mv result state)
-        (prove-equality-query-with-stp smaller-nodenum larger-nodenum dag-array-name dag-array dag-len
+        (prove-equality-with-stp smaller-nodenum larger-nodenum dag-array-name dag-array dag-len
                                        nodenums-to-translate
                                        (n-string-append (symbol-name miter-name) ;use concatenate? ;fixme pass the miter-name as a string throughout?
                                                         "-"
@@ -810,12 +810,13 @@
 ;would like to reuse this for pure constants
 ;; Returns (mv provedp state).
 ;; The two nodes must be pure nodes.
-(defund attempt-cut-equivalence-proofs (min-depth
-                                        max-depth
-                                        depth-array ; depths wrt the set containing smaller-nodenum and larger-nodenum
-                                        smaller-nodenum larger-nodenum
-                                        dag-array-name dag-array dag-len
-                                        var-type-alist print max-conflicts base-filename state)
+(defund try-cut-equivalence-proofs (min-depth
+                                    max-depth
+                                    depth-array ; depths wrt the set containing smaller-nodenum and larger-nodenum
+                                    smaller-nodenum
+                                    larger-nodenum
+                                    dag-array-name dag-array dag-len
+                                    var-type-alist print max-conflicts base-filename state)
   (declare (xargs :guard (and (natp min-depth)
                               (integerp max-depth) ; might go negative
                               (natp smaller-nodenum)
@@ -859,7 +860,7 @@
          ;; Call STP:
          (- (and print (cw "Attempting STP proof at depth ~x0.~%" current-depth)))
          ((mv result state)
-          (prove-equality-query-with-stp smaller-nodenum larger-nodenum
+          (prove-equality-with-stp smaller-nodenum larger-nodenum
                                          dag-array-name dag-array dag-len
                                          nodenums-to-translate
                                          (string-append base-filename (nat-to-string current-depth))
@@ -871,18 +872,18 @@
                                          nil
                                          state))
          ((when (eq result *error*))
-          (er hard? 'attempt-cut-equivalence-proofs "Error calling STP." nil)
+          (er hard? 'try-cut-equivalence-proofs "Error calling STP." nil)
           (mv nil ; did not prove it
               state)))
       (if (eq result *valid*)
           (mv t state) ; proved it
         (if (eq result *timedout*)
             ;;since the current depth timed out, we go shallower
-            (attempt-cut-equivalence-proofs min-depth (+ -1 current-depth)
+            (try-cut-equivalence-proofs min-depth (+ -1 current-depth)
                                             depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts base-filename state)
           ;;the goal was invalid, so we go deeper:
           ;;todo: use the counterexample?
-          (attempt-cut-equivalence-proofs (+ 1 current-depth) max-depth
+          (try-cut-equivalence-proofs (+ 1 current-depth) max-depth
                                           depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts base-filename state))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -989,7 +990,7 @@
        ;; todo: maybe the depths here should be measured from the shared-var frontier
        (- (cw "(Attempting cut proofs (min-depth ~x0, max-depth ~x1):~%" depth-of-deepest-translated-node max-depth))
        ((mv success-flg state)
-        (attempt-cut-equivalence-proofs depth-of-deepest-translated-node ; we could add 1 here, but even without that we might get more nodes translated on the first attempt than were trasnalted above (e.g., shallow nodes on the shared node frontier)
+        (try-cut-equivalence-proofs depth-of-deepest-translated-node ; we could add 1 here, but even without that we might get more nodes translated on the first attempt than were trasnalted above (e.g., shallow nodes on the shared node frontier)
                                         ;;(min max-depth ;(+ 1 (safe-min smaller-nodenum-depth larger-nodenum-depth)) ;starting depth (essentially depth 2; depth1 seems almost always useless to try)
                                         ;;                                                              starting-depth
                                         ;;                                                              )
