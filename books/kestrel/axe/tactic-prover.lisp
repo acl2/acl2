@@ -26,9 +26,9 @@
 (include-book "make-equality-dag-gen")
 (include-book "prune-term")
 (include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
-(include-book "dag-size")
+;(include-book "dag-size")
 (include-book "make-term-into-dag-basic")
-(include-book "equivalent-dags")
+;(include-book "equivalent-dags")
 (include-book "sweep-and-merge-support")
 (include-book "find-probable-facts-simple")
 (include-book "tools/prove-dollar" :dir :system)
@@ -38,9 +38,9 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
-(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
-(include-book "kestrel/utilities/real-time-since" :dir :system)
-(include-book "kestrel/bv/bvashr" :dir :system)
+;(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
+;(include-book "kestrel/utilities/real-time-since" :dir :system)
+;(include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")

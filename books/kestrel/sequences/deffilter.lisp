@@ -533,16 +533,22 @@
                                              ;;                                                      (x ,list-formal)
                                              ;;,@fixed-formal-bindings
                                              )
-                             ,@theory))))))))
-    (manage-screen-output
-     verbose
-     `(progn ,defun
-             ,@tail-rec-defuns
-             ,@tail-rec-theorems
-             ,@tail-rec-no-rev-defuns
-             ,@tail-rec-no-rev-theorems
-             ,@defthms
-             (value-triple ',filter-fn-name)))))
+                             ,@theory)))))))
+       (event `(progn
+                 ,defun
+                 ,@tail-rec-defuns
+                 ,@tail-rec-theorems
+                 ,@tail-rec-no-rev-defuns
+                 ,@tail-rec-no-rev-theorems
+                 ,@defthms
+                 (value-triple ',filter-fn-name)))
+       (event (if verbose
+                  event
+                `(with-output
+                   :off (proof-tree warning! warning observation prove event summary proof-builder history) ;; this is (remove1 'comment (remove1 'error *valid-output-names*))
+                   :gag-mode nil
+                   ,event))))
+    event))
 
 ;simple version for the common case of a unary predicate over a single list
 (defmacro deffilter-simple (pred ;the unary predicate to apply to each element in the list

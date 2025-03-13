@@ -25,7 +25,6 @@
 (include-book "kestrel/utilities/make-doublets" :dir :system)
 (include-book "../utilities/fresh-names")
 (include-book "kestrel/utilities/make-or" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system) ;for manage-screen-output (TODO: reduce the stuff included in this book)
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 
@@ -357,12 +356,19 @@
                                                       (n ,fresh-var)
                                                       ,@fixed-formal-bindings)
                                ,@theory)))
-                    )))))
-    (manage-screen-output
-     verbose
-     `(progn ,defun
-             ,@defthms
-             (value-triple ',map-fn-name)))))
+                    ))))
+         (event `(progn
+                   ,defun
+                   ,@defthms
+                   (value-triple ',map-fn-name)))
+         (event (if verbose
+                    event
+                  ;; todo: name this (and use in make-event-quiet):
+                  `(with-output
+                     :off (proof-tree warning! warning observation prove event summary proof-builder history) ;; this is (remove1 'comment (remove1 'error *valid-output-names*))
+                     :gag-mode nil
+                     ,event))))
+    event))
 
 ;fixme keep this up-to-date
 ;does not include the opener rule

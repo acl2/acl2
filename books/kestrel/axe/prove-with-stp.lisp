@@ -1,7 +1,7 @@
 ; Calling STP to prove things about DAGs and terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,6 +16,7 @@
 ;; this depend on a whole rewriter).
 
 (include-book "axe-clause-utilities") ; for handle-constant-disjuncts and expressions-for-this-case
+(include-book "depth-array")
 (include-book "translate-dag-to-stp") ; has ttags
 ;(include-book "conjunctions-and-disjunctions") ; for get-axe-disjunction-from-dag-items
 (include-book "make-term-into-dag-array-basic") ;for make-terms-into-dag-array-basic
@@ -1524,48 +1525,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; todo: compare to gather-nodes-to-translate-up-to-depth
 ;; Returns (mv erp nodenums-to-translate cut-nodenum-type-alist handled-node-array) ;the accumulators are extended
-;fixme look for type mismatches..
-;;fixme combine some recursive calls in this function?
+;; fixme: look for type mismatches..
+;; todo: combine some recursive calls in this function?
 ;; When we decide to cut at a node (either because we can't translate it or we've hit the depth limit), we have to select a type for it.
 ;; TODO: Consider returning an error if a bad arity is found.
 (defund process-nodenums-for-translation (worklist ;a list of nodenums to handle (each of these must either have an obvious type, a known-type, or be used in at least one choppable context)
                                           depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
-                                          depth-array
+                                          depth-array ; todo: what nodes have entries in this?
                                           handled-node-array
                                           dag-array dag-len dag-parent-array known-nodenum-type-alist
                                           ;;these are accumulators:
                                           nodenums-to-translate ; every node already in this list should have its flags set in handled-node-array (so we avoid duplicates)
                                           cut-nodenum-type-alist)
-  (declare (xargs ;; The measure is, first the number of unhandled nodes, then, if unchanged, check the length of the worklist.
-            :measure (make-ord 1
-                               (+ 1 ;coeff must be positive
-                                  (if (not (natp (alen1 'handled-node-array handled-node-array)))
-                                      0
-                                    (+ 1 (- (alen1 'handled-node-array handled-node-array)
-                                            (num-handled-nodes 'handled-node-array handled-node-array)))))
-                               (len worklist))
-            :guard (and (nat-listp worklist)
-                        (or (natp depth-limit)
-                            (null depth-limit))
-                        (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                        (nodenum-type-alistp known-nodenum-type-alist)
-                        (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
-                        (equal (alen1 'dag-parent-array dag-parent-array)
-                               (alen1 'dag-array dag-array))
-                        (all-< worklist dag-len)
-                        (all-natp nodenums-to-translate)
-                        (nodenum-type-alistp cut-nodenum-type-alist)
-                        (array1p 'handled-node-array handled-node-array)
-                        (all-< worklist (alen1 'handled-node-array handled-node-array))
-                        (implies depth-limit (array1p 'depth-array depth-array))
-                        (if depth-limit (all-< worklist (alen1 'depth-array depth-array)) t) ;todo: and it contains rationals
-                        )
-            :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) (MYQUOTEP DARGP))
-                           :do-not '(generalize eliminate-destructors)))))
+  (declare (xargs :guard (and (nat-listp worklist)
+                              (or (natp depth-limit)
+                                  (null depth-limit))
+                              (implies depth-limit (array1p 'depth-array depth-array))
+                              (if depth-limit (all-< worklist (alen1 'depth-array depth-array)) t) ;todo: and it contains rationals
+                              (array1p 'handled-node-array handled-node-array)
+                              (all-< worklist (alen1 'handled-node-array handled-node-array))
+                              (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+                              (all-< worklist dag-len)
+                              (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
+                              (equal (alen1 'dag-parent-array dag-parent-array)
+                                     (alen1 'dag-array dag-array))
+                              (nodenum-type-alistp known-nodenum-type-alist)
+                              (all-natp nodenums-to-translate)
+                              (nodenum-type-alistp cut-nodenum-type-alist))
+                  ;; The measure is, first the number of unhandled nodes, then, if unchanged, check the length of the worklist.
+                  :measure (make-ord 1
+                                     (+ 1 ;coeff must be positive
+                                        (if (not (natp (alen1 'handled-node-array handled-node-array)))
+                                            0
+                                          (+ 1 (- (alen1 'handled-node-array handled-node-array)
+                                                  (num-handled-nodes 'handled-node-array handled-node-array)))))
+                                     (len worklist))
+                  :guard-hints (("Goal" :in-theory (e/d (car-becomes-nth-of-0) (MYQUOTEP DARGP))
+                                 :do-not '(generalize eliminate-destructors)))))
   (if (or (endp worklist)
           (not (mbt (and (array1p 'handled-node-array handled-node-array)
                          (nat-listp worklist)
@@ -1873,10 +1871,10 @@
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; This cuts out any stuff we can't translate, or any stuff that's too deep:
-(defund prove-node-disjunction-with-stp-at-depth (depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
-                                                  disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                  base-filename
-                                                  print max-conflicts counterexamplep print-cex-as-signedp state)
+(defund prove-disjunction-with-stp-at-depth (depth-limit ;a natural, or nil for no limit (in which case depth-array is meaningless)
+                                             disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                             base-filename
+                                             print max-conflicts counterexamplep print-cex-as-signedp state)
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (or (natp depth-limit) (equal nil depth-limit))
                               (bounded-possibly-negated-nodenumsp disjuncts dag-len)
@@ -1890,7 +1888,7 @@
                               (all-< (strip-cars known-nodenum-type-alist) dag-len)
                               (stringp base-filename)
                               (print-levelp print)
-                              (or (natp max-conflicts) (null max-conflicts))
+                              (or (null max-conflicts) (natp max-conflicts))
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp))
                   :stobjs state
@@ -1928,40 +1926,34 @@
                           print-cex-as-signedp
                           state)))
 
-(defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp-at-depth
-  (equal (w (mv-nth 1 (prove-node-disjunction-with-stp-at-depth depth-limit disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
-                                                                base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
-         (w state))
-  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-at-depth))))
+(local
+  (defthm w-of-mv-nth-1-of-prove-disjunction-with-stp-at-depth
+    (equal (w (mv-nth 1 (prove-disjunction-with-stp-at-depth depth-limit disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+                                                             base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable prove-disjunction-with-stp-at-depth)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;binary search the range [min-depth, max-depth] to try to find a cut depth at which STP says valid
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, or :timedout.
 ;terminates because the difference in depths decreases
-(defund prove-node-disjunction-with-stp-at-depths (min-depth
-                                             max-depth
-                                             depth-array
-                                             known-nodenum-type-alist
-                                             disjuncts ;there must be at least 1 disjunct - enforce this in the callers?! no longer necessary?
-                                             dag-array ;must be named 'dag-array
-                                             dag-len
-                                             dag-parent-array ;must be named 'dag-parent-array
-                                             base-filename    ;a string
-                                             print
-                                             max-conflicts ;a number of conflicts, or nil for no max
-                                             counterexamplep
-                                             print-cex-as-signedp
-                                             state)
-  (declare (xargs :stobjs state
-                  :measure (nfix (+ 1 (- max-depth min-depth)))
-                  :hints (("Goal" :in-theory (e/d (natp)
-                                                  (ceiling-in-terms-of-floor ;disable?
-                                                   ))))
-                  :guard-hints (("Goal" :in-theory (e/d (natp)
-                                                        (ceiling-in-terms-of-floor))))
-                  :guard (and ;(natp min-depth)
-                              ;(natp max-depth)
+(defund prove-disjunction-with-stp-at-depths (min-depth
+                                              max-depth
+                                              depth-array
+                                              known-nodenum-type-alist
+                                              disjuncts ;there must be at least 1 disjunct - enforce this in the callers?! no longer necessary?
+                                              dag-array ;must be named 'dag-array
+                                              dag-len
+                                              dag-parent-array ;must be named 'dag-parent-array
+                                              base-filename    ;a string
+                                              print
+                                              max-conflicts ;a number of conflicts, or nil for no max
+                                              counterexamplep
+                                              print-cex-as-signedp
+                                              state)
+  (declare (xargs :guard (and (posp min-depth)
+                              (natp max-depth)
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (nodenum-type-alistp known-nodenum-type-alist)
                               (all-< (strip-cars known-nodenum-type-alist) dag-len)
@@ -1975,10 +1967,17 @@
                                      (alen1 'dag-array dag-array))
                               (stringp base-filename)
                               (print-levelp print)
-                              (or (equal max-conflicts nil) (natp max-conflicts))
+                              (or (null max-conflicts) (natp max-conflicts))
                               (booleanp counterexamplep)
-                              (booleanp print-cex-as-signedp))))
-  (if (or (not (natp min-depth))
+                              (booleanp print-cex-as-signedp))
+                  :stobjs state
+                  :measure (nfix (+ 1 (- max-depth min-depth)))
+                  :hints (("Goal" :in-theory (e/d (natp)
+                                                  (ceiling-in-terms-of-floor ;disable?
+                                                   ))))
+                  :guard-hints (("Goal" :in-theory (e/d (natp)
+                                                        (ceiling-in-terms-of-floor))))))
+  (if (or (not (mbt (natp min-depth)))
           (not (natp max-depth))
           (< max-depth min-depth))
       (prog2$ (cw "No more depths to try.~%")
@@ -1987,7 +1986,7 @@
     (b* ((depth (ceiling (/ (+ min-depth max-depth) 2) 1)) ;take the average (could round down instead..)
          ((mv result state)
           ;; This cuts out any stuff we can't translate, or any stuff that's too deep:
-          (prove-node-disjunction-with-stp-at-depth depth disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
+          (prove-disjunction-with-stp-at-depth depth disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist
                                                     base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
       (if (eq result *error*)
           (mv *error* state)
@@ -1995,21 +1994,22 @@
             (mv *valid* state)
           (if (eq result *timedout*)
               ;; STP timed out, so don't try any deeper depths (they will probably time-out too). recur on the range of shallower depths
-              (prove-node-disjunction-with-stp-at-depths min-depth (+ -1 depth) depth-array known-nodenum-type-alist disjuncts
+              (prove-disjunction-with-stp-at-depths min-depth (+ -1 depth) depth-array known-nodenum-type-alist disjuncts
                                                    dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)
             (progn$
              ;; STP said invalid or gave a counterexample, so don't try any shallower depths (they will also be invalid). recur on the range of deeper depths
              ;; TODO: Use the counterexample here (check whether possible or certain?)?
-             (prove-node-disjunction-with-stp-at-depths (+ 1 depth) max-depth depth-array known-nodenum-type-alist disjuncts
+             (prove-disjunction-with-stp-at-depths (+ 1 depth) max-depth depth-array known-nodenum-type-alist disjuncts
                                                   dag-array dag-len dag-parent-array
                                                   base-filename print max-conflicts
                                                   counterexamplep print-cex-as-signedp state))))))))
 
-(defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp-at-depths
-  (equal (w (mv-nth 1 (prove-node-disjunction-with-stp-at-depths min-depth max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len
-                                                           dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
-         (w state))
-  :hints (("Goal" :in-theory (enable prove-node-disjunction-with-stp-at-depths))))
+(local
+  (defthm w-of-mv-nth-1-of-prove-disjunction-with-stp-at-depths
+    (equal (w (mv-nth 1 (prove-disjunction-with-stp-at-depths min-depth max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len
+                                                                   dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable prove-disjunction-with-stp-at-depths)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2030,6 +2030,7 @@
 ;; Attempt to prove that the disjunction of DISJUNCTS is non-nil.  Works by cutting out non-(bv/array/bool) stuff and calling STP.  Also uses heuristic cuts.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: the cutting could look at shared nodes (don't cut above the shared node frontier)?
+;; todo: rename to remove 'node' from the name
 (defund prove-node-disjunction-with-stp (disjuncts ; these are possibly-negated nodenums
                                          dag-array ;must be named 'dag-array (todo: generalize?)
                                          dag-len
@@ -2084,6 +2085,7 @@
                (cw "known-nodenum-type-alist: ~x0.~%" known-nodenum-type-alist)))
        (maybe-node-given-empty-type (node-given-empty-type known-nodenum-type-alist)) ; we could compute this as we build the alist
        ((when maybe-node-given-empty-type) ;move this test up before we print?
+        ;; We assumed the negations of the disjuncts and got a contradiction (about types), so they can't all be false:
         (cw "(WARNING: Goal is true due to type mismatch on:~%")
         (print-dag-array-node-and-supporters 'dag-array dag-array maybe-node-given-empty-type)
         (cw ")~%")
@@ -2097,7 +2099,7 @@
                        (print-dag-array-node-and-supporters-lst (strip-nots-from-possibly-negated-nodenums disjuncts) 'dag-array dag-array))))
        ;; First try without heuristic cuts (untranslatable things will still be cut out):
        ((mv result state)
-        (prove-node-disjunction-with-stp-at-depth nil ;no depth limit
+        (prove-disjunction-with-stp-at-depth nil ;no depth limit
                                                   disjuncts
                                                   nil ;fake depth-array
                                                   dag-array dag-len dag-parent-array known-nodenum-type-alist
@@ -2120,13 +2122,13 @@
                 (prog2$ (and (print-level-at-least-tp print) (cw "Giving up because the uncut goal ~s0 is invalid.)~%" base-filename)) ; todo: what if untranslatable stuff was cut out that makes the goal valid?
                         (mv result state))
               (if (eq result *timedout*)
-                  ;;STP timed out on the uncut case.  Now binary search for the right depth:
+                  ;; STP timed out on the uncut case.  Now binary search for the right depth:
                   ;; TTODO: Start with max-depth minus 1 since we've already timed out on the full proof!?
                   (b* (((mv depth-array max-depth)
                         (make-depth-array-for-nodes (strip-nots-from-possibly-negated-nodenums disjuncts) ;todo: avoid consing this up?
                                                     'dag-array dag-array dag-len))
                        ((mv result state)
-                        (prove-node-disjunction-with-stp-at-depths 1 max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
+                        (prove-disjunction-with-stp-at-depths 1 max-depth depth-array known-nodenum-type-alist disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
                     ;;todo: move printing to sub-function?
                     (if (eq result *error*)
                         (mv *error* state)
@@ -2139,7 +2141,7 @@
                           (prog2$ (and (print-level-at-least-tp print) (cw "STP failed to find a depth at which ~s0 would be valid.)~%" base-filename))
                                   (mv *timedout* state))))))
                 ;;todo: prove this can't happen:
-                (mv (er hard? 'prove-node-disjunction-with-stp "Bad result, ~x0, from prove-node-disjunction-with-stp-at-depth." result)
+                (mv (er hard? 'prove-node-disjunction-with-stp "Bad result, ~x0, from prove-disjunction-with-stp-at-depth." result)
                     state)))))))))
 
 (defthm w-of-mv-nth-1-of-prove-node-disjunction-with-stp
