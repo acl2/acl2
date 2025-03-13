@@ -20403,8 +20403,8 @@
      (prove-equivalence
          dag1                   ;; The first DAG or term to compare
          dag2                   ;; The second DAG or term to compare
-         [:assumptions]         ;; Assumptions to use when proving equivalence
-         [:types]               ;; An alist from variables to their types, or one of the special values :bits or :bytes.  Used to generate test cases.
+         [:assumptions]         ;; Assumptions to use when proving equivalence, a list of terms (not necessarily translated)
+         [:types]               ;; An alist from variables to their types, or one of the special values :bits or :bytes.  Used to generate test cases, and in STP queries.
          [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
          [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100
          [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief

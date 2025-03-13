@@ -3051,7 +3051,7 @@
                                  ;; unsigned-byte-p-from-bounds
                                  unsigned-byte-p-of-+-of--1
                                  ;; unsigned-byte-p-forward
-                                 rule-alistp-means-alistp
+                                 ;;rule-alistp-means-alistp
                                  axe-bind-free-function-applicationp
                                  natp-of-+-of-1-and-largest-non-quotep
                                  <-of-largest-non-quotep

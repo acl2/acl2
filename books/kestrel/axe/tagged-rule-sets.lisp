@@ -28,7 +28,7 @@
 ;;  (:rule-names <rule-name_1> ... <rule-name_n>)
 ;;  (:rules <axe-rule_1> ... <axe-rule_n>)
 ;;  (:rule-alist . <rule-alist>)
-(defun tagged-rule-setp (tagged-rule-set)
+(defund tagged-rule-setp (tagged-rule-set)
   (declare (xargs :guard t))
   (and (consp tagged-rule-set)
        (if (eq :rule-names (car tagged-rule-set))
@@ -58,7 +58,7 @@
 ;; Throws an error if anything is ill-formed, or if rules are supplied in
 ;; multiple ways.  Returns a boolean indicating whether everything is ok, but
 ;; the main consideration is whether this throws an error.
-(defun ensure-rules-etc-ok (ctx rules rule-alist rule-alists)
+(defund ensure-rules-etc-ok (ctx rules rule-alist rule-alists)
   (declare (xargs :guard (symbolp ctx))) ;todo: strengthen
   (b* (((when (not (or (eq :none rules)
                        (symbol-listp rules))))
@@ -87,7 +87,7 @@
 ;; RULE-ALISTS should be a value other than :none.
 ;; TODO: Relax the restruction on :none?
 ;; TODO: Avoid returning an erp.
-(defun make-tagged-rule-sets (rules rule-alist rule-alists)
+(defund make-tagged-rule-sets (rules rule-alist rule-alists)
   (declare (xargs :guard (and (or (eq :none rules)
                                   (symbol-listp rules))
                               (or (eq :none rule-alist)

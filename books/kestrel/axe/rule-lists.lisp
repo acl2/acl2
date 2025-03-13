@@ -1102,6 +1102,10 @@
      ;; bvor-disjoint-ones-arg2-gen
      bvor-of-bvcat-becomes-bvcat-arg2
      bvor-of-bvcat-becomes-bvcat-arg3
+     bvxor-of-bvcat-becomes-bvcat-arg2
+     bvxor-of-bvcat-becomes-bvcat-arg3
+     bvplus-of-bvcat-becomes-bvcat-arg2
+     bvplus-of-bvcat-becomes-bvcat-arg3
      )))
 
 ;todo combine this with core-rules-bv
