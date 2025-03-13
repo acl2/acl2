@@ -14,7 +14,7 @@
 
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
-(include-book "test-cases") ; for test-case-type-alistp
+;(include-book "test-cases") ; for test-case-type-alistp
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "kestrel/lists-light/add-to-end" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
@@ -94,11 +94,64 @@
     :rule-classes (:rewrite :type-prescription)
     :hints (("Goal" :in-theory (enable strip-equal-t)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recognizes an alist that maps vars to axe-types
+;; See also test-case-type-alistp.
+(defund var-type-alistp (alist)
+  (declare (xargs :guard t))
+  (if (atom alist)
+      (null alist)
+    (let ((entry (first alist)))
+      (and (consp entry)
+           (let ((var (car entry))
+                 (type (cdr entry)))
+             (and (symbolp var)
+                  (axe-typep type)
+                  (var-type-alistp (rest alist))))))))
+
+;; Not quite true, because of empty-type and most-general-type:
+;; (thm
+;;   (implies (var-type-alistp alist)
+;;            (test-case-type-alistp alist))
+;;   :hints (("Goal" :in-theory (enable test-case-type-alistp
+;;                                      var-type-alistp))))
+
+;; Like var-type-alistp but excludes the most-general-type and the empty-type.
+;; todo: allow most-general-type (represented by t??) once test-case-typep allows that
+(defund strict-var-type-alistp (alist)
+  (declare (xargs :guard t))
+  (if (atom alist)
+      (null alist)
+    (let ((entry (first alist)))
+      (and (consp entry)
+           (let ((var (car entry))
+                 (type (cdr entry)))
+             (and (symbolp var)
+                  (axe-typep type)
+                  (not (most-general-typep type)) ; note this
+                  (not (empty-typep type)) ; note this
+                  (strict-var-type-alistp (rest alist))))))))
+
+(defthm test-case-type-alistp-when-strict-var-type-alistp
+  (implies (strict-var-type-alistp alist)
+           (test-case-type-alistp alist))
+  :hints (("Goal" :in-theory (enable test-case-type-alistp
+                                     strict-var-type-alistp))))
+
+(defthm var-type-alistp-when-strict-var-type-alistp
+  (implies (strict-var-type-alistp alist)
+           (var-type-alistp alist))
+  :hints (("Goal" :in-theory (enable var-type-alistp
+                                     strict-var-type-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; todo: check consisency with existing entries in the alist
 (defund extend-var-type-alist-with-hyp (hyp all-hyps var-type-alist)
   (declare (xargs :guard (and (pseudo-termp hyp)
                               (pseudo-term-listp all-hyps)
-                              (test-case-type-alistp var-type-alist) ;strengthen?  not all constructs can appear
+                              (var-type-alistp var-type-alist) ;strengthen? empty-type and most-general-type cannot appear?
                               )))
   (let ((hyp (strip-equal-t hyp)))
     (if (and (call-of 'booleanp hyp)
@@ -132,16 +185,18 @@
                   var-type-alist))
             var-type-alist))))))
 
-(defthm test-case-type-alistp-of-extend-var-type-alist-with-hyp
-  (implies (test-case-type-alistp var-type-alist)
-           (test-case-type-alistp (extend-var-type-alist-with-hyp hyp all-hyps var-type-alist)))
-  :hints (("Goal" :in-theory (enable extend-var-type-alist-with-hyp))))
+(defthm strict-var-type-alistp-of-extend-var-type-alist-with-hyp
+  (implies (strict-var-type-alistp var-type-alist)
+           (strict-var-type-alistp (extend-var-type-alist-with-hyp hyp all-hyps var-type-alist)))
+  :hints (("Goal" :in-theory (enable extend-var-type-alist-with-hyp strict-var-type-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;ffixme should we do this for nodes that are not variables?
 (defund make-var-type-alist-from-hyps-aux (hyps all-hyps var-type-alist)
   (declare (xargs :guard (and (pseudo-term-listp hyps)
                               (pseudo-term-listp all-hyps)
-                              (test-case-type-alistp var-type-alist) ; strengthen further, since some things don't occur?
+                              (strict-var-type-alistp var-type-alist) ; strengthen further, since some things don't occur?
                               )))
   (if (endp hyps)
       var-type-alist
@@ -151,15 +206,12 @@
                                                                        all-hyps
                                                                        var-type-alist))))
 
-(defthm test-case-type-alistp-of-make-var-type-alist-from-hyps-aux
-  (implies (test-case-type-alistp var-type-alist)
-           (test-case-type-alistp (make-var-type-alist-from-hyps-aux hyps all-hyps var-type-alist)))
+(defthm strict-var-type-alistp-of-make-var-type-alist-from-hyps-aux
+  (implies (strict-var-type-alistp var-type-alist)
+           (strict-var-type-alistp (make-var-type-alist-from-hyps-aux hyps all-hyps var-type-alist)))
   :hints (("Goal" :in-theory (enable make-var-type-alist-from-hyps-aux))))
 
-;; (defthm var-type-alistp-of-make-var-type-alist-from-hyps-aux
-;;   (implies (var-type-alistp var-type-alist)
-;;            (var-type-alistp (make-var-type-alist-from-hyps-aux hyps all-hyps var-type-alist)))
-;;   :hints (("Goal" :in-theory (enable make-var-type-alist-from-hyps-aux))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; use this more?!
 ;ffixme what about more complicated things, like bounds on (or low bits of) the length of an array?
@@ -167,10 +219,13 @@
   (declare (xargs :guard (pseudo-term-listp hyps)))
   (make-var-type-alist-from-hyps-aux hyps hyps nil))
 
-(defthm test-case-type-alistp-of-make-var-type-alist-from-hyps
-  (implies (test-case-type-alistp var-type-alist)
-           (test-case-type-alistp (make-var-type-alist-from-hyps hyps)))
+(defthm strict-var-type-alistp-of-make-var-type-alist-from-hyps
+  (implies (strict-var-type-alistp var-type-alist)
+           (strict-var-type-alistp (make-var-type-alist-from-hyps hyps)))
   :hints (("Goal" :in-theory (enable make-var-type-alist-from-hyps))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;;
 ;; Tags to determine the order of nodes to attack
