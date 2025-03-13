@@ -46,14 +46,6 @@
            (not (< y x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))))
 
-(defthm dargp-less-than-when-not-consp-cheap
-  (implies (not (consp item))
-           (equal (dargp-less-than item len)
-                  (and (natp item)
-                       (< item len))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable dargp-less-than))))
-
 (local
  (defthm <-of-+-of-1-when-integerp
    (implies (and (integerp x)

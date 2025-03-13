@@ -1888,7 +1888,7 @@
                               (all-< (strip-cars known-nodenum-type-alist) dag-len)
                               (stringp base-filename)
                               (print-levelp print)
-                              (or (natp max-conflicts) (null max-conflicts))
+                              (or (null max-conflicts) (natp max-conflicts))
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp))
                   :stobjs state
@@ -1967,7 +1967,7 @@
                                      (alen1 'dag-array dag-array))
                               (stringp base-filename)
                               (print-levelp print)
-                              (or (equal max-conflicts nil) (natp max-conflicts))
+                              (or (null max-conflicts) (natp max-conflicts))
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp))
                   :stobjs state
