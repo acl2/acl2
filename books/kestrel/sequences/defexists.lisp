@@ -1,6 +1,6 @@
 ; Generate a function to search a list for an item that satisfies a predicate
 ;
-; Copyright (C) 2014-2023 Kestrel Institute
+; Copyright (C) 2014-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,7 +25,6 @@
 ;(include-book "../utilities/alists")
 (include-book "../utilities/fresh-names")
 (include-book "kestrel/utilities/make-or" :dir :system)
-(include-book "kestrel/utilities/user-interface" :dir :system) ;for manage-screen-output
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -341,12 +340,18 @@
 ;                                                      (x ,list-formal)
                                                       ;,@fixed-formal-bindings
                                                       )
-                               ,@theory))))))))
-    (manage-screen-output ;todo: expand manage-screen-output here?
-     verbose
-    `(progn ,defun
-            ,@defthms
-            (value-triple ',exists-fn-name)))))
+                               ,@theory)))))))
+         (event `(progn
+                   ,defun
+                   ,@defthms
+                   (value-triple ',exists-fn-name)))
+         (event (if verbose
+                    event
+                  `(with-output
+                     :off (proof-tree warning! warning observation prove event summary proof-builder history) ;; this is (remove1 'comment (remove1 'error *valid-output-names*))
+                     :gag-mode nil
+                     ,event))))
+    event))
 
 ;simple version for the common case of mapping a unary predicate over a single list
 (defmacro defexists-simple (pred ;the unary predicate to apply to each element in the list

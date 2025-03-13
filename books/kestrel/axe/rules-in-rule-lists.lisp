@@ -26,6 +26,7 @@
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe")
 (include-book "list-rules") ; for EQUAL-CONS-NTH-0-SELF and maybe others
+(include-book "kestrel/bv-lists/map-packbv-and-map-unpackbv" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system)
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/booleans/not" :dir :system)
@@ -39,8 +40,10 @@
 (include-book "kestrel/bv/arith" :dir :system) ;for COLLECT-CONSTANTS-OVER-<-2 (todo: reduce)
 (include-book "kestrel/bv/adder" :dir :system) ;for BVPLUS-BECOMES-RIPPLE-CARRY-ADDER, used in bit blasting in the phased rules
 (include-book "kestrel/bv/bvequal-rules" :dir :system)
+(include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "bv-array-rules-axe")
 ;(include-book "rules1" :dir :system) ;included by bv-array-rules-axe
+(include-book "rules3") ; todo: for equal-of-nil-and-bvchop-list (move that)
 (include-book "axe-rules-mixed") ;reduce? since some rules in this file are now in the basic jvm rule set? for NOT-EQUAL-MAX-INT-WHEN-<=, etc.
 (include-book "kestrel/bv/sbvdivdown-rules" :dir :system)
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
@@ -62,6 +65,7 @@
 (include-book "kestrel/lists-light/repeat-tail" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/lists-light/cons" :dir :system)
+(include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/rules" :dir :system) ; for CONS-EQUAL-REWRITE-CONSTANT-VERSION
 (include-book "kestrel/lists-light/rules2" :dir :system) ;for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
 (include-book "kestrel/lists-light/ungroup" :dir :system)

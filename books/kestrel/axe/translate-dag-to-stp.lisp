@@ -1,7 +1,7 @@
 ; Creating STP queries from DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -52,7 +52,7 @@
 ;; in a separate pass before calling the STP translation code.
 
 (include-book "type-inference")
-(include-book "depth-array")
+;(include-book "depth-array")
 (include-book "stp-counterexamples")
 (include-book "call-axe-script") ; has ttags
 (include-book "pure-dags")
@@ -80,6 +80,7 @@
 (include-book "kestrel/acl2-arrays/print-array" :dir :system)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
+(local (include-book "rational-lists"))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/bv/bvdiv" :dir :system))
 (local (include-book "kestrel/bv/bvmod" :dir :system))

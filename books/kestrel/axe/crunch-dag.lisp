@@ -1,7 +1,7 @@
 ; Crunching a DAG (i.e., dropping irrelevant nodes from a dag-array in place)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,24 +15,25 @@
 ;; TODO: Can we deprecate this book?
 
 (include-book "supporting-nodes") ;reduce? but we need tag-supporters-of-nodes
+(local (include-book "rational-lists"))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local
  (defthm all-<-of-+-of-1-and-maxelem-alt
-   (implies (and (all-natp nodenums)
+   (implies (and (nat-listp nodenums)
                  (consp nodenums))
             (all-< nodenums (+ 1 (maxelem nodenums))))
-   :hints (("Goal" :in-theory (enable all-natp)))))
+   :hints (("Goal" :in-theory (enable nat-listp)))))
 
 (local
  (defthm not-<-of-+-of-1-and-maxelem-when-all-<
    (implies (and (all-< nodenums dag-len)
-                 (all-natp nodenums)
+                 (nat-listp nodenums)
                  (consp nodenums)
                  (integerp dag-len))
             (not (< dag-len (+ 1 (maxelem nodenums)))))
-   :hints (("Goal" :in-theory (enable all-natp)))))
+   :hints (("Goal" :in-theory (enable nat-listp)))))
 
 ;; TODO: The resulting array may still have irrelevant nodes above the new
 ;; dag-len, which might slow things down.
@@ -133,9 +134,8 @@
 ;; Note that this inlines constant nodes, so some nodes may map to constants.
 (defun crunch-dag-array-for-nodenums (nodenums dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (true-listp nodenums)
+                              (nat-listp nodenums)
                               (consp nodenums) ; so we can find the max
-                              (all-natp nodenums)
                               (all-< nodenums dag-len))))
   (let* ((max-nodenum (maxelem nodenums))
          (tag-array (tag-supporters-of-nodes-with-name nodenums max-nodenum dag-array-name dag-array 'tag-array (+ 1 max-nodenum)))

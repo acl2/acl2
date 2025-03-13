@@ -22,6 +22,7 @@
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "wf-dagp")
 (include-book "std/util/defaggregate" :dir :system)
+(local (include-book "rational-lists"))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/acl2-arrays/aref1" :dir :system))

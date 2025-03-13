@@ -6189,7 +6189,7 @@
                 (- (print-dag-info dag-or-quotep defconst-name nil))
                 (- (if (myquotep dag-or-quotep)
                        nil ; skip the purity check if we have constant
-                     (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
+                     (if (dag-is-purep-aux dag-or-quotep :all t) ; prints any non-pure nodes
                          (cw "~x0 is a pure dag.~%" defconst-name)
                        (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
                 (- (progn$ (cw "~%SIMPLIFICATION FINISHED (")
@@ -6223,7 +6223,7 @@
                                           state)
            (declare (xargs :guard (and (symbolp defconst-name)
                                        ;; dag-or-term is a dag or an (untranslated) term
-                                       (pseudo-term-listp assumptions)
+                                       ;; assumptions are (untranslated) terms
                                        (symbol-listp rules)
                                        (interpreted-function-alistp interpreted-function-alist)
                                        (normalize-xors-optionp normalize-xors)
@@ -6264,9 +6264,9 @@
                                                 (memoize 't) ; not memoizep, since this is user-facing
                                                 (count-hits 'nil)
                                                 (print ':brief)
-                                                (monitored-symbols 'nil)
+                                                (monitor 'nil)
                                                 (fns-to-elide 'nil))
-           `(make-event-quiet (,',def-simplified-fn-name ',defconst-name ,dag-or-term ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitored-symbols ,fns-to-elide ',whole-form state)))
+           `(make-event-quiet (,',def-simplified-fn-name ',defconst-name ,dag-or-term ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitor ,fns-to-elide ',whole-form state)))
          )) ; end of the generated encapsulate and progn
     ))
 

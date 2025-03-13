@@ -1,7 +1,7 @@
 ; Check whether a DAG has only supported expressions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -184,7 +184,7 @@
         (if (not print)
             nil ; stop immediately
           ;; print a message and check the rest of the dag:
-          (prog2$ (cw "Non-pure expression in DAG: ~x0.~%" expr) ; todo: don't print this more than once for each kind of thing.
+          (prog2$ (cw "Note: Node ~x0 is not pure: ~x1.~%" (car entry) expr) ; todo: don't print this more than once for each kind of thing.
                   (if (eq print :first)
                       nil
                     (dag-is-purep-aux (rest dag) print nil))))))))

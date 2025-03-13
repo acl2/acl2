@@ -873,9 +873,9 @@
 (defthm items-have-len-of-firstn
   (implies (items-have-len n lst)
            (items-have-len n (firstn m lst)))
-  :hints (("Goal" :in-theory (e/d (items-have-len firstn) (
-                                                           TAKE-OF-CDR-BECOMES-SUBRANGE
-                                                           FIRSTN-BECOMES-TAKE-GEN)))))
+  :hints (("Goal" :in-theory (e/d (items-have-len firstn)
+                                  (take-of-cdr-becomes-subrange
+                                   firstn-becomes-take-gen)))))
 
 (defthm items-have-len-of-subrange-hack-gen
   (implies (and (natp start)
@@ -890,7 +890,6 @@
 ;           :induct (ind2 start end lst)
            :in-theory (e/d (subrange items-have-len)
                            (take-of-cdr-becomes-subrange)))))
-
 
 ;; ;bozo gen
 ;; (defthm items-have-len-of-subrange-hack-gen

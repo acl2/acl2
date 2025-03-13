@@ -12,18 +12,23 @@
 
 (in-package "ACL2")
 
+;; Tagged-rule-sets help resolve a tension in when we want to create
+;; rule-alists.  When calling a rewriter repeatedly, we may want to create the
+;; rule-alist outside the main loop, to avoid doing so more than once.  But
+;; when rewriting using a sequence of rule-sets, we may waste time converting
+;; them all into rule-alists at the start (e.g., if the first rule-set reduces
+;; the DAG to a constant and later rule-sets are unused).
+
 (include-book "axe-rule-lists") ; reduce?
 (include-book "rule-alists")
 
-;;;
-;;; tagged-rule-setp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognizes one of the following
 ;;  (:rule-names <rule-name_1> ... <rule-name_n>)
 ;;  (:rules <axe-rule_1> ... <axe-rule_n>)
 ;;  (:rule-alist . <rule-alist>)
-(defun tagged-rule-setp (tagged-rule-set)
+(defund tagged-rule-setp (tagged-rule-set)
   (declare (xargs :guard t))
   (and (consp tagged-rule-set)
        (if (eq :rule-names (car tagged-rule-set))
@@ -33,9 +38,7 @@
            (if (eq :rule-alist (car tagged-rule-set))
                (rule-alistp (cdr tagged-rule-set))
              nil)))))
-;;;
-;;; tagged-rule-setps
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund tagged-rule-setsp (tagged-rule-sets)
   (declare (xargs :guard t))
@@ -50,10 +53,12 @@
               (tagged-rule-setsp b)))
   :hints (("Goal" :in-theory (enable tagged-rule-setsp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Throws an error if anything is ill-formed, or if rules are supplied in
 ;; multiple ways.  Returns a boolean indicating whether everything is ok, but
 ;; the main consideration is whether this throws an error.
-(defun ensure-rules-etc-ok (ctx rules rule-alist rule-alists)
+(defund ensure-rules-etc-ok (ctx rules rule-alist rule-alists)
   (declare (xargs :guard (symbolp ctx))) ;todo: strengthen
   (b* (((when (not (or (eq :none rules)
                        (symbol-listp rules))))
@@ -76,10 +81,13 @@
         ))
     t))
 
-;; Only one of RULES/RULE-ALIST/RULE-ALISTS should be a value other than :none
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp rule-alists).  At most one of RULES, RULE-ALIST, and
 ;; RULE-ALISTS should be a value other than :none.
-(defun make-tagged-rule-sets (rules rule-alist rule-alists)
+;; TODO: Relax the restruction on :none?
+;; TODO: Avoid returning an erp.
+(defund make-tagged-rule-sets (rules rule-alist rule-alists)
   (declare (xargs :guard (and (or (eq :none rules)
                                   (symbol-listp rules))
                               (or (eq :none rule-alist)

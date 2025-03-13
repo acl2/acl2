@@ -1,7 +1,7 @@
 ; Axe's representation of rewrite rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,6 +12,10 @@
 
 (in-package "ACL2")
 
+;; Axe-rules are created from theorems in the world.  Later, a collection of
+;; axe-rules is assembled into a rule-alist for use in rewriting.
+
+;; See also rule-alists.lisp.
 ;; See also stored-rules.lisp.
 
 (include-book "kestrel/utilities/quote" :dir :system)
@@ -510,18 +514,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: Define these later, so they can have axe-rulep as their guards?
+
+;; Extracts the left-hand-side of an axe-rule.
 (defund-inline rule-lhs (axe-rule)
   (declare (xargs :guard (equal 4 (len axe-rule))))
   (first axe-rule))
 
+;; Extracts the right-hand-side of an axe-rule.
 (defund-inline rule-rhs (axe-rule)
   (declare (xargs :guard (equal 4 (len axe-rule))))
   (second axe-rule))
 
+;; Extracts the name ("rule-symbol") of an axe-rule.
 (defund-inline rule-symbol (axe-rule)
   (declare (xargs :guard (equal 4 (len axe-rule))))
   (third axe-rule))
 
+;; Extracts the hypotheses of an axe-rule.
 (defund-inline rule-hyps (axe-rule)
   (declare (xargs :guard (equal 4 (len axe-rule))))
   (fourth axe-rule))
@@ -561,6 +571,7 @@
 
 ;; An axe-rule is a 4-tuple containing: LHS, RHS, rule name ("rule-symbol"), and hyps.
 ;; See also stored-axe-rulep.
+;; TODO: Make the hyps the final cdr?
 (defund axe-rulep (axe-rule)
   (declare (xargs :guard t))
   (and (true-listp axe-rule)

@@ -13,7 +13,8 @@
 (include-book "tools/with-supporters" :dir :system)
 
 ;; todo: also need to include all the calls of add-known-boolean (making sure
-;; the functions are defined)
+;; the functions are defined).  Or use the :tables option to get the
+;; :known-booleans-table.
 
 (with-supporters
  (local (include-book "rewriter-basic"))

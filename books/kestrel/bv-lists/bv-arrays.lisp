@@ -603,6 +603,12 @@
              (bv-arrayp element-width length val1)
            (bv-arrayp element-width length val2))))
 
+(defthmd bv-array-write-of-if-arg4 ; todo: gen to a "convert-to-bv" rule
+  (implies (integerp element-size)
+           (equal (bv-array-write element-size len index (if test val1 val2) data)
+                  (bv-array-write element-size len index (bvif element-size test val1 val2) data)))
+  :hints (("Goal" :in-theory (enable bvif))))
+
 ;for axe
 (defthm bv-arrayp-constant-opener
   (implies (syntaxp (and (quotep element-width)
