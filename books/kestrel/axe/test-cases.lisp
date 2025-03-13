@@ -14,6 +14,7 @@
 
 (include-book "axe-types") ; for stuff like bv-type-width
 (include-book "evaluator-basic") ; for the :eval type
+(include-book "var-type-alists")
 (include-book "misc/random" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -246,6 +247,21 @@
               (test-case-typep type)
               (test-case-type-alistp alist)))
   :hints (("Goal" :in-theory (enable test-case-type-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Not quite true, because of empty-type and most-general-type:
+;; (thm
+;;   (implies (var-type-alistp alist)
+;;            (test-case-type-alistp alist))
+;;   :hints (("Goal" :in-theory (enable test-case-type-alistp
+;;                                      var-type-alistp))))
+
+(defthm test-case-type-alistp-when-strict-var-type-alistp
+  (implies (strict-var-type-alistp alist)
+           (test-case-type-alistp alist))
+  :hints (("Goal" :in-theory (enable test-case-type-alistp
+                                     strict-var-type-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

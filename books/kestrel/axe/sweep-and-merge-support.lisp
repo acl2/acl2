@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+(include-book "var-type-alists")
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "test-cases") ; for test-case-type-alistp
@@ -93,65 +94,6 @@
              (pseudo-termp (strip-equal-t term)))
     :rule-classes (:rewrite :type-prescription)
     :hints (("Goal" :in-theory (enable strip-equal-t)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Recognizes an alist that maps vars to axe-types
-;; See also test-case-type-alistp.
-(defund var-type-alistp (alist)
-  (declare (xargs :guard t))
-  (if (atom alist)
-      (null alist)
-    (let ((entry (first alist)))
-      (and (consp entry)
-           (let ((var (car entry))
-                 (type (cdr entry)))
-             (and (symbolp var)
-                  (axe-typep type)
-                  (var-type-alistp (rest alist))))))))
-
-
-;; Since nil is not an axe-type (see not-axe-typep-of-nil), nil means no type
-(defthm axe-typep-of-lookup-equal-when-var-type-alistp
-  (implies (var-type-alistp alist)
-           (iff (axe-typep (lookup-equal var alist))
-                (lookup-equal var alist)))
-  :hints (("Goal" :in-theory (enable var-type-alistp))))
-
-;; Not quite true, because of empty-type and most-general-type:
-;; (thm
-;;   (implies (var-type-alistp alist)
-;;            (test-case-type-alistp alist))
-;;   :hints (("Goal" :in-theory (enable test-case-type-alistp
-;;                                      var-type-alistp))))
-
-;; Like var-type-alistp but excludes the most-general-type and the empty-type.
-;; todo: allow most-general-type (represented by t??) once test-case-typep allows that
-(defund strict-var-type-alistp (alist)
-  (declare (xargs :guard t))
-  (if (atom alist)
-      (null alist)
-    (let ((entry (first alist)))
-      (and (consp entry)
-           (let ((var (car entry))
-                 (type (cdr entry)))
-             (and (symbolp var)
-                  (axe-typep type)
-                  (not (most-general-typep type)) ; note this
-                  (not (empty-typep type)) ; note this
-                  (strict-var-type-alistp (rest alist))))))))
-
-(defthm test-case-type-alistp-when-strict-var-type-alistp
-  (implies (strict-var-type-alistp alist)
-           (test-case-type-alistp alist))
-  :hints (("Goal" :in-theory (enable test-case-type-alistp
-                                     strict-var-type-alistp))))
-
-(defthm var-type-alistp-when-strict-var-type-alistp
-  (implies (strict-var-type-alistp alist)
-           (var-type-alistp alist))
-  :hints (("Goal" :in-theory (enable var-type-alistp
-                                     strict-var-type-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
