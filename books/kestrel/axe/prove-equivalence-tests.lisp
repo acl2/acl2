@@ -41,34 +41,27 @@
 (deftest ;; turns on extensive guard-checking
   (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
                      (dagify-term! '(bvplus '8 x '7))
-                     ;; prevent rewriting from getting it
+                     ;; prevent rewriting from getting it:
                      :initial-rule-sets nil
-                     ;; todo: support this: :types :bytes
-                     :types (acons 'x (make-bv-type 8) nil)
-                     ))
+                     :types :bytes))
 
 ;; Tests :max-conflicts nil
 (deftest ;; turns on extensive guard-checking
   (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
                      (dagify-term! '(bvplus '8 x '7))
-                     ;; prevent rewriting from getting it
+                     ;; prevent rewriting from getting it:
                      :initial-rule-sets nil
-                     ;; todo: support this: :types :bytes
-                     :types (acons 'x (make-bv-type 8) nil)
-                     :max-conflicts nil
-                     ))
+                     :types :bytes
+                     :max-conflicts nil))
 
 ;; Tests :max-conflicts <nat>
 (deftest ;; turns on extensive guard-checking
   (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
                      (dagify-term! '(bvplus '8 x '7))
-                     ;; prevent rewriting from getting it
+                     ;; prevent rewriting from getting it:
                      :initial-rule-sets nil
-                     ;; todo: support this: :types :bytes
-                     :types (acons 'x (make-bv-type 8) nil)
-                     :max-conflicts 1000000
-                     ))
-
+                     :types :bytes
+                     :max-conflicts 1000000))
 
 (must-fail ;the dags have different vars
  (prove-equivalence (dagify-term! '(bvplus '32 x y))

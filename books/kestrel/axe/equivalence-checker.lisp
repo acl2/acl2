@@ -20344,13 +20344,13 @@
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
        ;; Handle the special values :bits and :bytes for the types:
        (types (if (eq :bits types)
-                  (let ((all-vars (merge-symbol< vars1 vars2 nil) ; usually the same as just the vars1.
-                                  ))
+                  ;; todo: optimize the removal of duplicates (see merge-symbol<-and-remove-dups, or remove from consecutive dup groups):
+                  (let ((all-vars (remove-duplicates-equal (merge-symbol< vars1 vars2 nil)))) ; usually the same as just the vars1.
                     (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len all-vars))
                             (pairlis$ all-vars (repeat (len all-vars) (make-bv-type 1)))))
                 (if (eq :bytes types)
-                    (let ((all-vars (merge-symbol< vars1 vars2 nil) ; usually the same as just the vars1.
-                                    ))
+                    ;; todo: optimize the removal of duplicates (see merge-symbol<-and-remove-dups, or remove from consecutive dup groups):
+                    (let ((all-vars (remove-duplicates-equal (merge-symbol< vars1 vars2 nil)))) ; usually the same as just the vars1.
                       (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bytes.~%" (len all-vars))
                               (pairlis$ all-vars (repeat (len all-vars) (make-bv-type 8)))))
                   types)))
