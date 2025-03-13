@@ -365,6 +365,21 @@
         ;; not needed, so skip it
         (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))))
 
+;; todo issue with lookup-eq-safe -- allow returning an error?
+;; (thm
+;;   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+;;                 (integerp n)
+;;                 (<= -1 n)
+;;                 (< n dag-len)
+;;                 (var-type-alistp var-type-alist)
+;;                 (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
+;;                 (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
+;;                 (nat-listp nodenums-to-translate)
+;;                 (nodenum-type-alistp cut-nodenum-type-alist)
+;;                 )
+;;            (nodenum-type-alistp (mv-nth 1 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist))))
+;;   :hints (("Goal" :in-theory (enable gather-nodes-for-translation))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Used in equivalence-checker.lisp
