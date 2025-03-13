@@ -20424,9 +20424,10 @@
 
 @({
      (prove-equivalence
+
          dag-or-term1           ;; The first DAG or term to compare
          dag-or-term2           ;; The second DAG or term to compare
-         [:assumptions]         ;; Assumptions to use when proving equivalence
+         [:assumptions]         ;; Assumptions to use when proving equivalence, a list of terms (not necessarily translated)
          [:types]               ;; A test-case-type-alist (alist mapping variables to their test-case-types), or one of the special values :bits or :bytes.
          [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
          [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100

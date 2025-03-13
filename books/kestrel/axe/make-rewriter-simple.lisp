@@ -6189,7 +6189,7 @@
                 (- (print-dag-info dag-or-quotep defconst-name nil))
                 (- (if (myquotep dag-or-quotep)
                        nil ; skip the purity check if we have constant
-                     (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
+                     (if (dag-is-purep-aux dag-or-quotep :all t) ; prints any non-pure nodes
                          (cw "~x0 is a pure dag.~%" defconst-name)
                        (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
                 (- (progn$ (cw "~%SIMPLIFICATION FINISHED (")
