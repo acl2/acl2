@@ -15235,7 +15235,7 @@
                                   print interpreted-function-alist
                                   rewriter-rule-alist prover-rule-alist extra-stuff
                                   monitored-symbols
-                                  assumptions ;terms to assume non-nil?
+                                  assumptions ;terms to assume non-nil
                                   test-cases test-case-array-alist
                                   step-num ;use this even in the pure case?
                                   analyzed-function-table unroll miter-is-purep
@@ -15262,7 +15262,7 @@
      ;; Next, determine whether everything relevant is pure:
      ;;ffffixme also check here that all supporting vars have bv or array types in the alist? - could cut if they don't?
      ;;ffixme also check that all necessary indices and sizes are constants (miter-is-purep could reflect that? maybe it does now?)
-     (if (and ;could omit non pure assumptions (but then the proof may fail)? ;do we actually translate the assumptions?
+     (if (and ;could omit non pure assumptions (but then the proof may fail)?
            (pure-assumptionsp assumptions) ;; TODO: don't recompute this each time ;; TODO: We could drop or cut non-pure ones.
            (or miter-is-purep
                (if nil ;(g :treat-as-purep options)
@@ -15438,7 +15438,7 @@
      (if (and (not (if nil ;(g :treat-as-purep options)
                        (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil))
               (or (not miter-is-purep)
-                  (not (pure-assumptionsp assumptions)) ;fixme precompute and thread through?
+                  (not (pure-assumptionsp assumptions)) ;todo: precompute and thread through?
                   ))
          ;; Non-pure mode (rewrite fully, using contexts, then call the axe-prover, then handle supporting rec. fns):
          ;;fixme can we just call the prover?
@@ -16191,7 +16191,7 @@
                                                     dag-array-name dag-array interpreted-function-alist
                                                     rewriter-rule-alist ;gets extended
                                                     prover-rule-alist ;gets extended
-                                                    ;;assumptions ;ffixme
+                                                    ;;assumptions ; ttodo
                                                     extra-stuff test-cases
                                                     test-case-array-alist
                                                     analyzed-function-table
@@ -16478,7 +16478,7 @@
                          debug-nodes ;do we still use this?
                          rewriter-rule-alist
                          prover-rule-alist
-                         assumptions ; a list of terms to be assumed non-nil
+                         assumptions ; terms to be assumed non-nil
                          extra-stuff
                          test-cases ;alists from input vars to values (do all of these satisfy the assumptions?)
                          monitored-symbols
