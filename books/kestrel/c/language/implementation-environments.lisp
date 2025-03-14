@@ -77,7 +77,19 @@
   ((bits nat :reqfix (if (>= bits 8) bits 8)))
   :require (>= bits 8)
   :pred uchar-formatp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :prepwork ((local (in-theory (enable nfix))))
+  ///
+
+  (defret uchar-format->bits-type-prescription
+    (and (posp bits)
+         (> bits 1))
+    :fn uchar-format->bits
+    :rule-classes :type-prescription)
+
+  (defret uchar-format->bits-lower-bound
+    (>= bits 8)
+    :fn uchar-format->bits
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
