@@ -376,9 +376,9 @@
                 (new-value (c::expr-value->value new-result)))
              (implies (and ,@hyps
                            (not (c::errorp old-result)))
-                      (and (equal (c::value-kind old-value) :sint)
-                           (not (c::errorp new-result))
-                           (equal old-value new-value))))))
+                      (and (not (c::errorp new-result))
+                           (equal old-value new-value)
+                           (equal (c::value-kind old-value) :sint))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
