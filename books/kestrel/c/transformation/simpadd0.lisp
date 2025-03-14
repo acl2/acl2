@@ -1241,6 +1241,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-stmt-return ((expr? expr-optionp)
+                              (expr?-new expr-optionp)
+                              (expr?-events pseudo-event-form-listp)
+                              (expr?-thm-name symbolp)
+                              (expr?-vars ident-setp)
+                              (expr?-diffp booleanp)
+                              (gin simpadd0-ginp))
+  :guard (and (expr-option-unambp expr?)
+              (expr-option-unambp expr?-new)
+              (iff expr? expr?-new))
+  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
+  :short "Transform a return statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We put the new optional expression into a return statement."))
+  (declare (ignore expr? expr?-thm-name))
+  (b* (((simpadd0-gin gin) gin)
+       (stmt-new (stmt-return expr?-new)))
+    (mv stmt-new
+        (make-simpadd0-gout
+         :events expr?-events
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :vars expr?-vars
+         :diffp expr?-diffp)))
+
+  ///
+
+  (defret stmt-unambp-of-simpadd0-stmt-return
+    (stmt-unambp stmt)
+    :hyp (expr-option-unambp expr?-new)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines simpadd0-exprs/decls/stmts
   :short "Transform expressions, declarations, statements,
           and related entities."
@@ -1628,7 +1664,13 @@
                                      :names-to-avoid gin.names-to-avoid
                                      :vars nil
                                      :diffp nil))))
-    :measure (expr-option-count expr?))
+    :measure (expr-option-count expr?)
+
+    ///
+
+    (defret simpadd0-expr-option-iff-expr-option
+      (iff new-expr? expr?)
+      :hints (("Goal" :expand (simpadd0-expr-option expr? gin state)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3487,15 +3529,15 @@
                    :vars nil
                    :diffp nil))
        :return (b* (((mv new-expr? (simpadd0-gout gout-expr?))
-                     (simpadd0-expr-option stmt.expr? gin state)))
-                 (mv (stmt-return new-expr?)
-                     (make-simpadd0-gout
-                      :events gout-expr?.events
-                      :thm-name nil
-                      :thm-index gout-expr?.thm-index
-                      :names-to-avoid gout-expr?.names-to-avoid
-                      :vars gout-expr?.vars
-                      :diffp gout-expr?.diffp)))
+                     (simpadd0-expr-option stmt.expr? gin state))
+                    (gin (simpadd0-gin-update gin gout-expr?)))
+                 (simpadd0-stmt-return stmt.expr?
+                                       new-expr?
+                                       gout-expr?.events
+                                       gout-expr?.thm-name
+                                       gout-expr?.vars
+                                       gout-expr?.diffp
+                                       gin))
        :asm (mv (stmt-fix stmt)
                 (make-simpadd0-gout
                  :events nil
