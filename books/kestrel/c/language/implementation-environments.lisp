@@ -872,33 +872,20 @@
 
 (define ienv->uchar-max ((ienv ienvp))
   :returns (max posp :hints (("Goal" :in-theory (enable posp))))
-  :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1],
+          taken from an implementation environment."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This directly derives from @('CHAR_BIT'),
-     as discussed in @(tsee uchar-format),
-     and in footnote 50 of [C17:6.2.6.1//3],
-     which says that @('unsigned char') values
-     range from 0 to @($2^{\\mathtt{CHAR\\_BIT}}-1$).")
-   (xdoc::p
-    "This is at least 255, as required by [C17:5.2.4.2.1/1]."))
-  (1- (expt 2 (ienv->char-bits ienv)))
+    "See @(tsee uchar-format->max)."))
+  (uchar-format->max (ienv->uchar-format ienv))
   :hooks (:fix)
   ///
 
   (defret ienv->uchar-max-type-prescription
     (and (posp max)
          (> max 1))
-    :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable posp))))
-
-  (defrulel lemma
-    (>= (expt 2 (ienv->char-bits ienv)) 256)
-    :rule-classes :linear
-    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 8) (n (ienv->char-bits ienv)))
-    :disable acl2::expt-is-weakly-increasing-for-base->-1)
+    :rule-classes :type-prescription)
 
   (defret ienv->uchar-max-lower-bound
     (>= max 255)
