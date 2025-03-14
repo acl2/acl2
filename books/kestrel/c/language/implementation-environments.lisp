@@ -189,6 +189,44 @@
    (trap bool))
   :pred schar-formatp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-format->max ((schar-format schar-formatp)
+                           (uchar-format uchar-formatp))
+  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :short "The ACL2 integer value of @('SCHAR_MAX') [C17:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Based on the discussion in @(tsee schar-format),
+     this is always @($2^{\\mathtt{CHAR\\_BIT}-1} - 1$).")
+   (xdoc::p
+    "This depends on @('CHAR_BIT'),
+     so this function also takes the @('unsigned char') format as input.
+     In fact, this function only depends on @('CHAR_BIT'),
+     but we include the @('signed char') format as input for uniformity."))
+  (declare (ignore schar-format))
+  (1- (expt 2 (1- (uchar-format->bits uchar-format))))
+  :hooks (:fix)
+  ///
+
+  (defret schar-format->max-type-prescription
+    (and (posp max)
+         (> max 1))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable posp))))
+
+  (defrulel lemma
+    (>= (expt 2 (1- (uchar-format->bits uchar-format))) 128)
+    :rule-classes :linear
+    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                    (x 2) (m 7) (n (1- (uchar-format->bits uchar-format))))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1)
+
+  (defret schar-format->max-lower-bound
+    (>= max 127)
+    :rule-classes :linear))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod char-format
@@ -899,8 +937,7 @@
   (xdoc::topstring
    (xdoc::p
     "Based on the discussion in @(tsee schar-format),
-     this is always @($2^{\\mathtt{CHAR\\_BIT}-1} - 1$).
-     "))
+     this is always @($2^{\\mathtt{CHAR\\_BIT}-1} - 1$)."))
   (1- (expt 2 (1- (ienv->char-bits ienv))))
   :hooks (:fix)
   ///
