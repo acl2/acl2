@@ -872,8 +872,7 @@
 
 (define ienv->uchar-max ((ienv ienvp))
   :returns (max posp :hints (("Goal" :in-theory (enable posp))))
-  :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1],
-          taken from an implementation environment."
+  :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
    (xdoc::p
