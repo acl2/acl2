@@ -768,8 +768,9 @@
    (xdoc::p
     "The resulting expression is obtained by
      combining the unary operator with
-     the possibly transformed argument expression.
-     We generate a theorem iff
+     the possibly transformed argument expression.")
+   (xdoc::p
+    "We generate a theorem iff
      a theorem was generated for the argument expression,
      and the unary operator is among @('+'), @('-'), @('~') and @('!').
      The theorem is proved via two general ones that we prove below."))
@@ -924,7 +925,6 @@
              c::exec-unary
              c::eval-unary
              c::apconvert-expr-value-when-not-array
-             c::expr-valuep-when-expr-value-resultp-and-not-errorp
              c::plus-value-lemma
              c::bitnot-value-lemma
              c::minus-value-lemma
@@ -934,6 +934,452 @@
     (implies (c::errorp (c::exec-expr-pure arg compst))
              (c::errorp (c::exec-expr-pure (c::expr-unary op arg) compst)))
     :expand (c::exec-expr-pure (c::expr-unary op arg) compst)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-expr-binary ((op c$::binopp)
+                              (arg1 exprp)
+                              (arg1-new exprp)
+                              (arg1-events pseudo-event-form-listp)
+                              (arg1-thm-name symbolp)
+                              (arg1-vars ident-setp)
+                              (arg1-diffp booleanp)
+                              (arg2 exprp)
+                              (arg2-new exprp)
+                              (arg2-events pseudo-event-form-listp)
+                              (arg2-thm-name symbolp)
+                              (arg2-vars ident-setp)
+                              (arg2-diffp booleanp)
+                              (gin simpadd0-ginp))
+  :guard (and (expr-unambp arg1)
+              (expr-unambp arg1-new)
+              (expr-unambp arg2)
+              (expr-unambp arg2-new))
+  :returns (mv (expr exprp) (gout simpadd0-goutp))
+  :short "Transform a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The resulting expression is obtained by
+     combining the binary operator with
+     the possibly transformed argument expressions,
+     unless the binary operator is @('+')
+     and the possibly transformed left argument is an @('int') variable
+     and the possibly transformed right argument is an @('int') octal 0,
+     in which case the resulting expression is just that variable.
+     This is the core of this simple transformation.")
+   (xdoc::p
+    "We generate a theorem iff
+     theorems were generated for both argument expressions,
+     and the binary operator is pure and non-strict.
+     The theorem is proved via three general ones that we prove below;
+     the third one is only needed if there is an actual simplification,
+     but we use it always in the proof for simplicity."))
+  (b* (((simpadd0-gin gin) gin)
+       (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2))
+       (expr-new (if (and (c$::binop-case op :add)
+                          (c$::expr-case arg1-new :ident)
+                          (c$::type-case (c$::var-info->type
+                                          (c$::coerce-var-info
+                                           (c$::expr-ident->info arg1-new)))
+                                         :sint)
+                          (c$::expr-zerop arg2-new))
+                     (expr-fix arg1-new)
+                   (make-expr-binary :op op :arg1 arg1-new :arg2 arg2-new)))
+       (vars (set::union arg1-vars arg2-vars))
+       (diffp (or arg1-diffp arg2-diffp))
+       ((unless (and arg1-thm-name
+                     arg2-thm-name
+                     (member-eq (c$::binop-kind op)
+                                '(:mul :div :rem :add :sub :shl :shr
+                                  :lt :gt :le :ge :eq :ne
+                                  :bitand :bitxor :bitior))))
+        (mv expr-new
+            (make-simpadd0-gout :events (append arg1-events arg2-events)
+                                :thm-name nil
+                                :thm-index gin.thm-index
+                                :names-to-avoid gin.names-to-avoid
+                                :vars vars
+                                :diffp diffp)))
+       (hints `(("Goal"
+                 :in-theory '((:e c$::ldm-expr)
+                              (:e c::iconst-length-none)
+                              (:e c::iconst-base-oct)
+                              (:e c::iconst)
+                              (:e c::const-int)
+                              (:e c::expr-const)
+                              (:e c::binop-add)
+                              (:e c::binop-purep)
+                              (:e c::binop-strictp)
+                              (:e c::expr-binary))
+                 :use (,arg1-thm-name
+                       ,arg2-thm-name
+                       (:instance
+                        simpadd0-expr-binary-support-lemma-1
+                        (op ',(c$::ldm-binop op))
+                        (old-arg1 (mv-nth 1 (c$::ldm-expr ',arg1)))
+                        (old-arg2 (mv-nth 1 (c$::ldm-expr ',arg2)))
+                        (new-arg1 (mv-nth 1 (c$::ldm-expr ',arg1-new)))
+                        (new-arg2 (mv-nth 1 (c$::ldm-expr ',arg2-new))))
+                       (:instance
+                        simpadd0-expr-binary-support-lemma-2
+                        (op ',(c$::ldm-binop op))
+                        (arg1 (mv-nth 1 (c$::ldm-expr ',arg1)))
+                        (arg2 (mv-nth 1 (c$::ldm-expr ',arg2))))
+                       (:instance
+                        simpadd0-expr-binary-support-lemma-3
+                        (expr (mv-nth 1 (c$::ldm-expr ',arg1-new))))))))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-expr-pure-thm expr
+                                    expr-new
+                                    vars
+                                    gin.const-new
+                                    gin.thm-index
+                                    hints)))
+    (mv expr-new
+        (make-simpadd0-gout :events (append arg1-events
+                                            arg2-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+                            :vars vars
+                            :diffp diffp)))
+
+  ///
+
+  (defret expr-unamp-of-simpadd0-expr-binary
+    (expr-unambp expr)
+    :hyp (and (expr-unambp arg1-new)
+              (expr-unambp arg2-new)))
+
+  (defruledl c::mul-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::mul-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::mul-values
+             c::mul-arithmetic-values
+             c::mul-integer-values
+             c::uaconvert-values-when-sintp-and-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::type-of-value-when-sintp))
+
+  (defruledl c::div-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::div-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::div-values
+             c::div-arithmetic-values
+             c::div-integer-values
+             c::uaconvert-values-when-sintp-and-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::type-of-value-when-sintp))
+
+  (defruledl c::rem-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::rem-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::rem-values
+             c::rem-arithmetic-values
+             c::rem-integer-values
+             c::uaconvert-values-when-sintp-and-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::type-of-value-when-sintp))
+
+  (defruledl c::add-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::add-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::add-values
+             c::add-arithmetic-values
+             c::add-integer-values
+             c::uaconvert-values-when-sintp-and-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::type-of-value-when-sintp))
+
+  (defruledl c::sub-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::sub-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::sub-values
+             c::sub-arithmetic-values
+             c::sub-integer-values
+             c::uaconvert-values-when-sintp-and-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::type-of-value-when-sintp))
+
+  (defruledl c::shl-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::shl-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::shl-values
+             c::shl-integer-values
+             c::promote-value-when-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::type-of-value-when-sintp))
+
+  (defruledl c::shr-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::shr-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::shr-values
+             c::shr-integer-values
+             c::promote-value-when-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::type-of-value-when-sintp))
+
+  (defruledl c::lt-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::lt-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::lt-values
+             c::lt-real-values
+             c::lt-integer-values))
+
+  (defruledl c::gt-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::gt-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::gt-values
+             c::gt-real-values
+             c::gt-integer-values))
+
+  (defruledl c::le-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::le-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::le-values
+             c::le-real-values
+             c::le-integer-values))
+
+  (defruledl c::ge-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::ge-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::ge-values
+             c::ge-real-values
+             c::ge-integer-values))
+
+  (defruledl c::eq-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::eq-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::eq-values
+             c::eq-arithmetic-values
+             c::eq-integer-values))
+
+  (defruledl c::ne-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::ne-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::ne-values
+             c::ne-arithmetic-values
+             c::ne-integer-values))
+
+  (defruledl c::bitand-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::bitand-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::bitand-values
+             c::bitand-integer-values
+             c::uaconvert-values-when-sintp-and-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::type-of-value-when-sintp))
+
+  (defruledl c::bitxor-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::bitxor-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::bitxor-values
+             c::bitxor-integer-values
+             c::uaconvert-values-when-sintp-and-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::type-of-value-when-sintp))
+
+  (defruledl c::bitior-values-lemma
+    (implies (and (c::valuep val1)
+                  (c::valuep val2)
+                  (equal (c::value-kind val1) :sint)
+                  (equal (c::value-kind val2) :sint))
+             (b* ((val (c::bitior-values val1 val2)))
+               (implies (not (c::errorp val))
+                        (equal (c::value-kind val) :sint))))
+    :enable (c::bitior-values
+             c::bitior-integer-values
+             c::uaconvert-values-when-sintp-and-sintp
+             c::sintp-alt-def
+             c::result-integer-value
+             c::type-of-value-when-sintp))
+
+  (defruled simpadd0-expr-binary-support-lemma-1
+    (b* ((old (c::expr-binary op old-arg1 old-arg2))
+         (new (c::expr-binary op new-arg1 new-arg2))
+         (old-arg1-result (c::exec-expr-pure old-arg1 compst))
+         (old-arg2-result (c::exec-expr-pure old-arg2 compst))
+         (new-arg1-result (c::exec-expr-pure new-arg1 compst))
+         (new-arg2-result (c::exec-expr-pure new-arg2 compst))
+         (old-arg1-value (c::expr-value->value old-arg1-result))
+         (old-arg2-value (c::expr-value->value old-arg2-result))
+         (new-arg1-value (c::expr-value->value new-arg1-result))
+         (new-arg2-value (c::expr-value->value new-arg2-result))
+         (old-result (c::exec-expr-pure old compst))
+         (new-result (c::exec-expr-pure new compst))
+         (old-value (c::expr-value->value old-result))
+         (new-value (c::expr-value->value new-result)))
+      (implies (and (c::binop-purep op)
+                    (c::binop-strictp op)
+                    (not (c::errorp old-result))
+                    (not (c::errorp new-arg1-result))
+                    (not (c::errorp new-arg2-result))
+                    (equal old-arg1-value new-arg1-value)
+                    (equal old-arg2-value new-arg2-value)
+                    (equal (c::value-kind old-arg1-value) :sint)
+                    (equal (c::value-kind old-arg2-value) :sint))
+               (and (not (c::errorp new-result))
+                    (equal old-value new-value)
+                    (equal (c::value-kind old-value) :sint))))
+    :expand ((c::exec-expr-pure (c::expr-binary op old-arg1 old-arg2) compst)
+             (c::exec-expr-pure (c::expr-binary op new-arg1 new-arg2) compst))
+    :enable (c::binop-purep
+             c::binop-strictp
+             c::exec-binary-strict-pure
+             c::eval-binary-strict-pure
+             c::apconvert-expr-value-when-not-array
+             c::mul-values-lemma
+             c::div-values-lemma
+             c::rem-values-lemma
+             c::add-values-lemma
+             c::sub-values-lemma
+             c::shl-values-lemma
+             c::shr-values-lemma
+             c::lt-values-lemma
+             c::gt-values-lemma
+             c::le-values-lemma
+             c::ge-values-lemma
+             c::eq-values-lemma
+             c::ne-values-lemma
+             c::bitand-values-lemma
+             c::bitxor-values-lemma
+             c::bitior-values-lemma))
+
+  (defruled simpadd0-expr-binary-support-lemma-2
+    (implies (and (c::binop-strictp op)
+                  (or (c::errorp (c::exec-expr-pure arg1 compst))
+                      (c::errorp (c::exec-expr-pure arg2 compst))))
+             (c::errorp
+              (c::exec-expr-pure (c::expr-binary op arg1 arg2) compst)))
+    :expand (c::exec-expr-pure (c::expr-binary op arg1 arg2) compst)
+    :enable c::binop-strictp)
+
+  (defruledl c::add-values-of-sint-and-sint0
+    (implies (and (c::valuep val)
+                  (c::value-case val :sint)
+                  (equal sint0 (c::value-sint 0)))
+             (equal (c::add-values val sint0)
+                    val))
+    :enable (c::add-values
+             c::add-arithmetic-values
+             c::add-integer-values
+             c::value-arithmeticp-when-sintp
+             c::value-integerp-when-sintp
+             c::uaconvert-values-when-sintp-and-sintp
+             c::sintp-alt-def
+             c::type-of-value-when-sintp
+             c::result-integer-value
+             c::integer-type-rangep
+             fix
+             ifix))
+
+  (defruled simpadd0-expr-binary-support-lemma-3
+    (b* ((zero (c::expr-const
+                (c::const-int
+                 (c::make-iconst
+                  :value 0
+                  :base (c::iconst-base-oct)
+                  :unsignedp nil
+                  :length (c::iconst-length-none)))))
+         (expr+zero (c::expr-binary (c::binop-add) expr zero))
+         (expr-result (c::exec-expr-pure expr compst))
+         (expr-value (c::expr-value->value expr-result))
+         (expr+zero-result (c::exec-expr-pure expr+zero compst))
+         (expr+zero-value (c::expr-value->value expr+zero-result)))
+      (implies (and (not (c::errorp expr-result))
+                    (equal (c::value-kind expr-value) :sint))
+               (equal expr+zero-value expr-value)))
+    :enable (c::exec-expr-pure
+             c::exec-binary-strict-pure
+             c::eval-binary-strict-pure
+             c::apconvert-expr-value-when-not-array
+             c::add-values-of-sint-and-sint0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1149,79 +1595,22 @@
              (simpadd0-expr expr.arg1 gin state))
             (gin (simpadd0-gin-update gin gout-arg1))
             ((mv new-arg2 (simpadd0-gout gout-arg2))
-             (simpadd0-expr expr.arg2 gin state)))
-         (if (and (c$::expr-zerop new-arg2)
-                  (expr-case new-arg1 :ident)
-                  (b* (((c$::var-info info)
-                        (c$::coerce-var-info
-                         (c$::expr-ident->info new-arg1))))
-                    (c$::type-case info.type :sint))
-                  (equal new-arg1 expr.arg1)
-                  (equal new-arg2 expr.arg2))
-             ;; Transform the expression and generate a theorem.
-             (b* ((var (expr-ident->ident new-arg1))
-                  (vars (set::insert var (set::union gout-arg1.vars
-                                                     gout-arg2.vars)))
-                  (info (c$::expr-ident->info new-arg1))
-                  (hints
-                   `(("Goal"
-                      :in-theory '((:e c::expr-binary)
-                                   (:e c::expr-ident)
-                                   (:e c::binop-add)
-                                   (:e c$::binop-add)
-                                   (:e c$::const-int)
-                                   (:e c$::dec/oct/hex-const-oct)
-                                   (:e c$::expr-binary)
-                                   (:e c$::expr-const)
-                                   (:e c$::expr-ident)
-                                   (:e c$::expr-zerop)
-                                   (:e c$::iconst)
-                                   (:e c$::ident)
-                                   (:e c$::ldm-expr)
-                                   (:e c$::ldm-ident)
-                                   (:e c$::expr-pure-formalp))
-                      :use ((:instance simpadd0-supporting-lemma
-                                       (var (mv-nth 1 (c$::ldm-ident
-                                                       (c$::ident
-                                                        ,(ident->unwrap var)))))
-                                       (zero (c$::expr-const
-                                              (c$::const-int
-                                               (c$::make-iconst
-                                                :core
-                                                (c$::make-dec/oct/hex-const-oct
-                                                 :leading-zeros 1
-                                                 :value 0)
-                                                :suffix? nil)))))
-                            (:instance simpadd0-expr-ident-support-lemma
-                                       (ident ',var)
-                                       (info ',info))))))
-                  ((mv thm-event thm-name thm-index)
-                   (simpadd0-gen-expr-pure-thm expr
-                                               new-arg1
-                                               vars
-                                               gin.const-new
-                                               gout-arg2.thm-index
-                                               hints)))
-               (mv new-arg1
-                   (make-simpadd0-gout
-                    :events (append gout-arg1.events
-                                    gout-arg2.events
-                                    (list thm-event))
-                    :thm-name thm-name
-                    :thm-index thm-index
-                    :names-to-avoid (append gout-arg2.names-to-avoid
-                                            (list thm-name))
-                    :vars vars
-                    :diffp t)))
-           ;; Do not transform the expression.
-           (mv (make-expr-binary :op expr.op :arg1 new-arg1 :arg2 new-arg2)
-               (make-simpadd0-gout
-                :events (append gout-arg1.events gout-arg2.events)
-                :thm-name nil
-                :thm-index gout-arg2.thm-index
-                :names-to-avoid gout-arg2.names-to-avoid
-                :vars (set::union gout-arg1.vars gout-arg2.vars)
-                :diffp (or gout-arg1.diffp gout-arg2.diffp)))))
+             (simpadd0-expr expr.arg2 gin state))
+            (gin (simpadd0-gin-update gin gout-arg2)))
+         (simpadd0-expr-binary expr.op
+                               expr.arg1
+                               new-arg1
+                               gout-arg1.events
+                               gout-arg1.thm-name
+                               gout-arg1.vars
+                               gout-arg1.diffp
+                               expr.arg2
+                               new-arg2
+                               gout-arg2.events
+                               gout-arg2.thm-name
+                               gout-arg2.vars
+                               gout-arg2.diffp
+                               gin))
        :cond
        (b* (((mv new-test (simpadd0-gout gout-test))
              (simpadd0-expr expr.test gin state))
