@@ -227,6 +227,62 @@
     (>= max 127)
     :rule-classes :linear))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-format->min ((schar-format schar-formatp)
+                           (uchar-format uchar-formatp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('SCHAR_MIN') [C17:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Based on the discussion in @(tsee schar-format),
+     this is either @($- 2^{\\mathtt{CHAR\\_BIT}-1}$)
+     (if the signed format is two's complement
+     and the pattern with sign bit 1 and all value bits 0
+     is not a trap representation)
+     or @($- 2^{\\mathtt{CHAR\\_BIT}-1} + 1$)
+     (if the signed format is ones' complement or sign-and-magnitude,
+     or it is two's complement
+     but the pattern with sign bit 1 and all value bits 0
+     is a trap representation).")
+   (xdoc::p
+    "Like @(tsee schar-format->max),
+     this function also depends on the @('unsigned char') format.
+     Unlike @(tsee schar-format->max),
+     this function also depends on the @('signed char') format."))
+  (if (and (equal (signed-format-kind
+                   (schar-format->signed schar-format))
+                  :twos-complement)
+           (not (schar-format->trap schar-format)))
+      (- (expt 2 (1- (uchar-format->bits uchar-format))))
+    (- (1- (expt 2 (1- (uchar-format->bits uchar-format))))))
+  :hooks (:fix)
+  ///
+
+  (defret schar-format->min-type-prescription
+    (and (integerp min)
+         (< min 0))
+    :rule-classes :type-prescription)
+
+  (defrulel lemma
+    (>= (expt 2 (1- (uchar-format->bits uchar-format))) 128)
+    :rule-classes :linear
+    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                    (x 2) (m 7) (n (1- (uchar-format->bits uchar-format))))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1)
+
+  (defret schar-format->min-upper-bound
+    (<= min (if (and (equal (signed-format-kind
+                             (schar-format->signed schar-format))
+                            :twos-complement)
+                     (not (schar-format->trap schar-format)))
+                -128
+              -127))
+    :rule-classes
+    ((:linear
+      :trigger-terms ((schar-format->min schar-format uchar-format))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod char-format
