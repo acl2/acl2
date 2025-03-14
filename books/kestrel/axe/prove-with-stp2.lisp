@@ -17,8 +17,9 @@
 (include-book "depth-array")
 (include-book "translate-dag-to-stp") ; has ttags, for add-assert-if-a-mult (move that here?)
 (include-book "type-inference") ; for maybe-get-type-of-function-call, reduce?
-(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+;(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "supporting-nodes") ;for tag-nodenums-with-name
+(include-book "supporting-vars") ; for vars-that-support-dag-node
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
@@ -50,6 +51,33 @@
          (all-natp x))
   :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund integer-average-round-up (x y)
+  (declare (xargs :guard (and (integerp x)
+                              (integerp y))))
+  (ceiling (/ (+ x y) 2) 1))
+
+(local
+  (defthm <=-of-integer-average-round-up-1
+    (implies (and (<= x y)
+                  (natp x)
+                  (natp y))
+             (<= (integer-average-round-up x y) y))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable integer-average-round-up)))))
+
+(local
+  (defthm <=-of-integer-average-round-up-2
+    (implies (and (<= x y)
+                  (natp x)
+                  (natp y))
+             (<= x (integer-average-round-up x y)))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable integer-average-round-up)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns a string-tree that extends extra-asserts.
 ;; todo: should we use this more?
 ;fixme rectify this printing with the other use of this function
@@ -60,7 +88,7 @@
                               (bounded-dag-exprp n expr)
                               (dag-function-call-exprp expr)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 n))
-                              (symbol-alistp var-type-alist)
+                              (var-type-alistp var-type-alist)
                               (string-treep extra-asserts))
                   :guard-hints (("Goal" :in-theory (enable bounded-dag-exprp car-becomes-nth-of-0
                                                            not-<-of-nth-when-bounded-darg-listp-gen
@@ -95,6 +123,150 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This assumes the miter is pure. -- or just the relevant nodes??
+;; Only used for pure probably-constant nodes.
+;;only used for probably-constant nodes
+;;only cuts at variables
+;FIXME can we clean this up?
+;; Returns (mv erp nodenums-to-translate cut-nodenum-type-alist) where NODENUMS-TO-TRANSLATE is in decreasing order.
+;; TODO: implement increasingly aggressive cuts?
+; TODO: Consider using a worklist.
+;todo: compare to gather-nodes-to-translate-up-to-depth
+;todo: generate extra asserts for bvmults?
+(defund gather-nodes-for-translation (n ;counts down and stops at -1
+                                      dag-array-name dag-array dag-len ; dag-len is only used for the guard
+                                      var-type-alist
+                                      needed-for-node1-tag-array ; todo: rename this array, since there is only one node
+                                      nodenums-to-translate-acc ;gets extended, in increasing order
+                                      cut-nodenum-type-alist ; an accumulator, gets extended
+                                      )
+  (declare (xargs :guard (and (integerp n)
+                              (<= -1 n)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< n dag-len)
+                              (var-type-alistp var-type-alist)
+                              (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                              (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
+                              (nat-listp nodenums-to-translate-acc)
+                              (nodenum-type-alistp cut-nodenum-type-alist))
+                  :measure (nfix (+ 1 n))))
+  (if (not (natp n))
+      (mv (erp-nil) (reverse-list nodenums-to-translate-acc) cut-nodenum-type-alist)
+    (mv-let (erp needed-for-node1-tag-array nodenums-to-translate-acc cut-nodenum-type-alist)
+      (if (not (aref1 'needed-for-node1-tag-array needed-for-node1-tag-array n))
+          ;; this node is not needed, so skip it:
+          (mv (erp-nil) needed-for-node1-tag-array nodenums-to-translate-acc cut-nodenum-type-alist)
+        (let ((expr (aref1 dag-array-name dag-array n)))
+          (if (variablep expr)
+              ;; variable; we'll cut:
+              (let ((type (lookup-eq expr var-type-alist)))
+                (if (not type)
+                    (prog2$ (cw "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist)
+                            (mv :type-error nil nil nil))
+                  (mv (erp-nil) needed-for-node1-tag-array nodenums-to-translate-acc (acons-fast n type cut-nodenum-type-alist))))
+            (if (fquotep expr)
+                ;; constant; we'll translate it:
+                (mv (erp-nil) needed-for-node1-tag-array (cons n nodenums-to-translate-acc) cut-nodenum-type-alist)
+              ;; function call (we'll translate it and mark its children as being needed):
+              ;; todo: consider cutting!
+              (mv (erp-nil)
+                  (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                  (cons n nodenums-to-translate-acc)
+                  cut-nodenum-type-alist)))))
+      (if erp
+          (mv erp nil nil)
+        (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate-acc cut-nodenum-type-alist)))))
+
+(local
+  (defthm gather-nodes-for-translation-return-type-1
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+                  (<= -1 n)
+                  (< n dag-len)
+                  (var-type-alistp var-type-alist)
+                  (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                  (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
+                  (nat-listp nodenums-to-translate)
+                  (nodenum-type-alistp cut-nodenum-type-alist)
+                  (no-nodes-are-variablesp nodenums-to-translate dag-array-name dag-array dag-len)
+                  (all-< nodenums-to-translate dag-len))
+             (and (nat-listp (mv-nth 1 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))
+                  (no-nodes-are-variablesp (mv-nth 1 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist))
+                                           dag-array-name dag-array dag-len)
+                  (all-< (mv-nth 1 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist))
+                         dag-len)))
+    :hints (("Goal" :in-theory (enable gather-nodes-for-translation)))))
+
+(local
+  (defthm gather-nodes-for-translation-return-type-2
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+                  (<= -1 n)
+                  (< n dag-len)
+                  (var-type-alistp var-type-alist)
+                  (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
+                  (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
+                  (nat-listp nodenums-to-translate)
+                  (nodenum-type-alistp cut-nodenum-type-alist)
+                  (all-< (strip-cars cut-nodenum-type-alist)
+                         dag-len))
+             (and (nodenum-type-alistp (mv-nth 2 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))
+                  (all-< (strip-cars (mv-nth 2 (gather-nodes-for-translation n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))
+                         dag-len)))
+    :hints (("Goal" :in-theory (enable gather-nodes-for-translation)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This currently does no cutting.
+;; Returns (mv result state) where result is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+(defund prove-node-is-constant-with-stp (nodenum constant-value
+                                                 miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
+  (declare (xargs :guard (and (natp nodenum)
+                              (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                              (< nodenum miter-len)
+                              (var-type-alistp var-type-alist)
+                              (print-levelp print)
+                              (or (null max-conflicts) (natp max-conflicts))
+                              (symbolp miter-name))
+                  :stobjs state))
+  (b* ((needed-for-node1-tag-array (make-empty-array 'needed-for-node1-tag-array (+ 1 nodenum))) ; todo: rename the array
+       (needed-for-node1-tag-array (aset1 'needed-for-node1-tag-array needed-for-node1-tag-array nodenum t))
+       ;; Choose which nodes to translate (no cutting):
+       ((mv erp nodenums-to-translate cut-nodenum-type-alist)
+        (gather-nodes-for-translation nodenum miter-array-name miter-array miter-len var-type-alist needed-for-node1-tag-array nil nil))
+       ((when (not (consp nodenums-to-translate))) ; todo: can this happen?  should this be an error or a failure? can the node be a constant node?  a var?
+        (cw "ERROR: No nodes to translate.")
+        (mv *error* state))
+       ((when erp)
+        (mv *error* state)) ; or pass back this error?
+       ;; Call STP on the proof obligation without replacement:
+       ((mv result state)
+        (prove-equality-query-with-stp (enquote constant-value)
+                                       nodenum
+                                       miter-array-name miter-array miter-len
+                                       nodenums-to-translate
+                                       (concatenate 'string (symbol-name miter-name) "-CONSTANT-" (nat-to-string nodenum))
+                                       cut-nodenum-type-alist
+                                       nil ;extra-asserts ;fixme
+                                       print
+                                       max-conflicts
+                                       nil ;no counterexample (for now)
+                                       nil ; print-cex-as-signedp (irrelevant?)
+                                       state)))
+    (if (eq *error* result)
+        (prog2$ (er hard? 'prove-node-is-constant-with-stp "Error calling STP.")
+                (mv result state))
+      (if (eq *valid* result)
+          (prog2$ (cw "STP proved that node ~x0 is the constant ~x1.~%" nodenum constant-value)
+                  (mv result state))
+        ;; TODO: Use the counterexample if there is one.
+        (prog2$
+          (cw "STP FAILED to prove that node ~x0 is the constant ~x1.~%" nodenum constant-value)
+          ;;fffixme return "timed out" if it did
+          (mv result state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; This assumes the miter is pure.
 ;; Only used by the equivalence checker.
 ;fixme could use a worklist instead of walking the whole dag? perhaps merge the supporters lists for the two dags?
@@ -109,25 +281,26 @@
 ;            )
 (defund gather-nodes-to-translate-for-aggressively-cut-proof (n ;counts down and stops at -1
                                                               dag-array-name dag-array dag-len
+                                                              var-type-alist
                                                               needed-for-node1-tag-array ;initially only node1 is tagged (there are nodes that support node1 and are above the shared nodes)
                                                               needed-for-node2-tag-array ;initially only node2 is tagged (there are nodes that support node2 and are above the shared nodes)
                                                               nodenums-to-translate ;this is an accumulator sorted in increasing order
                                                               cut-nodenum-type-alist ; todo: make this an array?
                                                               extra-asserts ;an accumulator (a string-tree)
-                                                              print var-type-alist)
-  (declare (xargs :measure (nfix (+ 1 n))
-                  :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (integerp n)
+                                                              print)
+  (declare (xargs :guard (and (integerp n)
                               (<= -1 n)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< n dag-len)
                               (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
                               (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
                               (array1p 'needed-for-node2-tag-array needed-for-node2-tag-array)
                               (< n (alen1 'needed-for-node2-tag-array needed-for-node2-tag-array))
-                              (symbol-alistp var-type-alist) ; the cdrs should be axe-types?
+                              (var-type-alistp var-type-alist)
                               (nat-listp nodenums-to-translate)
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (string-treep extra-asserts))
+                  :measure (nfix (+ 1 n))
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))))
   (if (not (natp n))
       (mv (erp-nil) (reverse-list nodenums-to-translate) cut-nodenum-type-alist extra-asserts)
@@ -136,28 +309,27 @@
       (if (and (not needed-for-node1p)
                (not needed-for-node2p))
           ;; Node n is not needed for either node, so skip it:
-          (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate
-                                                                cut-nodenum-type-alist extra-asserts print var-type-alist)
+          (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts print)
         ;; Node n is needed for at least one of node1 and node2:
         ;;fixme move these tests down?  constants and variables are rare?
         (let ((expr (aref1 dag-array-name dag-array n)))
           (if (variablep expr)
               ;; if it's a variable, we will cut (the variable generated in STP will be named NODEXXX, so we don't have to worry about the actual name of expr clashing with something) and add info about its type to cut-nodenum-type-alist:
-              (b* ((type (lookup-eq-safe expr var-type-alist))
-                   ((when (not (axe-typep type)))
-                    (cw "ERROR: Bad type for ~x0 in alist ~x1.~%" expr var-type-alist)
+              (b* ((type (lookup-eq expr var-type-alist))
+                   ((when (not type)) ; should not happen (var-type-alist should assign types to all vars in the dag)
+                    (cw "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist)
                     (mv :type-error nil nil extra-asserts)))
-                (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array
                                                                       nodenums-to-translate ;not adding n
                                                                       (acons-fast n type cut-nodenum-type-alist)
-                                                                      extra-asserts print var-type-alist))
+                                                                      extra-asserts print))
             (if (fquotep expr)
                 ;; it's a constant; we'll always translate it:
                 ;; fixme can this happen?  or when we merge a node with a constant, does the value get changed in each parent?
-                (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array
                                                                       (cons n nodenums-to-translate) ;translate it
                                                                       cut-nodenum-type-alist
-                                                                      extra-asserts print var-type-alist)
+                                                                      extra-asserts print)
               ;; expr must be a function call:
               (if needed-for-node1p
                   (if needed-for-node2p
@@ -179,48 +351,48 @@
                            ;;values for the product is: (2^m-1)*(2^n-1).
                            (extra-asserts (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist print extra-asserts))
                            (- (and print (cw ".)"))))
-                        (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
+                        (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array
                                                                               nodenums-to-translate ;don't translate
                                                                               ;;fixme will expr always have a known type? ;;FIXME think about arrays here?
                                                                               (acons-fast n type cut-nodenum-type-alist)
-                                                                              extra-asserts print var-type-alist))
+                                                                              extra-asserts print))
                     ;;needed for node1 but not node2
                     ;; translate it and mark its children as being needed for node1
                     (gather-nodes-to-translate-for-aggressively-cut-proof
-                      (+ -1 n) dag-array-name dag-array dag-len
+                      (+ -1 n) dag-array-name dag-array dag-len var-type-alist
                       (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
                       needed-for-node2-tag-array
                       (cons n nodenums-to-translate)
-                      cut-nodenum-type-alist extra-asserts print var-type-alist))
+                      cut-nodenum-type-alist extra-asserts print))
                 ;; needed for node2 but not node1
                 ;; translate it and mark its children as being needed for node2
                 (gather-nodes-to-translate-for-aggressively-cut-proof
-                  (+ -1 n) dag-array-name dag-array dag-len
+                  (+ -1 n) dag-array-name dag-array dag-len var-type-alist
                   needed-for-node1-tag-array
                   (tag-nodenums-with-name (dargs expr) 'needed-for-node2-tag-array needed-for-node2-tag-array)
                   (cons n nodenums-to-translate)
-                  cut-nodenum-type-alist extra-asserts print var-type-alist)))))))))
+                  cut-nodenum-type-alist extra-asserts print)))))))))
 
-(defthm nat-listp-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (integerp n)
-                (<= -1 n)
-                (nat-listp nodenums-to-translate))
-           (nat-listp (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
-                                                                                      nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
+(local
+  (defthm nat-listp-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+                  (<= -1 n)
+                  (nat-listp nodenums-to-translate))
+             (nat-listp (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts print))))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof)))))
 
-(defthm no-nodes-are-variablesp-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (integerp n)
-                (<= -1 n)
-                (nat-listp nodenums-to-translate)
-                (no-nodes-are-variablesp nodenums-to-translate
-                                         dag-array-name dag-array dag-len))
-           (no-nodes-are-variablesp (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
-                                                                                                    nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))
-                                    dag-array-name dag-array dag-len))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
+(local
+  (defthm no-nodes-are-variablesp-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+                  (<= -1 n)
+                  (nat-listp nodenums-to-translate)
+                  (no-nodes-are-variablesp nodenums-to-translate
+                                           dag-array-name dag-array dag-len))
+             (no-nodes-are-variablesp (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts print))
+                                      dag-array-name dag-array dag-len))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof)))))
 
 ;; ;drop?
 ;; (defthmd all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof
@@ -243,131 +415,206 @@
 ;;                   dag-len))
 ;;   :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
 
-(defthm all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (integerp n)
-                (<= -1 n)
-                (< n dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate bound)
-                (<= (+ 1 n) bound)
-                (all-< nodenums-to-translate dag-len))
-           (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
-                                                                                  nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))
-                  bound))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
+(local
+  (defthm all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+                  (<= -1 n)
+                  (< n dag-len)
+                  (nat-listp nodenums-to-translate)
+                  (all-< nodenums-to-translate bound)
+                  (<= (+ 1 n) bound)
+                  (all-< nodenums-to-translate dag-len))
+             (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts print))
+                    bound))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof)))))
 
-(defthm all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new-special
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (integerp n)
-                (<= -1 n)
-                (< n dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate (+ 1 n))
-                (all-< nodenums-to-translate dag-len))
-           (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
-                                                                                   nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))
-                  (+ 1 n)))
-  :hints (("Goal" :use (:instance all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new (bound (+ 1 n)))
-           :in-theory (disable all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new))))
+(local
+  (defthm all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new-special
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+                  (<= -1 n)
+                  (< n dag-len)
+                  (nat-listp nodenums-to-translate)
+                  (all-< nodenums-to-translate (+ 1 n))
+                  (all-< nodenums-to-translate dag-len))
+             (all-< (mv-nth 1 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts print))
+                    (+ 1 n)))
+    :hints (("Goal" :use (:instance all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new (bound (+ 1 n)))
+             :in-theory (disable all-<-of-mv-nth-1-of-gather-nodes-to-translate-for-aggressively-cut-proof-new)))))
 
 ;todo: may need the ability to return an error
-(defthm nodenum-type-alistp-of-mv-nth-2-of-gather-nodes-to-translate-for-aggressively-cut-proof
-  (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (integerp n)
-                (<= -1 n)
-                (nat-listp nodenums-to-translate)
-                (nodenum-type-alistp cut-nodenum-type-alist))
-           (nodenum-type-alistp (mv-nth 2 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
-                                                                                                nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
+(local
+  (defthm nodenum-type-alistp-of-mv-nth-2-of-gather-nodes-to-translate-for-aggressively-cut-proof
+    (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+                  (<= -1 n)
+                  (nat-listp nodenums-to-translate)
+                  (nodenum-type-alistp cut-nodenum-type-alist)
+                  (var-type-alistp var-type-alist))
+             (nodenum-type-alistp (mv-nth 2 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts print))))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof)))))
 
-(defthm all-<-of-strip-cars-of-mv-nth-2-of-gather-nodes-to-translate-for-aggressively-cut-proof
-  (implies (and (all-< (strip-cars cut-nodenum-type-alist) dag-len)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (integerp n)
-                (<= -1 n)
-                (< n dag-len)
-                (nat-listp nodenums-to-translate)
-                (all-< nodenums-to-translate dag-len))
-           (all-< (strip-cars (mv-nth 2 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
-                                                                                              nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist)))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
+(local
+  (defthm all-<-of-strip-cars-of-mv-nth-2-of-gather-nodes-to-translate-for-aggressively-cut-proof
+    (implies (and (all-< (strip-cars cut-nodenum-type-alist) dag-len)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (integerp n)
+                  (<= -1 n)
+                  (< n dag-len)
+                  (nat-listp nodenums-to-translate)
+                  (all-< nodenums-to-translate dag-len))
+             (all-< (strip-cars (mv-nth 2 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts print)))
+                    dag-len))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof)))))
 
-(defthm string-treep-of-mv-nth-3-of-gather-nodes-to-translate-for-aggressively-cut-proof
-  (implies (string-treep extra-asserts)
-           (string-treep (mv-nth 3 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
-                                                                                         nodenums-to-translate cut-nodenum-type-alist extra-asserts print var-type-alist))))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; This assumes the miter is pure.
-;; Only used by the equivalence-checker.
-;;only used for probably-constant nodes
-;;only cuts at variables
-;FIXME can we clean this up?
-;; Only used by the equivalence-checker.
-;returns (mv nodenums-to-translate ;decreasing order
-;            cut-nodenum-type-alist)
-;fixme implement increasingly aggressive cuts?
-; TODO: Considing using a worklist.
-;todo: compare to gather-nodes-to-translate-up-to-depth
-;todo: generate extra asserts for bvmults?
-(defund gather-nodes-for-translation (n ;counts down and stops at -1
-                                      dag-array-name dag-array dag-len ; dag-len is only used for the guard
-                                      var-type-alist ;; todo: what about types we can't handle?
-                                      needed-for-node1-tag-array ; todo: rename this array, since there is only one node
-                                      nodenums-to-translate ;gets extended, in increasing order
-                                      cut-nodenum-type-alist ; gets extended
-                                      )
-  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                              (integerp n)
-                              (<= -1 n)
-                              (< n dag-len)
-                              (symbol-alistp var-type-alist) ; the cdrs should be axe-types?
-                              ;; (nodenum-type-alistp cut-nodenum-type-alist) ; todo
-                              (array1p 'needed-for-node1-tag-array needed-for-node1-tag-array)
-                              (< n (alen1 'needed-for-node1-tag-array needed-for-node1-tag-array))
-                              (nat-listp nodenums-to-translate)
-                              )
-                  :measure (nfix (+ 1 n))))
-  (if (not (natp n))
-      (mv (reverse-list nodenums-to-translate) cut-nodenum-type-alist)
-    (let* ((needed-for-node1 (aref1 'needed-for-node1-tag-array needed-for-node1-tag-array n)))
-      (if needed-for-node1
-          (let ((expr (aref1 dag-array-name dag-array n)))
-            (if (variablep expr)
-                ;; variable; we'll cut:
-                (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist
-                                              needed-for-node1-tag-array
-                                              nodenums-to-translate
-                                              (acons-fast n (lookup-eq-safe expr var-type-alist) cut-nodenum-type-alist))
-              (if (fquotep expr)
-                  ;; constant; we'll translate it:
-                  (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist
-                                                needed-for-node1-tag-array
-                                                (cons n nodenums-to-translate)
-                                                cut-nodenum-type-alist)
-                ;; function call (we'll translate it and mark its children as being needed)
-                (let ((translatep t)) ; todo: simplify
-                  (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist
-                                                (if translatep
-                                                    (tag-nodenums-with-name (dargs expr) 'needed-for-node1-tag-array needed-for-node1-tag-array)
-                                                  needed-for-node1-tag-array)
-                                                (if translatep
-                                                    (cons n nodenums-to-translate)
-                                                  nodenums-to-translate)
-                                                (if translatep
-                                                    cut-nodenum-type-alist
-                                                  (acons-fast n (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)) cut-nodenum-type-alist)))))))
-        ;; not needed, so skip it
-        (gather-nodes-for-translation (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nodenums-to-translate cut-nodenum-type-alist)))))
+(local
+  (defthm string-treep-of-mv-nth-3-of-gather-nodes-to-translate-for-aggressively-cut-proof
+    (implies (string-treep extra-asserts)
+             (string-treep (mv-nth 3 (gather-nodes-to-translate-for-aggressively-cut-proof n dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts print))))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Used in equivalence-checker.lisp
+;Tries to prove that smaller-nodenum equals larger-nodenum, but replaces some (all?) shared supporting nodes by variables (and so proves a more general goal).
+;If this succeeds, the nodes are equal.  If this fails, they may still be equal, because the failure might be due to the cutting.
+;returns (mv erp provedp
+;            nodenums-translated ;;in decreasing order
+;            state)
+;; Assumes that smaller-nodenum and larger-nodenum are pure.
+(defund try-aggressively-cut-equivalence-proof (smaller-nodenum
+                                                larger-nodenum
+                                                dag-array-name
+                                                dag-array ;this is the miter-array
+                                                dag-len
+                                                var-type-alist ;gives types to the variables in the dag (are these really needed? maybe not if we use induced types?)
+                                                print max-conflicts miter-name
+                                                state)
+  (declare (xargs :guard (and (natp smaller-nodenum)
+                              (natp larger-nodenum)
+                              (<= smaller-nodenum larger-nodenum) ; is equal possible?
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< smaller-nodenum dag-len)
+                              (< larger-nodenum dag-len)
+                              (var-type-alistp var-type-alist)
+                              (print-levelp print) ; tighter?
+                              (or (null max-conflicts) (natp max-conflicts))
+                              (symbolp miter-name))
+                  :stobjs state))
+  (b* ((- (and print (cw " (Cutting at shared nodes...")))
+       (num-nodes-to-consider (+ 1 larger-nodenum))
+       ;;both of these arrays must have length at least (+ 1 larger-nodenum), since nodes up to larger-nodenum will be looked up?  could skip the array access for nodenums larger that smaller-nodenum (they obviously can't support it)
+       (needed-for-smaller-nodenum-tag-array (make-empty-array 'needed-for-node1-tag-array num-nodes-to-consider)) ;ffixme rename these arrays (but have to do it everywhere!)
+       (needed-for-smaller-nodenum-tag-array (aset1 'needed-for-node1-tag-array needed-for-smaller-nodenum-tag-array smaller-nodenum t))
+       (needed-for-larger-nodenum-tag-array (make-empty-array 'needed-for-node2-tag-array num-nodes-to-consider))
+       (needed-for-larger-nodenum-tag-array (aset1 'needed-for-node2-tag-array needed-for-larger-nodenum-tag-array larger-nodenum t))
+       ;; Use our heuristic to cut the proof (nodes above the cut are marked for translation, nodes at the cut get entries made in cut-nodenum-type-alist):
+       ((mv erp
+            nodenums-to-translate ;in decreasing order
+            cut-nodenum-type-alist extra-asserts)
+         ; todo: consider a worklist algorithm for this:
+        (gather-nodes-to-translate-for-aggressively-cut-proof larger-nodenum ;skip everything above larger-nodenum
+                                                              dag-array-name dag-array dag-len
+                                                              var-type-alist
+                                                              needed-for-smaller-nodenum-tag-array
+                                                              needed-for-larger-nodenum-tag-array
+                                                              nil ;nodenums-to-translate
+                                                              nil ;cut-nodenum-type-alist ; todo: use an array for this, for speed?
+                                                              nil ;extra-asserts
+                                                              print))
+       ((when erp)
+        (cw "ERROR (~x0) in gathering nodes.~%" erp)
+        (mv erp
+            nil ; not proved
+            nodenums-to-translate
+            state))
+       ((when (not (consp nodenums-to-translate))) ; can this happen?  two vars? two constants? a var and a constant?
+        (cw "ERROR: No nodes to translate.")
+        (mv :no-nodes-to-translate
+            nil ; not proved
+            nodenums-to-translate
+            state))
+       (- (and print (cw ")~%")))
+       ;; Call STP:
+       (- (and print ;(cw "Proving with STP...~%" nil)
+               ))
+       ((mv result state)
+        (prove-equality-query-with-stp smaller-nodenum larger-nodenum dag-array-name dag-array dag-len
+                                       nodenums-to-translate
+                                       (n-string-append (symbol-name miter-name) ;use concatenate? ;fixme pass the miter-name as a string throughout?
+                                                        "-"
+                                                        (nat-to-string smaller-nodenum)
+                                                        "="
+                                                        (nat-to-string larger-nodenum))
+                                       cut-nodenum-type-alist
+                                       extra-asserts
+                                       print
+                                       max-conflicts
+                                       nil ;no counterexample (for now)
+                                       nil
+                                       state)))
+    (if (eq result *error*)
+        (prog2$ (er hard? 'try-aggressively-cut-equivalence-proof "Error calling STP." nil)
+                (mv :error-calling-stp
+                    nil ;not proved
+                    nodenums-to-translate
+                    state))
+      (prog2$ (and (eq result *timedout*) (cw "STP timed out.~%"))
+              (mv (erp-nil)
+                  (eq result *valid*) ;ttodo: user the counterexample, if present?
+                  nodenums-to-translate
+                  state)))))
+
+(local
+  (defthm nat-listp-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
+    (implies (and (natp smaller-nodenum)
+                  (natp larger-nodenum)
+                  (<= smaller-nodenum larger-nodenum) ; is equal possible?
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (< smaller-nodenum dag-len)
+                  (< larger-nodenum dag-len)
+                  (var-type-alistp var-type-alist)
+                  (print-levelp print) ; tighter?
+                  ;; (natp max-conflicts) ; allow nil?
+                  (symbolp miter-name))
+             (nat-listp (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))))
+    :hints (("Goal" :in-theory (enable try-aggressively-cut-equivalence-proof)))))
+
+(local
+  (defthm all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
+    (implies (and (natp smaller-nodenum)
+                  (natp larger-nodenum)
+                  (<= smaller-nodenum larger-nodenum) ; is equal possible?
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (< smaller-nodenum dag-len)
+                  (< larger-nodenum dag-len)
+                  (var-type-alistp var-type-alist)
+                  (print-levelp print) ; tighter?
+                  ;; (natp max-conflicts) ; allow nil?
+                  (symbolp miter-name))
+             (all-< (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
+                    (+ 1 larger-nodenum)))
+    :hints (("Goal" :in-theory (enable try-aggressively-cut-equivalence-proof)))))
+
+;; (defthm all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof-gen
+;;   (implies (and (<= dag-len bound)
+;;                 (natp smaller-nodenum)
+;;                 (natp larger-nodenum)
+;;                 (<= smaller-nodenum larger-nodenum) ; is equal possible?
+;;                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+;;                 (< smaller-nodenum dag-len)
+;;                 (< larger-nodenum dag-len)
+;;                 (var-type-alistp var-type-alist)
+;;                 (print-levelp print) ; tighter?
+;;                 ;; (natp max-conflicts) ; allow nil?
+;;                 (symbolp miter-name))
+;;            (all-< (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
+;;                   bound))
+;;   :hints (("Goal" :use all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
+;;            :in-theory (disable all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;TODO: Consider using a worklist algorithm.
 ;returns (mv erp nodenums-to-translate ;in decreasing order
 ;            cut-nodenum-type-alist
@@ -377,7 +624,7 @@
 ;; todo: do guards for functions like this cause expensive checks when we call them from :program mode code?
 ;; All nodes involved (everything tagged in the depth-array and supporters-tag-array) will be pure nodes.
 ;; Instead of returning errors,  suppose we could return most-general-type.
-(defund gather-nodes-to-translate-up-to-depth (n
+(defund gather-nodes-to-translate-up-to-depth (n ;counts down and stops at -1
                                                depth
                                                depth-array
                                                dag-array-name dag-array dag-len ; dag-len is only used for the guard
@@ -398,7 +645,7 @@
                               (< n (alen1 'supporters-tag-array supporters-tag-array))
                               (nat-listp nodenums-to-translate)
                               (nodenum-type-alistp cut-nodenum-type-alist)
-                              (symbol-alistp var-type-alist) ; the cdrs should be axe-types?
+                              (var-type-alistp var-type-alist)
                               (string-treep extra-asserts))
                   :measure (nfix (+ 1 n))))
   (if (not (natp n))
@@ -411,9 +658,9 @@
         (let ((expr (aref1 dag-array-name dag-array n)))
           (if (variablep expr)
               ;;it's a variable.  we always cut:
-              (b* ((type (lookup-eq-safe expr var-type-alist))
-                   ((when (not (axe-typep type))) ; should not fail (var-type-alist should assign types to all vars in the dag)
-                    (cw "ERROR: Bad type, ~x0, for ~x1 in alist ~x2.~%" type expr var-type-alist)
+              (b* ((type (lookup-eq expr var-type-alist))
+                   ((when (not type)) ; should not happen (var-type-alist should assign types to all vars in the dag)
+                    (cw "ERROR: No type, ~x0, for ~x1 in alist ~x2.~%" type expr var-type-alist)
                     (mv :type-error nil nil extra-asserts)))
                 (gather-nodes-to-translate-up-to-depth (+ -1 n) depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
                                                        nodenums-to-translate
@@ -454,99 +701,318 @@
                                                            (acons-fast n type cut-nodenum-type-alist)
                                                            extra-asserts))))))))))))
 
-(defthm nat-listp-of-mv-nth-1-of-gather-nodes-to-translate-up-to-depth
-  (implies (and (integerp n)
-                (<= -1 n)
-                (natp depth)
-                (depth-arrayp 'depth-array depth-array (+ 1 n))
-                (array1p 'depth-array depth-array)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (< n dag-len)
-                (array1p 'supporters-tag-array supporters-tag-array)
-                (< n (alen1 'supporters-tag-array supporters-tag-array))
-                (nat-listp nodenums-to-translate)
-                (nodenum-type-alistp cut-nodenum-type-alist)
-                (symbol-alistp var-type-alist)
-                (string-treep extra-asserts))
-           (nat-listp (mv-nth 1 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth))))
+(local
+  (defthm nat-listp-of-mv-nth-1-of-gather-nodes-to-translate-up-to-depth
+    (implies (and (integerp n)
+                  (<= -1 n)
+                  (natp depth)
+                  (depth-arrayp 'depth-array depth-array (+ 1 n))
+                  (array1p 'depth-array depth-array)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (< n dag-len)
+                  (array1p 'supporters-tag-array supporters-tag-array)
+                  (< n (alen1 'supporters-tag-array supporters-tag-array))
+                  (nat-listp nodenums-to-translate)
+                  (nodenum-type-alistp cut-nodenum-type-alist)
+                  (var-type-alistp var-type-alist)
+                  (string-treep extra-asserts))
+             (nat-listp (mv-nth 1 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth)))))
 
-(defthm no-nodes-are-variablesp-of-mv-nth-1-of-gather-nodes-to-translate-up-to-depth
-  (implies (and (NO-NODES-ARE-VARIABLESP NODENUMS-TO-TRANSLATE DAG-ARRAY-NAME DAG-ARRAY DAG-LEN)
-                (integerp n)
-                (<= -1 n)
-                (natp depth)
-                (depth-arrayp 'depth-array depth-array (+ 1 n))
-                (array1p 'depth-array depth-array)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (< n dag-len)
-                (array1p 'supporters-tag-array supporters-tag-array)
-                (< n (alen1 'supporters-tag-array supporters-tag-array))
-                (nat-listp nodenums-to-translate)
-                (nodenum-type-alistp cut-nodenum-type-alist)
-                (symbol-alistp var-type-alist)
-                (string-treep extra-asserts))
-           (no-nodes-are-variablesp (mv-nth 1 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))
-                                    dag-array-name dag-array dag-len))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth))))
+(local
+  (defthm no-nodes-are-variablesp-of-mv-nth-1-of-gather-nodes-to-translate-up-to-depth
+    (implies (and (NO-NODES-ARE-VARIABLESP NODENUMS-TO-TRANSLATE DAG-ARRAY-NAME DAG-ARRAY DAG-LEN)
+                  (integerp n)
+                  (<= -1 n)
+                  (natp depth)
+                  (depth-arrayp 'depth-array depth-array (+ 1 n))
+                  (array1p 'depth-array depth-array)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (< n dag-len)
+                  (array1p 'supporters-tag-array supporters-tag-array)
+                  (< n (alen1 'supporters-tag-array supporters-tag-array))
+                  (nat-listp nodenums-to-translate)
+                  (nodenum-type-alistp cut-nodenum-type-alist)
+                  (var-type-alistp var-type-alist)
+                  (string-treep extra-asserts))
+             (no-nodes-are-variablesp (mv-nth 1 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))
+                                      dag-array-name dag-array dag-len))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth)))))
 
-(defthm all-<-of-mv-nth-1-of-gather-nodes-to-translate-up-to-depth
-  (implies (and (ALL-< NODENUMS-TO-TRANSLATE DAG-LEN)
-                (integerp n)
-                (<= -1 n)
-                (natp depth)
-                (depth-arrayp 'depth-array depth-array (+ 1 n))
-                (array1p 'depth-array depth-array)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (< n dag-len)
-                (array1p 'supporters-tag-array supporters-tag-array)
-                (< n (alen1 'supporters-tag-array supporters-tag-array))
-                (nat-listp nodenums-to-translate)
-                (nodenum-type-alistp cut-nodenum-type-alist)
-                (symbol-alistp var-type-alist)
-                (string-treep extra-asserts))
-           (all-< (mv-nth 1 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth))))
+(local
+  (defthm all-<-of-mv-nth-1-of-gather-nodes-to-translate-up-to-depth
+    (implies (and (ALL-< NODENUMS-TO-TRANSLATE DAG-LEN)
+                  (integerp n)
+                  (<= -1 n)
+                  (natp depth)
+                  (depth-arrayp 'depth-array depth-array (+ 1 n))
+                  (array1p 'depth-array depth-array)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (< n dag-len)
+                  (array1p 'supporters-tag-array supporters-tag-array)
+                  (< n (alen1 'supporters-tag-array supporters-tag-array))
+                  (nat-listp nodenums-to-translate)
+                  (nodenum-type-alistp cut-nodenum-type-alist)
+                  (var-type-alistp var-type-alist)
+                  (string-treep extra-asserts))
+             (all-< (mv-nth 1 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))
+                    dag-len))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth)))))
 
 ;todo: may need the ability to return an error
-(defthm nodenum-type-alistp-of-mv-nth-2-of-gather-nodes-to-translate-up-to-depth
-  (implies (and (integerp n)
-                (<= -1 n)
-                (natp depth)
-                (depth-arrayp 'depth-array depth-array (+ 1 n))
-                (array1p 'depth-array depth-array)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (< n dag-len)
-                (array1p 'supporters-tag-array supporters-tag-array)
-                (< n (alen1 'supporters-tag-array supporters-tag-array))
-                (nat-listp nodenums-to-translate)
-                (nodenum-type-alistp cut-nodenum-type-alist)
-                (symbol-alistp var-type-alist)
-                (string-treep extra-asserts))
-           (nodenum-type-alistp (mv-nth 2 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth))))
+(local
+  (defthm nodenum-type-alistp-of-mv-nth-2-of-gather-nodes-to-translate-up-to-depth
+    (implies (and (integerp n)
+                  (<= -1 n)
+                  (natp depth)
+                  (depth-arrayp 'depth-array depth-array (+ 1 n))
+                  (array1p 'depth-array depth-array)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (< n dag-len)
+                  (array1p 'supporters-tag-array supporters-tag-array)
+                  (< n (alen1 'supporters-tag-array supporters-tag-array))
+                  (nat-listp nodenums-to-translate)
+                  (nodenum-type-alistp cut-nodenum-type-alist)
+                  (var-type-alistp var-type-alist)
+                  (string-treep extra-asserts))
+             (nodenum-type-alistp (mv-nth 2 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth)))))
 
-(defthm all-<-of-strip-cars-of-mv-nth-2-of-gather-nodes-to-translate-up-to-depth
-  (implies (and (ALL-< (STRIP-CARS CUT-NODENUM-TYPE-ALIST) DAG-LEN)
-                (integerp n)
-                (<= -1 n)
-                (natp depth)
-                (depth-arrayp 'depth-array depth-array (+ 1 n))
-                (array1p 'depth-array depth-array)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (< n dag-len)
-                (array1p 'supporters-tag-array supporters-tag-array)
-                (< n (alen1 'supporters-tag-array supporters-tag-array))
-                (nat-listp nodenums-to-translate)
-                (nodenum-type-alistp cut-nodenum-type-alist)
-                (symbol-alistp var-type-alist)
-                (string-treep extra-asserts))
-           (all-< (strip-cars (mv-nth 2 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts)))
-                  dag-len))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth))))
+(local
+  (defthm all-<-of-strip-cars-of-mv-nth-2-of-gather-nodes-to-translate-up-to-depth
+    (implies (and (ALL-< (STRIP-CARS CUT-NODENUM-TYPE-ALIST) DAG-LEN)
+                  (integerp n)
+                  (<= -1 n)
+                  (natp depth)
+                  (depth-arrayp 'depth-array depth-array (+ 1 n))
+                  (array1p 'depth-array depth-array)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (< n dag-len)
+                  (array1p 'supporters-tag-array supporters-tag-array)
+                  (< n (alen1 'supporters-tag-array supporters-tag-array))
+                  (nat-listp nodenums-to-translate)
+                  (nodenum-type-alistp cut-nodenum-type-alist)
+                  (var-type-alistp var-type-alist)
+                  (string-treep extra-asserts))
+             (all-< (strip-cars (mv-nth 2 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts)))
+                    dag-len))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth)))))
 
-(defthm string-treep-of-mv-nth-3-of-gather-nodes-to-translate-up-to-depth
-  (implies (string-treep extra-asserts)
-           (string-treep (mv-nth 3 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))))
-  :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth))))
+(local
+  (defthm string-treep-of-mv-nth-3-of-gather-nodes-to-translate-up-to-depth
+    (implies (string-treep extra-asserts)
+             (string-treep (mv-nth 3 (gather-nodes-to-translate-up-to-depth n depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array nodenums-to-translate cut-nodenum-type-alist extra-asserts))))
+    :hints (("Goal" :in-theory (enable gather-nodes-to-translate-up-to-depth)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;binary search to try to find a cut depth at which the goal is valid.
+;would like to reuse this for pure constants
+;; Returns (mv provedp state).
+;; The two nodes must be pure nodes.
+(defund attempt-cut-equivalence-proofs (min-depth
+                                        max-depth
+                                        depth-array ; depths wrt the set containing smaller-nodenum and larger-nodenum
+                                        smaller-nodenum larger-nodenum
+                                        dag-array-name dag-array dag-len
+                                        var-type-alist print max-conflicts base-filename state)
+  (declare (xargs :guard (and (natp min-depth)
+                              (integerp max-depth) ; might go negative
+                              (natp smaller-nodenum)
+                              (natp larger-nodenum)
+                              (depth-arrayp 'depth-array depth-array (+ 1 larger-nodenum))
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (<= smaller-nodenum larger-nodenum)
+                              (< larger-nodenum dag-len)
+                              (var-type-alistp var-type-alist)
+                              (print-levelp print) ; tighter?
+                              (or (null max-conflicts) (natp max-conflicts))
+                              (stringp base-filename))
+                  :measure (nfix (+ 1 (- max-depth min-depth)))
+                  :stobjs state))
+  (if (or (not (and (mbt (natp min-depth))
+                    (mbt (integerp max-depth))))
+          (< max-depth min-depth))
+      (prog2$ (cw "!! We failed to find a cut depth at which STP can prove the goal !!~%")
+              (mv nil state))
+    (b* (;; todo: drop this supporters-tag-array because the depth-array already tracks supporters (but consider what happens with cutting at bvmult and bvif nodes)
+         (supporters-tag-array (make-empty-array 'supporters-tag-array (+ 1 larger-nodenum))) ;fixme drop this and have gather-nodes-to-translate-up-to-depth use a worklist?
+         ;;mark the two nodes as supporters:
+         (supporters-tag-array (aset1 'supporters-tag-array supporters-tag-array larger-nodenum t))
+         (supporters-tag-array (aset1 'supporters-tag-array supporters-tag-array smaller-nodenum t))
+         (current-depth (integer-average-round-up min-depth max-depth))
+         ;; TODO: Consider a worklist algorithm:
+         ((mv erp nodenums-to-translate cut-nodenum-type-alist extra-asserts)
+          (gather-nodes-to-translate-up-to-depth larger-nodenum current-depth depth-array dag-array-name dag-array dag-len var-type-alist supporters-tag-array
+                                                 nil
+                                                 nil ;initial cut-nodenum-type-alist
+                                                 nil))
+         ((when erp)
+          (mv nil ; todo: or pass back the error?
+              state))
+         ((when (not (consp nodenums-to-translate))) ; can this happen?
+          (cw "ERROR: No nodes to translate.")
+          (mv ;; :no-nodes-to-translate
+              nil ; not proved
+              ;; nodenums-to-translate
+              state))
+         ;; Call STP:
+         (- (and print (cw "Attempting STP proof at depth ~x0.~%" current-depth)))
+         ((mv result state)
+          (prove-equality-query-with-stp smaller-nodenum larger-nodenum
+                                         dag-array-name dag-array dag-len
+                                         nodenums-to-translate
+                                         (string-append base-filename (nat-to-string current-depth))
+                                         cut-nodenum-type-alist
+                                         extra-asserts
+                                         print
+                                         max-conflicts
+                                         nil ;no counterexample (for now)
+                                         nil
+                                         state))
+         ((when (eq result *error*))
+          (er hard? 'attempt-cut-equivalence-proofs "Error calling STP." nil)
+          (mv nil ; did not prove it
+              state)))
+      (if (eq result *valid*)
+          (mv t state) ; proved it
+        (if (eq result *timedout*)
+            ;;since the current depth timed out, we go shallower
+            (attempt-cut-equivalence-proofs min-depth (+ -1 current-depth)
+                                            depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts base-filename state)
+          ;;the goal was invalid, so we go deeper:
+          ;;todo: use the counterexample?
+          (attempt-cut-equivalence-proofs (+ 1 current-depth) max-depth
+                                          depth-array smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts base-filename state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;this one takes a list of array indices to check
+;rename to remove the 2
+(defun max-array-elem2 (indices current-max array-name array)
+  (declare (xargs :guard (and (nat-listp indices)
+                              (array1p array-name array)
+                              (all-< indices (alen1 array-name array))
+                              (rationalp current-max))))
+  (if (endp indices)
+      current-max
+    (let* ((nodenum (first indices))
+           (val (rfix (aref1 array-name array nodenum))) ; the rfix may not be needed in some cases
+           )
+      (max-array-elem2 (rest indices) (max current-max val) array-name array))))
+
+(defthm natp-of-max-array-elem2-when-depth-arrayp
+  (implies (and (nat-listp indices)
+                (depth-arrayp array-name array num-valid-indices)
+                (all-< indices num-valid-indices)
+                (natp current-max))
+           (natp (max-array-elem2 indices current-max array-name array))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: consider othe proofs methods, like rewriting, using the axe-prover, using contexts (should we cut the context too -- what if the context is huge and unrelated to the goal nodes?), etc.
+;not currently doing any of these things because we want this to be fast.
+;; Returns (mv provedp state).
+;; TTODO: pass in assumptions (e.g., bvlt claims) - should we cut the assumptions too?
+;; TODO: Return the counterexample, if any.
+(defun try-to-prove-pure-nodes-equal (smaller-nodenum
+                                      larger-nodenum ; could one of these have been replaced by a constant?
+                                      miter-array-name miter-array miter-len
+                                      var-type-alist
+                                      print max-conflicts miter-name state)
+  (declare (xargs :guard (and (natp smaller-nodenum)
+                              (natp larger-nodenum)
+                              (<= smaller-nodenum larger-nodenum)
+                              (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                              (< smaller-nodenum miter-len)
+                              (< larger-nodenum miter-len)
+                              (var-type-alistp var-type-alist)
+                              (print-levelp print) ; tighten?
+                              (or (null max-conflicts) (natp max-conflicts))
+                              (symbolp miter-name))
+                  :guard-hints (("Goal"
+                                 :use (:instance natp-of-max-array-elem2-when-depth-arrayp
+                                                 (indices (MV-NTH 2
+                                                                  (TRY-AGGRESSIVELY-CUT-EQUIVALENCE-PROOF
+                                                                    SMALLER-NODENUM
+                                                                    LARGER-NODENUM MITER-ARRAY-NAME
+                                                                    MITER-ARRAY MITER-LEN VAR-TYPE-ALIST
+                                                                    PRINT MAX-CONFLICTS MITER-NAME STATE)))
+                                                 (current-max 0)
+                                                 (array-name 'DEPTH-ARRAY)
+                                                 (array (MV-NTH 0
+                                                                (MAKE-DEPTH-ARRAY-FOR-NODES (LIST SMALLER-NODENUM LARGER-NODENUM)
+                                                                                            MITER-ARRAY-NAME
+                                                                                            MITER-ARRAY MITER-LEN)))
+                                                 (NUM-VALID-INDICES (+ 1 LARGER-NODENUM)))
+                                 :in-theory (e/d (integerp-when-natp) (natp natp-of-max-array-elem2-when-depth-arrayp))))
+                  :stobjs state))
+  (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
+       ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array miter-len (list smaller-nodenum larger-nodenum))))
+       ;;(- (and print (cw ")~%")))
+       ;; Print info about vars that support only one of the 2 nodes (unusual, may indicate missing rules or inadequate test cases):
+       ;; TODO: Option to suppress this for speed?
+       ;;todo: move this printing to the caller?
+       (vars-for-smaller-nodenum (vars-that-support-dag-node smaller-nodenum miter-array-name miter-array miter-len))
+       (vars-for-larger-nodenum (vars-that-support-dag-node larger-nodenum miter-array-name miter-array miter-len))
+       (vars-that-support-only-larger-node (set-difference-eq vars-for-larger-nodenum vars-for-smaller-nodenum))
+       (vars-that-support-only-smaller-node (set-difference-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
+       ;; (vars-that-support-both-nodes (intersection-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
+       ;; (- (cw "(Vars that support both nodes: ~x0.)~%" vars-that-support-both-nodes))
+       (- (and vars-that-support-only-smaller-node (cw "(Vars that support node ~x0 only: ~x1.)~%" smaller-nodenum vars-that-support-only-smaller-node)))
+       (- (and vars-that-support-only-larger-node (cw "(Vars that support node ~x0 only: ~x1.)~%" larger-nodenum vars-that-support-only-larger-node)))
+       (- (cw "(Attempting aggressively cut proof:~%"))
+       ;;first try with our proof-cutting heuristic (cuts at shared nodes):
+       ;;fixme if we have contexts, how will we cut them (not clear what "shared nodes" means with 3 or more terms)?
+       ;;probably best not to use contexts here, since this usually succeeds, and contexts are rarely needed
+       ;;aggressive cut that replaces all shared nodes with variables:
+       ((mv erp
+            provedp
+            nodenums-translated ;below we check these to determine the depth of the deepest translated node
+            state)
+        (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state))
+       ((when erp)
+        (cw "  ERROR.)~%")
+        (mv nil state)) ; todo: or pass back an error?
+       (- (if provedp
+              (cw "  Proved.)~%")
+            (cw "  Failed.)~%")))
+       ((when provedp) (mv t state))
+       ;; The aggressively cut proof did not work, so try to find a depth that does work:
+       ((mv depth-array max-depth)
+        (make-depth-array-for-nodes (list smaller-nodenum larger-nodenum) miter-array-name miter-array miter-len) ;todo: any way to avoid rebuilding this?
+        )
+       ;;deepest node translated when we tried our heuristic: (try-aggressively-cut-equivalence-proof could compute this if we pass it the depth array, but that might be expensive?
+       (depth-of-deepest-translated-node (max-array-elem2 nodenums-translated
+                                                          0 ;fixme think about the 0..
+                                                          'depth-array depth-array))
+       ;; todo: maybe the depths here should be measured from the shared-var frontier
+       (- (cw "(Attempting cut proofs (min-depth ~x0, max-depth ~x1):~%" depth-of-deepest-translated-node max-depth))
+       ((mv success-flg state)
+        (attempt-cut-equivalence-proofs depth-of-deepest-translated-node ; we could add 1 here, but even without that we might get more nodes translated on the first attempt than were trasnalted above (e.g., shallow nodes on the shared node frontier)
+                                        ;;(min max-depth ;(+ 1 (safe-min smaller-nodenum-depth larger-nodenum-depth)) ;starting depth (essentially depth 2; depth1 seems almost always useless to try)
+                                        ;;                                                              starting-depth
+                                        ;;                                                              )
+                                        ;;                                                         ;; the min above prevents us form starting out over max depth
+                                        max-depth
+                                        depth-array
+                                        smaller-nodenum
+                                        larger-nodenum
+                                        miter-array-name
+                                        miter-array
+                                        miter-len
+                                        var-type-alist
+                                        print max-conflicts
+                                        (n-string-append (symbol-name miter-name)
+                                                         "-"
+                                                         (nat-to-string smaller-nodenum)
+                                                         "="
+                                                         (nat-to-string larger-nodenum)
+                                                         "-depth-")
+                                        state))
+       (-  (cw ")")))
+    (mv (if success-flg
+            t
+          (prog2$ (cw "!! STP failed to prove the equality of nodes ~x0 and ~x1. !!~%" smaller-nodenum larger-nodenum)
+                  nil))
+        state)))
