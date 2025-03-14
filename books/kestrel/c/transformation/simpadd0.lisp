@@ -87,7 +87,7 @@
    and then call the separate non-recursive functions
    with the results from transforming the sub-constructs.
    An example is @(tsee simpadd0-expr-paren),
-   which is called by @(tsee simpadd-expr):
+   which is called by @(tsee simpadd0-expr):
    the caller recursively transforms the inner expression,
    and passes to the callee
    the possibly transformed expression,
@@ -99,7 +99,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled simpadd-exec-binary-strict-pure-when-add-alt
+(defruled simpadd0-exec-binary-strict-pure-when-add-alt
   :parents (simpadd0-implementation)
   :short "Alternative symbolic execution theorem."
   :long
@@ -4196,7 +4196,7 @@
   (fty::deffixequiv simpadd0-filepath-transunit-map
     :args ((gin simpadd0-ginp)))
 
-  (defret filepath-transunit-map-unambp-of-simpadd-filepath-transunit-map
+  (defret filepath-transunit-map-unambp-of-simpadd0-filepath-transunit-map
     (filepath-transunit-map-unambp new-map)
     :hyp (filepath-transunit-mapp map)
     :hints (("Goal" :induct t))))
@@ -4266,7 +4266,7 @@
            :enable (c::atc-all-rules
                     c::fun-env-lookup
                     omap::assoc
-                    simpadd-exec-binary-strict-pure-when-add-alt)
+                    simpadd0-exec-binary-strict-pure-when-add-alt)
            :disable ((:e c::ident)))))
     event)
   :guard-hints (("Goal" :in-theory (enable atom-listp))))
