@@ -634,6 +634,70 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define uinteger-format->max ((format uinteger-formatp))
+  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :short "The ACL2 integer value of
+          the maximum value representable in an unsigned integer format."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is determined by the number @('N') of value bits:
+     the maximum value is @('2^N - 1')."))
+  (1- (expt 2 (uinteger-bit-roles-value-count
+               (uinteger-format->bits format))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sinteger-format->max ((format sinteger-formatp))
+  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :short "The ACL2 integer value of
+          the maximum value representable in a signed integer format."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is determined by the number @('M') of value bits:
+     the maximum value is @('2^M - 1')."))
+  (1- (expt 2 (sinteger-bit-roles-value-count
+               (sinteger-format->bits format))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sinteger-format->min ((format sinteger-formatp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of
+          the minimum value representable in a signed integer format."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is determined by the number @('M') of value bits,
+     the signed format, and possibly the trap representations
+     [C17:6.2.6.2/2].
+     If the signed format is either sign and magnitude or ones' complement,
+     the minimum value is the negation of the maximum value,
+     i.e. @('- (2^M - 1)').
+     If the signed format is two's complement,
+     there are two possibilities:
+     if the representation with sign bit 1 and all value bits 0
+     is a trap representation,
+     the minimum value is @('- (2^M - 1)');
+     otherwise, it is @('- 2^M').
+     As explained in @(tsee sinteger-format),
+     currently we do not have a detailed model of trap representations;
+     as a placeholder, for now we regard that representation to be a trap one
+     iff the @('traps') component of @(tsee sinteger-format) is not @('nil')."))
+  (if (and (equal (signed-format-kind (sinteger-format->signed format))
+                  :twos-complement)
+           (not (sinteger-format->traps format)))
+      (- (expt 2 (sinteger-bit-roles-value-count
+                  (sinteger-format->bits format))))
+    (- (1- (expt 2 (sinteger-bit-roles-value-count
+                    (sinteger-format->bits format))))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod uinteger+sinteger-format
   :short "Fixtype of pairs consisting of
           a format of unsigned integer objects
