@@ -11870,6 +11870,47 @@
 
 (skip-proofs (verify-guards apply-rule-at-nodenum))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv provedp state).
+;todo: consider othe proofs methods, like rewriting, using the axe-prover, using contexts (should we cut the context too -- what if the context is huge and unrelated to the goal nodes?), etc.
+;not currently doing any of these things because we want this to be fast.
+;; TTODO: pass in assumptions (e.g., bvlt claims) - should we cut the assumptions too?
+;; TODO: Return the counterexample, if any.
+(defun try-to-prove-pure-nodes-equal (smaller-nodenum
+                                      larger-nodenum ; could either node have been replaced by a constant?
+                                      miter-array-name miter-array miter-len
+                                      var-type-alist
+                                      print max-conflicts miter-name state)
+  (declare (xargs :guard (and (natp smaller-nodenum)
+                              (natp larger-nodenum)
+                              (<= smaller-nodenum larger-nodenum)
+                              (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                              (< smaller-nodenum miter-len)
+                              (< larger-nodenum miter-len)
+                              (var-type-alistp var-type-alist)
+                              (print-levelp print) ; tighten?
+                              (or (null max-conflicts) (natp max-conflicts))
+                              (symbolp miter-name))
+                  :stobjs state))
+  ;; todo: do more, like rewriting the (top node of) the equality
+  (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
+       ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array miter-len (list smaller-nodenum larger-nodenum))))
+       ;;(- (and print (cw ")~%")))
+       ;; Print info about vars that support only one of the 2 nodes (unusual, may indicate missing rules or inadequate test cases):
+       ;; TODO: Option to suppress this for speed?
+       ;;todo: move this printing to the caller?
+       (vars-for-smaller-nodenum (vars-that-support-dag-node smaller-nodenum miter-array-name miter-array miter-len))
+       (vars-for-larger-nodenum (vars-that-support-dag-node larger-nodenum miter-array-name miter-array miter-len))
+       (vars-that-support-only-larger-node (set-difference-eq vars-for-larger-nodenum vars-for-smaller-nodenum))
+       (vars-that-support-only-smaller-node (set-difference-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
+       ;; (vars-that-support-both-nodes (intersection-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
+       ;; (- (cw "(Vars that support both nodes: ~x0.)~%" vars-that-support-both-nodes))
+       (- (and vars-that-support-only-smaller-node (cw "(Vars that support node ~x0 only: ~x1.)~%" smaller-nodenum vars-that-support-only-smaller-node)))
+       (- (and vars-that-support-only-larger-node (cw "(Vars that support node ~x0 only: ~x1.)~%" larger-nodenum vars-that-support-only-larger-node))))
+    (try-to-prove-pure-nodes-equal-with-stp smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;
 ;; the main mutual-recursion of the Axe Equivalence Checker (fixme should more stuff above use this to prove goals by mitering?):
@@ -14314,13 +14355,13 @@
    (declare (xargs :guard (and (or (null max-conflicts) (natp max-conflicts))
                                (not (eq 'dag-array miter-array-name)))
                    :mode :program :stobjs (rand state)))
-   (b* ;;Start by trying to rewrite the equality of the two nodes to true:
-       ((- (cw " Trying to prove non-pure nodes ~x0 and ~x1 equal.~%" original-nodenum1 original-nodenum2))
+   (b* ((- (cw " Trying to prove non-pure nodes ~x0 and ~x1 equal.~%" original-nodenum1 original-nodenum2))
+        ;;Start by trying to rewrite the equality of the two nodes to true:
         ;;often at this point it's just that stuff is commuted wrong - add rules to handle such cases in the first rule set below?
         ;; We can do the rewrite in the context for the node that is being replaced:
-        ;; FIXME first try rewriting without this external context? fixme could just rewrite the equality node?
-;ffixme i wonder if the rewrites here are so expensive that we should just rewrite the dag after every merge?
-        ;;fffixme delay generating the context until after the first rewrite below (which will handle ifs with constant tests - seems common)
+        ;; TODO: first try rewriting without this external context? TODO: could just rewrite the equality node?
+        ;; TODO: i wonder if the rewrites here are so expensive that we should just rewrite the dag after every merge?
+        ;; TODO: delay generating the context until after the first rewrite below (which will handle ifs with constant tests - seems common)
         (context (get-context-for-nodenum original-nodenum2 miter-array-name miter-array miter-len
                                           )) ; todo: compute before the sweep?  how would tranforming the dag affect things?
         (- (cw " (Context for node ~x0: ~x1)~%" original-nodenum2 context))
@@ -15308,7 +15349,7 @@
                                        var-type-alist print
                                        interpreted-function-alist extra-stuff
                                        rewriter-rule-alist prover-rule-alist test-cases test-case-array-alist
-                                       assumptions ;terms we can assume non-nil (we can't actually assume them to be 't right?)
+                                       assumptions ; terms we can assume non-nil
                                        monitored-symbols step-num analyzed-function-table miter-depth unroll miter-is-purep
                                        use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state)
    (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
@@ -15324,6 +15365,7 @@
                            (farg2 expr))))
          (cw "  Trivial equality.~%")
          (mv (erp-nil) :proved analyzed-function-table rand state)))
+     ;; todo: check for ground term (ex: (booland 't 't))
      ;; Not a trivial equality:
      (if (or (if nil ;(g :treat-as-purep options)
                  (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t)

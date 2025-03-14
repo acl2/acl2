@@ -911,16 +911,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;todo: consider othe proofs methods, like rewriting, using the axe-prover, using contexts (should we cut the context too -- what if the context is huge and unrelated to the goal nodes?), etc.
-;not currently doing any of these things because we want this to be fast.
 ;; Returns (mv provedp state).
 ;; TTODO: pass in assumptions (e.g., bvlt claims) - should we cut the assumptions too?
 ;; TODO: Return the counterexample, if any.
-(defun try-to-prove-pure-nodes-equal (smaller-nodenum
-                                      larger-nodenum ; could one of these have been replaced by a constant?
-                                      miter-array-name miter-array miter-len
-                                      var-type-alist
-                                      print max-conflicts miter-name state)
+(defun try-to-prove-pure-nodes-equal-with-stp (smaller-nodenum
+                                               larger-nodenum ; could one of these have been replaced by a constant?
+                                               miter-array-name miter-array miter-len
+                                               var-type-alist
+                                               print max-conflicts miter-name state)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
                               (<= smaller-nodenum larger-nodenum)
@@ -948,21 +946,7 @@
                                                  (NUM-VALID-INDICES (+ 1 LARGER-NODENUM)))
                                  :in-theory (e/d (integerp-when-natp) (natp natp-of-max-array-elem2-when-depth-arrayp))))
                   :stobjs state))
-  (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
-       ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array miter-len (list smaller-nodenum larger-nodenum))))
-       ;;(- (and print (cw ")~%")))
-       ;; Print info about vars that support only one of the 2 nodes (unusual, may indicate missing rules or inadequate test cases):
-       ;; TODO: Option to suppress this for speed?
-       ;;todo: move this printing to the caller?
-       (vars-for-smaller-nodenum (vars-that-support-dag-node smaller-nodenum miter-array-name miter-array miter-len))
-       (vars-for-larger-nodenum (vars-that-support-dag-node larger-nodenum miter-array-name miter-array miter-len))
-       (vars-that-support-only-larger-node (set-difference-eq vars-for-larger-nodenum vars-for-smaller-nodenum))
-       (vars-that-support-only-smaller-node (set-difference-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
-       ;; (vars-that-support-both-nodes (intersection-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
-       ;; (- (cw "(Vars that support both nodes: ~x0.)~%" vars-that-support-both-nodes))
-       (- (and vars-that-support-only-smaller-node (cw "(Vars that support node ~x0 only: ~x1.)~%" smaller-nodenum vars-that-support-only-smaller-node)))
-       (- (and vars-that-support-only-larger-node (cw "(Vars that support node ~x0 only: ~x1.)~%" larger-nodenum vars-that-support-only-larger-node)))
-       (- (cw "(Attempting aggressively cut proof:~%"))
+  (b* ((- (cw "(Attempting aggressively cut proof:~%"))
        ;;first try with our proof-cutting heuristic (cuts at shared nodes):
        ;;fixme if we have contexts, how will we cut them (not clear what "shared nodes" means with 3 or more terms)?
        ;;probably best not to use contexts here, since this usually succeeds, and contexts are rarely needed
@@ -972,6 +956,7 @@
             nodenums-translated ;below we check these to determine the depth of the deepest translated node
             state)
         (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state))
+       ;; todo: can the aggressively cut proof return a non-spurious counterexample?  if so, don't bother with the rest of this function
        ((when erp)
         (cw "  ERROR.)~%")
         (mv nil state)) ; todo: or pass back an error?
@@ -979,7 +964,7 @@
               (cw "  Proved.)~%")
             (cw "  Failed.)~%")))
        ((when provedp) (mv t state))
-       ;; The aggressively cut proof did not work, so try to find a depth that does work:
+       ;; The aggressively-cut proof did not work, so try to find a depth that does work:
        ((mv depth-array max-depth)
         (make-depth-array-for-nodes (list smaller-nodenum larger-nodenum) miter-array-name miter-array miter-len) ;todo: any way to avoid rebuilding this?
         )
@@ -991,26 +976,26 @@
        (- (cw "(Attempting cut proofs (min-depth ~x0, max-depth ~x1):~%" depth-of-deepest-translated-node max-depth))
        ((mv success-flg state)
         (try-cut-equivalence-proofs depth-of-deepest-translated-node ; we could add 1 here, but even without that we might get more nodes translated on the first attempt than were trasnalted above (e.g., shallow nodes on the shared node frontier)
-                                        ;;(min max-depth ;(+ 1 (safe-min smaller-nodenum-depth larger-nodenum-depth)) ;starting depth (essentially depth 2; depth1 seems almost always useless to try)
-                                        ;;                                                              starting-depth
-                                        ;;                                                              )
-                                        ;;                                                         ;; the min above prevents us form starting out over max depth
-                                        max-depth
-                                        depth-array
-                                        smaller-nodenum
-                                        larger-nodenum
-                                        miter-array-name
-                                        miter-array
-                                        miter-len
-                                        var-type-alist
-                                        print max-conflicts
-                                        (n-string-append (symbol-name miter-name)
-                                                         "-"
-                                                         (nat-to-string smaller-nodenum)
-                                                         "="
-                                                         (nat-to-string larger-nodenum)
-                                                         "-depth-")
-                                        state))
+                                    ;;(min max-depth ;(+ 1 (safe-min smaller-nodenum-depth larger-nodenum-depth)) ;starting depth (essentially depth 2; depth1 seems almost always useless to try)
+                                    ;;                                                              starting-depth
+                                    ;;                                                              )
+                                    ;;                                                         ;; the min above prevents us form starting out over max depth
+                                    max-depth
+                                    depth-array
+                                    smaller-nodenum
+                                    larger-nodenum
+                                    miter-array-name
+                                    miter-array
+                                    miter-len
+                                    var-type-alist
+                                    print max-conflicts
+                                    (n-string-append (symbol-name miter-name)
+                                                     "-"
+                                                     (nat-to-string smaller-nodenum)
+                                                     "="
+                                                     (nat-to-string larger-nodenum)
+                                                     "-depth-")
+                                    state))
        (-  (cw ")")))
     (mv (if success-flg
             t
