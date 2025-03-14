@@ -4687,6 +4687,57 @@
          (formals1 (fn-formals fn1 (w state))))
     (make-induction-function-helper fn1 formals1 body1 fn2 formals2 body2 induction-fn-name)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;fixme check the arity of functions mentioned here? also check that the functions mentioned are not macros (like "+")
+;fixme check that all keys in the entry are allowed
+(defun extra-stuff-okayp-aux (keys extra-stuff)
+  (declare (xargs :guard t))
+  (if (atom keys)
+      t
+    (let* ((key (car keys))
+           (entry (g key extra-stuff)))
+      (and (subsetp-eq (dom entry) '(:extra-hyps
+                                    :remove-hyps
+                                    :explanations
+                                    :explanations-to-remove
+                                    :connections
+                                    :connections-to-remove
+                                    :extra-rv-claims
+                                    :print-traces
+                                    :split
+                                    :unrolling-factor
+                                    :complete-unrolling-amount
+                                    ;;can appear in options:
+                                    :do-not-drop
+                                    ))
+           (pseudo-term-listp (g :extra-hyps entry))
+           (pseudo-term-listp (g :remove-hyps entry))
+           (pseudo-term-listp (g :explanations entry))
+           (pseudo-term-listp (g :explanations-to-remove entry))
+           (pseudo-term-listp (g :connections entry))
+           (pseudo-term-listp (g :connections-to-remove entry))
+           (pseudo-term-listp (g :extra-rv-claims entry))
+           (pseudo-term-listp (g :print-traces entry))
+           (let ((split (g :split entry)))
+             (or (not split)
+                 (pseudo-termp split)))
+           ;;            ;fixme do we still use this?!
+           ;;            (let ((old-var-to-formal-alist (g :old-var-to-formal-alist entry)))
+           ;;              (and (my-all->=-len old-var-to-formal-alist 2)
+           ;;                   (pseudo-term-listp (strip-cadrs old-var-to-formal-alist))))
+
+           (extra-stuff-okayp-aux (cdr keys) extra-stuff)))))
+
+(defun extra-stuff-okayp (extra-stuff)
+  (declare (xargs :guard t))
+  (and (wfr extra-stuff)
+       (let ((keys (dom extra-stuff)))
+         (and (symbol-listp keys)
+              (extra-stuff-okayp-aux keys extra-stuff)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun make-arg-symbols (current symbol)
   (declare (xargs :guard (and (integerp current)
                               (symbolp symbol))
@@ -7812,6 +7863,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: optimize by using a stobj array and with-local-stobj
 (defund nodes-are-purep (worklist dag-array-name dag-array dag-len done-array)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (nat-listp worklist)
@@ -11894,20 +11946,22 @@
                               (symbolp miter-name))
                   :stobjs state))
   ;; todo: do more, like rewriting the (top node of) the equality
-  (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
-       ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array miter-len (list smaller-nodenum larger-nodenum))))
-       ;;(- (and print (cw ")~%")))
-       ;; Print info about vars that support only one of the 2 nodes (unusual, may indicate missing rules or inadequate test cases):
-       ;; TODO: Option to suppress this for speed?
-       ;;todo: move this printing to the caller?
-       (vars-for-smaller-nodenum (vars-that-support-dag-node smaller-nodenum miter-array-name miter-array miter-len))
-       (vars-for-larger-nodenum (vars-that-support-dag-node larger-nodenum miter-array-name miter-array miter-len))
-       (vars-that-support-only-larger-node (set-difference-eq vars-for-larger-nodenum vars-for-smaller-nodenum))
-       (vars-that-support-only-smaller-node (set-difference-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
-       ;; (vars-that-support-both-nodes (intersection-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
-       ;; (- (cw "(Vars that support both nodes: ~x0.)~%" vars-that-support-both-nodes))
-       (- (and vars-that-support-only-smaller-node (cw "(Vars that support node ~x0 only: ~x1.)~%" smaller-nodenum vars-that-support-only-smaller-node)))
-       (- (and vars-that-support-only-larger-node (cw "(Vars that support node ~x0 only: ~x1.)~%" larger-nodenum vars-that-support-only-larger-node))))
+  (b* ((- (and (print-level-at-least-tp print)
+               (b* (;;(- (and print (cw "(Subdag that supports the nodes:~%")))
+                    ;;(- (and print (print-dag-array-nodes-and-supporters miter-array-name miter-array miter-len (list smaller-nodenum larger-nodenum))))
+                    ;;(- (and print (cw ")~%")))
+                    ;; Print info about vars that support only one of the 2 nodes (unusual, may indicate missing rules or inadequate test cases):
+                    ;; TODO: Option to suppress this for speed?
+                    ;;todo: move this printing to the caller?
+                    (vars-for-smaller-nodenum (vars-that-support-dag-node smaller-nodenum miter-array-name miter-array miter-len))
+                    (vars-for-larger-nodenum (vars-that-support-dag-node larger-nodenum miter-array-name miter-array miter-len))
+                    (vars-that-support-only-larger-node (set-difference-eq vars-for-larger-nodenum vars-for-smaller-nodenum))
+                    (vars-that-support-only-smaller-node (set-difference-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
+                    ;; (vars-that-support-both-nodes (intersection-eq vars-for-smaller-nodenum vars-for-larger-nodenum))
+                    ;; (- (cw "(Vars that support both nodes: ~x0.)~%" vars-that-support-both-nodes))
+                    (- (and vars-that-support-only-smaller-node (cw "(Vars that support node ~x0 only: ~x1.)~%" smaller-nodenum vars-that-support-only-smaller-node)))
+                    (- (and vars-that-support-only-larger-node (cw "(Vars that support node ~x0 only: ~x1.)~%" larger-nodenum vars-that-support-only-larger-node))))
+                 nil))))
     (try-to-prove-pure-nodes-equal-with-stp smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -15180,12 +15234,19 @@
                                (pseudo-dag-arrayp miter-array-name miter-array miter-len)
                                (natp miter-depth)
                                (var-type-alistp var-type-alist)
+                               (print-levelp print)
+                               (interpreted-function-alistp interpreted-function-alist)
+                               (rule-alistp rewriter-rule-alist)
+                               (rule-alistp prover-rule-alist)
+                               (extra-stuff-okayp extra-stuff)
+                               (symbol-listp monitored-symbols)
+                               (pseudo-term-listp assumptions)
                                ;; ...more...
                                (or (null max-conflicts) (natp max-conflicts)))
                    :mode :program :stobjs (rand state)))
-   (b* ((expr1 (aref1 miter-array-name miter-array smaller-nodenum))
+   (b* (;; First, we check whether the nodes are calls of the same function on the same arguments (may be quite common):
+        (expr1 (aref1 miter-array-name miter-array smaller-nodenum))
         (expr2 (aref1 miter-array-name miter-array larger-nodenum))
-        ;; First, we check whether the nodes are calls of the same function on the same arguments (may be quite common):
         ;; todo: is identical-exprs-up-to-constant-inlining overkill (shouldn't things below the node already have been merged?)?
         ((when (identical-dag-exprs-up-to-constant-inlining expr1 expr2 miter-array-name miter-array miter-len))
          (and print (cw "  Structural equivalence between ~x0 and ~x1.~%" smaller-nodenum larger-nodenum))
@@ -15196,8 +15257,6 @@
      (if (and ;could omit non pure assumptions (but then the proof may fail)?
            (pure-assumptionsp assumptions) ;; TODO: don't recompute this each time ;; TODO: We could drop or cut non-pure ones.
            (or miter-is-purep
-               (if nil ;(g :treat-as-purep options)
-                   (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t) nil)
                ;; TODO: Instead of this, consider pre-computing which nodes are pure (updating that info when merging nodes):
                (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array)
                ))
@@ -15367,13 +15426,10 @@
          (mv (erp-nil) :proved analyzed-function-table rand state)))
      ;; todo: check for ground term (ex: (booland 't 't))
      ;; Not a trivial equality:
-     (if (or (if nil ;(g :treat-as-purep options)
-                 (prog2$ (cw "NOTE: We have been instructed to treat the miter as pure.~%") t)
-               nil)
-             (and miter-is-purep
-                  ;; todo: check whether this node is pure!
-                  (pure-assumptionsp assumptions) ;todo: precompute and thread through?  split into pure-assumptions and non-pure-assumptions?
-                  ))
+     (if (and miter-is-purep
+              ;; todo: check whether this node is pure!
+              (pure-assumptionsp assumptions) ;todo: precompute and thread through?  split into pure-assumptions and non-pure-assumptions?
+              )
          ;;The miter is pure:
          ;; fixme clean this up!   see what we do for 2 nodes...
          ;;Rewrite [the top miter node only], then call STP:
@@ -18151,56 +18207,6 @@
 ;;         t
 ;;       (len-less-than (+ -1 n) (cdr lst)))))
 
-
-
-
-;fixme check the arity of functions mentioned here? also check that the functions mentioned are not macros (like "+")
-;fixme check that all keys in the entry are allowed
-(defun extra-stuff-okayp-aux (keys extra-stuff)
-  (declare (xargs :guard t))
-  (if (atom keys)
-      t
-    (let* ((key (car keys))
-           (entry (g key extra-stuff)))
-      (and (subsetp-eq (dom entry) '(:extra-hyps
-                                    :remove-hyps
-                                    :explanations
-                                    :explanations-to-remove
-                                    :connections
-                                    :connections-to-remove
-                                    :extra-rv-claims
-                                    :print-traces
-                                    :split
-                                    :unrolling-factor
-                                    :complete-unrolling-amount
-                                    ;;can appear in options:
-                                    :do-not-drop
-                                    ))
-           (pseudo-term-listp (g :extra-hyps entry))
-           (pseudo-term-listp (g :remove-hyps entry))
-           (pseudo-term-listp (g :explanations entry))
-           (pseudo-term-listp (g :explanations-to-remove entry))
-           (pseudo-term-listp (g :connections entry))
-           (pseudo-term-listp (g :connections-to-remove entry))
-           (pseudo-term-listp (g :extra-rv-claims entry))
-           (pseudo-term-listp (g :print-traces entry))
-           (let ((split (g :split entry)))
-             (or (not split)
-                 (pseudo-termp split)))
-           ;;            ;fixme do we still use this?!
-           ;;            (let ((old-var-to-formal-alist (g :old-var-to-formal-alist entry)))
-           ;;              (and (my-all->=-len old-var-to-formal-alist 2)
-           ;;                   (pseudo-term-listp (strip-cadrs old-var-to-formal-alist))))
-
-           (extra-stuff-okayp-aux (cdr keys) extra-stuff)))))
-
-(defun extra-stuff-okayp (extra-stuff)
-  (declare (xargs :guard t))
-  (and (wfr extra-stuff)
-       (let ((keys (dom extra-stuff)))
-         (and (symbol-listp keys)
-              (extra-stuff-okayp-aux keys extra-stuff)))))
-
 ;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not merely non-nil).
 ; Returns (mv erp provedp state rand)
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
@@ -18232,7 +18238,6 @@
                          normalize-xors ;fixme use the more, deeper in?
                          miter-name     ;the name of this proof
                          prove-constants
-                         ;; treat-as-purep
                          debug
                          state rand)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
@@ -18470,7 +18475,6 @@
                        normalize-xors ;fixme use the more, deeper in?
                        miter-name     ;the name of this proof
                        prove-constants
-                       ;; treat-as-purep
                        debug
                        whole-form
                        state rand)
@@ -18531,7 +18535,6 @@
                           normalize-xors ;fixme use the more, deeper in?
                           miter-name
                           prove-constants
-                          ;; treat-as-purep
                           debug
                           state rand)))
     ;; Depending on how it went, maybe introduce a theorem:
@@ -18584,7 +18587,6 @@
                                   (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
                                   (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                                   (normalize-xors 't)
-                                  ;; (treat-as-purep 'nil)
                                   (debug 'nil) ;if t, the temp dir with STP files is not deleted
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
                                   )
@@ -18592,7 +18594,6 @@
                    ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                    ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name
                    ,prove-constants
-                   ;; ,treat-as-purep
                     ,debug
                    ',whole-form
                    state rand))
@@ -19652,7 +19653,6 @@
                           normalize-xors
                           miter-name
                           t   ;prove-constants
-                          ;; nil ; treat-as-purep
                           debug
                           state rand))
        ;; Remove the temp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
