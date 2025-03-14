@@ -91,6 +91,42 @@
     :fn uchar-format->bits
     :rule-classes :linear))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uchar-format->max ((format uchar-formatp))
+  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This directly derives from @('CHAR_BIT'),
+     as discussed in @(tsee uchar-format),
+     and in footnote 50 of [C17:6.2.6.1//3],
+     which says that @('unsigned char') values
+     range from 0 to @($2^{\\mathtt{CHAR\\_BIT}}-1$).")
+   (xdoc::p
+    "This is at least 255, as required by [C17:5.2.4.2.1/1]."))
+  (1- (expt 2 (uchar-format->bits format)))
+  :hooks (:fix)
+  ///
+
+  (defret uchar-format->-max-type-prescription
+    (and (posp max)
+         (> max 1))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable posp))))
+
+  (defrulel lemma
+    (>= (expt 2 (uchar-format->bits format)) 256)
+    :rule-classes :linear
+    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                    (x 2) (m 8) (n (uchar-format->bits format)))
+    :disable acl2::expt-is-weakly-increasing-for-base->-1)
+
+  (defret uchar-format->max-lower-bound
+    (>= max 255)
+    :rule-classes :linear))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum signed-format
