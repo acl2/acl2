@@ -992,24 +992,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Based on the discussion in @(tsee schar-format),
-     this is always @($2^{\\mathtt{CHAR\\_BIT}-1} - 1$)."))
-  (1- (expt 2 (1- (ienv->char-bits ienv))))
+    "See @(tsee schar-format->max)."))
+  (schar-format->max (ienv->schar-format ienv)
+                     (ienv->uchar-format ienv))
   :hooks (:fix)
   ///
 
   (defret ienv->schar-max-type-prescription
     (and (posp max)
          (> max 1))
-    :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable posp))))
-
-  (defrulel lemma
-    (>= (expt 2 (1- (ienv->char-bits ienv))) 128)
-    :rule-classes :linear
-    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 7) (n (1- (ienv->char-bits ienv))))
-    :disable acl2::expt-is-weakly-increasing-for-base->-1)
+    :rule-classes :type-prescription)
 
   (defret ienv->schar-max-lower-bound
     (>= max 127)
@@ -1023,22 +1015,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Based on the discussion in @(tsee schar-format),
-     this is either @($- 2^{\\mathtt{CHAR\\_BIT}-1}$)
-     (if the signed format is two's complement
-     and the pattern with sign bit 1 and all value bits 0
-     is not a trap representation)
-     or @($- 2^{\\mathtt{CHAR\\_BIT}-1} + 1$)
-     (if the signed format is ones' complement or sign-and-magnitude,
-     or it is two's complement
-     but the pattern with sign bit 1 and all value bits 0
-     is a trap representation)."))
-  (if (and (equal (signed-format-kind
-                   (schar-format->signed (ienv->schar-format ienv)))
-                  :twos-complement)
-           (not (schar-format->trap (ienv->schar-format ienv))))
-      (- (expt 2 (1- (ienv->char-bits ienv))))
-    (- (1- (expt 2 (1- (ienv->char-bits ienv))))))
+    "See @(tsee schar-format->min)"))
+  (schar-format->min (ienv->schar-format ienv)
+                     (ienv->uchar-format ienv))
   :hooks (:fix)
   ///
 
@@ -1046,13 +1025,6 @@
     (and (integerp min)
          (< min 0))
     :rule-classes :type-prescription)
-
-  (defrulel lemma
-    (>= (expt 2 (1- (ienv->char-bits ienv))) 128)
-    :rule-classes :linear
-    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 7) (n (1- (ienv->char-bits ienv))))
-    :disable acl2::expt-is-weakly-increasing-for-base->-1)
 
   (defret ienv->schar-min-upper-bound
     (<= min (if (and (equal (signed-format-kind
