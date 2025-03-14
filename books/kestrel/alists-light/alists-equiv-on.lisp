@@ -1,6 +1,6 @@
 ; A predicate that checks whether two alists agree on a given list of keys
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,10 +11,8 @@
 (in-package "ACL2")
 
 (local (include-book "assoc-equal"))
-(local (include-book "pairlis-dollar"))
 (local (include-book "strip-cars"))
 (local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
-(local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
 ;; Checks whether ALIST1 and ALIST2 are equivalent wrt the KEYS.  For these
@@ -80,7 +78,7 @@
            (alists-equiv-on keys
                             (append alist1 alist2)
                             (append alist1 alist3)))
-  :hints (("subgoal *1/2" :cases ((equal (car keys) (caar alist1))))
+  :hints (;("subgoal *1/2" :cases ((equal (car keys) (caar alist1))))
           ("Goal" :expand ((STRIP-CARS ALIST1)
                            (ALISTS-EQUIV-ON KEYS (APPEND ALIST1 ALIST2)
                                             (APPEND ALIST1 ALIST3)))
