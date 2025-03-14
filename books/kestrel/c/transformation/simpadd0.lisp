@@ -665,8 +665,7 @@
                                      (:e c::expr-const->get)
                                      (:e c::exec-const)
                                      (:e c::expr-value->value)
-                                     (:e c::value-kind)
-                                     (:e c::errorp)))))
+                                     (:e c::value-kind)))))
        (vars nil)
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
