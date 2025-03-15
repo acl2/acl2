@@ -393,6 +393,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-stmt-thm ((old stmtp)
+                               (new stmtp)
+                               (vars ident-setp)
+                               (const-new symbolp)
+                               (thm-index posp)
+                               (hints true-listp))
+  :guard (and (stmt-unambp old)
+              (stmt-unambp new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the transformation of a statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee simpadd0-gen-expr-pure-thm),
+     but for statments instead of pure expressions;
+     see that function's documentation first.")
+   (xdoc::p
+    "For now, this is limited to statements
+     whose execution yields an @('int') value.
+     The theorem says that the old statement returns an @('int') value,
+     regardless of whether old and new statements
+     are syntactically equal or not.
+     If they are not, the theorem also says that
+     their execution returns equal values and equal computation states,
+     and that the execution of the new statement does not yield an error."))
+  (b* ((old (stmt-fix old))
+       (new (stmt-fix new))
+       ((unless (c$::stmt-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       (equalp (equal old new))
+       ((unless (or equalp (c$::stmt-formalp new)))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (hyps (simpadd0-gen-var-hyps vars))
+       (formula
+        (if equalp
+            `(b* ((stmt (mv-nth 1 (c$::ldm-stmt ',old)))
+                  ((mv result &) (c::exec-stmt stmt compst fenv limit)))
+               (implies (and ,@hyps
+                             (not (c::errorp result)))
+                        (and result
+                             (equal (c::value-kind result) :sint))))
+          `(b* ((old-stmt (mv-nth 1 (c$::ldm-stmt ',old)))
+                (new-stmt (mv-nth 1 (c$::ldm-stmt ',new)))
+                ((mv old-result old-compst)
+                 (c::exec-stmt old-stmt compst fenv limit))
+                ((mv new-result new-compst)
+                 (c::exec-stmt new-stmt compst fenv limit)))
+             (implies (and ,@hyps
+                           (not (c::errorp old-result)))
+                      (and (not (c::errorp new-result))
+                           (equal old-result new-result)
+                           (equal old-compst new-compst)
+                           old-result
+                           (equal (c::value-kind old-result) :sint))))))
+       (thm-name
+        (packn-pos (list const-new '-thm- thm-index) const-new))
+       (thm-index (1+ (pos-fix thm-index)))
+       (thm-event
+        `(defthmd ,thm-name
+           ,formula
+           :hints ,hints)))
+    (mv thm-event thm-name thm-index))
+  ///
+  (fty::deffixequiv simpadd0-gen-stmt-thm
+    :args ((old stmtp) (new stmtp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-expr-ident ((ident identp)
                              (info c$::var-infop)
                              (gin simpadd0-ginp))
@@ -1256,24 +1328,101 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We put the new optional expression into a return statement."))
-  (declare (ignore expr? expr?-thm-name))
+    "We put the new optional expression into a return statement.")
+   (xdoc::p
+    "We generate a theorem iff
+     the expression is present
+     and a theorem was generated for the expression.
+     The theorem is proved via two general ones proved below."))
   (b* (((simpadd0-gin gin) gin)
-       (stmt-new (stmt-return expr?-new)))
+       (stmt (stmt-return expr?))
+       (stmt-new (stmt-return expr?-new))
+       ((unless (and expr?
+                     expr?-thm-name))
+        (mv stmt-new
+            (make-simpadd0-gout
+             :events expr?-events
+             :thm-name nil
+             :thm-index gin.thm-index
+             :names-to-avoid gin.names-to-avoid
+             :vars expr?-vars
+             :diffp expr?-diffp)))
+       (hints `(("Goal"
+                 :in-theory '((:e c$::ldm-stmt)
+                              (:e c$::ldm-expr)
+                              (:e c$::ldm-ident)
+                              (:e c$::ident)
+                              (:e c::expr-kind)
+                              (:e c::stmt-return))
+                 :use (,expr?-thm-name
+                       (:instance
+                        simpadd0-stmt-return-support-lemma-1
+                        (old-expr (mv-nth 1 (c$::ldm-expr ',expr?)))
+                        (new-expr (mv-nth 1 (c$::ldm-expr ',expr?-new))))
+                       (:instance
+                        simpadd0-stmt-return-support-lemma-2
+                        (expr (mv-nth 1 (c$::ldm-expr ',expr?))))))))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-stmt-thm stmt
+                               stmt-new
+                               expr?-vars
+                               gin.const-new
+                               gin.thm-index
+                               hints)))
     (mv stmt-new
-        (make-simpadd0-gout
-         :events expr?-events
-         :thm-name nil
-         :thm-index gin.thm-index
-         :names-to-avoid gin.names-to-avoid
-         :vars expr?-vars
-         :diffp expr?-diffp)))
+        (make-simpadd0-gout :events (append expr?-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+                            :vars expr?-vars
+                            :diffp expr?-diffp)))
 
   ///
 
   (defret stmt-unambp-of-simpadd0-stmt-return
     (stmt-unambp stmt)
-    :hyp (expr-option-unambp expr?-new)))
+    :hyp (expr-option-unambp expr?-new))
+
+  (defruled simpadd0-stmt-return-support-lemma-1
+    (b* ((old (c::stmt-return old-expr))
+         (new (c::stmt-return new-expr))
+         (old-expr-result (c::exec-expr-pure old-expr compst))
+         (new-expr-result (c::exec-expr-pure new-expr compst))
+         (old-expr-value (c::expr-value->value old-expr-result))
+         (new-expr-value (c::expr-value->value new-expr-result))
+         ((mv old-result old-compst) (c::exec-stmt old compst fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst fenv limit)))
+      (implies (and old-expr
+                    new-expr
+                    (not (equal (c::expr-kind old-expr) :call))
+                    (not (equal (c::expr-kind new-expr) :call))
+                    (not (c::errorp old-result))
+                    (not (c::errorp new-expr-result))
+                    (equal old-expr-value new-expr-value)
+                    (equal (c::value-kind old-expr-value) :sint)
+                    (equal (c::value-kind new-expr-value) :sint))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    old-result
+                    (equal (c::value-kind old-result) :sint))))
+    :expand ((c::exec-stmt (c::stmt-return old-expr) compst fenv limit)
+             (c::exec-stmt (c::stmt-return new-expr) compst fenv limit))
+    :enable (c::exec-expr-call-or-pure
+             c::apconvert-expr-value-when-not-array))
+
+  (defruled simpadd0-stmt-return-support-lemma-2
+    (implies (and expr
+                  (not (equal (c::expr-kind expr) :call))
+                  (c::errorp (c::exec-expr-pure expr compst)))
+             (c::errorp
+              (mv-nth 0 (c::exec-stmt (c::stmt-return expr)
+                                      compst
+                                      fenv
+                                      limit))))
+    :expand (c::exec-stmt (c::stmt-return expr) compst fenv limit)
+    :enable c::exec-expr-call-or-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
