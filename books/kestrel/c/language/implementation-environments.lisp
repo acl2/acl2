@@ -297,6 +297,70 @@
   ((signedp bool))
   :pred char-formatp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-format->max ((char-format char-formatp)
+                          (uchar-format uchar-formatp)
+                          (schar-format schar-formatp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in [C17:5.2.4.2.1/2],
+     this is the same as either @('UCHAR_MAX') or @('SCHAR_MAX')."))
+  (if (char-format->signedp char-format)
+      (schar-format->max schar-format uchar-format)
+    (uchar-format->max uchar-format))
+  :hooks (:fix)
+  ///
+
+  (defret char-format->max-type-prescription
+    (and (posp max)
+         (> max 1))
+    :rule-classes :type-prescription)
+
+  (defret char-format->max-lower-bound
+    (>= max 127)
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-format->min ((char-format char-formatp)
+                          (uchar-format uchar-formatp)
+                          (schar-format schar-formatp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in [C17:5.2.4.2.1/2],
+     this is either 0 or the same as @('SCHAR_MIN')."))
+  (if (char-format->signedp char-format)
+      (schar-format->min schar-format uchar-format)
+    0)
+  :hooks (:fix)
+  ///
+
+  (defret char-format->min-type-prescription
+    (and (integerp min)
+         (<= min 0))
+    :rule-classes :type-prescription)
+
+  (defret char-format->min-upper-bound
+    (<= min (if (char-format->signedp char-format)
+                (if (and (equal (signed-format-kind
+                                 (schar-format->signed schar-format))
+                                :twos-complement)
+                         (not (schar-format->trap schar-format)))
+                    -128
+                  -127)
+              0))
+    :rule-classes
+    ((:linear
+      :trigger-terms
+      ((char-format->min char-format uchar-format schar-format))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum uinteger-bit-role
@@ -992,24 +1056,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Based on the discussion in @(tsee schar-format),
-     this is always @($2^{\\mathtt{CHAR\\_BIT}-1} - 1$)."))
-  (1- (expt 2 (1- (ienv->char-bits ienv))))
+    "See @(tsee schar-format->max)."))
+  (schar-format->max (ienv->schar-format ienv)
+                     (ienv->uchar-format ienv))
   :hooks (:fix)
   ///
 
   (defret ienv->schar-max-type-prescription
     (and (posp max)
          (> max 1))
-    :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable posp))))
-
-  (defrulel lemma
-    (>= (expt 2 (1- (ienv->char-bits ienv))) 128)
-    :rule-classes :linear
-    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 7) (n (1- (ienv->char-bits ienv))))
-    :disable acl2::expt-is-weakly-increasing-for-base->-1)
+    :rule-classes :type-prescription)
 
   (defret ienv->schar-max-lower-bound
     (>= max 127)
@@ -1023,22 +1079,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Based on the discussion in @(tsee schar-format),
-     this is either @($- 2^{\\mathtt{CHAR\\_BIT}-1}$)
-     (if the signed format is two's complement
-     and the pattern with sign bit 1 and all value bits 0
-     is not a trap representation)
-     or @($- 2^{\\mathtt{CHAR\\_BIT}-1} + 1$)
-     (if the signed format is ones' complement or sign-and-magnitude,
-     or it is two's complement
-     but the pattern with sign bit 1 and all value bits 0
-     is a trap representation)."))
-  (if (and (equal (signed-format-kind
-                   (schar-format->signed (ienv->schar-format ienv)))
-                  :twos-complement)
-           (not (schar-format->trap (ienv->schar-format ienv))))
-      (- (expt 2 (1- (ienv->char-bits ienv))))
-    (- (1- (expt 2 (1- (ienv->char-bits ienv))))))
+    "See @(tsee schar-format->min)"))
+  (schar-format->min (ienv->schar-format ienv)
+                     (ienv->uchar-format ienv))
   :hooks (:fix)
   ///
 
@@ -1046,13 +1089,6 @@
     (and (integerp min)
          (< min 0))
     :rule-classes :type-prescription)
-
-  (defrulel lemma
-    (>= (expt 2 (1- (ienv->char-bits ienv))) 128)
-    :rule-classes :linear
-    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 7) (n (1- (ienv->char-bits ienv))))
-    :disable acl2::expt-is-weakly-increasing-for-base->-1)
 
   (defret ienv->schar-min-upper-bound
     (<= min (if (and (equal (signed-format-kind
@@ -1067,23 +1103,21 @@
 
 (define ienv->char-max ((ienv ienvp))
   :returns (max integerp)
-  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C17:5.2.4.2.1/2],
-     this is either 0 or the same as @('SCHAR_MIN')."))
-  (if (char-format->signedp (ienv->char-format ienv))
-      (ienv->schar-max ienv)
-    (ienv->uchar-max ienv))
+    "See @(tsee char-format->max)."))
+  (char-format->max (ienv->char-format ienv)
+                    (ienv->uchar-format ienv)
+                    (ienv->schar-format ienv))
   :hooks (:fix)
   ///
 
   (defret ienv->char-max-type-prescription
     (and (posp max)
          (> max 1))
-    :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable posp))))
+    :rule-classes :type-prescription)
 
   (defret ienv->char-max-lower-bound
     (>= max 127)
@@ -1097,11 +1131,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C17:5.2.4.2.1/2],
-     this is either 0 or the same as @('SCHAR_MIN')."))
-  (if (char-format->signedp (ienv->char-format ienv))
-      (ienv->schar-min ienv)
-    0)
+    "See @(tsee char-format->min)."))
+  (char-format->min (ienv->char-format ienv)
+                    (ienv->uchar-format ienv)
+                    (ienv->schar-format ienv))
   :hooks (:fix)
   ///
 
