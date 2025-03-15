@@ -4676,7 +4676,7 @@
                                        (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                        (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2))
                                        (< old-nodenum (renumbering-length renumbering-stobj))
-                                       (bounded-good-renumbering-stobj (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
+                                       (bounded-good-renumbering-stobjp (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
                            :stobjs (rewrite-stobj renumbering-stobj rewrite-stobj2)
                            :guard-hints (("Goal" :in-theory (e/d (;; todo: simplify this hint
                                                                   integerp-when-dargp
@@ -4898,7 +4898,7 @@
                          (rewrite-stobj2p rewrite-stobj2)
                          (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2))
                          (< old-nodenum (renumbering-length renumbering-stobj))
-                         (bounded-good-renumbering-stobj (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
+                         (bounded-good-renumbering-stobjp (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
                     (mv-let (erp new-nodenum-or-quotep new-rewrite-stobj2 new-memoization new-hit-counts new-tries new-limits
                                  new-node-replacement-array ; no real change
                                  )
@@ -4956,7 +4956,7 @@
                          (rewrite-stobj2p rewrite-stobj2)
                          (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2))
                          (< old-nodenum (renumbering-length renumbering-stobj))
-                         (bounded-good-renumbering-stobj (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
+                         (bounded-good-renumbering-stobjp (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
                     (mv-let (erp new-nodenum-or-quotep new-rewrite-stobj2 new-memoization new-hit-counts new-tries new-limits
                                  new-node-replacement-array ; no real change
                                  )
@@ -4990,7 +4990,7 @@
                          (rewrite-stobj2p rewrite-stobj2)
                          (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2))
                          (< old-nodenum (renumbering-length renumbering-stobj))
-                         (bounded-good-renumbering-stobj (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
+                         (bounded-good-renumbering-stobjp (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
                     (mv-let (erp new-nodenum-or-quotep new-rewrite-stobj2 new-memoization new-hit-counts new-tries new-limits
                                  new-node-replacement-array ; no real change
                                  )
@@ -5045,7 +5045,7 @@
                                            (equal (renumbering-length renumbering-stobj)
                                                   (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                                          t)
-                                       (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                       (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                                            (+ -1 (car (first rev-dag)))
                                                                          -1)
                                                                        (get-dag-len rewrite-stobj2) renumbering-stobj))
@@ -5145,7 +5145,7 @@
                              (equal (renumbering-length renumbering-stobj)
                                     (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                            t)
-                         (bounded-good-renumbering-stobj (if (consp rev-dag)
+                         (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                              (+ -1 (car (first rev-dag)))
                                                            -1)
                                                          (get-dag-len rewrite-stobj2) renumbering-stobj)
@@ -5166,7 +5166,7 @@
                                     (iff new-memoization memoization)
                                     (rule-limitsp new-limits)
                                     (renumbering-stobjp new-renumbering-stobj)
-                                    (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                    (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                                         (car (car (last rev-dag)))
                                                                       -1)
                                                                     (get-dag-len new-rewrite-stobj2)
@@ -5227,7 +5227,7 @@
                              (equal (renumbering-length renumbering-stobj)
                                     (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                            t)
-                         (bounded-good-renumbering-stobj (if (consp rev-dag)
+                         (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                              (+ -1 (car (first rev-dag)))
                                                            -1)
                                                          (get-dag-len rewrite-stobj2) renumbering-stobj)
@@ -5274,7 +5274,7 @@
                              (equal (renumbering-length renumbering-stobj)
                                     (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                            t)
-                         (bounded-good-renumbering-stobj (if (consp rev-dag)
+                         (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                              (+ -1 (car (first rev-dag)))
                                                            -1)
                                                          (get-dag-len rewrite-stobj2) renumbering-stobj)
@@ -5320,7 +5320,7 @@
                              (equal (renumbering-length renumbering-stobj)
                                     (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                            t)
-                         (bounded-good-renumbering-stobj (if (consp rev-dag)
+                         (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                              (+ -1 (car (first rev-dag)))
                                                            -1)
                                                          (get-dag-len rewrite-stobj2) renumbering-stobj)
@@ -5339,7 +5339,7 @@
                       (implies (and (not erp)
                                     (natp bound)
                                     (<= bound (car (car (last rev-dag)))))
-                               (good-renumbering-stobj bound new-renumbering-stobj))))
+                               (good-renumbering-stobjp bound new-renumbering-stobj))))
            :hints (("Goal" :use (:instance ,(pack$ simplify-dag-nodes-name '-return-type))
                     :in-theory (disable ,(pack$ simplify-dag-nodes-name '-return-type)))))
 
@@ -5369,7 +5369,7 @@
                              (equal (renumbering-length renumbering-stobj)
                                     (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                            t)
-                         (bounded-good-renumbering-stobj (if (consp rev-dag)
+                         (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                              (+ -1 (car (first rev-dag)))
                                                            -1)
                                                          (get-dag-len rewrite-stobj2) renumbering-stobj)
@@ -5390,7 +5390,7 @@
                                     (<= (get-dag-len new-rewrite-stobj2) bound2)
                                     (natp bound2)
                                     )
-                               (bounded-good-renumbering-stobj bound bound2 new-renumbering-stobj))))
+                               (bounded-good-renumbering-stobjp bound bound2 new-renumbering-stobj))))
            :hints (("Goal" :use (:instance ,(pack$ simplify-dag-nodes-name '-return-type))
                     :in-theory (disable ,(pack$ simplify-dag-nodes-name '-return-type)))))
 
