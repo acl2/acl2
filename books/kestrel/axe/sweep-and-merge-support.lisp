@@ -104,11 +104,11 @@
                               (var-type-alistp var-type-alist) ;strengthen? empty-type and most-general-type cannot appear?
                               )))
   (let ((hyp (strip-equal-t hyp)))
-    (if (and (call-of 'booleanp hyp)
+    (if (and (call-of 'booleanp hyp) ; (booleanp <var>)
              (= 1 (len (fargs hyp)))
              (symbolp (farg1 hyp)))
         (acons-fast (farg1 hyp) (boolean-type) var-type-alist)
-      (if (and (call-of 'unsigned-byte-p hyp)
+      (if (and (call-of 'unsigned-byte-p hyp) ; (unsigned-byte-p '<size> <var>)
                (= 2 (len (fargs hyp)))
                (quotep (second hyp))
                (natp (unquote (second hyp))) ;should we require > 0 ?

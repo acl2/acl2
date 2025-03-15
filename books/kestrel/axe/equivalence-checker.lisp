@@ -14399,7 +14399,7 @@
                                            print interpreted-function-alist rewriter-rule-alist prover-rule-alist
                                            extra-stuff ;does soundness depend on anything in this, or are these just hints?
                                            monitored-symbols
-                                           assumptions ;terms we can assume non-nil ;fixme add these to the dag earlier (but what if some of their nodes get transformed)?
+                                           assumptions ;terms we can assume non-nil ; we'd like to add these to the dag earlier, but that may be unsound since DAG nodes get transformed using contexts.
                                            test-cases
                                            test-case-array-alist step-num
                                            analyzed-function-table unroll

@@ -540,19 +540,19 @@
                ))
        ((mv result state)
         (prove-equality-with-stp smaller-nodenum larger-nodenum dag-array-name dag-array dag-len
-                                       nodenums-to-translate
-                                       (n-string-append (symbol-name miter-name) ;use concatenate? ;fixme pass the miter-name as a string throughout?
-                                                        "-"
-                                                        (nat-to-string smaller-nodenum)
-                                                        "="
-                                                        (nat-to-string larger-nodenum))
-                                       cut-nodenum-type-alist
-                                       extra-asserts
-                                       print
-                                       max-conflicts
-                                       nil ;no counterexample (for now)
-                                       nil
-                                       state)))
+                                 nodenums-to-translate
+                                 (n-string-append (symbol-name miter-name) ;use concatenate? ;todo: pass the miter-name as a string throughout?
+                                                  "-"
+                                                  (nat-to-string smaller-nodenum)
+                                                  "="
+                                                  (nat-to-string larger-nodenum))
+                                 cut-nodenum-type-alist
+                                 extra-asserts
+                                 print
+                                 max-conflicts
+                                 nil ;no counterexample (for now)
+                                 nil
+                                 state)))
     (if (eq result *error*)
         (prog2$ (er hard? 'try-aggressively-cut-equivalence-proof "Error calling STP." nil)
                 (mv :error-calling-stp
