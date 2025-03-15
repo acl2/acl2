@@ -1107,19 +1107,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C17:5.2.4.2.1/2],
-     this is either 0 or the same as @('SCHAR_MIN')."))
-  (if (char-format->signedp (ienv->char-format ienv))
-      (ienv->schar-max ienv)
-    (ienv->uchar-max ienv))
+    "See @(tsee char-format->max)."))
+  (char-format->max (ienv->char-format ienv)
+                    (ienv->uchar-format ienv)
+                    (ienv->schar-format ienv))
   :hooks (:fix)
   ///
 
   (defret ienv->char-max-type-prescription
     (and (posp max)
          (> max 1))
-    :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable posp))))
+    :rule-classes :type-prescription)
 
   (defret ienv->char-max-lower-bound
     (>= max 127)
@@ -1133,11 +1131,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C17:5.2.4.2.1/2],
-     this is either 0 or the same as @('SCHAR_MIN')."))
-  (if (char-format->signedp (ienv->char-format ienv))
-      (ienv->schar-min ienv)
-    0)
+    "See @(tsee char-format->min)."))
+  (char-format->min (ienv->char-format ienv)
+                    (ienv->uchar-format ienv)
+                    (ienv->schar-format ienv))
   :hooks (:fix)
   ///
 
