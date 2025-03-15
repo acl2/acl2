@@ -21,10 +21,11 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
-(defun sub1-cdr-cdr-induct (n x y)
-  (if (zp n)
-      (list n x y)
-    (sub1-cdr-cdr-induct (+ -1 n) (cdr x) (cdr y))))
+(local
+  (defun sub1-cdr-cdr-induct (n x y)
+    (if (zp n)
+        (list n x y)
+      (sub1-cdr-cdr-induct (+ -1 n) (cdr x) (cdr y)))))
 
 ;; todo: rephrase using take?
 ;; ;could also phrase this using clear-nth

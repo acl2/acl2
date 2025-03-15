@@ -107,3 +107,9 @@
            (equal (< (expt 2 (+ -1 (integer-length n))) n)
                   (not (power-of-2p n))))
   :hints (("Goal" :in-theory (e/d (integer-length power-of-2p expt) (expt-hack floor)))))
+
+(defthmd expt-2-of-integer-length-when-power-2p
+  (implies (power-of-2p x)
+           (equal (expt 2 (integer-length x))
+                  (* 2 x)))
+  :hints (("Goal" :in-theory (enable power-of-2p))))

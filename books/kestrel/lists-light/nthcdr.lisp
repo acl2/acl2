@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function nthcdr.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -298,3 +298,10 @@
   (implies (true-listp x)
            (equal (nthcdr (len x) x)
                   nil)))
+
+(defthmd nth-sum-when-nthcdr-known ; can loop?
+  (implies (and (equal vals2 (nthcdr m vals))
+                (natp n)
+                (natp m))
+           (equal (nth (+ m n) vals)
+                  (nth n vals2))))
