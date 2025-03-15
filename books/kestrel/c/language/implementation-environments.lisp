@@ -297,6 +297,70 @@
   ((signedp bool))
   :pred char-formatp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-format->max ((char-format char-formatp)
+                          (uchar-format uchar-formatp)
+                          (schar-format schar-formatp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in [C17:5.2.4.2.1/2],
+     this is the same as either @('UCHAR_MAX') or @('SCHAR_MAX')."))
+  (if (char-format->signedp char-format)
+      (schar-format->max schar-format uchar-format)
+    (uchar-format->max uchar-format))
+  :hooks (:fix)
+  ///
+
+  (defret char-format->max-type-prescription
+    (and (posp max)
+         (> max 1))
+    :rule-classes :type-prescription)
+
+  (defret char-format->max-lower-bound
+    (>= max 127)
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-format->min ((char-format char-formatp)
+                          (uchar-format uchar-formatp)
+                          (schar-format schar-formatp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in [C17:5.2.4.2.1/2],
+     this is either 0 or the same as @('SCHAR_MIN')."))
+  (if (char-format->signedp char-format)
+      (schar-format->min schar-format uchar-format)
+    0)
+  :hooks (:fix)
+  ///
+
+  (defret char-format->min-type-prescription
+    (and (integerp min)
+         (<= min 0))
+    :rule-classes :type-prescription)
+
+  (defret char-format->min-upper-bound
+    (<= min (if (char-format->signedp char-format)
+                (if (and (equal (signed-format-kind
+                                 (schar-format->signed schar-format))
+                                :twos-complement)
+                         (not (schar-format->trap schar-format)))
+                    -128
+                  -127)
+              0))
+    :rule-classes
+    ((:linear
+      :trigger-terms
+      ((char-format->min char-format uchar-format schar-format))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum uinteger-bit-role
@@ -1039,7 +1103,7 @@
 
 (define ienv->char-max ((ienv ienvp))
   :returns (max integerp)
-  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
    (xdoc::p
