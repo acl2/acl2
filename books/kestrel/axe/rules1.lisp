@@ -53,6 +53,13 @@
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 
+;move
+(defthm <-of-expt-2-of-ceiling-of-lg-same
+  (implies (posp x)
+           (equal (< x (expt 2 (ceiling-of-lg x)))
+                  (not (power-of-2p x))))
+  :hints (("Goal" :in-theory (enable ceiling-of-lg power-of-2p))))
+
 (local
  (defthmd even-when-power-of-2-and-at-least-2
    (implies (and (<= 2 n)
@@ -463,12 +470,6 @@
 ;;            (all-integerp vals))
 ;;   :hints (("Goal" :in-theory (enable all-integerp))))
 
-(defthmd nth-sum-when-nthcdr-known ; can loop?
-  (implies (and (equal vals2 (nthcdr m vals))
-                (natp n)
-                (natp m))
-           (equal (nth (+ m n) vals)
-                  (nth n vals2))))
 
 ;; (defthm nth-of-bitnot-list
 ;;   (implies (and (natp n)
@@ -590,37 +591,6 @@
                            (x (getbit n index))
                            (y (bvchop n index))
                            (vals (true-list-fix vals))))))
-
-(defthm equal-of-nthcdr-and-subrange-of-minus1
-  (implies (and (natp n)
-                (natp len)
-                (<= len (len array))
-                (true-listp array)
-                (<= n len)
-                )
-           (equal (equal (nthcdr n array) (subrange n (+ -1 len) array))
-                  (equal len (len array))))
-  :hints (("Goal" :in-theory (e/d (subrange) (
-                                              ;nthcdr-of-take-becomes-subrange
-                                              )))))
-
-(defthm firstn-of-bvchop-list
-  (equal (firstn n (bvchop-list size array))
-         (bvchop-list size (firstn n array)))
-  :hints (("Goal" :in-theory (enable bvchop-list firstn))))
-
-;move
-(defthm <-of-expt-2-of-ceiling-of-lg-same
-  (implies (posp x)
-           (equal (< x (expt 2 (ceiling-of-lg x)))
-                  (not (power-of-2p x))))
-  :hints (("Goal" :in-theory (enable ceiling-of-lg power-of-2p))))
-
-(defthmd expt-2-of-integer-length-when-power-2p
-  (implies (power-of-2p x)
-           (equal (expt 2 (integer-length x))
-                  (* 2 x)))
-  :hints (("Goal" :in-theory (enable power-of-2p))))
 
 ;we could do the (equal (bvnot-list ..) ..) check without consing:
 ;in general, if we have the equality of 2 lists built up by consing, we can build them up in parallel and stop as soon as one difference is found
@@ -1185,8 +1155,7 @@
            (equal (bvif size1 test (bv-array-read size2 len index data) z)
                   (bvif size1 test (bv-array-read size1 len index data) z)))
   :hints (("Goal" :in-theory (e/d (bvif myif bv-array-read)
-                                  (
-                                   ;;MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1
+                                  (;;MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1
                                    )))))
 
 (defthm bvif-of-bv-array-read-tighten-arg2
@@ -1196,8 +1165,7 @@
            (equal (bvif size1 test z (bv-array-read size2 len index data))
                   (bvif size1 test z (bv-array-read size1 len index data))))
   :hints (("Goal" :in-theory (e/d (bvif myif bv-array-read)
-                                  (
-                                   ;;MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1
+                                  (;;MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1
                                    )))))
 
 ;; (defthm nth-becomes-bvnth-when-unsigned-byte-p
@@ -2135,10 +2103,10 @@
   :hints (("Goal" :induct t
            :in-theory (enable bv-array-clear-range))))
 
-(defun sub1-sub1-induct (n1 n2)
-  (if (zp n1)
-      (list n1 n2)
-    (sub1-sub1-induct (+ -1 n1) (+ -1 n2))))
+;; (defun sub1-sub1-induct (n1 n2)
+;;   (if (zp n1)
+;;       (list n1 n2)
+;;     (sub1-sub1-induct (+ -1 n1) (+ -1 n2))))
 
 (defthm take-of-bv-array-clear-range
   (implies (and ; (natp elem-size)

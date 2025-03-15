@@ -106,7 +106,15 @@
              :object nil)
           (error (list :array-without-designator (expr-value-fix eval))))
       (expr-value-fix eval)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled c::apconvert-expr-value-when-not-array
+    (implies (not (equal (c::value-kind (c::expr-value->value eval))
+                         :array))
+             (equal (c::apconvert-expr-value eval)
+                    (c::expr-value-fix eval)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
