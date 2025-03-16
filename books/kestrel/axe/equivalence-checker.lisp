@@ -15263,12 +15263,15 @@
      ;; Next, determine whether everything relevant is pure:
      ;;ffffixme also check here that all supporting vars have bv or array types in the alist? - could cut if they don't?
      ;;ffixme also check that all necessary indices and sizes are constants (miter-is-purep could reflect that? maybe it does now?)
-     (if (and ;could omit non pure assumptions (but then the proof may fail)?
-           (pure-assumptionsp assumptions) ;; TODO: don't recompute this each time ;; TODO: We could drop or cut non-pure ones.
-           (or miter-is-purep
-               ;; TODO: Instead of this, consider pre-computing which nodes are pure (updating that info when merging nodes):
-               (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array var-type-alist)
-               ))
+     (if (and (or miter-is-purep
+                  ;; TODO: Instead of this, consider pre-computing which nodes are pure (updating that info when merging nodes):
+                  (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array var-type-alist)
+                  )
+              ;;could omit non pure assumptions (but then the proof may fail)?
+              (if (pure-assumptionsp assumptions) ;; TODO: don't recompute this each time ;; TODO: We could drop or cut non-pure ones.
+                  t
+                (prog2$ (cw "WARNING: Not treating equality of nodes ~x0 and ~x1 as pure due to the presence of assumptions.~%" smaller-nodenum larger-nodenum)
+                        nil)))
          ;; The relevant part of the miter is pure:
          ;;should we first make a miter and rewrite it?   pull that code up out of try-to-prove-non-pure-nodes-equal? no?  might be expensive?
          ;; or just rewrite the top node?
@@ -15441,8 +15444,11 @@
      ;; Not a trivial equality:
      (if (and (or miter-is-purep
                   (node-is-purep nodenum miter-array-name miter-array var-type-alist))
-              (pure-assumptionsp assumptions) ;todo: precompute and thread through?  split into pure-assumptions and non-pure-assumptions?
-              )
+              ;; todo: check the constant (but it would be odd for a pure node to be probably-equal to a bad constant)?
+              (if (pure-assumptionsp assumptions) ;todo: precompute and thread through?  split into pure-assumptions and non-pure-assumptions?
+                  t
+                (prog2$ (cw "WARNING: Not treating node ~x0 as pure due to the presence of assumptions.~%" nodenum)
+                        nil)))
          ;;The node is pure:
          ;; fixme clean this up!   see what we do for 2 nodes...
          ;;Rewrite [the top miter node only], then call STP:
