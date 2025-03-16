@@ -68,6 +68,7 @@
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/rules" :dir :system) ; for CONS-EQUAL-REWRITE-CONSTANT-VERSION
 (include-book "kestrel/lists-light/rules2" :dir :system) ;for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
+(include-book "kestrel/lists-light/group" :dir :system)
 (include-book "kestrel/lists-light/ungroup" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/lists-light/union-equal" :dir :system)  ;for UNION-EQUAL-OF-NIL-ARG1
