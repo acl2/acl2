@@ -7831,49 +7831,53 @@
         (+ 1 (num-true-nodes (+ -1 n) array-name array))
       (num-true-nodes (+ -1 n) array-name array))))
 
-(defthm num-true-nodes-bound
-  (implies (and (integerp n)
-                (<= -1 n))
-           (<= (num-true-nodes n array-name array)
-               (+ 1 n)))
-  :rule-classes ((:linear :trigger-terms ((num-true-nodes n array-name array))))
-  :hints (("Goal" :expand ((num-true-nodes 0 array-name array)))))
+(local
+  (defthm num-true-nodes-bound
+    (implies (and (integerp n)
+                  (<= -1 n))
+             (<= (num-true-nodes n array-name array)
+                 (+ 1 n)))
+    :rule-classes ((:linear :trigger-terms ((num-true-nodes n array-name array))))
+    :hints (("Goal" :expand ((num-true-nodes 0 array-name array))))))
 
-(defthm num-true-nodes-of-aset1-irrel
-  (implies (and ;val
-                (array1p array-name array)
-                ;; (natp n)
-                (< index (alen1 array-name array))
-                (natp index)
-                (< n index))
-           (equal (num-true-nodes n array-name (aset1 array-name array index val))
-                  (num-true-nodes n array-name array)))
-  :hints (("Goal" :expand ((num-true-nodes 0 array-name array)
-                           (num-true-nodes 0 array-name (aset1 array-name array index val))))))
+(local
+  (defthm num-true-nodes-of-aset1-irrel
+    (implies (and ;val
+               (array1p array-name array)
+               ;; (natp n)
+               (< index (alen1 array-name array))
+               (natp index)
+               (< n index))
+             (equal (num-true-nodes n array-name (aset1 array-name array index val))
+                    (num-true-nodes n array-name array)))
+    :hints (("Goal" :expand ((num-true-nodes 0 array-name array)
+                             (num-true-nodes 0 array-name (aset1 array-name array index val)))))))
 
-(defthm num-true-nodes-of-aset1
-  (implies (and val
-                (array1p array-name array)
-                (natp n)
-                (< n (alen1 array-name array))
-                (natp index)
-                (<= index n))
-           (equal (num-true-nodes n array-name (aset1 array-name array index val))
-                  (if (aref1 array-name array index)
-                      ;; already true:
-                      (num-true-nodes n array-name array)
-                    (+ 1 (num-true-nodes n array-name array)))))
-  :hints (("Goal" :expand ((num-true-nodes 0 array-name (aset1 array-name array 0 val))))))
+(local
+  (defthm num-true-nodes-of-aset1
+    (implies (and val
+                  (array1p array-name array)
+                  (natp n)
+                  (< n (alen1 array-name array))
+                  (natp index)
+                  (<= index n))
+             (equal (num-true-nodes n array-name (aset1 array-name array index val))
+                    (if (aref1 array-name array index)
+                        ;; already true:
+                        (num-true-nodes n array-name array)
+                      (+ 1 (num-true-nodes n array-name array)))))
+    :hints (("Goal" :expand ((num-true-nodes 0 array-name (aset1 array-name array 0 val)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: optimize by using a stobj array and with-local-stobj
-(defund nodes-are-purep (worklist dag-array-name dag-array dag-len done-array)
+(defund nodes-are-purep (worklist dag-array-name dag-array dag-len done-array var-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (nat-listp worklist)
                               (all-< worklist dag-len)
                               (array1p 'done-array-temp done-array)
-                              (all-< worklist (alen1 'done-array-temp done-array)))
+                              (all-< worklist (alen1 'done-array-temp done-array))
+                              (var-type-alistp var-type-alist))
                   :measure (make-ord 1 (+ 1 (- (nfix (alen1 'done-array-temp done-array))
                                                (num-true-nodes (+ -1 (alen1 'done-array-temp done-array))
                                                                'done-array-temp done-array)))
@@ -7887,40 +7891,40 @@
   (if (or (endp worklist)
           ;; for termination:
           (not (mbt (and (array1p 'done-array-temp done-array)
-                         ;; (array1p dag-array-name dag-array)
                          (nat-listp worklist)
-                         (all-< worklist (alen1 'done-array-temp done-array))
-                         ))))
+                         (all-< worklist (alen1 'done-array-temp done-array))))))
       t
     (let ((nodenum (first worklist)))
       (if (aref1 'done-array-temp done-array nodenum)
-          (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array)
+          (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array var-type-alist)
         (let ((expr (aref1 dag-array-name dag-array nodenum)))
-          (if (variablep expr) ;check more?
-              (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array)
+          (if (variablep expr)
+              (and (assoc-eq expr var-type-alist) ; the var must have a type in the alist (which is guaranteed to be an axe-type)
+                   (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array var-type-alist))
             (if (fquotep expr) ;fixme check the value?!
-                (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array)
+                (nodes-are-purep (rest worklist) dag-array-name dag-array dag-len done-array var-type-alist)
               (and (pure-fn-call-exprp expr)
                    ;;we checked nodenum, and now we have to check its children (the non-quotep args):
                    (nodes-are-purep (append-nodenum-dargs (dargs expr) (rest worklist)) dag-array-name dag-array dag-len
-                                    (aset1 'done-array-temp done-array nodenum t))))))))))
+                                    (aset1 'done-array-temp done-array nodenum t)
+                                    var-type-alist)))))))))
 
 ;; Checks whether nodenum and all of its supporters are pure.
-(defund node-is-purep (nodenum dag-array-name dag-array)
+(defund node-is-purep (nodenum dag-array-name dag-array var-type-alist)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
-                              )))
-  (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (make-empty-array 'done-array-temp (+ 1 nodenum))))
+                              (var-type-alistp var-type-alist))))
+  (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (make-empty-array 'done-array-temp (+ 1 nodenum)) var-type-alist))
 
 ;; Checks whether smaller-nodenum and larger-nodenum and all of their supporters are pure.
 ;; May be faster than doing the 2 checks separately.
-(defund both-nodes-are-purep (smaller-nodenum larger-nodenum dag-array-name dag-array)
+(defund both-nodes-are-purep (smaller-nodenum larger-nodenum dag-array-name dag-array var-type-alist)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
                               (< smaller-nodenum larger-nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 larger-nodenum))
-                              )))
-  (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (+ 1 larger-nodenum) (make-empty-array 'done-array-temp (+ 1 larger-nodenum))))
+                              (var-type-alistp var-type-alist))))
+  (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (+ 1 larger-nodenum) (make-empty-array 'done-array-temp (+ 1 larger-nodenum)) var-type-alist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -15263,7 +15267,7 @@
            (pure-assumptionsp assumptions) ;; TODO: don't recompute this each time ;; TODO: We could drop or cut non-pure ones.
            (or miter-is-purep
                ;; TODO: Instead of this, consider pre-computing which nodes are pure (updating that info when merging nodes):
-               (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array)
+               (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array var-type-alist)
                ))
          ;; The relevant part of the miter is pure:
          ;;should we first make a miter and rewrite it?   pull that code up out of try-to-prove-non-pure-nodes-equal? no?  might be expensive?
