@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "find-probable-facts")
-(include-book "jvm/rule-lists-jvm") ;drop?
+;(include-book "jvm/rule-lists-jvm") ;drop?
 (include-book "rules-in-rule-lists")
 (include-book "make-axe-rules2")
 (include-book "equivalence-checker-helpers") ; not strictly necessary; helpful functions and justifications of correctness
@@ -282,6 +282,10 @@
                         name)))
     ;; avoid name clashes, since we may use the same name for the theorem:
     (fresh-name-in-world-with-$s desired-name nil wrld)))
+
+;; todo
+;; (defthm symbolp-of-choose-miter-name
+;;   (symbolp (choose-miter-name name quoted-form1 quoted-form2 wrld)))
 
 ;; (mutual-recursion
 ;;  (defun first-nodenum-aux-lst (objects)
@@ -15242,7 +15246,8 @@
                                (symbol-listp monitored-symbols)
                                (pseudo-term-listp assumptions)
                                ;; ...more...
-                               (or (null max-conflicts) (natp max-conflicts)))
+                               (or (null max-conflicts) (natp max-conflicts))
+                               (symbolp miter-name))
                    :mode :program :stobjs (rand state)))
    (b* (;; First, we check whether the nodes are calls of the same function on the same arguments (may be quite common):
         (expr1 (aref1 miter-array-name miter-array smaller-nodenum))
@@ -15346,7 +15351,9 @@
                                             extra-stuff monitored-symbols
                                             assumptions test-cases test-case-array-alist step-num analyzed-function-table unroll miter-is-purep
                                             some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll options rand state)
-   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+   (declare (xargs :guard (and  ;...
+                            (or (null max-conflicts) (natp max-conflicts))
+                            (symbolp miter-name))
                    :mode :program :stobjs (rand state)))
    (b* ((- (and (member-eq print '(t :verbose :verbose!)) ;used to print this even for :brief:
                 (prog2$ (cw "  Equating nodes ~x0 and ~x1.~%" smaller-nodenum larger-nodenum)
@@ -15411,7 +15418,9 @@
                                        assumptions ; terms we can assume non-nil
                                        monitored-symbols step-num analyzed-function-table miter-depth unroll miter-is-purep
                                        use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state)
-   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+   (declare (xargs :guard (and ;...
+                            (or (null max-conflicts) (natp max-conflicts))
+                            (symbolp miter-name))
                    :mode :program :stobjs (rand state)))
    (b* ((- (cw "  Trying to prove node ~x0 is the constant ~x1.~%" nodenum constant-value)) ;add parens?
         ;;check for trivial equality (this helps if we had (equal x y) and x
@@ -15647,7 +15656,9 @@
                                                    assumptions monitored-symbols step-num
                                                    analyzed-function-table unroll miter-is-purep
                                                    use-proverp-flag some-goal-timed-outp max-conflicts miter-name options rand state)
-   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+   (declare (xargs :guard (and ;...
+                            (or (null max-conflicts) (natp max-conflicts))
+                            (symbolp miter-name))
                    :mode :program :stobjs (rand state)))
    (if (eq :unused constant-value)
 ;get rid of this check if it never fires
@@ -15716,7 +15727,8 @@
                                  some-goal-timed-outp max-conflicts miter-name nodenums-not-to-unroll
                                  options
                                  rand state)
-   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+   (declare (xargs :guard (and (or (null max-conflicts) (natp max-conflicts))
+                               (symbolp miter-name))
                    :mode :program :stobjs (rand state)))
    (if (equal *t* (aref1 miter-array-name miter-array top-node)) ; stop when the top node has been replaced with 't
        ;;bozo put in some checks here?  maybe not, since we already made sure the top node is all t's
@@ -15850,12 +15862,16 @@
  ;;ffixme think this through
  ;;returns (mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state)
  ;;where if ERP is nil, then result is :proved-miter, :did-nothing (wasn't able to do any merging), or :did-something
- (defun perform-miter-sweep (miter-name miter-array-name miter-array miter-len miter-depth var-type-alist
-                                        test-cases ;give values to the input vars (may be more here than we want to use)
-                                        interpreted-function-alist print
-                                        debug-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff monitored-symbols assumptions use-context-when-miteringp
-                                        sweep-num analyzed-function-table unroll max-conflicts options rand state)
-   (declare (xargs :guard (and (or (null max-conflicts) (natp max-conflicts))
+ (defun perform-miter-sweep (miter-array-name miter-array miter-len miter-depth
+                             var-type-alist ; can only contain axe-types, so may not give types to all vars
+                             test-cases ;give values to the input vars (may be more here than we want to use)
+                             interpreted-function-alist print
+                             debug-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff monitored-symbols assumptions use-context-when-miteringp
+                             sweep-num analyzed-function-table unroll max-conflicts miter-name options rand state)
+   (declare (xargs :guard (and ;;...
+                               (var-type-alistp var-type-alist)
+                               (or (null max-conflicts) (natp max-conflicts))
+                               (symbolp miter-name)
                                (not (eq 'dag-array miter-array-name)))
                    :mode :program :stobjs (rand state)))
    ;;ffixme what if the miter is a constant?? maybe not possible..
@@ -16136,21 +16152,26 @@
  ;;what if test-cases is nil?
  ;;fffixme should this take the miter as a dag-lst? maybe not
 ;fffixme should this return transformation-rules?
- (defun perform-miter-sweeps (miter-name miter-array-name miter-array miter-len miter-depth
-                                         var-type-alist
-                                         test-cases
-                                         interpreted-function-alist print debug-nodes
-                                         rewriter-rule-alist prover-rule-alist transformation-rules
-                                         assumptions extra-stuff monitored-symbols
-                                         use-context-when-miteringp sweep-num analyzed-function-table unroll
-                                         max-conflicts options rand state)
-   (declare (xargs :guard (or (null max-conflicts) (natp max-conflicts))
+ (defun perform-miter-sweeps (miter-array-name miter-array miter-len
+                              miter-depth
+                              var-type-alist ; can only contain axe-types, so may not give types to all vars
+                              test-cases
+                              interpreted-function-alist print debug-nodes
+                              rewriter-rule-alist prover-rule-alist transformation-rules
+                              assumptions extra-stuff monitored-symbols
+                              use-context-when-miteringp sweep-num analyzed-function-table unroll
+                              max-conflicts miter-name options rand state)
+   (declare (xargs :guard (and
+                               ;;...
+                               (var-type-alistp var-type-alist)
+                               (or (null max-conflicts) (natp max-conflicts))
+                               (symbolp miter-name))
                    :mode :program :stobjs (rand state)))
    (mv-let (erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist transformation-rules analyzed-function-table monitored-symbols rand state)
-     (perform-miter-sweep miter-name miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
+     (perform-miter-sweep miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
                           print debug-nodes rewriter-rule-alist prover-rule-alist transformation-rules extra-stuff
                           monitored-symbols assumptions use-context-when-miteringp sweep-num analyzed-function-table unroll
-                          max-conflicts options rand state)
+                          max-conflicts miter-name options rand state)
      (if erp
          (mv erp nil  miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state)
        (if (eq :proved-miter result)
@@ -16158,7 +16179,7 @@
          (if (eq :did-nothing result)
              (mv (erp-nil) :done miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state)
            (if (eq :did-something result)
-               (perform-miter-sweeps miter-name miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
+               (perform-miter-sweeps miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
                                      print debug-nodes
                                      rewriter-rule-alist prover-rule-alist transformation-rules
                                      assumptions
@@ -16167,7 +16188,7 @@
                                      use-context-when-miteringp
                                      (+ 1 sweep-num)
                                      analyzed-function-table
-                                     unroll max-conflicts options
+                                     unroll max-conflicts miter-name options
                                      rand state)
              (prog2$ (er hard 'perform-miter-sweeps "ERROR: This should not happen.")
                      (mv (erp-t) nil miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state))))))))
@@ -16462,7 +16483,7 @@
  (defun miter-and-merge (dag-or-quotep
                          miter-name ;a symbol
                          miter-depth ;we may be proving this miter on behalf of an overarching miter, and so on
-                         var-type-alist ;used if we need to call STP (callers can compute from the assumptions using make-var-type-alist-from-hyps)
+                         var-type-alist ;used if we need to call STP (callers can compute from the assumptions using make-var-type-alist-from-hyps) ; can only contain axe-types, so may not give types to all vars
                          interpreted-function-alist
                          print
                          debug-nodes ;do we still use this?
@@ -16482,9 +16503,13 @@
                          normalize-xors
                          options
                          rand state)
-   (declare (xargs :guard (and (or (null max-conflicts) (natp max-conflicts))
+   (declare (xargs :guard (and (or (myquotep dag-or-quotep)
+                                   (pseudo-dagp dag-or-quotep))
+                               (symbolp miter-name)
+                               ;;...
                                (var-type-alistp var-type-alist) ; todo: allows more than we can handle when calling stp
-                               )
+                               ;...
+                               (or (null max-conflicts) (natp max-conflicts)))
                    :mode :program :stobjs (rand state)))
    (if (quotep dag-or-quotep) ;get rid of this and improve pre simp to take a constant?
        (let ((val (unquote dag-or-quotep)))
@@ -16540,7 +16565,7 @@
               ((mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist
                    & ; new-analyzed-function-table
                    monitored-symbols rand state)
-               (perform-miter-sweeps miter-name miter-array-name miter-array miter-len
+               (perform-miter-sweeps miter-array-name miter-array miter-len
                                      miter-depth
                                      var-type-alist
                                      test-cases
@@ -16555,7 +16580,7 @@
                                      use-context-when-miteringp
                                      0
                                      analyzed-function-table
-                                     unroll max-conflicts options
+                                     unroll max-conflicts miter-name options
                                      rand state))
               ((when erp) (mv erp nil rand state)))
            (if (eq :proved-miter result)
@@ -18263,6 +18288,7 @@
                                   (null max-conflicts)
                                   (natp max-conflicts))
                               (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
+                              (symbolp miter-name)
                               )
                   :mode :program
                   :stobjs (state rand)))
@@ -18502,7 +18528,8 @@
                               (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
                               (or (eq :auto max-conflicts)
                                   (null max-conflicts)
-                                  (natp max-conflicts)))
+                                  (natp max-conflicts))
+                              (symbolp miter-name))
                   :mode :program
                   :stobjs (state rand)))
   (b* (((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
