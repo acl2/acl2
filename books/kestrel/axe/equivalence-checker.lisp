@@ -15439,11 +15439,11 @@
          (mv (erp-nil) :proved analyzed-function-table rand state)))
      ;; todo: check for ground term (ex: (booland 't 't))
      ;; Not a trivial equality:
-     (if (and miter-is-purep
-              ;; todo: check whether this node is pure!
+     (if (and (or miter-is-purep
+                  (node-is-purep nodenum miter-array-name miter-array var-type-alist))
               (pure-assumptionsp assumptions) ;todo: precompute and thread through?  split into pure-assumptions and non-pure-assumptions?
               )
-         ;;The miter is pure:
+         ;;The node is pure:
          ;; fixme clean this up!   see what we do for 2 nodes...
          ;;Rewrite [the top miter node only], then call STP:
          ;;This is the default for the big cipher proofs...
