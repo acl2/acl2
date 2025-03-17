@@ -281,7 +281,7 @@
        (- (and (print-level-at-least-verbosep print)
                (cw "(Attempting to prove test true with STP:~%")))
        ((mv true-result state)
-        (prove-implication-with-stp simplified-test-term
+        (prove-term-implication-with-stp simplified-test-term
                                     (append assumptions equality-assumptions)
                                     nil         ;counterexamplep
                                     nil ; print-cex-as-signedp
@@ -301,7 +301,7 @@
        (- (and (print-level-at-least-verbosep print)
                (cw "(Attempting to prove test false with STP:~%")))
        ((mv false-result state)
-        (prove-implication-with-stp `(not ,simplified-test-term)
+        (prove-term-implication-with-stp `(not ,simplified-test-term)
                                     assumptions ;todo: this caused problems with an rlp example: (append assumptions equality-assumptions)
                                     nil         ;counterexamplep
                                     nil ; print-cex-as-signedp
