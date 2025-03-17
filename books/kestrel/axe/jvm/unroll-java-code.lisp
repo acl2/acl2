@@ -1,7 +1,7 @@
 ; A tool to unroll Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -61,7 +61,7 @@
       t)))
 
 ;; Works for terms or dag-exprs
-(defun elide-make-frame-args (fn args)
+(defund elide-make-frame-args (fn args)
   (declare (xargs :guard t)) ;strengthen?
   (if (and (eq fn 'jvm::make-frame)
            (= 6 (len args))
@@ -79,7 +79,8 @@
 
 (mutual-recursion
  (defun elide-method-info-in-term (term)
-   (declare (xargs :guard t)) ; or require pseudo-termp, but that might take time to check?
+   (declare (xargs :guard t  ; or require pseudo-termp, but that might take time to check?
+                   :hints (("Goal" :in-theory (enable elide-make-frame-args)))))
    (if (or (not (consp term)) ; var
            (eq 'quote (ffn-symb term)))
        term
