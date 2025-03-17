@@ -556,7 +556,7 @@
                          (bvdiv bvdiv-unguarded arg1 arg2 arg3) ;see bvdiv-unguarded-correct
 
                          (bvsx bvsx-unguarded arg1 arg2 arg3)
-                         (sbvdiv sbvdiv arg1 arg2 arg3)
+                         (sbvdiv sbvdiv-unguarded arg1 arg2 arg3)
                          (sbvdivdown sbvdivdown arg1 arg2 arg3)
                          (sbvrem sbvrem arg1 arg2 arg3)
                          (sbvmoddown sbvmoddown arg1 arg2 arg3)
