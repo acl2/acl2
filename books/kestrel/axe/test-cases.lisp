@@ -265,8 +265,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns (mv erp value rand)
-;should we allow tuples?
+;; Generates a random value of the given type.
+;; Returns (mv erp value rand).
+;; todo: should we allow tuples?
 (mutual-recursion
  (defund gen-random-value (type rand var-value-alist)
    (declare (xargs :guard (and (test-case-typep type)
@@ -288,10 +289,10 @@
                                                   (natp))))))
    (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
           (mv (erp-nil) (unquote type) rand))
-         ((symbolp type) ;; a symbol means lookup a previously generated value (i guess this is a 'dependent type'?) ; todo: just use :eval for this?
-          (mv (erp-nil)
-              (lookup-eq-safe type var-value-alist) ; todo
-              rand))
+         ;; ((symbolp type) ;; a symbol means lookup a previously generated value (i guess this is a 'dependent type'?) ; todo: just use :eval for this?
+         ;;  (mv (erp-nil)
+         ;;      (lookup-eq-safe type var-value-alist) ; todo
+         ;;      rand))
          ((boolean-typep type)
           ;; Generates a random bit and converts it to a boolean:
           (b* (((mv value rand) (gen-random-bv 1 rand)))
@@ -360,7 +361,7 @@
                 (er hard 'gen-random-value "Unknown type: ~x0" type)
                 rand))))
 
- ;;returns (mv erp values rand)
+ ;; Returns (mv erp values rand).
  (defund gen-random-values (n type rand var-value-alist)
    (declare (xargs :guard (and (natp n)
                                (test-case-typep type)
@@ -377,7 +378,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognize a test case, an alist from variables to their values.
+;; Recognizes a test case, an alist from variables to their values.
 (defund test-casep (test-case)
   (declare (xargs :guard t))
   (symbol-alistp test-case))
@@ -396,7 +397,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognize a true-list of test cases.
+;; Recognizes a true-list of test cases.
 (defund test-casesp (test-cases)
   (declare (xargs :guard t))
   (if (atom test-cases)

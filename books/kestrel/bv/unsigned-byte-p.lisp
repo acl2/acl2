@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function unsigned-byte-p.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; For unsigned-byte-p-forward and unsigned-byte-p-from-bounds,
 ; see the copyrights on the ihs and coi libraries.
 ;
@@ -130,7 +130,8 @@
                       (unsigned-byte-p (+ -1 n) x)))))
   :hints (("Goal":in-theory (enable expt-of-+ unsigned-byte-p unsigned-byte-p-when-n-is-not-natp))))
 
-(defthm size-non-negative-when-unsigned-byte-p-free
+; caused problems?
+(defthmd size-non-negative-when-unsigned-byte-p-free
   (implies (unsigned-byte-p size free)
            (not (< size 0)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
