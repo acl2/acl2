@@ -1,7 +1,7 @@
 ; BV Library: leftrotate for size 32
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,7 +21,10 @@
 (local (in-theory (disable unsigned-byte-p)))
 
 (defund leftrotate32 (amt val)
-  (declare (type integer amt val))
+  (declare (xargs :guard (and (natp amt)
+                              (integerp val))
+                  :split-types t)
+           (type integer amt val))
   (leftrotate 32 amt val))
 
 (defthm leftrotate32-of-0-arg1
@@ -36,16 +39,14 @@
 
 ;todo gen the 5 and move
 (defthm leftrotate-32-of-bvchop-5
-  (implies (natp amt)
-           (equal (leftrotate 32 (bvchop 5 amt) val)
-                  (leftrotate 32 (ifix amt) val)))
+  (equal (leftrotate 32 (bvchop 5 amt) val)
+         (leftrotate 32 amt val))
   :hints (("Goal" :in-theory (enable bvchop))))
 
 ;todo gen the 5
 (defthm leftrotate32-of-bvchop-5
-  (implies (natp amt)
-           (equal (leftrotate32 (bvchop 5 amt) val)
-                  (leftrotate32 amt val)))
+  (equal (leftrotate32 (bvchop 5 amt) val)
+         (leftrotate32 amt val))
   :hints (("Goal" :in-theory (enable leftrotate32))))
 
 ;justifies the correctness of some operations performed by Axe
@@ -73,17 +74,17 @@
                   (leftrotate32 amt x)))
   :hints (("Goal" :in-theory (enable leftrotate32 leftrotate))))
 
+;gen
 (defthm leftrotate32-of-bvchop
-  (implies (natp amt)
-           (equal (leftrotate32 (bvchop 32 amt) val)
-                  (leftrotate32 amt val)))
+  (equal (leftrotate32 (bvchop 32 amt) val)
+         (leftrotate32 amt val))
   :hints (("Goal" :in-theory (disable leftrotate32 leftrotate32-of-bvchop-5)
            :use ((:instance leftrotate32-of-bvchop-5 (amt amt))
                  (:instance leftrotate32-of-bvchop-5 (amt (bvchop 32 amt)))))))
 
 ;do not remove.  this helps justify how Axe translates leftrotate32 to STP:
 (defthm leftrotate32-of-mod
-  (implies (natp amt)
+  (implies (integerp amt)
            (equal (leftrotate32 (mod amt 32) val)
                   (leftrotate32 amt val)))
   :hints (("Goal" :in-theory (enable leftrotate32))))
@@ -98,7 +99,7 @@
 (defthmd leftrotate32-open-when-constant-shift-amount
   (implies (syntaxp (quotep amt))
            (equal (leftrotate32 amt val)
-                  (let* ((amt (mod (nfix amt) 32) ;(bvchop 5 amt)
+                  (let* ((amt (mod (ifix amt) 32) ;(bvchop 5 amt)
                               ))
                     (bvcat (- 32 amt)
                            (slice (- 31 amt) 0 val)

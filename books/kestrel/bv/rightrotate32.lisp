@@ -17,7 +17,10 @@
 (local (include-book "slice"))
 
 (defund rightrotate32 (amt val)
-  (declare (type integer amt val))
+  (declare (xargs :guard (and (natp amt)
+                              (integerp val))
+                  :split-types t)
+           (type integer amt val))
   (rightrotate 32 amt val))
 
 ;justifies the correctness of some operations performed by Axe
@@ -33,16 +36,14 @@
 
 ;todo gen the 5 and move
 (defthm rightrotate-32-of-bvchop-5
-  (implies (natp amt)
-           (equal (rightrotate 32 (bvchop 5 amt) val)
-                  (rightrotate 32 (ifix amt) val)))
+  (equal (rightrotate 32 (bvchop 5 amt) val)
+         (rightrotate 32 amt val))
   :hints (("Goal" :in-theory (enable bvchop))))
 
 ;todo gen the 5
 (defthm rightrotate32-of-bvchop-5
-  (implies (natp amt)
-           (equal (rightrotate32 (bvchop 5 amt) val)
-                  (rightrotate32 amt val)))
+  (equal (rightrotate32 (bvchop 5 amt) val)
+         (rightrotate32 amt val))
   :hints (("Goal" :in-theory (enable rightrotate32))))
 
 ;gen

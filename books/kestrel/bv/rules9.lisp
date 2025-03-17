@@ -162,8 +162,7 @@
                 )
            (equal (BVCAT highsize x lowsize (SLICE upper-bit highsize x))
                   (rightrotate (+ 1 upper-bit) highsize x)))
-  :hints (("Goal" :in-theory (enable ;RIGHTROTATE
-                              ))))
+  :hints (("Goal" :in-theory (disable leftrotate-of-plus-same))))
 
 (defthmd bvcat-of-bitxor-and-bitxor-adjacent-bits
   (implies (and (natp low1)
