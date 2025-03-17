@@ -261,6 +261,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun no-duplicatesp-equal-unguarded (l)
+  (declare (xargs :guard t))
+  (cond ((atom l) t)
+        ((member-equal-unguarded (car l) (cdr l)) nil)
+        (t (no-duplicatesp-equal-unguarded (cdr l)))))
+
+(defthm no-duplicatesp-equal-unguarded-correct
+  (equal (no-duplicatesp-equal-unguarded l)
+         (no-duplicatesp-equal l))
+  :hints (("Goal" :in-theory (enable no-duplicatesp-equal-unguarded
+                                     no-duplicatesp-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun map-reverse-list-unguarded (items)
+  (declare (xargs :guard t))
+  (if (atom items)
+      nil
+    (cons (reverse-list-unguarded (car items))
+          (map-reverse-list-unguarded (cdr items)))))
+
+(defthm map-reverse-list-unguarded-correct
+  (equal (map-reverse-list-unguarded l)
+         (map-reverse-list l))
+  :hints (("Goal" :in-theory (enable map-reverse-list-unguarded
+                                     map-reverse-list))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; This justifies evaluating calls to EQL below by calling EQUAL.
 (local
  (defthm eql-becomes-eql
@@ -332,7 +361,7 @@
            (key-list key-list arg1)
            (true-list-fix true-list-fix arg1) ;unguarded
            (all-integerp all-integerp arg1) ;unguarded
-           (no-duplicatesp-equal no-duplicatesp-equal arg1)
+           (no-duplicatesp-equal no-duplicatesp-equal-unguarded arg1)
            (strip-cdrs strip-cdrs-unguarded arg1) ;see strip-cdrs-unguarded-correct
            (strip-cars strip-cars-unguarded arg1) ;see strip-cars-unguarded-correct
            (stringp stringp arg1)       ;unguarded, primitive
@@ -344,7 +373,7 @@
            (endp endp-unguarded arg1) ;see endp-unguarded-correct
            ;(int-fix-list int-fix-list arg1) ;unguarded
            (bitnot bitnot-unguarded arg1)   ;see bitnot-unguarded-correct
-           (logmaskp logmaskp arg1)         ;drop?
+           (logmaskp logmaskp arg1)         ;drop? ; unguarded
            (integer-length integer-length-unguarded arg1) ;see INTEGER-LENGTH-UNGUARDED-CORRECT
            (ceiling-of-lg ceiling-of-lg-unguarded arg1) ; see ceiling-of-lg-unguarded-correct
            (unary-/ unary-/-unguarded arg1) ;see unary-/-unguarded-correct
@@ -359,7 +388,7 @@
            (car car-unguarded arg1)         ; see car-unguarded-correct
            (cdr cdr-unguarded arg1)         ; see cdr-unguarded-correct
            ;; (EXTRACT-PACKAGE-NAME EXTRACT-PACKAGE-NAME arg1)
-           (map-reverse-list map-reverse-list arg1)
+           (map-reverse-list map-reverse-list-unguarded arg1)
            (realpart realpart-unguarded arg1) ; see realpart-unguarded-correct
            (imagpart imagpart-unguarded arg1) ; see imagpart-unguarded-correct
            (symbolp symbolp arg1) ;unguarded
@@ -371,7 +400,7 @@
          (acons 2
                 '((mv-nth mv-nth-unguarded arg1 arg2)
                   (items-have-len items-have-len-unguarded arg1 arg2) ;see items-have-len-unguarded-correct
-                  (all-all-unsigned-byte-p all-all-unsigned-byte-p arg1 arg2)
+                  (all-all-unsigned-byte-p all-all-unsigned-byte-p arg1 arg2) ;unguarded
                   (add-to-end add-to-end arg1 arg2)
                   (coerce coerce-unguarded arg1 arg2) ;see coerce-unguarded-correct
                   (< <-unguarded arg1 arg2) ;see <-unguarded-correct
