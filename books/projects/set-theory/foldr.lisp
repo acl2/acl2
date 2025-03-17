@@ -10,7 +10,7 @@
 (include-book "zify")
 
 (defun foldr (lst fn init)
-  (declare (xargs :guard (true-listp lst)))     
+  (declare (xargs :guard (true-listp lst)))
   (if (endp lst)
       init
     (apply fn
@@ -96,7 +96,9 @@
                            lst)))
       :props (foldr-prop zmax*$prop))
 
-(zify* zand* and 2)
+(zify* zand* and 2
+; The following avoids a name conflict.
+       :fn* zf::and*)
 
 (defthm member-preserves-acl2p
   (implies (and (member x lst)
