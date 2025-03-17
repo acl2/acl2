@@ -67,8 +67,7 @@
 (def-simplified-basic *aes-128-encrypt-spec-dag-bit-blasted-as-boolean*
   *aes-128-encrypt-spec-dag*
 ;  :monitored-symbols '(ARRAY-REDUCTION-WHEN-ALL-SAME-IMPROVED2)
-  :rules (append '(bv-array-read-blast-one-step-better
-                   bif-rewrite ;bif
+  :rules (append '(bv-array-read-blast-one-step
                    bitor-becomes-bitnot-of-bitand-of-bitnot-and-bitnot
                    bitxor-becomes-bitor-of-bitand-of-bitnot-and-bitand-of-bitnot
                    bytes-to-bits-base

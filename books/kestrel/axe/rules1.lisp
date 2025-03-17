@@ -1476,72 +1476,64 @@
 ;;                  (jvm::update-nth-local key (myif test (nth key x) val) (myif test x l))))
 ;;  :hints (("Goal" :in-theory (e/d (len-update-nth myif list::update-nth-equal-rewrite nth-when-n-is-zp) (car-becomes-nth-of-0)))))
 
-(defthmd bv-array-read-blast-one-step
-  (implies (and (equal len (expt 2 index-width))
-;               (equal index-width 4)
-                (all-unsigned-byte-p index-width vals)
-                (posp index-width)
-                (equal (expt 2 index-width) (len vals))
-                (natp index)
-                )
-           (equal (bv-array-read 1 len index vals)
-                  (bif (getbit (+ -1 index-width) index)
-                       (bv-array-read 1 (expt 2 (+ -1 index-width))
-                                      (bvchop (+ -1 index-width) index)
-                                      (subrange (expt 2 (+ -1 index-width))
-                                                (+ -1 (expt 2 index-width))
-                                                vals))
-                       (bv-array-read 1 (expt 2 (+ -1 index-width))
-                                      (bvchop (+ -1 index-width) index)
-                                      (subrange 0 (+ -1 (expt 2 (+ -1 index-width)))
-                                                vals)))))
-  :hints (("Goal"
-           :use ( ;; (:instance BVCAT-SPECIAL-OPENER
-                 ;;                           (x (getbit (+ -1 index-width) index))
-                 ;;                           (y (bvchop (+ -1 index-width) index))
-                 ;;                           (n (+ -1 index-width)))
-                 (:instance BVCAT-OF-GETBIT-AND-X-ADJACENT
-                            (n (+ -1 index-width))
-                            (x index)))
+;; here we are bit-blasting the index
+(local
+  (defthmd bv-array-read-blast-one-step-helper
+    (implies (and (equal len (expt 2 index-width))
+                  (posp index-width)
+                  (natp index))
+             (equal (bv-array-read element-size len index vals)
+                    (bvif element-size
+                          (equal 1 (getbit (+ -1 index-width) index))
+                          (bv-array-read element-size (expt 2 (+ -1 index-width))
+                                         (bvchop (+ -1 index-width) index)
+                                         (subrange (expt 2 (+ -1 index-width))
+                                                   (+ -1 (expt 2 index-width))
+                                                   vals))
+                          (bv-array-read element-size (expt 2 (+ -1 index-width))
+                                         (bvchop (+ -1 index-width) index)
+                                         (subrange 0 (+ -1 (expt 2 (+ -1 index-width)))
+                                                   vals)))))
+    :hints (("Goal"
+             :use (;; (:instance BVCAT-SPECIAL-OPENER
+                   ;;                           (x (getbit (+ -1 index-width) index))
+                   ;;                           (y (bvchop (+ -1 index-width) index))
+                   ;;                           (n (+ -1 index-width)))
+                   (:instance BVCAT-OF-GETBIT-AND-X-ADJACENT
+                              (n (+ -1 index-width))
+                              (x index)))
 ;          :expand ((BVCAT 1 0 7 INDEX))
-           :in-theory (e/d (subrange
-                            bif
-                            bv-ARRAY-READ
-                            ;LOGAPP-0
-                            ceiling-of-lg
-                            bvcat logapp
-;bvcat
-                            )
-                           (;bif-rewrite
-
-                            BVCAT-OF-GETBIT-AND-X-ADJACENT
-                            TIMES-4-BECOMES-LOGAPP
-                            BVCAT-OF-GETBIT-AND-X-ADJACENT
-                            BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt
-                            LOGAPP-EQUAL-REWRITE
-                            BVCAT-OF-0-arg2
-                            )))))
+             :in-theory (e/d (subrange
+                              bvif
+                              bv-ARRAY-READ
+                              ;;LOGAPP-0
+                              ceiling-of-lg
+                              bvcat logapp)
+                             (BVCAT-OF-GETBIT-AND-X-ADJACENT
+                              TIMES-4-BECOMES-LOGAPP
+                              BVCAT-OF-GETBIT-AND-X-ADJACENT
+                              BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt
+                              LOGAPP-EQUAL-REWRITE
+                              BVCAT-OF-0-arg2
+                              ))))))
 
 ;actually matches
-(defthmd bv-array-read-blast-one-step-better
+(defthmd bv-array-read-blast-one-step
   (implies (and (equal len (expt 2 (+ -1 (integer-length len))))
-             ;               (equal (+ -1 (integer-length len)) 4)
-                (all-unsigned-byte-p (+ -1 (integer-length len)) vals)
-                (posp (+ -1 (integer-length len)))
-                (equal (expt 2 (+ -1 (integer-length len))) (len vals))
-                (natp index)
-                )
-           (equal (bv-array-read 1 len index vals)
-                  (bif (getbit (+ -1 (+ -1 (integer-length len))) index)
-                       (bv-array-read 1
-                                      (expt 2 (+ -1 (+ -1 (integer-length len))))
-                                      (bvchop (+ -1 (+ -1 (integer-length len))) index)
-                                      (subrange (expt 2 (+ -1 (+ -1 (integer-length len)))) (+ -1 (expt 2 (+ -1 (integer-length len)))) vals))
-                       (bv-array-read 1
-                                      (expt 2 (+ -1 (+ -1 (integer-length len))))
-                                      (bvchop (+ -1 (+ -1 (integer-length len))) index)
-                                      (subrange 0 (+ -1 (expt 2 (+ -1 (+ -1 (integer-length len))))) vals)))))
-  :hints (("Goal" :use (:instance bv-array-read-blast-one-step (index-width (+ -1 (integer-length len)))))))
+                (<= 2 len)
+                (natp index))
+           (equal (bv-array-read element-size len index vals)
+                  (bvif element-size
+                        (equal 1 (getbit (+ -1 (+ -1 (integer-length len))) index))
+                        (bv-array-read element-size
+                                       (expt 2 (+ -1 (+ -1 (integer-length len))))
+                                       (bvchop (+ -1 (+ -1 (integer-length len))) index)
+                                       (subrange (expt 2 (+ -1 (+ -1 (integer-length len)))) (+ -1 (expt 2 (+ -1 (integer-length len)))) vals))
+                        (bv-array-read element-size
+                                       (expt 2 (+ -1 (+ -1 (integer-length len))))
+                                       (bvchop (+ -1 (+ -1 (integer-length len))) index)
+                                       (subrange 0 (+ -1 (expt 2 (+ -1 (+ -1 (integer-length len))))) vals)))))
+  :hints (("Goal" :use (:instance bv-array-read-blast-one-step-helper (index-width (+ -1 (integer-length len)))))))
 ;bozo use the macros below more?
 
 ;; (thm
