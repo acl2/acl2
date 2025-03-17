@@ -1,7 +1,7 @@
 ; A function to return the integer, from a list, that uses the most bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,3 +45,12 @@
                                  vals))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable all-natp all-unsigned-byte-p width-of-widest-int unsigned-byte-p-of-integer-length-gen))))
+
+;rename
+;drop?
+(defthm unsigned-byte-p-of-width-of-widest-int-nth
+  (implies (and (natp index)
+                (all-natp vals)
+                (< index (len vals)))
+           (unsigned-byte-p (width-of-widest-int vals) (nth index vals)))
+  :hints (("Goal" :in-theory (e/d (width-of-widest-int nth) ()))))
