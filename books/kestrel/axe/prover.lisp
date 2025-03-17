@@ -1776,7 +1776,7 @@
                        ;; We have been told not to use STP:
                        (mv :not-calling-stp state)
                      ;; Calling STP:
-                     (prove-node-disjunction-with-stp literal-nodenums dag-array dag-len dag-parent-array case-designator print max-conflicts
+                     (prove-disjunction-with-stp literal-nodenums dag-array dag-len dag-parent-array case-designator print max-conflicts
                                                       nil ;no counterexample (for now)
                                                       nil ; don't print cex as signed
                                                       state))

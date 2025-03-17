@@ -104,11 +104,11 @@
                               (var-type-alistp var-type-alist) ;strengthen? empty-type and most-general-type cannot appear?
                               )))
   (let ((hyp (strip-equal-t hyp)))
-    (if (and (call-of 'booleanp hyp)
+    (if (and (call-of 'booleanp hyp) ; (booleanp <var>)
              (= 1 (len (fargs hyp)))
              (symbolp (farg1 hyp)))
         (acons-fast (farg1 hyp) (boolean-type) var-type-alist)
-      (if (and (call-of 'unsigned-byte-p hyp)
+      (if (and (call-of 'unsigned-byte-p hyp) ; (unsigned-byte-p '<size> <var>)
                (= 2 (len (fargs hyp)))
                (quotep (second hyp))
                (natp (unquote (second hyp))) ;should we require > 0 ?
@@ -176,7 +176,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;;
 ;; Tags to determine the order of nodes to attack
 ;;
@@ -210,6 +209,7 @@
              (and (sweep-info-tag-and-valuep tag val)
                   (sweep-infop (rest info))))))))
 
+;;The sweep-array associates each nodenum with a little alist mapping tags to values.
 (def-typed-acl2-array2 sweep-arrayp (sweep-infop val)) ; todo: reduce output
 
 (local
@@ -232,7 +232,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;sweep-array associates each nodenums with a little alist from tags to their values
 (defund get-node-tag (nodenum tag sweep-array)
   (declare (xargs :guard (and (natp nodenum)
                               (symbolp tag)
@@ -334,7 +333,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns sweep-array
+;; Returns the updated sweep-array.
 ;moves nodes one at a time from node-set to smaller-nodes-from-this-set
 (defund tag-probably-equal-node-set (node-set ;should be sorted
                                      smaller-nodes-from-this-set ;should be kept sorted (ffixme maybe that's too expensive, in which case choose the minimum one when this is used? but then removing the node may be slow?  maybe that is more rare?)
@@ -371,8 +370,10 @@
                   (alen1 'sweep-array sweep-array)))
   :hints (("Goal" :in-theory (enable tag-probably-equal-node-set))))
 
-;returns sweep-array
-;Tag the elements of probably-equal node sets but exclude sets that are probably constant (TODO: try not excluding them)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns the updated sweep-array.
+;Tags the elements of probably-equal node sets but exclude sets that are probably constant (TODO: try not excluding them)
 (defun tag-probably-equal-node-sets (node-sets sweep-array probably-constant-node-alist)
   (declare (xargs :guard (and (nat-list-listp node-sets)
                               (sweep-arrayp 'sweep-array sweep-array)
@@ -396,8 +397,10 @@
                                     probably-constant-node-alist))))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Tags all the nodes that are probably constants.
-;; Returns sweep-array.
+;; Returns the updated sweep-array.
 (defund tag-probably-constant-nodes (probably-constant-node-alist sweep-array)
   (declare (xargs :guard (and (alistp probably-constant-node-alist)
                               (nat-listp (strip-cars probably-constant-node-alist))
@@ -412,6 +415,8 @@
            (sweep-array (set-node-tag nodenum *probable-constant* (enquote value) sweep-array)))
       (tag-probably-constant-nodes (cdr probably-constant-node-alist) sweep-array))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun remove-node-from-smaller-nodes-that-might-be-equal (nodenum nodenum-to-remove sweep-array)
   (declare (xargs :guard (and (natp nodenum)
                               (natp nodenum-to-remove)
@@ -421,6 +426,8 @@
          (smaller-nodes-that-might-be-equal (remove1 nodenum-to-remove smaller-nodes-that-might-be-equal))
          (sweep-array (set-node-tag nodenum *smaller-nodes-that-might-be-equal* smaller-nodes-that-might-be-equal sweep-array)))
     sweep-array))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun remove-node-from-smaller-nodes-that-might-be-equal-list (nodenums nodenum-to-remove sweep-array)
   (declare (xargs :guard (and (nat-listp nodenums)
@@ -433,6 +440,8 @@
      (cdr nodenums)
      nodenum-to-remove
      (remove-node-from-smaller-nodes-that-might-be-equal (car nodenums) nodenum-to-remove sweep-array))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: guard (but need the notion of a bounded-sweep-array)
 (defun update-tags-for-proved-constant-node (nodenum sweep-array)
@@ -447,6 +456,8 @@
          (sweep-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-array)))
     sweep-array))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;we failed to prove the node is constant, but we might be able to prove it equal to some other node we think is the same constant..
 (defun update-tags-for-failed-constant-node (nodenum sweep-array)
   (declare (xargs :guard (and (natp nodenum)
@@ -455,6 +466,8 @@
   (let* ((sweep-array (set-node-tag nodenum *probable-constant* nil sweep-array))) ;don't try to prove that it is the constant
     ;;we leave the node among the smaller-nodes-that-might-be-equal for larger nodes in its set
     sweep-array))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;we proved that nodenum equals some smaller node (and we changed refs to it to point to that smaller node)
 (defun update-tags-for-proved-equal-node (nodenum sweep-array)
@@ -471,6 +484,8 @@
          (sweep-array (remove-node-from-smaller-nodes-that-might-be-equal-list larger-nodes-that-might-be-equal nodenum sweep-array)))
     sweep-array))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;we failed to prove that nodenum is equal to smaller-nodenum-we-tried-to-prove-it-equal-to
 ;(we know *probable-constant* wasn't set or we would have tried to prove the node constant)
 (defun update-tags-for-failed-equal-node (nodenum smaller-nodenum-we-tried-to-prove-it-equal-to sweep-array)
@@ -481,6 +496,8 @@
   ;;nodenum may still be provably equal to other nodes on the list (if any)
   (let* ((sweep-array (remove-node-from-smaller-nodes-that-might-be-equal nodenum smaller-nodenum-we-tried-to-prove-it-equal-to sweep-array)))
     sweep-array))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;based on the function print-each-list-on-one-line
 (defund print-non-constant-probably-equal-sets (sets sweep-array)
@@ -499,6 +516,7 @@
               (print-non-constant-probably-equal-sets (rest sets) ;sweep-array-name
                                                       sweep-array)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Is this really right, if a set has more than 2 nodes and some of the attempted merges fail?
 (defund count-merges-in-probably-equal-node-sets (sets acc)
@@ -513,6 +531,8 @@
                                                   (+ -1 ; a set of 2 contributes 1 merge, and so on
                                                      (len set)
                                                      acc))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;go from the bottom up, looking for the next node to handle (is there guaranteed to always be one? i think so.)
 ;we handle the smallest numbered node that is either 1) an (unhandled) probable constant or 2) the larger of two (unhandled) probably-equal nodes in the same set

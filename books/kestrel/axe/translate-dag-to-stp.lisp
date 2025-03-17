@@ -186,7 +186,7 @@
 
 ;just use repeat?
 ;optimize?
-(defun n-close-parens (n acc)
+(defund n-close-parens (n acc)
   (declare (xargs :guard (natp n)))
   (if (zp n)
       acc
@@ -195,7 +195,8 @@
 (local
   (defthm string-treep-of-n-close-parens
     (implies (string-treep acc)
-             (string-treep (n-close-parens n acc)))))
+             (string-treep (n-close-parens n acc)))
+    :hints (("Goal" :in-theory (enable n-close-parens)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2106,7 +2107,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: What if we cut out some structure but it is not involved in the counterexample?
-(defun all-cuts-are-at-varsp (cut-nodenum-type-alist dag-array-name dag-array)
+(defund all-cuts-are-at-varsp (cut-nodenum-type-alist dag-array-name dag-array)
   (declare (xargs :guard (and (nodenum-type-alistp cut-nodenum-type-alist)
                               (symbolp dag-array-name)
                               (array1p dag-array-name dag-array)
@@ -2143,7 +2144,6 @@
                               (stringp extra-string)
                               (string-treep extra-asserts)
                               (nodenum-type-alistp cut-nodenum-type-alist)
-                              ;;(consp nodenums-to-translate) ;think
                               (stringp base-filename)
                               (print-levelp print)
                               (or (null max-conflicts)
@@ -2267,19 +2267,20 @@
 ;; Tries to prove the equality of LHS and RHS, which are dargs.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 ;; TODO: Unify param order with prove-query-with-stp
-(defund prove-equality-query-with-stp (lhs ;a nodenum or quotep
-                                       rhs ;a nodenum or quotep
-                                       ;;todo: add an extra-string arg
-                                       dag-array-name dag-array dag-len
-                                       nodenums-to-translate ;sorted in decreasing order
-                                       base-filename
-                                       cut-nodenum-type-alist
-                                       extra-asserts
-                                       print
-                                       max-conflicts ;a number of conflicts, or nil for no max
-                                       counterexamplep
-                                       print-cex-as-signedp
-                                       state)
+;; todo: start by checking whether LHS and RHS are equal?
+(defund prove-equality-with-stp (lhs ;a nodenum or quotep
+                                 rhs ;a nodenum or quotep
+                                 ;;todo: add an extra-string arg
+                                 dag-array-name dag-array dag-len
+                                 nodenums-to-translate ;sorted in decreasing order
+                                 base-filename
+                                 cut-nodenum-type-alist
+                                 extra-asserts
+                                 print
+                                 max-conflicts ;a number of conflicts, or nil for no max
+                                 counterexamplep
+                                 print-cex-as-signedp
+                                 state)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (or (myquotep lhs)
                                   (and (natp lhs)
@@ -2291,7 +2292,6 @@
                               (booleanp print-cex-as-signedp)
                               (stringp base-filename)
                               (symbolp dag-array-name)
-                              (consp nodenums-to-translate) ;why?
                               (nat-listp nodenums-to-translate)
                               (all-< nodenums-to-translate dag-len)
                               (no-nodes-are-variablesp nodenums-to-translate dag-array-name dag-array dag-len)
@@ -2318,9 +2318,9 @@
                           print-cex-as-signedp
                           state)))
 
-(defthmd prove-equality-query-with-stp-return-type
+(defthmd prove-equality-with-stp-return-type
   (implies (nodenum-type-alistp cut-nodenum-type-alist)
-           (let ((res (mv-nth 0 (prove-equality-query-with-stp lhs rhs dag-array-name dag-array dag-len nodenums-to-translate base-filename cut-nodenum-type-alist extra-asserts
+           (let ((res (mv-nth 0 (prove-equality-with-stp lhs rhs dag-array-name dag-array dag-len nodenums-to-translate base-filename cut-nodenum-type-alist extra-asserts
                                                                print max-conflicts counterexamplep print-cex-as-signedp state))))
              (or (eq *error* res)
                  (eq *valid* res)
@@ -2334,7 +2334,7 @@
                       (eq (first res) *possible-counterexample*)
                       (counterexamplep (second res))
                       (null (cddr res))))))
-  :hints (("Goal" :in-theory (enable prove-equality-query-with-stp)
+  :hints (("Goal" :in-theory (enable prove-equality-with-stp)
            :use (:instance prove-query-with-stp-return-type
                            (translated-query-core (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist nil)))
                            (extra-string "")
@@ -2350,7 +2350,7 @@
 ;;                   :stobjs state))
 ;;   (let* ((dag-array (make-into-array 'dag-array dag-lst))
 ;;          (dag-len (len dag-lst)))
-;;     (prove-equality-query-with-stp (+ -1 dag-len) ;top node of the dag (we prove it equals true)
+;;     (prove-equality-with-stp (+ -1 dag-len) ;top node of the dag (we prove it equals true)
 ;;                              *t*
 ;;                              'dag-array
 ;;                              dag-array
@@ -2372,7 +2372,7 @@
 ;;                                   var-type-alist max-conflicts state)
 ;;   (declare (xargs
 ;;                   :stobjs state))
-;;   (prove-equality-query-with-stp nodenum
+;;   (prove-equality-with-stp nodenum
 ;;                            *t*
 ;;                            'dag-array
 ;;                            dag-array
@@ -2432,7 +2432,7 @@
 ;;     (make-node-var item)))
 
 ;; Returns a string-tree.
-(defun translate-possibly-negated-nodenum (item)
+(defund translate-possibly-negated-nodenum (item)
   (declare (xargs :guard (possibly-negated-nodenump item)
                   :guard-hints (("Goal" :in-theory (enable possibly-negated-nodenump)))))
   (if (consp item) ;test for call of NOT
@@ -2440,6 +2440,11 @@
              (make-node-var (farg1 item))
              "))")
     (make-node-var item)))
+
+(local
+  (defthm string-treep-of-translate-possibly-negated-nodenum
+    (string-treep (translate-possibly-negated-nodenum item))
+    :hints (("Goal" :in-theory (enable translate-possibly-negated-nodenum)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
