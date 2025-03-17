@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-;; When rewritng a DAG, this stobj tracks the mapping from nodenums in the old
+;; When rewriting a DAG, this stobj tracks the mapping from nodenums in the old
 ;; DAG to the new nodenums or quoteps to which they rewrote.
 
 (include-book "darg-listp")
@@ -119,12 +119,10 @@
            :in-theory (e/d (maybe-dargp dargp)
                            (maybe-dargp-of-renumberingi)))))
 
-;;;
-;;; good-renumbering-stobj-aux
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Checks that all the entries from 0 through i are dargs
-(defun good-renumbering-stobj-aux (i renumbering-stobj)
+;; Checks that all the entries from 0 through I are dargs.
+(defun good-renumbering-stobjp-aux (i renumbering-stobj)
   (declare (xargs :guard (and (integerp i) ; might be -1
                               (< i (renumbering-length renumbering-stobj)))
                    :stobjs renumbering-stobj
@@ -132,99 +130,96 @@
   (if (not (natp i))
       t
     (and (dargp (renumberingi i renumbering-stobj))
-         (good-renumbering-stobj-aux (+ -1 i) renumbering-stobj))))
+         (good-renumbering-stobjp-aux (+ -1 i) renumbering-stobj))))
 
 (local
- (defthm good-renumbering-stobj-aux-monotone
-   (implies (and (good-renumbering-stobj-aux i2 renumbering-stobj) ;n is a free var
+ (defthm good-renumbering-stobjp-aux-monotone
+   (implies (and (good-renumbering-stobjp-aux i2 renumbering-stobj) ;n is a free var
                  (<= i1 i2)
                  (integerp i1)
                  (integerp i2))
-            (good-renumbering-stobj-aux i1 renumbering-stobj))
-   :hints (("Goal" :in-theory (enable good-renumbering-stobj-aux)))))
+            (good-renumbering-stobjp-aux i1 renumbering-stobj))
+   :hints (("Goal" :in-theory (enable good-renumbering-stobjp-aux)))))
 
 (local
- (defthm good-renumbering-stobj-aux-of-update-renumberingi-irrel
+ (defthm good-renumbering-stobjp-aux-of-update-renumberingi-irrel
    (implies (and (< i j)
                  (natp i)
                  (natp j)
 ;              (< i (renumbering-length renumbering-stobj))
 ;               (< j (renumbering-length renumbering-stobj))
 ;                (renumbering-stobjp renumbering-stobj)
-;                (good-renumbering-stobj-aux (+ -1 i) renumbering-stobj)
+;                (good-renumbering-stobjp-aux (+ -1 i) renumbering-stobj)
                  )
-            (equal (good-renumbering-stobj-aux i (update-renumberingi j darg renumbering-stobj))
-                   (good-renumbering-stobj-aux i renumbering-stobj)))
-   :hints (("Goal" :expand ((good-renumbering-stobj-aux 0 renumbering-stobj)
-                            (good-renumbering-stobj-aux 0 (update-renumberingi j darg renumbering-stobj)))
-            :in-theory (enable good-renumbering-stobj-aux)))))
+            (equal (good-renumbering-stobjp-aux i (update-renumberingi j darg renumbering-stobj))
+                   (good-renumbering-stobjp-aux i renumbering-stobj)))
+   :hints (("Goal" :expand ((good-renumbering-stobjp-aux 0 renumbering-stobj)
+                            (good-renumbering-stobjp-aux 0 (update-renumberingi j darg renumbering-stobj)))
+            :in-theory (enable good-renumbering-stobjp-aux)))))
 
 (local
- (defthm renumberingi-when-good-renumbering-stobj-aux-iff
-   (implies (and (good-renumbering-stobj-aux i renumbering-stobj)
+ (defthm renumberingi-when-good-renumbering-stobjp-aux-iff
+   (implies (and (good-renumbering-stobjp-aux i renumbering-stobj)
                  (natp i))
             (renumberingi i renumbering-stobj))
-   :hints (("Goal" :in-theory (enable good-renumbering-stobj-aux)))))
+   :hints (("Goal" :in-theory (enable good-renumbering-stobjp-aux)))))
 
-;;;
-;;; good-renumbering-stobj
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; If i is negative, this makes no real claim
-(defund good-renumbering-stobj (i renumbering-stobj)
+(defund good-renumbering-stobjp (i renumbering-stobj)
   (declare (xargs :guard (integerp i)
                   :stobjs renumbering-stobj))
   (and (< i (renumbering-length renumbering-stobj))
-       (good-renumbering-stobj-aux i renumbering-stobj)))
+       (good-renumbering-stobjp-aux i renumbering-stobj)))
 
-(defthm good-renumbering-stobj-of-if
-  (equal (good-renumbering-stobj (if test i1 i2) renumbering-stobj)
+(defthm good-renumbering-stobjp-of-if
+  (equal (good-renumbering-stobjp (if test i1 i2) renumbering-stobj)
          (if test
-             (good-renumbering-stobj i1 renumbering-stobj)
-           (good-renumbering-stobj i2 renumbering-stobj))))
+             (good-renumbering-stobjp i1 renumbering-stobj)
+           (good-renumbering-stobjp i2 renumbering-stobj))))
 
-(defthm good-renumbering-stobj-monotone
-  (implies (and (good-renumbering-stobj i2 renumbering-stobj) ;n is a free var
+(defthm good-renumbering-stobjp-monotone
+  (implies (and (good-renumbering-stobjp i2 renumbering-stobj) ;n is a free var
                 (<= i1 i2)
                 (integerp i1)
                 (integerp i2))
-           (good-renumbering-stobj i1 renumbering-stobj))
-  :hints (("Goal" :in-theory (enable good-renumbering-stobj))))
+           (good-renumbering-stobjp i1 renumbering-stobj))
+  :hints (("Goal" :in-theory (enable good-renumbering-stobjp))))
 
-(defthm good-renumbering-stobj-of--1
-  (good-renumbering-stobj -1 renumbering-stobj)
-  :hints (("Goal" :in-theory (enable good-renumbering-stobj))))
+(defthm good-renumbering-stobjp-of--1
+  (good-renumbering-stobjp -1 renumbering-stobj)
+  :hints (("Goal" :in-theory (enable good-renumbering-stobjp))))
 
-(defthm good-renumbering-stobj-of-update-renumberingi
+(local
+  (defthm good-renumbering-stobjp-of-update-renumberingi
+    (implies (and ; (renumbering-stobjp renumbering-stobj)
+               (good-renumbering-stobjp i renumbering-stobj)
+               (natp i)
+               (< (+ 1 i) (renumbering-length renumbering-stobj))
+               (dargp darg))
+             (good-renumbering-stobjp (+ 1 i) (update-renumberingi (+ 1 i) darg renumbering-stobj)))
+    :hints (("Goal" :in-theory (enable good-renumbering-stobjp)))))
+
+(defthm good-renumbering-stobjp-of-update-renumbering
   (implies (and; (renumbering-stobjp renumbering-stobj)
-                (good-renumbering-stobj i renumbering-stobj)
+                (good-renumbering-stobjp i renumbering-stobj)
                 (natp i)
                 (< (+ 1 i) (renumbering-length renumbering-stobj))
                 (dargp darg))
-           (good-renumbering-stobj (+ 1 i) (update-renumberingi (+ 1 i) darg renumbering-stobj)))
-  :hints (("Goal" :in-theory (enable good-renumbering-stobj))))
-
-(defthm good-renumbering-stobj-of-update-renumbering
-  (implies (and; (renumbering-stobjp renumbering-stobj)
-                (good-renumbering-stobj i renumbering-stobj)
-                (natp i)
-                (< (+ 1 i) (renumbering-length renumbering-stobj))
-                (dargp darg))
-           (good-renumbering-stobj (+ 1 i) (update-renumbering (+ 1 i) darg renumbering-stobj)))
+           (good-renumbering-stobjp (+ 1 i) (update-renumbering (+ 1 i) darg renumbering-stobj)))
   :hints (("Goal" :in-theory (enable update-renumbering))))
 
-(defthm renumberingi-when-good-renumbering-stobj-iff
-  (implies (and (good-renumbering-stobj i renumbering-stobj)
+(defthm renumberingi-when-good-renumbering-stobjp-iff
+  (implies (and (good-renumbering-stobjp i renumbering-stobj)
                 (natp i))
            (renumberingi i renumbering-stobj))
-  :hints (("Goal" :in-theory (enable good-renumbering-stobj))))
+  :hints (("Goal" :in-theory (enable good-renumbering-stobjp))))
 
-;;;
-;;; bounded-good-renumbering-stobj-aux
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Checks that all the entries from 0 through i are dargs less than bound
-(defun bounded-good-renumbering-stobj-aux (i bound renumbering-stobj)
+;; Checks that all the entries from 0 through I are dargs less than BOUND
+(defun bounded-good-renumbering-stobjp-aux (i bound renumbering-stobj)
   (declare (xargs :guard (and (integerp i) ; might be -1
                               (natp bound)
                               (< i (renumbering-length renumbering-stobj)))
@@ -233,53 +228,53 @@
   (if (not (natp i))
       t
     (and (dargp-less-than (renumberingi i renumbering-stobj) bound)
-         (bounded-good-renumbering-stobj-aux (+ -1 i) bound renumbering-stobj))))
+         (bounded-good-renumbering-stobjp-aux (+ -1 i) bound renumbering-stobj))))
 
 (local
- (defthm bounded-good-renumbering-stobj-aux-monotone
-   (implies (and (bounded-good-renumbering-stobj-aux i2 bound2 renumbering-stobj) ;n is a free var
+ (defthm bounded-good-renumbering-stobjp-aux-monotone
+   (implies (and (bounded-good-renumbering-stobjp-aux i2 bound2 renumbering-stobj) ;n is a free var
                  (<= i1 i2)
                  (<= bound2 bound1)
                  (integerp i1)
                  (integerp i2))
-            (bounded-good-renumbering-stobj-aux i1 bound1 renumbering-stobj))
-   :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobj-aux)))))
+            (bounded-good-renumbering-stobjp-aux i1 bound1 renumbering-stobj))
+   :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobjp-aux)))))
 
 (local
- (defthm bounded-good-renumbering-stobj-aux-of-update-renumberingi-irrel
+ (defthm bounded-good-renumbering-stobjp-aux-of-update-renumberingi-irrel
    (implies (and (< i j)
                  (integerp i)
                  (integerp j)
 ;              (< i (renumbering-length renumbering-stobj))
 ;               (< j (renumbering-length renumbering-stobj))
 ;                (renumbering-stobjp renumbering-stobj)
-;                (bounded-good-renumbering-stobj-aux (+ -1 i) renumbering-stobj)
+;                (bounded-good-renumbering-stobjp-aux (+ -1 i) renumbering-stobj)
                  )
-            (equal (bounded-good-renumbering-stobj-aux i bound (update-renumberingi j darg renumbering-stobj))
-                   (bounded-good-renumbering-stobj-aux i bound renumbering-stobj)))
-   :hints (("Goal" :expand ((bounded-good-renumbering-stobj-aux 0 bound renumbering-stobj)
-                            (bounded-good-renumbering-stobj-aux 0 bound (update-renumberingi j darg renumbering-stobj)))
-            :in-theory (enable bounded-good-renumbering-stobj-aux)))))
+            (equal (bounded-good-renumbering-stobjp-aux i bound (update-renumberingi j darg renumbering-stobj))
+                   (bounded-good-renumbering-stobjp-aux i bound renumbering-stobj)))
+   :hints (("Goal" :expand ((bounded-good-renumbering-stobjp-aux 0 bound renumbering-stobj)
+                            (bounded-good-renumbering-stobjp-aux 0 bound (update-renumberingi j darg renumbering-stobj)))
+            :in-theory (enable bounded-good-renumbering-stobjp-aux)))))
 
 (local
- (defthm bounded-good-renumbering-stobj-aux-of-update-renumberingi
-   (implies (and (bounded-good-renumbering-stobj-aux (+ -1 i) bound renumbering-stobj)
+ (defthm bounded-good-renumbering-stobjp-aux-of-update-renumberingi
+   (implies (and (bounded-good-renumbering-stobjp-aux (+ -1 i) bound renumbering-stobj)
                  (dargp-less-than darg bound)
                  (integerp i)
 ;              (< i (renumbering-length renumbering-stobj))
 ;               (< j (renumbering-length renumbering-stobj))
 ;                (renumbering-stobjp renumbering-stobj)
                  )
-            (bounded-good-renumbering-stobj-aux i bound (update-renumberingi i darg renumbering-stobj)))
-   :hints (("Goal" :expand ((BOUNDED-GOOD-RENUMBERING-STOBJ-AUX 0 BOUND
+            (bounded-good-renumbering-stobjp-aux i bound (update-renumberingi i darg renumbering-stobj)))
+   :hints (("Goal" :expand ((BOUNDED-GOOD-RENUMBERING-STOBJP-AUX 0 BOUND
                                                              (UPDATE-RENUMBERINGI 0 DARG RENUMBERING-STOBJ)))
-            :induct (bounded-good-renumbering-stobj-aux i bound renumbering-stobj)
-            :in-theory (enable bounded-good-renumbering-stobj-aux)))))
+            :induct (bounded-good-renumbering-stobjp-aux i bound renumbering-stobj)
+            :in-theory (enable bounded-good-renumbering-stobjp-aux)))))
 
 ;maybe drop?
 (local
- (defthm bounded-good-renumbering-stobj-aux-of-update-renumberingi-gen
-   (implies (and (bounded-good-renumbering-stobj-aux i bound renumbering-stobj)
+ (defthm bounded-good-renumbering-stobjp-aux-of-update-renumberingi-gen
+   (implies (and (bounded-good-renumbering-stobjp-aux i bound renumbering-stobj)
                  (dargp-less-than darg bound)
                  (<= j i)
                  (natp j)
@@ -288,87 +283,100 @@
 ;               (< j (renumbering-length renumbering-stobj))
 ;                (renumbering-stobjp renumbering-stobj)
                  )
-            (bounded-good-renumbering-stobj-aux i bound (update-renumberingi j darg renumbering-stobj)))
-   :hints (("Goal" :expand ((BOUNDED-GOOD-RENUMBERING-STOBJ-AUX 0 BOUND
+            (bounded-good-renumbering-stobjp-aux i bound (update-renumberingi j darg renumbering-stobj)))
+   :hints (("Goal" :expand ((BOUNDED-GOOD-RENUMBERING-STOBJP-AUX 0 BOUND
                                                              (UPDATE-RENUMBERINGI 0 DARG RENUMBERING-STOBJ)))
-            :induct (bounded-good-renumbering-stobj-aux i bound renumbering-stobj)
-            :in-theory (enable bounded-good-renumbering-stobj-aux
+            :induct (bounded-good-renumbering-stobjp-aux i bound renumbering-stobj)
+            :in-theory (enable bounded-good-renumbering-stobjp-aux
                                renumberingi-of-update-renumberingi-split)))))
 
 (local
- (defthm <-of-renumberingi-when-bounded-good-renumbering-stobj-aux
-   (implies (and (bounded-good-renumbering-stobj-aux i bound renumbering-stobj)
+ (defthm <-of-renumberingi-when-bounded-good-renumbering-stobjp-aux
+   (implies (and (bounded-good-renumbering-stobjp-aux i bound renumbering-stobj)
                  (not (consp (renumberingi i renumbering-stobj))) ; not a quotep
                  (natp i)
                  (< i (renumbering-length renumbering-stobj)))
             (< (renumberingi i renumbering-stobj) bound))
-   :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobj-aux)))))
+   :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobjp-aux)))))
 
-;;;
-;;; bounded-good-renumbering-stobj
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks that all the entries from 0 through I are dargs less than BOUND.
 ;; If i is negative, this makes no real claim
-(defund bounded-good-renumbering-stobj (i bound renumbering-stobj)
+(defund bounded-good-renumbering-stobjp (i bound renumbering-stobj)
   (declare (xargs :guard (and (integerp i)
                               (natp bound))
                   :stobjs renumbering-stobj))
   (and (< i (renumbering-length renumbering-stobj))
-       (bounded-good-renumbering-stobj-aux i bound renumbering-stobj)))
+       (bounded-good-renumbering-stobjp-aux i bound renumbering-stobj)))
 
-(defthm bounded-good-renumbering-stobj-forward
-  (implies (bounded-good-renumbering-stobj i bound renumbering-stobj)
+(defthm bounded-good-renumbering-stobjp-forward
+  (implies (bounded-good-renumbering-stobjp i bound renumbering-stobj)
            (< i (renumbering-length renumbering-stobj)))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobj))))
+  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobjp))))
 
-(defthm bounded-good-renumbering-stobj-forward-to-good-renumbering-stobj
-  (implies (bounded-good-renumbering-stobj i bound renumbering-stobj)
-           (good-renumbering-stobj i renumbering-stobj))
+(defthm bounded-good-renumbering-stobjp-forward-to-good-renumbering-stobjp
+  (implies (bounded-good-renumbering-stobjp i bound renumbering-stobj)
+           (good-renumbering-stobjp i renumbering-stobj))
   :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobj
-                                     good-renumbering-stobj))))
+  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobjp
+                                     good-renumbering-stobjp))))
 
-(defthm bounded-good-renumbering-stobj-of-if
-  (equal (bounded-good-renumbering-stobj (if test i1 i2) bound renumbering-stobj)
+(defthm bounded-good-renumbering-stobjp-of-if
+  (equal (bounded-good-renumbering-stobjp (if test i1 i2) bound renumbering-stobj)
          (if test
-             (bounded-good-renumbering-stobj i1 bound renumbering-stobj)
-           (bounded-good-renumbering-stobj i2 bound renumbering-stobj))))
+             (bounded-good-renumbering-stobjp i1 bound renumbering-stobj)
+           (bounded-good-renumbering-stobjp i2 bound renumbering-stobj))))
 
-(defthm bounded-good-renumbering-stobj-monotone
-  (implies (and (bounded-good-renumbering-stobj i2 bound2 renumbering-stobj) ;n is a free var
+(defthm bounded-good-renumbering-stobjp-monotone
+  (implies (and (bounded-good-renumbering-stobjp i2 bound2 renumbering-stobj) ;n is a free var
                 (<= i1 i2)
                 (<= bound2 bound1)
                 (integerp i1)
                 (integerp i2))
-           (bounded-good-renumbering-stobj i1 bound1 renumbering-stobj))
-  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobj))))
+           (bounded-good-renumbering-stobjp i1 bound1 renumbering-stobj))
+  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobjp))))
 
-(defthm bounded-good-renumbering-stobj-of--1
-  (bounded-good-renumbering-stobj -1 bound renumbering-stobj)
-  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobj))))
+(defthm bounded-good-renumbering-stobjp-of--1
+  (bounded-good-renumbering-stobjp -1 bound renumbering-stobj)
+  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobjp))))
 
-(defthm bounded-good-renumbering-stobj-of-update-renumberingi
+(local
+  (defthm bounded-good-renumbering-stobjp-of-update-renumberingi
+    (implies (and ;(renumbering-stobjp renumbering-stobj)
+               (bounded-good-renumbering-stobjp (+ -1 i) bound renumbering-stobj)
+               (natp i)
+               (< i (renumbering-length renumbering-stobj)))
+             (equal (bounded-good-renumbering-stobjp i bound (update-renumberingi i darg renumbering-stobj))
+                    (dargp-less-than darg bound)))
+    :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobjp)))))
+
+(defthm bounded-good-renumbering-stobjp-of-update-renumbering
   (implies (and ;(renumbering-stobjp renumbering-stobj)
-                (bounded-good-renumbering-stobj (+ -1 i) bound renumbering-stobj)
+                (bounded-good-renumbering-stobjp (+ -1 i) bound renumbering-stobj)
                 (natp i)
                 (< i (renumbering-length renumbering-stobj)))
-           (equal (bounded-good-renumbering-stobj i bound (update-renumberingi i darg renumbering-stobj))
-                  (dargp-less-than darg bound)))
-  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobj))))
-
-(defthm bounded-good-renumbering-stobj-of-update-renumbering
-  (implies (and ;(renumbering-stobjp renumbering-stobj)
-                (bounded-good-renumbering-stobj (+ -1 i) bound renumbering-stobj)
-                (natp i)
-                (< i (renumbering-length renumbering-stobj)))
-           (equal (bounded-good-renumbering-stobj i bound (update-renumbering i darg renumbering-stobj))
+           (equal (bounded-good-renumbering-stobjp i bound (update-renumbering i darg renumbering-stobj))
                   (dargp-less-than darg bound)))
   :hints (("Goal" :in-theory (enable update-renumbering))))
 
-(defthm bounded-good-renumbering-stobj-of-update-renumberingi-gen
-  (implies (and (bounded-good-renumbering-stobj i bound renumbering-stobj)
+(local
+  (defthm bounded-good-renumbering-stobjp-of-update-renumberingi-gen
+    (implies (and (bounded-good-renumbering-stobjp i bound renumbering-stobj)
+                  (dargp-less-than darg bound)
+                  (<= j i)
+                  (natp j)
+                  (natp i)
+;              (< i (renumbering-length renumbering-stobj))
+;               (< j (renumbering-length renumbering-stobj))
+;                (renumbering-stobjp renumbering-stobj)
+                  )
+             (bounded-good-renumbering-stobjp i bound (update-renumberingi j darg renumbering-stobj)))
+    :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobjp)))))
+
+(defthm bounded-good-renumbering-stobjp-of-update-renumbering-gen
+  (implies (and (bounded-good-renumbering-stobjp i bound renumbering-stobj)
                 (dargp-less-than darg bound)
                 (<= j i)
                 (natp j)
@@ -377,40 +385,25 @@
 ;               (< j (renumbering-length renumbering-stobj))
 ;                (renumbering-stobjp renumbering-stobj)
                 )
-           (bounded-good-renumbering-stobj i bound (update-renumberingi j darg renumbering-stobj)))
-  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobj))))
-
-(defthm bounded-good-renumbering-stobj-of-update-renumbering-gen
-  (implies (and (bounded-good-renumbering-stobj i bound renumbering-stobj)
-                (dargp-less-than darg bound)
-                (<= j i)
-                (natp j)
-                (natp i)
-;              (< i (renumbering-length renumbering-stobj))
-;               (< j (renumbering-length renumbering-stobj))
-;                (renumbering-stobjp renumbering-stobj)
-                )
-           (bounded-good-renumbering-stobj i bound (update-renumbering j darg renumbering-stobj)))
+           (bounded-good-renumbering-stobjp i bound (update-renumbering j darg renumbering-stobj)))
   :hints (("Goal" :in-theory (enable update-renumbering))))
 
-(defthm <-of-renumberingi-when-bounded-good-renumbering-stobj
-  (implies (and (bounded-good-renumbering-stobj i bound renumbering-stobj)
+(defthm <-of-renumberingi-when-bounded-good-renumbering-stobjp
+  (implies (and (bounded-good-renumbering-stobjp i bound renumbering-stobj)
                 (not (consp (renumberingi i renumbering-stobj))) ; not a quotep
                 (natp i)
                 (< i (renumbering-length renumbering-stobj)))
            (< (renumberingi i renumbering-stobj) bound))
-  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobj))))
+  :hints (("Goal" :in-theory (enable bounded-good-renumbering-stobjp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;
-;;; renumber-darg-with-stobj
-;;;
-
+;; Renames DARG, if it is a nodenum, according to the RENUMBERING-STOBJ.
 (defund-inline renumber-darg-with-stobj (darg renumbering-stobj)
   (declare (xargs :guard (and (dargp darg) ; in fact, it should always be in the valid region:
-                              (good-renumbering-stobj (if (consp darg) -1 darg) renumbering-stobj))
+                              (good-renumbering-stobjp (if (consp darg) -1 darg) renumbering-stobj))
                   :guard-hints (("Goal" :in-theory (enable renumbering-stobjp
-                                                           good-renumbering-stobj)))
+                                                           good-renumbering-stobjp)))
                   :stobjs renumbering-stobj))
   (if (consp darg)
       darg ; quoted constant, do nothing
@@ -419,64 +412,62 @@
 
 (defthm dargp-of-renumber-darg-with-stobj
   (implies (and (dargp darg)
-                (good-renumbering-stobj (if (consp darg) -1 darg) renumbering-stobj))
+                (good-renumbering-stobjp (if (consp darg) -1 darg) renumbering-stobj))
            (dargp (renumber-darg-with-stobj darg renumbering-stobj)))
-  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobj))))
+  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobjp))))
 
 (defthm dargp-less-than-of-renumber-darg-with-stobj
   (implies (and (dargp darg)
-                (bounded-good-renumbering-stobj (if (consp darg) -1 darg) bound renumbering-stobj))
+                (bounded-good-renumbering-stobjp (if (consp darg) -1 darg) bound renumbering-stobj))
            (dargp-less-than (renumber-darg-with-stobj darg renumbering-stobj) bound))
   :hints (("Goal" :in-theory (enable renumber-darg-with-stobj
-                                     good-renumbering-stobj
-                                     bounded-good-renumbering-stobj))))
+                                     good-renumbering-stobjp
+                                     bounded-good-renumbering-stobjp))))
 
 ;; Disabled since hung on <
 (defthmd <-of-renumber-darg-with-stobj
   (implies (and (dargp darg)
-                (bounded-good-renumbering-stobj (if (consp darg) -1 darg) bound renumbering-stobj)
+                (bounded-good-renumbering-stobjp (if (consp darg) -1 darg) bound renumbering-stobj)
                 (not (consp (renumber-darg-with-stobj darg renumbering-stobj))) ; it's a nodenum
                 )
            (< (renumber-darg-with-stobj darg renumbering-stobj) bound))
   :hints (("Goal" :in-theory (enable renumber-darg-with-stobj
-                                     good-renumbering-stobj
-                                     bounded-good-renumbering-stobj))))
+                                     good-renumbering-stobjp
+                                     bounded-good-renumbering-stobjp))))
 
 ; use "not consp" as the normal form for dargs
 ;; Disabled since hung on natp.
 (defthmd natp-of-renumber-darg-with-stobj
-  (implies (and (good-renumbering-stobj (if (consp darg) -1 darg) renumbering-stobj)
+  (implies (and (good-renumbering-stobjp (if (consp darg) -1 darg) renumbering-stobj)
                 (dargp darg))
            (equal (natp (renumber-darg-with-stobj darg renumbering-stobj))
                   (not (consp (renumber-darg-with-stobj darg renumbering-stobj)))))
-  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobj))))
+  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobjp))))
 
 ; use "not consp" as the normal form for dargs
 ;; Disabled since hung on integerp.
 (defthmd integerp-of-renumber-darg-with-stobj
-  (implies (and (good-renumbering-stobj (if (consp darg) -1 darg) renumbering-stobj)
+  (implies (and (good-renumbering-stobjp (if (consp darg) -1 darg) renumbering-stobj)
                 (dargp darg))
            (equal (integerp (renumber-darg-with-stobj darg renumbering-stobj))
                   (not (consp (renumber-darg-with-stobj darg renumbering-stobj)))))
-  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobj))))
+  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobjp))))
 
 ;; Use consp as the normal form
 ;; Disabled since hung on true-listp
 (defthmd true-listp-of-renumber-darg-with-stobj
-  (implies (and (good-renumbering-stobj (if (consp darg) -1 darg) renumbering-stobj)
+  (implies (and (good-renumbering-stobjp (if (consp darg) -1 darg) renumbering-stobj)
                 (dargp darg))
            (equal (true-listp (renumber-darg-with-stobj darg renumbering-stobj))
                   (consp (renumber-darg-with-stobj darg renumbering-stobj))))
-  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobj))))
+  :hints (("Goal" :in-theory (enable renumber-darg-with-stobj good-renumbering-stobjp))))
 
-;;;
-;;; renumber-dargs-with-stobj
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Renames any of the DARGS that are nodenums according to the RENUMBERING-STOBJ.
 (defund renumber-dargs-with-stobj (dargs renumbering-stobj)
   (declare (xargs :guard (and (darg-listp dargs)
-                              (good-renumbering-stobj (largest-non-quotep dargs) renumbering-stobj))
+                              (good-renumbering-stobjp (largest-non-quotep dargs) renumbering-stobj))
                   :stobjs renumbering-stobj))
   (if (endp dargs)
       nil
@@ -484,7 +475,7 @@
           (renumber-dargs-with-stobj (rest dargs) renumbering-stobj))))
 
 (defthm darg-listp-of-renumber-dargs-with-stobj
-  (implies (and (good-renumbering-stobj (largest-non-quotep dargs) renumbering-stobj)
+  (implies (and (good-renumbering-stobjp (largest-non-quotep dargs) renumbering-stobj)
                 (darg-listp dargs))
            (darg-listp (renumber-dargs-with-stobj dargs renumbering-stobj)))
   :hints (("Goal" :in-theory (enable renumber-dargs-with-stobj darg-listp natp-of-renumber-darg-with-stobj)
@@ -493,7 +484,7 @@
            :do-not '(generalize eliminate-destructors))))
 
 (defthm bounded-darg-listp-of-renumber-dargs-with-stobj
-  (implies (and (bounded-good-renumbering-stobj (largest-non-quotep dargs) bound renumbering-stobj)
+  (implies (and (bounded-good-renumbering-stobjp (largest-non-quotep dargs) bound renumbering-stobj)
                 (darg-listp dargs))
            (bounded-darg-listp (renumber-dargs-with-stobj dargs renumbering-stobj) bound))
   :hints (("Goal" :in-theory (enable renumber-dargs-with-stobj darg-listp largest-non-quotep)

@@ -156,7 +156,7 @@
            (get-normalize-xors rewrite-stob))
     :hints (("Goal" :in-theory (enable  load-rule-db-aux)))))
 
-;; Loads the RULE-ALIST into the stobj.
+;; Loads the RULE-ALIST into the rule-db hash table in stobj.
 ;; The clearing may not always be needed.
 (defund load-rule-db (rule-alist rewrite-stobj)
   (declare (xargs :guard (rule-alistp rule-alist)

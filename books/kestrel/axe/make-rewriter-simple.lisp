@@ -4676,7 +4676,7 @@
                                        (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                                        (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2))
                                        (< old-nodenum (renumbering-length renumbering-stobj))
-                                       (bounded-good-renumbering-stobj (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
+                                       (bounded-good-renumbering-stobjp (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
                            :stobjs (rewrite-stobj renumbering-stobj rewrite-stobj2)
                            :guard-hints (("Goal" :in-theory (e/d (;; todo: simplify this hint
                                                                   integerp-when-dargp
@@ -4898,7 +4898,7 @@
                          (rewrite-stobj2p rewrite-stobj2)
                          (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2))
                          (< old-nodenum (renumbering-length renumbering-stobj))
-                         (bounded-good-renumbering-stobj (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
+                         (bounded-good-renumbering-stobjp (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
                     (mv-let (erp new-nodenum-or-quotep new-rewrite-stobj2 new-memoization new-hit-counts new-tries new-limits
                                  new-node-replacement-array ; no real change
                                  )
@@ -4956,7 +4956,7 @@
                          (rewrite-stobj2p rewrite-stobj2)
                          (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2))
                          (< old-nodenum (renumbering-length renumbering-stobj))
-                         (bounded-good-renumbering-stobj (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
+                         (bounded-good-renumbering-stobjp (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
                     (mv-let (erp new-nodenum-or-quotep new-rewrite-stobj2 new-memoization new-hit-counts new-tries new-limits
                                  new-node-replacement-array ; no real change
                                  )
@@ -4990,7 +4990,7 @@
                          (rewrite-stobj2p rewrite-stobj2)
                          (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2))
                          (< old-nodenum (renumbering-length renumbering-stobj))
-                         (bounded-good-renumbering-stobj (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
+                         (bounded-good-renumbering-stobjp (+ -1 old-nodenum) (get-dag-len rewrite-stobj2) renumbering-stobj))
                     (mv-let (erp new-nodenum-or-quotep new-rewrite-stobj2 new-memoization new-hit-counts new-tries new-limits
                                  new-node-replacement-array ; no real change
                                  )
@@ -5045,7 +5045,7 @@
                                            (equal (renumbering-length renumbering-stobj)
                                                   (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                                          t)
-                                       (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                       (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                                            (+ -1 (car (first rev-dag)))
                                                                          -1)
                                                                        (get-dag-len rewrite-stobj2) renumbering-stobj))
@@ -5145,7 +5145,7 @@
                              (equal (renumbering-length renumbering-stobj)
                                     (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                            t)
-                         (bounded-good-renumbering-stobj (if (consp rev-dag)
+                         (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                              (+ -1 (car (first rev-dag)))
                                                            -1)
                                                          (get-dag-len rewrite-stobj2) renumbering-stobj)
@@ -5166,7 +5166,7 @@
                                     (iff new-memoization memoization)
                                     (rule-limitsp new-limits)
                                     (renumbering-stobjp new-renumbering-stobj)
-                                    (bounded-good-renumbering-stobj (if (consp rev-dag)
+                                    (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                                         (car (car (last rev-dag)))
                                                                       -1)
                                                                     (get-dag-len new-rewrite-stobj2)
@@ -5227,7 +5227,7 @@
                              (equal (renumbering-length renumbering-stobj)
                                     (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                            t)
-                         (bounded-good-renumbering-stobj (if (consp rev-dag)
+                         (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                              (+ -1 (car (first rev-dag)))
                                                            -1)
                                                          (get-dag-len rewrite-stobj2) renumbering-stobj)
@@ -5274,7 +5274,7 @@
                              (equal (renumbering-length renumbering-stobj)
                                     (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                            t)
-                         (bounded-good-renumbering-stobj (if (consp rev-dag)
+                         (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                              (+ -1 (car (first rev-dag)))
                                                            -1)
                                                          (get-dag-len rewrite-stobj2) renumbering-stobj)
@@ -5320,7 +5320,7 @@
                              (equal (renumbering-length renumbering-stobj)
                                     (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                            t)
-                         (bounded-good-renumbering-stobj (if (consp rev-dag)
+                         (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                              (+ -1 (car (first rev-dag)))
                                                            -1)
                                                          (get-dag-len rewrite-stobj2) renumbering-stobj)
@@ -5339,7 +5339,7 @@
                       (implies (and (not erp)
                                     (natp bound)
                                     (<= bound (car (car (last rev-dag)))))
-                               (good-renumbering-stobj bound new-renumbering-stobj))))
+                               (good-renumbering-stobjp bound new-renumbering-stobj))))
            :hints (("Goal" :use (:instance ,(pack$ simplify-dag-nodes-name '-return-type))
                     :in-theory (disable ,(pack$ simplify-dag-nodes-name '-return-type)))))
 
@@ -5369,7 +5369,7 @@
                              (equal (renumbering-length renumbering-stobj)
                                     (+ 1 (car (car (last rev-dag))))) ; the highest nodenum
                            t)
-                         (bounded-good-renumbering-stobj (if (consp rev-dag)
+                         (bounded-good-renumbering-stobjp (if (consp rev-dag)
                                                              (+ -1 (car (first rev-dag)))
                                                            -1)
                                                          (get-dag-len rewrite-stobj2) renumbering-stobj)
@@ -5390,7 +5390,7 @@
                                     (<= (get-dag-len new-rewrite-stobj2) bound2)
                                     (natp bound2)
                                     )
-                               (bounded-good-renumbering-stobj bound bound2 new-renumbering-stobj))))
+                               (bounded-good-renumbering-stobjp bound bound2 new-renumbering-stobj))))
            :hints (("Goal" :use (:instance ,(pack$ simplify-dag-nodes-name '-return-type))
                     :in-theory (disable ,(pack$ simplify-dag-nodes-name '-return-type)))))
 
@@ -5477,7 +5477,6 @@
                             ;; dag-len
                             ;; dag-parent-array dag-constant-alist dag-variable-alist
                             memoization hit-counts tries limits
-                            ;; node-replacement-array
                             renumbering-stobj rewrite-stobj rewrite-stobj2)
                  (b* (;; Initialize rewrite-stobj:
                       (rewrite-stobj (put-monitored-symbols monitored-symbols rewrite-stobj))
@@ -5485,16 +5484,10 @@
                       (rewrite-stobj (put-known-booleans known-booleans rewrite-stobj))
                       (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
                       (rewrite-stobj (put-interpreted-function-alist interpreted-function-alist rewrite-stobj))
-                      ;; (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
-                      (rewrite-stobj (load-rule-db rule-alist rewrite-stobj))
+                      (rewrite-stobj (load-rule-db rule-alist rewrite-stobj)) ; todo: initialize the hash table directly from stored-rules?
                       (rewrite-stobj (put-print print rewrite-stobj))
-                      ;; Initialize rewrite-stobj2:
+                      ;; Initialize rewrite-stobj2 (for now, this just writes to these 5 stobj fields):
                       (rewrite-stobj2 (load-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rewrite-stobj2))
-                      ;; (rewrite-stobj2 (put-dag-array dag-array rewrite-stobj2))
-                      ;; (rewrite-stobj2 (put-dag-len dag-len rewrite-stobj2))
-                      ;; (rewrite-stobj2 (put-dag-parent-array dag-parent-array rewrite-stobj2))
-                      ;; (rewrite-stobj2 (put-dag-constant-alist dag-constant-alist rewrite-stobj2))
-                      ;; (rewrite-stobj2 (put-dag-variable-alist dag-variable-alist rewrite-stobj2))
                       (rewrite-stobj2 (if (eq :compact (get-normalize-xors rewrite-stobj))
                                           (set-xor-signature-fields 0 rewrite-stobj2)
                                         rewrite-stobj2))
@@ -5505,15 +5498,15 @@
                            & ; node-replacement-array
                            renumbering-stobj)
                        (,simplify-dag-nodes-name (reverse-list dag) ;;we'll simplify nodes from the bottom-up
-                                               rewrite-stobj2
-                                               maybe-internal-context-array
-                                               (and memoizep (empty-memoization)) ; todo: add an option to make this bigger?
-                                               (initialize-hit-counts count-hits)
-                                               tries
-                                               limits
-                                               node-replacement-array node-replacement-count refined-assumption-alist
-                                               rewrite-stobj
-                                               renumbering-stobj))
+                                                 rewrite-stobj2
+                                                 maybe-internal-context-array
+                                                 (and memoizep (empty-memoization)) ; todo: add an option to make this bigger?
+                                                 (initialize-hit-counts count-hits)
+                                                 tries
+                                                 limits
+                                                 node-replacement-array node-replacement-count refined-assumption-alist
+                                                 rewrite-stobj
+                                                 renumbering-stobj))
                       ((when erp) (mv erp nil dag-array ;; dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                       memoization hit-counts tries limits
                                       ;;node-replacement-array
@@ -5523,7 +5516,6 @@
                    (mv (erp-nil) new-top-nodenum-or-quotep
                        (get-dag-array rewrite-stobj2) ;; (get-dag-len rewrite-stobj2) (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2)
                        memoization hit-counts tries limits
-                       ;; node-replacement-array
                        renumbering-stobj rewrite-stobj rewrite-stobj2))
                  ;; Cannot refer to the stobjs after this point:
                  ;; (declare (ignore dag-len dag-parent-array dag-constant-alist dag-variable-alist node-replacement-array)) ; print some stats from these?
@@ -5676,6 +5668,7 @@
                     (- (and print (cw "(Simplifying DAG with internal contexts and no memoization (~x0 nodes, ~x1 assumptions):~%" dag-len (len assumptions))))
                     (initial-array-size (min *max-1d-array-length* (* 2 dag-len))) ; could make this adjustable
                     ;; Start with an array with all the nodes loaded (since we are using contexts):
+                    ;; TODO: Opt: Combine these steps?:
                     (dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
                     ;; Make the auxiliary data structures for the DAG:
                     ((mv dag-parent-array dag-constant-alist dag-variable-alist)
