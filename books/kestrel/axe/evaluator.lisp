@@ -35,6 +35,7 @@
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-clear-range" :dir :system)
 (include-book "kestrel/bv-lists/map-packbv" :dir :system) ;for map-packbv, map-reverse-list, etc.
 (include-book "kestrel/bv-lists/map-unpackbv" :dir :system)
 (include-book "kestrel/bv-lists/map-reverse-list" :dir :system)

@@ -27,6 +27,7 @@
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-read-of-bvchop-list?
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-clear-range" :dir :system)
 ;(include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system) ;todo
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
@@ -2080,6 +2081,18 @@
 ;;   (if (zp n1)
 ;;       (list n1 n2)
 ;;     (sub1-sub1-induct (+ -1 n1) (+ -1 n2))))
+
+(local
+  (defthmd take-when-most-known
+  (implies (and (equal (take (+ -1 n) x) free)
+                (posp n))
+           (equal (take n x)
+                  (append free
+                          (list (nth (+ -1 n) x)))))
+  :hints (("Goal" :in-theory (enable equal-of-append
+;                                     subrange ;todo
+                                     CAR-BECOMES-NTH-OF-0
+                                     )))))
 
 (defthm take-of-bv-array-clear-range
   (implies (and ; (natp elem-size)
