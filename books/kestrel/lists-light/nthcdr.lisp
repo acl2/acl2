@@ -292,7 +292,7 @@
                 (true-listp x))
            (equal (nthcdr n x)
                   (list (nth n x))))
-  :hints (("Goal" :in-theory (enable NTHCDR))))
+  :hints (("Goal" :in-theory (enable nthcdr))))
 
 (defthm nthcdr-of-len-same-when-true-listp
   (implies (true-listp x)
@@ -305,3 +305,12 @@
                 (natp m))
            (equal (nth (+ m n) vals)
                   (nth n vals2))))
+
+; maybe disable this, as it is hung on equal
+(defthm equal-of-len-and-len-when-equal-of-nthcdr-and-nthcdr
+  (implies (and (equal (nthcdr n x) (nthcdr n y)) ; n is a free var
+                (or (< n (len x))
+                    (< n (len y))))
+           (equal (equal (len x) (len y))
+                  t))
+  :hints (("Goal" :in-theory (enable nthcdr))))

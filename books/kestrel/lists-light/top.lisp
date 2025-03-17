@@ -90,6 +90,7 @@
 (include-book "take2")
 (include-book "memberp2")
 
+(include-book "group-def")
 (include-book "group")
 (include-book "group2")
 (include-book "ungroup")

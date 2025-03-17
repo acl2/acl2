@@ -85,20 +85,6 @@
   :hints (("Goal" :in-theory (e/d (equal-of-append nthcdr-of-cdr-combine-strong) (;EQUAL-OF-REPEAT-OF-LEN-SAME
                                                      )))))
 
-(defthm bv-array-clear-length-1-of-list-zero
-  (equal (bv-array-clear width 1 index '(0))
-         '(0))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
-
-(defthm car-of-bv-array-clear
-  (equal (car (bv-array-clear width len index data))
-         (if (posp len)
-             (if (zp (bvchop (ceiling-of-lg (nfix len)) index))
-                 0
-               (bvchop width (car data)))
-           nil))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
-
 (defthm car-of-bv-array-clear-range
   (implies (and (natp high)
                 (natp low)
@@ -115,21 +101,6 @@
                                   ( ;list::equal-append-reduction!
                                    cons-onto-repeat
                                    )))))
-
-(defthm cdr-of-bv-array-clear
-  (implies (and (posp len)
-                (< index len) ;Mon Jul 19 21:20:04 2010
-                (natp index))
-           (equal (cdr (bv-array-clear width len index data))
-                  (if (zp index)
-                      (bvchop-list width (SUBRANGE 1 (+ -1 LEN) DATA))
-                    (bv-array-clear width (+ -1 len) (+ -1 index) (cdr data)))))
-  :hints (("Goal"
-           :cases ((< len 2))
-           :in-theory (e/d (bv-array-clear bv-array-write-opener update-nth2 subrange)
-                                  (GETBIT-OF-BV-ARRAY-READ-HELPER ;yuck
-                                   ;LIST::UPDATE-NTH-EQUAL-REWRITE-ALT
-                                   update-nth-becomes-update-nth2-extend-gen)))))
 
 (defthm bv-array-clear-range-of-1-and-cons-of-0
   (implies (and (<= 1 high)

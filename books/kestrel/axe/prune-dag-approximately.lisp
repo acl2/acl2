@@ -149,81 +149,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp result state), where result is :true (meaning non-nil), :false, or :unknown.
-;; TODO: Also use rewriting?  See also try-to-resolve-test.
-(defund try-to-resolve-node-with-stp (nodenum-or-quotep
-                                      assumptions
-                                      ;; rule-alist interpreted-function-alist monitored-rules call-stp
-                                      dag-array ;must be named 'dag-array (todo: generalize?)
-                                      dag-len
-                                      dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
-                                      base-filename    ;a string
-                                      print
-                                      max-conflicts ;a number of conflicts, or nil for no max
-                                      ;; counterexamplep
-                                      state)
-  (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
-                              (bounded-dag-parent-arrayp 'dag-parent-array dag-parent-array dag-len)
-                              (equal (alen1 'dag-parent-array dag-parent-array)
-                                     (alen1 'dag-array dag-array))
-                              (or (myquotep nodenum-or-quotep)
-                                  (and (natp nodenum-or-quotep)
-                                       (< nodenum-or-quotep dag-len)))
-                              (bounded-possibly-negated-nodenumsp assumptions dag-len)
-                              (stringp base-filename)
-                              (print-levelp print)
-                              (or (null max-conflicts)
-                                  (natp max-conflicts)))
-                  :stobjs state))
-  (b* (((when (consp nodenum-or-quotep)) ; test for quotep
-        (if (unquote nodenum-or-quotep)
-            (mv (erp-nil) :true state)
-          (mv (erp-nil) :false state)))
-       (nodenum nodenum-or-quotep)
-       (- (and (print-level-at-least-tp print) (cw "(Attempting to resolve test with STP using ~x0 assumptions.~%" (len assumptions))))
-       ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test).
-       (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test true with STP:~%")))
-       ((mv true-result state)
-        (prove-node-implication-with-stp assumptions
-                                         nodenum
-                                         dag-array dag-len dag-parent-array
-                                         base-filename print max-conflicts
-                                         nil ; counterexamplep
-                                         nil ; print-cex-as-signedp
-                                         state))
-       ((when (eq *error* true-result))
-        (prog2$ (er hard? 'try-to-resolve-node-with-stp "Error calling STP")
-                (mv :error-calling-stp :unknown state)))
-       ((when (eq *valid* true-result)) ;; STP proved the test
-        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test true.))~%"))
-                (mv (erp-nil) :true state)))
-       (- (and (print-level-at-least-tp print) (cw "STP failed to prove the test true.)~%")))
-       (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test false with STP:~%")))
-       ((mv false-result state)
-        (prove-node-implication-with-stp assumptions
-                                         `(not ,nodenum)
-                                         dag-array dag-len dag-parent-array
-                                         base-filename print max-conflicts
-                                         nil ;counterexamplep
-                                         nil ; print-cex-as-signedp
-                                         state))
-       ((when (eq *error* false-result))
-        (prog2$ (er hard? 'try-to-resolve-node-with-stp "Error calling STP")
-                (mv :error-calling-stp :unknown state)))
-       ((when (eq *valid* false-result)) ;; STP proved the negation of the test
-        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test false.))~%"))
-                (mv (erp-nil) :false state))))
-    (prog2$ (and (print-level-at-least-tp print) (cw "STP did not resolve the test.))~%"))
-            (mv (erp-nil) :unknown state))))
-
-(local
-  (defthm w-of-mv-nth-2-of-try-to-resolve-node-with-stp
-    (equal (w (mv-nth 2 (try-to-resolve-node-with-stp dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))
-           (w state))
-    :hints (("Goal" :in-theory (enable try-to-resolve-node-with-stp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; These justify the pruning done by prune-dag-approximately-aux:
 (thm (implies test (equal (myif test x y) (if test x y)))) ; myif can be treated just like if
 (thm (implies test (equal (if test x y) (id x))))
@@ -305,7 +230,7 @@
                   ((mv erp result state)
                    ;; TODO: What if the test is among the context assumptions?
                    ;; TODO: Should we use any rewriting here?
-                   (try-to-resolve-node-with-stp (darg1 expr) ; the test of the IF/MYIF
+                   (try-to-resolve-darg-with-stp (darg1 expr) ; the test of the IF/MYIF
                                                  context      ; the assumptions
                                                  dag-array dag-len dag-parent-array
                                                  "PRUNE" ; todo: improve?
@@ -334,7 +259,7 @@
                   ((mv erp result state)
                    ;; TODO: What if the test is among the context assumptions?
                    ;; TODO: Should we use any rewriting here?
-                   (try-to-resolve-node-with-stp (darg1 expr) ; the test of the BOOLIF
+                   (try-to-resolve-darg-with-stp (darg1 expr) ; the test of the BOOLIF
                                                  context      ; the assumptions
                                                  dag-array dag-len dag-parent-array
                                                  "PRUNE" ; todo: improve?
@@ -367,7 +292,7 @@
                   ((mv erp result state)
                    ;; TODO: What if the test is among the context assumptions?
                    ;; TODO: Should we use any rewriting here?
-                   (try-to-resolve-node-with-stp (darg2 expr) ; the test of the BVIF
+                   (try-to-resolve-darg-with-stp (darg2 expr) ; the test of the BVIF
                                                  context      ; the assumptions
                                                  dag-array dag-len dag-parent-array
                                                  "PRUNE" ; todo: improve?
