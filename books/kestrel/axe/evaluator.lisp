@@ -261,7 +261,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun no-duplicatesp-equal-unguarded (l)
+(defund no-duplicatesp-equal-unguarded (l)
   (declare (xargs :guard t))
   (cond ((atom l) t)
         ((member-equal-unguarded (car l) (cdr l)) nil)
@@ -275,7 +275,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun map-reverse-list-unguarded (items)
+(defund map-reverse-list-unguarded (items)
   (declare (xargs :guard t))
   (if (atom items)
       nil
@@ -289,6 +289,50 @@
                                      map-reverse-list))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund intersection-equal-unguarded (l1 l2)
+  (declare (xargs :guard t))
+  (cond ((atom l1) nil)
+        ((member-equal-unguarded (car l1) l2)
+         (cons (car l1)
+               (intersection-equal-unguarded (cdr l1) l2)))
+        (t (intersection-equal-unguarded (cdr l1) l2))))
+
+(defthm intersection-equal-unguarded-correct
+  (equal (intersection-equal-unguarded l1 l2)
+         (intersection-equal l1 l2))
+  :hints (("Goal" :in-theory (enable intersection-equal-unguarded
+                                     intersection-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund first-non-member-unguarded (items items-to-exclude)
+  (declare (xargs :guard t))
+  (if (atom items)
+      nil
+    (if (not (member-equal-unguarded (car items) items-to-exclude))
+        (car items)
+      (first-non-member-unguarded (cdr items) items-to-exclude))))
+
+(defthm first-non-member-correct
+  (equal (first-non-member-unguarded items items-to-exclude)
+         (first-non-member items items-to-exclude))
+  :hints (("Goal" :in-theory (enable first-non-member-unguarded
+                                     first-non-member))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun update-nth-unguarded (key val l)
+  (declare (xargs :guard t))
+  (COND ((not (posp key)) (CONS VAL (CDR-unguarded L)))
+        (T (CONS (CAR-unguarded L)
+                 (UPDATE-NTH-unguarded (1- KEY) VAL (CDR-unguarded L))))))
+
+(defthm update-nth-unguarded-correct
+  (equal (update-nth-unguarded key val l)
+         (update-nth key val l))
+  :hints (("Goal" :in-theory (enable update-nth-unguarded
+                                     update-nth))))
 
 ;; This justifies evaluating calls to EQL below by calling EQUAL.
 (local
@@ -408,7 +452,7 @@
                   (eql equal arg1 arg2)   ;to evaluate eql, just call equal (primitive)
                   (list-equiv list-equiv arg1 arg2) ;unguarded
                   (prefixp prefixp arg1 arg2) ;unguarded
-                  (lookup-equal lookup-equal arg1 arg2) ;or open to assoc-equal?
+                  (lookup-equal lookup-equal-unguarded arg1 arg2) ;or open to assoc-equal?
                   ;(lookup arg1 arg2) ;whoa! this is missing an argument - this is an error!
                   (lookup lookup arg1 arg2) ;or go to lookup-equal?
                   (bvnot bvnot-unguarded arg1 arg2) ;see bvnot-unguarded-correct
@@ -420,15 +464,15 @@
                   (binary-+ binary-+-unguarded arg1 arg2) ;see binary-+-unguarded-correct
 
                   ;; (all-items-less-than all-items-less-than arg1 arg2)
-                  (every-nth every-nth arg1 arg2)
-                  (intersection-equal intersection-equal arg1 arg2)
+                  (every-nth every-nth-unguarded arg1 arg2)
+                  (intersection-equal intersection-equal-unguarded arg1 arg2)
 ;                  (push-bvchop-list push-bvchop-list arg1 arg2) ;do we need this?
                   (all-equal$ all-equal$-unguarded arg1 arg2)
                   (repeatbit repeatbit-unguarded arg1 arg2)
 ;                  (print-dag-expr print-dag-expr arg1 arg2)
                   ;; (binary-and binary-and arg1 arg2) ;unguarded
                   (implies implies arg1 arg2)       ;unguarded
-                  (first-non-member first-non-member arg1 arg2)
+                  (first-non-member first-non-member-unguarded arg1 arg2)
                   (booland booland arg1 arg2) ;unguarded
                   (boolor boolor arg1 arg2)   ;unguarded
                   (getbit-list getbit-list-unguarded arg1 arg2) ; see getbit-list-unguarded-correct
@@ -438,7 +482,7 @@
 ;                  (n-new-ads2 n-new-ads2 arg1 arg2)
                   (set::insert set::insert arg1 arg2)
 ;                  (nth-new-ad nth-new-ad arg1 arg2)
-                  (floor floor arg1 arg2)
+                  (floor floor-unguarded arg1 arg2)
 ;                  (logext-list logext-list arg1 arg2)
 ;                  (list::memberp list::memberp arg1 arg2)
                   (member-equal member-equal-unguarded arg1 arg2)
@@ -474,8 +518,8 @@
                   (bvnot-list bvnot-list-unguarded arg1 arg2) ;see bvnot-list-unguarded-correct
                   (eq equal arg1 arg2) ;eq is logically the same as equal
                   (ceiling ceiling-unguarded arg1 arg2)
-                  (lookup-eq lookup-eq arg1 arg2)
-                  (lookup lookup arg1 arg2)
+                  (lookup-eq lookup-eq arg1 arg2) ;drop? call lookup-equal-unguarded
+                  (lookup lookup arg1 arg2) ;drop? call lookup-equal-unguarded
                   (group group arg1 arg2)
                   (group2 group2 arg1 arg2)
                   (set::in set::in-unguarded arg1 arg2)
@@ -523,7 +567,7 @@
                          (myif myif arg1 arg2 arg3)     ;unguarded
                          (boolif boolif arg1 arg2 arg3) ;unguarded
                          (array-elem-2d array-elem-2d arg1 arg2 arg3) ;drop?
-                         (update-nth update-nth arg1 arg2 arg3)
+                         (update-nth update-nth-unguarded arg1 arg2 arg3)
                          (if if arg1 arg2 arg3) ;primitive
                          (slice slice-unguarded arg1 arg2 arg3)
                          (bvshl bvshl-unguarded arg1 arg2 arg3)
@@ -643,7 +687,9 @@
                               (interpreted-function-alistp interpreted-function-alist))
                   :measure (nfix (+ 1 count))
                   :guard-hints (("Goal" :in-theory (e/d (lookup-equal interpreted-function-alistp)
-                                                        (interpreted-function-infop-of-lookup-equal-when-interpreted-function-alistp))
+                                                        (interpreted-function-infop-of-lookup-equal-when-interpreted-function-alistp
+                                                         member-equal ; for speed
+                                                         ))
                                  :use (:instance interpreted-function-infop-of-lookup-equal-when-interpreted-function-alistp (fn (car fns)))
                                  ))))
   (if (not (natp count))

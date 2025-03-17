@@ -126,7 +126,7 @@
                            (eql (mv t (equal arg1 arg2)))
                            (list-equiv (mv t (list-equiv arg1 arg2)))
                            (prefixp (mv t (prefixp arg1 arg2)))
-                           (lookup-equal (mv t (lookup-equal arg1 arg2)))
+                           (lookup-equal (mv t (lookup-equal-unguarded arg1 arg2)))
                            (lookup (mv t (lookup arg1 arg2)))
                            (bvnot (mv t (bvnot-unguarded arg1 arg2)))
                            (bvuminus (mv t (bvuminus-unguarded arg1 arg2)))
@@ -137,14 +137,14 @@
                            (trim (mv t (trim-unguarded arg1 arg2)))
                            (binary-+ (mv t (binary-+-unguarded arg1 arg2)))
                            ;; (all-items-less-than (mv t (all-items-less-than arg1 arg2)))
-                           (every-nth (mv t (every-nth arg1 arg2)))
+                           (every-nth (mv t (every-nth-unguarded arg1 arg2)))
                            (intersection-equal
-                                (mv t (intersection-equal arg1 arg2)))
+                                (mv t (intersection-equal-unguarded arg1 arg2)))
                            (all-equal$ (mv t (all-equal$-unguarded arg1 arg2)))
                            (repeatbit (mv t (repeatbit-unguarded arg1 arg2)))
                            (implies (mv t (implies arg1 arg2)))
                            (first-non-member
-                                (mv t (first-non-member arg1 arg2)))
+                                (mv t (first-non-member-unguarded arg1 arg2)))
                            (booland (mv t (booland arg1 arg2)))
                            (boolor (mv t (boolor arg1 arg2)))
                            (getbit-list (mv t (getbit-list-unguarded arg1 arg2)))
@@ -152,7 +152,7 @@
                            (leftrotate32
                                 (mv t (leftrotate32-unguarded arg1 arg2)))
                            (set::insert (mv t (set::insert arg1 arg2)))
-                           (floor (mv t (floor arg1 arg2)))
+                           (floor (mv t (floor-unguarded arg1 arg2)))
                            (member-equal
                                 (mv t (member-equal-unguarded arg1 arg2)))
                            (g (mv t (g arg1 arg2)))
@@ -245,7 +245,7 @@
                              (boolif (mv t (boolif arg1 arg2 arg3)))
                              (array-elem-2d
                                   (mv t (array-elem-2d arg1 arg2 arg3)))
-                             (update-nth (mv t (update-nth arg1 arg2 arg3)))
+                             (update-nth (mv t (update-nth-unguarded arg1 arg2 arg3)))
                              (if (mv t (if arg1 arg2 arg3)))
                              (slice
                                   (mv t (slice-unguarded arg1 arg2 arg3)))
@@ -725,7 +725,7 @@
                            (eql (mv t (equal arg1 arg2)))
                            (list-equiv (mv t (list-equiv arg1 arg2)))
                            (prefixp (mv t (prefixp arg1 arg2)))
-                           (lookup-equal (mv t (lookup-equal arg1 arg2)))
+                           (lookup-equal (mv t (lookup-equal-unguarded arg1 arg2)))
                            (lookup (mv t (lookup arg1 arg2)))
                            (bvnot (mv t (bvnot-unguarded arg1 arg2)))
                            (bvuminus (mv t (bvuminus-unguarded arg1 arg2)))
@@ -736,14 +736,14 @@
                            (trim (mv t (trim-unguarded arg1 arg2)))
                            (binary-+ (mv t (binary-+-unguarded arg1 arg2)))
                            ;; (all-items-less-than (mv t (all-items-less-than arg1 arg2)))
-                           (every-nth (mv t (every-nth arg1 arg2)))
+                           (every-nth (mv t (every-nth-unguarded arg1 arg2)))
                            (intersection-equal
-                                (mv t (intersection-equal arg1 arg2)))
+                                (mv t (intersection-equal-unguarded arg1 arg2)))
                            (all-equal$ (mv t (all-equal$-unguarded arg1 arg2)))
                            (repeatbit (mv t (repeatbit-unguarded arg1 arg2)))
                            (implies (mv t (implies arg1 arg2)))
                            (first-non-member
-                                (mv t (first-non-member arg1 arg2)))
+                                (mv t (first-non-member-unguarded arg1 arg2)))
                            (booland (mv t (booland arg1 arg2)))
                            (boolor (mv t (boolor arg1 arg2)))
                            (getbit-list (mv t (getbit-list-unguarded arg1 arg2)))
@@ -751,7 +751,7 @@
                            (leftrotate32
                                 (mv t (leftrotate32-unguarded arg1 arg2)))
                            (set::insert (mv t (set::insert arg1 arg2)))
-                           (floor (mv t (floor arg1 arg2)))
+                           (floor (mv t (floor-unguarded arg1 arg2)))
                            (member-equal
                                 (mv t (member-equal-unguarded arg1 arg2)))
                            (g (mv t (g arg1 arg2)))
@@ -841,7 +841,7 @@
                             (boolif (mv t (boolif arg1 arg2 arg3)))
                             (array-elem-2d
                                  (mv t (array-elem-2d arg1 arg2 arg3)))
-                            (update-nth (mv t (update-nth arg1 arg2 arg3)))
+                            (update-nth (mv t (update-nth-unguarded arg1 arg2 arg3)))
                             (if (mv t (if arg1 arg2 arg3)))
                             (slice
                                  (mv t (slice-unguarded arg1 arg2 arg3)))
