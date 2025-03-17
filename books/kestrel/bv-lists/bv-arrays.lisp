@@ -420,30 +420,6 @@
   :hints (("Goal" :use bitxor-of-bv-array-read-and-bv-array-read-constant-arrays
            :in-theory (disable bitxor-of-bv-array-read-and-bv-array-read-constant-arrays))))
 
-;move
-;; breaks the abstraction
-(defthm car-of-bv-array-write
-  (implies (and ;; (<= 1 len)
-                (integerp len)
-                (< key len)
-                ;(natp len)
-                (natp key))
-           (equal (car (bv-array-write element-size len key val lst))
-                  (if (< key 1)
-                      (bvchop element-size val)
-                    (bvchop element-size (car lst)))))
-  :hints (("Goal" :in-theory (enable bv-array-write-opener update-nth2))))
-
-;move
-(defthm car-of-bv-array-write-gen
-  (implies (posp len)
-           (equal (car (bv-array-write element-size len key val lst))
-                  (if (equal 0 (bvchop (ceiling-of-lg len) key))
-                      (bvchop element-size val)
-                    (bvchop element-size (car lst)))))
-  :hints (("Goal" :expand (bv-array-write element-size len key val lst)
-           :in-theory (enable update-nth2))))
-
 (defthm bvchop-list-of-update-nth2
   (implies (and (< key len)
                 ;(<= len (+ 1 (len lst)))
@@ -494,37 +470,6 @@
 
 ;; ;move
 ;; (theory-invariant (incompatible (:rewrite nthcdr-of-true-list-fix) (:rewrite true-list-fix-of-nthcdr)))
-
-(defthm nthcdr-of-bv-array-write
-  (implies (and (<= n (len lst))
-                (equal (len lst) len) ;bozo
-                (< key len)           ;Mon Jul 19 20:28:02 2010
-                (natp n)
-                (natp key))
-           (equal (nthcdr n (bv-array-write element-size len key val lst))
-                  (if (< key n)
-                      (bvchop-list element-size (nthcdr n (true-list-fix lst)))
-                    (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
-  :hints (("Goal" :in-theory (enable UPDATE-NTH2 bv-array-write ceiling-of-lg NTHCDR-of-true-list-fix))))
-
-(defthm nthcdr-of-bv-array-write-better
-  (implies (and (<= n len)
-                (integerp len)
-;(natp len)
-                (< key len)
-                (natp n)
-                (natp key))
-           (equal (nthcdr n (bv-array-write element-size len key val lst))
-                  (if (< key n)
-                      (bvchop-list element-size (nthcdr n (take len (true-list-fix lst))))
-                    (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
-  :hints (("Goal"
-           :cases ((< key n))
-           :in-theory (enable update-nth2 bv-array-write-opener))))
-
-(defthmd bv-array-write-of-bv-array-write-when-length-is-1
-  (equal (bv-array-write size 1 index1 val1 (bv-array-write size 1 index2 val2 data))
-         (bv-array-write size 1 0 val1 '(0))))
 
 (defthmd bv-array-read-of-bv-array-write-when-length-is-1
   (equal (bv-array-read size 1 index1 (bv-array-write size 1 index2 val data))
