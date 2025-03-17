@@ -338,7 +338,7 @@
            (true-listp true-listp arg1) ;unguarded
            (consp consp arg1)           ;unguarded, primitive
            (bytes-to-bits bytes-to-bits arg1) ;fixme drop since we rewrite it?
-           (width-of-widest-int width-of-widest-int-unguarded arg1)
+           (width-of-widest-int width-of-widest-int-unguarded arg1) ; see width-of-widest-int-unguarded-correct
            (all-natp all-natp arg1) ;unguarded
            (endp endp-unguarded arg1) ;see endp-unguarded-correct
            ;(int-fix-list int-fix-list arg1) ;unguarded
@@ -350,7 +350,7 @@
            (nfix nfix arg1)                 ;unguarded
            (ifix ifix arg1)                 ;unguarded
            (len len arg1)                   ;unguarded
-           (reverse-list reverse-list-unguarded arg1)
+           (reverse-list reverse-list-unguarded arg1) ; see reverse-list-unguarded-correct
            (acl2-numberp acl2-numberp arg1) ;(primitive)
            (zp zp-unguarded arg1)           ;see zp-unguarded-correct
            (unary-- unary---unguarded arg1) ;see unary---unguarded-correct
@@ -359,13 +359,13 @@
            (cdr cdr-unguarded arg1)         ; see cdr-unguarded-correct
            ;; (EXTRACT-PACKAGE-NAME EXTRACT-PACKAGE-NAME arg1)
            (map-reverse-list map-reverse-list arg1)
-           (realpart realpart-unguarded arg1)
-           (imagpart imagpart-unguarded arg1)
-           (symbolp symbolp arg1) ;guard of t
-           (characterp characterp arg1) ;guard of t
-           (complex-rationalp complex-rationalp arg1) ;guard of t
-           (denominator denominator-unguarded arg1)
-           (numerator numerator-unguarded arg1)
+           (realpart realpart-unguarded arg1) ; see realpart-unguarded-correct
+           (imagpart imagpart-unguarded arg1) ; see imagpart-unguarded-correct
+           (symbolp symbolp arg1) ;unguarded
+           (characterp characterp arg1) ;unguarded
+           (complex-rationalp complex-rationalp arg1) ;unguarded
+           (denominator denominator-unguarded arg1) ; see denominator-unguarded-correct
+           (numerator numerator-unguarded arg1) ;see numerator-unguarded-correct
            )
          (acons 2
                 '((mv-nth mv-nth-unguarded arg1 arg2)
@@ -433,9 +433,9 @@
                   (expt expt-unguarded arg1 arg2) ;see expt-unguarded-correct
                   (min min-unguarded arg1 arg2) ;see min-unguarded-correct
                   (max max-unguarded arg1 arg2) ;see max-unguarded-correct
-                  (mod mod arg1 arg2)
+                  (mod mod-unguarded arg1 arg2)
                   (getbit getbit-unguarded arg1 arg2) ;see getbit-unguarded-correct
-                  (cons cons arg1 arg2)               ;primitive
+                  (cons cons arg1 arg2)               ;unguarded (primitive)
                   (bvchop bvchop-unguarded arg1 arg2) ;see bvchop-unguarded-correct
                   (logtail$inline logtail$inline-unguarded arg1 arg2) ;see logtail$inline-unguarded-correct
                   (logext logext-unguarded arg1 arg2) ;see logext-unguarded-correct
@@ -453,18 +453,18 @@
                 (acons 3
                        '((repeat-tail repeat-tail arg1 arg2 arg3) ;; can this blow up?
                          (negated-elems-listp negated-elems-listp-unguarded arg1 arg2 arg3)
-                         (leftrotate leftrotate arg1 arg2 arg3)
-                         (acons acons arg1 arg2 arg3)
-;                         (map-slice map-slice arg1 arg2 arg3)
-                         ;(myif-nest-needs-bvchop-list myif-nest-needs-bvchop-list arg1 arg2 arg3)
-;                         (EQUAL-LST-EXEC EQUAL-LST-EXEC arg1 arg2 arg3) ;Mon Mar  8 04:03:38 2010
-                         (bvshr bvshr arg1 arg2 arg3)
-                         (bvashr bvashr arg1 arg2 arg3) ;new
-;    (bitxor-terms-should-be-reordered arg1 arg2 arg3)
+                         (leftrotate leftrotate-unguarded arg1 arg2 arg3)
+                         (acons acons-unguarded arg1 arg2 arg3)
+                         ;; (map-slice map-slice arg1 arg2 arg3)
+                         ;; (myif-nest-needs-bvchop-list myif-nest-needs-bvchop-list arg1 arg2 arg3)
+                         ;; (EQUAL-LST-EXEC EQUAL-LST-EXEC arg1 arg2 arg3) ;Mon Mar  8 04:03:38 2010
+                         (bvshr bvshr-unguarded arg1 arg2 arg3) ;see bvshr-unguarded-correct
+                         (bvashr bvashr-unguarded arg1 arg2 arg3) ;see bvashr-unguarded-correct
+                         ;; (bitxor-terms-should-be-reordered arg1 arg2 arg3)
 
-                         (packbv packbv arg1 arg2 arg3)
+                         (packbv packbv-unguarded arg1 arg2 arg3)
                          (unpackbv unpackbv-less-guarded arg1 arg2 arg3)
-;                         (map-packbv map-packbv arg1 arg2 arg3)
+                         ;; (map-packbv map-packbv arg1 arg2 arg3)
 
                          ;many of these call bvchop, whose guard should be improved..
                          ;; (bvplus-lst bvplus-lst arg1 arg2 arg3)
@@ -486,8 +486,8 @@
                          (sbvdivdown sbvdivdown arg1 arg2 arg3)
                          (sbvrem sbvrem arg1 arg2 arg3)
                          (sbvmoddown sbvmoddown arg1 arg2 arg3)
-                         (sbvlt sbvlt arg1 (ifix arg2) (ifix arg3)) ;probably okay - may not be needed if guards for the defining functions were better
-                         (sbvle sbvle arg1 arg2 arg3)
+                         (sbvlt sbvlt-unguarded arg1 (ifix arg2) (ifix arg3)) ;probably okay - may not be needed if guards for the defining functions were better
+                         (sbvle sbvle-unguarded arg1 arg2 arg3)
                          (s s arg1 arg2 arg3) ;unguarded
 ;;                         (nth2 nth2 arg1 arg2 arg3)
                          (myif myif arg1 arg2 arg3)     ;unguarded
@@ -496,7 +496,7 @@
                          (update-nth update-nth arg1 arg2 arg3)
                          (if if arg1 arg2 arg3) ;primitive
                          (slice slice-unguarded arg1 arg2 arg3)
-                         (bvshl bvshl arg1 arg2 arg3)
+                         (bvshl bvshl-unguarded arg1 arg2 arg3)
                          ;; (keep-items-less-than keep-items-less-than-unguarded arg1 arg2 arg3) ;see keep-items-less-than-unguarded-correct
                          (subrange subrange-unguarded arg1 arg2 arg3) ; see subrange-unguarded-correct
                          (bvxor-list bvxor-list-unguarded arg1 arg2 arg3))

@@ -176,7 +176,7 @@
                            (expt (mv t (expt-unguarded arg1 arg2)))
                            (min (mv t (min-unguarded arg1 arg2)))
                            (max (mv t (max-unguarded arg1 arg2)))
-                           (mod (mv t (mod arg1 arg2)))
+                           (mod (mv t (mod-unguarded arg1 arg2)))
                            (getbit (mv t (getbit-unguarded arg1 arg2)))
                            (cons (mv t (cons arg1 arg2)))
                            (bvchop (mv t (bvchop-unguarded arg1 arg2)))
@@ -208,11 +208,11 @@
                              (negated-elems-listp (mv t
                                                       (negated-elems-listp-unguarded
                                                            arg1 arg2 arg3)))
-                             (leftrotate (mv t (leftrotate arg1 arg2 arg3)))
-                             (acons (mv t (acons arg1 arg2 arg3)))
-                             (bvshr (mv t (bvshr arg1 arg2 arg3)))
-                             (bvashr (mv t (bvashr arg1 arg2 arg3)))
-                             (packbv (mv t (packbv arg1 arg2 arg3)))
+                             (leftrotate (mv t (leftrotate-unguarded arg1 arg2 arg3)))
+                             (acons (mv t (acons-unguarded arg1 arg2 arg3)))
+                             (bvshr (mv t (bvshr-unguarded arg1 arg2 arg3)))
+                             (bvashr (mv t (bvashr-unguarded arg1 arg2 arg3)))
+                             (packbv (mv t (packbv-unguarded arg1 arg2 arg3)))
                              (unpackbv
                                  (mv t
                                      (unpackbv-less-guarded arg1 arg2 arg3)))
@@ -238,8 +238,8 @@
                              (sbvrem (mv t (sbvrem arg1 arg2 arg3)))
                              (sbvmoddown (mv t (sbvmoddown arg1 arg2 arg3)))
                              (sbvlt
-                                 (mv t (sbvlt arg1 (ifix arg2) (ifix arg3))))
-                             (sbvle (mv t (sbvle arg1 arg2 arg3)))
+                                 (mv t (sbvlt-unguarded arg1 (ifix arg2) (ifix arg3))))
+                             (sbvle (mv t (sbvle-unguarded arg1 arg2 arg3)))
                              (s (mv t (s arg1 arg2 arg3)))
                              (myif (mv t (myif arg1 arg2 arg3)))
                              (boolif (mv t (boolif arg1 arg2 arg3)))
@@ -249,7 +249,7 @@
                              (if (mv t (if arg1 arg2 arg3)))
                              (slice
                                   (mv t (slice-unguarded arg1 arg2 arg3)))
-                             (bvshl (mv t (bvshl arg1 arg2 arg3)))
+                             (bvshl (mv t (bvshl-unguarded arg1 arg2 arg3)))
                              ;; (keep-items-less-than (mv t (keep-items-less-than-unguarded arg1 arg2 arg3)))
                              (subrange (mv t
                                            (subrange-unguarded arg1
@@ -775,7 +775,7 @@
                            (expt (mv t (expt-unguarded arg1 arg2)))
                            (min (mv t (min-unguarded arg1 arg2)))
                            (max (mv t (max-unguarded arg1 arg2)))
-                           (mod (mv t (mod arg1 arg2)))
+                           (mod (mv t (mod-unguarded arg1 arg2)))
                            (getbit (mv t (getbit-unguarded arg1 arg2)))
                            (cons (mv t (cons arg1 arg2)))
                            (bvchop (mv t (bvchop-unguarded arg1 arg2)))
@@ -806,11 +806,11 @@
                             (negated-elems-listp (mv t
                                                      (negated-elems-listp-unguarded
                                                           arg1 arg2 arg3)))
-                            (leftrotate (mv t (leftrotate arg1 arg2 arg3)))
-                            (acons (mv t (acons arg1 arg2 arg3)))
-                            (bvshr (mv t (bvshr arg1 arg2 arg3)))
-                            (bvashr (mv t (bvashr arg1 arg2 arg3)))
-                            (packbv (mv t (packbv arg1 arg2 arg3)))
+                            (leftrotate (mv t (leftrotate-unguarded arg1 arg2 arg3)))
+                            (acons (mv t (acons-unguarded arg1 arg2 arg3)))
+                            (bvshr (mv t (bvshr-unguarded arg1 arg2 arg3)))
+                            (bvashr (mv t (bvashr-unguarded arg1 arg2 arg3)))
+                            (packbv (mv t (packbv-unguarded arg1 arg2 arg3)))
                             (unpackbv
                                  (mv t
                                      (unpackbv-less-guarded arg1 arg2 arg3)))
@@ -834,8 +834,8 @@
                             (sbvrem (mv t (sbvrem arg1 arg2 arg3)))
                             (sbvmoddown (mv t (sbvmoddown arg1 arg2 arg3)))
                             (sbvlt
-                                 (mv t (sbvlt arg1 (ifix arg2) (ifix arg3))))
-                            (sbvle (mv t (sbvle arg1 arg2 arg3)))
+                                 (mv t (sbvlt-unguarded arg1 (ifix arg2) (ifix arg3))))
+                            (sbvle (mv t (sbvle-unguarded arg1 arg2 arg3)))
                             (s (mv t (s arg1 arg2 arg3)))
                             (myif (mv t (myif arg1 arg2 arg3)))
                             (boolif (mv t (boolif arg1 arg2 arg3)))
@@ -845,7 +845,7 @@
                             (if (mv t (if arg1 arg2 arg3)))
                             (slice
                                  (mv t (slice-unguarded arg1 arg2 arg3)))
-                            (bvshl (mv t (bvshl arg1 arg2 arg3)))
+                            (bvshl (mv t (bvshl-unguarded arg1 arg2 arg3)))
                             ;; (keep-items-less-than (mv t (keep-items-less-than-unguarded arg1 arg2 arg3)))
                             (subrange (mv t
                                           (subrange-unguarded arg1
