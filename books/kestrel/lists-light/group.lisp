@@ -14,8 +14,8 @@
 ;stuff about the function group, which chops a list into segments
 ;; TODO: harvest good lemmas from this book
 
+(include-book "group-def")
 (include-book "kestrel/utilities/myif-def" :dir :system) ;drop?
-(include-book "firstn-def")
 (include-book "subrange-def")
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
@@ -258,17 +258,6 @@
   :hints (("Goal" :expand ((SUBRANGE 1 (+ -1 N) X)
                            (subrange 1 (+ -1 (min (nfix n) (len x))) x))
            :in-theory (enable))))
-
-;only makes sense when (len x) is a multiple of n?
-(defund group (n x)
-  (declare (xargs :measure (+ 1 (len x))
-                  :guard (and (true-listp x) ;would be nice for firstn's guard to not require true-listp
-                              (posp n))))
-  (if (or (not (mbt (posp n)))
-          (atom x))
-      nil
-    (cons (firstn n x)
-          (group n (nthcdr n x)))))
 
 (defthm consp-of-group
   (implies (posp n)

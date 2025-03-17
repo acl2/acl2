@@ -35,6 +35,7 @@
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-clear-range" :dir :system)
 (include-book "kestrel/bv-lists/map-packbv" :dir :system) ;for map-packbv, map-reverse-list, etc.
 (include-book "kestrel/bv-lists/map-unpackbv" :dir :system)
 (include-book "kestrel/bv-lists/map-reverse-list" :dir :system)
@@ -47,7 +48,7 @@
 ;(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
 (include-book "kestrel/lists-light/every-nth" :dir :system)
 (include-book "kestrel/lists-light/add-to-end" :dir :system)
-(include-book "kestrel/lists-light/group" :dir :system) ;drop?
+(include-book "kestrel/lists-light/group-def" :dir :system) ;drop?
 (include-book "kestrel/lists-light/group2" :dir :system) ;drop?
 (include-book "kestrel/lists-light/first-non-member" :dir :system)
 (include-book "kestrel/lists-light/all-same" :dir :system)

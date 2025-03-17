@@ -27,6 +27,7 @@
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ;drop?
 (include-book "kestrel/bv-lists/bv-arrays" :dir :system) ; for bv-array-read-of-bvchop-list?
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-clear-range" :dir :system)
 ;(include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system) ;todo
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
@@ -81,25 +82,16 @@
 ;;                   (true-listp x))))
 
 ;move
-(defthm equal-of-true-listp-when-equal-of-cdr
-  (implies (and (equal (cdr lst) (cdr rhs))
-                (< 0 (len lst))
-                (< 0 (len rhs)))
-           (equal (equal (true-listp rhs) (true-listp lst))
-                  t))
-  :hints (("Goal" :induct t
-           :in-theory (enable true-listp))))
+;; (defthm equal-of-true-listp-when-equal-of-cdr
+;;   (implies (and (equal (cdr lst) (cdr rhs))
+;;                 (< 0 (len lst))
+;;                 (< 0 (len rhs)))
+;;            (equal (equal (true-listp rhs) (true-listp lst))
+;;                   t))
+;;   :hints (("Goal" :induct t
+;;            :in-theory (enable true-listp))))
 
-(in-theory (disable TRUE-LISTP)) ; todo
-
-;move
-(defthm equal-of-len-and-len-when-equal-of-nthcdr-and-nthcdr
-  (implies (and (equal (nthcdr n x) (nthcdr n y))
-                (or (< n (len x))
-                    (< n (len y))))
-           (equal (equal (len x) (len y))
-                  t))
-  :hints (("Goal" :in-theory (enable nthcdr))))
+;(in-theory (disable TRUE-LISTP)) ; todo
 
 ;TTODO: Move these rules to the appropriate libraries!
 ;TODO: Handle the things with -dag in the name
@@ -522,75 +514,76 @@
 
 ;newly disabled
 ;rename!
-(defthmd gross-hack
-  (IMPLIES (AND ;(UNSIGNED-BYTE-P ELEM-SIZE (NTH (EXPT 2 N) VALS))
-            (EQUAL (BVNOT-LIST ELEM-SIZE (TAKE (EXPT 2 N) VALS))
-                   (NTHCDR (EXPT 2 N) VALS))
-            (NATP N)
-            (EQUAL (LEN VALS) (* 2 (EXPT 2 N)))
-            (TRUE-LISTP VALS)
-            (NATP ELEM-SIZE))
-           (EQUAL (BVCHOP ELEM-SIZE (NTH (EXPT 2 N) VALS))
-                  (BVNOT ELEM-SIZE (NTH 0 VALS))))
-  :hints (("Goal" :expand ((BVNOT-LIST ELEM-SIZE (TAKE (EXPT 2 N) VALS))
-                           (NTHCDR (EXPT 2 N) VALS))
-           :in-theory (disable NTHCDR-OF-CDR-COMBINE-STRONG NTHCDR-OF-CDR-COMBINE)
-           )))
+(local
+  (defthmd gross-hack
+    (IMPLIES (AND ;(UNSIGNED-BYTE-P ELEM-SIZE (NTH (EXPT 2 N) VALS))
+               (EQUAL (BVNOT-LIST ELEM-SIZE (TAKE (EXPT 2 N) VALS))
+                      (NTHCDR (EXPT 2 N) VALS))
+               (NATP N)
+               (EQUAL (LEN VALS) (* 2 (EXPT 2 N)))
+               (TRUE-LISTP VALS)
+               (NATP ELEM-SIZE))
+             (EQUAL (BVCHOP ELEM-SIZE (NTH (EXPT 2 N) VALS))
+                    (BVNOT ELEM-SIZE (NTH 0 VALS))))
+    :hints (("Goal" :expand ((BVNOT-LIST ELEM-SIZE (TAKE (EXPT 2 N) VALS))
+                             (NTHCDR (EXPT 2 N) VALS))
+             :in-theory (disable NTHCDR-OF-CDR-COMBINE-STRONG NTHCDR-OF-CDR-COMBINE)
+             ))))
 
-(defthmd array-reduction-when-top-bit-is-xored-in-helper-helper
-  (implies (and (equal (bvnot-list elem-size (firstn (expt 2 n) vals)) ;why subrange?
-                       (subrange (expt 2 n) (+ -1 (expt 2 n) (expt 2 n)) vals))
-                (natp n)
-                (equal (len vals) (expt 2 (+ 1 n)))
-                (true-listp vals)
-                (natp elem-size)
-                )
-           (equal (bv-array-read elem-size (expt 2 (+ 1 n)) (bvcat 1 x n y) vals)
-                  (bvxor elem-size
-                         (repeatbit elem-size (getbit 0 x))
-                         (bv-array-read elem-size (expt 2 n) (bvchop n y) (firstn (expt 2 n) vals)))))
-  :hints (("Goal"
-           :cases ((equal 0 (getbit 0 x)))
-           :use (:instance gross-hack)
-           :in-theory (e/d (expt-of-+
-                            bvplus ;-opener
-                            nth-sum-when-nthcdr-known
-                            bvcat-special-opener
-                            bv-array-read ceiling-of-lg
-;                                        car-of-both-sides-alt
-;                                       car-of-both-sides
-                            ;bvchop-of-+-becomes-bvplus
-                            ;EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
-                            subrange
-                            )
-                           (gross-hack
-                            nth-of-cdr
-                            NTH-OF-NTHCDR ;looped
-                            REPEATBIT-OF-1-ARG2
-                            NTHCDR-OF-CDR-COMBINE-STRONG NTHCDR-OF-CDR-COMBINE
-                            ;LIST::NTH-NTHCDR
+(local
+  (defthmd array-reduction-when-top-bit-is-xored-in-helper-helper
+    (implies (and (equal (bvnot-list elem-size (firstn (expt 2 n) vals)) ;why subrange?
+                         (subrange (expt 2 n) (+ -1 (expt 2 n) (expt 2 n)) vals))
+                  (natp n)
+                  (equal (len vals) (expt 2 (+ 1 n)))
+                  (true-listp vals)
+                  (natp elem-size)
+                  )
+             (equal (bv-array-read elem-size (expt 2 (+ 1 n)) (bvcat 1 x n y) vals)
+                    (bvxor elem-size
+                           (repeatbit elem-size (getbit 0 x))
+                           (bv-array-read elem-size (expt 2 n) (bvchop n y) (firstn (expt 2 n) vals)))))
+    :hints (("Goal"
+             :cases ((equal 0 (getbit 0 x)))
+             :use (:instance gross-hack)
+             :in-theory (e/d (expt-of-+
+                              bvplus ;-opener
+                              nth-sum-when-nthcdr-known
+                              bvcat-special-opener
+                              bv-array-read ceiling-of-lg
+                              ;; car-of-both-sides-alt
+                              ;; car-of-both-sides
+                              ;; bvchop-of-+-becomes-bvplus
+                              ;; EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
+                              subrange)
+                             (gross-hack
+                              nth-of-cdr
+                              NTH-OF-NTHCDR ;looped
+                              REPEATBIT-OF-1-ARG2
+                              NTHCDR-OF-CDR-COMBINE-STRONG NTHCDR-OF-CDR-COMBINE
                             ;NTH-OF-TAKE-GEN
-;NTH-OF-BVNOT-LIST
-;BV-ARRAY-READ-OF-TAKE
-;BV-ARRAY-READ-OF-BVCHOP
-;BV-ARRAY-READ-OF-BVCHOP-HELPER
-                            )))))
+                            ;NTH-OF-BVNOT-LIST
+                            ;BV-ARRAY-READ-OF-TAKE
+                            ;BV-ARRAY-READ-OF-BVCHOP
+                            ;BV-ARRAY-READ-OF-BVCHOP-HELPER
+                              ))))))
 
-(defthm array-reduction-when-top-bit-is-xored-in-helper
-  (implies (and (equal (bvnot-list elem-size (firstn (expt 2 n) vals))
-                       (subrange (expt 2 n) (+ -1 (expt 2 (+ 1 n))) vals))
-                (natp n)
-                (equal (len vals) (expt 2 (+ 1 n)))
-                (natp elem-size)
-                )
-           (equal (bv-array-read elem-size (expt 2 (+ 1 n)) index vals)
-                  (bvxor elem-size (repeatbit elem-size (getbit n index))
-                         (bv-array-read elem-size (expt 2 n) (bvchop n index) (firstn (expt 2 n) vals)))))
-  :hints (("Goal" :in-theory (enable expt-of-+ subrange)
-           :use (:instance array-reduction-when-top-bit-is-xored-in-helper-helper
-                           (x (getbit n index))
-                           (y (bvchop n index))
-                           (vals (true-list-fix vals))))))
+(local
+  (defthm array-reduction-when-top-bit-is-xored-in-helper
+    (implies (and (equal (bvnot-list elem-size (firstn (expt 2 n) vals))
+                         (subrange (expt 2 n) (+ -1 (expt 2 (+ 1 n))) vals))
+                  (natp n)
+                  (equal (len vals) (expt 2 (+ 1 n)))
+                  (natp elem-size)
+                  )
+             (equal (bv-array-read elem-size (expt 2 (+ 1 n)) index vals)
+                    (bvxor elem-size (repeatbit elem-size (getbit n index))
+                           (bv-array-read elem-size (expt 2 n) (bvchop n index) (firstn (expt 2 n) vals)))))
+    :hints (("Goal" :in-theory (enable expt-of-+ subrange)
+             :use (:instance array-reduction-when-top-bit-is-xored-in-helper-helper
+                             (x (getbit n index))
+                             (y (bvchop n index))
+                             (vals (true-list-fix vals)))))))
 
 ;we could do the (equal (bvnot-list ..) ..) check without consing:
 ;in general, if we have the equality of 2 lists built up by consing, we can build them up in parallel and stop as soon as one difference is found
@@ -636,26 +629,28 @@
                    (+ (expt 2 n) (bvchop n y))))
    :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P expt-of-+)))))
 
-(defthm array-reduction-when-top-bit-is-irrelevant-helper
-  (implies (and ;(integerp y)
-            ;;(<= 0 y)
-            (natp n)
-            (equal (len vals) (expt 2 (+ 1 n)))
-            (true-listp vals)
-            (all-unsigned-byte-p 1 vals)
-            (equal (firstn (expt 2 n) vals)
-                   (subrange (expt 2 n) (+ -1 (expt 2 n) (expt 2 n)) vals))
-            )
-           (equal (bv-array-read 1 (expt 2 (+ 1 n)) (bvcat 1 x n y) vals)
-                  (bv-array-read 1 (expt 2 n) (bvchop n y) (firstn (expt 2 n) vals))))
-  :hints (("Goal"
-           :cases ((equal 0 (getbit 0 x)))
-           :in-theory (e/d (nth-sum-when-nthcdr-known bvcat-special-opener bv-array-read ceiling-of-lg subrange)
-                           (NTH-OF-NTHCDR
-                            BV-ARRAY-READ-OF-BVCHOP-HELPER
-                            BV-ARRAY-READ-OF-BVCHOP
-                            BV-ARRAY-READ-OF-TAKE)))))
+(local
+  (defthm array-reduction-when-top-bit-is-irrelevant-helper
+    (implies (and ;(integerp y)
+               ;;(<= 0 y)
+               (natp n)
+               (equal (len vals) (expt 2 (+ 1 n)))
+               (true-listp vals)
+               (all-unsigned-byte-p 1 vals)
+               (equal (firstn (expt 2 n) vals)
+                      (subrange (expt 2 n) (+ -1 (expt 2 n) (expt 2 n)) vals))
+               )
+             (equal (bv-array-read 1 (expt 2 (+ 1 n)) (bvcat 1 x n y) vals)
+                    (bv-array-read 1 (expt 2 n) (bvchop n y) (firstn (expt 2 n) vals))))
+    :hints (("Goal"
+             :cases ((equal 0 (getbit 0 x)))
+             :in-theory (e/d (nth-sum-when-nthcdr-known bvcat-special-opener bv-array-read ceiling-of-lg subrange)
+                             (NTH-OF-NTHCDR
+                              BV-ARRAY-READ-OF-BVCHOP-HELPER
+                              BV-ARRAY-READ-OF-BVCHOP
+                              BV-ARRAY-READ-OF-TAKE))))))
 
+;todo: gen to more than 1 bit
 (defthm array-reduction-when-top-bit-is-irrelevant
   (implies (and (syntaxp (quotep vals)) ;Sat Mar 20 08:56:01 2010
                  (equal (firstn (/ len 2) vals) ;fixme slow?
@@ -820,7 +815,6 @@
                   (bv-array-read n 64 (bvchop 6 x) vals)))
   :hints (("Goal" :in-theory (enable bv-array-read BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
-
 ;move
 ;; (defthm getbit-list-of-logext-list
 ;;   (implies (and (< n size)
@@ -832,7 +826,7 @@
 
 ;use a trim rule!
 (defthmd bv-array-write-of-bvcat-reduce
-  (implies (and (<= element-size lowsize)
+  (implies (and (<= element-size lowsize) ; so highval is irrelevant
                 (natp element-size)
                 (natp highsize)
                 (natp lowsize)
@@ -935,7 +929,6 @@
                   (bv-array-write 1 len key (getbit n val) (getbit-list n (true-list-fix lst)))))
   :hints (("Goal" :in-theory (enable UPDATE-NTH2 bv-array-write))))
 
-
 ;; ;not true for negative vals!
 ;; (defthm nth-of-bvcat-becomes-bvnth-for-natps
 ;;   (implies (and (all-natp vals)
@@ -986,7 +979,6 @@
 (defthmd nth-of-if-arg2
   (equal (nth n (if test a b))
          (if test (nth n a) (nth n b))))
-
 
 ;; (defthm myif-of-logext-list-and-logext-list
 ;;   (equal (myif test (logext-list n x) (logext-list n y))
@@ -1047,10 +1039,6 @@
 ;;                              LOGTAIL-BECOMES-SLICE-BIND-FREE
 ;;                              LOGTAIL-OF-BVCHOP-BECOMES-SLICE
 ;;                              SLICE-BECOMES-BVCHOP))))))
-
-
-
-
 
 ;these two from des:
 
@@ -1179,15 +1167,6 @@
 ;;                          vals)))
 ;;   :hints (("Goal" :in-theory (enable bvnth all-integerp-when-all-natp))))
 
-;drop?
-(defthm UNSIGNED-BYTE-P-of-WIDTH-OF-WIDEST-INT-nth
-  (implies (and (natp index)
-                (all-natp vals)
-                (< index (len vals)))
-           (UNSIGNED-BYTE-P (WIDTH-OF-WIDEST-INT VALS)
-                            (NTH index VALS)))
-  :hints (("Goal" :in-theory (e/d (WIDTH-OF-WIDEST-INT nth) (nth-of-cdr)))))
-
 ;go get the length of the lists (using a binding hyp??)
 (defthmd nth-becomes-bv-array-read
   (implies (and (syntaxp (quotep vals))
@@ -1225,10 +1204,8 @@
                   (bv-array-read n len (bvchop (integer-length (+ -1 len))
                                                 index)
                                  (bvchop-list n data))))
-  :hints
-  (("Goal" :in-theory (e/d (bv-array-read ceiling-of-lg)
-                           (;list::nth-of-cons
-                            )))))
+  :hints (("Goal" :in-theory (e/d (bv-array-read ceiling-of-lg)
+                                  ()))))
 
 ;;from des encrypt sun:
 
@@ -1427,8 +1404,6 @@
                   (bv-array-read width2 len index lst)))
   :hints (("Goal" :in-theory (enable bv-array-read bvchop-when-i-is-not-an-integer))))
 
-(in-theory (disable size-non-negative-when-unsigned-byte-p-free)) ;this caused problems..
-
 ;; (defthmd nth2-becomes-bvnth-for-natps-dag
 ;;   (implies (and (syntaxp (quotep vals))
 ;;                 (all-natp vals)
@@ -1476,6 +1451,7 @@
 ;;                  (jvm::update-nth-local key (myif test (nth key x) val) (myif test x l))))
 ;;  :hints (("Goal" :in-theory (e/d (len-update-nth myif list::update-nth-equal-rewrite nth-when-n-is-zp) (car-becomes-nth-of-0)))))
 
+
 ;; here we are bit-blasting the index
 (local
   (defthmd bv-array-read-blast-one-step-helper
@@ -1520,6 +1496,7 @@
 ;actually matches
 (defthmd bv-array-read-blast-one-step
   (implies (and (equal len (expt 2 (+ -1 (integer-length len))))
+
                 (<= 2 len)
                 (natp index))
            (equal (bv-array-read element-size len index vals)
@@ -1534,7 +1511,6 @@
                                        (bvchop (+ -1 (+ -1 (integer-length len))) index)
                                        (subrange 0 (+ -1 (expt 2 (+ -1 (+ -1 (integer-length len))))) vals)))))
   :hints (("Goal" :use (:instance bv-array-read-blast-one-step-helper (index-width (+ -1 (integer-length len)))))))
-;bozo use the macros below more?
 
 ;; (thm
 ;;  (implies (and (EQUAL (CDR LST) (CDR RHS))
@@ -1837,34 +1813,6 @@
                     (bv-array-write width (+ 1 high (- low)) (- index low) val (subrange low high data)))))
   :hints (("Goal" :in-theory (enable boolor))))
 
-;move
-(defthm cdr-of-bv-array-write-better
-  (implies (and (integerp len)
-                (< key len)
-                (natp key))
-           (equal (cdr (bv-array-write element-size len key val lst))
-                  (if (zp len)
-                      nil
-                    (if (< key 1)
-                        (bvchop-list element-size (cdr (take len (true-list-fix lst))))
-                      (bv-array-write element-size (- len 1) (- key 1) val (nthcdr 1 lst))))))
-  :hints (("Goal"
-           :cases ((and (< len 0)
-                        (< key n))
-                   (and (not (< len 0))
-                        (< key n))
-                   (and (< len 0)
-                        (not (< key n)))
-                   (and (not (< len 0))
-                        (not (< key n))))
-           :in-theory (e/d (update-nth2 bv-array-write-opener
-                            ;bv-array-write
-                            ) (ceiling-of-lg
-                               update-nth-becomes-update-nth2-extend-gen
-                            ;LIST::UPDATE-NTH-EQUAL-REWRITE-ALT
-                            ;LIST::UPDATE-NTH-EQUAL-REWRITE
-                            )))))
-
 (defthmd cdr-of-bv-array-write-better-work-hard
   (implies (and (integerp len)
                 (work-hard (< key len))
@@ -1990,54 +1938,6 @@
 
 ;move a bunch of this stuff
 
-(defthm nthcdr-of-bv-array-clear
-  (implies (and (<= n len)
-                (< key len)
-                (integerp len)
-                (natp n)
-                (natp key))
-           (equal (nthcdr n (bv-array-clear element-size len key lst))
-                  (if (< key n)
-                      (bvchop-list element-size
-                                    (nthcdr n (take len (true-list-fix lst))))
-                    (bv-array-clear element-size (- len n)
-                                    (- key n) (nthcdr n lst)))))
-  :hints (("Goal" :in-theory (enable bv-array-clear))))
-
-(defthm nthcdr-of-bv-array-clear-range
-  (implies (and (<= n lowindex)
-                (<= n len)
-                (< lowindex len) ;Mon Jul 19 20:46:59 2010
-                (< highindex len) ;Mon Jul 19 20:46:59 2010
-                (integerp len)
-                (equal len (+ 1 highindex)) ; Mon Jul 19 20:49:41 2010 could drop?
-                (natp n)
-                (natp lowindex)
-                (natp highindex))
-           (equal (nthcdr n (bv-array-clear-range element-size len lowindex highindex lst))
-                  (bv-array-clear-range element-size (- len n) (- lowindex n) (- highindex n) (nthcdr n lst))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (bv-array-clear-range nthcdr) (NTHCDR-OF-CDR-COMBINE NTHCDR-OF-CDR-COMBINE-strong)))))
-
-;(in-theory (disable LIST::EQUAL-APPEND-REDUCTION!-ALT)) ;move up?
-
-(defthm nthcdr-of-bv-array-clear-range2
-  (implies (and (< highindex n)
-                (<= n len)
-                (<= lowindex highindex)
-                (integerp len)
-                (natp n)
-                (natp lowindex)
-                (natp highindex))
-           (equal (nthcdr n (bv-array-clear-range element-size len lowindex highindex lst))
-                  (nthcdr n (bvchop-list element-size (take len lst)))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (bv-array-clear-range nthcdr) (NTHCDR-OF-CDR-COMBINE
-                                                          NTHCDR-OF-CDR-COMBINE-strong
-                                                          ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                                          )))))
-
-
 (defthmd subrange-when-take-known-hack
   (implies (and (equal (take n x) free)
                 (integerp n)
@@ -2049,12 +1949,6 @@
   :hints (("Goal" :in-theory (enable equal-of-append
                                      subrange ;todo
                                      ))))
-
-(defthm car-of-BV-ARRAY-CLEAR-of-0
-  (implies (posp len)
-           (equal (CAR (BV-ARRAY-CLEAR ELEM-SIZE LEN 0 lst))
-                  0))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-CLEAR))))
 
 (defthm cdr-of-bv-array-clear-of-0
   (implies (posp len)
@@ -2099,6 +1993,18 @@
 ;;   (if (zp n1)
 ;;       (list n1 n2)
 ;;     (sub1-sub1-induct (+ -1 n1) (+ -1 n2))))
+
+(local
+  (defthmd take-when-most-known
+  (implies (and (equal (take (+ -1 n) x) free)
+                (posp n))
+           (equal (take n x)
+                  (append free
+                          (list (nth (+ -1 n) x)))))
+  :hints (("Goal" :in-theory (enable equal-of-append
+;                                     subrange ;todo
+                                     CAR-BECOMES-NTH-OF-0
+                                     )))))
 
 (defthm take-of-bv-array-clear-range
   (implies (and ; (natp elem-size)
