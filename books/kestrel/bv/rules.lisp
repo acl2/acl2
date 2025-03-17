@@ -2127,12 +2127,6 @@
 ;;   (equal (logtail 7 (bvcat 8 x 24 y))
 ;;          (bvcat 8 x 17 (slice 23 7 y))))
 
-;gen!
-(defthm bvand-128-hack
-  (implies (integerp x)
-           (equal (bvand 8 128 x)
-                  (bvcat 1 (getbit 7 x) 7 0))))
-
 ;what if the some bits of the slice get thrown away?
 (defthm slice-of-bvif
   (implies (and; (<= size (+ 1 high (- low))) ;bozo
@@ -2219,61 +2213,6 @@
                   (bvcat m x n y)))
   :hints (("Goal" :use bvor-of-bvcat-appending-idiom
            :in-theory (disable bvor-of-bvcat-appending-idiom))))
-
-;BOZO gen this series...
-(defthm bvand-64-hack
-  (implies (and (integerp x)
-                (< 6 n)
-                (natp n))
-           (equal (bvand n 64 x)
-                  (bvcat
-                   1 (getbit 6 x) 6 0
-                   ))))
-
-(defthm bvand-32-hack
-  (implies (and (integerp x)
-                (< 5 n)
-                (natp n))
-           (equal (bvand n 32 x)
-                  (bvcat
-                   1 (getbit 5 x) 5 0
-                   ))))
-
-(defthm bvand-16-hack
-  (implies (and (integerp x)
-                (< 4 n)
-                (natp n))
-           (equal (bvand n 16 x)
-                  (bvcat
-                           1 (getbit 4 x) 4 0
-                           ))))
-
-(defthm bvand-8-hack
-  (implies (and (integerp x)
-                (< 3 n)
-                (natp n))
-           (equal (bvand n 8 x)
-                  (bvcat
-                           1 (getbit 3 x) 3 0
-                           ))))
-
-(defthm bvand-4-hack
-  (implies (and (integerp x)
-                (< 2 n)
-                (natp n))
-           (equal (bvand n 4 x)
-                  (bvcat
-                           1 (getbit 2 x) 2 0
-                           ))))
-
-(defthm bvand-2-hack
-  (implies (and (integerp x)
-                (< 1 n)
-                (natp n))
-           (equal (bvand n 2 x)
-                  (bvcat
-                           1 (getbit 1 x) 1 0
-                           ))))
 
 ;gen?
 (defthm bvor-large-of-getbit
@@ -2507,16 +2446,32 @@
   :hints (("Goal" :in-theory (e/d (getbit slice) (
                                                   )))))
 
-(defthm bvand-of-expt
+;bvand-of-constant-when-power-of-2p should usually be enough
+(defthmd bvand-of-expt
   (implies (and (equal k (expt 2 (+ -1 (integer-length k)))) ;check for power-of-2
                 (<= (integer-length k) size)
-                (natp size)
-                (natp k))
+                (integerp size)
+                (integerp k))
            (equal (bvand size k x)
                   (bvcat 1
                          (getbit (+ -1 (integer-length k)) x)
                          (+ -1 (integer-length k))
                          0))))
+
+;; This is helpful when we have things like (equal 0 (bitand 8 128 x))
+(defthm bvand-of-constant-when-power-of-2p
+  (implies (and (syntaxp (quotep k))
+                (power-of-2p k)
+                (<= (integer-length k) size)
+                (integerp size)
+                (integerp k))
+           (equal (bvand size k x)
+                  (let ((exponent (+ -1 (integer-length k)))) ; gets computed
+                    (bvcat 1
+                           (getbit exponent x)
+                           exponent
+                           0))))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
 
 ;; (defthmd expt-move-hack
 ;;   (equal (equal (expt 2 y)
