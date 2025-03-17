@@ -82,6 +82,7 @@
 (include-book "bv-array-read-rules")
 (include-book "bv-array-write")
 (include-book "bv-array-clear")
+(include-book "bv-array-clear-range")
 (include-book "bv-array-if")
 (include-book "append-arrays")
 (include-book "array-of-zeros")
