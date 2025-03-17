@@ -518,3 +518,33 @@
                       (bv-array-clear-range elem-size len lowindex1 highindex2 lst)
                     (bv-array-clear-range elem-size len lowindex2 highindex2 lst))))
   :hints (("Goal" :in-theory (enable bv-array-clear-range))))
+
+(defthm nthcdr-of-bv-array-clear-range
+  (implies (and (<= n lowindex)
+                (<= n len)
+                (< lowindex len) ;Mon Jul 19 20:46:59 2010
+                (< highindex len) ;Mon Jul 19 20:46:59 2010
+                (integerp len)
+                (equal len (+ 1 highindex)) ; Mon Jul 19 20:49:41 2010 could drop?
+                (natp n)
+                (natp lowindex)
+                (natp highindex))
+           (equal (nthcdr n (bv-array-clear-range element-size len lowindex highindex lst))
+                  (bv-array-clear-range element-size (- len n) (- lowindex n) (- highindex n) (nthcdr n lst))))
+  :hints (("Goal" ; :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (bv-array-clear-range nthcdr) ()))))
+
+(defthm nthcdr-of-bv-array-clear-range2
+  (implies (and (< highindex n)
+                (<= n len)
+                (<= lowindex highindex)
+                (integerp len)
+                (natp n)
+                (natp lowindex)
+                (natp highindex))
+           (equal (nthcdr n (bv-array-clear-range element-size len lowindex highindex lst))
+                  (nthcdr n (bvchop-list element-size (take len lst)))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (bv-array-clear-range nthcdr) (
+                                                          ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
+                                                          )))))

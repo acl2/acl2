@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/lists-light/repeat" :dir :system)
+(include-book "kestrel/lists-light/subrange-def" :dir :system)
 (include-book "bv-array-write")
 (local (include-book "all-unsigned-byte-p2"))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
@@ -279,3 +280,51 @@
            (equal (take index (bv-array-clear elem-size len index2 lst))
                   (bvchop-list elem-size (take index lst))))
   :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2 ceiling-of-lg) ()))))
+
+(defthm nthcdr-of-bv-array-clear
+  (implies (and (<= n len)
+                (< key len)
+                (integerp len)
+                (natp n)
+                (natp key))
+           (equal (nthcdr n (bv-array-clear element-size len key lst))
+                  (if (< key n)
+                      (bvchop-list element-size
+                                    (nthcdr n (take len (true-list-fix lst))))
+                    (bv-array-clear element-size (- len n)
+                                    (- key n) (nthcdr n lst)))))
+  :hints (("Goal" :in-theory (enable bv-array-clear))))
+
+(defthm car-of-BV-ARRAY-CLEAR-of-0
+  (implies (posp len)
+           (equal (CAR (BV-ARRAY-CLEAR ELEM-SIZE LEN 0 lst))
+                  0))
+  :hints (("Goal" :in-theory (enable BV-ARRAY-CLEAR))))
+
+(defthm car-of-bv-array-clear
+  (equal (car (bv-array-clear width len index data))
+         (if (posp len)
+             (if (zp (bvchop (ceiling-of-lg (nfix len)) index))
+                 0
+               (bvchop width (car data)))
+           nil))
+  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
+
+(defthm bv-array-clear-length-1-of-list-zero
+  (equal (bv-array-clear width 1 index '(0))
+         '(0))
+  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
+
+(defthm cdr-of-bv-array-clear
+  (implies (and (posp len)
+                (< index len) ;Mon Jul 19 21:20:04 2010
+                (natp index))
+           (equal (cdr (bv-array-clear width len index data))
+                  (if (zp index)
+                      (bvchop-list width (SUBRANGE 1 (+ -1 LEN) DATA)) ; todo: avoid subrange here?
+                    (bv-array-clear width (+ -1 len) (+ -1 index) (cdr data)))))
+  :hints (("Goal"
+           :cases ((< len 2))
+           :in-theory (e/d (bv-array-clear bv-array-write-opener update-nth2 subrange)
+                           (;GETBIT-OF-BV-ARRAY-READ-HELPER ;yuck
+                            update-nth-becomes-update-nth2-extend-gen)))))

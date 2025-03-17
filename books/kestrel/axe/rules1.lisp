@@ -1819,34 +1819,6 @@
                     (bv-array-write width (+ 1 high (- low)) (- index low) val (subrange low high data)))))
   :hints (("Goal" :in-theory (enable boolor))))
 
-;move
-(defthm cdr-of-bv-array-write-better
-  (implies (and (integerp len)
-                (< key len)
-                (natp key))
-           (equal (cdr (bv-array-write element-size len key val lst))
-                  (if (zp len)
-                      nil
-                    (if (< key 1)
-                        (bvchop-list element-size (cdr (take len (true-list-fix lst))))
-                      (bv-array-write element-size (- len 1) (- key 1) val (nthcdr 1 lst))))))
-  :hints (("Goal"
-           :cases ((and (< len 0)
-                        (< key n))
-                   (and (not (< len 0))
-                        (< key n))
-                   (and (< len 0)
-                        (not (< key n)))
-                   (and (not (< len 0))
-                        (not (< key n))))
-           :in-theory (e/d (update-nth2 bv-array-write-opener
-                            ;bv-array-write
-                            ) (ceiling-of-lg
-                               update-nth-becomes-update-nth2-extend-gen
-                            ;LIST::UPDATE-NTH-EQUAL-REWRITE-ALT
-                            ;LIST::UPDATE-NTH-EQUAL-REWRITE
-                            )))))
-
 (defthmd cdr-of-bv-array-write-better-work-hard
   (implies (and (integerp len)
                 (work-hard (< key len))
@@ -1972,54 +1944,6 @@
 
 ;move a bunch of this stuff
 
-(defthm nthcdr-of-bv-array-clear
-  (implies (and (<= n len)
-                (< key len)
-                (integerp len)
-                (natp n)
-                (natp key))
-           (equal (nthcdr n (bv-array-clear element-size len key lst))
-                  (if (< key n)
-                      (bvchop-list element-size
-                                    (nthcdr n (take len (true-list-fix lst))))
-                    (bv-array-clear element-size (- len n)
-                                    (- key n) (nthcdr n lst)))))
-  :hints (("Goal" :in-theory (enable bv-array-clear))))
-
-(defthm nthcdr-of-bv-array-clear-range
-  (implies (and (<= n lowindex)
-                (<= n len)
-                (< lowindex len) ;Mon Jul 19 20:46:59 2010
-                (< highindex len) ;Mon Jul 19 20:46:59 2010
-                (integerp len)
-                (equal len (+ 1 highindex)) ; Mon Jul 19 20:49:41 2010 could drop?
-                (natp n)
-                (natp lowindex)
-                (natp highindex))
-           (equal (nthcdr n (bv-array-clear-range element-size len lowindex highindex lst))
-                  (bv-array-clear-range element-size (- len n) (- lowindex n) (- highindex n) (nthcdr n lst))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (bv-array-clear-range nthcdr) (NTHCDR-OF-CDR-COMBINE NTHCDR-OF-CDR-COMBINE-strong)))))
-
-;(in-theory (disable LIST::EQUAL-APPEND-REDUCTION!-ALT)) ;move up?
-
-(defthm nthcdr-of-bv-array-clear-range2
-  (implies (and (< highindex n)
-                (<= n len)
-                (<= lowindex highindex)
-                (integerp len)
-                (natp n)
-                (natp lowindex)
-                (natp highindex))
-           (equal (nthcdr n (bv-array-clear-range element-size len lowindex highindex lst))
-                  (nthcdr n (bvchop-list element-size (take len lst)))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (bv-array-clear-range nthcdr) (NTHCDR-OF-CDR-COMBINE
-                                                          NTHCDR-OF-CDR-COMBINE-strong
-                                                          ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                                          )))))
-
-
 (defthmd subrange-when-take-known-hack
   (implies (and (equal (take n x) free)
                 (integerp n)
@@ -2031,12 +1955,6 @@
   :hints (("Goal" :in-theory (enable equal-of-append
                                      subrange ;todo
                                      ))))
-
-(defthm car-of-BV-ARRAY-CLEAR-of-0
-  (implies (posp len)
-           (equal (CAR (BV-ARRAY-CLEAR ELEM-SIZE LEN 0 lst))
-                  0))
-  :hints (("Goal" :in-theory (enable BV-ARRAY-CLEAR))))
 
 (defthm cdr-of-bv-array-clear-of-0
   (implies (posp len)
