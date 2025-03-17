@@ -11974,11 +11974,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: clean this up!   see what we do for 2 nodes...
-;todo: return and use some-goal-timed-outp
 ;;Rewrites [the top miter node only], then calls STP:
 ;; Returns (mv erp provedp state).
-;; Smashes 'dag-array
+;; old: Smashes 'dag-array
+;; todo: use context and assumptions
+;; todo: return whether the attempt timed out some-goal-timed-outp
+;; todo: consider using cutting heuristics
+;; todo: return any counterexample, for use in splitting more node pairs
 (defun try-to-prove-pure-node-is-constant (constant-value ;not quoted
                                            nodenum
                                            miter-array-name miter-array miter-len
@@ -12000,73 +12002,74 @@
                               (or (null max-conflicts) (natp max-conflicts))
                               (symbolp miter-name))
                   :mode :program ; todo: because we call simplify-tree-and-add-to-dag-wrapper (try the basic rewriter?)
-                  :stobjs state))
-  (b* (;; First try to simplify the equality of the node and the constant:
-       ;; TODO: This step seems slow and maybe not worth it for a pure node
-       (- (cw "Making the equality and rewriting (but only the top node).~%"))
-       ;;ffixme should we instead call the dag prover here, in case the assumptions are not simplified?
-       ;;ffixme don't do this for pure mode, since it's supposed to be fast?...:
-       ;;ffffixme need to pass in the array name for this?!:
-       ;;              (context-assumptions (and use-context-when-miteringp
-       ;;                                        (get-context-assumptions-for-nodenum nodenum miter-array miter-len)))
+                  :stobjs state)
+           (ignore assumptions interpreted-function-alist rewriter-rule-alist monitored-symbols)
+           )
+  (b* (
+       ;; ;; First try to simplify the equality of the node and the constant:
+       ;; ;; TODO: This step seems slow and maybe not worth it for a pure node
+       ;; (- (cw "Making the equality and rewriting (but only the top node).~%"))
+       ;; ;;ffixme should we instead call the dag prover here, in case the assumptions are not simplified?
+       ;; ;;ffixme don't do this for pure mode, since it's supposed to be fast?...:
+       ;; ;;ffffixme need to pass in the array name for this?!:
+       ;; ;;              (context-assumptions (and use-context-when-miteringp
+       ;; ;;                                        (get-context-assumptions-for-nodenum nodenum miter-array miter-len)))
 
-       ;;ffixme eventually pass the miter-array to the rewriter (but don't overwrite any existing nodes), but for now the rewriter can only work on an array named 'dag-array
-       (dag-array (make-empty-array 'dag-array miter-len ;(+ 1 nodenum) using this caused a problem in make-dag-indices (in simplify-tree-and-add-to-dag-wrapper??) ffffixme
-                                    ))
-       (dag-array (copy-array-vals nodenum miter-array-name miter-array 'dag-array dag-array)) ;fixme only copy the supporting values?  we basically already computed the supporters when we did the purity check
-       ((mv erp miter-nodenum-or-quotep dag-array
-            & ;dag-len-after-rewrite ;okay to ignore?
-            state)
-        (simplify-tree-and-add-to-dag-wrapper `(equal ',constant-value ,nodenum)
-                                              dag-array
-                                              miter-len ;use a smaller value?
-                                              rewriter-rule-alist ;ffixme think about this
-                                              assumptions ;(append context-assumptions assumptions)
-                                              interpreted-function-alist
-                                              monitored-symbols
-                                              t ;fixme?
-                                              print
-                                              'ffixme
-                                              state))
-       ((when erp) (mv erp nil state))
-       ((when (quotep miter-nodenum-or-quotep))
-        (if (equal *t* miter-nodenum-or-quotep)
-            (prog2$ (cw "The equality rewrote to true, which proves that node ~x0 is the constant ~x1.~%" nodenum constant-value)
-                    (mv (erp-nil) t state))
-          (if (equal *nil* miter-nodenum-or-quotep)
-              (prog2$ (cw "!! The equality rewrote to false. We have failed to prove that node ~x0 is the constant ~x1.~%" ;should this be an error?
-                          nodenum constant-value)
-                      (mv (erp-nil) nil state))
-            (prog2$
-              (er hard? 'try-to-prove-node-is-constant "!! ERROR The equality rewrote to a constant other than t or nil, namely ~x0.  This should never happen.  Contact the implementor.~%" miter-nodenum-or-quotep)
-              (mv (erp-t) nil state)))))
-       ;;The equality didn't rewrite to a constant:
-       (- (and (eq :verbose! print)
-               (prog2$ (cw "Equality rewrote to:~%")
-                       (print-dag-array-node-and-supporters 'dag-array dag-array miter-nodenum-or-quotep))))
-       ;;fixme use miter-nodenum-or-quotep below here?
-       ;;fixme use the fact that the miter is pure!
-       ;;There are no recursive fns, but there might still be non-bv/array fns: fixme expand any non-rec fns?
-       ;;fixme check all indices and sizes...
-       ((when (not (or (natp constant-value) ;; todo: check this earlier?  todo: allow a constant array?
-                       (booleanp constant-value))))
-        ;;is this checked when we check for pure miters?
-        ;; The constant-value isn't a natural or boolean (fixme support more stuff here??... arrays?):
-        (prog2$ (hard-error 'try-to-prove-node-is-constant
-                            "Found a constant we don't yet handle: ~x0 for nodenum: ~x1.~%"
-                            (acons #\1 nodenum (acons #\0 constant-value nil)))
-                (mv (erp-t) nil state)))
-       ;; The constant is okay, so call STP:
-       ;; TODO: Use the cutting heuristics (put in vars for uninteresting subterms)? binary search to find the cut depth?
-       ;; TTODO: Need to handle vars not given types in the alist (look how they are used and infer a type?)
+       ;; ;;ffixme eventually pass the miter-array to the rewriter (but don't overwrite any existing nodes), but for now the rewriter can only work on an array named 'dag-array
+       ;; (dag-array (make-empty-array 'dag-array miter-len ;(+ 1 nodenum) using this caused a problem in make-dag-indices (in simplify-tree-and-add-to-dag-wrapper??) ffffixme
+       ;;                              ))
+       ;; (dag-array (copy-array-vals nodenum miter-array-name miter-array 'dag-array dag-array)) ;fixme only copy the supporting values?  we basically already computed the supporters when we did the purity check
+       ;; ((mv erp miter-nodenum-or-quotep dag-array
+       ;;      & ;dag-len-after-rewrite ;okay to ignore?
+       ;;      state)
+       ;;  (simplify-tree-and-add-to-dag-wrapper `(equal ',constant-value ,nodenum)
+       ;;                                        dag-array
+       ;;                                        miter-len ;use a smaller value?
+       ;;                                        rewriter-rule-alist ;ffixme think about this
+       ;;                                        assumptions ;(append context-assumptions assumptions)
+       ;;                                        interpreted-function-alist
+       ;;                                        monitored-symbols
+       ;;                                        t ;fixme?
+       ;;                                        print
+       ;;                                        'ffixme
+       ;;                                        state))
+       ;; ((when erp) (mv erp nil state))
+       ;; ((when (quotep miter-nodenum-or-quotep))
+       ;;  (if (equal *t* miter-nodenum-or-quotep)
+       ;;      (prog2$ (cw "The equality rewrote to true, which proves that node ~x0 is the constant ~x1.~%" nodenum constant-value)
+       ;;              (mv (erp-nil) t state))
+       ;;    (if (equal *nil* miter-nodenum-or-quotep)
+       ;;        (prog2$ (cw "!! The equality rewrote to false. We have failed to prove that node ~x0 is the constant ~x1.~%" ;should this be an error?
+       ;;                    nodenum constant-value)
+       ;;                (mv (erp-nil) nil state))
+       ;;      (prog2$
+       ;;        (er hard? 'try-to-prove-node-is-constant "!! ERROR The equality rewrote to a constant other than t or nil, namely ~x0.  This should never happen.  Contact the implementor.~%" miter-nodenum-or-quotep)
+       ;;        (mv (erp-t) nil state)))))
+       ;; ;;The equality didn't rewrite to a constant:
+       ;; (- (and (eq :verbose! print)
+       ;;         (prog2$ (cw "Equality rewrote to:~%")
+       ;;                 (print-dag-array-node-and-supporters 'dag-array dag-array miter-nodenum-or-quotep))))
+       ;; ;;fixme use miter-nodenum-or-quotep below here?
+       ;; ;;fixme use the fact that the miter is pure!
+       ;; ;;There are no recursive fns, but there might still be non-bv/array fns: fixme expand any non-rec fns?
+       ;; ;;fixme check all indices and sizes...
+       ;; ((when (not (or (natp constant-value) ;; todo: check this earlier?  todo: allow a constant array?
+       ;;                 (booleanp constant-value))))
+       ;;  ;;is this checked when we check for pure miters?
+       ;;  ;; The constant-value isn't a natural or boolean (fixme support more stuff here??... arrays?):
+       ;;  (prog2$ (hard-error 'try-to-prove-node-is-constant
+       ;;                      "Found a constant we don't yet handle: ~x0 for nodenum: ~x1.~%"
+       ;;                      (acons #\1 nodenum (acons #\0 constant-value nil)))
+       ;;          (mv (erp-t) nil state)))
+       ;; ;; The constant is okay, so call STP:
+       ;; ;; TODO: Use the cutting heuristics (put in vars for uninteresting subterms)? binary search to find the cut depth?
+       ;; ;; TTODO: Need to handle vars not given types in the alist (look how they are used and infer a type?)
        ((mv result state)
         (prove-node-is-constant-with-stp nodenum constant-value miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)))
     (if (eq *error* result)
         (mv (erp-t) nil state)
       (if (eq *valid* result)
           (mv (erp-nil) t state)
-        ;;fffixme return "timed out" if it did
-        ;; TODO: Use the counterexample if there is one.
         (mv (erp-nil) nil state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -15704,7 +15707,7 @@
                             (symbolp miter-name))
                    :mode :program :stobjs (rand state)))
    (if (eq :unused constant-value)
-;get rid of this check if it never fires
+       ;; todo: get rid of this check if it never fires
        (prog2$ (er hard 'try-to-prove-node-is-constant-and-replace "unused node.") ;(cw "  (Skipping node ~x0 because it is unused on any test case.)" nodenum) ;fixme now this should never happen?
                (mv (erp-t) nil miter-array analyzed-function-table rand state)) ;fffffixme think about this
      (prog2$ (and (or (eq print 't) (eq print :verbose) (eq print :verbose!))
