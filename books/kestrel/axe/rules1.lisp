@@ -31,7 +31,6 @@
 ;(include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system) ;todo
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
-(include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these..  could make a macro to copy a theorem and wrap work-hard around a hyp..
 (include-book "kestrel/lists-light/update-subrange" :dir :system)
 (include-book "kestrel/lists-light/update-subrange2" :dir :system)
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
@@ -1451,71 +1450,65 @@
 ;;                  (jvm::update-nth-local key (myif test (nth key x) val) (myif test x l))))
 ;;  :hints (("Goal" :in-theory (e/d (len-update-nth myif list::update-nth-equal-rewrite nth-when-n-is-zp) (car-becomes-nth-of-0)))))
 
-(defthmd bv-array-read-blast-one-step-helper
-  (implies (and (equal len (expt 2 index-width))
-;               (equal index-width 4)
-                (all-unsigned-byte-p index-width vals)
-                (posp index-width)
-                (equal (expt 2 index-width) (len vals))
-                (natp index)
-                )
-           (equal (bv-array-read 1 len index vals)
-                  (bif (getbit (+ -1 index-width) index)
-                       (bv-array-read 1 (expt 2 (+ -1 index-width))
-                                      (bvchop (+ -1 index-width) index)
-                                      (subrange (expt 2 (+ -1 index-width))
-                                                (+ -1 (expt 2 index-width))
-                                                vals))
-                       (bv-array-read 1 (expt 2 (+ -1 index-width))
-                                      (bvchop (+ -1 index-width) index)
-                                      (subrange 0 (+ -1 (expt 2 (+ -1 index-width)))
-                                                vals)))))
-  :hints (("Goal"
-           :use ( ;; (:instance BVCAT-SPECIAL-OPENER
-                 ;;                           (x (getbit (+ -1 index-width) index))
-                 ;;                           (y (bvchop (+ -1 index-width) index))
-                 ;;                           (n (+ -1 index-width)))
-                 (:instance BVCAT-OF-GETBIT-AND-X-ADJACENT
-                            (n (+ -1 index-width))
-                            (x index)))
-;          :expand ((BVCAT 1 0 7 INDEX))
-           :in-theory (e/d (subrange
-                            bif
-                            bv-ARRAY-READ
-                            ;LOGAPP-0
-                            ceiling-of-lg
-                            bvcat logapp
-;bvcat
-                            )
-                           (;bif-rewrite
 
-                            BVCAT-OF-GETBIT-AND-X-ADJACENT
-                            TIMES-4-BECOMES-LOGAPP
-                            BVCAT-OF-GETBIT-AND-X-ADJACENT
-                            BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt
-                            LOGAPP-EQUAL-REWRITE
-                            BVCAT-OF-0-arg2
-                            )))))
+;; here we are bit-blasting the index
+(local
+  (defthmd bv-array-read-blast-one-step-helper
+    (implies (and (equal len (expt 2 index-width))
+                  (posp index-width)
+                  (natp index))
+             (equal (bv-array-read element-size len index vals)
+                    (bvif element-size
+                          (equal 1 (getbit (+ -1 index-width) index))
+                          (bv-array-read element-size (expt 2 (+ -1 index-width))
+                                         (bvchop (+ -1 index-width) index)
+                                         (subrange (expt 2 (+ -1 index-width))
+                                                   (+ -1 (expt 2 index-width))
+                                                   vals))
+                          (bv-array-read element-size (expt 2 (+ -1 index-width))
+                                         (bvchop (+ -1 index-width) index)
+                                         (subrange 0 (+ -1 (expt 2 (+ -1 index-width)))
+                                                   vals)))))
+    :hints (("Goal"
+             :use (;; (:instance BVCAT-SPECIAL-OPENER
+                   ;;                           (x (getbit (+ -1 index-width) index))
+                   ;;                           (y (bvchop (+ -1 index-width) index))
+                   ;;                           (n (+ -1 index-width)))
+                   (:instance BVCAT-OF-GETBIT-AND-X-ADJACENT
+                              (n (+ -1 index-width))
+                              (x index)))
+;          :expand ((BVCAT 1 0 7 INDEX))
+             :in-theory (e/d (subrange
+                              bvif
+                              bv-ARRAY-READ
+                              ;;LOGAPP-0
+                              ceiling-of-lg
+                              bvcat logapp)
+                             (BVCAT-OF-GETBIT-AND-X-ADJACENT
+                              TIMES-4-BECOMES-LOGAPP
+                              BVCAT-OF-GETBIT-AND-X-ADJACENT
+                              BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt
+                              LOGAPP-EQUAL-REWRITE
+                              BVCAT-OF-0-arg2
+                              ))))))
 
 ;actually matches
 (defthmd bv-array-read-blast-one-step
   (implies (and (equal len (expt 2 (+ -1 (integer-length len))))
-             ;               (equal (+ -1 (integer-length len)) 4)
-                (all-unsigned-byte-p (+ -1 (integer-length len)) vals)
-                (posp (+ -1 (integer-length len)))
-                (equal (expt 2 (+ -1 (integer-length len))) (len vals))
-                (natp index)
-                )
-           (equal (bv-array-read 1 len index vals)
-                  (bif (getbit (+ -1 (+ -1 (integer-length len))) index)
-                       (bv-array-read 1
-                                      (expt 2 (+ -1 (+ -1 (integer-length len))))
-                                      (bvchop (+ -1 (+ -1 (integer-length len))) index)
-                                      (subrange (expt 2 (+ -1 (+ -1 (integer-length len)))) (+ -1 (expt 2 (+ -1 (integer-length len)))) vals))
-                       (bv-array-read 1
-                                      (expt 2 (+ -1 (+ -1 (integer-length len))))
-                                      (bvchop (+ -1 (+ -1 (integer-length len))) index)
-                                      (subrange 0 (+ -1 (expt 2 (+ -1 (+ -1 (integer-length len))))) vals)))))
+
+                (<= 2 len)
+                (natp index))
+           (equal (bv-array-read element-size len index vals)
+                  (bvif element-size
+                        (equal 1 (getbit (+ -1 (+ -1 (integer-length len))) index))
+                        (bv-array-read element-size
+                                       (expt 2 (+ -1 (+ -1 (integer-length len))))
+                                       (bvchop (+ -1 (+ -1 (integer-length len))) index)
+                                       (subrange (expt 2 (+ -1 (+ -1 (integer-length len)))) (+ -1 (expt 2 (+ -1 (integer-length len)))) vals))
+                        (bv-array-read element-size
+                                       (expt 2 (+ -1 (+ -1 (integer-length len))))
+                                       (bvchop (+ -1 (+ -1 (integer-length len))) index)
+                                       (subrange 0 (+ -1 (expt 2 (+ -1 (+ -1 (integer-length len))))) vals)))))
   :hints (("Goal" :use (:instance bv-array-read-blast-one-step-helper (index-width (+ -1 (integer-length len)))))))
 
 ;; (thm
@@ -1768,69 +1761,7 @@
                            (;anti-subrange
                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
-;includes both irrel cases
-(defthm subrange-of-bv-array-write-irrel
-  (implies (and (or (< high index)
-                    (< index low))
-                (< high len) ;handle?
-                (work-hard (< index len))
-                (natp len)
-                (natp high)
-                (natp index)
-                (integerp low))
-           (equal (subrange low high (bv-array-write width len index val data))
-                  (subrange low high (bvchop-list width (take len data)))))
-  :hints (("Goal" :in-theory (disable subrange))))
 
-(defthm subrange-of-bv-array-write-in-range
-  (implies (and (<= low index)  ;this case
-                (<= index high) ;this case
-                (work-hard (< high len)) ;work-hard is new
-                (natp len)
-                (natp high)
-                (natp index)
-                (natp low)
-                )
-           (equal (subrange low high (bv-array-write width len index val data))
-                  (bv-array-write width (+ 1 high (- low)) (- index low) val (subrange low high data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write-opener
-                                   update-nth2
-                                   subrange ;bozo?
-                                   )
-                                  (;anti-subrange
-                                   ;CDR-OF-TAKE-BECOMES-SUBRANGE ;bozo
-                                   UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
-
-;all cases - drop some hyps?
-;this rule seemed to split into a lot of cases before the two "irrelevant write" cases were combined
-(defthm subrange-of-bv-array-write
-  (implies (and (work-hard (< index len))
-                (work-hard (< high len)) ;drop?
-                (natp len)
-                (natp high)
-                (natp index)
-                (natp low)
-                )
-           (equal (subrange low high (bv-array-write width len index val data))
-                  ;;recently combined the branches and made the or into a boolor
-                  (if (boolor (< index low)
-                              (< high index))
-                      (subrange low high (bvchop-list width (take len data)))
-                    (bv-array-write width (+ 1 high (- low)) (- index low) val (subrange low high data)))))
-  :hints (("Goal" :in-theory (enable boolor))))
-
-(defthmd cdr-of-bv-array-write-better-work-hard
-  (implies (and (integerp len)
-                (work-hard (< key len))
-                (natp key))
-           (equal (cdr (bv-array-write element-size len key val lst))
-                  (if (zp len)
-                      nil
-                    (if (< key 1)
-                        (bvchop-list element-size (cdr (take len (true-list-fix lst))))
-                      (bv-array-write element-size (- len 1) (- key 1) val (nthcdr 1 lst))))))
-  :hints (("Goal" :use (:instance cdr-of-bv-array-write-better)
-           :in-theory (disable cdr-of-bv-array-write-better))))
 
 (defthm equal-of-nth-and-bv-array-read
   (implies (and (<= len (len x))
@@ -2310,53 +2241,7 @@
   :hints (("Goal" :in-theory (enable ;LIST::NTH-APPEND
                               ))))
 
-(defthm bv-array-read-of-bv-array-write-same-work-hard
-  (implies (and (natp index)
-                (work-hard (< index len))
-                (integerp len))
-           (equal (bv-array-read width len index (bv-array-write width len index val lst))
-                  (bvchop width val)))
-  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write-opener))))
 
-;move these?
-(defthmd bv-array-read-of-bv-array-write-both-better-work-hard
-  (implies (and (work-hard (< index1 len))
-                (work-hard (< index2 len))
-                (natp width2)
-                (<= width width2)
-                (integerp len)
-                (natp index1)
-                (natp index2))
-           (equal (bv-array-read width len index1 (bv-array-write width2 len index2 val lst))
-                  (if (not (equal index1 index2))
-                      (bv-array-read width len index1 lst)
-                    (bvchop width val))))
-  :hints (("Goal" :use (:instance bv-array-read-of-bv-array-write-both-better)
-           :in-theory (disable bv-array-read-of-bv-array-write-both-better))))
-
-;this one has only one index, and so only one work-hard, so we will try this one first
-(defthmd bv-array-read-of-bv-array-write-same-better-work-hard
-  (implies (and (work-hard (< index len))
-                (natp width2)
-                (<= width width2)
-                (integerp len)
-                (natp index))
-           (equal (bv-array-read width len index (bv-array-write width2 len index val lst))
-                  (bvchop width val)))
-  :hints (("Goal" :use (:instance bv-array-read-of-bv-array-write-both-better (index1 index) (index2 index))
-           :in-theory (disable bv-array-read-of-bv-array-write-both-better))))
-
-;this version sets the length param of the bv-array-read to be the right
-;fixme allow the lens in the lhs to differ?
-;move
-(defthm bv-array-read-of-take-better
-  (implies (and (posp len)
-                (natp index)
-                (work-hard (< index len))
-                (<= len (len array)))
-           (equal (bv-array-read elem-size len index (take len array))
-                  (bv-array-read elem-size (len array) index array)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener) ()))))
 
 ;has the right len for the read in the rhs
 ;move
@@ -2376,18 +2261,3 @@
                          (+ START INDEX)
                          LST)))
   :hints (("Goal" :in-theory (enable bv-array-read-opener bvchop-when-i-is-not-an-integer))))
-
-(defthm bv-array-write-of-bv-array-write-diff-constant-indices-work-hard
-  (implies (and (syntaxp (quotep index1))
-                (syntaxp (quotep index2))
-                (< index2 index1)
-                (work-hard (< index1 len))
-                (work-hard (< index2 len))
-                (natp index1)
-                (natp index2)
-;                (work-hard (natp len)) ;drop?
-                )
-           (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
-                  (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))))
-  :hints (("Goal" :use (:instance bv-array-write-of-bv-array-write-diff-constant-indices)
-           :in-theory (disable bv-array-write-of-bv-array-write-diff-constant-indices))))
