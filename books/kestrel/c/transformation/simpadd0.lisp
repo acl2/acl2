@@ -537,6 +537,80 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-block-item-list-thm ((old block-item-listp)
+                                          (new block-item-listp)
+                                          (vars ident-setp)
+                                          (const-new symbolp)
+                                          (thm-index posp)
+                                          (hints true-listp))
+  :guard (and (block-item-list-unambp old)
+              (block-item-list-unambp new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the transformation of a list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee simpadd0-gen-block-item-thm),
+     but for lists of block items instead of single block items;
+     see that function's documentation first.")
+   (xdoc::p
+    "For now, this is limited to lists of block items
+     whose execution yields an @('int') value.
+     The theorem says that the old block item list returns an @('int') value,
+     regardless of whether old and new block item lists
+     are syntactically equal or not.
+     If they are not, the theorem also says that
+     their execution returns equal values and equal computation states,
+     and that the execution of the new block item list
+     does not yield an error."))
+  (b* ((old (block-item-list-fix old))
+       (new (block-item-list-fix new))
+       ((unless (c$::block-item-list-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       (equalp (equal old new))
+       ((unless (or equalp (c$::block-item-list-formalp new)))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (hyps (simpadd0-gen-var-hyps vars))
+       (formula
+        (if equalp
+            `(b* ((items (mv-nth 1 (c$::ldm-block-item-list ',old)))
+                  ((mv result &)
+                   (c::exec-block-item-list items compst fenv limit)))
+               (implies (and ,@hyps
+                             (not (c::errorp result)))
+                        (and result
+                             (equal (c::value-kind result) :sint))))
+          `(b* ((old-items (mv-nth 1 (c$::ldm-block-item-list ',old)))
+                (new-items (mv-nth 1 (c$::ldm-block-item-list ',new)))
+                ((mv old-result old-compst)
+                 (c::exec-block-item-list old-items compst fenv limit))
+                ((mv new-result new-compst)
+                 (c::exec-block-item-list new-items compst fenv limit)))
+             (implies (and ,@hyps
+                           (not (c::errorp old-result)))
+                      (and (not (c::errorp new-result))
+                           (equal old-result new-result)
+                           (equal old-compst new-compst)
+                           old-result
+                           (equal (c::value-kind old-result) :sint))))))
+       (thm-name
+        (packn-pos (list const-new '-thm- thm-index) const-new))
+       (thm-index (1+ (pos-fix thm-index)))
+       (thm-event
+        `(defthmd ,thm-name
+           ,formula
+           :hints ,hints)))
+    (mv thm-event thm-name thm-index))
+  ///
+  (fty::deffixequiv simpadd0-gen-block-item-list-thm
+    :args ((old block-item-listp) (new block-item-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-expr-ident ((ident identp)
                              (info c$::var-infop)
                              (gin simpadd0-ginp))
@@ -1600,6 +1674,111 @@
               (mv-nth 0 (c::exec-block-item
                          (c::block-item-stmt stmt) compst fenv limit))))
     :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-block-item-list-one ((item block-itemp)
+                                      (item-new block-itemp)
+                                      (item-events pseudo-event-form-listp)
+                                      (item-thm-name symbolp)
+                                      (item-vars ident-setp)
+                                      (item-diffp booleanp)
+                                      (gin simpadd0-ginp))
+  :guard (and (block-item-unambp item)
+              (block-item-unambp item-new))
+  :returns (mv (items block-item-listp) (gout simpadd0-goutp))
+  :short "Transform a singleton list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate a theorem iff
+     a theorem was generated for the block item.
+     That theorem is used to prove the theorem for the block item,
+     along with using two general theorems proved below.
+     Note that the limit in the theorem for the block item
+     must be shifted by one,
+     since @(tsee c::exec-block-item-list) decreases the limit by 1
+     before calling @(tsee c::exec-block-item)."))
+  (b* (((simpadd0-gin gin) gin)
+       (items (list (block-item-fix item)))
+       (items-new (list (block-item-fix item-new)))
+       ((unless item-thm-name)
+        (mv items-new
+            (make-simpadd0-gout :events item-events
+                                :thm-name nil
+                                :thm-index gin.thm-index
+                                :names-to-avoid gin.names-to-avoid
+                                :vars item-vars
+                                :diffp item-diffp)))
+       (hints `(("Goal"
+                 :in-theory '((:e c$::ldm-block-item-list)
+                              (:e c$::ldm-block-item)
+                              (:e c$::ldm-ident)
+                              (:e c$::ident))
+                 :use ((:instance ,item-thm-name (limit (1- limit)))
+                       (:instance
+                        simpadd0-block-item-list-support-lemma-1
+                        (old-item (mv-nth 1 (c$::ldm-block-item ',item)))
+                        (new-item (mv-nth 1 (c$::ldm-block-item ',item-new))))
+                       (:instance
+                        simpadd0-block-item-list-support-lemma-2
+                        (item (mv-nth 1 (c$::ldm-block-item ',item))))))))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-block-item-list-thm items
+                                          items-new
+                                          item-vars
+                                          gin.const-new
+                                          gin.thm-index
+                                          hints)))
+    (mv items-new
+        (make-simpadd0-gout :events (append item-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+                            :vars item-vars
+                            :diffp item-diffp)))
+
+  ///
+
+  (defret block-item-list-unambp-of-simpadd0-block-item-list-one
+    (block-item-list-unambp items)
+    :hyp (block-item-unambp item-new))
+
+  (defruled simpadd0-block-item-list-support-lemma-1
+    (b* ((old (list old-item))
+         (new (list new-item))
+         ((mv old-item-result old-item-compst)
+          (c::exec-block-item old-item compst fenv (1- limit)))
+         ((mv new-item-result new-item-compst)
+          (c::exec-block-item new-item compst fenv (1- limit)))
+         ((mv old-result old-compst)
+          (c::exec-block-item-list old compst fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-block-item-list new compst fenv limit)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-item-result))
+                    (equal old-item-result new-item-result)
+                    (equal old-item-compst new-item-compst)
+                    old-item-result
+                    (equal (c::value-kind old-item-result) :sint))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    old-result
+                    (equal (c::value-kind old-result) :sint))))
+    :expand ((c::exec-block-item-list (list old-item) compst fenv limit)
+             (c::exec-block-item-list (list new-item) compst fenv limit))
+    :enable (c::exec-block-item-list
+             c::value-optionp-when-value-option-resultp-and-not-errorp))
+
+  (defruled simpadd0-block-item-list-support-lemma-2
+    (implies (c::errorp
+              (mv-nth 0 (c::exec-block-item item compst fenv (1- limit))))
+             (c::errorp
+              (mv-nth 0 (c::exec-block-item-list
+                         (list item) compst fenv limit))))
+    :expand (c::exec-block-item-list (list item) compst fenv limit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3902,6 +4081,14 @@
          ((mv new-item (simpadd0-gout gout-item))
           (simpadd0-block-item (car items) gin state))
          (gin (simpadd0-gin-update gin gout-item))
+         ((when (endp (cdr items)))
+          (simpadd0-block-item-list-one (block-item-fix (car items))
+                                        new-item
+                                        gout-item.events
+                                        gout-item.thm-name
+                                        gout-item.vars
+                                        gout-item.diffp
+                                        gin))
          ((mv new-items (simpadd0-gout gout-items))
           (simpadd0-block-item-list (cdr items) gin state)))
       (mv (cons new-item new-items)
