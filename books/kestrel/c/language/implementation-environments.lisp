@@ -983,7 +983,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define integer-format->bits ((format integer-formatp))
+(define integer-format->size ((format integer-formatp))
   :short "Number of bits of an integer format."
   :long
   (xdoc::topstring
@@ -998,9 +998,9 @@
 
   ///
 
-  (defruled integer-format->bits-alt-def
+  (defruled integer-format->size-alt-def
     (implies (integer-formatp format)
-             (equal (integer-format->bits format)
+             (equal (integer-format->size format)
                     (len (sinteger-format->bits
                           (uinteger+sinteger-format->signed
                            (integer-format->pair format))))))
