@@ -760,7 +760,6 @@
            :in-theory (e/d (wf-dagp) (merge-term-into-dag-array-return-type)))))
 
 (verify-guards merge-term-into-dag-array
-  :otf-flg t
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (merge-term-into-dag-array merge-terms-into-dag-array car-becomes-nth-of-0
                                                       not-equal-of-len-and-1-when-dargp

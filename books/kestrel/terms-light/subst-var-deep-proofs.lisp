@@ -461,8 +461,7 @@
 ;                            LOOKUP-EQUAL-OF-EMPTY-EVAL-CDRS
                             ALISTS-EQUIV-ON-OF-APPEND-ARG1
                             ALISTS-EQUIV-ON-OF-CONS-ARG2
-                            main.help.help))))
-  :otf-flg t)
+                            main.help.help)))))
 
 
 ;; ;; for the proof, consider 3 cases: var, other trivial formal, non-trivial formal
