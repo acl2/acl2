@@ -263,8 +263,8 @@
              (or (natp (lookup-equal sym alist))
                  (not (lookup-equal sym alist))))
     :rule-classes :type-prescription
-    :otf-flg t ; why?
-    :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF))))))
+    :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal strip-cdrs)
+                                    (cdr-iff natp))))))
 
 (local
   (defthmd nat-of-cdr-of-car-when-hit-count-alistp
