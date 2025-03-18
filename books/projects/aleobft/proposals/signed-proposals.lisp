@@ -249,3 +249,38 @@
               (signed-props-in-message-set signer
                                            (get-network-state systate)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-when-init
+  :short "Initially there are no signed proposals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Initially, all DAGs, all pending proposal maps, and the network
+     are empty."))
+
+  (defruled signed-props-in-validators-when-init
+    (implies (and (system-initp systate)
+                  (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators signer vals systate)
+                    nil))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator
+             signed-props-in-dag
+             signed-props-in-proposed
+             system-initp
+             system-validators-initp-necc
+             validator-init
+             set::expensive-rules))
+
+  (defruled signed-props-when-init
+    (implies (system-initp systate)
+             (equal (signed-props signer systate)
+                    nil))
+    :enable (signed-props
+             signed-props-in-validators-when-init
+             signed-props-in-message-set
+             system-initp)))
