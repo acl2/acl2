@@ -73,22 +73,25 @@
    (xdoc::p
     "Thus, the format of @('unsigned char') objects is determined
      by their number of bits, i.e. @('CHAR_BIT').
-     This is required to be at least 8 [C17:5.2.4.2.1/1]."))
-  ((bits nat :reqfix (if (>= bits 8) bits 8)))
-  :require (>= bits 8)
+     This is required to be at least 8 [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "We use the name @('size') for the number of bits,
+     i.e. the size (in bits) of @('unsigned char') objects."))
+  ((size nat :reqfix (if (>= size 8) size 8)))
+  :require (>= size 8)
   :pred uchar-formatp
   :prepwork ((local (in-theory (enable nfix))))
   ///
 
-  (defret uchar-format->bits-type-prescription
-    (and (posp bits)
-         (> bits 1))
-    :fn uchar-format->bits
+  (defret uchar-format->size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :fn uchar-format->size
     :rule-classes :type-prescription)
 
-  (defret uchar-format->bits-lower-bound
-    (>= bits 8)
-    :fn uchar-format->bits
+  (defret uchar-format->size-lower-bound
+    (>= size 8)
+    :fn uchar-format->size
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -106,7 +109,7 @@
      range from 0 to @($2^{\\mathtt{CHAR\\_BIT}}-1$).")
    (xdoc::p
     "This is at least 255, as required by [C17:5.2.4.2.1/1]."))
-  (1- (expt 2 (uchar-format->bits format)))
+  (1- (expt 2 (uchar-format->size format)))
   :hooks (:fix)
   ///
 
@@ -117,10 +120,10 @@
     :hints (("Goal" :in-theory (enable posp))))
 
   (defrulel lemma
-    (>= (expt 2 (uchar-format->bits format)) 256)
+    (>= (expt 2 (uchar-format->size format)) 256)
     :rule-classes :linear
     :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 8) (n (uchar-format->bits format)))
+                    (x 2) (m 8) (n (uchar-format->size format)))
     :disable acl2::expt-is-weakly-increasing-for-base->-1)
 
   (defret uchar-format->max-lower-bound
@@ -206,7 +209,7 @@
      In fact, this function only depends on @('CHAR_BIT'),
      but we include the @('signed char') format as input for uniformity."))
   (declare (ignore schar-format))
-  (1- (expt 2 (1- (uchar-format->bits uchar-format))))
+  (1- (expt 2 (1- (uchar-format->size uchar-format))))
   :hooks (:fix)
   ///
 
@@ -217,10 +220,10 @@
     :hints (("Goal" :in-theory (enable posp))))
 
   (defrulel lemma
-    (>= (expt 2 (1- (uchar-format->bits uchar-format))) 128)
+    (>= (expt 2 (1- (uchar-format->size uchar-format))) 128)
     :rule-classes :linear
     :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 7) (n (1- (uchar-format->bits uchar-format))))
+                    (x 2) (m 7) (n (1- (uchar-format->size uchar-format))))
     :disable acl2::expt-is-weakly-increasing-for-base->-1)
 
   (defret schar-format->max-lower-bound
@@ -255,8 +258,8 @@
                    (schar-format->signed schar-format))
                   :twos-complement)
            (not (schar-format->trap schar-format)))
-      (- (expt 2 (1- (uchar-format->bits uchar-format))))
-    (- (1- (expt 2 (1- (uchar-format->bits uchar-format))))))
+      (- (expt 2 (1- (uchar-format->size uchar-format))))
+    (- (1- (expt 2 (1- (uchar-format->size uchar-format))))))
   :hooks (:fix)
   ///
 
@@ -266,10 +269,10 @@
     :rule-classes :type-prescription)
 
   (defrulel lemma
-    (>= (expt 2 (1- (uchar-format->bits uchar-format))) 128)
+    (>= (expt 2 (1- (uchar-format->size uchar-format))) 128)
     :rule-classes :linear
     :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 7) (n (1- (uchar-format->bits uchar-format))))
+                    (x 2) (m 7) (n (1- (uchar-format->size uchar-format))))
     :disable acl2::expt-is-weakly-increasing-for-base->-1)
 
   (defret schar-format->min-upper-bound
@@ -1044,7 +1047,7 @@
     "We prefer to use dash instead of underscore,
      since it's more common convention in ACL2.
      We also prefer the plural `bits', since it's a number of bits."))
-  (uchar-format->bits (ienv->uchar-format ienv))
+  (uchar-format->size (ienv->uchar-format ienv))
   :hooks (:fix)
   ///
 
