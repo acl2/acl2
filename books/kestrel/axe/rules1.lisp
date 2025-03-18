@@ -605,7 +605,6 @@
                                         (/ len 2)
                                         (bvchop (+ -1 (lg len)) index)
                                         (firstn (/ len 2) array)))))
-  :otf-flg t
   :hints (("Goal"
            :in-theory (e/d (expt-2-of-integer-length-when-power-2p ;power-of-2p
                             expt-of-+

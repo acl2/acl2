@@ -1142,7 +1142,6 @@
                                integerp-of-mv-nth-1-of-merge-tree-into-dag-array))))
 
 (verify-guards merge-tree-into-dag-array
-   :otf-flg t
    :hints (("Goal" :in-theory (e/d (axe-treep
                                     car-becomes-nth-of-0
                                     cadr-becomes-nth-of-1
@@ -1248,7 +1247,6 @@
                                                DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
                                                INTERPRETED-FUNCTION-ALIST))
              *max-1d-array-length*)))
-  :OTF-FLG T
   :HINTS (("Goal" :IN-THEORY (ENABLE MAKE-TERM-INTO-DAG-ARRAY))))
 
 ;;do we need this?
