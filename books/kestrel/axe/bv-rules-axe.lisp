@@ -20,21 +20,18 @@
 
 ;; TODO: Some of these are not BV rules.
 
-;(include-book "bv-rules-axe0") ;drop?
-(include-book "ihs/basic-definitions" :dir :system) ; for logmask
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "kestrel/bv/defs" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
-(include-book "kestrel/utilities/myif" :dir :system)
+;(include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/bv/rightrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/leftrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
-(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
+;(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv/bit-to-bool-def" :dir :system)
 (include-book "known-booleans")
-(include-book "kestrel/utilities/def-constant-opener" :dir :system)
+;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system));drop?
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
@@ -2107,6 +2104,7 @@
 ;;            :in-theory (theory 'minimal-theory)
 ;;            )))
 
+;move?
 ;drop?  mentioned in rule-lists.lisp
 (defthmd recollapse-hack-slice-version  ;just use a non-axe-version?
   (implies (and (syntaxp (not (quotep x)))
@@ -2140,18 +2138,6 @@
                   (bvmod (+ -1 size) x y)))
   :hints (("Goal" :use (:instance sbvrem-when-positive)
            :in-theory (disable sbvrem-when-positive))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthmd integerp-of-bv-array-read
-  (integerp (bv-array-read element-size len index data)))
-
-(defthmd natp-of-bv-array-read
-  (natp (bv-array-read element-size len index data)))
-
-;bozo more like this?  gen the 0?
-(defthmd bv-array-read-non-negative
-  (not (< (bv-array-read esize len index data) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2388,6 +2374,7 @@
 ;rename
 ;version for <=?
 ;not a bv rule
+;move
 (defthmd not-equal-when-bound
   (implies (and (syntaxp (quotep y))
                 ;(equal (< free x) t) ;awkward
@@ -2398,6 +2385,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;move
 (defthmd equal-of-constant-and-bitand
   (implies (syntaxp (quotep k))
            (equal (equal k (bitand x y))
@@ -2412,6 +2400,7 @@
   :hints (("Goal" :use equal-of-bitand-and-constant
            :in-theory (disable equal-of-bitand-and-constant))))
 
+;move
 (defthmd equal-of-constant-and-bitor
   (implies (syntaxp (quotep k))
            (equal (equal k (bitor x y))
@@ -2432,16 +2421,6 @@
   (implies (posp size)
            (equal (equal (logext size x) x)
                   (signed-byte-p size x))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Only needed for Axe (ACL2 knows this by type reasoning).
-(defthmd integerp-of-bool-to-bit
-   (integerp (bool-to-bit x)))
-
-;; Only needed for Axe (ACL2 knows this by type reasoning).
-(defthmd natp-of-bool-to-bit
-   (natp (bool-to-bit x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
