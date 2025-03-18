@@ -548,6 +548,10 @@
   (and (counterexamplep cex)
        (all-< (strip-cars cex) bound)))
 
+(defthm bounded-counterexamplep-of-nil
+  (bounded-counterexamplep nil bound)
+  :hints (("Goal" :in-theory (enable bounded-counterexamplep))))
+
 (defthm bounded-counterexamplep-of-mv-nth-1-of-fixup-counterexample
   (implies (and (all-< (strip-cars cut-nodenum-type-alist) bound)
                 (nodenum-type-alistp cut-nodenum-type-alist)

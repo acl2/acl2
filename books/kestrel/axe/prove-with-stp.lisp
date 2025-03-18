@@ -1955,6 +1955,17 @@
     :hints (("Goal" :in-theory (enable prove-disjunction-with-stp-at-depth)))))
 
 (local
+  (defthm bounded-stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth
+    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
+                  (bounded-possibly-negated-nodenumsp disjuncts dag-len)
+                  (all-< (strip-cars known-nodenum-type-alist) dag-len)
+                  (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+             (bounded-stp-resultp (mv-nth 0 (prove-disjunction-with-stp-at-depth depth-limit disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
+                                  dag-len))
+    :otf-flg t
+    :hints (("Goal" :in-theory (enable prove-disjunction-with-stp-at-depth)))))
+
+(local
   (defthm w-of-mv-nth-1-of-prove-disjunction-with-stp-at-depth
     (equal (w (mv-nth 1 (prove-disjunction-with-stp-at-depth depth-limit disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
            (w state))
@@ -2181,6 +2192,23 @@
                            (depth-limit nil))
            :in-theory (e/d (prove-disjunction-with-stp stp-resultp) (stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth)))))
 
+(defthm bounded-stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp
+  (implies (and (bounded-possibly-negated-nodenumsp disjuncts dag-len)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+           (bounded-stp-resultp (mv-nth 0 (prove-disjunction-with-stp disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
+                                dag-len))
+  :hints (("Goal"
+           :use (:instance bounded-stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth
+                           (known-nodenum-type-alist (build-known-nodenum-type-alist (get-axe-disjunction-from-dag-items disjuncts 'dag-array
+                                                                                                                         dag-array dag-len)
+                                                                                     dag-array dag-len))
+
+                           (depth-array nil)
+                           (disjuncts (get-axe-disjunction-from-dag-items disjuncts 'dag-array
+                                                                          dag-array dag-len))
+                           (depth-limit nil))
+           :in-theory (e/d (prove-disjunction-with-stp bounded-stp-resultp) (bounded-stp-resultp-of-mv-nth-0-of-prove-disjunction-with-stp-at-depth)))))
+
 (defthm counterexamplep-of-cadr-of-mv-nth-0-of-prove-disjunction-with-stp
   (implies (and (equal :counterexample (car (mv-nth 0 (prove-disjunction-with-stp disjuncts dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))))
                 (bounded-possibly-negated-nodenumsp disjuncts dag-len)
@@ -2230,6 +2258,14 @@
     (equal (w (mv-nth 1 (prove-implication-with-stp hyps conc dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state)))
            (w state))
     :hints (("Goal" :in-theory (enable prove-implication-with-stp)))))
+
+(defthm bounded-stp-resultp-of-mv-nth-0-of-prove-implication-with-stp
+  (implies (and (bounded-possibly-negated-nodenump conc dag-len)
+                (bounded-possibly-negated-nodenumsp hyps dag-len)
+                (pseudo-dag-arrayp 'dag-array dag-array dag-len))
+           (bounded-stp-resultp (mv-nth 0 (prove-implication-with-stp hyps conc dag-array dag-len dag-parent-array base-filename print max-conflicts counterexamplep print-cex-as-signedp state))
+                                dag-len))
+  :hints (("Goal" :in-theory (e/d (prove-implication-with-stp) ()))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2407,6 +2443,12 @@
   (equal (w (mv-nth 1 (prove-clause-with-stp clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
          (w state))
   :hints (("Goal" :in-theory (enable prove-clause-with-stp))))
+
+;; would say bounded-stp-resultp but what would the bound be?
+(defthm stp-resultp-of-mv-nth-0-of-prove-clause-with-stp
+  (implies (pseudo-term-listp clause)
+           (stp-resultp (mv-nth 0 (prove-clause-with-stp clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state))))
+  :hints (("Goal" :in-theory (enable prove-clause-with-stp bounded-possibly-negated-nodenumsp-when-nat-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

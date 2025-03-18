@@ -460,11 +460,12 @@
 
 ;move?
 ;; Change a counterexample to map variables (not nodenums) to values.
-(defund lookup-nodes-in-counterexample (cex dag-array-name dag-array)
-  (declare (xargs :guard (and (counterexamplep cex) ;; all nodenums in the cex should be nodenums of variables
-                              (if (consp cex)
-                                  (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem (strip-cars cex))))
-                                t))
+(defund lookup-nodes-in-counterexample (cex dag-array-name dag-array
+                                            dag-len ; only used in the guard
+                                            )
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (bounded-counterexamplep cex dag-len) ;; all nodenums in the cex should be nodenums of variables
+                              )
                   :verify-guards nil ;done below
                   ))
   (if (endp cex)
@@ -476,13 +477,13 @@
          (expr (dag-to-term-aux-array dag-array-name dag-array nodenum)) ;; TODO: These should all be vars!
          ((when (not (symbolp expr)))
           (er hard? 'lookup-nodes-in-counterexample "A non-variable, ~x0, is bound in the counterexample." expr)))
-      (acons expr value (lookup-nodes-in-counterexample (rest cex) dag-array-name dag-array)))))
+      (acons expr value (lookup-nodes-in-counterexample (rest cex) dag-array-name dag-array dag-len)))))
 
 (defthm alistp-of-lookup-nodes-in-counterexample
-  (alistp (lookup-nodes-in-counterexample cex dag-array-name dag-array))
+  (alistp (lookup-nodes-in-counterexample cex dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable lookup-nodes-in-counterexample))))
 
-(verify-guards lookup-nodes-in-counterexample)
+(verify-guards lookup-nodes-in-counterexample :hints (("Goal" :in-theory (enable bounded-counterexamplep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -517,9 +518,7 @@
                                                          <-of-+-of-1-when-integers)
                                                         (myquotep quotep ilks-plist-worldp))
                                  :do-not '(generalize eliminate-destructors)))
-                  :stobjs state
-                  :verify-guards nil ;todo: need some facts about the counterexample being bounded
-                  ))
+                  :stobjs state))
   (b* ((dag (first problem))
        (assumptions (second problem))
        ((when (quotep dag))
@@ -620,7 +619,7 @@
             (if (call-of *counterexample* result)
                 (prog2$ (and print (cw "STP tactic returned a counterexample.)~%")) ; balances "(Applying STP tactic"
                         (mv *invalid* ;this is a true counterexample, so give up
-                            `(:var-counterexample ,(lookup-nodes-in-counterexample (farg1 result) dag-array-name dag-array)) ;; return the counterexample in the info
+                            `(:var-counterexample ,(lookup-nodes-in-counterexample (farg1 result) dag-array-name dag-array dag-len)) ;; return the counterexample in the info
                             state))
               (if (call-of *possible-counterexample* result)
                   (prog2$ (and print (cw "STP tactic returned a possible counterexample.)~%")) ; balances "(Applying STP tactic"
