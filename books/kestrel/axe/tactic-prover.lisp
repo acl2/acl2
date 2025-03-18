@@ -25,7 +25,7 @@
 
 (include-book "make-equality-dag-gen")
 (include-book "prune-term")
-(include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
+(include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly
 ;(include-book "dag-size")
 (include-book "make-term-into-dag-basic")
 ;(include-book "equivalent-dags")
@@ -976,7 +976,7 @@
        (assumptions (append assumptions assumptions2)) ;TODO: which assumptions / term / dag should be used in the theorem below?
        ((mv erp assumptions state)
         (if simplify-assumptionsp
-            (simplify-terms-repeatedly ;; simplify-terms-using-each-other
+            (simplify-terms-repeatedly ;; simplify-terms-using-each-other ; todo: consider simplify-conjunction-basic here
              assumptions rule-alist
              nil ; monitored-rules
              t ; memoizep
