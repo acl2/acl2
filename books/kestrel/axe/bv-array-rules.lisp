@@ -16,6 +16,9 @@
 
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "rules1") ; todo
+(include-book "kestrel/lists-light/prefixp-def" :dir :system)
+(local (include-book "kestrel/lists-light/prefixp" :dir :system))
+(local (include-book "kestrel/lists-light/prefixp2" :dir :system))
 
 ;; (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 ;; ;(local (include-book "arithmetic/equalities" :dir :system))
@@ -85,20 +88,6 @@
   :hints (("Goal" :in-theory (e/d (equal-of-append nthcdr-of-cdr-combine-strong) (;EQUAL-OF-REPEAT-OF-LEN-SAME
                                                      )))))
 
-(defthm bv-array-clear-length-1-of-list-zero
-  (equal (bv-array-clear width 1 index '(0))
-         '(0))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
-
-(defthm car-of-bv-array-clear
-  (equal (car (bv-array-clear width len index data))
-         (if (posp len)
-             (if (zp (bvchop (ceiling-of-lg (nfix len)) index))
-                 0
-               (bvchop width (car data)))
-           nil))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
-
 (defthm car-of-bv-array-clear-range
   (implies (and (natp high)
                 (natp low)
@@ -115,21 +104,6 @@
                                   ( ;list::equal-append-reduction!
                                    cons-onto-repeat
                                    )))))
-
-(defthm cdr-of-bv-array-clear
-  (implies (and (posp len)
-                (< index len) ;Mon Jul 19 21:20:04 2010
-                (natp index))
-           (equal (cdr (bv-array-clear width len index data))
-                  (if (zp index)
-                      (bvchop-list width (SUBRANGE 1 (+ -1 LEN) DATA))
-                    (bv-array-clear width (+ -1 len) (+ -1 index) (cdr data)))))
-  :hints (("Goal"
-           :cases ((< len 2))
-           :in-theory (e/d (bv-array-clear bv-array-write-opener update-nth2 subrange)
-                                  (GETBIT-OF-BV-ARRAY-READ-HELPER ;yuck
-                                   ;LIST::UPDATE-NTH-EQUAL-REWRITE-ALT
-                                   update-nth-becomes-update-nth2-extend-gen)))))
 
 (defthm bv-array-clear-range-of-1-and-cons-of-0
   (implies (and (<= 1 high)
@@ -252,7 +226,6 @@
 
 (theory-invariant (incompatible (:definition bv-array-read) (:rewrite bvchop-of-nth-becomes-bv-array-read2)))
 
-
 (defthm equal-of-bv-array-write-same
   (implies (and (natp width)
                 (natp index)
@@ -286,3 +259,29 @@
                          (equal (bvchop width val)
                                 (bv-array-read width len index data))))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-of-bv-array-write-both) (BV-ARRAY-READ-OF-BV-ARRAY-WRITE)))))
+
+(defthm prefixp-of-bv-array-write-when-prefixp
+  (implies (and (< (len x) len)
+                (all-unsigned-byte-p 8 data)
+                (prefixp x data)
+                (natp len))
+           (equal (prefixp x (bv-array-write '8 len (len x) val data))
+                  t))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :use (:instance ALL-UNSIGNED-BYTE-P-OF-TRUE-LIST-FIX
+                           (size 8)
+                           (lst x))
+           :in-theory (e/d (bv-array-write ceiling-of-lg UPDATE-NTH2 PREFIXP-REWRITE-gen
+                                           equal-of-true-list-fix-and-true-list-fix-forward)
+                           (ALL-UNSIGNED-BYTE-P-OF-TRUE-LIST-FIX
+                            )))))
+
+;rename
+(defthm bvlt-of-len-and-len-when-prefixp
+  (implies (and (prefixp x free)
+                (equal y free)
+                (unsigned-byte-p size (len x))
+                (unsigned-byte-p size (len y)))
+           (equal (bvlt size (len y) (len x))
+                  nil))
+  :hints (("Goal" :in-theory (enable bvlt prefixp))))

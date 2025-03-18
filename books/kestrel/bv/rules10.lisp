@@ -146,21 +146,6 @@
 
 (theory-invariant (incompatible (:rewrite bvand-of-+-arg3) (:definition bvplus)))
 
-(defthm bvand-of-expt-constant-version
-  (implies (and (syntaxp (quotep k))
-                (equal k (expt 2 (+ -1 (integer-length k))))
-                (<= (integer-length k) size)
-                (integerp size)
-                (integerp k))
-           (equal (bvand size k x)
-                  (bvcat 1
-                         (getbit (+ -1 (integer-length k))
-                                 x)
-                         (+ -1 (integer-length k))
-                         0))))
-
-(in-theory (disable bvand-of-expt)) ;bvand-of-expt-constant-version should usually be enough
-
 ;move
 ;todo: gen to reduce the constant even if not down to 0
 (defthm mod-of-+-of-constant

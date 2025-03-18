@@ -1,7 +1,7 @@
 ; The Axe Rewriter (somewhat old)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -28,7 +28,7 @@
 (include-book "dag-array-builders3")
 (include-book "node-replacement-alist")
 (include-book "node-replacement-alist-for-context")
-(include-book "instantiate-hyp")
+(include-book "instantiate-hyp") ; brings in skip-proofs, via evaluator.lisp
 (include-book "prover")
 (include-book "dag-to-term")
 (include-book "normalize-xors")
