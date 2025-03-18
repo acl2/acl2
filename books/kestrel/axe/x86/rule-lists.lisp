@@ -4783,7 +4783,7 @@
             not-equal-of-+-of-+-and-+-when-separate-gen
             acl2::<-of-negative-constant-and-bv
             ;;read-1-of-write-1-both
-            acl2::bvlt-of-constant-when-usb-dag ; rename
+            acl2::not-bvlt-of-constant-when-usb-dag ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
             ;; acl2::equal-of-myif-arg1-safe
