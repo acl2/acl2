@@ -111,7 +111,56 @@
         (set::insert prop props)
       props))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret signed-props-in-proposed-subset-keys
+    (set::subset props (omap::keys proposed))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* signed-props-in-proposed
+                                 set::expensive-rules))))
+
+  (defruled in-of-signed-props-in-proposed
+    (implies (proposal-address-set-mapp proposed)
+             (equal (set::in prop (signed-props-in-proposed signer proposed))
+                    (and (omap::assoc prop proposed)
+                         (or (equal (address-fix signer)
+                                    (proposal->author prop))
+                             (set::in (address-fix signer)
+                                      (cdr (omap::assoc prop proposed)))))))
+    :induct t
+    :enable (omap::assoc
+             omap::assoc-to-in-of-keys
+             set::expensive-rules)
+    :disable omap::head-key-not-in-keys-of-tail
+    :hints ('(:use (:instance omap::head-key-not-in-keys-of-tail
+                              (map proposed)))))
+
+  (defruled signed-props-in-proposed-of-update
+    (implies (and (proposalp prop)
+                  (address-setp endors)
+                  (proposal-address-set-mapp proposed))
+             (equal (signed-props-in-proposed
+                     signer (omap::update prop endors proposed))
+                    (if (or (equal (proposal->author prop)
+                                   (address-fix signer))
+                            (set::in (address-fix signer)
+                                     (address-set-fix endors)))
+                        (set::insert prop
+                                     (signed-props-in-proposed
+                                      signer proposed))
+                      (if (and (omap::assoc prop proposed)
+                               (set::in (address-fix signer)
+                                        (cdr (omap::assoc prop proposed))))
+                          (set::delete prop
+                                       (signed-props-in-proposed signer
+                                                                 proposed))
+                        (signed-props-in-proposed signer proposed)))))
+    :enable (in-of-signed-props-in-proposed
+             set::expensive-rules
+             set::double-containment-no-backchain-limit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
