@@ -2097,6 +2097,12 @@
     :hints (("Goal" :in-theory (e/d (call-stp-on-file) ())))))
 
 (local
+  (defthm consp-of-mv-nth-0-of-call-stp-on-file
+    (implies (not (member-equal (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)) (list *error* *valid* *invalid* *timedout*)))
+             (consp (mv-nth 0 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state))))
+    :hints (("Goal" :in-theory (e/d (call-stp-on-file) ())))))
+
+(local
   (defthm w-of-mv-nth-1-of-call-stp-on-file
     (equal (w (mv-nth 1 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
            (w state))
@@ -2236,23 +2242,55 @@
     ;;no error:
     (mv result state)))
 
+;; use this more?
+(defund stp-resultp (res)
+  (declare (xargs :guard t))
+  (or (eq *error* res)
+      (eq *valid* res)
+      (eq *invalid* res)
+      (eq *timedout* res)
+      (and (true-listp res)
+           (eq (first res) *counterexample*)
+           (counterexamplep (second res))
+           (equal (len res) 2))
+      (and (true-listp res)
+           (eq (first res) *possible-counterexample*)
+           (counterexamplep (second res))
+           (equal (len res) 2))))
+
+(defthmd len-when-stp-resultp
+  (implies (stp-resultp res)
+           (equal (len res)
+                  (if (member-eq res (list *error* *valid* *invalid* *timedout*))
+                      0
+                    2)))
+  :hints (("Goal" :in-theory (enable stp-resultp member-equal))))
+
+(defthmd true-listp-when-stp-resultp
+  (implies (stp-resultp res)
+           (equal (true-listp res)
+                  (not (member-eq res (list *error* *valid* *invalid* *timedout*)))))
+  :hints (("Goal" :in-theory (enable stp-resultp member-equal))))
+
+(defthmd cdr-when-stp-resultp-iff
+  (implies (stp-resultp res)
+           (iff (cdr res)
+                (not (member-eq res (list *error* *valid* *invalid* *timedout*)))))
+  :hints (("Goal" :in-theory (enable stp-resultp member-equal))))
+
 (defthmd prove-query-with-stp-return-type
   (implies (nodenum-type-alistp cut-nodenum-type-alist)
-           (let ((res (mv-nth 0 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename
-                                                      cut-nodenum-type-alist print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state))))
-             (or (eq *error* res)
-                 (eq *valid* res)
-                 (eq *invalid* res)
-                 (eq *timedout* res)
-                 (and (true-listp res)
-                      (eq (first res) *counterexample*)
-                      (counterexamplep (second res))
-                      (equal (len res) 2))
-                 (and (true-listp res)
-                      (eq (first res) *possible-counterexample*)
-                      (counterexamplep (second res))
-                      (equal (len res) 2)))))
-  :hints (("Goal" :in-theory (enable prove-query-with-stp))))
+           (stp-resultp (mv-nth 0 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state))))
+  :hints (("Goal" :in-theory (enable prove-query-with-stp stp-resultp))))
+
+;do we need this?
+(defthm prove-query-with-stp-return-type-corollary-1
+  (implies (nodenum-type-alistp cut-nodenum-type-alist)
+           (let ((res (mv-nth 0 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state))))
+             (implies (eq (first res) *counterexample*)
+                      (counterexamplep (second res)))))
+  :hints (("Goal" :use prove-query-with-stp-return-type
+           :in-theory (enable stp-resultp))))
 
 (defthm w-of-mv-nth-1-of-prove-query-with-stp
   (equal (w (mv-nth 1 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist
@@ -2318,20 +2356,8 @@
 
 (defthmd prove-equality-with-stp-return-type
   (implies (nodenum-type-alistp cut-nodenum-type-alist)
-           (let ((res (mv-nth 0 (prove-equality-with-stp lhs rhs dag-array-name dag-array dag-len nodenums-to-translate base-filename cut-nodenum-type-alist extra-asserts
-                                                               print max-conflicts counterexamplep print-cex-as-signedp state))))
-             (or (eq *error* res)
-                 (eq *valid* res)
-                 (eq *invalid* res)
-                 (eq *timedout* res)
-                 (and (consp res)
-                      (eq (first res) *counterexample*)
-                      (counterexamplep (second res))
-                      (null (cddr res)))
-                 (and (consp res)
-                      (eq (first res) *possible-counterexample*)
-                      (counterexamplep (second res))
-                      (null (cddr res))))))
+           (stp-resultp (mv-nth 0 (prove-equality-with-stp lhs rhs dag-array-name dag-array dag-len nodenums-to-translate base-filename cut-nodenum-type-alist extra-asserts
+                                                           print max-conflicts counterexamplep print-cex-as-signedp state))))
   :hints (("Goal" :in-theory (enable prove-equality-with-stp)
            :use (:instance prove-query-with-stp-return-type
                            (translated-query-core (mv-nth 0 (translate-equality-to-stp lhs rhs dag-array-name dag-array dag-len cut-nodenum-type-alist nil)))
