@@ -40,6 +40,21 @@
 
 (add-known-boolean bv-arrayp)
 
+;; Only needed for Axe
+(defthmd integerp-of-bv-array-read
+  (integerp (bv-array-read element-size len index data)))
+
+;; Only needed for Axe
+(defthmd natp-of-bv-array-read
+  (natp (bv-array-read element-size len index data)))
+
+;; Only needed for Axe
+;bozo more like this?  gen the 0?
+(defthmd bv-array-read-non-negative
+  (not (< (bv-array-read esize len index data) 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;maybe not true?
 ;; (DEFTHM BV-ARRAY-WRITE-OF-BVCHOP-ARG4-better
 ;;   (IMPLIES (<= ELEMENT-SIZE SIZE)

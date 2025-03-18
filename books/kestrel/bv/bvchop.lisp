@@ -924,3 +924,12 @@
                 (integerp y))
            (equal (bvchop size (+ x y (expt 2 size)))
                   (bvchop size (+ x y)))))
+
+(defthmd bvchop-identity-when-<=
+  (implies (and (unsigned-byte-p size x)
+                (unsigned-byte-p size y)
+                (<= y x))
+           (equal (bvchop size (+ x (- y)))
+                  (+ x (- y))))
+;  :hints (("Goal" :use (:instance bvchop-identity (i (+ x (- y))))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
