@@ -1,7 +1,7 @@
 ; A function to recognize lists of naturals
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "../sequences/defforall") ;todo: drop
+(include-book "kestrel/sequences/defforall" :dir :system) ;todo: drop
 
 (defforall all-natp (lst) (natp lst) :declares ((type t lst)))
 
