@@ -20,8 +20,6 @@
 
 ;; TODO: Some of these are not BV rules.
 
-;(include-book "bv-rules-axe0") ;drop?
-;(include-book "ihs/basic-definitions" :dir :system) ; for logmask
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "kestrel/bv/defs" :dir :system)
@@ -30,11 +28,10 @@
 (include-book "kestrel/bv/rightrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/leftrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
-(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
-(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
+;(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv/bit-to-bool-def" :dir :system)
 (include-book "known-booleans")
-(include-book "kestrel/utilities/def-constant-opener" :dir :system)
+;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system));drop?
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;for SLICE-TIGHTEN-TOP
@@ -2144,21 +2141,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Only needed for Axe
-(defthmd integerp-of-bv-array-read
-  (integerp (bv-array-read element-size len index data)))
-
-;; Only needed for Axe
-(defthmd natp-of-bv-array-read
-  (natp (bv-array-read element-size len index data)))
-
-;; Only needed for Axe
-;bozo more like this?  gen the 0?
-(defthmd bv-array-read-non-negative
-  (not (< (bv-array-read esize len index data) 0)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defthm not-equal-of-constant-and-bv-term-axe
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -2439,16 +2421,6 @@
   (implies (posp size)
            (equal (equal (logext size x) x)
                   (signed-byte-p size x))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Only needed for Axe (ACL2 knows this by type reasoning).
-(defthmd integerp-of-bool-to-bit
-   (integerp (bool-to-bit x)))
-
-;; Only needed for Axe (ACL2 knows this by type reasoning).
-(defthmd natp-of-bool-to-bit
-   (natp (bool-to-bit x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

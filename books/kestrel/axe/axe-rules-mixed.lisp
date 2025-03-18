@@ -16,6 +16,8 @@
 
 ;; This file was called dagrulesmore.lisp.
 
+;; TODO: Combine with bv-rules-axe but first deal with the dependence on rules3
+
 (include-book "axe-syntax-functions")
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/bv/bvplus" :dir :system)
@@ -520,12 +522,6 @@
   :hints (("Goal"
 ;           :cases ((equal 1 (GETBIT 29 X)))
            :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-+ sbvlt-rewrite))))
-
-;move
-(defthm <-of-if-arg1-safe
-  (implies (syntaxp (quotep k))
-           (equal (< (if test x y) k)
-                  (if test (< x k) (< y k)))))
 
 (defthmd unsigned-byte-p-of-+-of-minus-better
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
