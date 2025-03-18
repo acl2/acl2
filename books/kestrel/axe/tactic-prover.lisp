@@ -487,6 +487,11 @@
 
 (ensure-rules-known (pre-stp-rules))
 
+;; so we can get the top nodenum
+(local
+  (defthm not-<-of-len-and-1-when-pseudo-dagp
+    (implies (pseudo-dagp x) (not (< (len x) 1)))))
+
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; A true counterexample returned in the info is fixed up to bind vars, not nodenums
 (defun apply-tactic-stp (problem rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts
@@ -498,17 +503,21 @@
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitor)
                               (booleanp normalize-xors)
-                              ;; print
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
                               (ilks-plist-worldp (w state)))
-                  :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-pre-stp-rules)
-                                                        (myquotep quotep))
+                  :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-pre-stp-rules
+                                                         len-when-stp-resultp
+                                                         true-listp-when-stp-resultp
+                                                         cdr-when-stp-resultp-iff
+                                                         <-of-+-of-1-when-integers)
+                                                        (myquotep quotep ilks-plist-worldp))
                                  :do-not '(generalize eliminate-destructors)))
                   :stobjs state
-                  :verify-guards nil ;todo
+                  :verify-guards nil ;todo: need some facts about the counterexample being bounded
                   ))
   (b* ((dag (first problem))
        (assumptions (second problem))
