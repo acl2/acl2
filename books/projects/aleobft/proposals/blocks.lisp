@@ -30,10 +30,10 @@
    (xdoc::p
     "Blocks in the Aleo blockchain have a rich structure.
      However, for the purpose of our model,
-     blocks are simply containers of transactions.
+     blocks are mainly containers of transactions.
      We also explicate the round number at which each block is generated:
      there is a natural association of round numbers to blocks,
-     which is also used to calculate dynamic committees from the blocks."))
+     which is used to calculate dynamic committees from the blocks."))
   :order-subtopics t
   :default-parent t)
 
@@ -73,13 +73,15 @@
   (xdoc::topstring
    (xdoc::p
     "The state of each (correct) validator includes
-     a list of blocks that models the blockchain (as seen by the validator).
-     Blocks go from right to left, i.e. the @(tsee car) is the latest block.")
+     a list of blocks that models the blockchain as seen by the validator.
+     Blocks go from right to left, i.e. the @(tsee car) is the newest block.")
    (xdoc::p
     "Blocks are committed at increasingly higher round numbers,
      at most one block per round.
      So the blocks have round numbers in stricly increasing order.
-     This predicate fomalizes this constraint on round numbers of blocks."))
+     This predicate fomalizes this constraint on round numbers of blocks.")
+   (xdoc::p
+    "The fact that the round numbers are even is captured in @(tsee block)."))
   (b* (((when (endp blocks)) t)
        ((when (endp (cdr blocks))) t)
        ((unless (> (block->round (car blocks))
