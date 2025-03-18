@@ -27,8 +27,8 @@
 (include-book "logapp")
 (include-book "bvcat2")
 (include-book "bvif")
+(include-book "logext") ;; todo: this and the next include (of sbvlt) cannot be reordered without breaking the android proofs -- why?
 (include-book "sbvlt")
-(include-book "logext")
 (include-book "bvnot")
 (include-book "bitxor")
 (include-book "bvmult")
