@@ -3311,19 +3311,6 @@
                   (myif test (bool-to-bit x) (bool-to-bit y))))
   :hints (("Goal" :in-theory (enable myif bool-to-bit boolif))))
 
-;fixme do we use this?
-;the test is a bit, not a boolean
-(defun bif (bit x y)
-  (if (equal bit 0)
-      (getbit 0 y)
-    (getbit 0 x)))
-
-(defthm myif-becomes-bif
-  (implies (and (booleanp test)
-                (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (myif test x y)
-                  (bif (bool-to-bit test) x y))))
 
 (defthmd bool-to-bit-of-equal-becomes-bitxnor
   (implies (and (unsigned-byte-p 1 x)
@@ -3331,26 +3318,6 @@
            (equal (bool-to-bit (equal x y))
                   (bitxnor x y)))
   :hints (("Goal" :in-theory (enable bitxnor))))
-
-(defthm bif-x-y-0
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (bif x y 0)
-                  (bitand x y))))
-
- ;bozo gen the 1
-(defthm unsigned-byte-p-of-bif
-  (unsigned-byte-p 1 (bif test x y)))
-
-(defthm bif-of-getbit-0
-  (equal (bif test y (getbit 0 x))
-         (bif test y x))
-  :hints (("Goal" :in-theory (enable bif))))
-
-(defthm bif-of-getbit-0-alt
-  (equal (bif test (getbit 0 x) y)
-         (bif test x y))
-  :hints (("Goal" :in-theory (enable bif))))
 
 (defthm integer-length-all-ones-free
   (implies (and (equal x (expt 2 free))
@@ -3439,8 +3406,7 @@
   (equal (bvand 1 x y)
          (if (equal 1 (getbit 0 y))
              (if (equal 1 (getbit 0 x)) 1 0)
-           ;both branches are the same...:
-           (if (equal 1 (getbit 0 x)) 0 0)))
+           0))
   :hints (("Goal" :in-theory (enable bvand getbit))))
 
 ;fixme we probably need a lot more rules like this to add sizes (we need sizes

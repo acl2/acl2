@@ -1,7 +1,7 @@
 ; Basic Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -25,6 +25,7 @@
 (include-book "kestrel/bv/sbvlt" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/bv/rotate" :dir :system)
+(include-book "kestrel/bv/bool-to-bit" :dir :system)
 
 (defthmd integerp-of-floor
   (integerp (floor i j)))
@@ -155,3 +156,13 @@
 ;or just open bvle
 (defthmd booleanp-of-bvle
   (booleanp (bvle size x y)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Only needed for Axe (ACL2 knows this by type reasoning).
+(defthmd integerp-of-bool-to-bit
+   (integerp (bool-to-bit x)))
+
+;; Only needed for Axe (ACL2 knows this by type reasoning).
+(defthmd natp-of-bool-to-bit
+   (natp (bool-to-bit x)))

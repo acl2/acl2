@@ -3384,7 +3384,7 @@
 
              floor-of-32-when-usb
              list-fix-of-append
-             bvlt-of-constant-when-usb-dag
+             not-bvlt-of-constant-when-usb-dag
              minus-becomes-bv-2
 ;commutativity-2-of-+
 

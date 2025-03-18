@@ -44,6 +44,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
+(include-book "bv-array-rules-axe") ; not all are needed, but we need integerp-of-bv-array-read
 (include-book "bv-intro-rules")
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 (include-book "kestrel/bv/sbvdiv" :dir :system)
