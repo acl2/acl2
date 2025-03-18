@@ -2923,8 +2923,7 @@
 ;may help during backchaining...
 (defthm not-equal-when-less
   (implies (< x y)
-           (equal (equal x y)
-                  nil))
+           (not (equal x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
 ;; todo: compare to the rules below
@@ -3031,36 +3030,13 @@
 
 ;;== new stuff
 
-;; (defthm nth-of-push
-;;   (equal (nth n (jvm::push x y))
-;;          (if (zp n) x (nth (+ -1 n) y)))
-;;   :hints (("Goal" :in-theory (enable jvm::push list::nth-of-cons))))
-
-;;
-;; bvchop-list
-;;
-
-;; ;BOZO do i really not have this?
-;; ;dup from jvm
-;; ;move to an earlier book?
-;; (defund bvchop-list (size lst)
-;;   (declare (type (integer 0 *) size)
-;;            (xargs :guard (ALL-INTEGERP lst)))
-;;   (if (atom lst)
-;;       nil
-;;     (cons (bvchop size (car lst))
-;;           (bvchop-list size (cdr lst)))))
-
 ;move
-(defthm all-integerp-when-all-signed-byte-p
+(defthmd all-integerp-when-all-signed-byte-p
   (implies (all-signed-byte-p free x)
            (all-integerp x))
   :hints (("Goal" :in-theory (enable all-signed-byte-p all-integerp))))
 
 ;(in-theory (disable bvxor-1-becomes-bitxor)) ;trying without
-
-;new stuff:
-
 
 ;; ;this is when we know what the entire class is
 ;; (defthm open-execute-INVOKEspecial-another
