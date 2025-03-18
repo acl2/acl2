@@ -1014,6 +1014,207 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define integer-format-short-wfp ((short-format integer-formatp)
+                                  (uchar-format uchar-formatp)
+                                  (schar-format schar-formatp))
+  :returns (yes/no booleanp)
+  :short "Check if an integer format is well-formed
+          when used for (signed and unsigned) @('short')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
+   (xdoc::p
+    "The possible signed values must cover at least
+     the range from -32767 to +32767 (both inclusive) [C17:5.2.4.2.1/1].
+     The possible unsigned values must cover at least
+     the range from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "The possible signed values must at least include
+     those of @('signed char'),
+     and the possible unsigned values must at least include
+     those of @('unsigned char')
+     [C17:6.2.5/8]."))
+  (b* ((size (integer-format->size short-format))
+       (signed-short-min (sinteger-format->min
+                          (uinteger+sinteger-format->signed
+                           (integer-format->pair short-format))))
+       (signed-short-max (sinteger-format->max
+                          (uinteger+sinteger-format->signed
+                           (integer-format->pair short-format))))
+       (unsigned-short-max (uinteger-format->max
+                            (uinteger+sinteger-format->unsigned
+                             (integer-format->pair short-format))))
+       (signed-char-min (schar-format->min schar-format uchar-format))
+       (signed-char-max (schar-format->max schar-format uchar-format))
+       (unsigned-char-max (uchar-format->max uchar-format)))
+    (and (integerp (/ size (uchar-format->size uchar-format)))
+         (<= signed-short-min -32767)
+         (<= +32767 signed-short-max)
+         (<= 65535 unsigned-short-max)
+         (<= signed-short-min signed-char-min)
+         (<= signed-char-max signed-short-max)
+         (<= unsigned-char-max unsigned-short-max)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format-int-wfp ((int-format integer-formatp)
+                                (uchar-format uchar-formatp)
+                                (short-format integer-formatp))
+  :returns (yes/no booleanp)
+  :short "Check if an integer format is well-formed
+          when used for (signed and unsigned) @('int')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
+   (xdoc::p
+    "The possible signed values must cover at least
+     the range from -32767 to +32767 (both inclusive) [C17:5.2.4.2.1/1].
+     The possible unsigned values must cover at least
+     the range from 0 to 65535 (both inclusive) [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "The possible signed values must at least include
+     those of @('signed short'),
+     and the possible unsigned values must at least include
+     those of @('unsigned short')
+     [C17:6.2.5/8]."))
+  (b* ((size (integer-format->size int-format))
+       (signed-int-min (sinteger-format->min
+                        (uinteger+sinteger-format->signed
+                         (integer-format->pair int-format))))
+       (signed-int-max (sinteger-format->max
+                        (uinteger+sinteger-format->signed
+                         (integer-format->pair int-format))))
+       (unsigned-int-max (uinteger-format->max
+                          (uinteger+sinteger-format->unsigned
+                           (integer-format->pair int-format))))
+       (signed-short-min (sinteger-format->min
+                          (uinteger+sinteger-format->signed
+                           (integer-format->pair short-format))))
+       (signed-short-max (sinteger-format->max
+                          (uinteger+sinteger-format->signed
+                           (integer-format->pair short-format))))
+       (unsigned-short-max (uinteger-format->max
+                            (uinteger+sinteger-format->unsigned
+                             (integer-format->pair short-format)))))
+    (and (integerp (/ size (uchar-format->size uchar-format)))
+         (<= signed-int-min -32767)
+         (<= +32767 signed-int-max)
+         (<= 65535 unsigned-int-max)
+         (<= signed-int-min signed-short-min)
+         (<= signed-short-max signed-int-max)
+         (<= unsigned-short-max unsigned-int-max)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format-long-wfp ((long-format integer-formatp)
+                                 (uchar-format uchar-formatp)
+                                 (int-format integer-formatp))
+  :returns (yes/no booleanp)
+  :short "Check if an integer format is well-formed
+          when used for (signed and unsigned) @('long')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
+   (xdoc::p
+    "The possible signed values must cover at least
+     the range from -2147483647 to +2147483647 (both inclusive)
+     [C17:5.2.4.2.1/1].
+     The possible unsigned values must cover at least
+     the range from 0 to 4294967295 (both inclusive) [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "The possible signed values must at least include
+     those of @('signed int'),
+     and the possible unsigned values must at least include
+     those of @('unsigned int')
+     [C17:6.2.5/8]."))
+  (b* ((size (integer-format->size long-format))
+       (signed-long-min (sinteger-format->min
+                         (uinteger+sinteger-format->signed
+                          (integer-format->pair long-format))))
+       (signed-long-max (sinteger-format->max
+                         (uinteger+sinteger-format->signed
+                          (integer-format->pair long-format))))
+       (unsigned-long-max (uinteger-format->max
+                           (uinteger+sinteger-format->unsigned
+                            (integer-format->pair long-format))))
+       (signed-int-min (sinteger-format->min
+                        (uinteger+sinteger-format->signed
+                         (integer-format->pair int-format))))
+       (signed-int-max (sinteger-format->max
+                        (uinteger+sinteger-format->signed
+                         (integer-format->pair int-format))))
+       (unsigned-int-max (uinteger-format->max
+                          (uinteger+sinteger-format->unsigned
+                           (integer-format->pair int-format)))))
+    (and (integerp (/ size (uchar-format->size uchar-format)))
+         (<= signed-long-min -2147483647)
+         (<= +2147483647 signed-long-max)
+         (<= 4294967295 unsigned-long-max)
+         (<= signed-long-min signed-int-min)
+         (<= signed-int-max signed-long-max)
+         (<= unsigned-int-max unsigned-long-max)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format-llong-wfp ((llong-format integer-formatp)
+                                  (uchar-format uchar-formatp)
+                                  (long-format integer-formatp))
+  :returns (yes/no booleanp)
+  :short "Check if an integer format is well-formed
+          when used for (signed and unsigned) @('long long')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The number of bits must be a multiple of @('CHAR_BIT') [C17:6.2.6.1/4].")
+   (xdoc::p
+    "The possible signed values must cover at least
+     the range from -9223372036854775807 to +9223372036854775807
+     (both inclusive) [C17:5.2.4.2.1/1].
+     The possible unsigned values must cover at least
+     the range from 0 to 18446744073709551615 (both inclusive)
+     [C17:5.2.4.2.1/1].")
+   (xdoc::p
+    "The possible signed values must at least include
+     those of @('signed long'),
+     and the possible unsigned values must at least include
+     those of @('unsigned long')
+     [C17:6.2.5/8]."))
+  (b* ((size (integer-format->size llong-format))
+       (signed-llong-min (sinteger-format->min
+                          (uinteger+sinteger-format->signed
+                           (integer-format->pair llong-format))))
+       (signed-llong-max (sinteger-format->max
+                          (uinteger+sinteger-format->signed
+                           (integer-format->pair llong-format))))
+       (unsigned-llong-max (uinteger-format->max
+                            (uinteger+sinteger-format->unsigned
+                             (integer-format->pair llong-format))))
+       (signed-long-min (sinteger-format->min
+                         (uinteger+sinteger-format->signed
+                          (integer-format->pair long-format))))
+       (signed-long-max (sinteger-format->max
+                         (uinteger+sinteger-format->signed
+                          (integer-format->pair long-format))))
+       (unsigned-long-max (uinteger-format->max
+                           (uinteger+sinteger-format->unsigned
+                            (integer-format->pair long-format)))))
+    (and (integerp (/ size (uchar-format->size uchar-format)))
+         (<= signed-llong-min -9223372036854775807)
+         (<= +9223372036854775807 signed-llong-max)
+         (<= 18446744073709551615 unsigned-llong-max)
+         (<= signed-llong-min signed-long-min)
+         (<= signed-long-max signed-llong-max)
+         (<= unsigned-long-max unsigned-llong-max)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
