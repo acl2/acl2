@@ -23,6 +23,7 @@
 ;(include-book "kestrel/alists-light/lookup-equal-lst" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system)
+(include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "rewriter") ;TODO: brings in JVM stuff...
 (include-book "rewriter-alt") ;TODO: brings in JVM stuff...
 (include-book "kestrel/utilities/check-boolean" :dir :system)
@@ -93,9 +94,10 @@
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
+(local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))
 
 (local (in-theory (e/d (true-listp-when-nat-listp-rewrite)
-                       (acl2-count symbol-alistp))))
+                       (acl2-count symbol-alistp default-car default-cdr))))
 
 (defthm not-<-of-maxelem-and-nth
   (implies (and (< n (len x))
@@ -4635,11 +4637,11 @@
          (arity2 (len formals2))
          (new-formals1 (make-var-names 'farg arity1))
          (new-formals2 (make-var-names 'garg arity2))
-         (body1 (sublis-var (pairlis$ formals1 new-formals1) body1))
-         (body2 (sublis-var (pairlis$ formals2 new-formals2) body2))
+         (body1 (sublis-var-simple (pairlis$ formals1 new-formals1) body1))
+         (body2 (sublis-var-simple (pairlis$ formals2 new-formals2) body2))
          ;;ffixme this stuff broke when upgrading to acl2 3.5 - use fn-measure!
 ;         (justification (nth 4 (lookup-eq 'justification props1))) ;fixme what exactly is the format of the justification?
-;        (justification (sublis-var (pairlis$ formals1 new-formals1) justification))
+;        (justification (sublis-var-simple (pairlis$ formals1 new-formals1) justification))
          )
     (mv-let (expr rec-callp)
             (make-induction-function-aux body1 fn1 body2 new-formals2 induction-fn-name fn2)
@@ -19762,41 +19764,9 @@
        (event (if local `(local ,event) event)))
     (mv (erp-nil) event state rand)))
 
-(defxdoc prove-equivalence
-  :parents (axe)
-  :short "Prove that two items (DAGs or terms) over the same variables are equivalent for every value of the variables."
-  :long "<h3>General Form:</h3>
-
-@({
-     (prove-equivalence
-
-         dag-or-term1           ;; The first DAG or term to compare
-         dag-or-term2           ;; The second DAG or term to compare
-         [:assumptions]         ;; Assumptions to use when proving equivalence, a list of terms (not necessarily translated)
-         [:types]               ;; A test-case-type-alist (alist mapping variables to their test-case-types), or one of the special values :bits or :bytes.
-         [:tactic]              ;; Should be :rewrite or :rewrite-and-sweep
-         [:tests natp]          ;; How many tests to use to find internal equivalences, Default: 100
-         [:print]               ;; Print verbosity (allows nil, :brief, t, and :verbose), Default: :brief
-         [:name]                ;; A name to assign to the equivalence term, if desired
-         [:debug]               ;; Leave temp files around for debugging, Default: nil
-         [:max-conflicts]       ;; Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).
-         [:extra-rules]         ;; The names of extra rules to use when simplifying, Default: nil
-         [:initial-rule-sets]   ;; Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets), Default: :auto
-         [:monitor]             ;; Rule names (symbols) to monitor when rewriting
-         [:use-context-when-miteringp] ;; Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)
-         [:normalize-xors]      ;; Whether to normalize XOR nests when simplifying
-         [:interpreted-function-alist] ;; Provides definitions for non-built-in functions
-         [:check-vars] ;; whether to check that the two DAGs/terms have exactly the same vars
-         [:prove-theorem] ;; whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)
-         [:local] ;; whether to make the generated events local
-        )
-})
-
-<p>If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types).</p>")
-
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 ;; TODO: Use defmacrodoc to define this (see xdoc above).
-(defmacro prove-equivalence (&whole whole-form
+(defmacrodoc prove-equivalence (&whole whole-form
                                     dag-or-term1
                                     dag-or-term2
                                     &key
@@ -19837,4 +19807,26 @@
                                            ,prove-theorem
                                            ,local
                                            ',whole-form
-                                           state rand)))
+                                           state rand))
+  :parents (axe)
+  :short "Prove that two items (DAGs or terms) over the same variables are equivalent for every value of the variables."
+  :args ((dag-or-term1 "The first DAG or term to compare")
+         (dag-or-term2 "The second DAG or term to compare")
+         (assumptions "Assumptions to use when proving equivalence, a list of terms (not necessarily translated)")
+         (types "A test-case-type-alist (alist mapping variables to their test-case-types), or one of the special values :bits or :bytes.")
+         (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
+         (tests "How many tests to use to find internal equivalences (a natp)")
+         (print "Print verbosity (allows nil, :brief, t, and :verbose)")
+         (name "A name to assign to the equivalence term, if desired")
+         (debug "Whether to leave temp files in place, for debugging")
+         (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
+         (extra-rules "The names of extra rules to use when simplifying (a symbol list)")
+         (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets)")
+         (monitor "Rule names (symbols) to monitor when rewriting")
+         (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")
+         (normalize-xors "Whether to normalize XOR nests when simplifying")
+         (interpreted-function-alist "Provides definitions for non-built-in functions")
+         (check-vars "Whether to check that the two DAGs/terms have exactly the same vars")
+         (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
+         (local "whether to make the generated events local"))
+  :description ("If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."))
