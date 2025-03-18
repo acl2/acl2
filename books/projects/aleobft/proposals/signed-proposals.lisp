@@ -287,7 +287,38 @@
                        (signed-props-in-message-set signer (set::tail msgs)))))
   :prepwork ((local (in-theory (enable emptyp-of-message-set-fix))))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled signed-props-in-message-subset-when-in
+    (implies (and (message-setp msgs)
+                  (set::in msg msgs))
+             (set::subset (signed-props-in-message signer msg)
+                          (signed-props-in-message-set signer msgs)))
+    :induct t
+    :enable set::expensive-rules)
+
+  (defruled signed-props-in-message-set-of-insert
+    (implies (and (messagep msg)
+                  (message-setp msgs))
+             (equal (signed-props-in-message-set signer (set::insert msg msgs))
+                    (set::union (signed-props-in-message signer msg)
+                                (signed-props-in-message-set signer msgs))))
+    :induct (set::weak-insert-induction msg msgs)
+    :enable (signed-props-in-message-subset-when-in
+             set::expensive-rules))
+
+  (defruled signed-props-in-message-set-of-union
+    (implies (and (message-setp msgs1)
+                  (message-setp msgs2))
+             (equal (signed-props-in-message-set signer
+                                                 (set::union msgs1 msgs2))
+                    (set::union (signed-props-in-message-set signer msgs1)
+                                (signed-props-in-message-set signer msgs2))))
+    :induct t
+    :enable (set::union
+             signed-props-in-message-set-of-insert)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
