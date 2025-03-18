@@ -71,7 +71,7 @@
                           (true-list-fix (mv t (true-list-fix arg1)))
                           (all-integerp (mv t (all-integerp arg1)))
                           (no-duplicatesp-equal
-                               (mv t (no-duplicatesp-equal arg1)))
+                               (mv t (no-duplicatesp-equal-unguarded arg1)))
                           (strip-cdrs (mv t (strip-cdrs-unguarded arg1)))
                           (strip-cars (mv t (strip-cars-unguarded arg1)))
                           (stringp (mv t (stringp arg1)))
@@ -99,7 +99,7 @@
                           (atom (mv t (atom arg1)))
                           (car (mv t (car-unguarded arg1)))
                           (cdr (mv t (cdr-unguarded arg1)))
-                          (map-reverse-list (mv t (map-reverse-list arg1)))
+                          (map-reverse-list (mv t (map-reverse-list-unguarded arg1)))
                           (realpart (mv t (realpart-unguarded arg1)))
                           (imagpart (mv t (imagpart-unguarded arg1)))
                           (symbolp (mv t (symbolp arg1)))
@@ -126,7 +126,7 @@
                            (eql (mv t (equal arg1 arg2)))
                            (list-equiv (mv t (list-equiv arg1 arg2)))
                            (prefixp (mv t (prefixp arg1 arg2)))
-                           (lookup-equal (mv t (lookup-equal arg1 arg2)))
+                           (lookup-equal (mv t (lookup-equal-unguarded arg1 arg2)))
                            (lookup (mv t (lookup arg1 arg2)))
                            (bvnot (mv t (bvnot-unguarded arg1 arg2)))
                            (bvuminus (mv t (bvuminus-unguarded arg1 arg2)))
@@ -137,14 +137,14 @@
                            (trim (mv t (trim-unguarded arg1 arg2)))
                            (binary-+ (mv t (binary-+-unguarded arg1 arg2)))
                            ;; (all-items-less-than (mv t (all-items-less-than arg1 arg2)))
-                           (every-nth (mv t (every-nth arg1 arg2)))
+                           (every-nth (mv t (every-nth-unguarded arg1 arg2)))
                            (intersection-equal
-                                (mv t (intersection-equal arg1 arg2)))
+                                (mv t (intersection-equal-unguarded arg1 arg2)))
                            (all-equal$ (mv t (all-equal$-unguarded arg1 arg2)))
                            (repeatbit (mv t (repeatbit-unguarded arg1 arg2)))
                            (implies (mv t (implies arg1 arg2)))
                            (first-non-member
-                                (mv t (first-non-member arg1 arg2)))
+                                (mv t (first-non-member-unguarded arg1 arg2)))
                            (booland (mv t (booland arg1 arg2)))
                            (boolor (mv t (boolor arg1 arg2)))
                            (getbit-list (mv t (getbit-list-unguarded arg1 arg2)))
@@ -152,7 +152,7 @@
                            (leftrotate32
                                 (mv t (leftrotate32-unguarded arg1 arg2)))
                            (set::insert (mv t (set::insert arg1 arg2)))
-                           (floor (mv t (floor arg1 arg2)))
+                           (floor (mv t (floor-unguarded arg1 arg2)))
                            (member-equal
                                 (mv t (member-equal-unguarded arg1 arg2)))
                            (g (mv t (g arg1 arg2)))
@@ -176,7 +176,7 @@
                            (expt (mv t (expt-unguarded arg1 arg2)))
                            (min (mv t (min-unguarded arg1 arg2)))
                            (max (mv t (max-unguarded arg1 arg2)))
-                           (mod (mv t (mod arg1 arg2)))
+                           (mod (mv t (mod-unguarded arg1 arg2)))
                            (getbit (mv t (getbit-unguarded arg1 arg2)))
                            (cons (mv t (cons arg1 arg2)))
                            (bvchop (mv t (bvchop-unguarded arg1 arg2)))
@@ -208,11 +208,11 @@
                              (negated-elems-listp (mv t
                                                       (negated-elems-listp-unguarded
                                                            arg1 arg2 arg3)))
-                             (leftrotate (mv t (leftrotate arg1 arg2 arg3)))
-                             (acons (mv t (acons arg1 arg2 arg3)))
-                             (bvshr (mv t (bvshr arg1 arg2 arg3)))
-                             (bvashr (mv t (bvashr arg1 arg2 arg3)))
-                             (packbv (mv t (packbv arg1 arg2 arg3)))
+                             (leftrotate (mv t (leftrotate-unguarded arg1 arg2 arg3)))
+                             (acons (mv t (acons-unguarded arg1 arg2 arg3)))
+                             (bvshr (mv t (bvshr-unguarded arg1 arg2 arg3)))
+                             (bvashr (mv t (bvashr-unguarded arg1 arg2 arg3)))
+                             (packbv (mv t (packbv-unguarded arg1 arg2 arg3)))
                              (unpackbv
                                  (mv t
                                      (unpackbv-less-guarded arg1 arg2 arg3)))
@@ -233,23 +233,23 @@
                              (bvmod (mv t (bvmod-unguarded arg1 arg2 arg3)))
                              (bvdiv (mv t (bvdiv-unguarded arg1 arg2 arg3)))
                              (bvsx (mv t (bvsx-unguarded arg1 arg2 arg3)))
-                             (sbvdiv (mv t (sbvdiv arg1 arg2 arg3)))
+                             (sbvdiv (mv t (sbvdiv-unguarded arg1 arg2 arg3)))
                              (sbvdivdown (mv t (sbvdivdown arg1 arg2 arg3)))
                              (sbvrem (mv t (sbvrem arg1 arg2 arg3)))
                              (sbvmoddown (mv t (sbvmoddown arg1 arg2 arg3)))
                              (sbvlt
-                                 (mv t (sbvlt arg1 (ifix arg2) (ifix arg3))))
-                             (sbvle (mv t (sbvle arg1 arg2 arg3)))
+                                 (mv t (sbvlt-unguarded arg1 (ifix arg2) (ifix arg3))))
+                             (sbvle (mv t (sbvle-unguarded arg1 arg2 arg3)))
                              (s (mv t (s arg1 arg2 arg3)))
                              (myif (mv t (myif arg1 arg2 arg3)))
                              (boolif (mv t (boolif arg1 arg2 arg3)))
                              (array-elem-2d
                                   (mv t (array-elem-2d arg1 arg2 arg3)))
-                             (update-nth (mv t (update-nth arg1 arg2 arg3)))
+                             (update-nth (mv t (update-nth-unguarded arg1 arg2 arg3)))
                              (if (mv t (if arg1 arg2 arg3)))
                              (slice
                                   (mv t (slice-unguarded arg1 arg2 arg3)))
-                             (bvshl (mv t (bvshl arg1 arg2 arg3)))
+                             (bvshl (mv t (bvshl-unguarded arg1 arg2 arg3)))
                              ;; (keep-items-less-than (mv t (keep-items-less-than-unguarded arg1 arg2 arg3)))
                              (subrange (mv t
                                            (subrange-unguarded arg1
@@ -671,7 +671,7 @@
                         (true-list-fix (mv t (true-list-fix arg1)))
                         (all-integerp (mv t (all-integerp arg1)))
                         (no-duplicatesp-equal
-                             (mv t (no-duplicatesp-equal arg1)))
+                             (mv t (no-duplicatesp-equal-unguarded arg1)))
                         (strip-cdrs (mv t (strip-cdrs-unguarded arg1)))
                         (strip-cars (mv t (strip-cars-unguarded arg1)))
                         (stringp (mv t (stringp arg1)))
@@ -698,7 +698,7 @@
                         (atom (mv t (atom arg1)))
                         (car (mv t (car-unguarded arg1)))
                         (cdr (mv t (cdr-unguarded arg1)))
-                        (map-reverse-list (mv t (map-reverse-list arg1)))
+                        (map-reverse-list (mv t (map-reverse-list-unguarded arg1)))
                         (realpart (mv t (realpart-unguarded arg1)))
                         (imagpart (mv t (imagpart-unguarded arg1)))
                         (symbolp (mv t (symbolp arg1)))
@@ -725,7 +725,7 @@
                            (eql (mv t (equal arg1 arg2)))
                            (list-equiv (mv t (list-equiv arg1 arg2)))
                            (prefixp (mv t (prefixp arg1 arg2)))
-                           (lookup-equal (mv t (lookup-equal arg1 arg2)))
+                           (lookup-equal (mv t (lookup-equal-unguarded arg1 arg2)))
                            (lookup (mv t (lookup arg1 arg2)))
                            (bvnot (mv t (bvnot-unguarded arg1 arg2)))
                            (bvuminus (mv t (bvuminus-unguarded arg1 arg2)))
@@ -736,14 +736,14 @@
                            (trim (mv t (trim-unguarded arg1 arg2)))
                            (binary-+ (mv t (binary-+-unguarded arg1 arg2)))
                            ;; (all-items-less-than (mv t (all-items-less-than arg1 arg2)))
-                           (every-nth (mv t (every-nth arg1 arg2)))
+                           (every-nth (mv t (every-nth-unguarded arg1 arg2)))
                            (intersection-equal
-                                (mv t (intersection-equal arg1 arg2)))
+                                (mv t (intersection-equal-unguarded arg1 arg2)))
                            (all-equal$ (mv t (all-equal$-unguarded arg1 arg2)))
                            (repeatbit (mv t (repeatbit-unguarded arg1 arg2)))
                            (implies (mv t (implies arg1 arg2)))
                            (first-non-member
-                                (mv t (first-non-member arg1 arg2)))
+                                (mv t (first-non-member-unguarded arg1 arg2)))
                            (booland (mv t (booland arg1 arg2)))
                            (boolor (mv t (boolor arg1 arg2)))
                            (getbit-list (mv t (getbit-list-unguarded arg1 arg2)))
@@ -751,7 +751,7 @@
                            (leftrotate32
                                 (mv t (leftrotate32-unguarded arg1 arg2)))
                            (set::insert (mv t (set::insert arg1 arg2)))
-                           (floor (mv t (floor arg1 arg2)))
+                           (floor (mv t (floor-unguarded arg1 arg2)))
                            (member-equal
                                 (mv t (member-equal-unguarded arg1 arg2)))
                            (g (mv t (g arg1 arg2)))
@@ -775,7 +775,7 @@
                            (expt (mv t (expt-unguarded arg1 arg2)))
                            (min (mv t (min-unguarded arg1 arg2)))
                            (max (mv t (max-unguarded arg1 arg2)))
-                           (mod (mv t (mod arg1 arg2)))
+                           (mod (mv t (mod-unguarded arg1 arg2)))
                            (getbit (mv t (getbit-unguarded arg1 arg2)))
                            (cons (mv t (cons arg1 arg2)))
                            (bvchop (mv t (bvchop-unguarded arg1 arg2)))
@@ -806,11 +806,11 @@
                             (negated-elems-listp (mv t
                                                      (negated-elems-listp-unguarded
                                                           arg1 arg2 arg3)))
-                            (leftrotate (mv t (leftrotate arg1 arg2 arg3)))
-                            (acons (mv t (acons arg1 arg2 arg3)))
-                            (bvshr (mv t (bvshr arg1 arg2 arg3)))
-                            (bvashr (mv t (bvashr arg1 arg2 arg3)))
-                            (packbv (mv t (packbv arg1 arg2 arg3)))
+                            (leftrotate (mv t (leftrotate-unguarded arg1 arg2 arg3)))
+                            (acons (mv t (acons-unguarded arg1 arg2 arg3)))
+                            (bvshr (mv t (bvshr-unguarded arg1 arg2 arg3)))
+                            (bvashr (mv t (bvashr-unguarded arg1 arg2 arg3)))
+                            (packbv (mv t (packbv-unguarded arg1 arg2 arg3)))
                             (unpackbv
                                  (mv t
                                      (unpackbv-less-guarded arg1 arg2 arg3)))
@@ -829,23 +829,23 @@
                             (bvmod (mv t (bvmod-unguarded arg1 arg2 arg3)))
                             (bvdiv (mv t (bvdiv-unguarded arg1 arg2 arg3)))
                             (bvsx (mv t (bvsx-unguarded arg1 arg2 arg3)))
-                            (sbvdiv (mv t (sbvdiv arg1 arg2 arg3)))
+                            (sbvdiv (mv t (sbvdiv-unguarded arg1 arg2 arg3)))
                             (sbvdivdown (mv t (sbvdivdown arg1 arg2 arg3)))
                             (sbvrem (mv t (sbvrem arg1 arg2 arg3)))
                             (sbvmoddown (mv t (sbvmoddown arg1 arg2 arg3)))
                             (sbvlt
-                                 (mv t (sbvlt arg1 (ifix arg2) (ifix arg3))))
-                            (sbvle (mv t (sbvle arg1 arg2 arg3)))
+                                 (mv t (sbvlt-unguarded arg1 (ifix arg2) (ifix arg3))))
+                            (sbvle (mv t (sbvle-unguarded arg1 arg2 arg3)))
                             (s (mv t (s arg1 arg2 arg3)))
                             (myif (mv t (myif arg1 arg2 arg3)))
                             (boolif (mv t (boolif arg1 arg2 arg3)))
                             (array-elem-2d
                                  (mv t (array-elem-2d arg1 arg2 arg3)))
-                            (update-nth (mv t (update-nth arg1 arg2 arg3)))
+                            (update-nth (mv t (update-nth-unguarded arg1 arg2 arg3)))
                             (if (mv t (if arg1 arg2 arg3)))
                             (slice
                                  (mv t (slice-unguarded arg1 arg2 arg3)))
-                            (bvshl (mv t (bvshl arg1 arg2 arg3)))
+                            (bvshl (mv t (bvshl-unguarded arg1 arg2 arg3)))
                             ;; (keep-items-less-than (mv t (keep-items-less-than-unguarded arg1 arg2 arg3)))
                             (subrange (mv t
                                           (subrange-unguarded arg1
