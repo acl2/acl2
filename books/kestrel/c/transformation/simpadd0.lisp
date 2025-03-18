@@ -441,9 +441,9 @@
           `(b* ((old-stmt (mv-nth 1 (c$::ldm-stmt ',old)))
                 (new-stmt (mv-nth 1 (c$::ldm-stmt ',new)))
                 ((mv old-result old-compst)
-                 (c::exec-stmt old-stmt compst fenv limit))
+                 (c::exec-stmt old-stmt compst old-fenv limit))
                 ((mv new-result new-compst)
-                 (c::exec-stmt new-stmt compst fenv limit)))
+                 (c::exec-stmt new-stmt compst new-fenv limit)))
              (implies (and ,@hyps
                            (not (c::errorp old-result)))
                       (and (not (c::errorp new-result))
@@ -513,9 +513,9 @@
           `(b* ((old-item (mv-nth 1 (c$::ldm-block-item ',old)))
                 (new-item (mv-nth 1 (c$::ldm-block-item ',new)))
                 ((mv old-result old-compst)
-                 (c::exec-block-item old-item compst fenv limit))
+                 (c::exec-block-item old-item compst old-fenv limit))
                 ((mv new-result new-compst)
-                 (c::exec-block-item new-item compst fenv limit)))
+                 (c::exec-block-item new-item compst new-fenv limit)))
              (implies (and ,@hyps
                            (not (c::errorp old-result)))
                       (and (not (c::errorp new-result))
@@ -587,9 +587,9 @@
           `(b* ((old-items (mv-nth 1 (c$::ldm-block-item-list ',old)))
                 (new-items (mv-nth 1 (c$::ldm-block-item-list ',new)))
                 ((mv old-result old-compst)
-                 (c::exec-block-item-list old-items compst fenv limit))
+                 (c::exec-block-item-list old-items compst old-fenv limit))
                 ((mv new-result new-compst)
-                 (c::exec-block-item-list new-items compst fenv limit)))
+                 (c::exec-block-item-list new-items compst new-fenv limit)))
              (implies (and ,@hyps
                            (not (c::errorp old-result)))
                       (and (not (c::errorp new-result))
@@ -1053,17 +1053,18 @@
      but we use it always in the proof for simplicity."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2))
-       (expr-new (if (and (c$::binop-case op :add)
-                          (c$::expr-case arg1-new :ident)
-                          (c$::type-case (c$::var-info->type
-                                          (c$::coerce-var-info
-                                           (c$::expr-ident->info arg1-new)))
-                                         :sint)
-                          (c$::expr-zerop arg2-new))
+       (simpp (and (c$::binop-case op :add)
+                   (c$::expr-case arg1-new :ident)
+                   (c$::type-case (c$::var-info->type
+                                   (c$::coerce-var-info
+                                    (c$::expr-ident->info arg1-new)))
+                                  :sint)
+                   (c$::expr-zerop arg2-new)))
+       (expr-new (if simpp
                      (expr-fix arg1-new)
                    (make-expr-binary :op op :arg1 arg1-new :arg2 arg2-new)))
        (vars (set::union arg1-vars arg2-vars))
-       (diffp (or arg1-diffp arg2-diffp))
+       (diffp (or arg1-diffp arg2-diffp simpp))
        ((unless (and arg1-thm-name
                      arg2-thm-name
                      (member-eq (c$::binop-kind op)
@@ -1504,10 +1505,15 @@
                        (:instance
                         simpadd0-stmt-return-support-lemma-1
                         (old-expr (mv-nth 1 (c$::ldm-expr ',expr?)))
-                        (new-expr (mv-nth 1 (c$::ldm-expr ',expr?-new))))
+                        (new-expr (mv-nth 1 (c$::ldm-expr ',expr?-new)))
+                        ,@(and (not expr?-diffp)
+                               '((old-fenv fenv)
+                                 (new-fenv fenv))))
                        (:instance
                         simpadd0-stmt-return-support-lemma-2
-                        (expr (mv-nth 1 (c$::ldm-expr ',expr?))))))))
+                        (expr (mv-nth 1 (c$::ldm-expr ',expr?)))
+                        ,@(and expr?-diffp
+                               '((fenv old-fenv))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
@@ -1537,8 +1543,8 @@
          (new-expr-result (c::exec-expr-pure new-expr compst))
          (old-expr-value (c::expr-value->value old-expr-result))
          (new-expr-value (c::expr-value->value new-expr-result))
-         ((mv old-result old-compst) (c::exec-stmt old compst fenv limit))
-         ((mv new-result new-compst) (c::exec-stmt new compst fenv limit)))
+         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
       (implies (and old-expr
                     new-expr
                     (not (equal (c::expr-kind old-expr) :call))
@@ -1552,8 +1558,8 @@
                     (equal old-compst new-compst)
                     old-result
                     (equal (c::value-kind old-result) :sint))))
-    :expand ((c::exec-stmt (c::stmt-return old-expr) compst fenv limit)
-             (c::exec-stmt (c::stmt-return new-expr) compst fenv limit))
+    :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
+             (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
     :enable (c::exec-expr-call-or-pure
              c::apconvert-expr-value-when-not-array))
 
@@ -1616,10 +1622,15 @@
                        (:instance
                         simpadd0-block-item-stmt-support-lemma-1
                         (old-stmt (mv-nth 1 (c$::ldm-stmt ',stmt)))
-                        (new-stmt (mv-nth 1 (c$::ldm-stmt ',stmt-new))))
+                        (new-stmt (mv-nth 1 (c$::ldm-stmt ',stmt-new)))
+                        ,@(and (not stmt-diffp)
+                               '((old-fenv fenv)
+                                 (new-fenv fenv))))
                        (:instance
                         simpadd0-block-item-stmt-support-lemma-2
-                        (stmt (mv-nth 1 (c$::ldm-stmt ',stmt))))))))
+                        (stmt (mv-nth 1 (c$::ldm-stmt ',stmt)))
+                        ,@(and stmt-diffp
+                               '((fenv old-fenv))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-thm item
                                      item-new
@@ -1646,13 +1657,13 @@
     (b* ((old (c::block-item-stmt old-stmt))
          (new (c::block-item-stmt new-stmt))
          ((mv old-stmt-result old-stmt-compst)
-          (c::exec-stmt old-stmt compst fenv (1- limit)))
+          (c::exec-stmt old-stmt compst old-fenv (1- limit)))
          ((mv new-stmt-result new-stmt-compst)
-          (c::exec-stmt new-stmt compst fenv (1- limit)))
+          (c::exec-stmt new-stmt compst new-fenv (1- limit)))
          ((mv old-result old-compst)
-          (c::exec-block-item old compst fenv limit))
+          (c::exec-block-item old compst old-fenv limit))
          ((mv new-result new-compst)
-          (c::exec-block-item new compst fenv limit)))
+          (c::exec-block-item new compst new-fenv limit)))
       (implies (and (not (c::errorp old-result))
                     (not (c::errorp new-stmt-result))
                     (equal old-stmt-result new-stmt-result)
@@ -1665,8 +1676,8 @@
                     old-result
                     (equal (c::value-kind old-result) :sint))))
     :expand
-    ((c::exec-block-item (c::block-item-stmt old-stmt) compst fenv limit)
-     (c::exec-block-item (c::block-item-stmt new-stmt) compst fenv limit)))
+    ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
+     (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
 
   (defruled simpadd0-block-item-stmt-support-lemma-2
     (implies (c::errorp (mv-nth 0 (c::exec-stmt stmt compst fenv (1- limit))))
@@ -1719,10 +1730,15 @@
                        (:instance
                         simpadd0-block-item-list-support-lemma-1
                         (old-item (mv-nth 1 (c$::ldm-block-item ',item)))
-                        (new-item (mv-nth 1 (c$::ldm-block-item ',item-new))))
+                        (new-item (mv-nth 1 (c$::ldm-block-item ',item-new)))
+                        ,@(and (not item-diffp)
+                               '((old-fenv fenv)
+                                 (new-fenv fenv))))
                        (:instance
                         simpadd0-block-item-list-support-lemma-2
-                        (item (mv-nth 1 (c$::ldm-block-item ',item))))))))
+                        (item (mv-nth 1 (c$::ldm-block-item ',item)))
+                        ,@(and item-diffp
+                               '((fenv old-fenv))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-list-thm items
                                           items-new
@@ -1749,13 +1765,13 @@
     (b* ((old (list old-item))
          (new (list new-item))
          ((mv old-item-result old-item-compst)
-          (c::exec-block-item old-item compst fenv (1- limit)))
+          (c::exec-block-item old-item compst old-fenv (1- limit)))
          ((mv new-item-result new-item-compst)
-          (c::exec-block-item new-item compst fenv (1- limit)))
+          (c::exec-block-item new-item compst new-fenv (1- limit)))
          ((mv old-result old-compst)
-          (c::exec-block-item-list old compst fenv limit))
+          (c::exec-block-item-list old compst old-fenv limit))
          ((mv new-result new-compst)
-          (c::exec-block-item-list new compst fenv limit)))
+          (c::exec-block-item-list new compst new-fenv limit)))
       (implies (and (not (c::errorp old-result))
                     (not (c::errorp new-item-result))
                     (equal old-item-result new-item-result)
@@ -1767,8 +1783,8 @@
                     (equal old-compst new-compst)
                     old-result
                     (equal (c::value-kind old-result) :sint))))
-    :expand ((c::exec-block-item-list (list old-item) compst fenv limit)
-             (c::exec-block-item-list (list new-item) compst fenv limit))
+    :expand ((c::exec-block-item-list (list old-item) compst old-fenv limit)
+             (c::exec-block-item-list (list new-item) compst new-fenv limit))
     :enable (c::exec-block-item-list
              c::value-optionp-when-value-option-resultp-and-not-errorp))
 
