@@ -978,6 +978,37 @@
              (uinteger+sinteger-format->signed pair)))
   :pred integer-formatp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format->bits ((format integer-formatp))
+  :short "Number of bits of an integer format."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the total number of bits of the unsigned or signed format:
+     the two have the same number of bits,
+     because of @(tsee uinteger-sinteger-bit-roles-wfp)."))
+  (len (uinteger-format->bits
+        (uinteger+sinteger-format->unsigned
+         (integer-format->pair format))))
+  :hooks (:fix)
+
+  ///
+
+  (defruled integer-format->bits-alt-def
+    (implies (integer-formatp format)
+             (equal (integer-format->bits format)
+                    (len (sinteger-format->bits
+                          (uinteger+sinteger-format->signed
+                           (integer-format->pair format))))))
+    :use (:instance same-len-when-uinteger-sinteger-bit-roles-wfp
+                    (sroles (sinteger-format->bits
+                             (uinteger+sinteger-format->signed
+                              (integer-format->pair format))))
+                    (uroles (uinteger-format->bits
+                             (uinteger+sinteger-format->unsigned
+                              (integer-format->pair format)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod ienv

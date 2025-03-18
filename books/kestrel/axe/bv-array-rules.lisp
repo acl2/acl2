@@ -16,6 +16,9 @@
 
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "rules1") ; todo
+(include-book "kestrel/lists-light/prefixp-def" :dir :system)
+(local (include-book "kestrel/lists-light/prefixp" :dir :system))
+(local (include-book "kestrel/lists-light/prefixp2" :dir :system))
 
 ;; (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 ;; ;(local (include-book "arithmetic/equalities" :dir :system))
@@ -223,7 +226,6 @@
 
 (theory-invariant (incompatible (:definition bv-array-read) (:rewrite bvchop-of-nth-becomes-bv-array-read2)))
 
-
 (defthm equal-of-bv-array-write-same
   (implies (and (natp width)
                 (natp index)
@@ -257,3 +259,29 @@
                          (equal (bvchop width val)
                                 (bv-array-read width len index data))))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-of-bv-array-write-both) (BV-ARRAY-READ-OF-BV-ARRAY-WRITE)))))
+
+(defthm prefixp-of-bv-array-write-when-prefixp
+  (implies (and (< (len x) len)
+                (all-unsigned-byte-p 8 data)
+                (prefixp x data)
+                (natp len))
+           (equal (prefixp x (bv-array-write '8 len (len x) val data))
+                  t))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :use (:instance ALL-UNSIGNED-BYTE-P-OF-TRUE-LIST-FIX
+                           (size 8)
+                           (lst x))
+           :in-theory (e/d (bv-array-write ceiling-of-lg UPDATE-NTH2 PREFIXP-REWRITE-gen
+                                           equal-of-true-list-fix-and-true-list-fix-forward)
+                           (ALL-UNSIGNED-BYTE-P-OF-TRUE-LIST-FIX
+                            )))))
+
+;rename
+(defthm bvlt-of-len-and-len-when-prefixp
+  (implies (and (prefixp x free)
+                (equal y free)
+                (unsigned-byte-p size (len x))
+                (unsigned-byte-p size (len y)))
+           (equal (bvlt size (len y) (len x))
+                  nil))
+  :hints (("Goal" :in-theory (enable bvlt prefixp))))
