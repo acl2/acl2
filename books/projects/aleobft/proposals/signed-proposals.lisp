@@ -318,7 +318,21 @@
                                 (signed-props-in-message-set signer msgs2))))
     :induct t
     :enable (set::union
-             signed-props-in-message-set-of-insert)))
+             signed-props-in-message-set-of-insert))
+
+  (defruled signed-props-in-message-set-of-make-proposal-messages
+    (equal (signed-props-in-message-set
+            signer (make-proposal-messages prop dests))
+           (if (and (equal (address-fix signer)
+                           (proposal->author prop))
+                    (not (set::emptyp (address-set-fix dests))))
+               (set::insert (proposal-fix prop) nil)
+             nil))
+    :induct t
+    :enable (make-proposal-messages
+             signed-props-in-message
+             signed-props-in-message-set-of-insert
+             emptyp-of-address-set-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
