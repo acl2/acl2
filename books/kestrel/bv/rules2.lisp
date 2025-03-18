@@ -17,6 +17,7 @@
 (include-book "sbvlt-rules") ;for SBVLT-REWRITE
 (include-book "bvcat")
 (include-book "bvsx")
+(local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 ;gen the 0?
