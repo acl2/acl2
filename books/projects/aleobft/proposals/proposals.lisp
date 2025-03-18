@@ -142,8 +142,7 @@
     (implies (and (set::emptyp (props-with-round (proposal->round prop) props))
                   (proposal-setp props))
              (not (set::in prop props)))
-    :induct t
-    :enable props-with-round)
+    :induct t)
 
   (defruled not-in-prop-subset-when-none-with-round
     (implies (and (set::emptyp (props-with-round (proposal->round prop) props))
