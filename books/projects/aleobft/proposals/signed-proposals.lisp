@@ -70,7 +70,17 @@
       props))
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret signed-props-in-dag-subset-dag-props
+    (set::subset props (cert-set->prop-set dag))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable* signed-props-in-dag
+                                 cert-set->prop-set
+                                 set::expensive-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
