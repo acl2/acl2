@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -31,12 +31,13 @@
     "Validators propose transactions for inclusion in the blockchain.
      Transactions have a rich structure.
      In fact, AleoBFT handles not only transactions,
-     but also `solutions' and `ratifications',
-     which together with transactions form `transmissions'.
-     However, these details are unimportant for our model.
-     We can treat transactions as abstract entities,
-     since our model is only concerned with
-     properly putting them into blocks."))
+     but also `solutions' and (possibly in the future) `ratifications',
+     which together with transactions form `transmissions'.")
+   (xdoc::p
+    "However, these details are unimportant for our model.
+     Our model sticks to the more common term `transaction',
+     which can be thought as modeling also the other kinds of transmissions.
+     We treat transactions as abstract entities."))
   :order-subtopics t
   :default-parent t)
 
