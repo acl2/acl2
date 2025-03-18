@@ -134,4 +134,22 @@
       (props-with-round round (set::tail props))))
   :prepwork ((local (in-theory (enable emptyp-of-proposal-set-fix))))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled not-in-prop-set-when-none-with-round
+    (implies (and (set::emptyp (props-with-round (proposal->round prop) props))
+                  (proposal-setp props))
+             (not (set::in prop props)))
+    :induct t
+    :enable props-with-round)
+
+  (defruled not-in-prop-subset-when-none-with-round
+    (implies (and (set::emptyp (props-with-round (proposal->round prop) props))
+                  (set::subset props0 props)
+                  (proposal-setp props0)
+                  (proposal-setp props))
+             (not (set::in prop props0)))
+    :enable (not-in-prop-set-when-none-with-round
+             set::expensive-rules)))
