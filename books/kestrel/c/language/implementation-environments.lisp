@@ -1038,25 +1038,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ienv->char-bits ((ienv ienvp))
+(define ienv->char-size ((ienv ienvp))
   :returns (bits posp)
   :short "The ACL2 integer value of @('CHAR_BIT') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We prefer to use dash instead of underscore,
-     since it's more common convention in ACL2.
-     We also prefer the plural `bits', since it's a number of bits."))
+    "This is the size, in bits, of
+     (possibly @('unsigned') or @('signed')) @('char') objects."))
   (uchar-format->size (ienv->uchar-format ienv))
   :hooks (:fix)
   ///
 
-  (defret ienv->char-bits-type-prescription
+  (defret ienv->char-size-type-prescription
     (and (posp bits)
          (> bits 1))
     :rule-classes :type-prescription)
 
-  (defret ienv->char-bits-lower-bound
+  (defret ienv->char-size-lower-bound
     (>= bits 8)
     :rule-classes :linear))
 
