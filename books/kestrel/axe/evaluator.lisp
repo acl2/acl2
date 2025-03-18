@@ -371,10 +371,9 @@
 ;or use getprops (in which case the order won't matter)
 
 ;pairs each arity with an alist from fns to the terms to put in for them - fixme is the term ever more than a fn applied to arg1 arg2 ... ?
-;consider inlining some of the -unguarded functions for speed?
+;todo: consider inlining some of the -unguarded functions for speed?
 ;fixme add a test that all of these are functions, not macros
-;todo: get rid of set-field, set-fields, and get-field
-;todo: see adapt the simpler format of stuff like this that we use in evaluator-simple.  also generate check THMS like the ones that it generates
+;todo: adapt the simpler format of stuff like this that we use in evaluator-simple.  also generate check THMS like the ones that it generates
 (defund axe-evaluator-function-info ()
   (declare (xargs :guard t))
   (acons 1
@@ -382,8 +381,8 @@
          '((quotep quotep arg1) ;unguarded ;fixme is this still used?
            (natp natp arg1)     ;unguarded
            (posp posp arg1)     ;unguarded
-           (integerp integerp arg1)               ;(primitive)
-           (rationalp rationalp arg1)             ;(primitive)
+           (integerp integerp arg1)               ;unguarded, primitive
+           (rationalp rationalp arg1)             ;unguarded, primitive
            (print-constant print-constant arg1)   ;unguarded
            (not not arg1)                         ;unguarded
            (power-of-2p power-of-2p arg1)         ;unguarded
@@ -405,13 +404,13 @@
            (key-list key-list arg1)
            (true-list-fix true-list-fix arg1) ;unguarded
            (all-integerp all-integerp arg1) ;unguarded
-           (no-duplicatesp-equal no-duplicatesp-equal-unguarded arg1)
+           (no-duplicatesp-equal no-duplicatesp-equal-unguarded arg1) ; see no-duplicatesp-equal-unguarded-correct
            (strip-cdrs strip-cdrs-unguarded arg1) ;see strip-cdrs-unguarded-correct
            (strip-cars strip-cars-unguarded arg1) ;see strip-cars-unguarded-correct
            (stringp stringp arg1)       ;unguarded, primitive
            (true-listp true-listp arg1) ;unguarded
            (consp consp arg1)           ;unguarded, primitive
-           (bytes-to-bits bytes-to-bits arg1) ;fixme drop since we rewrite it?
+           (bytes-to-bits bytes-to-bits arg1) ;drop since we rewrite it? but that bytes-to-bits-rewrite seems gross
            (width-of-widest-int width-of-widest-int-unguarded arg1) ; see width-of-widest-int-unguarded-correct
            (all-natp all-natp arg1) ;unguarded
            (endp endp-unguarded arg1) ;see endp-unguarded-correct
@@ -568,7 +567,7 @@
                          (boolif boolif arg1 arg2 arg3) ;unguarded
                          (array-elem-2d array-elem-2d arg1 arg2 arg3) ;drop?
                          (update-nth update-nth-unguarded arg1 arg2 arg3)
-                         (if if arg1 arg2 arg3) ;primitive
+                         (if if arg1 arg2 arg3) ;unguarded
                          (slice slice-unguarded arg1 arg2 arg3)
                          (bvshl bvshl-unguarded arg1 arg2 arg3)
                          ;; (keep-items-less-than keep-items-less-than-unguarded arg1 arg2 arg3) ;see keep-items-less-than-unguarded-correct
@@ -584,11 +583,10 @@
                                 (bv-array-read bv-array-read-unguarded arg1 arg2 arg3 arg4)
                                 (bvif bvif-unguarded arg1 arg2 arg3 arg4))
                               (acons 5 '((update-subrange2 update-subrange2 arg1 arg2 arg3 arg4 arg5) ;new
-                                         (bv-array-write bv-array-write-unguarded (nfix arg1) (nfix arg2) (nfix arg3) arg4 arg5)
+                                         (bv-array-write bv-array-write-unguarded (nfix arg1) (nfix arg2) (nfix arg3) arg4 arg5) ; see bv-array-write-unguarded-correct
                                          (bv-array-clear-range bv-array-clear-range arg1 arg2 arg3 arg4 arg5)
                                          )
-                                     (acons 6 '()
-                                           nil)))))))
+                                     nil))))))
 
 ;was a function, but it seemed to get recomputed each time!
 ;FFIXME maybe this should include the dag-val function, eval-dag function, etc.
