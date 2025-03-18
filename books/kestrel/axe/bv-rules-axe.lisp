@@ -21,12 +21,12 @@
 ;; TODO: Some of these are not BV rules.
 
 ;(include-book "bv-rules-axe0") ;drop?
-(include-book "ihs/basic-definitions" :dir :system) ; for logmask
+;(include-book "ihs/basic-definitions" :dir :system) ; for logmask
 (include-book "axe-syntax-functions-bv")
 (include-book "axe-syntax-functions") ;for SYNTACTIC-CALL-OF
 (include-book "kestrel/bv/defs" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
-(include-book "kestrel/utilities/myif" :dir :system)
+;(include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/bv/rightrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/leftrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
@@ -2107,6 +2107,7 @@
 ;;            :in-theory (theory 'minimal-theory)
 ;;            )))
 
+;move?
 ;drop?  mentioned in rule-lists.lisp
 (defthmd recollapse-hack-slice-version  ;just use a non-axe-version?
   (implies (and (syntaxp (not (quotep x)))
@@ -2143,12 +2144,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Only needed for Axe
 (defthmd integerp-of-bv-array-read
   (integerp (bv-array-read element-size len index data)))
 
+;; Only needed for Axe
 (defthmd natp-of-bv-array-read
   (natp (bv-array-read element-size len index data)))
 
+;; Only needed for Axe
 ;bozo more like this?  gen the 0?
 (defthmd bv-array-read-non-negative
   (not (< (bv-array-read esize len index data) 0)))
@@ -2388,6 +2392,7 @@
 ;rename
 ;version for <=?
 ;not a bv rule
+;move
 (defthmd not-equal-when-bound
   (implies (and (syntaxp (quotep y))
                 ;(equal (< free x) t) ;awkward
@@ -2398,6 +2403,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;move
 (defthmd equal-of-constant-and-bitand
   (implies (syntaxp (quotep k))
            (equal (equal k (bitand x y))
@@ -2412,6 +2418,7 @@
   :hints (("Goal" :use equal-of-bitand-and-constant
            :in-theory (disable equal-of-bitand-and-constant))))
 
+;move
 (defthmd equal-of-constant-and-bitor
   (implies (syntaxp (quotep k))
            (equal (equal k (bitor x y))
