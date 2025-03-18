@@ -1526,34 +1526,6 @@
                 )
            (< k1 (max x k2))))
 
-;; (defthm getbit-of-bif
-;;   (implies (and (natp n))
-;;            (equal (getbit n (bif test thenpart elsepart))
-;;                   (bif test (getbit n thenpart) (getbit n elsepart))))
-;;   :hints (("Goal" :in-theory (enable bvif myif))))
-
-
-(defthm bvif-1-equal-1
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 1 x) tp ep)
-                  (bif x (getbit 0 tp) (getbit 0 ep))))
-  :hints (("Goal" :in-theory (disable BITXOR-OF-1-BECOMES-BITNOT-ARG1)
-           :DO-NOT '(preprocess))))
-
-;rename bif to bitif?
-(defthm bif-rewrite
-  (implies (unsigned-byte-p 1 test)
-           (equal (bif test x y)
-                  (bitor (bitand test x)
-                         (bitand (bitnot test) y))))
-  :hints (("Goal" :in-theory (disable BITXOR-OF-1-BECOMES-BITNOT-ARG1)
-           :DO-NOT '(preprocess))))
-
-(defthm bvif-becomes-bif
-  (equal (bvif 1 test x y)
-         (bif (bool-to-bit test) x y))
-  :hints (("Goal" :in-theory (enable bvif myif bool-to-bit))))
-
 ;actually, we should go to bvif?!
 (defthmd bvplus-of-myif
   (equal (bvplus size x (myif test a b))
