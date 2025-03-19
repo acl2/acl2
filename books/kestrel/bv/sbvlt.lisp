@@ -12,7 +12,9 @@
 (in-package "ACL2")
 
 (include-book "bvchop")
-(include-book "logext") ;todo: include less?
+(include-book "logext-def")
+(include-book "getbit")
+(local (include-book "logext")) ;todo: include less?
 (include-book "kestrel/utilities/polarity" :dir :system)
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
