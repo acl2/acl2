@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -28,10 +28,10 @@
    (xdoc::p
     "Blocks in the Aleo blockchain have a rich structure.
      However, for the purpose of our model,
-     blocks are simply containers of transactions.
+     blocks are mainly containers of transactions.
      We also explicate the round number at which each block is generated:
      there is a natural association of round numbers to blocks,
-     which is also used to calculate dynamic committees from the blocks."))
+     which is used to calculate dynamic committees from the blocks."))
   :order-subtopics t
   :default-parent t)
 
@@ -47,8 +47,8 @@
      The round number is always even,
      since blocks are only produced at even rounds,
      but we do not capture that constraint in this fixtype."))
-  ((round pos)
-   (transactions transaction-list))
+  ((transactions transaction-list)
+   (round pos))
   :pred blockp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -71,15 +71,13 @@
   (xdoc::topstring
    (xdoc::p
     "The state of each (correct) validator includes
-     a list of blocks that models the blockchain (as seen by the validator).
-     As explained there, blocks go from right to left,
-     i.e. the @(tsee car) is the latest block.")
+     a list of blocks that models the blockchain as seen by the validator.
+     Blocks go from right to left, i.e. the @(tsee car) is the newest block.")
    (xdoc::p
     "Blocks are committed at even rounds,
      using increasingly higher round numbers,
      at most one block per (even) round.
-     So the blocks will have round numbers in stricly increasing order,
-     and they will all be even.
+     So the blocks have even round numbers in stricly increasing order.
      This predicate fomalizes these constraints on round numbers."))
   (b* (((when (endp blocks)) t)
        (block (car blocks))
