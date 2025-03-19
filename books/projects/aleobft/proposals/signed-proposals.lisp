@@ -389,3 +389,97 @@
              signed-props-in-validators-when-init
              signed-props-in-message-set
              system-initp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-propose-next
+  :short "How signed proposals change under @('propose') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If a correct validator creates a proposal,
+     it adds it to its map of pending proposals, without ensorsements.
+     The validator may also add proposal messages, containing the proposal,
+     to the network
+     (but there is no requirement to do so: see @(tsee propose-possiblep)).
+     In any case, the set of proposals signed by the validator
+     is augmented with the new proposal,
+     while the set of proposals signed by other validators is unchanged.")
+   (xdoc::p
+    "If a faulty validator creates a proposal,
+     one or more proposal messages, containing the proposal,
+     are added to the network;
+     @(tsee propose-possiblep) requires at least one such message,
+     because otherwise the event would be a no-op in our model.
+     Thus, as in the case above of a proposal created by a correct validator,
+     the set of proposals signed by the faulty validator
+     is augmented with the new proposal,
+     while the set of proposals signed by other validators is unchanged."))
+
+  (defruled signed-props-in-validator-of-propose-next
+    (implies (and (propose-possiblep prop dests systate)
+                  (set::in val (correct-addresses systate)))
+             (equal (signed-props-in-validator
+                     signer
+                     (get-validator-state
+                      val (propose-next prop dests systate)))
+                    (if (and (equal (address-fix signer)
+                                    (proposal->author prop))
+                             (equal (address-fix signer)
+                                    val))
+                        (set::insert (proposal-fix prop)
+                                     (signed-props-in-validator
+                                      signer
+                                      (get-validator-state val systate)))
+                      (signed-props-in-validator
+                       signer
+                       (get-validator-state val systate)))))
+    :enable (signed-props-in-validator
+             validator-state->proposed-of-propose-next
+             signed-props-in-proposed-of-update
+             propose-possiblep)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (proposal-address-set-mapp proposed)
+                     (set::emptyp (props-with-round (proposal->round prop)
+                                                    (omap::keys proposed))))
+                (not (set::in prop (signed-props-in-proposed signer proposed))))
+       :enable (not-in-prop-subset-when-none-with-round
+                signed-props-in-proposed-subset-keys
+                proposal-setp-of-keys-when-proposal-address-set-mapp))))
+
+  (defruled signed-props-in-validators-of-propose-next
+    (implies (and (propose-possiblep prop dests systate)
+                  (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (propose-next prop dests systate))
+                    (if (and (equal (address-fix signer)
+                                    (proposal->author prop))
+                             (set::in (address-fix signer)
+                                      (address-set-fix vals))
+                             (set::in (address-fix signer)
+                                      (correct-addresses systate)))
+                        (set::insert (proposal-fix prop)
+                                     (signed-props-in-validators
+                                      signer vals systate))
+                      (signed-props-in-validators signer vals systate))))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-propose-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-propose-next
+    (implies (propose-possiblep prop dests systate)
+             (equal (signed-props signer (propose-next prop dests systate))
+                    (if (equal (address-fix signer)
+                               (proposal->author prop))
+                        (set::insert (proposal-fix prop)
+                                     (signed-props signer systate))
+                      (signed-props signer systate))))
+    :enable (signed-props
+             propose-possiblep
+             get-network-state-of-propose-next
+             signed-props-in-message-set-of-union
+             signed-props-in-message-set-of-make-proposal-messages
+             signed-props-in-validators-of-propose-next)))
