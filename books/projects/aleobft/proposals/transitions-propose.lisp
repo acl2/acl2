@@ -45,11 +45,13 @@
      a faulty validator may send it to any validators.
      However, in order to model the possibility that
      a faulty validator in the committee
-     forwards the proposal to a faulty validator not in the committee,
+     forwards a proposal from a correct validator
+     to a faulty validator not in the committee,
      so that the latter might endorse the proposal
      and send the endorsement back to the proposer,
-     we relax our model of proposal broadcasting by allowing
-     a proposal to be sent also to faulty validators not in the committee.")
+     we relax our model of proposal broadcasting
+     by allowing a proposal from a correct validator
+     to be sent also to faulty validators not in the committee.")
    (xdoc::p
     "If the validator is correct,
      it stores the proposal into its internal state,
@@ -84,12 +86,22 @@
      impersonating the author;
      the correctness of the protocol does not not depend on that.
      If the author of the proposal is a faulty validator,
-     there are no other requirements:
+     there are almost no other requirements:
      nothing prevents a faulty validator from
      generating a proposal with arbitrary
      round, transactions, and previous certificate addresses.")
    (xdoc::p
-    "If the proposal's author is correct, additional conditions apply;
+    "The `almost' above refers to the fact that we constrain faulty validators
+     to send a proposal to at least one validator.
+     This is merely a modeling convenience, not a real restriction:
+     if a faulty validator creates a proposal and sends it to nobody,
+     the event would cause no actual change to our modeled system state,
+     because faulty validators have no external state.
+     If there is at least one destination for the proposal,
+     then there is a state change, consisting of
+     at least one message being added to the network.")
+   (xdoc::p
+    "If the proposal's author is correct, the following conditions apply;
      that is, the event can happen only if these conditions are satisfied:")
    (xdoc::ul
     (xdoc::li
@@ -153,7 +165,8 @@
      however, it matters for other kinds of properties,
      so we plan to refine our model when studying those other properties."))
   (b* (((proposal prop) prop)
-       ((when (not (set::in prop.author (correct-addresses systate)))) t)
+       ((when (not (set::in prop.author (correct-addresses systate))))
+        (not (set::emptyp (address-set-fix dests))))
        ((validator-state vstate) (get-validator-state prop.author systate))
        ((unless (= prop.round vstate.round)) nil)
        (commtt (active-committee-at-round prop.round vstate.blockchain))
