@@ -357,12 +357,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection signed-props-when-init
-  :short "Initially there are no signed proposals."
+  :short "Initial signed proposals."
   :long
   (xdoc::topstring
    (xdoc::p
     "Initially, all DAGs, all pending proposal maps, and the network
-     are empty."))
+     are empty.
+     Thus, there are no signed proposals."))
 
   (defruled signed-props-in-validators-when-init
     (implies (and (system-initp systate)
