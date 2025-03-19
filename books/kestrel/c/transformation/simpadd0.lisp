@@ -15,6 +15,7 @@
 (include-book "../syntax/validation-information")
 (include-book "../syntax/langdef-mapping")
 (include-book "../atc/symbolic-execution-rules/top")
+(include-book "../representation/shallow-deep-relation")
 
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
@@ -30,23 +31,6 @@
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This should be moved to a more central place.
-; It is used to relieve some hypotheses in theorems proved in this file,
-; which involve hypotheses in terms of C::VALUEP and C::VALUE-KIND,
-; using existing rules,
-; which involve hypotheses in terms of C::SINTP;
-; this theorem rewrites the latter to the former.
-
-(defruledl c::sintp-alt-def
-  (equal (c::sintp x)
-         (and (c::valuep x)
-              (c::value-case x :sint)))
-  :enable (c::sintp
-           c::valuep
-           c::value-kind))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
