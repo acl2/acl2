@@ -24,7 +24,7 @@
 
 (defxdoc+ endorsed-in-author
   :parents (correctness)
-  :short "Invariant that each proposals endorsed by each correct validator
+  :short "Invariant that each proposal endorsed by each correct validator
           is in the state of the proposal author if correct."
   :long
   (xdoc::topstring
