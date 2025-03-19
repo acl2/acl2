@@ -1398,9 +1398,7 @@
   :props (zfc prod2$prop domain$prop inverse$prop))
 
 (defthmz domain-compose-lemma
-  (implies (and (funp f)
-                (funp g)
-                (subset (codomain g) (domain f)))
+  (implies (subset (codomain g) (domain f))
            (subset (domain g)
                    (domain (compose f g))))
   :props (zfc prod2$prop compose$prop domain$prop inverse$prop)
@@ -1437,9 +1435,8 @@
   :props (zfc prod2$prop compose$prop domain$prop))
 
 (defthmz compose-f-0
-  (implies (force (funp f))
-           (equal (compose f 0)
-                  0))
+  (equal (compose f 0)
+         0)
   :props (zfc prod2$prop compose$prop domain$prop)
   :hints (("Goal" :in-theory (enable extensionality))))
 
@@ -1474,7 +1471,7 @@
                         (:instance fn-equal-commutative-1 (f g) (g f))))))
 
 (defthmdz fn-equal-implies-in
-  (implies (and (in p f) 
+  (implies (and (in p f)
                 (funp f)
                 (funp g)
                 (fn-equal f g))
@@ -1653,7 +1650,7 @@
            (in (cons n (v-n n))
                (v)))
   :props (zfc v$prop domain$prop)
-  :hints (("Goal" 
+  :hints (("Goal"
            :in-theory (disable v$chooses)
            :use ((:instance v$chooses (x n)
                             (y (apply (v) n)))))))

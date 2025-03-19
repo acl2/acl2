@@ -237,7 +237,7 @@
 
  @({
  (defun-sk relation-p (r)
-   (forall p 
+   (forall p
            (implies (in p r) (consp p)))
    :rewrite :direct)
 
@@ -568,7 +568,7 @@
 
  @({
  (defun foldr (lst fn init)
-   (declare (xargs :guard (true-listp lst)))     
+   (declare (xargs :guard (true-listp lst)))
    (if (endp lst)
        init
      (apply fn
@@ -760,8 +760,9 @@
  generally, each natural number @('n') is an ordinal, namely, the set of
  natural numbers less than @('n').  Thus, the less-than relation (@('<')) on
  natural numbers is simply set membership.  Yet more generally, an
- <i>ordinal</i> is any set that is linearly ordered by set membership.  The
- first infinite ordinal, <i>&omega;</i>, is the set of all natural numbers;
+ <i>ordinal</i> is any set that is <i>transitive</i> &mdash; every element of
+ an element is an element &mdash; and is linearly ordered by set membership.
+ The first infinite ordinal, <i>&omega;</i>, is the set of all natural numbers;
  next is &omega;+1, which is the union of &omega; and {&omega;}, next,
  &omega;+2, and so on, with &omega;+n+1 equal to the union of &omega;+n and
  {&omega;+n}.  The union of all these &omega;+i is &omega;+&omega;, also known
