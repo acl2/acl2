@@ -6,8 +6,12 @@ The [formal-unit-tester/](formal-unit-tester) subdirectory contains "formal unit
 
 # Setup: Obtaining STP
 
-See :doc STP for information about installing the STP SMT solver,
-which is used by Axe.
+See :doc STP, here:
+
+https://www.cs.utexas.edu/~moore/acl2/manuals/latest/?topic=ACL2____STP
+
+for information about installing the STP SMT solver, which is used by
+Axe.
 
 # Setup: Obtaining Java Libraries
 
@@ -23,8 +27,9 @@ and download the file:
 
 jdk-7u80-linux-x64.tar.gz
 
-(To do this, I had to create an Oracle account and accept a license. I did this
-on 4/20/23 and again on 9/27/24.)
+(To do this, I had to create an Oracle account and accept a license.
+I successfully downloaded the file, jdk-7u80-linux-x64.tar.gz, on
+4/20/23 and again on 9/27/24 and again on 3/18/25.)
 
 If you want to check that you have the exact right file, the sha1sum
 and md5sum of jdk-7u80-linux-x64.tar.gz are:

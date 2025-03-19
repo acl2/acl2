@@ -492,8 +492,7 @@
 ;                            LOOKUP-EQUAL-OF-EMPTY-EVAL-CDRS
                             ALISTS-EQUIV-ON-OF-APPEND-ARG1
                             ALISTS-EQUIV-ON-OF-CONS-ARG2
-                            main.help.help))))
-  :otf-flg t)
+                            main.help.help)))))
 
 ;; ;; for the proof, consider 3 cases: var, other trivial formal, non-trivial formal
 ;(skip-proofs
@@ -556,7 +555,6 @@
              (equal (empty-eval-list (subst-var-alt-lst var replacement terms) a)
                     (empty-eval-list (make-lambda-terms-simple (list var) (list replacement) terms) a)))
     :flag induct-subst-var-alt-lst)
-  :otf-flg t
   :hints (("subgoal *1/4"  :use (:instance main (body (lambda-body (car term))) (formals (lambda-formals (car term))) (args (fargs term)))
            :in-theory (e/d (subst-var-alt
                             subst-var-alt-lst
