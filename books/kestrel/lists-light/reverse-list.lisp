@@ -51,7 +51,6 @@
   :hints (("Goal" :in-theory (enable reverse-list revappend append))))
 
 (verify-guards reverse-list :hints (("Goal" :expand ((reverse-list x))
-                                     :do-not '(generalize eliminate-destructors)
                                      :in-theory (e/d (revappend-becomes-append-of-reverse-list) (append-of-nil-arg2)))))
 
 ;; Reasoning should be done about reverse-list, not reverse, when possible.
