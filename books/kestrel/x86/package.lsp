@@ -1459,6 +1459,7 @@
     axe-rewrite-objective ; may not be needed
     dag-array ; for calls of axe-syntaxp functions
     def-simplified-x86
+    dag-val-with-axe-evaluator
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
     pseudo-dag-arrayp
@@ -1490,6 +1491,7 @@
 
     memberp
 
+    list-to-bv-array
     bv-array-to-list
     bv-array-to-list-aux
     bv-array-read
