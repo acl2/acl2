@@ -2450,6 +2450,7 @@
 (defthm bvand-of-constant-when-power-of-2p
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
+                (< 1 k) ; avoid unnecessary bvcat with 0 size lower part (some other rule should fire)
                 (<= (integer-length k) size)
                 (integerp size)
                 (integerp k))
