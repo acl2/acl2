@@ -131,7 +131,7 @@
     "If @(tsee blocks-orderedp) holds,
      block rounds are in strictly increading order from right to left.
      This function returns the latest, i.e. highest, round.
-     If there are no blocks, we totalize this function to return 0.")
+     If there are no blocks, this function returns 0.")
    (xdoc::p
     "Although it may seem natural
      to add @(tsee blocks-orderedp) to this function's guard,

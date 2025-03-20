@@ -150,7 +150,7 @@
     "If @(tsee blocks-ordered-even-p) holds,
      block rounds are in strictly increading order from right to left.
      This function returns the latest, i.e. highest, round.
-     If there are no blocks, we totalize this function to return 0.
+     If there are no blocks, this function returns 0.
      However, we do not require @(tsee blocks-ordered-even-p) in the guard."))
   (if (consp blocks)
       (block->round (car blocks))
