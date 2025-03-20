@@ -1,7 +1,7 @@
 ; Rules about group, group2, etc.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,6 +37,13 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
+
+;remove n?
+(local
+  (defun firstn-of-group-induct (x n m)
+    (if (zp m)
+        (list x n m)
+      (firstn-of-group-induct (nthcdr n x) n (+ -1 m)))))
 
 (defthm group-becomes-group2
   (implies (and (equal 0 (mod (len x) n))
@@ -287,8 +294,6 @@
                   (cons (firstn n x)
                         (group n (nthcdr n x)))))
   :hints (("Goal" :in-theory (enable group))))
-
-(in-theory (disable integerp-of-small))
 
 ;this can probably loop!
 (defthmd nth-when-equal-of-take

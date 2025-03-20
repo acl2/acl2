@@ -1,7 +1,7 @@
 ; MYIF, an alias for IF
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,8 @@
   (equal (if x y z)
          (myif x y z))
   :hints (("Goal" :in-theory (enable myif))))
+
+(theory-invariant (incompatible (:rewrite if-becomes-myif) (:definition myif)))
 
 (defthm myif-of-constant-when-not-nil
   (implies (and (syntaxp (quotep x))

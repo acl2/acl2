@@ -14,8 +14,8 @@
 ;stuff about the function group, which chops a list into segments
 ;; TODO: harvest good lemmas from this book
 
-(include-book "kestrel/utilities/myif" :dir :system) ;drop?
-(include-book "firstn-def")
+(include-book "group-def")
+(include-book "kestrel/utilities/myif-def" :dir :system) ;drop?
 (include-book "subrange-def")
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
@@ -58,37 +58,37 @@
                (items-have-len n y)))
   :hints (("Goal" :in-theory (enable myif))))
 
-(defthmd integerp-of-small-helper
-  (implies (and (< x n)
-                (posp x)
-                (posp n))
-           (not (integerp (* (/ n) x))))
-  :hints (("Goal" :in-theory (enable)
-           :cases ((< (* (/ n) x) 0)
-                   (<= 1 (* (/ n) x))))))
+;; (defthmd integerp-of-small-helper
+;;   (implies (and (< x n)
+;;                 (posp x)
+;;                 (posp n))
+;;            (not (integerp (* (/ n) x))))
+;;   :hints (("Goal" :in-theory (enable)
+;;            :cases ((< (* (/ n) x) 0)
+;;                    (<= 1 (* (/ n) x))))))
 
-;make an alt rule
-;simplify the rhs more?
-(defthm integerp-of-small-helper-2
-  (implies (and (< x n)
-                (natp x)
-                (posp n))
-           (equal (integerp (* (/ n) x))
-                  (equal 0 (* (/ n) x))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
-  :hints (("Goal" :in-theory (enable integerp-squeeze)
-           :cases ((< (* (/ n) x) 0)
-                   (<= 1 (* (/ n) x))))))
+;; ;make an alt rule
+;; ;simplify the rhs more?
+;; (defthmd integerp-of-small-helper-2
+;;   (implies (and (< x n)
+;;                 (natp x)
+;;                 (posp n))
+;;            (equal (integerp (* (/ n) x))
+;;                   (equal 0 (* (/ n) x))))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
+;;   :hints (("Goal" :in-theory (enable integerp-squeeze)
+;;            :cases ((< (* (/ n) x) 0)
+;;                    (<= 1 (* (/ n) x))))))
 
-;limit?
-(defthm integerp-of-small
-  (implies (and (< x n)
-                (natp x)
-                (posp n))
-           (equal (integerp (* (/ n) x))
-                  (equal x 0)))
-  :hints (("Goal" :use integerp-of-small-helper
-           :in-theory (disable integerp-of-small-helper))))
+;; ;limit?
+;; ;rename
+;; (defthmd integerp-of-small
+;;   (implies (and (< x n)
+;;                 (natp x)
+;;                 (posp n))
+;;            (equal (integerp (* (/ n) x))
+;;                   (equal x 0)))
+;;   :hints (("Goal" :use integerp-of-small-helper)))
 
 (defthm <-of-/-same
   (implies (and (< 0 x)
@@ -162,9 +162,7 @@
            :use (my-FLOOR-UPPER-BOUND
                  ;(:instance <-*-/-LEFT (x i) (a 2) (y j))
                  )
-           :in-theory (disable my-FLOOR-UPPER-BOUND
-                               my-FLOOR-UPPER-BOUND
-                               ))))
+           :in-theory (disable my-floor-upper-bound))))
 
 ;gen the 1 !
 (defthmd floor-bound-hack-2
@@ -175,10 +173,7 @@
   :hints (("Goal"
            :use (;(:instance FLOOR-UPPER-BOUND-better (x i) (y j))
                  my-FLOOR-lower-BOUND)
-           :in-theory (disable my-FLOOR-UPPER-BOUND
-                               my-FLOOR-UPPER-BOUND
-                               ))))
-
+           :in-theory (disable my-floor-upper-bound))))
 
 (defthm floor-bound-hack-3
   (implies (and (posp j)
@@ -196,7 +191,6 @@
            :in-theory (disable floor-bound-hack-3))))
 
 (local (in-theory (enable floor-must-be-1)))
-
 
 ;;(EQUAL (FIRSTN N X) (LIST (NTH 0 X)))
 
@@ -265,17 +259,6 @@
                            (subrange 1 (+ -1 (min (nfix n) (len x))) x))
            :in-theory (enable))))
 
-;only makes sense when (len x) is a multiple of n?
-(defund group (n x)
-  (declare (xargs :measure (+ 1 (len x))
-                  :guard (and (true-listp x) ;would be nice for firstn's guard to not require true-listp
-                              (posp n))))
-  (if (or (not (mbt (posp n)))
-          (atom x))
-      nil
-    (cons (firstn n x)
-          (group n (nthcdr n x)))))
-
 (defthm consp-of-group
   (implies (posp n)
            (equal (consp (group n list))
@@ -283,11 +266,11 @@
   :hints (("Goal" :in-theory (enable group))))
 
 ;drop?
-(defthm endp-of-group
-  (implies (posp n)
-           (equal (endp (group n list))
-                  (endp list)))
-  :hints (("Goal" :in-theory (enable endp))))
+;; (defthm endp-of-group
+;;   (implies (posp n)
+;;            (equal (endp (group n list))
+;;                   (endp list)))
+;;   :hints (("Goal" :in-theory (enable endp))))
 
 (defthm cdr-of-group
   (implies (posp n)
@@ -327,10 +310,11 @@
                             )))))
 
 ;remove n?
-(defun firstn-of-group-induct (x n m)
-  (if (zp m)
-      (list x n m)
-    (firstn-of-group-induct (nthcdr n x) n (+ -1 m))))
+(local
+  (defun firstn-of-group-induct (x n m)
+    (if (zp m)
+        (list x n m)
+      (firstn-of-group-induct (nthcdr n x) n (+ -1 m)))))
 
 (local (in-theory (disable NTHCDR-OF-TRUE-LIST-FIX)))
 
@@ -461,23 +445,12 @@
 ;;   (equal (PERM X (LIST (NTH 0 X)))
 ;;          (equal 1 (len x))))
 
-;move
-(defthm car-of-firstn
-  (implies (posp n)
-           (equal (car (firstn n x))
-                  (car x))))
-
 ;; or go from (NTHCDR (LEN X) X) to finalcdr
-(defthm append-of-nthcdr-of-len-same
-  (equal (APPEND (NTHCDR (LEN X) X) Y)
-         y)
-  :hints (("Goal" :in-theory (enable equal-of-append))))
-
-(DEFTHMd FIRSTN-WHEN-Zp
-  (IMPLIES (ZP N)
-           (EQUAL (FIRSTN N X)
-                  NIL))
-  :HINTS (("Goal" :IN-THEORY (ENABLE FIRSTN))))
+(local
+  (defthm append-of-nthcdr-of-len-same
+    (equal (APPEND (NTHCDR (LEN X) X) Y)
+           y)
+    :hints (("Goal" :in-theory (enable equal-of-append)))))
 
 ;only do this if there are whole chunks to cut off..
 (defthmd group-of-append-1
@@ -590,7 +563,8 @@
                   (equal 0 (mod (len x) n))))
   :hints (("Goal" :in-theory (enable GROUP items-have-len))))
 
-(defthm true-listp-of-group
+;; Should only be needed by Axe, since ACL2 knows this by :type-prescription
+(defthmd true-listp-of-group
   (true-listp (group n x)))
 
 (defthm all-true-listp-of-group

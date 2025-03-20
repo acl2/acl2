@@ -51,7 +51,7 @@
   (true-listp (firstn n x)))
 
 ;; Only needeed for Axe, since ACL2 knows this by type-prescription.
-(defthmd true-listp-of-true-list-fix2
+(defthmd true-listp-of-true-list-fix
   (true-listp (true-list-fix x)))
 
 ;; Only needeed for Axe, since ACL2 knows this by type-prescription.

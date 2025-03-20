@@ -1,7 +1,7 @@
 ; A version of unroll-spec that uses rewriter-basic.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -41,37 +41,6 @@
 (include-book "kestrel/axe/util2" :dir :system) ; not strictly needed but brings in symbolic-list
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
-
-;move to rule-lists.lisp
-(defun unroll-spec-basic-rules ()
-  (set-difference-eq
-   (append (base-rules)
-           (amazing-rules-bv)
-           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
-           (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
-           ;; (introduce-bv-array-rules)
-           ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
-           (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
-           ;; Handle nth of a 2-d array:
-           '(nth-becomes-nth-to-unroll-for-2d-array
-             nth-to-unroll-opener
-             collect-constants-over-<-2
-             ;; group-base group-unroll ; I guess we get these automatically from calling opener-rules-for-fns
-             len-of-group ;; these are not needed if we unroll group/ungroup
-             consp-of-group
-             nth-of-group
-             ungroup-of-cons)
-           ;; (bv-array-rules-simple)
-           ;; (list-to-bv-array-rules)
-           ;; (set-difference-eq (core-rules-bv)
-           ;;                    ;; these are kind of like trim rules, and can make the result worse:
-           ;;                    '(;BVCHOP-OF-BVPLUS
-           ;;                      BVCHOP-OF-bvuminus
-           ;;                      ))
-           ;; (unsigned-byte-p-forced-rules)
-           )
-   ;; can lead to blowup in lifting md5:
-   (bvplus-rules)))
 
 (ensure-rules-known (unroll-spec-basic-rules))
 

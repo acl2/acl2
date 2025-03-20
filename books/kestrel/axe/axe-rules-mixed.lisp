@@ -16,13 +16,24 @@
 
 ;; This file was called dagrulesmore.lisp.
 
-(include-book "rules1")
-(include-book "kestrel/bv/rules6" :dir :system)
-(include-book "rules3") ;drop? ;for BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-no-split
+;; TODO: Combine with bv-rules-axe but first deal with the dependence on rules3
+
 (include-book "axe-syntax-functions")
 (include-book "axe-syntax-functions-bv")
-(include-book "kestrel/lists-light/all-same" :dir :system)
-(local (include-book "list-rules"))
+(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/bvlt" :dir :system)
+(include-book "kestrel/bv/sbvlt" :dir :system)
+(include-book "kestrel/bv/bvdiv" :dir :system)
+(include-book "kestrel/bv/trim" :dir :system)
+(include-book "kestrel/bv/bvmult" :dir :system)
+(include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
+(include-book "kestrel/booleans/boolor" :dir :system)
+(include-book "kestrel/booleans/booland" :dir :system)
+(include-book "kestrel/arithmetic-light/lg" :dir :system)
+;(include-book "rules1")
+;(include-book "kestrel/bv/rules6" :dir :system) ; reduce?
+(local (include-book "rules3")) ;drop? ;for BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-no-split
+;(local (include-book "list-rules"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;drop?
@@ -111,7 +122,8 @@
   :hints (("Goal" :use (:instance bvlt-tighten)
            :in-theory (disable bvlt-tighten))))
 
-(defthmd bvlt-of-constant-when-usb-dag
+;rename
+(defthmd not-bvlt-of-constant-when-usb-dag
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= (expt 2 xsize) (bvchop size k))
@@ -120,8 +132,8 @@
                 (integerp size)
                 (unsigned-byte-p-forced xsize x))
            (not (bvlt size k x)))
-  :hints (("Goal" :use (:instance bvlt-of-constant-when-usb)
-           :in-theory (disable bvlt-of-constant-when-usb))))
+  :hints (("Goal" :use (:instance not-bvlt-of-constant-when-usb)
+           :in-theory (disable not-bvlt-of-constant-when-usb))))
 
 
 ;gross?!
@@ -381,49 +393,6 @@
            (< (+ x (- y)) k))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
-(defthmd nth-of-plus-of-bv-and-minus
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (natp y)
-                (unsigned-byte-p-forced xsize x))
-           (equal (nth (+ x (- y)) lst)
-                  (if (<= y x)
-                      (nth (bvplus xsize x (- y)) lst)
-                    (nth 0 lst))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvminus bvuminus unsigned-byte-p-forced nth) (;NTH-OF-CDR
-                                                                                        )))))
-
-(defthmd nth-of-plus-of-bv-and-minus-alt
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (natp y)
-                (unsigned-byte-p-forced xsize x))
-           (equal (nth (+ (- y) x) lst)
-                  (if (<= y x)
-                      (nth (bvplus xsize x (- y)) lst)
-                    (nth 0 lst))))
-  :hints (("Goal" :use (:instance nth-of-plus-of-bv-and-minus)
-           :in-theory (disable nth-of-plus-of-bv-and-minus))))
-
-(defthmd repeat-of-plus-of-bv-and-minus
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (natp y)
-                (unsigned-byte-p-forced xsize x))
-           (equal (repeat (+ x (- y)) v)
-                  (if (<= y x)
-                      (repeat (bvplus xsize x (- y)) v)
-                    (repeat 0 v))))
-  :hints (("Goal" :in-theory (enable bvplus bvminus bvuminus unsigned-byte-p-forced))))
-
-(defthmd repeat-of-plus-of-bv-and-minus-alt
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (natp y)
-                (unsigned-byte-p-forced xsize x))
-           (equal (repeat (+ (- y) x) v)
-                  (if (<= y x)
-                      (repeat (bvplus xsize x (- y)) v)
-                    (repeat 0 v))))
-  :hints (("Goal" :use (:instance repeat-of-plus-of-bv-and-minus)
-           :in-theory (disable repeat-of-plus-of-bv-and-minus))))
-
 (defthmd <-of-constant-and-+-of-bv-and-minus
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= 0 k) ;could this be expensive?
@@ -554,51 +523,6 @@
 ;           :cases ((equal 1 (GETBIT 29 X)))
            :in-theory (enable bvlt sbvlt bvplus bvuminus bvminus bvchop-of-sum-cases unsigned-byte-p-forced getbit-of-+ sbvlt-rewrite))))
 
-;move
-(defthm <-of-if-arg1-safe
-  (implies (syntaxp (quotep k))
-           (equal (< (if test x y) k)
-                  (if test (< x k) (< y k)))))
-
-;move
-(defthmd bvchop-identity-when-<=
-  (implies (and (unsigned-byte-p size x)
-                (unsigned-byte-p size y)
-                (<= y x))
-           (equal (bvchop size (+ x (- y)))
-                  (+ x (- y))))
-;  :hints (("Goal" :use (:instance bvchop-identity (i (+ x (- y))))))
-  :hints (("Goal" :in-theory (disable expt
-                                      UNSIGNED-BYTE-P-OF-+-OF-MINUS-BETTER-HELPER ;yuck
-                                      )))
-  )
-
-(defthmd firstn-of-+-of-minus
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y))
-           (equal (firstn (+ x (- y)) z)
-                  (if (< x y)
-                      nil
-                    (firstn (bvplus (max xsize ysize) x (bvuminus (max xsize ysize) y)) z))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvuminus bvminus unsigned-byte-p-forced <-of-if-arg1
-                                          bvchop-identity-when-<=)
-                                  (UNSIGNED-BYTE-P-OF-+-OF-MINUS
-                                   FIRSTN-BECOMES-TAKE-GEN)))))
-
-(defthmd firstn-of-+-of-minus-2
-  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
-                (unsigned-byte-p-forced xsize x)
-                (unsigned-byte-p-forced ysize y))
-           (equal (firstn (+ x (- y)) z)
-                  (if (< x y)
-                      nil
-                    (firstn (bvplus (max xsize ysize) x (bvuminus (max xsize ysize) y)) z))))
-  :hints (("Goal" :use (:instance firstn-of-+-of-minus)
-           :in-theory (disable firstn-of-+-of-minus))))
-
 (defthmd unsigned-byte-p-of-+-of-minus-better
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
@@ -613,20 +537,6 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-+-of-minus-better-helper (size (max xsize ysize)))
            :in-theory (enable unsigned-byte-p-forced))))
 
-;move
-(defthmd nth-of-bv-when-all-same
-  (implies (and (syntaxp (quotep lst))
-                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (all-same lst)
-                (< (len lst) (expt 2 xsize))
-                (unsigned-byte-p-forced xsize x))
-           (equal (nth x lst)
-                  (if (bvlt xsize x (len lst))
-                      (car lst)
-                    nil)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p-forced nth-when-all-same) (all-same
-                                                                                   ;CAR-BECOMES-NTH-OF-0 ;looped
-                                                                                   )))))
 ;gen!
 (defthmd equal-of-constant-and-bvchop-when-bvlt
   (implies (and (axe-rewrite-objective 't)

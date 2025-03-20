@@ -59,8 +59,6 @@
 (include-book "get-prefixes")
 (include-book "interrupt-servicing")
 (include-book "std/strings/hexify" :dir :system)
-(include-book "catalogue-doc")
-(include-book "inst-doc")
 
 (local (include-book "dispatch-creator"))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))

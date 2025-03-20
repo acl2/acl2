@@ -125,14 +125,14 @@
        ((unless (>= (committee-members-stake signers commtt)
                     (committee-quorum-stake commtt)))
         nil)
+       ((unless (set::emptyp
+                 (certs-with-author+round prop.author prop.round vstate.dag)))
+        nil)
        ((when (= prop.round 1))
         t)
        ((unless (set::subset prop.previous
                              (cert-set->author-set
                               (certs-with-round (1- prop.round) vstate.dag))))
-        nil)
-       ((unless (set::emptyp
-                 (certs-with-author+round prop.author prop.round vstate.dag)))
         nil))
     t)
   :guard-hints (("Goal" :in-theory (enable posp)))

@@ -117,14 +117,7 @@
   :hints (("Goal" :in-theory (enable bvshl))))
 
 ;these undo the shifting/masking changes
-(in-theory (disable bvand-of-expt
-                    bvand-128-hack
-                    bvand-64-hack
-                    bvand-32-hack
-                    bvand-16-hack
-                    bvand-8-hack
-                    bvand-4-hack
-                    bvand-2-hack
+(in-theory (disable bvand-of-constant-when-power-of-2p
                     bvand-with-constant-mask-arg2
                     bvand-with-constant-mask-arg3
                     ;bvand-of-constant-tighten

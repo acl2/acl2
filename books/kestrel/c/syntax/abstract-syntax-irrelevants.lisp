@@ -64,6 +64,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-iconst
+  :short "An irrelevant integer constant."
+  :type iconstp
+  :body (make-iconst :core (dec/oct/hex-const-dec 1)
+                     :suffix? nil
+                     :info nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-dec-expo-prefix
   :short "An irrelevant decimal exponent prefix."
   :type dec-expo-prefixp

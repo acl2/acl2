@@ -69,6 +69,10 @@
          (equal (getbit 0 x) (getbit 0 y)))
   :hints (("Goal" :in-theory (enable bitnot))))
 
+(defthm not-equal-of-bitnot-same
+  (not (equal (bitnot x) x))
+  :hints (("Goal" :in-theory (enable bitnot))))
+
 (defthmd bitnot-becomes-subtract
   (implies (bitp x)
            (equal (bitnot x)

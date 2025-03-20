@@ -515,3 +515,23 @@
                                      nth
                                      ) (NTH-OF-CDR
                                         TAKE-OF-CDR)))))
+
+;; ;; gen the len-1 term?
+;; (defthm equal-of-nthcdr-and-subrange-of-minus1
+;;   (implies (and (natp n)
+;;                 (natp len)
+;;                 (<= len (len array))
+;;                 (true-listp array)
+;;                 (<= n len)
+;;                 )
+;;            (equal (equal (nthcdr n array) (subrange n (+ -1 len) array))
+;;                   (equal len (len array))))
+;;   :hints (("Goal" :in-theory (enable subrange))))
+
+(defthm equal-of-nthcdr-and-subrange-same
+  (implies (and (<= n high)
+                (natp high))
+           (equal (equal (nthcdr n x) (subrange n high x))
+                  (and (equal high (+ -1 (len x)))
+                       (true-listp x))))
+  :hints (("Goal" :in-theory (enable subrange))))

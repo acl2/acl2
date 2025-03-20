@@ -74,7 +74,7 @@
     (xdoc::topstring
      (xdoc::p
       "We model the memory as a list of @($2^{32}$) unsigned bytes,
-       which can be interpreted in different eays (see operations on states).")
+       which can be interpreted in different ways (see operations on states).")
      (xdoc::p
       "This is the whole address space,
        although not all of it may be accessible,
@@ -234,7 +234,7 @@
      at least in the normal encoding, instructions take 32 bits each.
      We may generalize this function, or add an alternative one,
      if and when we extend our model to support
-     compressed encodingsin the C extension [ISA:26].")
+     compressed encodings in the C extension [ISA:26].")
    (xdoc::p
     "We read the program counter, we add 4, and we write the result.
      Recall that @(tsee write32-pc) wraps around if needed [ISA:1.4]."))

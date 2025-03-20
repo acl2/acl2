@@ -572,7 +572,7 @@
 (defun core-rules-bv ()
   (declare (xargs :guard t))
   (append
-   (bvchop-of-bv-rules)
+   (bvchop-of-bv-rules) ; todo: consider dropping these
    (unsigned-byte-p-rules)
    (bv-constant-chop-rules)
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
@@ -740,6 +740,7 @@
      bvnot-becomes-bvxor ;new! fri jan 28 13:08:38 2011
 
      equal-of-0-and-bvxor
+     ;; equal-of-0-and-bitxor
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
 
      bitxor-of-unary-minus-arg1 ;fixme lots of others like this, or use trim!
@@ -826,7 +827,7 @@
      bvif-of-getbit-arg3
      bvif-of-getbit-arg4
 
-     bvlt-self
+     not-bvlt-self
      bvlt-of-bvmod-false
      bvlt-transitive-1-a
      bvlt-transitive-1-b
@@ -1101,6 +1102,10 @@
      ;; bvor-disjoint-ones-arg2-gen
      bvor-of-bvcat-becomes-bvcat-arg2
      bvor-of-bvcat-becomes-bvcat-arg3
+     bvxor-of-bvcat-becomes-bvcat-arg2
+     bvxor-of-bvcat-becomes-bvcat-arg3
+     bvplus-of-bvcat-becomes-bvcat-arg2
+     bvplus-of-bvcat-becomes-bvcat-arg3
      )))
 
 ;todo combine this with core-rules-bv
@@ -1286,35 +1291,115 @@
     not-equal-of-nil-and-update-nth
     consp-of-update-nth))
 
+;; One goal of this rule-list is to be able to simplify terms involving the
+;; special functions that unroll-spec-basic has been instructed NOT to unroll
+;; when :rules is :auto.
 (defun list-rules ()
   (declare (xargs :guard t))
-  '(
-    ;; simple opener rules:
-    atom ; opens to expose CONSP ;thu mar  4 22:01:54 2010
-    endp ; opens to expore ATOM (todo: go directly?) ;fri dec 24 16:32:13 2010
-    ;; what do we want to do about LISTP (not used very much)?
-    ;; rules about take:
-    take-of-0 ;take-when-zp-n ;sun feb 20 00:29:56 2011
-    take-of-append
-    len-of-take
-    consp-of-take
-    take-of-cons
-    true-listp-of-take
-    take-of-take
-    take-does-nothing ; introduces true-list-fix
-    ;; rules about cdr:
-    true-listp-of-cdr
-    ;; rules about cons:
+  '(;; Simple opener rules:
+    atom ; opens to expose CONSP
+    endp ; opens to expore ATOM (todo: go directly?)
+
+    ;; Rules about cons:
     car-cons
     cdr-cons
     consp-of-cons ;also elsewhere?
-    ;; mixed rules:
+    len-of-cons
     true-listp-of-cons
-    len-update-nth ;pretty aggressive
-    true-listp-of-update-nth-2
-    nthcdr-of-nil
+    take-of-cons
+    nth-of-cons-constant-version
+
+    ;; Rules about cdr:
+    ;; todo: rule for car-of-cdr?
+    ;; todo: cdr-of-cdr-becomes-nthcdr
+    consp-of-cdr ; introduces len
+    len-of-cdr
+    true-listp-of-cdr
+    ;; todo: rule for take-of-cdr?
+    nth-of-cdr
+
+    ;; Rules about take:
+    car-of-take-strong
+    cdr-of-take
+    consp-of-take
+    len-of-take
+    true-listp-of-take
+    take-of-take
     nth-of-take-2-gen ;quite aggressive
+
+    ;; Rules about append:
+    car-of-append
+    cdr-of-append
+    consp-of-append
+    len-of-append
+    true-listp-of-append
+    take-of-append
+    nth-of-append ;may be bad if we can't resolve the if test?
+
+    ;; Rules about nthcdr:
+    car-of-nthcdr ; introduces nth
+    cdr-of-nthcdr ; combines the cdr and the nthcdr
+    consp-of-nthcdr
+    len-of-nthcdr
+    true-listp-of-nthcdr-2
+    ;; should we have a take-of-nthcdr rule?  would have to go to subrange?  or move the take inside...
+    nth-of-nthcdr
+
+    ;; Rules about update-nth:
+    car-of-update-nth
+    cdr-of-update-nth
+    consp-of-update-nth
+    len-update-nth ;pretty aggressive, todo: rename?  but this is built in
+    true-listp-of-update-nth-2
+    ;; should we have a rule for take-of-update-nth ?
+    nth-update-nth-safe
+
+    ;; Rules about firstn (or we can always convert it to take -- todo: try that rule first?):
+    car-of-firstn
+    ;; todo: cdr-of-firstn?
+    consp-of-firstn
+    len-of-firstn
+    true-listp-of-firstn
+    ;; todo: take-of-firstn?
+    nth-of-firstn
+
+    ;; Rules about true-list-fix
+    car-of-true-list-fix
+    cdr-of-true-list-fix
+    consp-of-true-list-fix
+    len-of-true-list-fix
+    true-listp-of-true-list-fix
+    take-of-true-list-fix ; more like this, but lower priority?
+    nth-of-true-list-fix
+
+    ;; Rules about reverse-list
+    car-of-reverse-list
+    cdr-of-reverse-list
+    consp-of-reverse-list
+    len-of-reverse-list
+    true-listp-of-reverse-list
+    ;; todo: take-of-reverse-list
+    nth-of-reverse-list
+
+    ;; Rules about repeat
+    car-of-repeat
+    cdr-of-repeat
+    consp-of-repeat
+    len-of-repeat  ;since initializing an array calls repeat
+    true-listp-of-repeat
+    take-of-repeat-2 ; todo: take-of-repeat
+    nth-of-repeat
+
+    ;; mixed rules:
+
+    take-of-0 ;take-when-zp-n
+    take-does-nothing ; introduces true-list-fix
+
+    ;; what do we want to do about LISTP (not used very much)?
+
+    nthcdr-of-nil
     repeat-becomes-repeat-tail
+    repeat-of-0
     nthcdr-of-cons
     equal-cons-nth-0-self
     equal-of-nthcdr-and-cons-of-nth
@@ -1322,46 +1407,33 @@
     equal-of-nil-and-nthcdr
     cdr-of-cdr-becomes-nthcdr ;these nthcdr rules are new
     nthcdr-of-cdr-combine
-    cdr-of-nthcdr
-    consp-of-nthcdr
-    len-of-nthcdr
-    nth-of-nthcdr
+
     nthcdr-of-1
     nthcdr-of-0
     nthcdr-when-not-posp ;drop?
     firstn-when-zp-cheap
-    nth-update-nth-safe
-    true-listp-of-append
+
     append-of-cons-arg1
-    consp-of-append
+
     append-of-nil-arg1
     append-of-nil-arg2
-    consp-of-update-nth
-    true-listp-of-true-list-fix2
-    len-of-true-list-fix
+
     true-list-fix-when-true-listp
-    true-listp-of-repeat
-    len-of-repeat  ;since initializing an array calls repeat
-    len-of-cons
-    nth-of-cons-constant-version
+
     integerp-of-len
     natp-of-len
     len-non-negative
     nthcdr-of-append-gen
     firstn-of-append ;todo: do we prefer firstn or take?  are rules about both needed?
-    firstn-becomes-take-gen
-    consp-of-reverse-list
-    nth-of-reverse-list ;sat dec  4 13:20:17 2010
+    firstn-becomes-take-gen ;try this first?
     reverse-list-of-cons
-    car-of-reverse-list ;sun feb  6 11:15:00 2011
-    cdr-of-reverse-list ;sun feb  6 11:15:00 2011
-    len-of-reverse-list ;sun feb  6 11:15:00 2011
-    len-of-append
-    nth-of-append ;may be bad if we can't resolve the if test?
-    len-of-firstn ;sun feb  6 11:16:17 2011
+
     equal-cons-nil-1
     equal-cons-nil-2
-    consp-of-myif-strong))
+    consp-of-myif-strong
+
+    consp-when-len-equal-constant
+    consp-when-len-equal-constant-alt))
 
 ;; TODO: Move some of these into list-rules.
 (defun list-rules2 ()
@@ -1369,10 +1441,9 @@
   (append (list-rules)
           '(finalcdr-iff
             ;;consp-of-finalcdr ;wed sep 22 17:46:19 2010
-            nth-of-firstn               ;sun sep  5 23:11:14 2010
+
             cons-equal-rewrite-constant-version ;sun sep  5 05:09:23 2010
             nthcdr-of-nthcdr                    ;sun sep  5 05:01:31 2010
-            consp-of-firstn                     ;fri sep  3 04:06:54 2010
             ;;list::nthcdr-of-len-or-more ;make a cheap version?
 
             equal-of-subrange-opener ;not in the usual rule set
@@ -1381,12 +1452,11 @@
 
             equal-of-take-and-firstn
             firstn-when-<=-of-len
-            nth-of-take-2
+            ;; nth-of-take-2
             append-of-firstn-and-cons-when-nth
             append-of-firstn-of-cons-of-nth
             cons-nth-onto-subrange-alt
             equal-subrange-nthcdr-rewrite
-            true-listp-of-firstn
 
             ;;firstn-of-cdr-becomes-subrange ; drop?
             append-of-take-and-cons-when-nth ;could be expensive
@@ -1396,10 +1466,7 @@
             append-of-take-and-subrange-alt
             equal-of-cons
             cdr-iff
-            car-becomes-nth-of-0
-            nth-of-cdr
-            consp-of-cdr
-            len-of-cdr
+            car-becomes-nth-of-0 ; aggressive, try last?
             nthcdr-iff
             +-combine-constants
             <-of-+-arg2-when-negative-constant
@@ -1618,7 +1685,7 @@
   (append
    (bv-array-rules-simple)
    '(bv-array-write-of-bvxor             ;use a trim rule?
-     len-of-bv-array-write                         ;a bv-list rule
+     len-of-bv-array-write
      all-unsigned-byte-p-of-bv-array-write
      true-listp-of-bv-array-write
 ;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays-alt
@@ -1779,8 +1846,7 @@
 ;    logext-list-of-logext-list
 
     ;; bvchop-of-bvnth
-    cdr-of-update-nth
-    car-of-update-nth))
+    ))
 
 ;fixme a few of these are -all rules...
 ;ffixme we shouldn't use these without the trim-helpers  - add them to this?
@@ -1900,7 +1966,7 @@
     array-reduction-when-top-bit-is-irrelevant  ;; at least one of these seems needed for aes-128-decrypt
     array-reduction-0-1
     array-reduction-1-0
-    array-reduction-when-all-same-improved2
+    bv-array-read-when-all-same
     bv-array-read-of-bvmult-discard-vals
     bv-array-read-of-bvplus-of-bvmult-discard-vals
     bv-array-read-of-+-of-constant-shorten ; for when we have + for the index (but we may prefer a bvplus) ; todo: make a bvplus version
@@ -1988,7 +2054,7 @@
           (bv-array-rules) ;todo: drop?
           (type-rules)
           (core-rules-bv)
-          (core-rules-non-bv) ;fixme remove these?
+          (core-rules-non-bv) ; todo: remove these?
           (bvif-rules)
           (unsigned-byte-p-rules)
           ;; probably more stuff needs to be added to this??  list stuff from more-rules / more-rules-yuck / jvm-rules-jvm?
@@ -2124,7 +2190,7 @@
     equal-of-bvplus-and-bvplus-hack-sha1
     equal-of-slice-and-slice-of-bvplus-of-1
     bvplus-of-bvuminus-of-bvmult-of-slice-same
-    bvlt-self ;drop
+    not-bvlt-self ;drop
     bvlt-of-bvcat-arg3-bvmult-version
     bvdiv-31-4
 
@@ -2330,8 +2396,8 @@
 ;     equal-of-myif-same
      ;;<-becomes-bvlt-alt
      <-becomes-bvlt-axe-bind-free-and-bind-free
-     equal-when-bvlt
-     equal-when-bvlt-alt
+     not-equal-when-bvlt
+     not-equal-when-bvlt-alt
      bvplus-of-bvuminus-tighten-gen-no-split-dag
      ;;turn-equal-around-axe3 ;this seemed to loop with the ...4 version
      unsigned-byte-p-of-bvplus-wider-9-10
@@ -2373,8 +2439,8 @@
      bvlt-when-bit-2-1-hack
      bvlt-of-4-hack
 
-;                        equal-of-constant-when-bvlt-constant-1-alt
-;                       equal-of-constant-when-bvlt-constant-2-alt
+;                        not-equal-of-constant-when-bvlt-constant-1-alt
+;                       not-equal-of-constant-when-bvlt-constant-2-alt
 
      bvplus-minus-13-tighten-32
      bvlt-of-bvmult5-4-13
@@ -2571,7 +2637,7 @@
 
      equal-of-bvplus-cancel-arg2 ;drop?
 
-     equal-of-0-and-bitxor
+     equal-of-0-and-bitxor ; tried moving this to core-rules-bv, but that caused problems.  we need bitxor cancellation rules.  (why doesn't the same thing happen for bvxor?)
      equal-of-bool-to-bit-split
      iff ;causes a split (todo: consider opening iff to equal of bool-fixes)
      bvlt-of-bvplus-of-bvuminus
@@ -3158,10 +3224,10 @@
              bitxor-when-equal-of-constant-and-bvchop-arg2
              <-of-+-cancel-1-2+  ; todo: also add commutativity of plus?
              getbit-when-equal-of-constant-and-bvchop
-             equal-of-constant-when-not-bvlt-constant-1
-             equal-of-constant-when-not-bvlt-constant-2
-             equal-of-constant-when-bvlt-constant-1
-             equal-of-constant-when-bvlt-constant-2
+             not-equal-of-constant-when-not-bvlt-constant-1
+             not-equal-of-constant-when-not-bvlt-constant-2
+             not-equal-of-constant-when-bvlt-constant-1
+             not-equal-of-constant-when-bvlt-constant-2
 
              bv-array-read-of-unary-minus-32-2 ;new
              bvuminus-of-myif-arg2
@@ -3318,7 +3384,7 @@
 
              floor-of-32-when-usb
              list-fix-of-append
-             bvlt-of-constant-when-usb-dag
+             not-bvlt-of-constant-when-usb-dag
              minus-becomes-bv-2
 ;commutativity-2-of-+
 
@@ -3920,8 +3986,39 @@
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
           (introduce-bv-array-rules)
           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
-          (introduce-bv-array-rules)  ;todo: duplicated above!
           ))
+
+;; todo: compare to unroll-spec-rules above
+;; todo: avoid trimming down things like xors (possibly to multiple different sizes)?
+(defun unroll-spec-basic-rules ()
+  (set-difference-eq
+   (append (base-rules)
+           (amazing-rules-bv)
+           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
+           (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
+           ;; (introduce-bv-array-rules) ; todo: consider these
+           ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
+           (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
+           ;; Handle nth of a 2-d array:
+           '(nth-becomes-nth-to-unroll-for-2d-array
+             nth-to-unroll-opener
+             collect-constants-over-<-2
+             ;; group-base group-unroll ; I guess we get these automatically from calling opener-rules-for-fns (but not with :rules :standard, so try adding these back here)
+             len-of-group ;; these are not needed if we unroll group/ungroup
+             consp-of-group
+             nth-of-group
+             ungroup-of-cons)
+           ;; (bv-array-rules-simple)
+           ;; (list-to-bv-array-rules)
+           ;; (set-difference-eq (core-rules-bv)
+           ;;                    ;; these are kind of like trim rules, and can make the result worse:
+           ;;                    '(;BVCHOP-OF-BVPLUS
+           ;;                      BVCHOP-OF-bvuminus
+           ;;                      ))
+           ;; (unsigned-byte-p-forced-rules)
+           )
+   ;; can lead to blowup in lifting md5:
+   (bvplus-rules)))
 
 ;outside-in rules.  Only used in rewriter-alt.lisp.
 (defun oi-rules ()
@@ -4023,7 +4120,7 @@
 ;want this to fire before the more general rules about boolif of constants:
 (set-axe-rule-priority boolif-of-nil-and-t -1)
 
-(set-axe-rule-priority BVLT-SELF -1) ;may fix a loop on (BVLT '32 (BVUMINUS '32 x) (BVUMINUS '32 x)) ??
+(set-axe-rule-priority not-bvlt-self -1) ;may fix a loop on (BVLT '32 (BVUMINUS '32 x) (BVUMINUS '32 x)) ??
 
 (set-axe-rule-priority equal-same -1) ;new
 

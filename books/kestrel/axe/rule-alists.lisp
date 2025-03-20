@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "make-axe-rules")
+(include-book "make-axe-rules") ; todo: reduce?
 (include-book "stored-rules")
 (include-book "kestrel/alists-light/uniquify-alist-eq" :dir :system)
 (include-book "kestrel/utilities/acons-fast" :dir :system) ; move this book
@@ -59,11 +59,12 @@
 
 ;rename
 ;disable outside of axe, or make a :forward-chaining rule
-(defthm rule-alistp-means-alistp
-  (implies (rule-alistp alist)
-           (alistp alist))
-  :rule-classes ((:rewrite :backchain-limit-lst 1))
-  :hints (("Goal" :in-theory (enable rule-alistp))))
+(local
+  (defthmd rule-alistp-means-alistp
+    (implies (rule-alistp alist)
+             (alistp alist))
+    :rule-classes ((:rewrite :backchain-limit-lst 1))
+    :hints (("Goal" :in-theory (enable rule-alistp)))))
 
 ;rename
 ;disable outside of axe, or make a :forward-chaining rule
@@ -249,7 +250,7 @@
    :hints (("Goal" :in-theory (enable  sort-rules-for-each-function-symbol-by-priority)))))
 
 (verify-guards sort-rules-for-each-function-symbol-by-priority
-  :hints (("Goal" :in-theory (enable rule-alistp  rule-alistp-means-alistp))))
+  :hints (("Goal" :in-theory (enable rule-alistp rule-alistp-means-alistp))))
 
 (local
  (defthm rule-alistp-of-sort-rules-for-each-function-symbol-by-priority
@@ -302,7 +303,7 @@
 
 ;; Makes a rule-alist from the given RULE-NAMES, using priority information from WRLD.
 ;; Returns (mv erp rule-alist).
-;todo: optimize this routine to not make the rules first
+;todo: optimize this routine to not make the axe-rules first
 ;; Warning: If any of these rules have :rule-classes nil, ACL2 won't allow us to use them.
 (defund make-rule-alist (rule-names wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)

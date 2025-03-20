@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function update-nth.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -45,7 +45,6 @@
          (update-nth n v1 x))
   :hints (("Goal" :in-theory (enable update-nth))))
 
-;BOZO add to update-nth library?
 (defthm car-of-update-nth
   ;; [Jared] changed variable names for compatibility with std/lists
   (equal (car (update-nth n v x))

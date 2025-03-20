@@ -27,8 +27,8 @@
 (include-book "logapp")
 (include-book "bvcat2")
 (include-book "bvif")
+(include-book "logext") ;; todo: this and the next include (of sbvlt) cannot be reordered without breaking the android proofs -- why?
 (include-book "sbvlt")
-(include-book "logext")
 (include-book "bvnot")
 (include-book "bitxor")
 (include-book "bvmult")
@@ -2127,12 +2127,6 @@
 ;;   (equal (logtail 7 (bvcat 8 x 24 y))
 ;;          (bvcat 8 x 17 (slice 23 7 y))))
 
-;gen!
-(defthm bvand-128-hack
-  (implies (integerp x)
-           (equal (bvand 8 128 x)
-                  (bvcat 1 (getbit 7 x) 7 0))))
-
 ;what if the some bits of the slice get thrown away?
 (defthm slice-of-bvif
   (implies (and; (<= size (+ 1 high (- low))) ;bozo
@@ -2219,61 +2213,6 @@
                   (bvcat m x n y)))
   :hints (("Goal" :use bvor-of-bvcat-appending-idiom
            :in-theory (disable bvor-of-bvcat-appending-idiom))))
-
-;BOZO gen this series...
-(defthm bvand-64-hack
-  (implies (and (integerp x)
-                (< 6 n)
-                (natp n))
-           (equal (bvand n 64 x)
-                  (bvcat
-                   1 (getbit 6 x) 6 0
-                   ))))
-
-(defthm bvand-32-hack
-  (implies (and (integerp x)
-                (< 5 n)
-                (natp n))
-           (equal (bvand n 32 x)
-                  (bvcat
-                   1 (getbit 5 x) 5 0
-                   ))))
-
-(defthm bvand-16-hack
-  (implies (and (integerp x)
-                (< 4 n)
-                (natp n))
-           (equal (bvand n 16 x)
-                  (bvcat
-                           1 (getbit 4 x) 4 0
-                           ))))
-
-(defthm bvand-8-hack
-  (implies (and (integerp x)
-                (< 3 n)
-                (natp n))
-           (equal (bvand n 8 x)
-                  (bvcat
-                           1 (getbit 3 x) 3 0
-                           ))))
-
-(defthm bvand-4-hack
-  (implies (and (integerp x)
-                (< 2 n)
-                (natp n))
-           (equal (bvand n 4 x)
-                  (bvcat
-                           1 (getbit 2 x) 2 0
-                           ))))
-
-(defthm bvand-2-hack
-  (implies (and (integerp x)
-                (< 1 n)
-                (natp n))
-           (equal (bvand n 2 x)
-                  (bvcat
-                           1 (getbit 1 x) 1 0
-                           ))))
 
 ;gen?
 (defthm bvor-large-of-getbit
@@ -2507,16 +2446,32 @@
   :hints (("Goal" :in-theory (e/d (getbit slice) (
                                                   )))))
 
-(defthm bvand-of-expt
+;bvand-of-constant-when-power-of-2p should usually be enough
+(defthmd bvand-of-expt
   (implies (and (equal k (expt 2 (+ -1 (integer-length k)))) ;check for power-of-2
                 (<= (integer-length k) size)
-                (natp size)
-                (natp k))
+                (integerp size)
+                (integerp k))
            (equal (bvand size k x)
                   (bvcat 1
                          (getbit (+ -1 (integer-length k)) x)
                          (+ -1 (integer-length k))
                          0))))
+
+;; This is helpful when we have things like (equal 0 (bitand 8 128 x))
+(defthm bvand-of-constant-when-power-of-2p
+  (implies (and (syntaxp (quotep k))
+                (power-of-2p k)
+                (<= (integer-length k) size)
+                (integerp size)
+                (integerp k))
+           (equal (bvand size k x)
+                  (let ((exponent (+ -1 (integer-length k)))) ; gets computed
+                    (bvcat 1
+                           (getbit exponent x)
+                           exponent
+                           0))))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
 
 ;; (defthmd expt-move-hack
 ;;   (equal (equal (expt 2 y)
@@ -3356,19 +3311,6 @@
                   (myif test (bool-to-bit x) (bool-to-bit y))))
   :hints (("Goal" :in-theory (enable myif bool-to-bit boolif))))
 
-;fixme do we use this?
-;the test is a bit, not a boolean
-(defun bif (bit x y)
-  (if (equal bit 0)
-      (getbit 0 y)
-    (getbit 0 x)))
-
-(defthm myif-becomes-bif
-  (implies (and (booleanp test)
-                (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (myif test x y)
-                  (bif (bool-to-bit test) x y))))
 
 (defthmd bool-to-bit-of-equal-becomes-bitxnor
   (implies (and (unsigned-byte-p 1 x)
@@ -3376,26 +3318,6 @@
            (equal (bool-to-bit (equal x y))
                   (bitxnor x y)))
   :hints (("Goal" :in-theory (enable bitxnor))))
-
-(defthm bif-x-y-0
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (bif x y 0)
-                  (bitand x y))))
-
- ;bozo gen the 1
-(defthm unsigned-byte-p-of-bif
-  (unsigned-byte-p 1 (bif test x y)))
-
-(defthm bif-of-getbit-0
-  (equal (bif test y (getbit 0 x))
-         (bif test y x))
-  :hints (("Goal" :in-theory (enable bif))))
-
-(defthm bif-of-getbit-0-alt
-  (equal (bif test (getbit 0 x) y)
-         (bif test x y))
-  :hints (("Goal" :in-theory (enable bif))))
 
 (defthm integer-length-all-ones-free
   (implies (and (equal x (expt 2 free))
@@ -3484,8 +3406,7 @@
   (equal (bvand 1 x y)
          (if (equal 1 (getbit 0 y))
              (if (equal 1 (getbit 0 x)) 1 0)
-           ;both branches are the same...:
-           (if (equal 1 (getbit 0 x)) 0 0)))
+           0))
   :hints (("Goal" :in-theory (enable bvand getbit))))
 
 ;fixme we probably need a lot more rules like this to add sizes (we need sizes

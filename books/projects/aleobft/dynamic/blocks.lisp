@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -28,10 +28,10 @@
    (xdoc::p
     "Blocks in the Aleo blockchain have a rich structure.
      However, for the purpose of our model,
-     blocks are simply containers of transactions.
+     blocks are mainly containers of transactions.
      We also explicate the round number at which each block is generated:
      there is a natural association of round numbers to blocks,
-     which is also needed to calculate dynamic committees from the blocks."))
+     which is used to calculate dynamic committees from the blocks."))
   :order-subtopics t
   :default-parent t)
 
@@ -66,21 +66,18 @@
 (define blocks-ordered-even-p ((blocks block-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of blocks has
-          strictly increasing (right to left), even round numbers."
+          strictly increasing (right to left) even round numbers."
   :long
   (xdoc::topstring
    (xdoc::p
     "The state of each (correct) validator includes
-     a list of blocks that models the blockchain (as seen by the validator):
-     see @(tsee validator-state).
-     As explained there, blocks go from right to left,
-     i.e. the @(tsee car) is the newest block.")
+     a list of blocks that models the blockchain as seen by the validator.
+     Blocks go from right to left, i.e. the @(tsee car) is the newest block.")
    (xdoc::p
     "Blocks are committed at even rounds,
      using increasingly higher round numbers,
      at most one block per (even) round.
-     So the blocks will have round numbers in stricly increasing order,
-     and they will all be even.
+     So the blocks have even round numbers in stricly increasing order.
      This predicate fomalizes these constraints on round numbers."))
   (b* (((when (endp blocks)) t)
        (block (car blocks))
@@ -93,7 +90,7 @@
 
   ///
 
-  (defruled blocks-ordered-even-p-of-cdr
+  (defrule blocks-ordered-even-p-of-cdr
     (implies (blocks-ordered-even-p blocks)
              (blocks-ordered-even-p (cdr blocks))))
 

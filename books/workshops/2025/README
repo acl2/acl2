@@ -1,0 +1,74 @@
+Below is a list of all papers accepted for ACL2 Workshop 2025,
+alphabetized by first author.  Each is associated (or, to be
+associated) with the corresponding directory containing supporting
+materials.  Directories starting with "[books]" are the indicated
+subdirectories of the community books; the others are subdirectories
+of this README's directory, i.e., of [books]/workshops/2025/.
+
+------------------------------
+
+Alessandro Coglio and Eric McCarthy
+A Formalization of the Yul Language and Some Verified Yul Code Transformations
+
+[books]/kestrel/yul/
+
+------------------------------
+
+Grant Jurgensen
+A Proof of the Schröder-Bernstein Theorem in ACL2
+
+------------------------------
+
+Matt Kaufmann, Warren Hunt and Yahya Sohail
+Extended Abstract: Mutable Objects with Several Implementations
+
+demos/attach-stobj/
+
+------------------------------
+
+Matt Kaufmann and J Moore
+Extended Abstract: Partial-encapsulate and Its Support for Floating-point Operations in ACL2
+
+[books]/demos/fp/
+
+------------------------------
+
+Ankit Kumar and Panagiotis Manolios
+A Formalization of the Correctness of the Floodsub Protocol
+
+------------------------------
+
+Carl Kwan
+RV32I in ACL2
+
+------------------------------
+
+Mayank Manjrekar
+[Extended Abstract] On Automating Proofs of Multiplier Adder Trees using the RTL Books
+
+------------------------------
+
+Zeke Medley and Panagiotis Manolios
+Cellular Automata Surviving k Steps
+
+------------------------------
+
+David Russinoff
+A Formalization of Elementary Linear Algebra: Part I
+
+------------------------------
+
+David Russinoff
+A Formalization of Elementary Linear Algebra: Part II
+
+------------------------------
+
+Andrew T. Walter and Panagiotis Manolios
+An ACL2s Interface to Z3
+
+------------------------------
+
+Samuel Xifaras, Panagiotis Manolios, Andrew Walter and William Robertson
+An Enumerative Embedding of the Python Type System into ACL2s
+
+------------------------------

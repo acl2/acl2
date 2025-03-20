@@ -1,7 +1,7 @@
 ; Test cases for the Axe Equivalence Checker
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -14,6 +14,7 @@
 
 (include-book "axe-types") ; for stuff like bv-type-width
 (include-book "evaluator-basic") ; for the :eval type
+(include-book "var-type-alists")
 (include-book "misc/random" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -54,11 +55,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;; The :list type:  (:list element-type len-type)
+;; The :list type: (:list element-type len-type)
 ;; TODO: Restrict the element type and length type (this should be mutually recursive with axe-typep?)
 ;; TODO: Disallow the empty list, so that nil is not both a list and a boolean?
-;; TODO: Redo the bv-array type and move this elsewhere.
 (defund list-typep (type)
   (declare (xargs :guard t))
   (and (true-listp type)
@@ -168,13 +167,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Represents the type of a value for testing purposes (see also axe-typep).
+;; Does not allow most-general-type or empty-type.
+;; TODO: Allow most-general-type (would be t, but we allow all symbols below):
 (defund test-case-typep (type)
   (declare (xargs :guard t
                   :hints (("Goal" :in-theory (enable list-type-len-type
                                                      list-type-element-type
                                                      list-typep)))))
   (or (myquotep type) ; a quoted constant (type is a singleton set containing that value)
-      (symbolp type) ; look up a previous val -- todo: tag this?
+;      (symbolp type) ; look up a previous val ; deprecated: just use :eval
       (boolean-typep type)
       (bv-typep type)
       (bv-array-typep type)
@@ -182,10 +183,10 @@
            (test-case-typep (list-type-element-type type))
            ;; todo: must be a scalar type:
            (test-case-typep (list-type-len-type type)))
-      (and (consp type)
+      (and (consp type) ; (:range <low-int> <high-int>)
            (eq :range (ffn-symb type))
-           (consp (fargs type))
-           (consp (cdr (fargs type)))
+           (true-listp type)
+           (= 2 (len (fargs type)))
            (integerp (farg1 type))
            (integerp (farg2 type))
            (< (farg1 type) (farg2 type)) ; low < high
@@ -199,6 +200,15 @@
            (true-listp (cdr type)) ; or make the elements the cadr?
            (consp (cdr type)) ; must be at least one element
            )))
+
+;; Sanity check
+(defthmd test-case-typep-when-axe-typep
+  (implies (and (axe-typep ty)
+                (not (most-general-typep ty))
+                (not (empty-typep ty)))
+           (test-case-typep ty))
+  :hints (("Goal" :in-theory (enable test-case-typep
+                                     axe-typep))))
 
 ;; (defthm test-case-typep-of-boolean-type
 ;;   (test-case-typep (boolean-type))
@@ -240,8 +250,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;returns (mv erp value rand)
-;should we allow tuples?
+;; Not quite true, because of empty-type and most-general-type:
+;; (thm
+;;   (implies (var-type-alistp alist)
+;;            (test-case-type-alistp alist))
+;;   :hints (("Goal" :in-theory (enable test-case-type-alistp
+;;                                      var-type-alistp))))
+
+(defthm test-case-type-alistp-when-strict-var-type-alistp
+  (implies (strict-var-type-alistp alist)
+           (test-case-type-alistp alist))
+  :hints (("Goal" :in-theory (enable test-case-type-alistp
+                                     strict-var-type-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Generates a random value of the given type.
+;; Returns (mv erp value rand).
+;; todo: should we allow tuples?
 (mutual-recursion
  (defund gen-random-value (type rand var-value-alist)
    (declare (xargs :guard (and (test-case-typep type)
@@ -263,10 +289,10 @@
                                                   (natp))))))
    (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
           (mv (erp-nil) (unquote type) rand))
-         ((symbolp type) ;; a symbol means lookup a previously generated value (i guess this is a 'dependent type'?) ; todo: just use :eval for this?
-          (mv (erp-nil)
-              (lookup-eq-safe type var-value-alist) ; todo
-              rand))
+         ;; ((symbolp type) ;; a symbol means lookup a previously generated value (i guess this is a 'dependent type'?) ; todo: just use :eval for this?
+         ;;  (mv (erp-nil)
+         ;;      (lookup-eq-safe type var-value-alist) ; todo
+         ;;      rand))
          ((boolean-typep type)
           ;; Generates a random bit and converts it to a boolean:
           (b* (((mv value rand) (gen-random-bv 1 rand)))
@@ -281,11 +307,11 @@
                 (mv (erp-nil) 0 rand)
               (b* (((mv value rand) (gen-random-bv width rand)))
                 (mv (erp-nil) value rand)))))
-         ;; a value in the given range: should we allow the bounds to be random? ;fixme are the args of this good types? if we allow random endpoints, what if the range is empty?  maybe :range should take a start value and am interval length?
+         ;; a value in the given range: should we allow the bounds to be random? if we allow random endpoints, what if the range is empty?  maybe :range should take a start value and an interval length?
          ((eq :range (car type)) ;here the bounds are both inclusive
-          (let ((low (second type))
-                (high (third type)))
-            (b* (((mv value rand) (gen-random-integer-in-range low (+ 1 high) rand)))
+          (let ((low-int (farg1 type))
+                (high-int (farg2 type)))
+            (b* (((mv value rand) (gen-random-integer-in-range low-int (+ 1 high-int) rand)))
               (mv (erp-nil) value rand))))
          ;;           ((eq :len (car type)) ;the length of something (probably a previously generated var - this is also a dependent type - more general facility for this?):
          ;;            (mv-let (value rand)
@@ -335,7 +361,7 @@
                 (er hard 'gen-random-value "Unknown type: ~x0" type)
                 rand))))
 
- ;;returns (mv erp values rand)
+ ;; Returns (mv erp values rand).
  (defund gen-random-values (n type rand var-value-alist)
    (declare (xargs :guard (and (natp n)
                                (test-case-typep type)
@@ -352,7 +378,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognize a test case, an alist from variables to their values.
+;; Recognizes a test case, an alist from variables to their values.
 (defund test-casep (test-case)
   (declare (xargs :guard t))
   (symbol-alistp test-case))
@@ -371,7 +397,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognize a true-list of test cases.
+;; Recognizes a true-list of test cases.
 (defund test-casesp (test-cases)
   (declare (xargs :guard t))
   (if (atom test-cases)
@@ -508,3 +534,37 @@
   (implies (test-case-type-alistp test-case-type-alist)
            (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions rand))))
   :hints (("Goal" :in-theory (enable make-test-cases))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: At least handle :range (round up to a power of 2)
+(defund var-type-alist-from-test-case-type-alist (a)
+  (declare (xargs :guard (test-case-type-alistp a)
+                  :guard-hints (("Goal" :in-theory (enable test-case-type-alistp)))
+                  :verify-guards nil ; done below
+                  ))
+  (if (endp a)
+      nil
+    (let* ((entry (first a))
+           (var (car entry))
+           (type (cdr entry)))
+      (if (axe-typep type)
+          (acons var
+                 type
+                 (var-type-alist-from-test-case-type-alist (rest a)))
+        (prog2$ (cw "WARNING: Not converting test-type ~x0 to a var-type.~%" type)
+                (var-type-alist-from-test-case-type-alist (rest a)))))))
+
+(defthm var-type-alistp-of-var-type-alist-from-test-case-type-alist
+  (implies (test-case-type-alistp a)
+           (var-type-alistp (var-type-alist-from-test-case-type-alist a)))
+  :hints (("Goal" :in-theory (enable var-type-alist-from-test-case-type-alist
+                                     test-case-type-alistp
+                                     var-type-alistp))))
+
+(defthmd alistp-whenvar-type-alistp
+  (implies (var-type-alistp a)
+           (alistp a))
+  :hints (("Goal" :in-theory (enable var-type-alistp alistp))))
+
+(verify-guards var-type-alist-from-test-case-type-alist)

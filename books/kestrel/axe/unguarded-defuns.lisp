@@ -36,6 +36,7 @@
 (include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/bv/bvminus" :dir :system)
+(include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/bit-to-bool-def" :dir :system)
 (include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
@@ -52,6 +53,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
@@ -640,6 +642,17 @@
   (equal (logext-unguarded size i)
          (logext size i))
   :hints (("Goal" :in-theory (enable logext logext-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund sbvdiv-unguarded (n x y)
+  (declare (xargs :guard t))
+  (bvchop-unguarded n (truncate-unguarded (logext-unguarded n x) (logext-unguarded n y))))
+
+(defthm sbvdiv-unguarded-correct
+  (equal (sbvdiv-unguarded size x y)
+         (sbvdiv size x y))
+  :hints (("Goal" :in-theory (enable sbvdiv sbvdiv-unguarded))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

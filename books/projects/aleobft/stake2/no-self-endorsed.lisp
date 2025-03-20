@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -11,8 +11,7 @@
 
 (in-package "ALEOBFT-STAKE2")
 
-(include-book "initialization")
-(include-book "transitions")
+(include-book "reachability")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -173,21 +172,32 @@
     :enable (event-next
              event-possiblep)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled no-self-endorsed-p-of-events-next
+  :short "Preservation of the invariant by multiple transitions."
+  (implies (and (events-possiblep events systate)
+                (no-self-endorsed-p systate))
+           (no-self-endorsed-p (events-next events systate)))
+  :induct t
+  :enable (events-possiblep
+           events-next))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection no-self-endorsed-p-always
-  :short "The invariant holds in every state
-          reachable from an initial state via a sequence of events."
-
-  (defruled no-self-endorsed-p-of-events-next
-    (implies (and (no-self-endorsed-p systate)
-                  (events-possiblep events systate))
-             (no-self-endorsed-p (events-next events systate)))
-    :induct t
-    :enable (events-possiblep
-             events-next))
-
-  (defruled no-self-endorsed-p-when-reachable
-    (implies (and (system-initp systate)
-                  (events-possiblep events systate))
-             (no-self-endorsed-p (events-next events systate)))))
+(defruled no-self-endorsed-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  (implies (system-state-reachablep systate)
+           (no-self-endorsed-p systate))
+  :enable (system-state-reachablep
+           no-self-endorsed-p-when-init)
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (system-state-reachable-from-p systate from)
+                   (no-self-endorsed-p from))
+              (no-self-endorsed-p systate))
+     :use (:instance
+           no-self-endorsed-p-of-events-next
+           (events (system-state-reachable-from-p-witness systate from))
+           (systate from))
+     :enable system-state-reachable-from-p)))

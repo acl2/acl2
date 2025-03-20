@@ -88,6 +88,13 @@
            (all-unsigned-byte-p size (bv-array-write element-size len key val lst)))
   :hints (("Goal" :in-theory (enable bv-array-write))))
 
+(defthm unsigned-byte-listp-of-bv-array-write
+  (implies (and (<= size2 size1)
+                (integerp size1)
+                (natp size2))
+           (unsigned-byte-listp size1 (bv-array-write size2 len index val data)))
+  :hints (("Goal" :in-theory (enable bv-array-write))))
+
 (defthm bv-array-write-iff
   (iff (bv-array-write element-size len index val data)
        (posp len))
@@ -415,3 +422,80 @@
            (equal (bv-array-write esize len index val data)
                   (bv-array-write 1 len index val data)))
   :hints (("Goal" :in-theory (enable UPDATE-NTH2 BV-ARRAY-WRITE))))
+
+(defthm nthcdr-of-bv-array-write
+  (implies (and (<= n (len lst))
+                (equal (len lst) len) ;bozo
+                (< key len)           ;Mon Jul 19 20:28:02 2010
+                (natp n)
+                (natp key))
+           (equal (nthcdr n (bv-array-write element-size len key val lst))
+                  (if (< key n)
+                      (bvchop-list element-size (nthcdr n (true-list-fix lst)))
+                    (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
+  :hints (("Goal" :in-theory (enable UPDATE-NTH2 bv-array-write ceiling-of-lg NTHCDR-of-true-list-fix))))
+
+(defthm nthcdr-of-bv-array-write-better
+  (implies (and (<= n len)
+                (integerp len)
+                ;;(natp len)
+                (< key len)
+                (natp n)
+                (natp key))
+           (equal (nthcdr n (bv-array-write element-size len key val lst))
+                  (if (< key n)
+                      (bvchop-list element-size (nthcdr n (take len (true-list-fix lst))))
+                    (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
+  :hints (("Goal"
+           :cases ((< key n))
+           :in-theory (enable update-nth2 bv-array-write-opener))))
+
+(defthmd bv-array-write-of-bv-array-write-when-length-is-1
+  (equal (bv-array-write size 1 index1 val1 (bv-array-write size 1 index2 val2 data))
+         (bv-array-write size 1 0 val1 '(0))))
+
+;; breaks the abstraction
+(defthm car-of-bv-array-write
+  (implies (and ;; (<= 1 len)
+                (integerp len)
+                (< key len)
+                ;(natp len)
+                (natp key))
+           (equal (car (bv-array-write element-size len key val lst))
+                  (if (< key 1)
+                      (bvchop element-size val)
+                    (bvchop element-size (car lst)))))
+  :hints (("Goal" :in-theory (enable bv-array-write-opener update-nth2))))
+
+(defthm car-of-bv-array-write-gen
+  (implies (posp len)
+           (equal (car (bv-array-write element-size len key val lst))
+                  (if (equal 0 (bvchop (ceiling-of-lg len) key))
+                      (bvchop element-size val)
+                    (bvchop element-size (car lst)))))
+  :hints (("Goal" :expand (bv-array-write element-size len key val lst)
+           :in-theory (enable update-nth2))))
+
+(defthm cdr-of-bv-array-write-better
+  (implies (and (integerp len)
+                (< key len)
+                (natp key))
+           (equal (cdr (bv-array-write element-size len key val lst))
+                  (if (zp len)
+                      nil
+                    (if (< key 1)
+                        (bvchop-list element-size (cdr (take len (true-list-fix lst))))
+                      (bv-array-write element-size (- len 1) (- key 1) val (nthcdr 1 lst))))))
+  :hints (("Goal"
+           :cases ((and (< len 0)
+                        (< key n))
+                   (and (not (< len 0))
+                        (< key n))
+                   (and (< len 0)
+                        (not (< key n)))
+                   (and (not (< len 0))
+                        (not (< key n))))
+           :in-theory (e/d (update-nth2 bv-array-write-opener
+                            ;bv-array-write
+                            ) (ceiling-of-lg
+                               update-nth-becomes-update-nth2-extend-gen)))))

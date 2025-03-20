@@ -367,3 +367,21 @@
            (not (boolean-typep x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bv-array-typep boolean-typep))))
+
+(defthm not-empty-typep-of-make-bv-type
+  (implies (natp width)
+           (not (empty-typep (make-bv-type width))))
+  :hints (("Goal" :in-theory (enable empty-typep make-bv-type))))
+
+(defthm not-most-general-typep-of-make-bv-type
+  (implies (natp width)
+           (not (most-general-typep (make-bv-type width))))
+  :hints (("Goal" :in-theory (enable most-general-typep make-bv-type))))
+
+(defthm not-empty-typep-of-make-bv-array-type
+  (not (empty-typep (make-bv-array-type element-width len)))
+  :hints (("Goal" :in-theory (enable empty-typep make-bv-array-type))))
+
+(defthm not-most-general-typep-of-make-bv-array-type
+  (not (most-general-typep (make-bv-array-type element-width len)))
+  :hints (("Goal" :in-theory (enable most-general-typep make-bv-array-type))))

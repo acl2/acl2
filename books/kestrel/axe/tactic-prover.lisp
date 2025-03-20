@@ -25,10 +25,10 @@
 
 (include-book "make-equality-dag-gen")
 (include-book "prune-term")
-(include-book "rewriter") ; for simp-dag and simplify-terms-using-each-other
-(include-book "dag-size")
+(include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly
+;(include-book "dag-size")
 (include-book "make-term-into-dag-basic")
-(include-book "equivalent-dags")
+;(include-book "equivalent-dags")
 (include-book "sweep-and-merge-support")
 (include-book "find-probable-facts-simple")
 (include-book "tools/prove-dollar" :dir :system)
@@ -38,12 +38,13 @@
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
-(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
-(include-book "kestrel/utilities/real-time-since" :dir :system)
-(include-book "kestrel/bv/bvashr" :dir :system)
+;(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
+;(include-book "kestrel/utilities/real-time-since" :dir :system)
+;(include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe")
+(include-book "bv-array-rules-axe") ; not all are needed, but we need integerp-of-bv-array-read
 (include-book "bv-intro-rules")
 (include-book "kestrel/bv-lists/bv-array-read-rules" :dir :system) ; for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 (include-book "kestrel/bv/sbvdiv" :dir :system)
@@ -459,11 +460,12 @@
 
 ;move?
 ;; Change a counterexample to map variables (not nodenums) to values.
-(defund lookup-nodes-in-counterexample (cex dag-array-name dag-array)
-  (declare (xargs :guard (and (counterexamplep cex) ;; all nodenums in the cex should be nodenums of variables
-                              (if (consp cex)
-                                  (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem (strip-cars cex))))
-                                t))
+(defund lookup-nodes-in-counterexample (cex dag-array-name dag-array
+                                            dag-len ; only used in the guard
+                                            )
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (bounded-counterexamplep cex dag-len) ;; all nodenums in the cex should be nodenums of variables
+                              )
                   :verify-guards nil ;done below
                   ))
   (if (endp cex)
@@ -475,17 +477,22 @@
          (expr (dag-to-term-aux-array dag-array-name dag-array nodenum)) ;; TODO: These should all be vars!
          ((when (not (symbolp expr)))
           (er hard? 'lookup-nodes-in-counterexample "A non-variable, ~x0, is bound in the counterexample." expr)))
-      (acons expr value (lookup-nodes-in-counterexample (rest cex) dag-array-name dag-array)))))
+      (acons expr value (lookup-nodes-in-counterexample (rest cex) dag-array-name dag-array dag-len)))))
 
 (defthm alistp-of-lookup-nodes-in-counterexample
-  (alistp (lookup-nodes-in-counterexample cex dag-array-name dag-array))
+  (alistp (lookup-nodes-in-counterexample cex dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable lookup-nodes-in-counterexample))))
 
-(verify-guards lookup-nodes-in-counterexample)
+(verify-guards lookup-nodes-in-counterexample :hints (("Goal" :in-theory (enable bounded-counterexamplep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (ensure-rules-known (pre-stp-rules))
+
+;; so we can get the top nodenum
+(local
+  (defthm not-<-of-len-and-1-when-pseudo-dagp
+    (implies (pseudo-dagp x) (not (< (len x) 1)))))
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; A true counterexample returned in the info is fixed up to bind vars, not nodenums
@@ -498,18 +505,20 @@
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitor)
                               (booleanp normalize-xors)
-                              ;; print
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
                               (ilks-plist-worldp (w state)))
-                  :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-pre-stp-rules)
-                                                        (myquotep quotep))
+                  :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-pre-stp-rules
+                                                         len-when-stp-resultp
+                                                         true-listp-when-stp-resultp
+                                                         cdr-when-stp-resultp-iff
+                                                         <-of-+-of-1-when-integers)
+                                                        (myquotep quotep ilks-plist-worldp))
                                  :do-not '(generalize eliminate-destructors)))
-                  :stobjs state
-                  :verify-guards nil ;todo
-                  ))
+                  :stobjs state))
   (b* ((dag (first problem))
        (assumptions (second problem))
        ((when (quotep dag))
@@ -566,7 +575,7 @@
        (dag-parent-array-name 'dag-parent-array)
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len))
-       ;; Add the assumptions to the DAG (todo: negating these may not be necessary once prove-node-disjunction-with-stp can take negated nodenums):
+       ;; Add the assumptions to the DAG (todo: negating these may not be necessary once prove-disjunction-with-stp can take negated nodenums):
        ((mv erp negated-assumption-nodenum-or-quoteps dag-array dag-len dag-parent-array & &)
         (merge-trees-into-dag-array ;inefficient? call a merge-terms... function?  or call merge-trees-into-dag-array-basic?
          (negate-terms assumptions)
@@ -584,7 +593,7 @@
        ;; We'll try prove that either the conclusion is true or one of the assumptions is false:
        (disjunct-nodenums (cons top-nodenum negated-assumption-nodenums))
        ((mv result state)
-        (prove-node-disjunction-with-stp disjunct-nodenums ; Disjuncts that represent disjunctions are flattened
+        (prove-disjunction-with-stp disjunct-nodenums ; Disjuncts that represent disjunctions are flattened
                                     dag-array ;must be named 'dag-array (fixme generalize?)
                                     dag-len
                                     dag-parent-array ;must be named 'dag-parent-array (fixme generalize?)
@@ -610,7 +619,7 @@
             (if (call-of *counterexample* result)
                 (prog2$ (and print (cw "STP tactic returned a counterexample.)~%")) ; balances "(Applying STP tactic"
                         (mv *invalid* ;this is a true counterexample, so give up
-                            `(:var-counterexample ,(lookup-nodes-in-counterexample (farg1 result) dag-array-name dag-array)) ;; return the counterexample in the info
+                            `(:var-counterexample ,(lookup-nodes-in-counterexample (farg1 result) dag-array-name dag-array dag-len)) ;; return the counterexample in the info
                             state))
               (if (call-of *possible-counterexample* result)
                   (prog2$ (and print (cw "STP tactic returned a possible counterexample.)~%")) ; balances "(Applying STP tactic"
@@ -976,7 +985,7 @@
        (assumptions (append assumptions assumptions2)) ;TODO: which assumptions / term / dag should be used in the theorem below?
        ((mv erp assumptions state)
         (if simplify-assumptionsp
-            (simplify-terms-repeatedly ;; simplify-terms-using-each-other
+            (simplify-terms-repeatedly ;; simplify-terms-using-each-other ; todo: consider simplify-conjunction-basic here
              assumptions rule-alist
              nil ; monitored-rules
              t ; memoizep

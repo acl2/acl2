@@ -78,7 +78,7 @@
             x86isa::gpr-xor-spec-1-alt-def
             x86isa::gpr-xor-spec-2-alt-def
             x86isa::gpr-xor-spec-4-alt-def
-            x86isa::gpr-xor-spec-8-alt-def
+            gpr-xor-spec-8-alt-def-axe
 
             x86isa::gpr-add-spec-1-alt-def
             x86isa::gpr-add-spec-2-alt-def
@@ -112,26 +112,26 @@
 
             x86isa::div-spec$inline ; just a dispatch on the size
             ;; These recharacterize divide in terms of bvops:
-            x86isa::mv-nth-0-of-div-spec-8
-            x86isa::mv-nth-1-of-div-spec-8
-            x86isa::mv-nth-2-of-div-spec-8
-            x86isa::mv-nth-0-of-div-spec-16
-            x86isa::mv-nth-1-of-div-spec-16
-            x86isa::mv-nth-2-of-div-spec-16
-            x86isa::mv-nth-0-of-div-spec-32
-            x86isa::mv-nth-1-of-div-spec-32
-            x86isa::mv-nth-2-of-div-spec-32
-            x86isa::mv-nth-0-of-div-spec-64
-            x86isa::mv-nth-1-of-div-spec-64
-            x86isa::mv-nth-2-of-div-spec-64
+            mv-nth-0-of-div-spec-8
+            mv-nth-1-of-div-spec-8
+            mv-nth-2-of-div-spec-8
+            mv-nth-0-of-div-spec-16
+            mv-nth-1-of-div-spec-16
+            mv-nth-2-of-div-spec-16
+            mv-nth-0-of-div-spec-32
+            mv-nth-1-of-div-spec-32
+            mv-nth-2-of-div-spec-32
+            mv-nth-0-of-div-spec-64
+            mv-nth-1-of-div-spec-64
+            mv-nth-2-of-div-spec-64
 
             x86isa::idiv-spec$inline
             ;;X86ISA::IDIV-SPEC-64 ;need to re-characterize this as something nice
             x86isa::idiv-spec-64-trim-arg1-axe-all
-            x86isa::mv-nth-0-of-idiv-spec-32 ; more?
-            x86isa::mv-nth-1-of-idiv-spec-32
-            x86isa::mv-nth-0-of-idiv-spec-64
-            x86isa::mv-nth-1-of-idiv-spec-64
+            mv-nth-0-of-idiv-spec-32 ; more?
+            mv-nth-1-of-idiv-spec-32
+            mv-nth-0-of-idiv-spec-64
+            mv-nth-1-of-idiv-spec-64
 
             x86isa::shr-spec$inline ;; dispatches based on size
             ;; x86isa::shr-spec-8
@@ -185,7 +185,7 @@
             x86isa::ror-spec-8
             x86isa::ror-spec-16
             x86isa::ror-spec-32
-            x86isa::ror-spec-64
+            ror-spec-64-alt-def ; x86isa::ror-spec-64
 
             x86isa::x86-operand-to-xmm/mem
 
@@ -200,6 +200,7 @@
                                 '(x86isa::x86-cbw/cwd/cdqe
                                   x86isa::x86-cwd/cdq/cqo))))
 
+;; todo: can we just use list-rules?
 (defun list-rules-x86 ()
   (declare (xargs :guard t))
   '(atom ;open to expose consp
@@ -1649,6 +1650,16 @@
     run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
     ))
 
+;; Extra rules to support the :stop-pcs option:
+(defund symbolic-execution-rules-with-stop-pcs ()
+  (declare (xargs :guard t))
+  '(run-until-return-or-reach-pc ; we always open this, to expose run-until-stack-shorter-than
+    run-until-stack-shorter-than-or-reach-pc-opener-axe ; not for IFs
+    run-until-stack-shorter-than-or-reach-pc-base-axe ; not for IFs
+    ;; stack-shorter-thanp
+    run-until-stack-shorter-than-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    ))
+
 (defun separate-rules ()
   (declare (xargs :guard t))
   '(x86isa::separate-normalize-r-w-x-1
@@ -2371,7 +2382,7 @@
      acl2::get-elf-section-header-base-1
      acl2::get-elf-section-header-base-2
      acl2::get-elf-section-header-unroll
-     acl2::get-elf-symbol-address-base
+     acl2::get-elf-symbol-address
      acl2::get-elf-symbol-address-aux-base-1
      acl2::get-elf-symbol-address-aux-base-2
      acl2::get-elf-symbol-address-aux-unroll
@@ -2489,8 +2500,8 @@
             acl2::<-of-bvplus-same-gen
             acl2::+-of-bvplus-of-x-and-minus-x
             acl2::<-of-minus-and-constant
-            acl2::equal-of-constant-when-bvlt-constant-1
-            acl2::equal-of-constant-when-bvlt-constant-2
+            acl2::not-equal-of-constant-when-bvlt-constant-1
+            acl2::not-equal-of-constant-when-bvlt-constant-2
             acl2::acl2-numberp-when-unsigned-byte-p
             acl2::integerp-when-unsigned-byte-p-free
             x86isa::32-bit-mode-one-byte-opcode-modr/m-p-rewrite-quotep
@@ -4772,7 +4783,7 @@
             not-equal-of-+-of-+-and-+-when-separate-gen
             acl2::<-of-negative-constant-and-bv
             ;;read-1-of-write-1-both
-            acl2::bvlt-of-constant-when-usb-dag ; rename
+            acl2::not-bvlt-of-constant-when-usb-dag ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
             ;; acl2::equal-of-myif-arg1-safe
@@ -4824,7 +4835,7 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (new-normal-form-rules64) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
+  (append ;(new-normal-form-rules64) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 
@@ -4995,7 +5006,8 @@
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
           (acl2::bv-of-logext-rules)
-          (acl2::unsigned-byte-p-rules)))
+          (acl2::unsigned-byte-p-rules)
+          (acl2::array-reduction-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

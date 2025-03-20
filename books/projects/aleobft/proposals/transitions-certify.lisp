@@ -74,7 +74,7 @@
     "If the validator is faulty,
      for each endorser in the certificate,
      there must be a message, in the network,
-     from that endorser for the proposal of the certificate.
+     from that endorser, for the proposal of the certificate.
      As a special case, if the certificate has no endorsers,
      no such message is required to be in the network:
      nothing prevents a faulty validator from authoring a proposal
@@ -95,7 +95,15 @@
      it does not send it to itself;
      but as discussed in @(see transitions-certify),
      we do not put any constraints on which other validators
-     the certificate is sent to."))
+     the certificate is sent to.")
+   (xdoc::p
+    "It is an invariant, proved elsewhere, that the endorsers of each proposal
+     in the @('proposed') map of a correct validator
+     are members of the active committee at the proposal's round.
+     But this invariant is not available here,
+     as we define @('certify') transitions,
+     and thus we use @(tsee committee-validators-stake)
+     to measure the stake of the signers."))
   (b* (((certificate cert) cert)
        ((proposal prop) cert.proposal)
        ((when (not (set::in prop.author (correct-addresses systate))))
@@ -105,7 +113,13 @@
        ((validator-state vstate) (get-validator-state prop.author systate))
        (prop+endors (omap::assoc prop vstate.proposed))
        ((unless prop+endors) nil)
-       ((unless (equal cert.endorsers (cdr prop+endors))) nil))
+       ((unless (equal cert.endorsers (cdr prop+endors))) nil)
+       (commtt (active-committee-at-round prop.round vstate.blockchain))
+       ((unless commtt) nil)
+       (signers (certificate->signers cert))
+       ((unless (>= (committee-validators-stake signers commtt)
+                    (committee-quorum-stake commtt)))
+        nil))
     t)
   :hooks (:fix))
 

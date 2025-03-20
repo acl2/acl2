@@ -992,6 +992,45 @@
   :hints (("Goal" :use (:instance merge-trees-into-dag-array-return-type)
            :in-theory (e/d (wf-dagp) (merge-trees-into-dag-array-return-type)))))
 
+;rename
+(defthm merge-trees-into-dag-array-return-type-corollary-alen1
+  (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                ;; no error:
+                (not (mv-nth 0 (merge-trees-into-dag-array
+                                trees
+                                var-replacement-alist
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                interpreted-function-alist)))
+                (bounded-axe-tree-listp trees dag-len)
+                (symbol-alistp var-replacement-alist)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+;                  (interpreted-function-alistp interpreted-function-alist)
+                )
+           (equal (alen1 dag-parent-array-name (mv-nth 4 (merge-trees-into-dag-array trees var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
+                  (alen1 dag-array-name (mv-nth 2 (merge-trees-into-dag-array trees var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))))
+  :hints (("Goal" :use (:instance merge-trees-into-dag-array-return-type)
+           :in-theory (e/d (wf-dagp) (merge-trees-into-dag-array-return-type)))))
+
+(defthm merge-trees-into-dag-array-return-type-corollary-bounded-dag-parent-arrayp
+  (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                ;; no error:
+                (not (mv-nth 0 (merge-trees-into-dag-array
+                                trees
+                                var-replacement-alist
+                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+                                interpreted-function-alist)))
+                (bounded-axe-tree-listp trees dag-len)
+                (symbol-alistp var-replacement-alist)
+                (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
+;                  (interpreted-function-alistp interpreted-function-alist)
+
+                )
+           (bounded-dag-parent-arrayp dag-parent-array-name
+                                      (mv-nth 4 (merge-trees-into-dag-array trees var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))
+                                      (mv-nth 3 (merge-trees-into-dag-array trees var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
+  :hints (("Goal" :use (:instance merge-trees-into-dag-array-return-type)
+           :in-theory (e/d (wf-dagp) (merge-trees-into-dag-array-return-type)))))
+
 (defthm merge-tree-into-dag-array-return-type-2
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (bounded-darg-listp (strip-cdrs var-replacement-alist) dag-len)
@@ -1103,7 +1142,6 @@
                                integerp-of-mv-nth-1-of-merge-tree-into-dag-array))))
 
 (verify-guards merge-tree-into-dag-array
-   :otf-flg t
    :hints (("Goal" :in-theory (e/d (axe-treep
                                     car-becomes-nth-of-0
                                     cadr-becomes-nth-of-1
@@ -1209,7 +1247,6 @@
                                                DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
                                                INTERPRETED-FUNCTION-ALIST))
              *max-1d-array-length*)))
-  :OTF-FLG T
   :HINTS (("Goal" :IN-THEORY (ENABLE MAKE-TERM-INTO-DAG-ARRAY))))
 
 ;;do we need this?

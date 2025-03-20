@@ -453,6 +453,30 @@
                   (run-until-stack-shorter-than old-rsp (x86-fetch-decode-execute x86))))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-opener))))
 
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (to save time).
+(defthmd run-until-stack-shorter-than-or-reach-pc-base-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (stack-shorter-thanp old-rsp x86))
+           (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
+                  x86))
+  :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-or-reach-pc-base))))
+
+;; For use by Axe.
+;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
+(defthmd run-until-stack-shorter-than-or-reach-pc-opener-axe
+  (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
+                ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
+                (not (stack-shorter-thanp old-rsp x86))
+                (not (member-equal (rip x86) stop-pcs)))
+           (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
+                  (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs (x86-fetch-decode-execute x86))))
+  :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-or-reach-pc-opener))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; probably only needed for axe
 (defthmd integerp-of-ctri
   (integerp (ctri i x86)))

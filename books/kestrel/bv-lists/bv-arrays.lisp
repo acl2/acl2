@@ -420,30 +420,6 @@
   :hints (("Goal" :use bitxor-of-bv-array-read-and-bv-array-read-constant-arrays
            :in-theory (disable bitxor-of-bv-array-read-and-bv-array-read-constant-arrays))))
 
-;move
-;; breaks the abstraction
-(defthm car-of-bv-array-write
-  (implies (and ;; (<= 1 len)
-                (integerp len)
-                (< key len)
-                ;(natp len)
-                (natp key))
-           (equal (car (bv-array-write element-size len key val lst))
-                  (if (< key 1)
-                      (bvchop element-size val)
-                    (bvchop element-size (car lst)))))
-  :hints (("Goal" :in-theory (enable bv-array-write-opener update-nth2))))
-
-;move
-(defthm car-of-bv-array-write-gen
-  (implies (posp len)
-           (equal (car (bv-array-write element-size len key val lst))
-                  (if (equal 0 (bvchop (ceiling-of-lg len) key))
-                      (bvchop element-size val)
-                    (bvchop element-size (car lst)))))
-  :hints (("Goal" :expand (bv-array-write element-size len key val lst)
-           :in-theory (enable update-nth2))))
-
 (defthm bvchop-list-of-update-nth2
   (implies (and (< key len)
                 ;(<= len (+ 1 (len lst)))
@@ -494,37 +470,6 @@
 
 ;; ;move
 ;; (theory-invariant (incompatible (:rewrite nthcdr-of-true-list-fix) (:rewrite true-list-fix-of-nthcdr)))
-
-(defthm nthcdr-of-bv-array-write
-  (implies (and (<= n (len lst))
-                (equal (len lst) len) ;bozo
-                (< key len)           ;Mon Jul 19 20:28:02 2010
-                (natp n)
-                (natp key))
-           (equal (nthcdr n (bv-array-write element-size len key val lst))
-                  (if (< key n)
-                      (bvchop-list element-size (nthcdr n (true-list-fix lst)))
-                    (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
-  :hints (("Goal" :in-theory (enable UPDATE-NTH2 bv-array-write ceiling-of-lg NTHCDR-of-true-list-fix))))
-
-(defthm nthcdr-of-bv-array-write-better
-  (implies (and (<= n len)
-                (integerp len)
-;(natp len)
-                (< key len)
-                (natp n)
-                (natp key))
-           (equal (nthcdr n (bv-array-write element-size len key val lst))
-                  (if (< key n)
-                      (bvchop-list element-size (nthcdr n (take len (true-list-fix lst))))
-                    (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
-  :hints (("Goal"
-           :cases ((< key n))
-           :in-theory (enable update-nth2 bv-array-write-opener))))
-
-(defthmd bv-array-write-of-bv-array-write-when-length-is-1
-  (equal (bv-array-write size 1 index1 val1 (bv-array-write size 1 index2 val2 data))
-         (bv-array-write size 1 0 val1 '(0))))
 
 (defthmd bv-array-read-of-bv-array-write-when-length-is-1
   (equal (bv-array-read size 1 index1 (bv-array-write size 1 index2 val data))
@@ -602,6 +547,12 @@
          (if test
              (bv-arrayp element-width length val1)
            (bv-arrayp element-width length val2))))
+
+(defthmd bv-array-write-of-if-arg4 ; todo: gen to a "convert-to-bv" rule
+  (implies (integerp element-size)
+           (equal (bv-array-write element-size len index (if test val1 val2) data)
+                  (bv-array-write element-size len index (bvif element-size test val1 val2) data)))
+  :hints (("Goal" :in-theory (enable bvif))))
 
 ;for axe
 (defthm bv-arrayp-constant-opener
@@ -725,26 +676,24 @@
   :hints (("Goal" :in-theory (e/d (update-nth2 bv-array-write) (;TAKE-OF-CDR-BECOMES-SUBRANGE
                                                                 )))))
 
-;drop the getbit?
+;rename
 (defthm array-reduction-0-1
-  (equal (bv-array-read 1 2 index '(0 1))
-         (getbit 0 (ifix index)))
-  :hints (("Goal"
-           :in-theory (enable bv-array-read
-                              GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
-                              NTH-OF-CONS))))
+  (implies (and (< 0 size)
+                (integerp size))
+           (equal (bv-array-read size 2 index '(0 1))
+                  (getbit 0 index)))
+  :hints (("Goal" :in-theory (enable bv-array-read nth-of-cons))))
 
-;drop the getbit?
+;rename
 (defthm array-reduction-1-0
-  (equal (bv-array-read 1 2 index '(1 0))
-         (bitnot (getbit 0 (ifix index))))
-  :hints (("Goal"
-           :expand (NTH (GETBIT 0 INDEX) '(1 0))
-           :in-theory (enable bitnot bv-array-read
-                                   GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
-                                   ))))
+  (implies (and (< 0 size)
+                (integerp size))
+           (equal (bv-array-read size 2 index '(1 0))
+                  (bitnot (getbit 0 index))))
+  :hints (("Goal" :in-theory (enable bitnot bv-array-read))))
 
-(defthmd array-reduction-when-all-same
+(local
+  (defthmd bv-array-read-when-all-same-helper
   (implies (and (equal data (repeat (len data) (car data))) ;expensive to check?
                 (natp index)
                 (< index len)
@@ -753,49 +702,33 @@
                 (all-unsigned-byte-p element-size data) ;drop?
                 )
            (equal (bv-array-read element-size len index data)
-                  (bv-array-read element-size len 0 data) ;
+                  (bv-array-read element-size len 0 data)
                   ;(bvchop element-size (car data))
                   ))
   :hints (("Goal"
-           :in-theory (enable bv-array-read))))
-
-;; ;bozo should we restrict this to constant arrays?
-;; (DEFTHMd ARRAY-REDUCTION-WHEN-ALL-SAME-improved
-;;   (IMPLIES (AND (all-equal$ (car data) data) ;old way (involves consing): (EQUAL DATA (REPEAT (LEN DATA) (CAR DATA)))
-;;                 (NATP INDEX)
-;;                 (< INDEX LEN)
-;;                 (EQUAL (LEN DATA) LEN)
-;;                 (TRUE-LISTP DATA)
-;;                 (ALL-UNSIGNED-BYTE-P ELEMENT-SIZE DATA))
-;;            (EQUAL (BV-ARRAY-READ ELEMENT-SIZE LEN INDEX DATA)
-;;                   (BV-ARRAY-READ ELEMENT-SIZE LEN 0 DATA) ;(BVCHOP ELEMENT-SIZE (CAR DATA))
-;;                   ))
-;;   :hints (("Goal" :use ARRAY-REDUCTION-WHEN-ALL-SAME
-;;            :in-theory (disable ARRAY-REDUCTION-WHEN-ALL-SAME; CAR-BECOMES-NTH-OF-0
-;;                                ))))
+           :in-theory (enable bv-array-read)))))
 
 ;; This could loop when INDEX is the constant 0, except that then the whole
 ;; bv-array-read should be evaluated because all the args would be constants.
-(defthmd array-reduction-when-all-same-improved2
+;todo: use a binding hyp (and make an axe version with a binding hyp)
+(defthmd bv-array-read-when-all-same
   (implies (and (syntaxp (and (quotep data)
                               (quotep len) ;these prevent loops
                               (quotep element-size)))
                 ;; should be evaluated:
                 (all-equal$ (bv-array-read element-size len 0 data) data) ;old way (involves consing): (equal data (repeat (len data) (car data)))
-                (natp index)
-                (< index len)
-                (equal (len data) len)
-                ;;(true-listp data)
-                ;;(all-unsigned-byte-p element-size data)
+                (or (and (natp index)
+                         (< index len))
+                    ;; the the array is all zeros, we don't need to show that the index is good:
+                    (equal 0 (bv-array-read element-size len 0 data)))
+                (equal (len data) len) ; gets computed
                 )
            (equal (bv-array-read element-size len index data)
-                  (bv-array-read element-size len 0 data) ;(bvchop element-size (car data))
-                  ))
-  :hints (("Goal" :use (:instance array-reduction-when-all-same (data (true-list-fix data)))
+                  (bv-array-read element-size len 0 data)))
+  :hints (("Goal" :use (:instance bv-array-read-when-all-same-helper (data (true-list-fix data)))
            :in-theory (e/d (;all-equal$-when-true-listp
-                            BV-ARRAY-READ
-                            )
-                           (array-reduction-when-all-same ;car-becomes-nth-of-0
+                            BV-ARRAY-READ)
+                           (bv-array-read-when-all-same-helper ;car-becomes-nth-of-0
                             )))))
 
 (defthm all-unsigned-byte-p-of-bv-array-write-gen-2
@@ -884,7 +817,7 @@
   (("Goal" :in-theory (e/d (bvchop-when-i-is-not-an-integer
                             BV-ARRAY-WRITE-opener
                             bv-array-read-opener update-nth2)
-                           (ARRAY-REDUCTION-WHEN-ALL-SAME)))))
+                           (BV-ARRAY-READ-WHEN-ALL-SAME)))))
 
 ;rename
 (defthmd bv-array-write-when-data-isnt-an-all-unsigned-byte-p

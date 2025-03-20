@@ -383,6 +383,7 @@
           nil ; todo: use the remove-lift-rules?
           step-limit
           step-increment
+          nil ; stop-pcs
           t ; memoizep (nil allows internal contexts)
           rules-to-monitor
           normalize-xors

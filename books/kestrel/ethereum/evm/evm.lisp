@@ -1,6 +1,6 @@
 ; A formal model of the EVM (Ethereum Virtual Machine)
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -93,19 +93,19 @@
 
 ;; ;;maybe define a wordplus, etc.
 ;; (defthm n256p-of-bvplus
-;;   (N256P (ACL2::BVPLUS 256 x y))
+;;   (N256P (BVPLUS 256 x y))
 ;;   :hints (("Goal" :in-theory (enable N256P))))
 
 ;; (defthm n256p-of-bvmult
-;;   (n256p (acl2::bvmult 256 x y))
+;;   (n256p (bvmult 256 x y))
 ;;   :hints (("Goal" :in-theory (enable n256p))))
 
 ;; (defthm n256p-of-bvdiv
-;;   (n256p (acl2::bvdiv 256 x y))
+;;   (n256p (bvdiv 256 x y))
 ;;   :hints (("Goal" :in-theory (enable n256p))))
 
 ;; (defthm n256p-of-bvmod
-;;   (n256p (acl2::bvmod 256 x y))
+;;   (n256p (bvmod 256 x y))
 ;;   :hints (("Goal" :in-theory (enable n256p))))
 
 ;; (defthm n256p-of-sbvdiv
@@ -113,18 +113,16 @@
 ;;   :hints (("Goal" :in-theory (enable n256p))))
 
 (defthm n256p-of-bvminus
-  (n256p (acl2::bvminus 256 x y))
-  :hints (("Goal" :in-theory (enable n256p
-                                     acl2::bvminus ;todo
-                                     ))))
+  (n256p (bvminus 256 x y))
+  :hints (("Goal" :in-theory (enable n256p))))
 
 ;; (defthm n256p-of-bvchop
-;;   (n256p (acl2::bvchop 256 x))
+;;   (n256p (bvchop 256 x))
 ;;   :hints (("Goal" :in-theory (enable n256p))))
 
 (defthm bvchop-identity-when-256p
   (implies (n256p x)
-           (equal (acl2::bvchop 256 x)
+           (equal (bvchop 256 x)
                   x))
   :hints (("Goal" :in-theory (enable n256p))))
 
@@ -931,7 +929,7 @@
 
 (defthm nat-listp-of-valid-jump-dests-aux
   (implies (natp i)
-           (acl2::nat-listp (valid-jump-dests-aux c i)))
+           (nat-listp (valid-jump-dests-aux c i)))
   :hints (("Goal" :in-theory (enable valid-jump-dests-aux))))
 
 ;; "D"
@@ -941,7 +939,7 @@
   (valid-jump-dests-aux c 0))
 
 (defthm nat-listp-of-valid-jump-dests
-  (acl2::nat-listp (valid-jump-dests c))
+  (nat-listp (valid-jump-dests c))
   :hints (("Goal" :in-theory (enable valid-jump-dests))))
 
 
@@ -1081,19 +1079,19 @@
 
 ;; The semantic function for :add.
 (def-simple-op :add
-  (acl2::bvplus 256
+  (bvplus 256
                 (stack-item 0 mu)
                 (stack-item 1 mu)))
 
 ;; The semantic function for :mul.
 (def-simple-op :mul
-  (acl2::bvmult 256
+  (bvmult 256
                 (stack-item 0 mu)
                 (stack-item 1 mu)))
 
 ;; The semantic function for :sub.
 (def-simple-op :sub
-  (acl2::bvminus 256
+  (bvminus 256
                  (stack-item 0 mu)
                  (stack-item 1 mu)))
 
@@ -1101,7 +1099,7 @@
 (def-simple-op :div
   (if (equal 0 (stack-item 1 mu)) ;todo: consider chopping before comparing to 0
       0
-    (acl2::bvdiv 256
+    (bvdiv 256
                  (stack-item 0 mu)
                  (stack-item 1 mu))))
 
@@ -1118,7 +1116,7 @@
 (def-simple-op :mod
   (if (equal 0 (stack-item 1 mu))
       0
-    (acl2::bvmod 256
+    (bvmod 256
                  (stack-item 0 mu)
                  (stack-item 1 mu))))
 
@@ -1127,17 +1125,17 @@
 (defun bvsgn (size x)
   (declare (xargs :guard (and (integerp x)
                               (natp size))))
-  (if (acl2::bvlt size x 0)
+  (if (bvlt size x 0)
       -1
-    (if (acl2::bvlt size 0 x)
+    (if (bvlt size 0 x)
         1
       0)))
 
 (local (in-theory (enable acl2::bvp)))
 
 (defthm equal-of-bv-to-sint-and-0
-  (equal (equal (acl2::bv-to-sint 256 x) 0)
-         (equal (acl2::bvchop 256 x) 0))
+  (equal (equal (bv-to-sint 256 x) 0)
+         (equal (bvchop 256 x) 0))
   :hints (("Goal" :in-theory (enable acl2::bv-to-sint))))
 
 (defthm unsigned-byte-p-of-sint-to-bv
@@ -1151,14 +1149,14 @@
 (defthm logext-256-when-non-negative
   (implies (<= 0 (acl2::logext 256 x))
            (equal (acl2::logext 256 x)
-                  (acl2::bvchop 255 x)))
+                  (bvchop 255 x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable acl2::logext-cases))))
 
 (defthm logext-256-when-non-negative-2
   (implies (equal 0 (acl2::getbit 255 x))
            (equal (acl2::logext 256 x)
-                  (acl2::bvchop 255 x)))
+                  (bvchop 255 x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable acl2::logext-cases))))
 
@@ -1184,7 +1182,7 @@
 ;; (thm
 ;;  (implies (and (unsigned-byte-p 256 x)
 ;;                (not (equal 0 x)))
-;;           (equal (< 0 (ACL2::BVCHOP '255 x))
+;;           (equal (< 0 (BVCHOP '255 x))
 ;;                  (not (equal
 
 
@@ -1197,13 +1195,13 @@
 ;todo: check
 ;todo: compare to sbvrem.
 (def-simple-op :smod
-  (if (equal 0 (acl2::bvchop 256 (stack-item 1 mu))) ;the chop should do nothing
+  (if (equal 0 (bvchop 256 (stack-item 1 mu))) ;the chop should do nothing
       0
     (acl2::sint-to-bv
      256
      (* (bvsgn 256 (stack-item 0 mu))
-        (mod (abs (acl2::bv-to-sint 256 (stack-item 0 mu)))
-             (abs (acl2::bv-to-sint 256 (stack-item 1 mu)))))))
+        (mod (abs (bv-to-sint 256 (stack-item 0 mu)))
+             (abs (bv-to-sint 256 (stack-item 1 mu)))))))
   :guard-hints (("Goal" :in-theory (e/d (n256p
                                          acl2::sintp
                                          acl2::bv-to-sint
@@ -1227,7 +1225,7 @@
 (def-simple-op :addmod
   (if (equal 0 (stack-item 2 mu))
       0
-    (acl2::bvmod 256
+    (bvmod 256
                  (+ (stack-item 0 mu)
                     (stack-item 1 mu))
                  (stack-item 2 mu))))
@@ -1236,14 +1234,14 @@
 (def-simple-op :mulmod
   (if (equal 0 (stack-item 2 mu))
       0
-    (acl2::bvmod 256
+    (bvmod 256
                  (* (stack-item 0 mu)
                     (stack-item 1 mu))
                  (stack-item 2 mu))))
 
 ;; The semantic function for :mulmod.
 (def-simple-op :exp
-  (acl2::bvchop 256
+  (bvchop 256
                  (expt (stack-item 0 mu)
                        (stack-item 1 mu))))
 
@@ -1252,7 +1250,7 @@
          (< 31 x)))
 
 (defthm <-when-bvlt
-  (implies (and (acl2::bvlt 256 x k2)
+  (implies (and (bvlt 256 x k2)
                 (<= k2 (+ -1 k))
                 (unsigned-byte-p 256 x)
                 (unsigned-byte-p 256 k2)
@@ -1299,10 +1297,10 @@
 ;             (t-var (- 256 (* 8 old-num-bytes))) ;; "t" ;; this can be at most 248 (the sign bit of the least significant byte), if it is 0 there is no effect
  ;            (sign-bit (- 256 t-var)) ;using our standard numbering system
              )
-        (acl2::bvsx 256 (* 8 old-num-bytes) (stack-item 1 mu)))))
-  ;; (if (acl2::bvle 256 31 (stack-item 0 mu))
+        (bvsx 256 (* 8 old-num-bytes) (stack-item 1 mu)))))
+  ;; (if (bvle 256 31 (stack-item 0 mu))
   ;;     (stack-item 1 mu)
-  ;;   (acl2::bvsx 256
+  ;;   (bvsx 256
   ;;               (* 8 (+ 1 (stack-item 0 mu)))
   ;;               (stack-item 1 mu)))
   :guard-hints (("Goal" :in-theory (enable n256p acl2::bvlt))))
@@ -1323,11 +1321,11 @@
 
 ;; The semantic function for :lt.
 (def-simple-op :lt
-  (acl2::bool-to-bit (acl2::bvlt 256 (stack-item 0 mu) (stack-item 1 mu))))
+  (acl2::bool-to-bit (bvlt 256 (stack-item 0 mu) (stack-item 1 mu))))
 
 ;; The semantic function for :gt.
 (def-simple-op :gt
-  (acl2::bool-to-bit (acl2::bvgt 256 (stack-item 0 mu) (stack-item 1 mu))))
+  (acl2::bool-to-bit (bvgt 256 (stack-item 0 mu) (stack-item 1 mu))))
 
 ;; The semantic function for :slt.
 (def-simple-op :slt
@@ -1347,15 +1345,15 @@
 
 ;; The semantic function for :and.
 (def-simple-op :and
-  (acl2::bvand 256 (stack-item 0 mu) (stack-item 1 mu)))
+  (bvand 256 (stack-item 0 mu) (stack-item 1 mu)))
 
 ;; The semantic function for :or.
 (def-simple-op :or
-  (acl2::bvor 256 (stack-item 0 mu) (stack-item 1 mu)))
+  (bvor 256 (stack-item 0 mu) (stack-item 1 mu)))
 
 ;; The semantic function for :xor.
 (def-simple-op :xor
-  (acl2::bvxor 256 (stack-item 0 mu) (stack-item 1 mu)))
+  (bvxor 256 (stack-item 0 mu) (stack-item 1 mu)))
 
 ;; Correctness of the :xor operation
 ;; todo: add more validation theorems like this
@@ -1370,7 +1368,7 @@
 
 ;; The semantic function for :not.
 (def-simple-op :not
-  (acl2::bvnot 256 (stack-item 0 mu)))
+  (bvnot 256 (stack-item 0 mu)))
 
 ;; Correctness of the :not operation
 (defthm execute-not-correct
@@ -1388,7 +1386,7 @@
   (let ((byte-num (stack-item 0 mu)))
     (if (< byte-num 32)
         ;; The result goes into the most-significant byte (why?):
-        (acl2::bvcat 8 (nth byte-num (word-to-bytes (stack-item 1 mu)))
+        (bvcat 8 (nth byte-num (word-to-bytes (stack-item 1 mu)))
                      248 0)
       0)))
 
@@ -1450,7 +1448,7 @@
 ;;   (let* ((stack (machine-state->stack mu)) ;boilerplate
 ;;          (stack (popn 2 ;delta
 ;;                       stack)) ;boilerplate
-;;          (stack (stack-push (acl2::bvplus 256
+;;          (stack (stack-push (bvplus 256
 ;;                                           (stack-item 0 mu)
 ;;                                           (stack-item 1 mu))
 ;;                             stack))

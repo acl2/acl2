@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -28,16 +28,12 @@
    (xdoc::p
     "Each validator has a unique address,
      which is an Aleo blockchain address of the form @('aleo1...').
-     By `validator' we mean not only one in the committee,
-     but any possible validator that may be in a committee;
-     committees are dynamic.")
+     An address is essentially a public key;
+     the validator uses the associated private key to sign data.")
    (xdoc::p
     "In our model, the details of these addresses are irrelevant,
      so we treat addresses as abstract entities.
-     Our model only needs to compare addresses for equality.")
-   (xdoc::p
-    "In our model, addresses are also used to represent signatures:
-     see our model of certificates."))
+     Our model only needs to compare addresses for equality."))
   :order-subtopics t
   :default-parent t)
 
