@@ -1966,7 +1966,7 @@
     array-reduction-when-top-bit-is-irrelevant  ;; at least one of these seems needed for aes-128-decrypt
     array-reduction-0-1
     array-reduction-1-0
-    array-reduction-when-all-same-improved2
+    bv-array-read-when-all-same
     bv-array-read-of-bvmult-discard-vals
     bv-array-read-of-bvplus-of-bvmult-discard-vals
     bv-array-read-of-+-of-constant-shorten ; for when we have + for the index (but we may prefer a bvplus) ; todo: make a bvplus version
