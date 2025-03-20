@@ -14,7 +14,7 @@
 (include-book "equivalence-checker")
 
 ;; todo: rename to test-case-type-alist:
-(prove-equality x x :input-type-alist '((x . 8)))
+(prove-equality 'x 'x :input-type-alist '((x . 8)))
 
 (must-fail
-  (prove-equality x y :input-type-alist '((x . 8) (y . 8))))
+  (prove-equality 'x 'y :input-type-alist '((x . 8) (y . 8))))
