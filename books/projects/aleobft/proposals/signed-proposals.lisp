@@ -506,7 +506,7 @@
              signed-props-in-message-set-of-make-proposal-messages
              signed-props-in-validators-of-propose-next)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection signed-props-of-endorse-next
   :short "How signed proposals change under @('endorse') events."
