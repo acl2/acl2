@@ -724,6 +724,8 @@
                 (equal (len data) len) ; gets computed
                 )
            (equal (bv-array-read element-size len index data)
+                  ;; this should be ground and thus should be evaluated,
+                  ;; so this rule should not loop:
                   (bv-array-read element-size len 0 data)))
   :hints (("Goal" :use (:instance bv-array-read-when-all-same-helper (data (true-list-fix data)))
            :in-theory (e/d (;all-equal$-when-true-listp
