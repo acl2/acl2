@@ -17076,6 +17076,8 @@
           (prog2$ (cw "failed to prove by mitering and merging.)") ;todo: error or not?
                   (mv (erp-nil) nil state rand)))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp event state rand) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
@@ -17184,62 +17186,55 @@
                     state rand))))))
 
 ;; Returns (mv erp event state rand).
-;fixme - eventually, try to always use the same rules for the dag prover as the dag rewriter..
+; todo: eventually, try to always use the same rules for the dag prover as the dag rewriter..
 ;fixme - need to gather up and return the events created, since make-event protects the logical world..
 ;BOZO consider changing the default for cut-proofs...- huh?
-;this is what is fed into make-event...
 ;;EXTRA-HYPS is an alist from theorem-names (without mention of hides) to lists of hyps
 ;the variables in dag list should be the final ones (i.e., we shouldn't expect assumptions to introduce new vars)
-;; This does not do the make-event, so we can call it programmatically.
-(defmacro prove-miter-aux (&whole whole-form
-                                  dag-or-quotep
-                                  test-case-count
-                                  test-case-type-alist ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
-                                  &KEY
-                                  (name ''unnamedmiter)
-                                  (tests-per-case '512)
-                                  (print 'nil)
-                                  (debug-nodes 'nil)
-                                  (interpreted-function-alist 'nil) ;affects soundness
-                                  (assumptions 'nil) ;affects soundness
-                                  (runes 'nil) ;used for both the rewriter and prover, affects soundness
-                                  (rules 'nil) ;used for both the rewriter and prover, affects soundness
-                                  (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
-                                  (prover-runes 'nil) ;used for the prover only (not the rewriter), affects soundness ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                                  (initial-rule-set 'nil)
-                                  (initial-rule-sets 'nil)
-                                  (pre-simplifyp 't) ;was nil
-                                  (extra-stuff 'nil) ;ffixme does any of this affect soundness?
-                                  (specialize-fnsp 'nil) ;do we ever use this?
-                                  (monitor 'nil)         ;a list of runes
-                                  (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
-                                  (random-seed 'nil)
-                                  (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
-                                  (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
-                                  (normalize-xors 't)
-                                  (debug 'nil) ;if t, the temp dir with STP files is not deleted
-                                  (prove-constants 't) ;whether to attempt to prove probably-constant nodes
-                                  )
-  `(prove-miter-fn ,dag-or-quotep ,test-case-count ,test-case-type-alist ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
-                   ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                   ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name
-                   ,prove-constants
-                    ,debug
-                   ',whole-form
-                   state rand))
-
-;; To understand the arguments, see prove-miter-aux.
-(defmacro prove-miter (&rest args)
+(defmacro prove-miter (&whole
+                       whole-form
+                       dag-or-quotep
+                       test-case-count
+                       test-case-type-alist ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
+                       &KEY
+                       (name ''unnamedmiter)
+                       (tests-per-case '512)
+                       (print 'nil)
+                       (debug-nodes 'nil)
+                       (interpreted-function-alist 'nil) ;affects soundness
+                       (assumptions 'nil) ;affects soundness
+                       (runes 'nil) ;used for both the rewriter and prover, affects soundness
+                       (rules 'nil) ;used for both the rewriter and prover, affects soundness
+                       (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
+                       (prover-runes 'nil) ;used for the prover only (not the rewriter), affects soundness ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                       (initial-rule-set 'nil)
+                       (initial-rule-sets 'nil)
+                       (pre-simplifyp 't) ;was nil
+                       (extra-stuff 'nil) ;ffixme does any of this affect soundness?
+                       (specialize-fnsp 'nil) ;do we ever use this?
+                       (monitor 'nil)         ;a list of runes
+                       (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
+                       (random-seed 'nil)
+                       (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
+                       (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
+                       (normalize-xors 't)
+                       (debug 'nil) ;if t, the temp dir with STP files is not deleted
+                       (prove-constants 't) ;whether to attempt to prove probably-constant nodes
+                       )
   ;; note: we can't put a make-event inside an acl2-unwind-protect, so we do it
   ;; this way:
   `(make-event
     (acl2-unwind-protect ; enable cleanup on abort
      "acl2-unwind-protect for prove-miter"
-     ;; Can't call prove-miter-aux directly here, because it returns extra
+     ;; Can't call prove-miter-fn directly here, because it returns extra
      ;; stobjs (does not return an error triple), so we use trans-eval as
      ;; suggested by MK:
      (mv-let (erp val state)
-       (trans-eval-no-warning '(prove-miter-aux ,@args)
+       (trans-eval-no-warning '(prove-miter-fn
+                                ,dag-or-quotep ,test-case-count ,test-case-type-alist ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+                                ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                                ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name ,prove-constants ,debug
+                                ',whole-form state rand)
                               'prove-miter
                               state
                               t)
@@ -17248,7 +17243,7 @@
            (mv erp nil state)
          (let* ( ;; (stobjs-out (car val))
                 (values-returned (cdr val))
-                ;; Get the non-stobj values returned by prove-miter-aux:
+                ;; Get the non-stobj values returned by prove-miter-fn:
                 (erp (first values-returned))
                 (event (second values-returned)))
            (mv erp event state))))
