@@ -505,3 +505,78 @@
              signed-props-in-message-set-of-union
              signed-props-in-message-set-of-make-proposal-messages
              signed-props-in-validators-of-propose-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-endorse-next
+  :short "How signed proposals change under @('endorse') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When a (correct or faulty) validator endorses a proposal,
+     it removes a proposal message from the network
+     and adds an endorsement message to the network.
+     The two messages have the same proposal.
+     The proposal message contributes the proposal to
+     the set of proposals in the system signed by the proposal's author;
+     the endorsement message makes the same contribution,
+     but it also contributes the proposal to
+     the set of proposals in the system signed by the endorsing validator.
+     Thus, the net effect is to add that proposal to
+     the set of proposals in the system signed by the endorser,
+     and to leave unchanged
+     all the sets of proposals signed by other validators.")
+   (xdoc::p
+    "As proved in @(see endorsement-from-other),
+     the endorser always differs from the proposal author
+     if the latter is correct,
+     but this fact does not affect the formulation of the theorem."))
+
+  (defruled signed-props-in-validator-of-endorse-next
+    (implies (set::in val (correct-addresses systate))
+             (equal (signed-props-in-validator
+                     signer
+                     (get-validator-state
+                      val (endorse-next prop endor systate)))
+                    (signed-props-in-validator
+                     signer
+                     (get-validator-state val systate))))
+    :enable signed-props-in-validator)
+
+  (defruled signed-props-in-validators-of-endorse-next
+    (implies (and (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (endorse-next prop endor systate))
+                    (signed-props-in-validators
+                     signer vals systate)))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-endorse-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-endorse-next
+    (implies (endorse-possiblep prop endor systate)
+             (equal (signed-props signer (endorse-next prop endor systate))
+                    (if (equal (address-fix signer)
+                               (address-fix endor))
+                        (set::insert (proposal-fix prop)
+                                     (signed-props signer systate))
+                      (signed-props signer systate))))
+    :enable (signed-props
+             signed-props-in-validators-of-endorse-next
+             get-network-state-of-endorse-next
+             signed-props-in-message-set-of-insert
+             signed-props-in-message
+             set::expensive-rules
+             endorse-possiblep)
+    :use ((:instance signed-props-in-message-set-of-delete-superset
+                     (msg (message-proposal prop endor))
+                     (msgs (get-network-state systate)))
+          (:instance signed-props-in-message-set-monotone
+                     (msgs1 (set::delete (message-proposal prop endor)
+                                         (get-network-state systate)))
+                     (msgs2 (get-network-state systate)))
+          (:instance signed-props-in-message-subset-when-in
+                     (msg (message-proposal prop endor))
+                     (msgs (get-network-state systate))))))
