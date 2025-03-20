@@ -17354,16 +17354,14 @@
                           (prove-constants 't) ;whether to attempt to prove probably-constant nodes
                           )
   `(make-event ; use make-event-quiet?
-     (prove-equality-fn ',term1 ; todo: evaluate this?
-                        ',term2 ; todo: evaluate this?
+     (prove-equality-fn ,term1
+                        ,term2
                         ,test-case-count
                         ,input-type-alist ;; test-case-type-alist ; todo: use this name
                         ,name
                         ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,assumptions ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                         ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants ',whole-form
                         state rand)))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
