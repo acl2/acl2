@@ -74,7 +74,7 @@
 ;; Note that we no longer translate IF or MYIF.
 ;; todo: consider adding unsigned-byte-p
 ;; todo: compare to can-always-translate-expr-to-stp and get-induced-type and translate-dag-expr
-(defun pure-fn-call-exprp (expr)
+(defund pure-fn-call-exprp (expr)
   (declare (xargs :guard (dag-function-call-exprp expr)
                   :guard-hints (("Goal" :in-theory (enable consp-of-cdr)))))
   (let ((fn (ffn-symb expr))

@@ -5720,6 +5720,26 @@
                                      )
                                     (myquotep natp)))))
 
+         (defthm ,(pack$ simplify-dag-name '-return-type-linear)
+           (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag)))
+                         (not (mv-nth 0 ,call-of-simplify-dag)) ; no error
+                         (pseudo-dagp dag)
+                         (pseudo-term-listp assumptions)
+                         (rule-limitsp limits)
+                         (rule-alistp rule-alist)
+                         ;; (count-hits-argp count-hits)
+                         (print-levelp print)
+                         (interpreted-function-alistp interpreted-function-alist)
+                         (symbol-listp known-booleans)
+                         (symbol-listp monitored-symbols)
+                         ;; (symbol-listp fns-to-elide)
+                         (normalize-xors-optionp normalize-xors)
+                         (booleanp memoizep))
+                    (<= (len (mv-nth 1 ,call-of-simplify-dag)) *max-1d-array-length*))
+           :rule-classes :linear
+           :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
+                    :in-theory (disable ,(pack$ simplify-dag-name '-return-type)))))
+
          ;; ;; It's a consp either way
          ;; (defthm ,(pack$ simplify-dag-name '-return-type-corollary-1)
          ;;   (implies (and (not (mv-nth 0 ,call-of-simplify-dag)) ; no error

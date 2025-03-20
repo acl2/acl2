@@ -460,11 +460,12 @@
 
 ;move?
 ;; Change a counterexample to map variables (not nodenums) to values.
-(defund lookup-nodes-in-counterexample (cex dag-array-name dag-array)
-  (declare (xargs :guard (and (counterexamplep cex) ;; all nodenums in the cex should be nodenums of variables
-                              (if (consp cex)
-                                  (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem (strip-cars cex))))
-                                t))
+(defund lookup-nodes-in-counterexample (cex dag-array-name dag-array
+                                            dag-len ; only used in the guard
+                                            )
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (bounded-counterexamplep cex dag-len) ;; all nodenums in the cex should be nodenums of variables
+                              )
                   :verify-guards nil ;done below
                   ))
   (if (endp cex)
@@ -476,17 +477,22 @@
          (expr (dag-to-term-aux-array dag-array-name dag-array nodenum)) ;; TODO: These should all be vars!
          ((when (not (symbolp expr)))
           (er hard? 'lookup-nodes-in-counterexample "A non-variable, ~x0, is bound in the counterexample." expr)))
-      (acons expr value (lookup-nodes-in-counterexample (rest cex) dag-array-name dag-array)))))
+      (acons expr value (lookup-nodes-in-counterexample (rest cex) dag-array-name dag-array dag-len)))))
 
 (defthm alistp-of-lookup-nodes-in-counterexample
-  (alistp (lookup-nodes-in-counterexample cex dag-array-name dag-array))
+  (alistp (lookup-nodes-in-counterexample cex dag-array-name dag-array dag-len))
   :hints (("Goal" :in-theory (enable lookup-nodes-in-counterexample))))
 
-(verify-guards lookup-nodes-in-counterexample)
+(verify-guards lookup-nodes-in-counterexample :hints (("Goal" :in-theory (enable bounded-counterexamplep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (ensure-rules-known (pre-stp-rules))
+
+;; so we can get the top nodenum
+(local
+  (defthm not-<-of-len-and-1-when-pseudo-dagp
+    (implies (pseudo-dagp x) (not (< (len x) 1)))))
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; A true counterexample returned in the info is fixed up to bind vars, not nodenums
@@ -499,18 +505,20 @@
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitor)
                               (booleanp normalize-xors)
-                              ;; print
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
                               (ilks-plist-worldp (w state)))
-                  :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-pre-stp-rules)
-                                                        (myquotep quotep))
+                  :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-pre-stp-rules
+                                                         len-when-stp-resultp
+                                                         true-listp-when-stp-resultp
+                                                         cdr-when-stp-resultp-iff
+                                                         <-of-+-of-1-when-integers)
+                                                        (myquotep quotep ilks-plist-worldp))
                                  :do-not '(generalize eliminate-destructors)))
-                  :stobjs state
-                  :verify-guards nil ;todo
-                  ))
+                  :stobjs state))
   (b* ((dag (first problem))
        (assumptions (second problem))
        ((when (quotep dag))
@@ -611,7 +619,7 @@
             (if (call-of *counterexample* result)
                 (prog2$ (and print (cw "STP tactic returned a counterexample.)~%")) ; balances "(Applying STP tactic"
                         (mv *invalid* ;this is a true counterexample, so give up
-                            `(:var-counterexample ,(lookup-nodes-in-counterexample (farg1 result) dag-array-name dag-array)) ;; return the counterexample in the info
+                            `(:var-counterexample ,(lookup-nodes-in-counterexample (farg1 result) dag-array-name dag-array dag-len)) ;; return the counterexample in the info
                             state))
               (if (call-of *possible-counterexample* result)
                   (prog2$ (and print (cw "STP tactic returned a possible counterexample.)~%")) ; balances "(Applying STP tactic"
