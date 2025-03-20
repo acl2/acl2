@@ -112,18 +112,6 @@
            :in-theory (e/d (power-of-2p)(;bvchop-shift-gen
                                          )))))
 
-(defthm bvchop-of-expt-alt
-  (implies (and (syntaxp (quotep k)) ;new
-                (power-of-2p k)
-                (natp size1))
-           (equal (bvchop size1 k)
-                  (if (<= size1 (lg k))
-                      0
-                    k)))
-  ;; The :use hint included just for speed:
-  :hints (("Goal" :use (:instance bvchop-of-expt (size2 (lg k)))
-           :in-theory (e/d (power-of-2p lg) (bvchop-of-expt)))))
-
 (defthm equal-of-slice-and-constant-extend-when-bvchop-known
   (implies (and (syntaxp (and (quotep high)
                               (quotep low)
