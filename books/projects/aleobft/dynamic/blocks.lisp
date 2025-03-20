@@ -99,7 +99,9 @@
                   (consp blocks))
              (>= (block->round (car blocks))
                  (block->round (car (last blocks)))))
-    :rule-classes :linear
+    :rule-classes ((:linear
+                    :trigger-terms ((block->round (car blocks))
+                                    (block->round (car (last blocks))))))
     :induct t
     :enable last)
 
