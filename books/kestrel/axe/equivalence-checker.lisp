@@ -17531,7 +17531,6 @@
     (mv (erp-nil) event state rand)))
 
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
-;; TODO: Use defmacrodoc to define this (see xdoc above).
 (defmacrodoc prove-equivalence (&whole whole-form
                                     dag-or-term1
                                     dag-or-term2
