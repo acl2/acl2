@@ -116,8 +116,9 @@
                     (>= (block->round (car (last blocks1)))
                         (+ 2 (block->round (car blocks2)))))))
     :induct t
-    :enable (append last
-                    aleobft::lt-to-2+le-when-both-evenp)))
+    :enable (append
+             last
+             aleobft::lt-to-2+le-when-both-evenp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

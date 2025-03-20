@@ -13,6 +13,8 @@
 
 (include-book "transactions")
 
+(local (include-book "../library-extensions/arithmetic-theorems"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -133,19 +135,9 @@
                     (>= (block->round (car (last blocks1)))
                         (+ 2 (block->round (car blocks2)))))))
     :induct t
-    :enable (append last)
-    :hints ('(:use ((:instance lemma
-                               (x (block->round (car blocks2)))
-                               (y (block->round (car (last blocks1))))))))
-    :prep-lemmas
-    ((defruled lemma
-       (implies (and (natp x)
-                     (natp y)
-                     (evenp x)
-                     (evenp y)
-                     (< x y))
-                (<= (+ 2 x) y))
-       :enable evenp))))
+    :enable (append
+             last
+             aleobft::lt-to-2+le-when-both-evenp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
