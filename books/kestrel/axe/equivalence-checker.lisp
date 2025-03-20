@@ -19647,7 +19647,9 @@
   ;;TODO: error or warning if :tactic is rewrite and :tests is given?
   (b* (((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :redundant) state rand))
-       (quoted-dag-or-term1 (farg1 whole-form))
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       ;; We use these to choose a name for the miter:
+       (quoted-dag-or-term1 (farg1 whole-form)) ; todo: why "quoted"?
        (quoted-dag-or-term2 (farg2 whole-form))
        (wrld (w state))
        ;; Translate assumptions
@@ -19735,7 +19737,10 @@
        ((when (not provedp)) (prog2$ (cw "ERROR: Proof of equivalence failed.~%")
                                      ;; Convert this to an error
                                      (mv :proof-failed nil state rand)))
-       (- (cw "Proof of equivalence succeeded.~%"))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (- (cw "Proof of equivalence succeeded in ")
+          (acl2::print-to-hundredths elapsed)
+          (cw "s.~%"))
        ;; Assemble the event to return:
        (event '(progn)) ; empty progn to be extended
        (prove-theorem (and prove-theorem
