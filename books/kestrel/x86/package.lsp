@@ -1477,6 +1477,8 @@
     lighter-dargp
 
     prove-equivalence
+    prove-equality
+    prove-miter
     prove-equal-with-tactics
     symbolic-byte-assumptions
     symbolic-list
