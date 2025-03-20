@@ -320,6 +320,28 @@
     :enable (set::union
              signed-props-in-message-set-of-insert))
 
+  (defruled signed-props-in-message-set-monotone
+    (implies (and (message-setp msgs2)
+                  (set::subset msgs1 msgs2))
+             (set::subset (signed-props-in-message-set signer msgs1)
+                          (signed-props-in-message-set signer msgs2)))
+    :induct t
+    :enable (set::subset
+             signed-props-in-message-subset-when-in
+             set::expensive-rules))
+
+  (defruled signed-props-in-message-set-of-delete-superset
+    (implies (message-setp msgs)
+             (set::subset (set::difference
+                           (signed-props-in-message-set signer msgs)
+                           (signed-props-in-message signer msg))
+                          (signed-props-in-message-set
+                           signer (set::delete msg msgs))))
+    :induct t
+    :enable (set::delete
+             signed-props-in-message-set-of-insert
+             set::expensive-rules))
+
   (defruled signed-props-in-message-set-of-make-proposal-messages
     (equal (signed-props-in-message-set
             signer (make-proposal-messages prop dests))
