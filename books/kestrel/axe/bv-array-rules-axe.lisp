@@ -453,3 +453,20 @@
            (equal (bv-array-read elem-size len index (take len array))
                   (bv-array-read elem-size (len array) index array)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener) ()))))
+
+(defthmd bv-array-read-when-all-same-axe
+  (implies (and (syntaxp (and (quotep data)
+                              (quotep len) ;these prevent loops
+                              (quotep element-size)))
+                (axe-binding-hyp (equal val (bv-array-read element-size len 0 data))) ; should get computed
+                (syntaxp (quotep val)) ; ensures the rule doesn't loop when the bv-array-read is not evaluated
+                (all-equal$ val data);; should be evaluated
+                (or (equal 0 val)  ;; if the array is all zeros, we don't need to show that the index is good
+                    (and (natp index)
+                         (< index len)))
+                (equal (len data) len) ; should get computed
+                )
+           (equal (bv-array-read element-size len index data)
+                  val))
+  :hints (("Goal" :use bv-array-read-when-all-same
+           :in-theory (disable bv-array-read-when-all-same))))
