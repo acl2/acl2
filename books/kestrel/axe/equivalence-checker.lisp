@@ -17081,7 +17081,7 @@
 ;; Returns (mv erp event state rand) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
-                       test-case-count ;the total number of tests to generate?  some may not be used
+                       tests ;the total number of tests to generate?  some may not be used
                        test-case-type-alist  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from one to the other (when possible), or pass both?
                        print
                        debug-nodes ;do we use this?
@@ -17111,7 +17111,7 @@
                        state rand)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
-                              (natp test-case-count)
+                              (natp tests)
                               (test-case-type-alistp test-case-type-alist)
                               (no-duplicatesp (strip-cars test-case-type-alist))
                               (not (assoc-eq nil test-case-type-alist)) ;consider relaxing this?
@@ -17142,7 +17142,7 @@
        ((mv erp provedp state rand)
         (prove-miter-core dag-or-quotep
                           :rewrite-and-sweep ; todo: pass this in?
-                          test-case-count
+                          tests
                           test-case-type-alist ;compute this from the hyps?
                           print
                           debug-nodes ;do we use this?
@@ -17194,7 +17194,7 @@
 (defmacro prove-miter (&whole
                        whole-form
                        dag-or-quotep
-                       test-case-count
+                       tests
                        test-case-type-alist ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
                        &KEY
                        (name ''unnamedmiter)
@@ -17231,7 +17231,7 @@
      ;; suggested by MK:
      (mv-let (erp val state)
        (trans-eval-no-warning '(prove-miter-fn
-                                ,dag-or-quotep ,test-case-count ,test-case-type-alist ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+                                ,dag-or-quotep ,tests ,test-case-type-alist ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                                 ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                                 ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name ,prove-constants ,debug
                                 ',whole-form state rand)
@@ -17258,14 +17258,17 @@
 ;; Returns (mv erp event state rand).
 (defun prove-equality-fn (term1
                           term2
-                          test-case-count
+                          tests
                           test-case-type-alist
                           name
                           ;; todo: standardize argument order:
                           tests-per-case print debug-nodes interpreted-function-alist assumptions runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
                           random-seed unroll max-conflicts normalize-xors debug prove-constants whole-form
                           state rand)
-  (declare (xargs :mode :program
+  (declare (xargs :guard (and (natp tests)
+                              ; todo: more
+                              )
+                  :mode :program
                   :stobjs (state rand)))
   (b* (((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state rand))
@@ -17277,7 +17280,7 @@
        ((mv erp provedp state rand)
         (prove-miter-core dag-or-quotep
                           :rewrite-and-sweep ; todo: pass this in?
-                          test-case-count
+                          tests
                           test-case-type-alist
                           print
                           debug-nodes ;do we use this?
@@ -17327,7 +17330,7 @@
                           term1
                           term2 ; todo: allow dags?
                           &KEY
-                          (test-case-count '40)
+                          (tests '100)
                           (input-type-alist ':none) ; todo: standardize name
                           (name ''unnamedmiter)
                           (tests-per-case '512)
@@ -17356,7 +17359,7 @@
   `(make-event ; use make-event-quiet?
      (prove-equality-fn ,term1
                         ,term2
-                        ,test-case-count
+                        ,tests
                         ,input-type-alist ;; test-case-type-alist ; todo: use this name
                         ,name
                         ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,assumptions ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
