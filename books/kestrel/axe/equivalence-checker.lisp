@@ -17258,17 +17258,116 @@
      ;; No need to clean up anything if no abort and no error:
      state)))
 
-;todo: deprecate?  unlike prove-miter, this takes 2 terms.  unlike prove-equivalence, this supports all the exotic options to prove-miter.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp event state rand).
+;; todo: use acl2-unwind-protect (see above)
+(defun prove-equality-fn (term1
+                          term2
+                          test-case-count
+                          test-case-type-alist
+                          name
+                          ;; todo: standardize argument order:
+                          tests-per-case print debug-nodes interpreted-function-alist assumptions runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
+                          random-seed unroll max-conflicts normalize-xors debug prove-constants whole-form
+                          state rand)
+  (declare (xargs :mode :program
+                  :stobjs (state rand)))
+  (b* (((when (command-is-redundantp whole-form state))
+        (mv nil '(value-triple :invisible) state rand))
+       ((mv erp dag-or-quotep) (dagify-term `(equal ,term1 ,term2)))
+       ((when erp) (mv erp nil state rand))
+       ((when (eq :none test-case-type-alist))
+        (er hard? 'prove-equality-fn "No :test-case-type-alist given.")  ;todo: compute this from the hyps?
+        (mv :bad-input nil state rand))
+       ((mv erp provedp state rand)
+        (prove-miter-core dag-or-quotep
+                          :rewrite-and-sweep ; todo: pass this in?
+                          test-case-count
+                          test-case-type-alist
+                          print
+                          debug-nodes ;do we use this?
+                          interpreted-function-alist
+                          ;;ffixme allow the use of rule phases?!
+                          runes      ;used for both the rewriter and prover
+                          rules      ;used for both the rewriter and prover
+                          rewriter-runes ;used for the rewriter only (not the prover)
+                          prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                          initial-rule-set
+                          initial-rule-sets
+                          assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                          pre-simplifyp
+                          extra-stuff
+                          specialize-fnsp
+                          monitor ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                          use-context-when-miteringp
+                          random-seed
+                          unroll
+                          tests-per-case
+                          max-conflicts
+                          normalize-xors ;fixme use the more, deeper in?
+                          name ; the miter-name
+                          prove-constants
+                          debug
+                          state rand)))
+    ;; Depending on how it went, maybe introduce a theorem:
+    (if erp
+        (mv erp nil state rand)
+      (if provedp
+          (let ((state (if debug
+                           state
+                         (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
+            (let ((event '(progn))) ;todo: should return a theorem about the dag!
+              (mv (erp-nil)
+                  (extend-progn event `(table prove-equality-table ',whole-form ',event))
+                  state rand)))
+        (progn$ (hard-error 'prove-equality "Failed to prove miter." nil)
+                (mv (erp-t) nil state rand))))))
+
+;; Unlike prove-miter, this takes 2 terms.  unlike prove-equivalence, this supports all the exotic options to prove-miter.
 ;; Used in several loop examples.
-(defmacro prove-equality (term1 term2 &rest rest)
-  `(make-event
-    (b* (((mv erp dag) (dagify-term '(equal ,term1 ,term2)))
-         ((when erp) (mv erp nil state rand)))
-      (prove-miter-aux dag
-                       ,(lookup-keyword-safe :test-case-count rest)
-                       ,(lookup-keyword-safe :input-type-alist rest)
-                       ,@(clear-key-in-keyword-value-list :test-case-count
-                                                          (clear-key-in-keyword-value-list :input-type-alist rest))))))
+(defmacro prove-equality (&whole
+                          whole-form
+                          term1
+                          term2 ; todo: allow dags?
+                          &KEY
+                          (test-case-count '40)
+                          (input-type-alist ':none) ; todo: standardize name
+                          (name ''unnamedmiter)
+                          (tests-per-case '512)
+                          (print 'nil)
+                          (debug-nodes 'nil)
+                          (interpreted-function-alist 'nil) ;affects soundness
+                          (assumptions 'nil) ;affects soundness
+                          (runes 'nil) ;used for both the rewriter and prover, affects soundness
+                          (rules 'nil) ;used for both the rewriter and prover, affects soundness
+                          (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
+                          (prover-runes 'nil) ;used for the prover only (not the rewriter), affects soundness ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                          (initial-rule-set 'nil)
+                          (initial-rule-sets 'nil)
+                          (pre-simplifyp 't) ;was nil
+                          (extra-stuff 'nil) ;ffixme does any of this affect soundness?
+                          (specialize-fnsp 'nil) ;do we ever use this?
+                          (monitor 'nil)         ;a list of runes
+                          (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
+                          (random-seed 'nil)
+                          (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
+                          (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
+                          (normalize-xors 't)
+                          (debug 'nil) ;if t, the temp dir with STP files is not deleted
+                          (prove-constants 't) ;whether to attempt to prove probably-constant nodes
+                          )
+  `(make-event ; use make-event-quiet?
+     (prove-equality-fn ',term1 ; todo: evaluate this?
+                        ',term2 ; todo: evaluate this?
+                        ,test-case-count
+                        ,input-type-alist ;; test-case-type-alist ; todo: use this name
+                        ,name
+                        ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,assumptions ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                        ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants ',whole-form
+                        state rand)))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
