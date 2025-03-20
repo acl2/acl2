@@ -17572,7 +17572,7 @@
                                            ,initial-rule-sets
                                            ,monitor
                                            ,use-context-when-miteringp
-                                           ',normalize-xors
+                                           ,normalize-xors
                                            ,interpreted-function-alist
                                            ,check-vars
                                            ,prove-theorem
