@@ -419,6 +419,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "A @('propose') event contributes a new proposal
+     to the set of proposals signed by the new proposal's author.")
+   (xdoc::p
     "If a correct validator creates a proposal,
      it adds it to its map of pending proposals, without ensorsements.
      The validator may also add proposal messages, containing the proposal,
@@ -512,6 +515,9 @@
   :short "How signed proposals change under @('endorse') events."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "An @('endorse') event contributes the endorsed proposal
+     to the set of proposals signed by the endorser.")
    (xdoc::p
     "When a (correct or faulty) validator endorses a proposal,
      it removes a proposal message from the network
