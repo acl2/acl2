@@ -150,8 +150,20 @@
     "If @(tsee blocks-ordered-even-p) holds,
      block rounds are in strictly increading order from right to left.
      This function returns the latest, i.e. highest, round.
-     If there are no blocks, this function returns 0.
-     However, we do not require @(tsee blocks-ordered-even-p) in the guard."))
+     If there are no blocks, this function returns 0.")
+   (xdoc::p
+    "Although it may seem natural
+     to add @(tsee blocks-ordered-even-p) to this function's guard,
+     we deliberately avoid that, for the following reason.
+     Adding that guard here requires adding it to other operations,
+     particularly @(tsee active-committee-at-round).
+     The latter is used to define system transistions,
+     and is applied to blockchains of validators,
+     which are just lists of blocks,
+     not necessarily satisfying @(tsee blocks-ordered-even-p).
+     It is an invariant that they satisfy that predicate,
+     but that invariant is proved after defining the transitions,
+     and so it is not available when defining the transitions."))
   (if (consp blocks)
       (block->round (car blocks))
     0)

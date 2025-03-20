@@ -140,8 +140,9 @@
      particularly @(tsee active-committee-at-round).
      The latter is used to define system transistions,
      and is applied to blockchains of validators,
-     which are just lists of blocks, not necessarily ordered.
-     It is an invariant that they are in fact ordered,
+     which are just lists of blocks,
+     not necessarily satisfying @(tsee blocks-orderedp).
+     It is an invariant that they satisfy that predicate,
      but that invariant is proved after defining the transitions,
      and so it is not available when defining the transitions."))
   (if (consp blocks)
