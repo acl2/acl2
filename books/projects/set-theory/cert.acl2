@@ -1,0 +1,10 @@
+; Copyright (C) 2025, Matt Kaufmann
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
+; Quoting :DOC zfc-model:
+;   Note that we have not worked out such an argument for ACL2(r) (see
+;   [real]).
+; cert_param: (non-acl2r)
+
+(include-book "portcullis")
