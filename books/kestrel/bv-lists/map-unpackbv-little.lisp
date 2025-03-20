@@ -13,6 +13,7 @@
 (include-book "unpackbv-little")
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system)
 (include-book "kestrel/typed-lists-light/all-all-integerp" :dir :system)
+(include-book "all-all-unsigned-byte-p")
 
 ;; Splits each of the BVS into a list of NUM items, each with SIZE bits.
 ;; The result is a list of lists, one list for each of the original BVS.
@@ -44,4 +45,9 @@
 
 (defthm all-all-integerp-of-map-unpackbv-little
   (all-all-integerp (map-unpackbv-little num size bvs))
+  :hints (("Goal" :in-theory (enable map-unpackbv-little))))
+
+(defthm all-all-unsigned-byte-p-of-map-unpackbv-little
+  (implies (natp size)
+           (all-all-unsigned-byte-p size (map-unpackbv-little num size bvs)))
   :hints (("Goal" :in-theory (enable map-unpackbv-little))))

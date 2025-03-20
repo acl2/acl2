@@ -18,6 +18,7 @@
 (include-book "all-unsigned-byte-p") ; todo: separate out?
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system) ; todo: separate out?
 (include-book "unsigned-byte-listp-def")
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (local (include-book "../utilities/equal-of-booleans"))
 
 (defthmd unsigned-byte-listp-rewrite
@@ -84,6 +85,11 @@
               (unsigned-byte-listp width y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp revappend))))
 
+(defthm unsigned-byte-listp-of-reverse-list
+  (equal (unsigned-byte-listp width (reverse-list x))
+         (unsigned-byte-listp width (true-list-fix x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp reverse-list))))
+
 ;; The version of this in std is a :forward-chaining rule for some reason
 (defthm unsigned-byte-p-of-car-when-unsigned-byte-listp-2
   (implies (unsigned-byte-listp width x)
@@ -145,5 +151,11 @@
 
 (defthm all-integerp-when-unsigned-byte-listp
   (implies (unsigned-byte-listp size x) ; size is a free var
+           (all-integerp x))
+  :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
+
+;; common special case (8-bit bytes) with no free var
+(defthm all-integerp-when-unsigned-byte-listp-8
+  (implies (unsigned-byte-listp 8 x)
            (all-integerp x))
   :hints (("Goal" :in-theory (enable unsigned-byte-listp))))
