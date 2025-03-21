@@ -92,6 +92,7 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
+(local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))
@@ -133,6 +134,43 @@
   :rule-classes :linear
   :hints (("Goal" :expand (set::in key '(nil))
            :in-theory (enable g acl2->rcd g-aux rkeys))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; move, so we can use it in other tools?
+;; Can throw an error or pring a warning if the vars disagree.  Returns nil.
+(defun maybe-check-dag-vars (check-vars
+                             dag-or-quotep1
+                             dag-or-quotep2
+                             ctx)
+  (declare (xargs :guard (and (member-eq check-vars '(t nil :warn))
+                              (or (myquotep dag-or-quotep1)
+                                  (pseudo-dagp dag-or-quotep1))
+                              (or (myquotep dag-or-quotep2)
+                                  (pseudo-dagp dag-or-quotep2))
+                              (symbolp ctx) ; at least for now
+                              )))
+  (if (not check-vars)
+      nil ; no check
+    (let* ((vars1 (if (quotep dag-or-quotep1) nil (merge-sort-symbol< (dag-vars dag-or-quotep1))))
+           (vars2 (if (quotep dag-or-quotep2) nil (merge-sort-symbol< (dag-vars dag-or-quotep2))))
+           ;; (- (cw "Variables in DAG1: ~x0~%" vars1))
+           ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
+           ;; can use equal here since the lists are sorted and duplicate-free:
+           (vars-differp (not (equal vars1 vars2))))
+      (if (not vars-differp)
+          nil
+        (progn$ (and (not (subsetp-eq vars1 vars2))
+                     (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
+                             (cw "The first DAG has vars, ~x0, not in the second DAG.~%" (set-difference-eq vars1 vars2))))
+                (and (not (subsetp-eq vars2 vars1))
+                     (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
+                             (cw "The second DAG has vars, ~x0, not in the first DAG.~%" (set-difference-eq vars2 vars1))))
+                (if (eq :warning check-vars)
+                    nil ; no error
+                  (er hard? ctx "Mismatch in DAG vars (see above).")))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;try to deprecate?
 (defund axe-prover-hints (runes
@@ -16841,7 +16879,7 @@
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-miter-core (dag-or-quotep
                          assumptions ; (untranslated) terms we can assume are true (non-nil)
-                         test-case-type-alist ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
+                         types ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                          tactic
                          test-case-count ;the total number of tests to generate?  some may not be used
                          print
@@ -16874,10 +16912,13 @@
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
                               (natp test-case-count)
-                              (test-case-type-alistp test-case-type-alist)
-                              (no-duplicatesp (strip-cars test-case-type-alist))
-                              (not (assoc-eq nil test-case-type-alist)) ;consider relaxing this?
-                              (not (assoc-eq t test-case-type-alist)) ;consider relaxing this?
+                              (or (eq :bits types)
+                                  (eq :bytes types)
+                                  (and (test-case-type-alistp types)
+                                       (no-duplicatesp (strip-cars types))
+                                       (not (assoc-eq nil types)) ;consider relaxing this?
+                                       (not (assoc-eq t types)) ;consider relaxing this?
+                                       ))
                               (extra-stuff-okayp extra-stuff)
                               (symbol-listp monitored-symbols)
                               (symbol-listp runes)
@@ -16993,9 +17034,17 @@
                     state))
            ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
            ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
-           (state (submit-event-quiet '(set-inhibit-warnings "double-rewrite" "subsume") state))
-           ;; Compare the vars in the DAG to the vars given types in TEST-CASE-TYPE-ALIST: ;move this check up?
+           (state (submit-event-quiet '(set-inhibit-warnings "double-rewrite" "subsume") state)) ; move up?
+           ;; Desugar the special values :bits and :bytes for the types:
            (dag-vars (dag-vars dag))
+           (test-case-type-alist (if (eq :bits types)
+                                     (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len dag-vars))
+                                             (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 1))))
+                                   (if (eq :bytes types)
+                                       (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bytes.~%" (len dag-vars))
+                                               (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 8))))
+                                     types)))
+           ;; Compare the vars in the DAG to the vars given types in TEST-CASE-TYPE-ALIST: ;move this check up?
            (sorted-dag-vars (merge-sort-symbol< dag-vars))
            (vars-given-types (strip-cars test-case-type-alist))
            (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
@@ -17117,10 +17166,13 @@
                                   (weak-dagp dag-or-quotep))
                               (true-listp assumptions) ; untranslated
                               (natp tests)
-                              (test-case-type-alistp types)
-                              (no-duplicatesp (strip-cars types))
-                              (not (assoc-eq nil types)) ;consider relaxing this?
-                              (not (assoc-eq t types)) ;consider relaxing this?
+                              (or (eq :bits types)
+                                  (eq :bytes types)
+                                  (and (test-case-type-alistp types)
+                                       (no-duplicatesp (strip-cars types))
+                                       (not (assoc-eq nil types)) ;consider relaxing this?
+                                       (not (assoc-eq t types)) ;consider relaxing this?
+                                       ))
                               (if (extra-stuff-okayp extra-stuff)
                                   t
                                 (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff)
@@ -17274,7 +17326,13 @@
                           random-seed unroll max-conflicts normalize-xors debug prove-constants whole-form
                           state rand)
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
-                              (test-case-type-alistp types) ; todo: allow :bits and :bytes
+                              (or (eq :bits types)
+                                  (eq :bytes types)
+                                  (and (test-case-type-alistp types)
+                                       (no-duplicatesp (strip-cars types))
+                                       (not (assoc-eq nil types)) ;consider relaxing this?
+                                       (not (assoc-eq t types)) ;consider relaxing this?
+                                       ))
                               (natp tests)
                               ; todo: more
                               )
@@ -17381,7 +17439,6 @@
 
 ;; Returns (mv erp event state rand).
 ;; TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
-;; TODO: Allow the :type option to be :bits, meaning assume every var in the DAG is a bit.
 (defun prove-equivalence-fn (dag-or-term1
                              dag-or-term2
                              assumptions ; (untranslated) terms we can assume are true (non-nil)
@@ -17402,9 +17459,13 @@
   (declare (xargs :guard (and ;; dag-or-term1 is a DAG or (untranslated) term
                               ;; dag-or-term2 is a DAG or (untranslated) term
                               (true-listp assumptions) ; untranslated
-                              (or (eq types :bits)
-                                  (eq types :bytes) ; todo: consider supporting other things, like :u32
-                                  (test-case-type-alistp types))
+                              (or (eq :bits types) ; todo: consider supporting other things, like :u32
+                                  (eq :bytes types)
+                                  (and (test-case-type-alistp types)
+                                       (no-duplicatesp (strip-cars types))
+                                       (not (assoc-eq nil types)) ;consider relaxing this?
+                                       (not (assoc-eq t types)) ;consider relaxing this?
+                                       ))
                               (natp tests)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
@@ -17421,7 +17482,7 @@
                               (booleanp use-context-when-miteringp)
                               (booleanp normalize-xors)
                               (interpreted-function-alistp interpreted-function-alist)
-                              (booleanp check-vars)
+                              (member-eq check-vars '(t nil :warn))
                               (booleanp prove-theorem)
                               (booleanp local))
                   :mode :program
@@ -17432,25 +17493,14 @@
         (mv (erp-nil) '(value-triple :redundant) state rand))
        ;; Make term args (if any) into DAGs:
        (wrld (w state))
-       ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld))
+       ((mv erp dag-or-quotep1) (dag-or-term-to-dag dag-or-term1 wrld))
        ((when erp) (mv erp nil state rand))
-       ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld))
+       ((mv erp dag-or-quotep2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand))
        ;; Compute and check var lists:
-       (vars1 (merge-sort-symbol< (dag-vars dag1)))
-       (vars2 (merge-sort-symbol< (dag-vars dag2)))
-       ((when (and check-vars
-                   ;; can use equal here since the lists are sorted and duplicate-free:
-                   (not (equal vars1 vars2))))
-        (and (not (subsetp-eq vars1 vars2))
-             (er hard? 'prove-equivalence-fn "The first dag has vars, ~x0, not in the second dag.~%" (set-difference-eq vars1 vars2)))
-        (and (not (subsetp-eq vars2 vars1))
-             (er hard? 'prove-equivalence-fn "The second dag has vars, ~x0, not in the first dag.~%" (set-difference-eq vars2 vars1)))
-        ;; (- (cw "Variables in DAG1: ~x0~%" vars1))
-        ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
-        (mv (erp-t) nil state rand))
+       (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equivalence-fn))
        ;; Make the equality DAG:
-       ((mv erp equality-dag) (make-equality-dag dag1 dag2)) ; todo: check for constant result
+       ((mv erp equality-dag) (make-equality-dag dag-or-quotep1 dag-or-quotep2)) ; todo: check for constant result
        ((when erp) (mv erp nil state rand))
        ;; Make the initial rule sets:
        ((mv erp initial-rule-sets) (if (eq :auto initial-rule-sets)
@@ -17468,18 +17518,6 @@
        (quoted-dag-or-term1 (farg1 whole-form))
        (quoted-dag-or-term2 (farg2 whole-form))
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
-       ;; Desugar the special values :bits and :bytes for the types:
-       (types (if (eq :bits types)
-                  ;; todo: optimize the removal of duplicates (see merge-symbol<-and-remove-dups, or remove from consecutive dup groups):
-                  (let ((all-vars (remove-duplicates-equal (merge-symbol< vars1 vars2 nil)))) ; usually the same as just the vars1.
-                    (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len all-vars))
-                            (pairlis$ all-vars (repeat (len all-vars) (make-bv-type 1)))))
-                (if (eq :bytes types)
-                    ;; todo: optimize the removal of duplicates (see merge-symbol<-and-remove-dups, or remove from consecutive dup groups):
-                    (let ((all-vars (remove-duplicates-equal (merge-symbol< vars1 vars2 nil)))) ; usually the same as just the vars1.
-                      (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bytes.~%" (len all-vars))
-                              (pairlis$ all-vars (repeat (len all-vars) (make-bv-type 8)))))
-                  types)))
        ;; Try to prove the equality:
        ((mv erp provedp state rand)
         (prove-miter-core equality-dag
@@ -17521,9 +17559,9 @@
        ;; Assemble the event to return:
        (event '(progn)) ; empty progn to be extended
        (prove-theorem (and prove-theorem
-                           (if  types ;todo: remove this restriction
-                                (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
-                                        nil)
+                           (if types ;todo: remove this restriction
+                               (prog2$ (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")
+                                       nil)
                              t)))
        ;; Maybe add the theorem to the progn:
        (event (if prove-theorem
@@ -17606,7 +17644,7 @@
          (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")
          (normalize-xors "Whether to normalize XOR nests when simplifying")
          (interpreted-function-alist "Provides definitions for non-built-in functions")
-         (check-vars "Whether to check that the two DAGs/terms have exactly the same vars")
+         (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
          (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
          (local "whether to make the generated events local"))
   :description ("If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."
