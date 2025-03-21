@@ -16840,7 +16840,7 @@
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-miter-core (dag-or-quotep
-                         assumptions ;terms we can assume non-nil
+                         assumptions ; (untranslated) terms we can assume are true (non-nil)
                          test-case-type-alist ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                          tactic
                          test-case-count ;the total number of tests to generate?  some may not be used
@@ -16854,7 +16854,6 @@
                          prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                          initial-rule-set
                          initial-rule-sets
-
                          pre-simplifyp ;fffixme get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
                          extra-stuff
                          specialize-fnsp
@@ -16871,6 +16870,7 @@
                          state rand)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
+                              (true-listp assumptions) ; untranslated
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
                               (natp test-case-count)
@@ -16905,6 +16905,9 @@
           (prog2$ (er hard? 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
                   (mv :non-t-constant nil state rand))))
        (dag dag-or-quotep)
+       ;; Translate assumptions:
+       (wrld (w state)) ; todo: use more below
+       (assumptions (translate-terms assumptions 'prove-miter-core wrld)) ;throws an error on bad input
        (interpreted-function-alist (make-interpreted-function-alist
                                     (get-non-built-in-supporting-fns-list (dag-fns dag) *axe-evaluator-functions* (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
        ;;doesn't actually check that the user supplied alist is consistent with the state (fixme just pass in the names and look them up in the current state)?
@@ -17082,7 +17085,7 @@
 ;; Returns (mv erp event state rand) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
-                       assumptions ;terms we can assume non-nil
+                       assumptions ; (untranslated) terms we can assume are true (non-nil)
                        types  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from one to the other (when possible), or pass both?
                        tests ;the total number of tests to generate?  some may not be used
                        print
@@ -17112,6 +17115,7 @@
                        state rand)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
+                              (true-listp assumptions) ; untranslated
                               (natp tests)
                               (test-case-type-alistp types)
                               (no-duplicatesp (strip-cars types))
@@ -17143,7 +17147,7 @@
         (mv nil '(value-triple :invisible) state rand))
        ((mv erp provedp state rand)
         (prove-miter-core dag-or-quotep
-                          assumptions ;terms we can assume non-nil
+                          assumptions
                           types ;compute this from the hyps?
                           :rewrite-and-sweep ; todo: pass this in?
                           tests
@@ -17197,7 +17201,7 @@
                        whole-form
                        dag-or-quotep
                        &KEY
-                       (assumptions 'nil) ;affects soundness
+                       (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
                        (types 'nil)  ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
                        (tests '100)
                        (name ''unnamedmiter)
@@ -17261,7 +17265,7 @@
 ;; Returns (mv erp event state rand).
 (defun prove-equality-fn (term1
                           term2
-                          assumptions
+                          assumptions ; (untranslated) terms we can assume are true (non-nil)
                           types  ;todo: compute the types from the hyps?
                           tests
                           name
@@ -17269,7 +17273,8 @@
                           tests-per-case print debug-nodes interpreted-function-alist runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
                           random-seed unroll max-conflicts normalize-xors debug prove-constants whole-form
                           state rand)
-  (declare (xargs :guard (and (test-case-type-alistp types) ; todo: allow :bits and :bytes
+  (declare (xargs :guard (and (true-listp assumptions) ; untranslated
+                              (test-case-type-alistp types) ; todo: allow :bits and :bytes
                               (natp tests)
                               ; todo: more
                               )
@@ -17282,7 +17287,7 @@
        ((when erp) (mv erp nil state rand))
        ((mv erp provedp state rand)
         (prove-miter-core dag-or-quotep
-                          assumptions ;terms we can assume non-nil
+                          assumptions
                           types
                           :rewrite-and-sweep ; todo: pass this in?
                           tests
@@ -17333,7 +17338,7 @@
                           term1
                           term2 ; todo: allow dags?
                           &KEY
-                          (assumptions 'nil) ;affects soundness
+                          (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
                           (types 'nil)
                           (tests '100)
                           (name ''unnamedmiter)
@@ -17379,7 +17384,7 @@
 ;; TODO: Allow the :type option to be :bits, meaning assume every var in the DAG is a bit.
 (defun prove-equivalence-fn (dag-or-term1
                              dag-or-term2
-                             assumptions ; untranslated
+                             assumptions ; (untranslated) terms we can assume are true (non-nil)
                              types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                              tests ;a natp indicating how many tests to run
                              tactic
@@ -17395,7 +17400,7 @@
                              whole-form
                              state rand)
   (declare (xargs :guard (and ;; dag-or-term1 is a DAG or (untranslated) term
-                           ;; dag-or-term2 is a DAG or (untranslated) term
+                              ;; dag-or-term2 is a DAG or (untranslated) term
                               (true-listp assumptions) ; untranslated
                               (or (eq types :bits)
                                   (eq types :bytes) ; todo: consider supporting other things, like :u32
@@ -17425,14 +17430,12 @@
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :redundant) state rand))
-       ;; Create the DAGs:
+       ;; Make term args (if any) into DAGs:
        (wrld (w state))
        ((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld))
        ((when erp) (mv erp nil state rand))
        ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand))
-       ;; Translate assumptions:
-       (assumptions (translate-terms assumptions 'prove-equivalence-fn wrld)) ;throws an error on bad input
        ;; Compute and check var lists:
        (vars1 (merge-sort-symbol< (dag-vars dag1)))
        (vars2 (merge-sort-symbol< (dag-vars dag2)))
@@ -17547,7 +17550,7 @@
                                 dag-or-term1
                                 dag-or-term2
                                 &key
-                                (assumptions 'nil) ;assumed when rewriting the miter
+                                (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
                                 (types 'nil) ;gives types to the vars so we can generate tests for sweeping
                                 (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                 (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
@@ -17589,7 +17592,7 @@
   :short "Prove that two items (DAGs or terms) are equivalent for all values of all of their variables."
   :args ((dag-or-term1 "The first DAG or term to compare")
          (dag-or-term2 "The second DAG or term to compare")
-         (assumptions "Assumptions to use when proving equivalence, a list of terms (not necessarily translated)")
+         (assumptions "Assumptions to use when proving equivalence, a list of terms (not necessarily translated).  The proof is done assuming all of the :assumptions are non-nil.")
          (types "A test-case-type-alist (alist mapping variables to their test-case-types), or one of the special values :bits or :bytes.")
          (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (tests "How many tests to use to find internal equivalences (a natp)")
