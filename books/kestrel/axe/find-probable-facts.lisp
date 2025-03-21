@@ -787,9 +787,10 @@
                                                  test-case-number
                                                num-of-last-interesting-test-case)))))
 
-(defthm booleanp-of-mv-nth-0-of-update-probable-facts-with-test-cases
-  (implies (nat-listp never-used-nodes)
-           (booleanp (mv-nth 0 (update-probable-facts-with-test-cases test-cases
+(local
+ (defthm booleanp-of-mv-nth-0-of-update-probable-facts-with-test-cases
+   (implies (nat-listp never-used-nodes)
+            (booleanp (mv-nth 0 (update-probable-facts-with-test-cases test-cases
                                                                        singleton-count
                                                                        dag-array-name dag-array dag-len
                                                                        probably-equal-node-sets
@@ -802,119 +803,123 @@
                                                                        test-case-number
                                                                        debug-nodes
                                                                        num-of-last-interesting-test-case))))
-  :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases))))
+   :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases)))))
 
-(defthm nat-list-listp-of-mv-nth-1-of-update-probable-facts-with-test-cases
-  (implies (and (test-casesp test-cases)
-                (natp singleton-count)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (< 0 dag-len)
-                (nat-list-listp probably-equal-node-sets)
+(local
+ (defthm nat-list-listp-of-mv-nth-1-of-update-probable-facts-with-test-cases
+   (implies (and (test-casesp test-cases)
+                 (natp singleton-count)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                 (< 0 dag-len)
+                 (nat-list-listp probably-equal-node-sets)
                 ;; (all-consp probably-equal-node-sets)
-                (all-all-< probably-equal-node-sets dag-len)
-                (nat-listp never-used-nodes)
-                (all-< never-used-nodes dag-len)
-                (alistp probably-constant-node-alist)
-                (nat-listp (strip-cars probably-constant-node-alist))
-                (all-< (strip-cars probably-constant-node-alist) dag-len)
-                (interpreted-function-alistp interpreted-function-alist)
+                 (all-all-< probably-equal-node-sets dag-len)
+                 (nat-listp never-used-nodes)
+                 (all-< never-used-nodes dag-len)
+                 (alistp probably-constant-node-alist)
+                 (nat-listp (strip-cars probably-constant-node-alist))
+                 (all-< (strip-cars probably-constant-node-alist) dag-len)
+                 (interpreted-function-alistp interpreted-function-alist)
                               ;; print
-                (symbolp test-case-array-name-base)
+                 (symbolp test-case-array-name-base)
 ;                (booleanp keep-test-casesp)
-                (alistp test-case-array-alist)
-                (natp test-case-number)
-                (nat-listp debug-nodes)
-                (all-< debug-nodes dag-len)
-                (or (null num-of-last-interesting-test-case)
-                    (natp num-of-last-interesting-test-case)))
-           (nat-list-listp (mv-nth 1 (update-probable-facts-with-test-cases test-cases
-                                                                            singleton-count
-                                                                            dag-array-name dag-array dag-len
-                                                                            probably-equal-node-sets
-                                                                            never-used-nodes
-                                                                            probably-constant-node-alist
-                                                                            interpreted-function-alist print
-                                                                            test-case-array-name-base
-                                                                            keep-test-casesp
-                                                                            test-case-array-alist
-                                                                            test-case-number
-                                                                            debug-nodes
-                                                                            num-of-last-interesting-test-case))))
-  :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases))))
+                 (alistp test-case-array-alist)
+                 (natp test-case-number)
+                 (nat-listp debug-nodes)
+                 (all-< debug-nodes dag-len)
+                 (or (null num-of-last-interesting-test-case)
+                     (natp num-of-last-interesting-test-case)))
+            (nat-list-listp (mv-nth 1 (update-probable-facts-with-test-cases test-cases
+                                                                             singleton-count
+                                                                             dag-array-name dag-array dag-len
+                                                                             probably-equal-node-sets
+                                                                             never-used-nodes
+                                                                             probably-constant-node-alist
+                                                                             interpreted-function-alist print
+                                                                             test-case-array-name-base
+                                                                             keep-test-casesp
+                                                                             test-case-array-alist
+                                                                             test-case-number
+                                                                             debug-nodes
+                                                                             num-of-last-interesting-test-case))))
+   :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases)))))
 
-(defthm all->=-len-of-mv-nth-1-of-update-probable-facts-with-test-cases
-  (implies (and (test-casesp test-cases)
-                (natp singleton-count)
-                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                (< 0 dag-len)
-                (nat-list-listp probably-equal-node-sets)
+(local
+ (defthm all->=-len-of-mv-nth-1-of-update-probable-facts-with-test-cases
+   (implies (and (test-casesp test-cases)
+                 (natp singleton-count)
+                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                 (< 0 dag-len)
+                 (nat-list-listp probably-equal-node-sets)
                 ;; (all-consp probably-equal-node-sets)
-                (ALL->=-LEN PROBABLY-EQUAL-NODE-SETS 2)
-                (all-all-< probably-equal-node-sets dag-len)
-                (nat-listp never-used-nodes)
-                (all-< never-used-nodes dag-len)
-                (alistp probably-constant-node-alist)
-                (nat-listp (strip-cars probably-constant-node-alist))
-                (all-< (strip-cars probably-constant-node-alist) dag-len)
-                (interpreted-function-alistp interpreted-function-alist)
+                 (ALL->=-LEN PROBABLY-EQUAL-NODE-SETS 2)
+                 (all-all-< probably-equal-node-sets dag-len)
+                 (nat-listp never-used-nodes)
+                 (all-< never-used-nodes dag-len)
+                 (alistp probably-constant-node-alist)
+                 (nat-listp (strip-cars probably-constant-node-alist))
+                 (all-< (strip-cars probably-constant-node-alist) dag-len)
+                 (interpreted-function-alistp interpreted-function-alist)
                               ;; print
-                (symbolp test-case-array-name-base)
+                 (symbolp test-case-array-name-base)
 ;                (booleanp keep-test-casesp)
-                (alistp test-case-array-alist)
-                (natp test-case-number)
-                (nat-listp debug-nodes)
-                (all-< debug-nodes dag-len)
-                (or (null num-of-last-interesting-test-case)
-                    (natp num-of-last-interesting-test-case)))
-           (all->=-len (mv-nth 1 (update-probable-facts-with-test-cases test-cases
-                                                                            singleton-count
-                                                                            dag-array-name dag-array dag-len
-                                                                            probably-equal-node-sets
-                                                                            never-used-nodes
-                                                                            probably-constant-node-alist
-                                                                            interpreted-function-alist print
-                                                                            test-case-array-name-base
-                                                                            keep-test-casesp
-                                                                            test-case-array-alist
-                                                                            test-case-number
-                                                                            debug-nodes
-                                                                            num-of-last-interesting-test-case))
-                       2))
-  :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases))))
+                 (alistp test-case-array-alist)
+                 (natp test-case-number)
+                 (nat-listp debug-nodes)
+                 (all-< debug-nodes dag-len)
+                 (or (null num-of-last-interesting-test-case)
+                     (natp num-of-last-interesting-test-case)))
+            (all->=-len (mv-nth 1 (update-probable-facts-with-test-cases test-cases
+                                                                         singleton-count
+                                                                         dag-array-name dag-array dag-len
+                                                                         probably-equal-node-sets
+                                                                         never-used-nodes
+                                                                         probably-constant-node-alist
+                                                                         interpreted-function-alist print
+                                                                         test-case-array-name-base
+                                                                         keep-test-casesp
+                                                                         test-case-array-alist
+                                                                         test-case-number
+                                                                         debug-nodes
+                                                                         num-of-last-interesting-test-case))
+                        2))
+   :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases)))))
 
-(defthm nat-listp-of-mv-nth-2-of-update-probable-facts-with-test-cases
-  (implies (nat-listp never-used-nodes)
-           (nat-listp (mv-nth 2 (update-probable-facts-with-test-cases test-cases
-                                                                       singleton-count
-                                                                       dag-array-name dag-array dag-len
-                                                                       probably-equal-node-sets
-                                                                       never-used-nodes
-                                                                       probably-constant-node-alist
-                                                                       interpreted-function-alist print
-                                                                       test-case-array-name-base
-                                                                       keep-test-casesp
-                                                                       test-case-array-alist
-                                                                       test-case-number
-                                                                       debug-nodes
-                                                                       num-of-last-interesting-test-case))))
-  :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases))))
+(local
+ (defthm nat-listp-of-mv-nth-2-of-update-probable-facts-with-test-cases
+   (implies (nat-listp never-used-nodes)
+            (nat-listp (mv-nth 2 (update-probable-facts-with-test-cases test-cases
+                                                                        singleton-count
+                                                                        dag-array-name dag-array dag-len
+                                                                        probably-equal-node-sets
+                                                                        never-used-nodes
+                                                                        probably-constant-node-alist
+                                                                        interpreted-function-alist print
+                                                                        test-case-array-name-base
+                                                                        keep-test-casesp
+                                                                        test-case-array-alist
+                                                                        test-case-number
+                                                                        debug-nodes
+                                                                        num-of-last-interesting-test-case))))
+   :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases)))))
 
-(defthm alistp-of-mv-nth-3-of-update-probable-facts-with-test-cases
-  (implies (alistp probably-constant-node-alist)
-           (alistp (mv-nth 3 (update-probable-facts-with-test-cases test-cases
-                                                                       singleton-count
-                                                                       dag-array-name dag-array dag-len
-                                                                       probably-equal-node-sets
-                                                                       never-used-nodes
-                                                                       probably-constant-node-alist
-                                                                       interpreted-function-alist print
-                                                                       test-case-array-name-base
-                                                                       keep-test-casesp
-                                                                       test-case-array-alist
-                                                                       test-case-number
-                                                                       debug-nodes
-                                                                       num-of-last-interesting-test-case))))
-  :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases))))
+(local
+ (defthm alistp-of-mv-nth-3-of-update-probable-facts-with-test-cases
+   (implies (alistp probably-constant-node-alist)
+            (alistp (mv-nth 3 (update-probable-facts-with-test-cases test-cases
+                                                                     singleton-count
+                                                                     dag-array-name dag-array dag-len
+                                                                     probably-equal-node-sets
+                                                                     never-used-nodes
+                                                                     probably-constant-node-alist
+                                                                     interpreted-function-alist print
+                                                                     test-case-array-name-base
+                                                                     keep-test-casesp
+                                                                     test-case-array-alist
+                                                                     test-case-number
+                                                                     debug-nodes
+                                                                     num-of-last-interesting-test-case))))
+   :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1102,55 +1107,60 @@
                          nil ; debug-nodes
                          )))
 
-(defthm booleanp-of-mv-nth-0-of-find-probable-facts-for-dag
-  (implies (and (pseudo-dagp dag)
-                (<= (len dag) *max-1d-array-length*)
-                (test-casesp test-cases)
-                (interpreted-function-alistp interpreted-function-alist)
+(local
+ (defthm booleanp-of-mv-nth-0-of-find-probable-facts-for-dag
+   (implies (and (pseudo-dagp dag)
+                 (<= (len dag) *max-1d-array-length*)
+                 (test-casesp test-cases)
+                 (interpreted-function-alistp interpreted-function-alist)
 ;                (booleanp keep-test-casesp)
-                )
-           (booleanp (mv-nth 0 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp))))
-  :hints (("Goal" :in-theory (enable find-probable-facts-for-dag))))
+                 )
+            (booleanp (mv-nth 0 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp))))
+   :hints (("Goal" :in-theory (enable find-probable-facts-for-dag)))))
 
-(defthm nat-list-listp-of-mv-nth-1-of-find-probable-facts-for-dag
-  (implies (and (pseudo-dagp dag)
-                (<= (len dag) *max-1d-array-length*)
-                (test-casesp test-cases)
-                (interpreted-function-alistp interpreted-function-alist)
+(local
+ (defthm nat-list-listp-of-mv-nth-1-of-find-probable-facts-for-dag
+   (implies (and (pseudo-dagp dag)
+                 (<= (len dag) *max-1d-array-length*)
+                 (test-casesp test-cases)
+                 (interpreted-function-alistp interpreted-function-alist)
 ;                (booleanp keep-test-casesp)
-                )
-           (nat-list-listp (mv-nth 1 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp))))
-  :hints (("Goal" :in-theory (enable find-probable-facts-for-dag))))
+                 )
+            (nat-list-listp (mv-nth 1 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp))))
+   :hints (("Goal" :in-theory (enable find-probable-facts-for-dag)))))
 
-(defthm all->=-len-of-mv-nth-1-of-find-probable-facts-for-dag
-  (implies (and (pseudo-dagp dag)
-                (<= (len dag) *max-1d-array-length*)
-                (test-casesp test-cases)
-                (interpreted-function-alistp interpreted-function-alist)
+(local
+ (defthm all->=-len-of-mv-nth-1-of-find-probable-facts-for-dag
+   (implies (and (pseudo-dagp dag)
+                 (<= (len dag) *max-1d-array-length*)
+                 (test-casesp test-cases)
+                 (interpreted-function-alistp interpreted-function-alist)
 ;                (booleanp keep-test-casesp)
-                )
-           (all->=-len (mv-nth 1 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp)) 2))
-  :hints (("Goal" :in-theory (enable find-probable-facts-for-dag))))
+                 )
+            (all->=-len (mv-nth 1 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp)) 2))
+   :hints (("Goal" :in-theory (enable find-probable-facts-for-dag)))))
 
-(defthm nat-listp-of-mv-nth-2-of-find-probable-facts-for-dag
-  (implies (and (pseudo-dagp dag)
-                (<= (len dag) *max-1d-array-length*)
-                (test-casesp test-cases)
-                (interpreted-function-alistp interpreted-function-alist)
+(local
+ (defthm nat-listp-of-mv-nth-2-of-find-probable-facts-for-dag
+   (implies (and (pseudo-dagp dag)
+                 (<= (len dag) *max-1d-array-length*)
+                 (test-casesp test-cases)
+                 (interpreted-function-alistp interpreted-function-alist)
 ;                (booleanp keep-test-casesp)
-                )
-           (nat-listp (mv-nth 2 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp))))
-  :hints (("Goal" :in-theory (enable find-probable-facts-for-dag))))
+                 )
+            (nat-listp (mv-nth 2 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp))))
+   :hints (("Goal" :in-theory (enable find-probable-facts-for-dag)))))
 
-(defthm alistp-of-mv-nth-3-of-find-probable-facts-for-dag
-  (implies (and (pseudo-dagp dag)
-                (<= (len dag) *max-1d-array-length*)
-                (test-casesp test-cases)
-                (interpreted-function-alistp interpreted-function-alist)
+(local
+ (defthm alistp-of-mv-nth-3-of-find-probable-facts-for-dag
+   (implies (and (pseudo-dagp dag)
+                 (<= (len dag) *max-1d-array-length*)
+                 (test-casesp test-cases)
+                 (interpreted-function-alistp interpreted-function-alist)
 ;                (booleanp keep-test-casesp)
-                )
-           (alistp (mv-nth 3 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp))))
-  :hints (("Goal" :in-theory (enable find-probable-facts-for-dag))))
+                 )
+            (alistp (mv-nth 3 (find-probable-facts-for-dag dag test-cases interpreted-function-alist keep-test-casesp))))
+   :hints (("Goal" :in-theory (enable find-probable-facts-for-dag)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
