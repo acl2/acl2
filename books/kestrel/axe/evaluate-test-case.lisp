@@ -522,7 +522,7 @@
                                       dag-array-name dag-array dag-len
                                       interpreted-function-alist
                                       test-case-array-name
-                                      debug-nodes ; this notion of tracing is differenct from the tracing we do for rec-fns
+                                      debug-nodes ; nodes whose values we want to print for each test case
                                       )
   (declare (xargs :guard (and (test-casep test-case)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
