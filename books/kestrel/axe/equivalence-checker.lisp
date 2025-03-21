@@ -16938,6 +16938,38 @@
                   :mode :program
                   :stobjs (state rand)))
   (b* ((- (cw "~%(Proving top-level miter ~x0:~%" miter-name))
+       ;; Desugar the special values :bits and :bytes for the types:
+       (dag-vars (if (quotep dag-or-quotep) nil (dag-vars dag-or-quotep))) ; todo: make a dag-or-quotep-vars
+       (test-case-type-alist (if (eq :bits types) ;todo: optimize this stuff:
+                                 (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len dag-vars))
+                                         (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 1))))
+                               (if (eq :bytes types)
+                                   (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bytes.~%" (len dag-vars))
+                                           (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 8))))
+                                 types)))
+       ;; Compare the vars in the DAG to the vars given types in TEST-CASE-TYPE-ALIST:
+       (sorted-dag-vars (merge-sort-symbol< dag-vars))
+       (vars-given-types (strip-cars test-case-type-alist))
+       (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
+       ;; todo: optimize the subset tests here and below, since the lists are sorted:
+       (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types))
+               ;; (hard-error 'prove-miter-core
+               ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
+               ;;               (acons #\0 sorted-dag-vars
+               ;;                      (acons #\1 sorted-vars-given-types
+               ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
+               ;;                                    nil))))
+               ;; todo: mention the tactics that won't work:
+               (let ((vars-not-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))) ; todo: optimize
+                 (if (eq tactic :rewrite-and-sweep)
+                     (cw "WARNING: The ~x0 DAG variables, ~x1, are not given types in the alist, ~x2.  This will prevent sweeping-and-merging from working if rewriting can't prove the goal.~%" (len vars-not-given-types) vars-not-given-types test-case-type-alist)
+                   (cw "WARNING: The ~x0 DAG variables, ~x1, are not given types in the alist, ~x2.~%" (len vars-not-given-types) vars-not-given-types test-case-type-alist)
+                   ))))
+       ((when (not (subsetp-eq sorted-vars-given-types sorted-dag-vars)))
+        (if (quotep dag-or-quotep)
+            (er hard? 'prove-miter-core "The following variables are given types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
+          (er hard? 'prove-miter-core "The following variables are given types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil))
+        (mv :input-error nil state rand))
        ;; Handle the case when dag-or-quotep is already a constant:
        ((when (quotep dag-or-quotep))
         (if (equal *t* dag-or-quotep)
@@ -17035,33 +17067,7 @@
            ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
            ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
            (state (submit-event-quiet '(set-inhibit-warnings "double-rewrite" "subsume") state)) ; move up?
-           ;; Desugar the special values :bits and :bytes for the types:
-           (dag-vars (dag-vars dag))
-           (test-case-type-alist (if (eq :bits types)
-                                     (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len dag-vars))
-                                             (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 1))))
-                                   (if (eq :bytes types)
-                                       (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bytes.~%" (len dag-vars))
-                                               (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 8))))
-                                     types)))
-           ;; Compare the vars in the DAG to the vars given types in TEST-CASE-TYPE-ALIST: ;move this check up?
-           (sorted-dag-vars (merge-sort-symbol< dag-vars))
-           (vars-given-types (strip-cars test-case-type-alist))
-           (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
-           (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types))
-                   ;; (hard-error 'prove-miter-core
-                   ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
-                   ;;               (acons #\0 sorted-dag-vars
-                   ;;                      (acons #\1 sorted-vars-given-types
-                   ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
-                   ;;                                    nil))))
-                   ;; todo: mention the tactics that won't work:
-                   (cw "WARNING: The DAG variables, ~x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
-                       sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
-           ((when (not (subsetp-eq sorted-vars-given-types sorted-dag-vars))) ; todo: what if some got simplified away?  make this a warning?
-            (er hard? 'prove-miter-core
-                "The following variables are given types in the alist but do not appear in the DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
-            (mv :input-error nil state rand))
+
            ;;(prog2$ (mv nil state rand))
            ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
            ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
@@ -17513,7 +17519,7 @@
        ;; Compute and check var lists:
        (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equivalence-fn))
        ;; Make the equality DAG:
-       ((mv erp equality-dag) (make-equality-dag dag-or-quotep1 dag-or-quotep2)) ; todo: check for constant result
+       ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2)) ; todo: check for constant result and finish immediately
        ((when erp) (mv erp nil state rand))
        ;; Make the initial rule sets:
        ((mv erp initial-rule-sets) (if (eq :auto initial-rule-sets)
@@ -17534,7 +17540,7 @@
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
        ;; Try to prove the equality:
        ((mv erp provedp state rand)
-        (prove-miter-core equality-dag
+        (prove-miter-core equality-dag-or-quotep
                           assumptions
                           types
                           tactic
