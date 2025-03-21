@@ -17194,9 +17194,9 @@
 (defmacro prove-miter (&whole
                        whole-form
                        dag-or-quotep
-                       tests
                        test-case-type-alist ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
                        &KEY
+                       (tests '100)
                        (name ''unnamedmiter)
                        (tests-per-case '512)
                        (print 'nil)
