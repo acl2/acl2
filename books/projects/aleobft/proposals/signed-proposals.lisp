@@ -616,3 +616,113 @@
           (:instance signed-props-in-message-subset-when-in
                      (msg (message-proposal prop endor))
                      (msgs (get-network-state systate))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-augment-next
+  :short "How signed proposals change under @('augment') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An @('augment') event does not change
+     the set of proposals signed by each validator.")
+   (xdoc::p
+    "The event removes an endorsement message from the network,
+     which contributes the proposal to the sets of proposals signed by
+     the proposal's author and the endorser in the message.
+     But the event can only happen if the proposal author is correct,
+     and if its pending proposal map includes that proposal.
+     The event leaves the proposal in the map,
+     and adds the new endorser.
+     Thus, the map contributes the same proposals as the message."))
+
+  (defruled signed-props-in-validator-of-augment-next
+    (implies (augment-possiblep prop endor systate)
+             (equal (signed-props-in-validator
+                     signer
+                     (get-validator-state
+                      val (augment-next prop endor systate)))
+                    (if (and (equal (address-fix val)
+                                    (proposal->author prop))
+                             (equal (address-fix signer)
+                                    (address-fix endor)))
+                        (set::insert (proposal-fix prop)
+                                     (signed-props-in-validator
+                                      signer
+                                      (get-validator-state val systate)))
+                      (signed-props-in-validator
+                       signer
+                       (get-validator-state val systate)))))
+    :enable (signed-props-in-validator
+             validator-state->proposed-of-augment-next
+             augment-possiblep
+             signed-props-in-proposed-of-update
+             in-of-signed-props-in-proposed
+             omap::lookup))
+
+  (defruled signed-props-in-validators-of-augment-next
+    (implies (and (augment-possiblep prop endor systate)
+                  (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (augment-next prop endor systate))
+                    (if (and (set::in (proposal->author prop) vals)
+                             (equal (address-fix signer)
+                                    (address-fix endor)))
+                        (set::insert (proposal-fix prop)
+                                     (signed-props-in-validators
+                                      signer vals systate))
+                      (signed-props-in-validators signer vals systate))))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-augment-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-augment-next
+    (implies (augment-possiblep prop endor systate)
+             (implies (set::in x (signed-props
+                                  signer (augment-next prop endor systate)))
+                      (set::in x (signed-props signer systate))))
+    :enable (lemma1 lemma2)
+
+    :prep-lemmas
+
+    ((defruled lemma1
+       (implies (augment-possiblep prop endor systate)
+                (implies (set::in x (signed-props
+                                     signer (augment-next prop endor systate)))
+                         (set::in x (signed-props signer systate))))
+       :enable (signed-props
+                signed-props-in-validators-of-augment-next
+                get-network-state-of-augment-next
+                augment-possiblep
+                signed-props-in-message
+                set::expensive-rules)
+       :use ((:instance signed-props-in-message-set-monotone
+                        (msgs1 (set::delete (message-endorsement prop endor)
+                                            (get-network-state systate)))
+                        (msgs2 (get-network-state systate)))
+             (:instance signed-props-in-message-subset-when-in
+                        (msg (message-endorsement prop endor))
+                        (msgs (get-network-state systate)))))
+
+     (defruled lemma2
+       (implies (augment-possiblep prop endor systate)
+                (implies (set::in x (signed-props signer systate))
+                         (set::in x (signed-props
+                                     signer (augment-next prop endor systate)))))
+       :enable (signed-props
+                signed-props-in-validators-of-augment-next
+                get-network-state-of-augment-next
+                augment-possiblep
+                signed-props-in-message
+                set::expensive-rules)
+       :use ((:instance in-of-signed-props-in-message-set-of-delete
+                        (msgs (get-network-state systate))
+                        (prop x)
+                        (msg (message-endorsement prop endor)))
+             (:instance signed-props-in-validators-when-assoc-of-proposed
+                        (vals (correct-addresses systate))
+                        (val (address-fix signer))
+                        (signer (address-fix signer))
+                        (prop (proposal-fix prop))))))))
