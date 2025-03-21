@@ -17315,8 +17315,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp event state rand).
-(defun prove-equality-fn (term1
-                          term2
+(defun prove-equality-fn (dag-or-term1
+                          dag-or-term2
                           assumptions ; (untranslated) terms we can assume are true (non-nil)
                           types  ;todo: compute the types from the hyps?
                           tests
@@ -17341,10 +17341,18 @@
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state rand))
-       ((mv erp dag-or-quotep) (dagify-term `(equal ,term1 ,term2)))
+       ;; Make term args (if any) into DAGs:
+       (wrld (w state))
+       ((mv erp dag-or-quotep1) (dag-or-term-to-dag dag-or-term1 wrld))
        ((when erp) (mv erp nil state rand))
+       ((mv erp dag-or-quotep2) (dag-or-term-to-dag dag-or-term2 wrld))
+       ((when erp) (mv erp nil state rand))
+       ;; Make the equality DAG:
+       ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2))
+       ((when erp) (mv erp nil state rand))
+       ;; Do the proof:
        ((mv erp provedp state rand)
-        (prove-miter-core dag-or-quotep
+        (prove-miter-core equality-dag-or-quotep
                           assumptions
                           types
                           :rewrite-and-sweep ; todo: pass this in?
@@ -17372,29 +17380,26 @@
                           name ; the miter-name
                           prove-constants
                           debug
-                          state rand)))
-    ;; Depending on how it went, maybe introduce a theorem:
-    (if erp
-        (mv erp nil state rand)
-      (if provedp
-          (let ((state (if debug
-                           state
-                         (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
-            (let ((event '(progn))) ;todo: should return a theorem about the dag!
-              (mv (erp-nil)
-                  (extend-progn event `(table prove-equality-table ',whole-form ',event))
-                  state rand)))
-        (progn$ (hard-error 'prove-equality "Failed to prove miter." nil)
-                (mv (erp-t) nil state rand))))))
+                          state rand))
+       ((when erp) (mv erp nil state rand))
+       )
+    (if provedp
+        (let ((state (if debug state (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
+          (let ((event '(progn))) ;todo: should return a theorem about the term-or-dags!
+            (mv (erp-nil)
+                (extend-progn event `(table prove-equality-table ',whole-form ',event))
+                state rand)))
+      (progn$ (er hard? 'prove-equality "Failed to prove miter ~x0." name)
+              (mv (erp-t) nil state rand)))))
 
-;; Unlike prove-miter, this takes 2 terms.  unlike prove-equivalence, this supports all the exotic options to prove-miter.
+;; Unlike prove-miter, this takes 2 terms/dags.  unlike prove-equivalence, this supports all the exotic options to prove-miter.
 ;; Used in several loop examples.
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 ;; See also prove-equivalence, which is preferable when it is sufficient (because it is simpler).
 (defmacro prove-equality (&whole
                           whole-form
-                          term1
-                          term2 ; todo: allow dags?
+                          dag-or-term1
+                          dag-or-term2
                           &KEY
                           (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
                           (types 'nil)
@@ -17423,11 +17428,9 @@
                           (prove-constants 't) ;whether to attempt to prove probably-constant nodes
                           )
   `(make-event ; use make-event-quiet?
-     (prove-equality-fn ,term1
-                        ,term2
-                        ,assumptions
-                        ,types
-                        ,tests
+     (prove-equality-fn ,dag-or-term1
+                        ,dag-or-term2
+                        ,assumptions ,types ,tests
                         ,name
                         ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                         ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants ',whole-form
