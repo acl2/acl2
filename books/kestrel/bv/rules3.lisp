@@ -448,7 +448,7 @@
   :hints (("Goal" :in-theory (enable myif bvif bvor))))
 
 (defthm bvcat-of-myif-arg2
-  (implies (and (Natp highsize)
+  (implies (and (natp highsize)
                 (<= 1 highsize)
                 (natp lowsize))
            (equal (bvcat highsize (myif test a b) lowsize lowval)
@@ -456,7 +456,7 @@
   :hints (("Goal" :in-theory (enable myif bvif))))
 
 (defthm bvcat-of-myif-arg4
-  (implies (and (Natp highsize)
+  (implies (and (natp highsize)
                 (<= 1 highsize)
                 (natp lowsize))
            (equal (bvcat highsize highval lowsize (myif test a b))
@@ -540,8 +540,8 @@
 ;; (DEFTHM logxor-BOUND
 ;;    (IMPLIES (AND (< x K)
 ;;                  (< y K)
-;;                  (Natp x)
-;;                  (Natp y)
+;;                  (natp x)
+;;                  (natp y)
 ;;                  (natp k))
 ;;             (EQUAL (< (logxor X Y) K)
 ;;                    T))
@@ -2067,7 +2067,7 @@
 
 (defthmd getbit-of-+-bvchop-expand2
   (implies (and (natp n)
-                (Natp y)
+                (natp y)
                 (natp x))
            (equal (getbit n (+ y (bvchop n x)))
                   (if (equal 0 (getbit n x))
@@ -2078,8 +2078,8 @@
 
 (defthmd getbit-of-+-bvchop-expand3
   (implies (and (natp n)
-                (Natp y1)
-                (Natp y2)
+                (natp y1)
+                (natp y2)
                 (natp x))
            (equal (getbit n (+ y1 (bvchop n x) y2))
                   (if (equal 0 (getbit n x))
@@ -2090,8 +2090,8 @@
 
 (defthmd getbit-of-+-bvchop-expand4
   (implies (and (natp n)
-                (Natp y1)
-                (Natp y2)
+                (natp y1)
+                (natp y2)
                 (natp x))
            (equal (getbit n (+ y1 y2 (bvchop n x)))
                   (if (equal 0 (getbit n x))
