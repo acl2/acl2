@@ -464,15 +464,15 @@
   :hints (("Goal" :in-theory (enable myif bvif))))
 
 (defthmd getbit-of-bvif-quoteps
-  (implies (and (syntaxp (quotep thenpart))
-                (syntaxp (quotep elsepart))
-                (syntaxp (quotep n))
-                (syntaxp (quotep size))
+  (implies (and (syntaxp (and (quotep thenpart)
+                              (quotep elsepart)
+                              (quotep n)
+                              (quotep size)))
                 (< n size)
                 (natp n)
-                (integerp size)
-                )
+                (integerp size))
            (equal (getbit n (bvif size test thenpart elsepart))
+                  ;; the getbit calls should get computed:
                   (bvif 1 test (getbit n thenpart) (getbit n elsepart))))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
