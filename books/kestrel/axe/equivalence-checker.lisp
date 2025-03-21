@@ -16920,7 +16920,7 @@
                       (eq :rewrite tactic)
                       initial-rule-set
                       initial-rule-sets))
-       ;; Begin by simplifying the DAG using the supplied axe-rules (if any).  We also simplify if the test case count is 0, because then simplifying is the only thing we can do. ffixme even if there are no rules supplied, we might we want to simplify to evaluate constants, etc.??  but if could be slow to do so if the dag is already simplified with some rule set (will almost always be the case) -- ffixme make simplifying or not an option (default nil?)
+       ;; Begin by simplifying the DAG using the supplied axe-rules (if any).  We also simplify if the test case count is 0, because then simplifying is the only thing we can do. ffixme even if there are no rules supplied, we might we want to simplify to evaluate constants, etc.??  but it could be slow to do so if the dag is already simplified with some rule set (will almost always be the case) -- todo: make simplifying or not an option (default nil?)
        ((mv erp dag-or-quotep state)
         (if simplifyp
             (progn$ (cw "(We begin by simplifying the miter:~%") ;(give the reason)?
@@ -17006,7 +17006,7 @@
                    ;; todo: mention the tactics that won't work:
                    (cw "WARNING: The DAG variables, ~x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
                        sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
-           ((when (not (subsetp-eq sorted-vars-given-types sorted-dag-vars)))
+           ((when (not (subsetp-eq sorted-vars-given-types sorted-dag-vars))) ; todo: what if some got simplified away?  make this a warning?
             (er hard? 'prove-miter-core
                 "The following variables are given types in the alist but do not appear in the DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
             (mv :input-error nil state rand))
@@ -17038,7 +17038,7 @@
            ;; Generate test-inputs:
            ;; TODO: Can we use something like with-local-stobj to isolate the use of rand here?:
            (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
-           ;;fixme rename test-cases test-inputs?
+           ;;todo: rename test-cases test-inputs?
            ((mv erp test-cases rand)
             ;; Make the random test cases (each assigns values to the input vars):
             ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
@@ -17083,7 +17083,7 @@
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
                        assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
-                       test-case-type-alist  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from one to the other (when possible), or pass both?
+                       types  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from one to the other (when possible), or pass both?
                        tests ;the total number of tests to generate?  some may not be used
                        print
                        debug-nodes ;do we use this?
@@ -17113,10 +17113,10 @@
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (natp tests)
-                              (test-case-type-alistp test-case-type-alist)
-                              (no-duplicatesp (strip-cars test-case-type-alist))
-                              (not (assoc-eq nil test-case-type-alist)) ;consider relaxing this?
-                              (not (assoc-eq t test-case-type-alist)) ;consider relaxing this?
+                              (test-case-type-alistp types)
+                              (no-duplicatesp (strip-cars types))
+                              (not (assoc-eq nil types)) ;consider relaxing this?
+                              (not (assoc-eq t types)) ;consider relaxing this?
                               (if (extra-stuff-okayp extra-stuff)
                                   t
                                 (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff)
@@ -17143,7 +17143,7 @@
        ((mv erp provedp state rand)
         (prove-miter-core dag-or-quotep
                           assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
-                          test-case-type-alist ;compute this from the hyps?
+                          types ;compute this from the hyps?
                           :rewrite-and-sweep ; todo: pass this in?
                           tests
                           print
@@ -17195,9 +17195,9 @@
 (defmacro prove-miter (&whole
                        whole-form
                        dag-or-quotep
-                       test-case-type-alist ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
                        &KEY
                        (assumptions 'nil) ;affects soundness
+                       (types 'nil)  ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
                        (tests '100)
                        (name ''unnamedmiter)
                        (tests-per-case '512)
@@ -17232,7 +17232,7 @@
      ;; suggested by MK:
      (mv-let (erp val state)
        (trans-eval-no-warning '(prove-miter-fn
-                                ,dag-or-quotep ,assumptions ,test-case-type-alist
+                                ,dag-or-quotep ,assumptions ,types
                                 ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                                 ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                                 ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name ,prove-constants ,debug
@@ -17287,7 +17287,7 @@
                           print
                           debug-nodes ;do we use this?
                           interpreted-function-alist
-                          ;;ffixme allow the use of rule phases?!
+                          ;; todo: allow the use of rule phases?!
                           runes      ;used for both the rewriter and prover
                           rules      ;used for both the rewriter and prover
                           rewriter-runes ;used for the rewriter only (not the prover)
@@ -17442,7 +17442,7 @@
         ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
         (mv (erp-t) nil state rand))
        ;; Make the equality DAG:
-       ((mv erp equality-dag) (make-equality-dag dag1 dag2))
+       ((mv erp equality-dag) (make-equality-dag dag1 dag2)) ; todo: check for constant result
        ((when erp) (mv erp nil state rand))
        ;; Make the initial rule sets:
        ((mv erp initial-rule-sets) (if (eq :auto initial-rule-sets)
