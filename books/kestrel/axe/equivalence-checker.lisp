@@ -16840,9 +16840,10 @@
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-miter-core (dag-or-quotep
+                         assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                         test-case-type-alist ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                          tactic
                          test-case-count ;the total number of tests to generate?  some may not be used
-                         test-case-type-alist ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                          print
                          debug-nodes ;do we use this?
                          user-interpreted-function-alist ;fixme just pass in the fn names and look them up in the state?
@@ -16853,7 +16854,7 @@
                          prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                          initial-rule-set
                          initial-rule-sets
-                         assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+
                          pre-simplifyp ;fffixme get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
                          extra-stuff
                          specialize-fnsp
@@ -17081,8 +17082,9 @@
 ;; Returns (mv erp event state rand) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
-                       tests ;the total number of tests to generate?  some may not be used
+                       assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
                        test-case-type-alist  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from one to the other (when possible), or pass both?
+                       tests ;the total number of tests to generate?  some may not be used
                        print
                        debug-nodes ;do we use this?
                        interpreted-function-alist
@@ -17093,7 +17095,6 @@
                        prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                        initial-rule-set
                        initial-rule-sets
-                       assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
                        pre-simplifyp
                        extra-stuff
                        specialize-fnsp
@@ -17141,9 +17142,10 @@
         (mv nil '(value-triple :invisible) state rand))
        ((mv erp provedp state rand)
         (prove-miter-core dag-or-quotep
+                          assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                          test-case-type-alist ;compute this from the hyps?
                           :rewrite-and-sweep ; todo: pass this in?
                           tests
-                          test-case-type-alist ;compute this from the hyps?
                           print
                           debug-nodes ;do we use this?
                           interpreted-function-alist
@@ -17154,7 +17156,6 @@
                           prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                           initial-rule-set
                           initial-rule-sets
-                          assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
                           pre-simplifyp
                           extra-stuff
                           specialize-fnsp
@@ -17196,13 +17197,13 @@
                        dag-or-quotep
                        test-case-type-alist ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
                        &KEY
+                       (assumptions 'nil) ;affects soundness
                        (tests '100)
                        (name ''unnamedmiter)
                        (tests-per-case '512)
                        (print 'nil)
                        (debug-nodes 'nil)
                        (interpreted-function-alist 'nil) ;affects soundness
-                       (assumptions 'nil) ;affects soundness
                        (runes 'nil) ;used for both the rewriter and prover, affects soundness
                        (rules 'nil) ;used for both the rewriter and prover, affects soundness
                        (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
@@ -17231,8 +17232,9 @@
      ;; suggested by MK:
      (mv-let (erp val state)
        (trans-eval-no-warning '(prove-miter-fn
-                                ,dag-or-quotep ,tests ,test-case-type-alist ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
-                                ,initial-rule-set ,initial-rule-sets ,assumptions ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                                ,dag-or-quotep ,assumptions ,test-case-type-alist
+                                ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+                                ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                                 ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name ,prove-constants ,debug
                                 ',whole-form state rand)
                               'prove-miter
@@ -17258,11 +17260,12 @@
 ;; Returns (mv erp event state rand).
 (defun prove-equality-fn (term1
                           term2
-                          tests
+                          assumptions
                           test-case-type-alist
+                          tests
                           name
                           ;; todo: standardize argument order:
-                          tests-per-case print debug-nodes interpreted-function-alist assumptions runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
+                          tests-per-case print debug-nodes interpreted-function-alist runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
                           random-seed unroll max-conflicts normalize-xors debug prove-constants whole-form
                           state rand)
   (declare (xargs :guard (and (natp tests)
@@ -17279,9 +17282,10 @@
         (mv :bad-input nil state rand))
        ((mv erp provedp state rand)
         (prove-miter-core dag-or-quotep
+                          assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                          test-case-type-alist
                           :rewrite-and-sweep ; todo: pass this in?
                           tests
-                          test-case-type-alist
                           print
                           debug-nodes ;do we use this?
                           interpreted-function-alist
@@ -17292,7 +17296,6 @@
                           prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                           initial-rule-set
                           initial-rule-sets
-                          assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
                           pre-simplifyp
                           extra-stuff
                           specialize-fnsp
@@ -17330,14 +17333,14 @@
                           term1
                           term2 ; todo: allow dags?
                           &KEY
-                          (tests '100)
+                          (assumptions 'nil) ;affects soundness
                           (input-type-alist ':none) ; todo: standardize name
+                          (tests '100)
                           (name ''unnamedmiter)
                           (tests-per-case '512)
                           (print 'nil)
                           (debug-nodes 'nil)
                           (interpreted-function-alist 'nil) ;affects soundness
-                          (assumptions 'nil) ;affects soundness
                           (runes 'nil) ;used for both the rewriter and prover, affects soundness
                           (rules 'nil) ;used for both the rewriter and prover, affects soundness
                           (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
@@ -17359,10 +17362,11 @@
   `(make-event ; use make-event-quiet?
      (prove-equality-fn ,term1
                         ,term2
-                        ,tests
+                        ,assumptions
                         ,input-type-alist ;; test-case-type-alist ; todo: use this name
+                        ,tests
                         ,name
-                        ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,assumptions ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                        ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                         ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants ',whole-form
                         state rand)))
 
@@ -17375,10 +17379,10 @@
 ;; TODO: Allow the :type option to be :bits, meaning assume every var in the DAG is a bit.
 (defun prove-equivalence-fn (dag-or-term1
                              dag-or-term2
-                             tests ;a natp indicating how many tests to run
-                             tactic
                              assumptions ; untranslated
                              types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
+                             tests ;a natp indicating how many tests to run
+                             tactic
                              name  ; may be :auto
                              print debug max-conflicts extra-rules initial-rule-sets
                              monitor
@@ -17473,9 +17477,11 @@
        ;; Try to prove the equality:
        ((mv erp provedp state rand)
         (prove-miter-core equality-dag
+                          assumptions
+                          types
                           tactic
                           tests ; number of tests to run
-                          types print
+                          print
                           nil ; debug-nodes
                           interpreted-function-alist
                           nil ;runes
@@ -17484,7 +17490,6 @@
                           nil ;prover-runes
                           nil ;initial-rule-set
                           initial-rule-sets
-                          assumptions
                           t   ;pre-simplifyp
                           nil ;extra-stuff
                           nil ;specialize-fnsp
@@ -17558,10 +17563,10 @@
                                 (local 't))
   `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
                                            ,dag-or-term2
-                                           ,tests
-                                           ,tactic
                                            ,assumptions
                                            ,types
+                                           ,tests
+                                           ,tactic
                                            ,name
                                            ,print
                                            ,debug
