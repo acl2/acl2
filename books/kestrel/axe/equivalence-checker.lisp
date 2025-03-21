@@ -17322,7 +17322,7 @@
                           tests
                           name
                           ;; todo: standardize argument order:
-                          tests-per-case print debug-nodes interpreted-function-alist runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
+                          tests-per-case print debug-nodes interpreted-function-alist check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
                           random-seed unroll max-conflicts normalize-xors debug prove-constants whole-form
                           state rand)
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
@@ -17335,6 +17335,7 @@
                                        ))
                               (natp tests)
                               ; todo: more
+                              (member-eq check-vars '(t nil :warn))
                               )
                   :mode :program
                   :stobjs (state rand)))
@@ -17347,6 +17348,8 @@
        ((when erp) (mv erp nil state rand))
        ((mv erp dag-or-quotep2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand))
+       ;; Compute and check var lists:
+       (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equality-fn))
        ;; Make the equality DAG:
        ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2))
        ((when erp) (mv erp nil state rand))
@@ -17409,6 +17412,7 @@
                           (print 'nil)
                           (debug-nodes 'nil)
                           (interpreted-function-alist 'nil) ;affects soundness
+                          (check-vars 't)
                           (runes 'nil) ;used for both the rewriter and prover, affects soundness
                           (rules 'nil) ;used for both the rewriter and prover, affects soundness
                           (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
@@ -17432,7 +17436,7 @@
                         ,dag-or-term2
                         ,assumptions ,types ,tests
                         ,name
-                        ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                        ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                         ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants ',whole-form
                         state rand)))
 
