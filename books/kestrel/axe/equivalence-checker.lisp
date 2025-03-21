@@ -16874,7 +16874,7 @@
 
 
 ;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not merely non-nil).
-; Returns (mv erp provedp state rand)
+; Returns (mv erp provedp state rand).
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-miter-core (dag-or-quotep
@@ -16884,15 +16884,15 @@
                          test-case-count ;the total number of tests to generate?  some may not be used
                          print
                          debug-nodes ;do we use this?
-                         user-interpreted-function-alist ;fixme just pass in the fn names and look them up in the state?
-;ffixme allow the use of rule phases?!
+                         user-interpreted-function-alist ;todo: just pass in the fn names and look them up in the state?
+                         ;; ttodo: allow the use of rule phases?!
                          runes          ;used for both the rewriter and prover
                          rules          ;used for both the rewriter and prover
                          rewriter-runes ;used for the rewriter only (not the prover)
                          prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                          initial-rule-set
                          initial-rule-sets
-                         pre-simplifyp ;fffixme get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
+                         pre-simplifyp ;todo: get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
                          extra-stuff
                          specialize-fnsp
                          monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
@@ -17453,7 +17453,10 @@
                              tests ;a natp indicating how many tests to run
                              tactic
                              name  ; may be :auto
-                             print debug max-conflicts extra-rules initial-rule-sets
+                             print
+                             debug ; whether to keep temp-dirs around
+                             debug-nodes
+                             max-conflicts extra-rules initial-rule-sets
                              monitor
                              use-context-when-miteringp
                              normalize-xors
@@ -17479,6 +17482,7 @@
                               (symbolp name)
                               ;; print
                               (booleanp debug)
+                              (nat-listp debug-nodes)
                               (or (eq :auto max-conflicts)
                                   (null max-conflicts)
                                   (natp max-conflicts))
@@ -17533,7 +17537,7 @@
                           tactic
                           tests ; number of tests to run
                           print
-                          nil ; debug-nodes
+                          debug-nodes
                           interpreted-function-alist
                           nil ;runes
                           nil ;rules
@@ -17602,6 +17606,7 @@
                                 (print ':brief)
                                 (name ':auto) ;the name of the miter, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
                                 (debug 'nil)
+                                (debug-nodes 'nil)
                                 (max-conflicts ':auto) ;1000 here broke proofs
                                 (extra-rules 'nil)
                                 (initial-rule-sets ':auto)
@@ -17621,6 +17626,7 @@
                                            ,name
                                            ,print
                                            ,debug
+                                           ,debug-nodes
                                            ,max-conflicts
                                            ,extra-rules
                                            ,initial-rule-sets
@@ -17644,6 +17650,7 @@
          (print "Print verbosity (allows nil, :brief, t, and :verbose)")
          (name "A name to assign to the equivalence term, if desired")
          (debug "Whether to leave temp files in place, for debugging")
+         (debug-nodes "Nodenums whose values should be printed for each test-case.")
          (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
          (extra-rules "The names of extra rules to use when simplifying (a symbol list)")
          (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets)")
