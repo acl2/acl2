@@ -17511,7 +17511,7 @@
        ;; Compute and check var lists:
        (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equivalence-fn))
        ;; Make the equality DAG:
-       ((mv erp equality-dag) (make-equality-dag dag-or-quotep1 dag-or-quotep2)) ; todo: check for constant result
+       ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2)) ; todo: check for constant result and finish immediately
        ((when erp) (mv erp nil state rand))
        ;; Make the initial rule sets:
        ((mv erp initial-rule-sets) (if (eq :auto initial-rule-sets)
@@ -17531,7 +17531,7 @@
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
        ;; Try to prove the equality:
        ((mv erp provedp state rand)
-        (prove-miter-core equality-dag
+        (prove-miter-core equality-dag-or-quotep
                           assumptions
                           types
                           tactic
