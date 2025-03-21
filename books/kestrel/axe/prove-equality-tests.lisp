@@ -13,8 +13,7 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "equivalence-checker")
 
-;; todo: rename to test-case-type-alist:
-(prove-equality x x :input-type-alist '((x . 8)))
+(prove-equality 'x 'x :types '((x . 8)))
 
 (must-fail
-  (prove-equality x y :input-type-alist '((x . 8) (y . 8))))
+  (prove-equality 'x 'y :types '((x . 8) (y . 8))))
