@@ -197,7 +197,7 @@
    (defthmd prefixp-of-append-arg1-fw-1
     (implies (prefixp (append x y) z)
              (<= (+ (len x) (len y)) (len z)))
-    :hints (("goal" :do-not '(generalize eliminate-destructors)
+    :hints (("goal"
              :in-theory (enable prefixp append)))))
 
   (local
@@ -205,7 +205,7 @@
     (implies (prefixp (append x y) z)
              (equal (true-list-fix x)
                     (take (len x) z)))
-    :hints (("goal" :do-not '(generalize eliminate-destructors)
+    :hints (("goal"
              :induct (prefixp x z)
              :in-theory (enable prefixp append TRUE-LIST-FIX)))))
 
@@ -214,7 +214,7 @@
     (implies (prefixp (append x y) z)
              (prefixp (true-list-fix y)
                       (nthcdr (len x) z)))
-    :hints (("goal" :do-not '(generalize eliminate-destructors)
+    :hints (("goal"
              :induct (prefixp x z)
              :in-theory (enable prefixp append nthcdr)))))
 
