@@ -17261,14 +17261,15 @@
 (defun prove-equality-fn (term1
                           term2
                           assumptions
-                          test-case-type-alist
+                          types  ;todo: compute the types from the hyps?
                           tests
                           name
                           ;; todo: standardize argument order:
                           tests-per-case print debug-nodes interpreted-function-alist runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
                           random-seed unroll max-conflicts normalize-xors debug prove-constants whole-form
                           state rand)
-  (declare (xargs :guard (and (natp tests)
+  (declare (xargs :guard (and (test-case-type-alistp types) ; todo: allow :bits and :bytes
+                              (natp tests)
                               ; todo: more
                               )
                   :mode :program
@@ -17277,13 +17278,10 @@
         (mv nil '(value-triple :invisible) state rand))
        ((mv erp dag-or-quotep) (dagify-term `(equal ,term1 ,term2)))
        ((when erp) (mv erp nil state rand))
-       ((when (eq :none test-case-type-alist))
-        (er hard? 'prove-equality-fn "No :test-case-type-alist given.")  ;todo: compute this from the hyps?
-        (mv :bad-input nil state rand))
        ((mv erp provedp state rand)
         (prove-miter-core dag-or-quotep
                           assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
-                          test-case-type-alist
+                          types
                           :rewrite-and-sweep ; todo: pass this in?
                           tests
                           print
@@ -17334,7 +17332,7 @@
                           term2 ; todo: allow dags?
                           &KEY
                           (assumptions 'nil) ;affects soundness
-                          (input-type-alist ':none) ; todo: standardize name
+                          (types 'nil)
                           (tests '100)
                           (name ''unnamedmiter)
                           (tests-per-case '512)
@@ -17363,7 +17361,7 @@
      (prove-equality-fn ,term1
                         ,term2
                         ,assumptions
-                        ,input-type-alist ;; test-case-type-alist ; todo: use this name
+                        ,types
                         ,tests
                         ,name
                         ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
