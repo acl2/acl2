@@ -1048,7 +1048,7 @@
                 )
            (equal (bvlt size x k)
                   (not (bvlt size (+ -1 k) x))))
-  :hints (("Goal" :cases ((Natp size))
+  :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 ;ex: strengthen 10<x to 11<=x

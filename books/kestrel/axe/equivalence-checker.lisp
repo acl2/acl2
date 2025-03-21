@@ -778,8 +778,8 @@
 
 (defun get-function-args-allows-lambdas-aux (arg-num arity fn term)
   (declare (xargs :measure (+ 1 (nfix (- arity arg-num)))))
-  (if (or (not (Natp arg-num))
-          (not (Natp arity))
+  (if (or (not (natp arg-num))
+          (not (natp arity))
           (<= arity arg-num))
       nil
     (cons (get-arg-n-allows-lambdas arg-num fn term)

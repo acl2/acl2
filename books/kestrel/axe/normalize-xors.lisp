@@ -1421,7 +1421,7 @@
                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                                   translation-array print))))
    :hints (("Goal" :use (:instance type-of-normalize-xors-aux-other-params)
-            :cases ((Natp v))
+            :cases ((natp v))
             :in-theory (disable type-of-normalize-xors-aux-other-params)))))
 
 ;need a bound on the size?
