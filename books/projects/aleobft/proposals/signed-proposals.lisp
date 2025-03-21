@@ -212,7 +212,28 @@
   :prepwork ((local (in-theory (enable emptyp-of-address-set-fix))))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable* set::expensive-rules)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled signed-props-in-validators-when-assoc-of-proposed
+    (implies (and (address-setp vals)
+                  (set::in val vals)
+                  (proposalp prop)
+                  (omap::assoc prop
+                               (validator-state->proposed
+                                (get-validator-state val systate)))
+                  (or (equal signer (proposal->author prop))
+                      (set::in signer
+                               (cdr (omap::assoc
+                                     prop
+                                     (validator-state->proposed
+                                      (get-validator-state val systate)))))))
+             (set::in prop
+                      (signed-props-in-validators signer vals systate)))
+    :induct t
+    :enable (signed-props-in-validator
+             in-of-signed-props-in-proposed)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -341,6 +362,16 @@
     :enable (set::delete
              signed-props-in-message-set-of-insert
              set::expensive-rules))
+
+  (defruled in-of-signed-props-in-message-set-of-delete
+    (implies (and (message-setp msgs)
+                  (set::in prop (signed-props-in-message-set signer msgs))
+                  (not (set::in prop (signed-props-in-message signer msg))))
+             (set::in prop (signed-props-in-message-set
+                            signer (set::delete msg msgs))))
+    :use signed-props-in-message-set-of-delete-superset
+    :enable set::expensive-rules
+    :disable signed-props-in-message-set)
 
   (defruled signed-props-in-message-set-of-make-proposal-messages
     (equal (signed-props-in-message-set
