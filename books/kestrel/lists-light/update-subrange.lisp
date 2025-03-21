@@ -181,8 +181,7 @@
                                             (+ 1 END)
                                             NIL LST))
            :in-theory (e/d (update-subrange)
-                           (;LIST::LEN-WHEN-AT-MOST-1        ;for speed
-                            len ;for speed
+                           (len ;for speed
                             UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
 (theory-invariant (incompatible (:rewrite update-subrange-split-off-last-elem) (:rewrite update-nth-of-update-subrange)))
@@ -475,8 +474,6 @@
            :in-theory (e/d (equal-of-append
                             ;equal-of-cons
                             ;;nth-when-n-is-zp
-                            ;LIST::EQUAL-CONS-CASES ;JVM::CONS-EQUAL-REWRITE
-                            ;LIST::LEN-UPDATE-NTH-BETTER
                             take
                             ;cons-car-self-equal-self
                             (:i update-subrange)
@@ -518,8 +515,7 @@
                     lst)))
 
   :hints (("Goal" :use (:instance update-subrange-rewrite)
-           :in-theory (disable update-subrange-rewrite ;LIST::EQUAL-APPEND-REDUCTION!
-                               ))))
+           :in-theory (disable update-subrange-rewrite))))
 
 ;similar to above
 (defthm update-subrange-from-0

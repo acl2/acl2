@@ -75,7 +75,7 @@
                 (natp m))
            (equal (take m (ungroup n x))
                   (ungroup n (take (floor m n) x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :induct (ungroup-induct x m n)
            :expand ((NTH 1 X)
                     (NTH 0 (CDR X))
@@ -110,8 +110,7 @@
            (equal (nthcdr n (ungroup m x))
                   (ungroup m (nthcdr (floor n m) x))))
   :hints (("Goal" :induct (ungroup-induct x n m)
-           :in-theory (enable posp ungroup nthcdr-of-cdr-combine-strong)
-           :do-not '(generalize eliminate-destructors))))
+           :in-theory (enable posp ungroup nthcdr-of-cdr-combine-strong))))
 
 (defthm nth-of-ungroup
   (implies (and (< n (* size (len x))) ;move to conclusion?
@@ -123,8 +122,7 @@
                             x))))
   :hints (("Goal"
            :induct (ungroup-induct x n size)
-           :in-theory (enable nth-of-0 ungroup len-of-cdr mod-sum-cases)
-           :do-not '(generalize eliminate-destructors))))
+           :in-theory (enable nth-of-0 ungroup len-of-cdr mod-sum-cases))))
 
 (defthm nth-of-ungroup-gen
   (implies (and (posp size)
