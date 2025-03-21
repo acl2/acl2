@@ -17508,6 +17508,8 @@
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :redundant) state rand))
+       ;; Start timing:
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; Make term args (if any) into DAGs:
        (wrld (w state))
        ((mv erp dag-or-quotep1) (dag-or-term-to-dag dag-or-term1 wrld))
@@ -17532,7 +17534,8 @@
                                      ;; special case: no initial-rule-sets, but extra rules are given (TODO: Think about this):
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state rand))
-       (quoted-dag-or-term1 (farg1 whole-form))
+       ;; Choose a name for the miter:
+       (quoted-dag-or-term1 (farg1 whole-form)) ; todo: why "quoted"?
        (quoted-dag-or-term2 (farg2 whole-form))
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
        ;; Try to prove the equality:
@@ -17572,7 +17575,10 @@
        ((when (not provedp)) (prog2$ (cw "ERROR: Proof of equivalence failed.~%")
                                      ;; Convert this to an error
                                      (mv :proof-failed nil state rand)))
-       (- (cw "Proof of equivalence succeeded.~%"))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (- (cw "Proof of equivalence succeeded in ")
+          (acl2::print-to-hundredths elapsed)
+          (cw "s.~%"))
        ;; Assemble the event to return:
        (event '(progn)) ; empty progn to be extended
        (prove-theorem (and prove-theorem

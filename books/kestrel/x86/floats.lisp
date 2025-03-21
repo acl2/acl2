@@ -235,7 +235,6 @@
                 (equal (mxcsrbits->dm$inline mxcsr) 1)
                 (equal (mxcsrbits->im$inline mxcsr) 1))
            (not (mv-nth 0 (sse-cmp operation op1 op2 mxcsr exp-width frac-width))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (sse-cmp
                                    sse-daz
                                    denormal-exception
