@@ -5006,7 +5006,8 @@
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
           (acl2::bv-of-logext-rules)
-          (acl2::unsigned-byte-p-rules)))
+          (acl2::unsigned-byte-p-rules)
+          (acl2::array-reduction-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
