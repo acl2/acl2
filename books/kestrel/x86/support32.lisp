@@ -3710,7 +3710,6 @@
                                                      nil ;gross keyword param
                                                      ))
                   (logext 8 (read-from-segment 1 eff-addr seg-reg x86))))
-  :otf-flg t
   :hints (("Goal" :expand ((:free (eff-addr) (read-byte-from-segment eff-addr seg-reg x86))
                     (:free (n eff-addr) (read-from-segment s eff-addr seg-reg x86))
 ;         (:free (n addr) (rb-1 n addr r-x x86))
@@ -3774,7 +3773,6 @@
                                                      nil ;gross keyword param
                                                      ))
                   (logext 16 (read-from-segment 2 eff-addr seg-reg x86))))
-  :otf-flg t
   :hints (("Goal" :expand ((:free (eff-addr seg-reg) (read-byte-from-segment eff-addr seg-reg x86))
                            (:free (n addr r-x) (rb-1 n addr r-x x86)))
            :do-not '(generalize eliminate-destructors)

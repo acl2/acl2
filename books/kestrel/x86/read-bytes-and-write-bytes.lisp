@@ -668,7 +668,6 @@
                                            vals1
                                            (nthcdr (+ (len vals1) (bvminus 48 ad1 ad2)) vals2))
                                x86)))
-  :otf-flg t
   :hints (("Goal"
            ;; :cases ((equal VALS2
            ;;                (append (acl2::firstn (bvminus 48 ad1 ad2) vals2)
