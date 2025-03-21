@@ -16840,7 +16840,7 @@
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-miter-core (dag-or-quotep
-                         assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                         assumptions ;terms we can assume non-nil
                          test-case-type-alist ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                          tactic
                          test-case-count ;the total number of tests to generate?  some may not be used
@@ -17082,7 +17082,7 @@
 ;; Returns (mv erp event state rand) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
-                       assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                       assumptions ;terms we can assume non-nil
                        types  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from one to the other (when possible), or pass both?
                        tests ;the total number of tests to generate?  some may not be used
                        print
@@ -17138,18 +17138,19 @@
                               (symbolp miter-name))
                   :mode :program
                   :stobjs (state rand)))
-  (b* (((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
+  (b* (;; Handle redundant invocation:
+       ((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
         (mv nil '(value-triple :invisible) state rand))
        ((mv erp provedp state rand)
         (prove-miter-core dag-or-quotep
-                          assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                          assumptions ;terms we can assume non-nil
                           types ;compute this from the hyps?
                           :rewrite-and-sweep ; todo: pass this in?
                           tests
                           print
                           debug-nodes ;do we use this?
                           interpreted-function-alist
-                          ;;ffixme allow the use of rule phases?!
+                          ;; todo: allow the use of rule phases?!
                           runes      ;used for both the rewriter and prover
                           rules      ;used for both the rewriter and prover
                           rewriter-runes ;used for the rewriter only (not the prover)
@@ -17274,13 +17275,14 @@
                               )
                   :mode :program
                   :stobjs (state rand)))
-  (b* (((when (command-is-redundantp whole-form state))
+  (b* (;; Handle redundant invocation:
+       ((when (command-is-redundantp whole-form state))
         (mv nil '(value-triple :invisible) state rand))
        ((mv erp dag-or-quotep) (dagify-term `(equal ,term1 ,term2)))
        ((when erp) (mv erp nil state rand))
        ((mv erp provedp state rand)
         (prove-miter-core dag-or-quotep
-                          assumptions ;terms we can assume non-nil (can't assume them to be actually 't right?)
+                          assumptions ;terms we can assume non-nil
                           types
                           :rewrite-and-sweep ; todo: pass this in?
                           tests
@@ -17392,12 +17394,15 @@
                              local
                              whole-form
                              state rand)
-  (declare (xargs :guard (and (natp tests)
-                              (or (eq tactic :rewrite)
-                                  (eq tactic :rewrite-and-sweep))
+  (declare (xargs :guard (and ;; dag-or-term1 is a DAG or (untranslated) term
+                           ;; dag-or-term2 is a DAG or (untranslated) term
+                              (true-listp assumptions) ; untranslated
                               (or (eq types :bits)
                                   (eq types :bytes) ; todo: consider supporting other things, like :u32
                                   (test-case-type-alistp types))
+                              (natp tests)
+                              (or (eq tactic :rewrite)
+                                  (eq tactic :rewrite-and-sweep))
                               (symbolp name)
                               ;; print
                               (booleanp debug)
