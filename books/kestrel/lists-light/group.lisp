@@ -297,16 +297,13 @@
                   (cons (cons a (firstn (+ -1 n) x))
                         (group n (nthcdr (+ -1 n) x)))))
   :hints (("Goal" ;:induct (group n x)
-           :do-not '(generalize eliminate-destructors)
            :expand ((GROUP N (CONS A X))
                     (group n x))
            :in-theory (e/d (group)
                            (firstn-becomes-take
-;                            list::firstn-does-nothing
                             firstn-becomes-take-gen
                             floor-bounded-by-/
                             ;small-int-hack
-;                            list::nthcdr-when-<=
                             )))))
 
 ;remove n?
@@ -334,7 +331,7 @@
                 (natp m))
            (equal (firstn m (group n x))
                   (group n (firstn (* m n) x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :expand ((GROUP N (FIRSTN (* M N) X)))
            :induct (firstn-of-group-induct x n m)
            :in-theory (e/d (group ;firstn
@@ -349,7 +346,7 @@
                 (<= m (ceiling (len x) n)))
            (equal (take m (group n x))
                   (group n (firstn (* m n) x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
            :expand ((GROUP N (take (* M N) X)))
            :induct (firstn-of-group-induct x n m)
            :in-theory (e/d (group ;firstn
@@ -364,7 +361,7 @@
                 (natp m))
            (equal (nthcdr m (group n x))
                   (group n (nthcdr (* m n) x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
 ;          :expand ((GROUP N (FIRSTN (* M N) (NTHCDR N X))))
            :induct (firstn-of-group-induct x n m)
            :in-theory (e/d (group nthcdr)
@@ -376,12 +373,11 @@
                 (posp n))
            (equal (nth m (group n x))
                   (firstn n (nthcdr (* m n) x))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+  :hints (("Goal"
 ;          :expand ((GROUP N (FIRSTN (* M N) (NTHCDR N X))))
            :expand ((GROUP N X))
            :induct (firstn-of-group-induct x n m)
-           :in-theory (e/d (group nthcdr ;LIST::NTH-OF-CONS
-                                  )
+           :in-theory (e/d (group nthcdr)
                            (NTHCDR-OF-CDR-COMBINE NTHCDR-OF-CDR-COMBINE-STRONG)))))
 
 (defthm group-when-not-consp
@@ -513,8 +509,7 @@
   :hints (("Goal" :in-theory (e/d (group-of-append) (MOD-TYPE
                                                      MOD-bounded-by-modulus
                                                      floor-bounded-by-/
-                                                                          ;LIST::EQUAL-APPEND-REDUCTION!
-                                                                          ;natp-when-integerp
+                                                     ;;natp-when-integerp
                                                      FIRSTN-BECOMES-TAKE-GEN)))))
 
 (defthm group-of-append-new2
@@ -535,8 +530,7 @@
   :hints (("Goal" :in-theory (e/d (group-of-append) (MOD-TYPE
                                                      MOD-bounded-by-modulus
                                                      floor-bounded-by-/
-                                                                          ;LIST::EQUAL-APPEND-REDUCTION!
-                                                                          ;natp-when-integerp
+                                                     ;;natp-when-integerp
                                                      FIRSTN-BECOMES-TAKE-GEN)))))
 
 (defthm group-of-myif-arg2
