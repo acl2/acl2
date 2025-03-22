@@ -228,7 +228,6 @@
                                8
                                (mv-nth 1 (rb 1 addr r-w-x x86))
                                )))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (rb rb-1 ash ;rvm08
                                       acl2::bvcat-becomes-bvor-of-bvshl acl2::bvor bvshl-becomes-*-of-expt ;acl2::bvshl ; ACL2::BVCAT
                                       acl2::logapp
