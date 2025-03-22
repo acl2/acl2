@@ -79,7 +79,28 @@
              :induct t
              :in-theory (enable* signed-props-in-dag
                                  cert-set->prop-set
-                                 set::expensive-rules)))))
+                                 set::expensive-rules))))
+
+  (defruled in-signed-props-in-dag-when-in-dag-and-signer
+    (implies (and (certificate-setp dag)
+                  (set::in cert dag)
+                  (set::in (address-fix signer)
+                           (certificate->signers cert)))
+             (set::in (certificate->proposal cert)
+                      (signed-props-in-dag signer dag)))
+    :induct t)
+
+  (defruled signed-props-in-dag-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp dag))
+             (equal (signed-props-in-dag signer (set::insert cert dag))
+                    (if (set::in (address-fix signer)
+                                 (certificate->signers cert))
+                        (set::insert (certificate->proposal cert)
+                                     (signed-props-in-dag signer dag))
+                      (signed-props-in-dag signer dag))))
+    :induct (set::weak-insert-induction cert dag)
+    :enable in-signed-props-in-dag-when-in-dag-and-signer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
