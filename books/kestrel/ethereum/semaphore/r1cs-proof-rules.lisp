@@ -1,6 +1,6 @@
 ; Rules to support R1CS proofs
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1150,13 +1150,13 @@
 
 ;;slow
 (defthm mod-of-sum-of-mod-4
-  (implies (and (Integerp x)
-                (Integerp y)
-                (Integerp z)
-                (Integerp w)
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z)
+                (integerp w)
                 (posp p))
-           (equal (MOD (+ x y z (MOD w P)) P)
-                  (MOD (+ x y z w) P)))
+           (equal (mod (+ x y z (mod w p)) p)
+                  (mod (+ x y z w) p)))
   :hints (("Goal" :in-theory (enable acl2::mod-sum-cases))))
 
 (defthm add-of-neg-of-bvplus-lemma2
