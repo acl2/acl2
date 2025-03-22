@@ -595,6 +595,100 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-init-scope-thm ((params paramdecl-listp)
+                                     (gin simpadd0-ginp))
+  :guard (paramdecl-list-unambp params)
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp))
+  :short "Generate a theorem about the initial scope of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now this is generated only if all the parameters have @('int') type.
+     If no theorem is generated, we return @('nil') as its name (second result)
+     and a dummy event as first result.")
+   (xdoc::p
+    "The theorem says that, given @('int') values for the arguments,
+     @(tsee c::init-scope) applied to the list of parameter declarations
+     and to the list of parameter values
+     yields an omap (which we express it directly as an alist)
+     that associates parameter name and argument value.")
+   (xdoc::p
+    "The name of the theorem is used locally to another theorem,
+     so it does not have to be particularly unique."))
+  (b* (((mv erp params) (c$::ldm-paramdecl-list params))
+       ((when erp) (mv '(_) nil))
+       ((mv okp hyps args parargs)
+        (simpadd0-gen-init-scope-thm-loop params gin))
+       ((unless okp) (mv '(_) nil))
+       (formula `(implies (and ,@hyps)
+                          (equal (c::init-scope ',params (list ,@args))
+                                 (list ,@parargs))))
+       (hints
+        '(("Goal" :in-theory '(omap::mapp
+                               omap::mfix-when-mapp
+                               omap::head
+                               omap::tail
+                               omap::update
+                               omap::assoc
+                               omap::mapp-non-nil-implies-not-emptyp
+                               (:e omap::emptyp)
+                               c::errorp
+                               c::init-scope
+                               c::not-flexible-array-member-p-when-sintp
+                               c::remove-flexible-array-member-when-absent
+                               c::sintp-alt-def
+                               c::type-of-value-when-sintp
+                               c::value-fix-when-valuep
+                               c::value-list-fix-of-cons
+                               (:e c::adjust-type)
+                               (:e c::apconvert-type)
+                               (:e c::ident)
+                               (:e c::param-declon-list-fix$inline)
+                               (:e c::param-declon-to-ident+tyname)
+                               (:e c::tyname-to-type)
+                               (:e c::type-sint)
+                               (:e c::value-list-fix$inline)
+                               mv-nth
+                               car-cons
+                               cdr-cons
+                               (:e <<)))))
+       (thm-name 'init-scope-thm)
+       (thm-event `(defruled init-scope-thm
+                     ,formula
+                     :hints ,hints)))
+    (mv thm-event thm-name))
+
+  :prepwork
+  ((define simpadd0-gen-init-scope-thm-loop ((params c::param-declon-listp)
+                                             (gin simpadd0-ginp))
+     :returns (mv (okp booleanp)
+                  (hyps true-listp)
+                  (args symbol-listp)
+                  (parargs true-listp))
+     :parents nil
+     (b* (((when (endp params)) (mv t nil nil nil))
+          ((c::param-declon param) (car params))
+          ((unless (c::tyspecseq-case param.tyspec :sint))
+           (mv nil nil nil nil))
+          ((unless (c::obj-declor-case param.declor :ident))
+           (mv nil nil nil nil))
+          (ident (c::obj-declor-ident->get param.declor))
+          (par (c::ident->name ident))
+          (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
+          (hyps `((c::valuep ,arg)
+                  (equal (c::value-kind ,arg) :sint)))
+          (pararg `(cons (c::ident ,par) ,arg))
+          ((mv okp more-hyps more-args more-parargs)
+           (simpadd0-gen-init-scope-thm-loop (cdr params) gin))
+          ((unless okp) (mv nil nil nil nil)))
+       (mv t
+           (append hyps more-hyps)
+           (cons arg more-args)
+           (cons pararg more-parargs))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-expr-ident ((ident identp)
                              (info c$::var-infop)
                              (gin simpadd0-ginp))
@@ -647,7 +741,7 @@
         (make-simpadd0-gout :events (list thm-event)
                             :thm-name thm-name
                             :thm-index thm-index
-                            :names-to-avoid (list thm-name)
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
                             :vars vars
                             :diffp nil)))
   :prepwork ((local (in-theory (enable identity))))
@@ -738,7 +832,7 @@
         (make-simpadd0-gout :events (list thm-event)
                             :thm-name thm-name
                             :thm-index thm-index
-                            :names-to-avoid (list thm-name)
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
                             :vars vars
                             :diffp nil)))
   :hooks (:fix)
@@ -4328,8 +4422,16 @@
   :returns (mv (new-fundef fundefp)
                (gout simpadd0-goutp))
   :short "Transform a function definition."
-  (b* (((simpadd0-gin gin) gin)
-       ((fundef fundef) fundef)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We attempt to generate a theorem about
+     the initial scope of the function.
+     We put that theorem inside a dummy theorem;
+     we plan to replace this dummy enclosing theorem
+     with a full theorem about the function
+     (if it is within the subset of C for which we have formal semantics."))
+  (b* (((fundef fundef) fundef)
        ((mv new-spec (simpadd0-gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin state))
        (gin (simpadd0-gin-update gin gout-spec))
@@ -4340,22 +4442,61 @@
         (simpadd0-decl-list fundef.decls gin state))
        (gin (simpadd0-gin-update gin gout-decls))
        ((mv new-body (simpadd0-gout gout-body))
-        (simpadd0-stmt fundef.body gin state)))
-    (mv (make-fundef :extension fundef.extension
-                     :spec new-spec
-                     :declor new-declor
-                     :asm? fundef.asm?
-                     :attribs fundef.attribs
-                     :decls new-decls
-                     :body new-body)
+        (simpadd0-stmt fundef.body gin state))
+       ((simpadd0-gin gin) (simpadd0-gin-update gin gout-body))
+       (new-fundef (make-fundef :extension fundef.extension
+                                :spec new-spec
+                                :declor new-declor
+                                :asm? fundef.asm?
+                                :attribs fundef.attribs
+                                :decls new-decls
+                                :body new-body))
+       (gout-no-thm
         (make-simpadd0-gout
          :events (append gout-spec.events
                          gout-declor.events
                          gout-decls.events
                          gout-body.events)
          :thm-name nil
-         :thm-index gout-body.thm-index
-         :names-to-avoid gout-body.names-to-avoid
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :vars (set::union gout-spec.vars
+                           (set::union gout-declor.vars
+                                       (set::union gout-decls.vars
+                                                   gout-body.vars)))
+         :diffp (or gout-spec.diffp
+                    gout-declor.diffp
+                    gout-decls.diffp
+                    gout-body.diffp)))
+       ((unless (c$::fundef-formalp fundef))
+        (mv new-fundef gout-no-thm))
+       ((declor declor) fundef.declor)
+       ((when (consp declor.pointers))
+        (mv new-fundef gout-no-thm))
+       ((unless (dirdeclor-case declor.direct :function-params))
+        (mv new-fundef gout-no-thm))
+       (params (dirdeclor-function-params->params declor.direct))
+       ((mv init-scope-thm-event init-scope-thm-name)
+        (simpadd0-gen-init-scope-thm params gin))
+       ((unless init-scope-thm-name)
+        (mv new-fundef gout-no-thm))
+       (thm-name (packn-pos (list gin.const-new '-thm- gin.thm-index)
+                            gin.const-new))
+       (thm-index (1+ gin.thm-index))
+       (thm-event `(defrule ,thm-name
+                     t ; placeholder
+                     :rule-classes nil
+                     :prep-lemmas (,init-scope-thm-event))))
+    (mv new-fundef
+        (make-simpadd0-gout
+         :events (append gout-spec.events
+                         gout-declor.events
+                         gout-decls.events
+                         gout-body.events
+                         (list thm-event))
+         :thm-name thm-name
+         :thm-index thm-index
+         :names-to-avoid (cons thm-name gout-body.names-to-avoid)
          :vars (set::union gout-spec.vars
                            (set::union gout-declor.vars
                                        (set::union gout-decls.vars
