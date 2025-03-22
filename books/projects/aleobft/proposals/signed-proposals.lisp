@@ -236,7 +236,7 @@
 
   ///
 
-  (defruled signed-props-in-validators-when-assoc-of-proposed
+  (defruled prop-in-signed-props-in-validators-when-assoc-of-proposed
     (implies (and (address-setp vals)
                   (set::in val vals)
                   (proposalp prop)
@@ -741,8 +741,9 @@
                         (msgs (get-network-state systate))
                         (prop x)
                         (msg (message-endorsement prop endor)))
-             (:instance signed-props-in-validators-when-assoc-of-proposed
-                        (vals (correct-addresses systate))
-                        (val (address-fix signer))
-                        (signer (address-fix signer))
-                        (prop (proposal-fix prop))))))))
+             (:instance
+              prop-in-signed-props-in-validators-when-assoc-of-proposed
+              (vals (correct-addresses systate))
+              (val (address-fix signer))
+              (signer (address-fix signer))
+              (prop (proposal-fix prop))))))))
