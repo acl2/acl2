@@ -77,8 +77,7 @@
                   (if  (< n m)
                       (nth n lst)
                     nil)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable take nth))))
+  :hints (("Goal" :in-theory (enable take nth))))
 
 ;todo
 (defthm nth-of-take-2-gen

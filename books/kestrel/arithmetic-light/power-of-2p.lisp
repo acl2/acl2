@@ -71,7 +71,7 @@
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
                 (<= n (+ -1 (integer-length k)))
-                (Integerp y)
+                (integerp y)
                 (integerp n))
            (integerp (* k (/ (expt 2 n)) y)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
