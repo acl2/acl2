@@ -277,7 +277,7 @@
 
 (defthm logbitp-when-i-is-negative
   (implies (and (< i 0)
-                (Integerp i))
+                (integerp i))
            (equal (LOGBITP i j)
                   (LOGBITP 0 j)))
   :hints (("Goal" :in-theory (e/d (logbitp) (LOGBITP-TO-GETBIT-EQUAL-1)))))
@@ -5057,7 +5057,7 @@
   (IMPLIES (AND (UNSIGNED-BYTE-P free X)
                 (< free SIZE)
                 (natp free)
-                (Integerp size)
+                (integerp size)
                 )
            (EQUAL (BVPLUS SIZE 1 X)
                   (IF (EQUAL (+ -1 (expt 2 free)) X)
