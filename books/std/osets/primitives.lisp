@@ -405,7 +405,7 @@ following loop:</p>
   ;;
   ;; (defthm tail-insert-empty
   ;;   (implies (emptyp X)
-  ;;  	      (emptyp (tail (insert a X)))))
+  ;;          (emptyp (tail (insert a X)))))
 
   (defthm insert-when-emptyp
     (implies (and (syntaxp (not (equal X ''nil)))

@@ -103,42 +103,42 @@
 
   (defun instance-unify-term (pattern term sublist)
     (if (atom pattern)
-	(if (instance-variablep pattern)
-	    (let ((value (assoc pattern sublist)))
-	      (if (consp value)
-		  (if (equal term (cdr value))
-		      (mv t sublist)
-		    (mv nil nil))
-		(mv t (acons pattern term sublist))))
-	  (if (equal term pattern)
-	      (mv t sublist)
-	    (mv nil nil)))
+        (if (instance-variablep pattern)
+            (let ((value (assoc pattern sublist)))
+              (if (consp value)
+                  (if (equal term (cdr value))
+                      (mv t sublist)
+                    (mv nil nil))
+                (mv t (acons pattern term sublist))))
+          (if (equal term pattern)
+              (mv t sublist)
+            (mv nil nil)))
       (if (or (atom term)
-	      (not (eq (car term) (car pattern))))
-	  (mv nil nil)
-	(if (or (eq (car term) 'quote)
-		(eq (car pattern) 'quote))
-	    (if (equal term pattern)
-		(mv t sublist)
-	      (mv nil nil))
-	  (instance-unify-list (cdr pattern) (cdr term) sublist)))))
+              (not (eq (car term) (car pattern))))
+          (mv nil nil)
+        (if (or (eq (car term) 'quote)
+                (eq (car pattern) 'quote))
+            (if (equal term pattern)
+                (mv t sublist)
+              (mv nil nil))
+          (instance-unify-list (cdr pattern) (cdr term) sublist)))))
 
   (defun instance-unify-list (pattern-list term-list sublist)
     (if (or (atom term-list)
-	    (atom pattern-list))
-	(if (and (atom term-list)
-		 (atom pattern-list))
-	    (mv t sublist)
-	  (mv nil nil))
+            (atom pattern-list))
+        (if (and (atom term-list)
+                 (atom pattern-list))
+            (mv t sublist)
+          (mv nil nil))
       (mv-let (successp new-sublist)
-	      (instance-unify-term (car pattern-list)
-				   (car term-list)
-				   sublist)
-	      (if successp
-		  (instance-unify-list (cdr pattern-list)
-				       (cdr term-list)
-				       new-sublist)
-		(mv nil nil)))))
+              (instance-unify-term (car pattern-list)
+                                   (car term-list)
+                                   sublist)
+              (if successp
+                  (instance-unify-list (cdr pattern-list)
+                                       (cdr term-list)
+                                       new-sublist)
+                (mv nil nil)))))
 )
 
 
@@ -157,7 +157,7 @@
       term
     (let* ((old (car (car sublist)))
            (new (cdr (car sublist)))
-	   (result (subst new old term)))
+           (result (subst new old term)))
       (instance-substitute (cdr sublist) result))))
 
 
@@ -180,12 +180,12 @@
   (defun instance-rewrite1 (pat repl term)
     (mv-let (successful sublist)
             (instance-unify-term pat term nil)
-	    (if successful
-		(instance-substitute sublist repl)
-	      (if (atom term)
-		  term
-		(cons (instance-rewrite1 pat repl (car term))
-		      (instance-rewrite-lst1 pat repl (cdr term)))))))
+            (if successful
+                (instance-substitute sublist repl)
+              (if (atom term)
+                  term
+                (cons (instance-rewrite1 pat repl (car term))
+                      (instance-rewrite-lst1 pat repl (cdr term)))))))
 
   (defun instance-rewrite-lst1 (pat repl lst)
     (if (endp lst)
@@ -206,9 +206,9 @@
       term
     (let ((first-sub (car subs)))
       (instance-rewrite (instance-rewrite1 (first first-sub)
-					   (second first-sub)
-					   term)
-			(cdr subs)))))
+                                           (second first-sub)
+                                           term)
+                        (cdr subs)))))
 
 
 
@@ -230,10 +230,10 @@
   (if (endp decls)
       nil
     (if (pseudo-termp (car decls))
-	(cons (instance-rewrite (car decls) subs)
-	      (instance-decls (cdr decls) subs))
+        (cons (instance-rewrite (car decls) subs)
+              (instance-decls (cdr decls) subs))
       (cons (car decls)
-	    (instance-decls (cdr decls) subs)))))
+            (instance-decls (cdr decls) subs)))))
 
 
 ; For the defun itself, we retain the same defun symbol (e.g., defun or
@@ -248,16 +248,16 @@
 
 (defun instance-defun (defun subs)
   (let* ((defun-symbol  (first defun))
- 	 (defun-name    (second defun))
-	 (defun-args    (third defun))
+         (defun-name    (second defun))
+         (defun-args    (third defun))
          (defun-decls   (butlast (cdddr defun) 1))
-	 (defun-body    (car (last defun)))
-	 (name/args     (cons defun-name defun-args))
-	 (new-body      (instance-rewrite defun-body subs))
-	 (new-name/args (instance-rewrite name/args subs))
-	 (new-decls     (instance-decls defun-decls subs))
-	 (new-name      (car new-name/args))
-	 (new-args      (cdr new-name/args)))
+         (defun-body    (car (last defun)))
+         (name/args     (cons defun-name defun-args))
+         (new-body      (instance-rewrite defun-body subs))
+         (new-name/args (instance-rewrite name/args subs))
+         (new-decls     (instance-decls defun-decls subs))
+         (new-name      (car new-name/args))
+         (new-args      (cdr new-name/args)))
     `(,defun-symbol
        ,new-name ,new-args
        ,@new-decls
@@ -270,7 +270,7 @@
   (if (endp defun-list)
       nil
     (cons (instance-defun (car defun-list) subs)
-	  (instance-defuns (cdr defun-list) subs))))
+          (instance-defuns (cdr defun-list) subs))))
 
 
 
@@ -280,28 +280,28 @@
   (if (endp event-list)
       nil
     (let* ((first-event (car event-list))
-	   (event-type  (first first-event)))
+           (event-type  (first first-event)))
       (cond ((or (eq event-type 'defthm)
-		 (eq event-type 'defthmd))
-	     (cons (second first-event)
-		   (defthm-names (cdr event-list))))
-	    ((eq event-type 'encapsulate)
-	     (append (defthm-names (cddr first-event))
-		     (defthm-names (cdr event-list))))
-	    (t (defthm-names (cdr event-list)))))))
+                 (eq event-type 'defthmd))
+             (cons (second first-event)
+                   (defthm-names (cdr event-list))))
+            ((eq event-type 'encapsulate)
+             (append (defthm-names (cddr first-event))
+                     (defthm-names (cdr event-list))))
+            (t (defthm-names (cdr event-list)))))))
 
 (defun create-new-names (name-list suffix)
   (if (endp name-list)
       nil
     (acons (car name-list)
-	   (intern-in-package-of-symbol (string-append (symbol-name (car name-list))
-						       (symbol-name suffix))
-					suffix)
-	   (create-new-names (cdr name-list) suffix))))
+           (intern-in-package-of-symbol (string-append (symbol-name (car name-list))
+                                                       (symbol-name suffix))
+                                        suffix)
+           (create-new-names (cdr name-list) suffix))))
 
 (defun rename-defthms (event-list suffix)
   (sublis (create-new-names (defthm-names event-list) suffix)
-	  event-list))
+          event-list))
 
 
 
@@ -339,16 +339,16 @@
 
 (defun sub-to-lambda (sub)
   (let ((term (first sub))
-	(repl (second sub)))
+        (repl (second sub)))
     (let ((function-symbol (car term))
-	  (lambda-args (cdr term)))
+          (lambda-args (cdr term)))
       `(,function-symbol (lambda ,lambda-args ,repl)))))
 
 (defun subs-to-lambdas (subs)
   (if (endp subs)
       nil
     (cons (sub-to-lambda (car subs))
-	  (subs-to-lambdas (cdr subs)))))
+          (subs-to-lambdas (cdr subs)))))
 
 
 ; (b) Determining the theory in which to conduct the proofs.
@@ -380,13 +380,13 @@
     (if (atom term)
         nil
       (cons (car term)
-	    (term-list-functions (cdr term)))))
+            (term-list-functions (cdr term)))))
 
   (defun term-list-functions (list)
     (if (endp list)
-	nil
+        nil
       (append (term-functions (car list))
-	      (term-list-functions (cdr list)))))
+              (term-list-functions (cdr list)))))
 )
 
 ; Next, I wrote the following function, which walks over the substitution list
@@ -398,9 +398,9 @@
   (if (endp subs)
       nil
     (let* ((sub1 (car subs))
-	   (repl (second sub1)))
+           (repl (second sub1)))
       (append (term-functions repl)
-	      (subs-repl-functions (cdr subs))))))
+              (subs-repl-functions (cdr subs))))))
 
 ; Given the above, we could then convert the list of function symbols into a
 ; list of (:definition f)'s with the following function.  We now use :d instead
@@ -410,7 +410,7 @@
   (if (endp funcs)
       nil
     (cons `(:d ,(car funcs))
-	  (function-list-to-definitions (cdr funcs)))))
+          (function-list-to-definitions (cdr funcs)))))
 
 ; And finally, here is a function that does "all of the work", calling
 ; function-list-to-definitions for all of the functions found in the
@@ -419,7 +419,7 @@
 
 (defun subs-to-defs (subs generics)
   (let* ((all-fns (subs-repl-functions subs))
-	 (real-fns (set-difference-eq all-fns generics)))
+         (real-fns (set-difference-eq all-fns generics)))
     (function-list-to-definitions real-fns)))
 
 
@@ -440,21 +440,21 @@
 (defun parse-defthm-option (option return-value)
   (cond ((equal (first option) :rule-classes)
          (update-nth 0 (list t (second option)) return-value))
-	((equal (first option) :instructions)
-	 (update-nth 1 (list t (second option)) return-value))
-	((equal (first option) :hints)
-	 (update-nth 2 (list t (second option)) return-value))
-	((equal (first option) :otf-flg)
-	 (update-nth 3 (list t (second option)) return-value))
-	((equal (first option) :doc)
-	 (update-nth 4 (list t (second option)) return-value))
-	(t (er hard "Unknown flag in defthm options ~x0." (first option)))))
+        ((equal (first option) :instructions)
+         (update-nth 1 (list t (second option)) return-value))
+        ((equal (first option) :hints)
+         (update-nth 2 (list t (second option)) return-value))
+        ((equal (first option) :otf-flg)
+         (update-nth 3 (list t (second option)) return-value))
+        ((equal (first option) :doc)
+         (update-nth 4 (list t (second option)) return-value))
+        (t (er hard "Unknown flag in defthm options ~x0." (first option)))))
 
 (defun parse-defthm-options (options return-value)
   (if (endp options)
       return-value
     (parse-defthm-options (cddr options)
-			  (parse-defthm-option options return-value))))
+                          (parse-defthm-option options return-value))))
 
 
 ; (d) Generating the actual defthm event.
@@ -475,20 +475,20 @@
 
 (defun instance-defthm (event new-name subs generics extra-defs)
   (let* ((defthm-symbol (first event))
-	 (defthm-name   (second event))
-	 (defthm-body   (third event))
-	 (new-body      (instance-rewrite defthm-body subs))
-	 (options       (parse-defthm-options (cdddr event)
-					      *default-parse-values*))
-	 (rc-opt        (first options)))
+         (defthm-name   (second event))
+         (defthm-body   (third event))
+         (new-body      (instance-rewrite defthm-body subs))
+         (options       (parse-defthm-options (cdddr event)
+                                              *default-parse-values*))
+         (rc-opt        (first options)))
     `(,defthm-symbol ,new-name
        ,new-body
        :hints(("Goal"
-	       :use (:functional-instance ,defthm-name
-					  ,@(subs-to-lambdas subs))
-	       :in-theory (union-theories (theory 'minimal-theory)
-			   (union-theories ',extra-defs
-					   ',(subs-to-defs subs generics)))))
+               :use (:functional-instance ,defthm-name
+                                          ,@(subs-to-lambdas subs))
+               :in-theory (union-theories (theory 'minimal-theory)
+                           (union-theories ',extra-defs
+                                           ',(subs-to-defs subs generics)))))
        ,@(if (car rc-opt) `(:rule-classes ,(cdr rc-opt)) nil))))
 
 
@@ -529,14 +529,14 @@
 
 (defun instance-signature (signature subs)
   (let ((name (first signature))
-	(rest (rest signature)))
+        (rest (rest signature)))
     (cons (instance-rewrite subs name) rest)))
 
 (defun instance-signatures (signatures subs)
   (if (endp signatures)
       nil
     (cons (instance-signature (car signatures) subs)
-	  (instance-signatures (cdr signatures) subs))))
+          (instance-signatures (cdr signatures) subs))))
 
 ; Because encapsulates can contain many events within them, it is natural to
 ; make them mutually recursive with the main event list handler, which we are
@@ -577,48 +577,48 @@
 
   (defun instance-event (event subs suffix generics mode extra-defs)
     (if (null suffix)
-	event
+        event
       (cond ((or (eq (car event) 'defun)
-		 (eq (car event) 'defund))
-	     (instance-defun event subs))
-	    ((or (eq (car event) 'defthm)
-		 (eq (car event) 'defthmd))
-	     (let* ((name (second event))
-		    (new-name (intern-in-package-of-symbol
-			       (acl2::string-upcase
-				(concatenate 'string
-					     (symbol-name name)
-					     (symbol-name suffix)))
-			       suffix)))
-	       (instance-defthm event new-name subs generics extra-defs)))
-	    ((equal (car event) 'local)
-	     (if (eq mode 'constrained)
-		 (instance-event (second event) subs suffix generics mode extra-defs)
-	       nil))
-	    ((equal (car event) 'encapsulate)
-	     (instance-encapsulate event subs suffix generics mode extra-defs))
-	    (t (er hard "Don't know how to handle ~x0" (car event))))))
+                 (eq (car event) 'defund))
+             (instance-defun event subs))
+            ((or (eq (car event) 'defthm)
+                 (eq (car event) 'defthmd))
+             (let* ((name (second event))
+                    (new-name (intern-in-package-of-symbol
+                               (acl2::string-upcase
+                                (concatenate 'string
+                                             (symbol-name name)
+                                             (symbol-name suffix)))
+                               suffix)))
+               (instance-defthm event new-name subs generics extra-defs)))
+            ((equal (car event) 'local)
+             (if (eq mode 'constrained)
+                 (instance-event (second event) subs suffix generics mode extra-defs)
+               nil))
+            ((equal (car event) 'encapsulate)
+             (instance-encapsulate event subs suffix generics mode extra-defs))
+            (t (er hard "Don't know how to handle ~x0" (car event))))))
 
   (defun instance-event-list (events subs suffix generics mode extra-defs)
     (if (endp events)
-	nil
+        nil
       (let ((first (instance-event (car events) subs suffix generics mode extra-defs))
-	    (rest  (instance-event-list (cdr events) subs suffix generics mode extra-defs)))
-	(if first
-	    (cons first rest)
-	  rest))))
+            (rest  (instance-event-list (cdr events) subs suffix generics mode extra-defs)))
+        (if first
+            (cons first rest)
+          rest))))
 
   (defun instance-encapsulate (event subs suffix generics mode extra-defs)
     (declare (ignore mode))
     (let* ((signatures (second event))
-	   (new-sigs   (if signatures
-			   (instance-signatures subs signatures)
-			 nil))
-	   (new-events (instance-event-list (cddr event) subs suffix generics
-					    (if signatures
-						'constrained
-					      nil)
-					    extra-defs)))
+           (new-sigs   (if signatures
+                           (instance-signatures subs signatures)
+                         nil))
+           (new-events (instance-event-list (cddr event) subs suffix generics
+                                            (if signatures
+                                                'constrained
+                                              nil)
+                                            extra-defs)))
       `(encapsulate ,new-sigs ,@new-events)))
 
 )
@@ -629,13 +629,13 @@
 
 (defmacro instance (theory)
   (let ((macro-name (intern-in-package-of-symbol
-		     (acl2::string-upcase (concatenate 'string
+                     (acl2::string-upcase (concatenate 'string
                                                        "instance-" (string theory)))
-		     theory)))
+                     theory)))
     `(defmacro ,macro-name (&key subs suffix generics extra-defs)
        (list* 'encapsulate
-	      nil
-	      (instance-event-list ,theory subs suffix generics nil extra-defs)))))
+              nil
+              (instance-event-list ,theory subs suffix generics nil extra-defs)))))
 
 
 
