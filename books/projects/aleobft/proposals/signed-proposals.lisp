@@ -700,14 +700,14 @@
 
   (defruled signed-props-of-augment-next
     (implies (augment-possiblep prop endor systate)
-             (implies (set::in x (signed-props
-                                  signer (augment-next prop endor systate)))
-                      (set::in x (signed-props signer systate))))
-    :enable (lemma1 lemma2)
+             (equal (signed-props signer (augment-next prop endor systate))
+                    (signed-props signer systate)))
+    :enable (set::double-containment-no-backchain-limit
+             set::expensive-rules)
 
     :prep-lemmas
 
-    ((defruled lemma1
+    ((defrule lemma1
        (implies (augment-possiblep prop endor systate)
                 (implies (set::in x (signed-props
                                      signer (augment-next prop endor systate)))
@@ -726,7 +726,7 @@
                         (msg (message-endorsement prop endor))
                         (msgs (get-network-state systate)))))
 
-     (defruled lemma2
+     (defrule lemma2
        (implies (augment-possiblep prop endor systate)
                 (implies (set::in x (signed-props signer systate))
                          (set::in x (signed-props
