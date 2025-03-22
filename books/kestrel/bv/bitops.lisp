@@ -83,7 +83,7 @@
 ;; ;;move
 ;; (defthm <-of-expt-and-expt
 ;;   (implies (and (natp i)
-;;                 (Natp j))
+;;                 (natp j))
 ;;            (equal (< (EXPT '2 i) (EXPT '2 j))
 ;;                   (< i j))))
 
