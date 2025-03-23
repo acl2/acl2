@@ -437,6 +437,20 @@
     :enable (make-proposal-messages
              signed-props-in-message
              signed-props-in-message-set-of-insert
+             emptyp-of-address-set-fix))
+
+  (defruled signed-props-in-message-set-of-make-certificate-messages
+    (equal (signed-props-in-message-set
+            signer (make-certificate-messages cert dests))
+           (if (and (set::in (address-fix signer)
+                             (certificate->signers cert))
+                    (not (set::emptyp (address-set-fix dests))))
+               (set::insert (certificate->proposal cert) nil)
+             nil))
+    :induct t
+    :enable (make-certificate-messages
+             signed-props-in-message
+             signed-props-in-message-set-of-insert
              emptyp-of-address-set-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
