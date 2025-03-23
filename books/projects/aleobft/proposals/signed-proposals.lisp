@@ -1061,8 +1061,7 @@
     "An @('advance') event does not change
      the set of proposals signed by any validator.")
    (xdoc::p
-    "This event only changes a validator's round number.
-     There is no change to DAGs, pending proposal maps, and network;
+    "This event does not change DAGs, pending proposal maps, or the network;
      thus, there is no change to the sets of signer proposals."))
 
   (defruled signed-props-in-validator-of-advance-next
@@ -1091,3 +1090,43 @@
                     (signed-props signer systate)))
     :enable (signed-props
              signed-props-in-validators-of-advance-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-commit-next
+  :short "How signed proposals change under @('commit') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @('commit') event does not change
+     the set of proposals signed by any validator.")
+   (xdoc::p
+    "This event does not change DAGs, pending proposal maps, or the network;
+     thus, there is no change to the sets of signer proposals."))
+
+  (defruled signed-props-in-validator-of-commit-next
+    (equal (signed-props-in-validator
+            signer
+            (get-validator-state val1 (commit-next val systate)))
+           (signed-props-in-validator
+            signer
+            (get-validator-state val1 systate)))
+    :enable signed-props-in-validator)
+
+  (defruled signed-props-in-validators-of-commit-next
+    (implies (and (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (commit-next val systate))
+                    (signed-props-in-validators signer vals systate)))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-commit-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-commit-next
+    (implies (commit-possiblep val systate)
+             (equal (signed-props signer (commit-next val systate))
+                    (signed-props signer systate)))
+    :enable (signed-props
+             signed-props-in-validators-of-commit-next)))
