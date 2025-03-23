@@ -42,7 +42,9 @@
 (include-book "../utils/basic-structs")
 (include-book "std/util/defenum" :dir :system)
 (include-book "cpuid-constants")
-(include-book "centaur/fty/top" :dir :system)
+(include-book "centaur/fty/deftypes" :dir :system)
+(include-book "centaur/fty/baselists" :dir :system)
+;(include-book "centaur/fty/top" :dir :system)
 (include-book "std/lists/duplicity" :dir :system)
 (include-book "std/strings/hexify" :dir :system)
 
