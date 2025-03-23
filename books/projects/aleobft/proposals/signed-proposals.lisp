@@ -479,7 +479,30 @@
     :disable signed-props-in-message-set
     :enable (make-endorsement-messages
              emptyp-of-address-set-fix
-             in-signed-props-in-message-set-when-message-endorsement)))
+             in-signed-props-in-message-set-when-message-endorsement))
+
+  (defruled in-signed-props-in-message-set-when-message-certificate
+    (implies (and (message-setp msgs)
+                  (set::in (message-certificate cert dest) msgs)
+                  (set::in (address-fix signer)
+                           (certificate->signers cert)))
+             (set::in (certificate->proposal cert)
+                      (signed-props-in-message-set signer msgs)))
+    :induct t
+    :enable signed-props-in-message)
+
+  (defruled in-signed-props-in-message-set-when-make-certificate-messages
+    (implies (and (message-setp msgs)
+                  (not (set::emptyp (address-set-fix dests)))
+                  (set::subset (make-certificate-messages cert dests) msgs)
+                  (set::in (address-fix signer)
+                           (certificate->signers cert)))
+             (set::in (certificate->proposal cert)
+                      (signed-props-in-message-set signer msgs)))
+    :induct t
+    :disable signed-props-in-message-set
+    :enable (make-certificate-messages
+             in-signed-props-in-message-set-when-message-certificate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
