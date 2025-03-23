@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function integer-length
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,8 @@
 (local (include-book "plus"))
 (local (include-book "times"))
 (local (include-book "numerator")) ; since floor calls numerator
+(local (include-book "denominator"))
+(local (include-book "nonnegative-integer-quotient"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (in-theory (disable integer-length))
@@ -308,3 +310,12 @@
                       (+ 1 (integer-length i))
                     (integer-length i))))
   :rule-classes nil)
+
+(defthm integer-length-of-nonnegative-integer-quotient-of-2
+  (implies (posp i)
+           (equal (integer-length (nonnegative-integer-quotient i 2))
+                  (+ -1 (integer-length i))))
+  :hints (("Goal" :use (:instance integer-length-of-floor-by-2)
+           :in-theory (e/d (nonnegative-integer-quotient-by-2)
+                           (integer-length-of-floor-by-2
+                            nonnegative-integer-quotient)))))
