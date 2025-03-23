@@ -14,6 +14,8 @@
 (include-book "initialization")
 (include-book "transitions")
 
+(local (include-book "../library-extensions/omap-theorems"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -180,7 +182,37 @@
                         (signed-props-in-proposed signer proposed)))))
     :enable (in-of-signed-props-in-proposed
              set::expensive-rules
-             set::double-containment-no-backchain-limit)))
+             set::double-containment-no-backchain-limit))
+
+  (defruled signed-props-in-proposed-of-delete-superset
+    (set::subset (set::delete prop
+                              (signed-props-in-proposed signer proposed))
+                 (signed-props-in-proposed signer
+                                           (omap::delete prop proposed)))
+    :induct t
+    :enable (signed-props-in-proposed
+             omap::assoc
+             in-of-signed-props-in-proposed
+             set::expensive-rules))
+
+  (defruled in-of-signed-props-in-proposed-of-delete
+    (implies (and (set::in prop1 (signed-props-in-proposed signer proposed))
+                  (not (equal prop1 prop)))
+             (set::in prop1
+                      (signed-props-in-proposed
+                       signer (omap::delete prop proposed))))
+    :use signed-props-in-proposed-of-delete-superset
+    :enable set::expensive-rules
+    :disable signed-props-in-proposed)
+
+  (defruled signed-props-in-proposed-monotone
+    (implies (and (proposal-address-set-mapp proposed2)
+                  (omap::submap proposed1 proposed2))
+             (set::subset (signed-props-in-proposed signer proposed1)
+                          (signed-props-in-proposed signer proposed2)))
+    :induct t
+    :enable (omap::submap
+             in-of-signed-props-in-proposed)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
