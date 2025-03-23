@@ -997,11 +997,7 @@
      A certificate message is removed from the network,
      but the certificate is added to the DAG of the validator.
      Thus, there two changes compensate each other,
-     for every signer (author and endorser) of the certificate.
-     If the proposal has been previously endorsed by the validator,
-     it is removed from the set of endorsed proposals of the validator,
-     but this is also compensated by
-     the addition of the certificate to the DAG."))
+     for every signer (author and endorser) of the certificate."))
 
   (defruled signed-props-in-validator-of-accept-next
     (implies (accept-possiblep val cert systate)
@@ -1054,3 +1050,44 @@
              signed-props-in-message-set-monotone
              in-signed-props-in-message-set-when-message-certificate
              set::expensive-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-advance-next
+  :short "How signed proposals change under @('advance') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An @('advance') event does not change
+     the set of proposals signed by any validator.")
+   (xdoc::p
+    "This event only changes a validator's round number.
+     There is no change to DAGs, pending proposal maps, and network;
+     thus, there is no change to the sets of signer proposals."))
+
+  (defruled signed-props-in-validator-of-advance-next
+    (equal (signed-props-in-validator
+            signer
+            (get-validator-state val1 (advance-next val systate)))
+           (signed-props-in-validator
+            signer
+            (get-validator-state val1 systate)))
+    :enable signed-props-in-validator)
+
+  (defruled signed-props-in-validators-of-advance-next
+    (implies (and (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (advance-next val systate))
+                    (signed-props-in-validators signer vals systate)))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-advance-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-advance-next
+    (implies (advance-possiblep val systate)
+             (equal (signed-props signer (advance-next val systate))
+                    (signed-props signer systate)))
+    :enable (signed-props
+             signed-props-in-validators-of-advance-next)))
