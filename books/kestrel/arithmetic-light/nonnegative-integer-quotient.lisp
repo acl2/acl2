@@ -213,3 +213,12 @@
   :hints (("Goal" :use (:instance <=-of-nonnegative-integer-quotient-of-numerator-and-denominator-same
                                   (x (- x)))
            :in-theory (disable <=-of-nonnegative-integer-quotient-of-numerator-and-denominator-same))))
+
+;; / is often easier to deal with than nonnegative-integer-quotient
+(defthm nonnegative-integer-quotient-when-multiple
+  (implies (and (integerp (/ i j))
+                (natp i)
+                (posp j))
+           (equal (nonnegative-integer-quotient i j)
+                  (/ i j)))
+  :hints (("Goal" :in-theory (enable nonnegative-integer-quotient))))
