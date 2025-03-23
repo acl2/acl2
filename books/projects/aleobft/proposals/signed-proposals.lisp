@@ -982,3 +982,75 @@
              (prop (certificate->proposal cert))
              (msgs (get-network-state systate))
              (endors (certificate->endorsers cert)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-accept-next
+  :short "How signed proposals change under @('accept') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An @('accept') event does not change
+     the set of proposals signed by any validator.")
+   (xdoc::p
+    "This event only involves correct validators.
+     A certificate message is removed from the network,
+     but the certificate is added to the DAG of the validator.
+     Thus, there two changes compensate each other,
+     for every signer (author and endorser) of the certificate.
+     If the proposal has been previously endorsed by the validator,
+     it is removed from the set of endorsed proposals of the validator,
+     but this is also compensated by
+     the addition of the certificate to the DAG."))
+
+  (defruled signed-props-in-validator-of-accept-next
+    (implies (accept-possiblep val cert systate)
+             (equal (signed-props-in-validator
+                     signer
+                     (get-validator-state
+                      val1 (accept-next val cert systate)))
+                    (if (and (equal (address-fix val1)
+                                    (address-fix val))
+                             (set::in (address-fix signer)
+                                      (certificate->signers cert)))
+                        (set::insert (certificate->proposal cert)
+                                     (signed-props-in-validator
+                                      signer (get-validator-state val1 systate)))
+                      (signed-props-in-validator
+                       signer (get-validator-state val1 systate)))))
+    :enable (signed-props-in-validator
+             validator-state->dag-of-accept-next
+             signed-props-in-dag-of-insert
+             accept-possiblep))
+
+  (defruled signed-props-in-validators-of-accept-next
+    (implies (and (accept-possiblep val cert systate)
+                  (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (accept-next val cert systate))
+                    (if (and (set::in (address-fix val) vals)
+                             (set::in (address-fix signer)
+                                      (certificate->signers cert)))
+                        (set::insert (certificate->proposal cert)
+                                     (signed-props-in-validators
+                                      signer vals systate))
+                      (signed-props-in-validators signer vals systate))))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-accept-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-accept-next
+    (implies (accept-possiblep val cert systate)
+             (equal (signed-props signer (accept-next val cert systate))
+                    (signed-props signer systate)))
+    :enable (signed-props
+             signed-props-in-validators-of-accept-next
+             get-network-state-of-accept-next
+             in-of-signed-props-in-message-set-of-delete
+             signed-props-in-message
+             accept-possiblep
+             signed-props-in-message-set-monotone
+             in-signed-props-in-message-set-when-message-certificate
+             set::expensive-rules)))
