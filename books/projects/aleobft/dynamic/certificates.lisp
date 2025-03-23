@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -33,27 +33,17 @@
   (xdoc::topstring
    (xdoc::p
     "Validators generate and exchange certificates,
-     which contain proposed transactions along with signatures.
-     Certificates are the nodes of the DAG,
-     in the Narwhal part of AleoBFT.")
+     which contain proposed transactions along with other information.
+     Certificates are the vertices of the DAG.")
    (xdoc::p
     "Certificates have a rich structure,
-     but as usual here we model just what is needed for our purposes.")
+     but we model only the information needed for our purposes.")
    (xdoc::p
     "In AleoBFT, there is a distinction between proposals and certificates,
-     with the latter being an extension of the former with signatures.
+     with the latter being an extension of the former with endorsing signatures.
      Currently we do not model proposals, but just certificates,
-     because we treat the Narwhal aspects of AleoBFT abstractly here;
-     the generation of certificates, and its relation to the ``real'' AleoBFT,
-     is explained in the definition of the state transitions.")
-   (xdoc::p
-    "Beside defining certificates,
-     we also introduce operations on (sets of) certificates,
-     particularly to retrieve certificates from sets
-     according to author and/or round criteria.
-     Since DAGs are represented as sets in "
-    (xdoc::seetopic "validator-states" "validator states")
-    ", these operations are usable (and in fact mainly used) on DAGs."))
+     because we treat the Narwhal aspects of AleoBFT somewhat abstractly;
+     see @(tsee transitions-create-certificate)."))
   :order-subtopics t
   :default-parent t)
 
@@ -71,7 +61,7 @@
     (xdoc::li
      "The round number of the certificate.")
     (xdoc::li
-     "The transactions that the certificate is proposing
+     "The transactions that the validator is proposing
       for inclusion in the blockchain.")
     (xdoc::li
      "The addresses that, together with the previous round number,

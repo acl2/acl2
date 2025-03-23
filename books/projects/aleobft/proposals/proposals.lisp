@@ -31,11 +31,10 @@
      which contain proposed transactions along with other information.
      Once they have enough endorsements, in the form of signatures,
      proposals are turned into certificates,
-     which are the vertices of the DAGs.")
+     which are the vertices of the DAG.")
    (xdoc::p
     "Proposals have a rich structure,
-     but most of that structure is irrelevant to our model.
-     We model just what is needed for our purposes."))
+     but we model only the information needed for our purposes."))
   :order-subtopics t
   :default-parent t)
 
@@ -53,7 +52,7 @@
     (xdoc::li
      "The round number of the proposal.")
     (xdoc::li
-     "The transactions that are being proposed
+     "The transactions that the validator is proposing
       for inclusion in the blockchain.")
     (xdoc::li
      "The addresses that, together with the previous round number,
