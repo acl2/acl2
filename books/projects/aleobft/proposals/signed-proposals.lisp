@@ -821,3 +821,141 @@
               (val (address-fix signer))
               (signer (address-fix signer))
               (prop (proposal-fix prop))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-certify-next
+  :short "How signed proposals change under @('certify') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @('certify') event almost never changes
+     the set of proposals signed by each validator,
+     except when the certificate author is faulty
+     and the certificate has no endorsements:
+     in this case, the proposal in the certificate is added to
+     the set of proposals signed by the author.")
+   (xdoc::p
+    "When the author is correct,
+     its pending proposal map must contain
+     the proposal and the endorsements that form the certificate.
+     The entry is removed from the map,
+     but the certificate is added to the author's DAG,
+     and thus there is no change to the set of proposals
+     signed by the certificate's signers (author and endorsers)
+     as far as validator states are concerned.
+     The addition of certificate messages to the network
+     does not contribute any new proposal to those signed sets.")
+   (xdoc::p
+    "If the author is faulty,
+     but the certificate has at least one endorser,
+     then there must be at least one endorsement message in the network,
+     which contributes the proposal to
+     the set of proposals signed by the author
+     and the set of proposals signed by the endorser.
+     In fact, every endorsers of the certificate
+     must have a corresponding endorsing message.
+     The endorsing messages are not removed from the network;
+     thus the generated certificate messages do not contribute new proposals.
+     However, if the certificate has no endorsers,
+     then there may be no endorsement messages;
+     the event can happen only if at least one certificate message is sent,
+     which contributes the proposal in the certificate
+     to the set of proposals signed by the author.
+     So this is the only case in which a new proposal
+     may be added to the sets of signed proposals.
+     Note that the addition may be a no-op, in case, for example,
+     there are in fact endorsement messages in the network,
+     but the faulty validators nondeterministically
+     chooses to not use any of them."))
+
+  (defruled signed-props-in-validator-of-certify-next
+    (implies (and (certify-possiblep cert dests systate)
+                  (set::in val (correct-addresses systate)))
+             (equal (signed-props-in-validator
+                     signer
+                     (get-validator-state
+                      val (certify-next cert dests systate)))
+                    (signed-props-in-validator
+                     signer (get-validator-state val systate))))
+    :enable (signed-props-in-validator
+             validator-state->dag-of-certify-next
+             validator-state->proposed-of-certify-next
+             signed-props-in-dag-of-insert
+             in-of-signed-props-in-proposed
+             certify-possiblep
+             certificate->author
+             certificate->signers
+             set::expensive-rules))
+
+  (defruled signed-props-in-validators-of-certify-next
+    (implies (and (certify-possiblep cert dests systate)
+                  (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (certify-next cert dests systate))
+                    (signed-props-in-validators signer vals systate)))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-certify-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-certify-next
+    (implies (certify-possiblep cert dests systate)
+             (equal (signed-props signer (certify-next cert dests systate))
+                    (if (and (not (set::in (certificate->author cert)
+                                           (correct-addresses systate)))
+                             (equal (address-fix signer)
+                                    (certificate->author cert))
+                             (set::emptyp (certificate->endorsers cert)))
+                        (set::insert (certificate->proposal cert)
+                                     (signed-props signer systate))
+                      (signed-props signer systate))))
+    :use (lemma-correct lemma-faulty)
+
+    :prep-lemmas
+
+    ((defruled lemma-correct
+       (implies (and (certify-possiblep cert dests systate)
+                     (set::in (certificate->author cert)
+                              (correct-addresses systate)))
+                (equal (signed-props signer (certify-next cert dests systate))
+                       (signed-props signer systate)))
+       :enable (signed-props
+                signed-props-in-validators-of-certify-next
+                get-network-state-of-certify-next
+                signed-props-in-message-set-of-union
+                signed-props-in-message-set-of-make-certificate-messages
+                certify-possiblep
+                certificate->author
+                certificate->signers)
+       :use (:instance prop-in-signed-props-in-validators-when-assoc-of-proposed
+                       (vals (correct-addresses systate))
+                       (val (certificate->author cert))
+                       (prop (certificate->proposal cert))
+                       (signer (address-fix signer))))
+
+     (defruled lemma-faulty
+       (implies (and (certify-possiblep cert dests systate)
+                     (not (set::in (certificate->author cert)
+                                   (correct-addresses systate))))
+                (equal (signed-props signer (certify-next cert dests systate))
+                       (if (and (equal (address-fix signer)
+                                       (certificate->author cert))
+                                (set::emptyp (certificate->endorsers cert)))
+                           (set::insert (certificate->proposal cert)
+                                        (signed-props signer systate))
+                         (signed-props signer systate))))
+       :enable (signed-props
+                signed-props-in-validators-of-certify-next
+                get-network-state-of-certify-next
+                signed-props-in-message-set-of-union
+                signed-props-in-message-set-of-make-certificate-messages
+                certify-possiblep
+                certificate->signers
+                certificate->author)
+       :use (:instance
+             in-signed-props-in-message-set-when-make-endorsement-messages
+             (prop (certificate->proposal cert))
+             (msgs (get-network-state systate))
+             (endors (certificate->endorsers cert)))))))
