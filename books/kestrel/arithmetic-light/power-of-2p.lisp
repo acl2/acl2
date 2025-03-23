@@ -17,12 +17,7 @@
 (local (include-book "times"))
 (local (include-book "floor"))
 
-;dup
-;define in terms of lg?
-(defund power-of-2p (x)
-  (declare (xargs :guard t))
-  (and (natp x) ;otherwise, this would count 1/2 but not 1/4
-       (= x (expt 2 (+ -1 (integer-length x))))))
+(include-book "power-of-2p-def")
 
 ;; (defthm integerp-when-power-of-2p
 ;;   (implies (power-of-2p x)
