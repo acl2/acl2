@@ -14,6 +14,8 @@
 (include-book "unpackbv")
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (local (include-book "kestrel/typed-lists-light/all-integerp2" :dir :system))
+(local (include-book "unsigned-byte-listp"))
+(local (include-book "all-unsigned-byte-p2"))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (local
@@ -37,6 +39,16 @@
 
 (defthm byte-listp-of-unpackbv-little
   (byte-listp (unpackbv-little num 8 bv))
+  :hints (("Goal" :in-theory (enable unpackbv-little))))
+
+(defthm all-unsigned-byte-p-of-unpackbv-little
+  (implies (natp size)
+           (all-unsigned-byte-p size (unpackbv-little num size bv)))
+  :hints (("Goal" :in-theory (enable unpackbv-little))))
+
+(defthm unsigned-byte-listp-of-unpackbv-little
+  (implies (natp size)
+           (unsigned-byte-listp size (unpackbv-little num size bv)))
   :hints (("Goal" :in-theory (enable unpackbv-little))))
 
 (defthm all-integerp-of-unpackbv-little
