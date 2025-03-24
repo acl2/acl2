@@ -51,6 +51,6 @@
                   :vars-for-array-elements :bits)
 
 ;; Prove equivalence of unrolled code and spec:
-(prove-equivalence *aes-128-encrypt-light-dag*
-                   *aes-128-encrypt-spec-dag*
-                   :tactic :rewrite)
+(prove-equal-with-axe *aes-128-encrypt-light-dag*
+                      *aes-128-encrypt-spec-dag*
+                      :tactic :rewrite)

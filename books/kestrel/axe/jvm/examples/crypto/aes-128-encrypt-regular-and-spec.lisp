@@ -55,6 +55,6 @@
                   :vars-for-array-elements :bits)
 
 ;; Prove equivalence of unrolled code and spec:
-(prove-equivalence *aes-128-encrypt-regular-dag*
-                   *aes-128-encrypt-spec-dag*
-                   :types :bits)
+(prove-equal-with-axe *aes-128-encrypt-regular-dag*
+                      *aes-128-encrypt-spec-dag*
+                      :types :bits)

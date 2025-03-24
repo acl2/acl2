@@ -1,4 +1,4 @@
-; Tests of prove-equality
+; Tests of prove-equal-with-axe+
 ;
 ; Copyright (C) 2025 Kestrel Institute
 ;
@@ -13,7 +13,7 @@
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "equivalence-checker")
 
-(prove-equality 'x 'x :types '((x . 8)))
+(prove-equal-with-axe+ 'x 'x :types '((x . 8)))
 
 (must-fail
-  (prove-equality 'x 'y :types '((x . 8) (y . 8))))
+  (prove-equal-with-axe+ 'x 'y :types '((x . 8) (y . 8))))
