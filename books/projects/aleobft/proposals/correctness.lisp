@@ -29,6 +29,7 @@
 (include-book "proposed-previous-closed")
 (include-book "endorsed-previous-closed")
 (include-book "dag-previous-closed")
+(include-book "signed-proposals")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -60,6 +61,7 @@
                     endorsed-round1-no-previous
                     proposed-previous-closed
                     endorsed-previous-closed
-                    dag-previous-closed))
+                    dag-previous-closed
+                    signed-proposals))
 
 ; TODO: continue

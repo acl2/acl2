@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -12,6 +12,8 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "transactions")
+
+(local (include-book "../library-extensions/arithmetic-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -28,10 +30,10 @@
    (xdoc::p
     "Blocks in the Aleo blockchain have a rich structure.
      However, for the purpose of our model,
-     blocks are simply containers of transactions.
+     blocks are mainly containers of transactions.
      We also explicate the round number at which each block is generated:
      there is a natural association of round numbers to blocks,
-     which is also needed to calculate dynamic committees from the blocks."))
+     which is used to calculate dynamic committees from the blocks."))
   :order-subtopics t
   :default-parent t)
 
@@ -66,21 +68,18 @@
 (define blocks-ordered-even-p ((blocks block-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of blocks has
-          strictly increasing (right to left), even round numbers."
+          strictly increasing (right to left) even round numbers."
   :long
   (xdoc::topstring
    (xdoc::p
     "The state of each (correct) validator includes
-     a list of blocks that models the blockchain (as seen by the validator):
-     see @(tsee validator-state).
-     As explained there, blocks go from right to left,
-     i.e. the @(tsee car) is the newest block.")
+     a list of blocks that models the blockchain as seen by the validator.
+     Blocks go from right to left, i.e. the @(tsee car) is the newest block.")
    (xdoc::p
     "Blocks are committed at even rounds,
      using increasingly higher round numbers,
      at most one block per (even) round.
-     So the blocks will have round numbers in stricly increasing order,
-     and they will all be even.
+     So the blocks have even round numbers in stricly increasing order.
      This predicate fomalizes these constraints on round numbers."))
   (b* (((when (endp blocks)) t)
        (block (car blocks))
@@ -93,7 +92,7 @@
 
   ///
 
-  (defruled blocks-ordered-even-p-of-cdr
+  (defrule blocks-ordered-even-p-of-cdr
     (implies (blocks-ordered-even-p blocks)
              (blocks-ordered-even-p (cdr blocks))))
 
@@ -102,7 +101,9 @@
                   (consp blocks))
              (>= (block->round (car blocks))
                  (block->round (car (last blocks)))))
-    :rule-classes :linear
+    :rule-classes ((:linear
+                    :trigger-terms ((block->round (car blocks))
+                                    (block->round (car (last blocks))))))
     :induct t
     :enable last)
 
@@ -134,19 +135,9 @@
                     (>= (block->round (car (last blocks1)))
                         (+ 2 (block->round (car blocks2)))))))
     :induct t
-    :enable (append last)
-    :hints ('(:use ((:instance lemma
-                               (x (block->round (car blocks2)))
-                               (y (block->round (car (last blocks1))))))))
-    :prep-lemmas
-    ((defruled lemma
-       (implies (and (natp x)
-                     (natp y)
-                     (evenp x)
-                     (evenp y)
-                     (< x y))
-                (<= (+ 2 x) y))
-       :enable evenp))))
+    :enable (append
+             last
+             aleobft::lt-to-2+le-when-both-evenp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,8 +150,20 @@
     "If @(tsee blocks-ordered-even-p) holds,
      block rounds are in strictly increading order from right to left.
      This function then returns the latest, i.e. highest, round.
-     If there are no blocks, we totalize this function to return 0.
-     However, we do not require @(tsee blocks-ordered-even-p) in the guard."))
+     If there are no blocks, this function returns 0.")
+   (xdoc::p
+    "Although it may seem natural
+     to add @(tsee blocks-ordered-even-p) to this function's guard,
+     we deliberately avoid that, for the following reason.
+     Adding that guard here requires adding it to other operations,
+     particularly @(tsee active-committee-at-round).
+     The latter is used to define system transistions,
+     and is applied to blockchains of validators,
+     which are just lists of blocks,
+     not necessarily satisfying @(tsee blocks-ordered-even-p).
+     It is an invariant that they satisfy that predicate,
+     but that invariant is proved after defining the transitions,
+     and so it is not available when defining the transitions."))
   (if (consp blocks)
       (block->round (car blocks))
     0)
@@ -178,4 +181,7 @@
                   (consp blocks1))
              (> (block->round (car (last blocks1)))
                 (blocks-last-round blocks2)))
+    :rule-classes ((:linear
+                    :trigger-terms ((block->round (car (last blocks1)))
+                                    (blocks-last-round blocks2))))
     :enable blocks-ordered-even-p-of-append))

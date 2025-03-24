@@ -82,6 +82,17 @@
      the certificate will not be accepted by correct validators,
      but the certificate can still be generated.")
    (xdoc::p
+    "Another constraint we put on faulty validators is that
+     they send the certificate to at least a validator.
+     Similarly to an analogous requirement in @(tsee propose-possiblep),
+     this is not a real restriction, but just a modeling convenience:
+     since faulty validators have no internal state,
+     if a faulty validator created a certificate but sent it to nobody,
+     there would be no change in the system state;
+     that is, it would be the same as no event.
+     In other words, a @('certify') event models the case in which
+     at least one message with the certificate is added to the network.")
+   (xdoc::p
     "If the validator is correct,
      no message is required to be in the network,
      because endorsing signatures are incorporated into the validator state
@@ -95,7 +106,13 @@
      it does not send it to itself;
      but as discussed in @(see transitions-certify),
      we do not put any constraints on which other validators
-     the certificate is sent to.")
+     the certificate is sent to.
+     Unlike for faulty validators,
+     there is no constraint that the certificate
+     is sent to at least another validator:
+     even if no certificate messages are added to the network,
+     the certificate is still added to the validator's DAG,
+     and thus there is some system change.")
    (xdoc::p
     "It is an invariant, proved elsewhere, that the endorsers of each proposal
      in the @('proposed') map of a correct validator
@@ -107,8 +124,9 @@
   (b* (((certificate cert) cert)
        ((proposal prop) cert.proposal)
        ((when (not (set::in prop.author (correct-addresses systate))))
-        (set::subset (make-endorsement-messages prop cert.endorsers)
-                     (get-network-state systate)))
+        (and (set::subset (make-endorsement-messages prop cert.endorsers)
+                          (get-network-state systate))
+             (not (set::emptyp (address-set-fix dests)))))
        ((when (set::in prop.author (address-set-fix dests))) nil)
        ((validator-state vstate) (get-validator-state prop.author systate))
        (prop+endors (omap::assoc prop vstate.proposed))

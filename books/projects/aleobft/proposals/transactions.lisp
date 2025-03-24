@@ -31,22 +31,19 @@
     "Validators propose transactions for inclusion in the blockchain.
      Transactions have a rich structure.
      In fact, AleoBFT handles not only transactions,
-     but also `solutions' and `ratifications',
+     but also `solutions' and (possibly in the future) `ratifications',
      which together with transactions form `transmissions'.")
    (xdoc::p
     "However, most of these details are unimportant for our model.
-     Our model is only concerned with two kinds of transactions:
+     Our model sticks to the more common term `transaction',
+     which can be thought as modeling also the other kinds of transmissions.
+     Our model is concerned with two kinds of transactions:
      one to bond a validator
      (i.e. add the validator to the committee with some stake), and
      one to unbond a validator
      (i.e. remove the validator from the committee).
      So we consider these two kinds of transactions,
-     plus an opaque one for all other kinds of transactions,
-     and more in general the other kinds of transmissions mentioned above.
-     We stick to the more common term `transaction' in our model,
-     but one can imagine that the non-bonding and non-unbonding transactions
-     (i.e. the third kind of transactions in our model)
-     also captures solutions and ratifications in AleoBFT."))
+     plus an opaque one for all other kinds of transactions."))
   :order-subtopics t
   :default-parent t)
 
@@ -57,14 +54,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Our model treats transactions as mostly opaque.
-     Certain transactions bond and unbond validators,
-     which is what makes the validator committee dynamic.
-     So we model three kinds of transactions:
+    "We model three kinds of transactions:
      bond a validator with a given amount of stake,
      unbond a validator,
      and something else that does not bond or unbond validators;
-     we leave the details of third kind open.")
+     we leave the details of third kind open,
+     via a wrapper of any ACL2 value.")
    (xdoc::p
     "Stake is modeled as a positive integer,
      which can be imagined to be Aleo micro-credits,
@@ -73,17 +68,7 @@
      the address of the validator and the stake bonded.
      An unbonding transaction consists of
      just the address of the validator;
-     implicitly, the transaction unbonds all the bonded stake.
-     As formalized elsewhere,
-     in our model nothing prevents a block from including
-     multiple transactions that bond and/or unbond the same validator,
-     which have some net effect at the end of the block;
-     this provides flexibility in modeling validators
-     that change their stake as net effect in a block.")
-   (xdoc::p
-    "We do not model AleoBFT solutions and ratifications explicitly.
-     The third kind of transactions in our model
-     can be thought of as including those as well."))
+     implicitly, the transaction unbonds all the bonded stake."))
   (:bond ((validator address)
           (stake pos)))
   (:unbond ((validator address)))
