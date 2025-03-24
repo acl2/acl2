@@ -1478,7 +1478,7 @@
 
     prove-equivalence
     prove-equality
-    prove-miter
+    prove-with-axe
     prove-equal-with-tactics
     symbolic-byte-assumptions
     symbolic-list

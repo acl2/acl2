@@ -4059,10 +4059,10 @@
                                        (acons #\3 formals nil))))))))
 
 ;; old vars are not allowed in these (it's not clear how old var names will be generated in the event of name clashes).  instead, the user should call oldval
-;fixme these should be checks that prove-miter can't do (e.g., because the functions may not be defined, prove-miter doesn't know what their formals are)
+;fixme these should be checks that prove-with-axe can't do (e.g., because the functions may not be defined, prove-with-axe doesn't know what their formals are)
 ;; fixme check the form of the user-supplied explanations - must be equalities whose lhses are nth nests around formals? what about "explanations" of lengths?
 ;fixme think about (oldval (len x)) vs (len (old x))... we now require the argument to oldval to be a formal - check that here!
-;besides checking the vars, fixme what other checks should we do?  any other components of extra stuff to check?  some may be checked by prove-miter?
+;besides checking the vars, fixme what other checks should we do?  any other components of extra stuff to check?  some may be checked by prove-with-axe?
 ;perhaps an error if something appears in both the extra and remove lists..
 ;fixme check arities?
 (defun check-annotations (fn extra-hyps remove-hyps explanations explanations-to-remove formals)
@@ -12183,7 +12183,7 @@
                      (cw ")~%(Calling the Equivalence Checker:~%")
                      ;;ffffixme should we call the dag prover here? what if some hyps need to be simplified?
                      (mv-let (erp provedp rand state)
-                       ;;fffixme maybe miter-and-merge should start with a simplification pass? - then wouldn't have to do it above - or call prove-miter-fn?
+                       ;;fffixme maybe miter-and-merge should start with a simplification pass? - then wouldn't have to do it above - or call prove-with-axe-fn?
                        ;;ffixme pass in the right args here:
                        ;;should miter and merge start with a single call to the prover??
                        ;;return a new analyzed-function-table?
@@ -16877,7 +16877,7 @@
 ; Returns (mv erp provedp state rand).
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
-(defun prove-miter-core (dag-or-quotep
+(defun prove-with-axe-core (dag-or-quotep
                          assumptions ; (untranslated) terms we can assume are true (non-nil)
                          types ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                          test-types
@@ -16959,7 +16959,7 @@
        (sorted-vars-given-test-types (merge-sort-symbol< vars-given-test-types))
        ;; todo: optimize the subset tests here and below, since the lists are sorted:
        (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types))
-               ;; (hard-error 'prove-miter-core
+               ;; (hard-error 'prove-with-axe-core
                ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
                ;;               (acons #\0 sorted-dag-vars
                ;;                      (acons #\1 sorted-vars-given-types
@@ -16973,30 +16973,30 @@
                    ))))
        ((when (not (subsetp-eq sorted-vars-given-types sorted-dag-vars)))
         (if (quotep dag-or-quotep)
-            (er hard? 'prove-miter-core "The following variables are given types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
-          (er hard? 'prove-miter-core "The following variables are given types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil))
+            (er hard? 'prove-with-axe-core "The following variables are given types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
+          (er hard? 'prove-with-axe-core "The following variables are given types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil))
         (mv :input-error nil state rand))
        ((when (not (subsetp-eq sorted-vars-given-test-types sorted-dag-vars)))
         (if (quotep dag-or-quotep)
-            (er hard? 'prove-miter-core "The following variables are given test-types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil)
-          (er hard? 'prove-miter-core "The following variables are given test-types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil))
+            (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil)
+          (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil))
         (mv :input-error nil state rand))
        ;; Handle the case when dag-or-quotep is already a constant:
        ((when (quotep dag-or-quotep))
         (if (equal *t* dag-or-quotep)
             (prog2$ (cw "The DAG is already the constant t!)~%")
                     (mv (erp-nil) t state rand))
-          (prog2$ (er hard? 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
+          (prog2$ (er hard? 'prove-with-axe-core "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
                   (mv :non-t-constant nil state rand))))
        (dag dag-or-quotep)
        ;; Translate assumptions:
        (wrld (w state)) ; todo: use more below
-       (assumptions (translate-terms assumptions 'prove-miter-core wrld)) ;throws an error on bad input
+       (assumptions (translate-terms assumptions 'prove-with-axe-core wrld)) ;throws an error on bad input
        (interpreted-function-alist (make-interpreted-function-alist
                                     (get-non-built-in-supporting-fns-list (dag-fns dag) *axe-evaluator-functions* (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
        ;;doesn't actually check that the user supplied alist is consistent with the state (fixme just pass in the names and look them up in the current state)?
        (interpreted-function-alist (if (not (consistent-alists interpreted-function-alist user-interpreted-function-alist))
-                                       (prog2$ (hard-error 'prove-miter-core "inconsistent interpreted function alists." nil) ;print more?
+                                       (prog2$ (hard-error 'prove-with-axe-core "inconsistent interpreted function alists." nil) ;print more?
                                                nil)
                                      (append interpreted-function-alist user-interpreted-function-alist)))
        ;; TODO: Use plain make-axe-rules here
@@ -17059,7 +17059,7 @@
         (if (equal *t* dag-or-quotep) ; todo: allow any non-nil constant?
             (prog2$ (cw "The DAG has been rewritten to true!)~%") ;move this message?
                     (mv (erp-nil) t state rand))
-          (prog2$ (er hard? 'prove-miter "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
+          (prog2$ (er hard? 'prove-with-axe-core "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
                   (mv :non-t-constant nil state rand)))
       ;; Did not simplify to a constant:
       (b* ((dag dag-or-quotep)
@@ -17069,7 +17069,7 @@
             (if (< (dag-size dag) 10000) ; print the term too, if small
                 (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
               nil)
-            (er hard? 'prove-miter-core "If the tactic is :rewrite, the DAG must simplify to true, but it simplified to the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
+            (er hard? 'prove-with-axe-core "If the tactic is :rewrite, the DAG must simplify to true, but it simplified to the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
             (mv :no-test-cases nil state rand))
            ;; Tactic is :rewrite-and-sweep:
            (state (if (and simplifyp (print-level-at-least-tp print))
@@ -17150,7 +17150,7 @@
 
 ;; Returns (mv erp event state rand) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
-(defun prove-miter-fn (dag-or-quotep
+(defun prove-with-axe-fn (dag-or-quotep
                        assumptions ; (untranslated) terms we can assume are true (non-nil)
                        types  ;compute this from the hyps
                        test-types
@@ -17217,7 +17217,7 @@
        ((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
         (mv nil '(value-triple :invisible) state rand))
        ((mv erp provedp state rand)
-        (prove-miter-core dag-or-quotep
+        (prove-with-axe-core dag-or-quotep
                           assumptions
                           types ;compute this from the hyps?
                           test-types
@@ -17256,9 +17256,9 @@
                          (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
             (let ((event '(progn))) ;fixme should return a theorem about the dag!
               (mv (erp-nil)
-                  (extend-progn event `(table prove-miter-table ',whole-form ',event))
+                  (extend-progn event `(table prove-with-axe-table ',whole-form ',event))
                   state rand)))
-        (progn$ (hard-error 'prove-miter "Failed to prove miter." nil)
+        (progn$ (hard-error 'prove-with-axe "Failed to prove miter." nil)
                 (mv (erp-t)
                     nil
                     state rand))))))
@@ -17269,7 +17269,7 @@
 ;BOZO consider changing the default for cut-proofs...- huh?
 ;;EXTRA-HYPS is an alist from theorem-names (without mention of hides) to lists of hyps
 ;the variables in dag list should be the final ones (i.e., we shouldn't expect assumptions to introduce new vars)
-(defmacro prove-miter (&whole
+(defmacro prove-with-axe (&whole
                        whole-form
                        dag-or-quotep
                        &KEY
@@ -17304,18 +17304,18 @@
   ;; this way:
   `(make-event
     (acl2-unwind-protect ; enable cleanup on abort
-     "acl2-unwind-protect for prove-miter"
-     ;; Can't call prove-miter-fn directly here, because it returns extra
+     "acl2-unwind-protect for prove-with-axe"
+     ;; Can't call prove-with-axe-fn directly here, because it returns extra
      ;; stobjs (does not return an error triple), so we use trans-eval as
      ;; suggested by MK:
      (mv-let (erp val state)
-       (trans-eval-no-warning '(prove-miter-fn
+       (trans-eval-no-warning '(prove-with-axe-fn
                                 ,dag-or-quotep ,assumptions ,types ,test-types
                                 ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                                 ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                                 ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name ,prove-constants ,debug
                                 ',whole-form state rand)
-                              'prove-miter
+                              'prove-with-axe
                               state
                               t)
        (if erp
@@ -17323,7 +17323,7 @@
            (mv erp nil state)
          (let* ( ;; (stobjs-out (car val))
                 (values-returned (cdr val))
-                ;; Get the non-stobj values returned by prove-miter-fn:
+                ;; Get the non-stobj values returned by prove-with-axe-fn:
                 (erp (first values-returned))
                 (event (second values-returned)))
            (mv erp event state))))
@@ -17378,7 +17378,7 @@
        ((when erp) (mv erp nil state rand))
        ;; Do the proof:
        ((mv erp provedp state rand)
-        (prove-miter-core equality-dag-or-quotep
+        (prove-with-axe-core equality-dag-or-quotep
                           assumptions
                           types
                           test-types
@@ -17419,7 +17419,7 @@
       (progn$ (er hard? 'prove-equality "Failed to prove miter ~x0." name)
               (mv (erp-t) nil state rand)))))
 
-;; Unlike prove-miter, this takes 2 terms/dags.  unlike prove-equivalence, this supports all the exotic options to prove-miter.
+;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equivalence, this supports all the exotic options to prove-with-axe.
 ;; Used in several loop examples.
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 ;; See also prove-equivalence, which is preferable when it is sufficient (because it is simpler).
@@ -17561,7 +17561,7 @@
        (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
        ;; Try to prove the equality:
        ((mv erp provedp state rand)
-        (prove-miter-core equality-dag-or-quotep
+        (prove-with-axe-core equality-dag-or-quotep
                           assumptions
                           types
                           test-types
@@ -17612,7 +17612,7 @@
        (event (if prove-theorem
                   (let* ((term1 (dag-or-term-to-term dag-or-term1 state))
                          (term2 (dag-or-term-to-term dag-or-term2 state))
-                         (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
+                         (defthm `(skip-proofs ;todo: have prove-with-axe return a theorem and use it to prove this
                                     (defthmd ,miter-name
                                       (implies (and ,@assumptions)
                                                (equal ,term1
@@ -19924,7 +19924,7 @@
 ;;                           state rand)
 ;;   (declare (xargs :stobjs (state rand)
 ;;                   :mode :program))
-;;   (prove-miter (dagify-term `(equal ,term1 ,term2))
+;;   (prove-with-axe (dagify-term `(equal ,term1 ,term2))
 ;;                test-case-count
 ;;                input-type-alist
 ;;                :name name
@@ -19951,7 +19951,7 @@
 
 ;; ;TODO: start by making sure we can call STP on a simple example..
 ;; ;TODO: does this export a theorem?
-;; ;TODO: add to this all keywords that prove-miter takes
+;; ;TODO: add to this all keywords that prove-with-axe takes
 ;; (defmacro prove-equality (term1 term2 &rest rest)
 ;;   `(make-event (prove-equality-fn ',term1
 ;;                                   ',term2
