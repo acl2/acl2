@@ -595,6 +595,77 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-from-params ((params c::param-declon-listp)
+                                  (gin simpadd0-ginp))
+  :returns (mv (okp booleanp)
+               (args symbol-listp)
+               (parargs true-listp)
+               (arg-types true-listp)
+               (arg-types-compst true-listp))
+  :short "Generate certain pieces of information
+          from the formal parameters of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The results of this function are used to generate
+     theorems about function calls.")
+   (xdoc::p
+    "We generate the following:")
+   (xdoc::ul
+    (xdoc::li
+     "A list @('args') of symbols used as ACL2 variables
+      that denote the C values passed as arguments to the function.")
+    (xdoc::li
+     "A list @('parargs') of terms that denote
+      the @(tsee cons) pairs that form
+      the initial scope of the function.
+      Each @(tsee cons) pair consists of the name of the parameter
+      and the variable for the corresponding argument.")
+    (xdoc::li
+     "A list @('arg-types') of terms that assert that
+      each variable in @('args') is a value of type @('int').")
+    (xdoc::li
+     "A list @('arg-types-compst') of terms that assert that
+      each parameter in @('params') can be read from a computation state
+      and its reading yields a value of type @('int')."))
+   (xdoc::p
+    "These results are generated only if all the parameters have type @('int'),
+     which we check as we go through the parameters.
+     This is because for now we only support theorem generation
+     for functions whose parameters are all @('int');
+     we will generalize this.
+     The @('okp') result says whether this is the case;
+     if it is @('nil'), the other results are @('nil') too."))
+  (b* (((when (endp params)) (mv t nil nil nil nil))
+       ((c::param-declon param) (car params))
+       ((unless (c::tyspecseq-case param.tyspec :sint))
+        (mv nil nil nil nil nil))
+       ((unless (c::obj-declor-case param.declor :ident))
+        (mv nil nil nil nil nil))
+       (ident (c::obj-declor-ident->get param.declor))
+       (par (c::ident->name ident))
+       (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
+       (pararg `(cons (c::ident ,par) ,arg))
+       (arg-type `(and (c::valuep ,arg)
+                       (equal (c::value-kind ,arg) :sint)))
+       (arg-type-compst
+        `(b* ((var (mv-nth 1 (c$::ldm-ident (ident ,par))))
+              (objdes (c::objdesign-of-var var compst))
+              (val (c::read-object objdes compst)))
+           (and objdes
+                (c::valuep val)
+                (c::value-case val :sint))))
+       ((mv okp more-args more-parargs more-arg-types more-arg-types-compst)
+        (simpadd0-gen-from-params (cdr params) gin))
+       ((unless okp) (mv nil nil nil nil nil)))
+    (mv t
+        (cons arg more-args)
+        (cons pararg more-parargs)
+        (cons arg-type more-arg-types)
+        (cons arg-type-compst more-arg-types-compst))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-gen-init-scope-thm ((params paramdecl-listp)
                                      (gin simpadd0-ginp))
   :guard (paramdecl-list-unambp params)
@@ -618,10 +689,10 @@
      so it does not have to be particularly unique."))
   (b* (((mv erp params) (c$::ldm-paramdecl-list params))
        ((when erp) (mv '(_) nil))
-       ((mv okp hyps args parargs)
-        (simpadd0-gen-init-scope-thm-loop params gin))
+       ((mv okp args parargs arg-types &)
+        (simpadd0-gen-from-params params gin))
        ((unless okp) (mv '(_) nil))
-       (formula `(implies (and ,@hyps)
+       (formula `(implies (and ,@arg-types)
                           (equal (c::init-scope ',params (list ,@args))
                                  (list ,@parargs))))
        (hints
@@ -657,35 +728,7 @@
        (thm-event `(defruled init-scope-thm
                      ,formula
                      :hints ,hints)))
-    (mv thm-event thm-name))
-
-  :prepwork
-  ((define simpadd0-gen-init-scope-thm-loop ((params c::param-declon-listp)
-                                             (gin simpadd0-ginp))
-     :returns (mv (okp booleanp)
-                  (hyps true-listp)
-                  (args symbol-listp)
-                  (parargs true-listp))
-     :parents nil
-     (b* (((when (endp params)) (mv t nil nil nil))
-          ((c::param-declon param) (car params))
-          ((unless (c::tyspecseq-case param.tyspec :sint))
-           (mv nil nil nil nil))
-          ((unless (c::obj-declor-case param.declor :ident))
-           (mv nil nil nil nil))
-          (ident (c::obj-declor-ident->get param.declor))
-          (par (c::ident->name ident))
-          (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
-          (hyps `((c::valuep ,arg)
-                  (equal (c::value-kind ,arg) :sint)))
-          (pararg `(cons (c::ident ,par) ,arg))
-          ((mv okp more-hyps more-args more-parargs)
-           (simpadd0-gen-init-scope-thm-loop (cdr params) gin))
-          ((unless okp) (mv nil nil nil nil)))
-       (mv t
-           (append hyps more-hyps)
-           (cons arg more-args)
-           (cons pararg more-parargs))))))
+    (mv thm-event thm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
