@@ -44,6 +44,7 @@
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 ;(include-book "kestrel/bv-lists/nth2" :dir :system) ; todo: drop?
 ;(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
 (include-book "kestrel/lists-light/every-nth" :dir :system)
@@ -566,6 +567,7 @@
                          (myif myif arg1 arg2 arg3)     ;unguarded
                          (boolif boolif arg1 arg2 arg3) ;unguarded
                          (array-elem-2d array-elem-2d arg1 arg2 arg3) ;drop?
+                         (bv-arrayp bv-arrayp arg1 arg2 arg3)
                          (update-nth update-nth-unguarded arg1 arg2 arg3)
                          (if if arg1 arg2 arg3) ;unguarded
                          (slice slice-unguarded arg1 arg2 arg3)
