@@ -862,6 +862,7 @@
 (thm (equal (bvdiv size x 0) 0))
 (thm (equal (bvmod size x 0) (bvchop size x)))
 (thm (implies (natp amt) (equal (leftrotate32 amt x) (leftrotate32 (mod amt 32) x))))
+;; Special case of leftrotate32 with 0 shift amount: We handle it like bvchop
 (thm (equal (leftrotate32 0 x) (bvchop 32 x)))
 
 ;; Returns (mv translated-expr-string constant-array-info).
@@ -1400,12 +1401,13 @@
                          )
                   constant-array-info))
             (mv (erp-t) nil constant-array-info)))
-        (leftrotate32 ; (leftrotate32 rotate-amount val) where amt is a constant
+        (leftrotate32 ; (leftrotate32 '<rotate-amount> <val>), note that rotate-amount must be a constant
           (if (and (= 2 (len (dargs expr)))
                    (darg-quoted-natp (darg1 expr))
                    (bv-arg-okp (darg2 expr)))
               (let* ((rotate-amount (unquote (darg1 expr)))
-                     (rotate-amount (mod rotate-amount 32)))
+                     (rotate-amount (mod rotate-amount 32)) ; todo: require this reduction to have already been done
+                     )
                 (if (= 0 rotate-amount) ;in this case, it's just like bvchop (handling 0 separately avoids an error in the main case, a slice of [31:32])
                     (mv (erp-nil)
                         (list* "(" ; todo: drop these parens?
@@ -1413,7 +1415,7 @@
                                ")")
                         constant-array-info)
                   ;;main case:
-                  (let ((low-slice-size (- 32 rotate-amount))
+                  (let ((low-slice-size (- 32 rotate-amount)) ; becomes the high bits of the result
                         ;;high-slice-size is rotate-amount
                         (translated-arg (translate-bv-arg (darg2 expr) 32 dag-array-name dag-array dag-len cut-nodenum-type-alist)))
                     (mv (erp-nil)
