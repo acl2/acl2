@@ -1476,9 +1476,9 @@
     term-should-be-trimmed-axe
     lighter-dargp
 
-    prove-equivalence
+    prove-equal-with-axe
     prove-equality
-    prove-miter
+    prove-with-axe
     prove-equal-with-tactics
     symbolic-byte-assumptions
     symbolic-list
