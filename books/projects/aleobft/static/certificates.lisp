@@ -109,6 +109,7 @@
     (implies (and (certificate-setp certs)
                   (set::in cert certs))
              (not (equal cert nil)))
+    :rule-classes ((:forward-chaining :trigger-terms ((set::in cert certs))))
     :enable nil-not-in-certificate-set))
 
 ;;;;;;;;;;;;;;;;;;;;
