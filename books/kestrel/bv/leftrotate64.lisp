@@ -1,7 +1,7 @@
 ; BV Library: leftrotate for size 64
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,10 @@
 (include-book "leftrotate")
 
 (defund leftrotate64 (amt val)
-  (declare (type integer amt val))
+  (declare (xargs :guard (and (natp amt)
+                              (integerp val))
+                  :split-types t)
+           (type integer amt val))
   (leftrotate 64 amt val))
 
 (defthmd leftrotate-becomes-leftrotate64

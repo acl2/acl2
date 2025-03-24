@@ -84,14 +84,14 @@
 ;; TODO: Other sizes.
 (defthm ror-spec-64-alt-def
   (equal (ror-spec-64 x n rflags)
-         (let* ((n (bvchop 6 n))
-                (result-value (rightrotate 64 n x)) ; todo: pass the unchopped n here (look at how rightrotate chops)
+         (let* ((chopped-n (bvchop 6 n))
+                (result-value (rightrotate 64 n x)) ; note the unchopped n here
                 )
            (mv result-value
                ;; output flags:
-               (if (equal n 0)
+               (if (equal chopped-n 0)
                    (bvchop 32 rflags)
-                 (if (equal n 1)
+                 (if (equal chopped-n 1)
                      ;; nicer than what the naive definition does?:
                      (!rflagsbits->cf
                        (getbit 0 x) ;(getbit 63 (rightrotate 64 1 x))
@@ -102,7 +102,7 @@
                          rflags))
                    (!rflagsbits->cf (getbit 63 result-value) rflags)))
                ;; undefined flags:
-               (if (equal n 1) 0 2048))))
+               (if (equal chopped-n 1) 0 2048))))
   :hints (("Goal" :in-theory (e/d (acl2::logapp-becomes-bvcat-when-bv
                                    x86isa::ror-spec-64
                                    !rflagsbits->cf

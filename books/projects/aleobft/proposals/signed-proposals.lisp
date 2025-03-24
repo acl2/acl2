@@ -14,6 +14,8 @@
 (include-book "initialization")
 (include-book "transitions")
 
+(local (include-book "../library-extensions/omap-theorems"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -62,9 +64,8 @@
   (b* (((when (set::emptyp (certificate-set-fix dag))) nil)
        (cert (set::head dag))
        (props (signed-props-in-dag signer (set::tail dag))))
-    (if (or (equal (certificate->author cert)
-                   (address-fix signer))
-            (set::in (address-fix signer) (certificate->endorsers cert)))
+    (if (set::in (address-fix signer)
+                 (certificate->signers cert))
         (set::insert (certificate->proposal cert)
                      props)
       props))
@@ -80,7 +81,28 @@
              :induct t
              :in-theory (enable* signed-props-in-dag
                                  cert-set->prop-set
-                                 set::expensive-rules)))))
+                                 set::expensive-rules))))
+
+  (defruled in-signed-props-in-dag-when-in-dag-and-signer
+    (implies (and (certificate-setp dag)
+                  (set::in cert dag)
+                  (set::in (address-fix signer)
+                           (certificate->signers cert)))
+             (set::in (certificate->proposal cert)
+                      (signed-props-in-dag signer dag)))
+    :induct t)
+
+  (defruled signed-props-in-dag-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp dag))
+             (equal (signed-props-in-dag signer (set::insert cert dag))
+                    (if (set::in (address-fix signer)
+                                 (certificate->signers cert))
+                        (set::insert (certificate->proposal cert)
+                                     (signed-props-in-dag signer dag))
+                      (signed-props-in-dag signer dag))))
+    :induct (set::weak-insert-induction cert dag)
+    :enable in-signed-props-in-dag-when-in-dag-and-signer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,7 +182,37 @@
                         (signed-props-in-proposed signer proposed)))))
     :enable (in-of-signed-props-in-proposed
              set::expensive-rules
-             set::double-containment-no-backchain-limit)))
+             set::double-containment-no-backchain-limit))
+
+  (defruled signed-props-in-proposed-of-delete-superset
+    (set::subset (set::delete prop
+                              (signed-props-in-proposed signer proposed))
+                 (signed-props-in-proposed signer
+                                           (omap::delete prop proposed)))
+    :induct t
+    :enable (signed-props-in-proposed
+             omap::assoc
+             in-of-signed-props-in-proposed
+             set::expensive-rules))
+
+  (defruled in-of-signed-props-in-proposed-of-delete
+    (implies (and (set::in prop1 (signed-props-in-proposed signer proposed))
+                  (not (equal prop1 prop)))
+             (set::in prop1
+                      (signed-props-in-proposed
+                       signer (omap::delete prop proposed))))
+    :use signed-props-in-proposed-of-delete-superset
+    :enable set::expensive-rules
+    :disable signed-props-in-proposed)
+
+  (defruled signed-props-in-proposed-monotone
+    (implies (and (proposal-address-set-mapp proposed2)
+                  (omap::submap proposed1 proposed2))
+             (set::subset (signed-props-in-proposed signer proposed1)
+                          (signed-props-in-proposed signer proposed2)))
+    :induct t
+    :enable (omap::submap
+             in-of-signed-props-in-proposed)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -212,7 +264,28 @@
   :prepwork ((local (in-theory (enable emptyp-of-address-set-fix))))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable* set::expensive-rules)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled prop-in-signed-props-in-validators-when-assoc-of-proposed
+    (implies (and (address-setp vals)
+                  (set::in val vals)
+                  (proposalp prop)
+                  (omap::assoc prop
+                               (validator-state->proposed
+                                (get-validator-state val systate)))
+                  (or (equal signer (proposal->author prop))
+                      (set::in signer
+                               (cdr (omap::assoc
+                                     prop
+                                     (validator-state->proposed
+                                      (get-validator-state val systate)))))))
+             (set::in prop
+                      (signed-props-in-validators signer vals systate)))
+    :induct t
+    :enable (signed-props-in-validator
+             in-of-signed-props-in-proposed)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -258,8 +331,8 @@
                                (address-fix signer)))
                     (set::insert msg.proposal nil)
                   nil)
-   :certificate (if (equal (certificate->author msg.certificate)
-                           (address-fix signer))
+   :certificate (if (set::in (address-fix signer)
+                             (certificate->signers msg.certificate))
                     (set::insert (certificate->proposal msg.certificate)
                                  nil)
                   nil))
@@ -320,6 +393,38 @@
     :enable (set::union
              signed-props-in-message-set-of-insert))
 
+  (defruled signed-props-in-message-set-monotone
+    (implies (and (message-setp msgs2)
+                  (set::subset msgs1 msgs2))
+             (set::subset (signed-props-in-message-set signer msgs1)
+                          (signed-props-in-message-set signer msgs2)))
+    :induct t
+    :enable (set::subset
+             signed-props-in-message-subset-when-in
+             set::expensive-rules))
+
+  (defruled signed-props-in-message-set-of-delete-superset
+    (implies (message-setp msgs)
+             (set::subset (set::difference
+                           (signed-props-in-message-set signer msgs)
+                           (signed-props-in-message signer msg))
+                          (signed-props-in-message-set
+                           signer (set::delete msg msgs))))
+    :induct t
+    :enable (set::delete
+             signed-props-in-message-set-of-insert
+             set::expensive-rules))
+
+  (defruled in-of-signed-props-in-message-set-of-delete
+    (implies (and (message-setp msgs)
+                  (set::in prop (signed-props-in-message-set signer msgs))
+                  (not (set::in prop (signed-props-in-message signer msg))))
+             (set::in prop (signed-props-in-message-set
+                            signer (set::delete msg msgs))))
+    :use signed-props-in-message-set-of-delete-superset
+    :enable set::expensive-rules
+    :disable signed-props-in-message-set)
+
   (defruled signed-props-in-message-set-of-make-proposal-messages
     (equal (signed-props-in-message-set
             signer (make-proposal-messages prop dests))
@@ -332,7 +437,72 @@
     :enable (make-proposal-messages
              signed-props-in-message
              signed-props-in-message-set-of-insert
-             emptyp-of-address-set-fix)))
+             emptyp-of-address-set-fix))
+
+  (defruled signed-props-in-message-set-of-make-certificate-messages
+    (equal (signed-props-in-message-set
+            signer (make-certificate-messages cert dests))
+           (if (and (set::in (address-fix signer)
+                             (certificate->signers cert))
+                    (not (set::emptyp (address-set-fix dests))))
+               (set::insert (certificate->proposal cert) nil)
+             nil))
+    :induct t
+    :enable (make-certificate-messages
+             signed-props-in-message
+             signed-props-in-message-set-of-insert
+             emptyp-of-address-set-fix))
+
+  (defruled in-signed-props-in-message-set-when-message-endorsement
+    (implies (and (proposalp prop)
+                  (message-setp msgs)
+                  (set::in (message-endorsement prop endor) msgs)
+                  (or (equal (address-fix signer)
+                             (proposal->author prop))
+                      (equal (address-fix signer)
+                             (address-fix endor))))
+             (set::in prop (signed-props-in-message-set signer msgs)))
+    :induct t
+    :enable signed-props-in-message)
+
+  (defruled in-signed-props-in-message-set-when-make-endorsement-messages
+    (implies (and (proposalp prop)
+                  (message-setp msgs)
+                  (not (set::emptyp (address-set-fix endors)))
+                  (set::subset (make-endorsement-messages prop endors) msgs)
+                  (or (equal (address-fix signer)
+                             (proposal->author prop))
+                      (set::in (address-fix signer)
+                               (address-set-fix endors))))
+             (set::in prop (signed-props-in-message-set signer msgs)))
+    :induct t
+    :disable signed-props-in-message-set
+    :enable (make-endorsement-messages
+             emptyp-of-address-set-fix
+             in-signed-props-in-message-set-when-message-endorsement))
+
+  (defruled in-signed-props-in-message-set-when-message-certificate
+    (implies (and (message-setp msgs)
+                  (set::in (message-certificate cert dest) msgs)
+                  (set::in (address-fix signer)
+                           (certificate->signers cert)))
+             (set::in (certificate->proposal cert)
+                      (signed-props-in-message-set signer msgs)))
+    :induct t
+    :enable signed-props-in-message)
+
+  (defruled in-signed-props-in-message-set-when-make-certificate-messages
+    (implies (and (message-setp msgs)
+                  (not (set::emptyp (address-set-fix dests)))
+                  (set::subset (make-certificate-messages cert dests) msgs)
+                  (set::in (address-fix signer)
+                           (certificate->signers cert)))
+             (set::in (certificate->proposal cert)
+                      (signed-props-in-message-set signer msgs)))
+    :induct t
+    :disable signed-props-in-message-set
+    :enable (make-certificate-messages
+             in-signed-props-in-message-set-when-message-certificate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -397,6 +567,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "A @('propose') event contributes a new proposal
+     to the set of proposals signed by the new proposal's author.")
+   (xdoc::p
     "If a correct validator creates a proposal,
      it adds it to its map of pending proposals, without ensorsements.
      The validator may also add proposal messages, containing the proposal,
@@ -456,8 +629,7 @@
                      signer vals (propose-next prop dests systate))
                     (if (and (equal (address-fix signer)
                                     (proposal->author prop))
-                             (set::in (address-fix signer)
-                                      (address-set-fix vals))
+                             (set::in (address-fix signer) vals)
                              (set::in (address-fix signer)
                                       (correct-addresses systate)))
                         (set::insert (proposal-fix prop)
@@ -483,3 +655,478 @@
              signed-props-in-message-set-of-union
              signed-props-in-message-set-of-make-proposal-messages
              signed-props-in-validators-of-propose-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-endorse-next
+  :short "How signed proposals change under @('endorse') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An @('endorse') event contributes the endorsed proposal
+     to the set of proposals signed by the endorser.")
+   (xdoc::p
+    "When a (correct or faulty) validator endorses a proposal,
+     it removes a proposal message from the network
+     and adds an endorsement message to the network.
+     The two messages have the same proposal.
+     The proposal message contributes the proposal to
+     the set of proposals in the system signed by the proposal's author;
+     the endorsement message makes the same contribution,
+     but it also contributes the proposal to
+     the set of proposals in the system signed by the endorsing validator.
+     Thus, the net effect is to add that proposal to
+     the set of proposals in the system signed by the endorser,
+     and to leave unchanged
+     all the sets of proposals signed by other validators.")
+   (xdoc::p
+    "As proved in @(see endorsement-from-other),
+     the endorser always differs from the proposal author
+     if the latter is correct,
+     but this fact does not affect the formulation of the theorem."))
+
+  (defruled signed-props-in-validator-of-endorse-next
+    (implies (set::in val (correct-addresses systate))
+             (equal (signed-props-in-validator
+                     signer
+                     (get-validator-state
+                      val (endorse-next prop endor systate)))
+                    (signed-props-in-validator
+                     signer
+                     (get-validator-state val systate))))
+    :enable signed-props-in-validator)
+
+  (defruled signed-props-in-validators-of-endorse-next
+    (implies (and (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (endorse-next prop endor systate))
+                    (signed-props-in-validators
+                     signer vals systate)))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-endorse-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-endorse-next
+    (implies (endorse-possiblep prop endor systate)
+             (equal (signed-props signer (endorse-next prop endor systate))
+                    (if (equal (address-fix signer)
+                               (address-fix endor))
+                        (set::insert (proposal-fix prop)
+                                     (signed-props signer systate))
+                      (signed-props signer systate))))
+    :enable (signed-props
+             signed-props-in-validators-of-endorse-next
+             get-network-state-of-endorse-next
+             signed-props-in-message-set-of-insert
+             signed-props-in-message
+             set::expensive-rules
+             endorse-possiblep)
+    :use ((:instance signed-props-in-message-set-of-delete-superset
+                     (msg (message-proposal prop endor))
+                     (msgs (get-network-state systate)))
+          (:instance signed-props-in-message-set-monotone
+                     (msgs1 (set::delete (message-proposal prop endor)
+                                         (get-network-state systate)))
+                     (msgs2 (get-network-state systate)))
+          (:instance signed-props-in-message-subset-when-in
+                     (msg (message-proposal prop endor))
+                     (msgs (get-network-state systate))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-augment-next
+  :short "How signed proposals change under @('augment') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An @('augment') event does not change
+     the set of proposals signed by each validator.")
+   (xdoc::p
+    "The event removes an endorsement message from the network,
+     which contributes the proposal to the sets of proposals signed by
+     the proposal's author and the endorser in the message.
+     But the event can only happen if the proposal author is correct,
+     and if its pending proposal map includes that proposal.
+     The event leaves the proposal in the map,
+     and adds the new endorser.
+     Thus, the map contributes the same proposals as the message."))
+
+  (defruled signed-props-in-validator-of-augment-next
+    (implies (augment-possiblep prop endor systate)
+             (equal (signed-props-in-validator
+                     signer
+                     (get-validator-state
+                      val (augment-next prop endor systate)))
+                    (if (and (equal (address-fix val)
+                                    (proposal->author prop))
+                             (equal (address-fix signer)
+                                    (address-fix endor)))
+                        (set::insert (proposal-fix prop)
+                                     (signed-props-in-validator
+                                      signer
+                                      (get-validator-state val systate)))
+                      (signed-props-in-validator
+                       signer
+                       (get-validator-state val systate)))))
+    :enable (signed-props-in-validator
+             validator-state->proposed-of-augment-next
+             augment-possiblep
+             signed-props-in-proposed-of-update
+             in-of-signed-props-in-proposed
+             omap::lookup))
+
+  (defruled signed-props-in-validators-of-augment-next
+    (implies (and (augment-possiblep prop endor systate)
+                  (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (augment-next prop endor systate))
+                    (if (and (set::in (proposal->author prop) vals)
+                             (equal (address-fix signer)
+                                    (address-fix endor)))
+                        (set::insert (proposal-fix prop)
+                                     (signed-props-in-validators
+                                      signer vals systate))
+                      (signed-props-in-validators signer vals systate))))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-augment-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-augment-next
+    (implies (augment-possiblep prop endor systate)
+             (equal (signed-props signer (augment-next prop endor systate))
+                    (signed-props signer systate)))
+    :enable (set::double-containment-no-backchain-limit
+             set::expensive-rules)
+
+    :prep-lemmas
+
+    ((defrule lemma1
+       (implies (augment-possiblep prop endor systate)
+                (implies (set::in x (signed-props
+                                     signer (augment-next prop endor systate)))
+                         (set::in x (signed-props signer systate))))
+       :enable (signed-props
+                signed-props-in-validators-of-augment-next
+                get-network-state-of-augment-next
+                augment-possiblep
+                signed-props-in-message
+                set::expensive-rules)
+       :use ((:instance signed-props-in-message-set-monotone
+                        (msgs1 (set::delete (message-endorsement prop endor)
+                                            (get-network-state systate)))
+                        (msgs2 (get-network-state systate)))
+             (:instance signed-props-in-message-subset-when-in
+                        (msg (message-endorsement prop endor))
+                        (msgs (get-network-state systate)))))
+
+     (defrule lemma2
+       (implies (augment-possiblep prop endor systate)
+                (implies (set::in x (signed-props signer systate))
+                         (set::in x (signed-props
+                                     signer (augment-next prop endor systate)))))
+       :enable (signed-props
+                signed-props-in-validators-of-augment-next
+                get-network-state-of-augment-next
+                augment-possiblep
+                signed-props-in-message
+                set::expensive-rules)
+       :use ((:instance in-of-signed-props-in-message-set-of-delete
+                        (msgs (get-network-state systate))
+                        (prop x)
+                        (msg (message-endorsement prop endor)))
+             (:instance
+              prop-in-signed-props-in-validators-when-assoc-of-proposed
+              (vals (correct-addresses systate))
+              (val (address-fix signer))
+              (signer (address-fix signer))
+              (prop (proposal-fix prop))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-certify-next
+  :short "How signed proposals change under @('certify') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @('certify') event almost never changes
+     the set of proposals signed by each validator,
+     except when the certificate author is faulty
+     and the certificate has no endorsements:
+     in this case, the proposal in the certificate is added to
+     the set of proposals signed by the author.")
+   (xdoc::p
+    "When the author is correct,
+     its pending proposal map must contain
+     the proposal and the endorsements that form the certificate.
+     The entry is removed from the map,
+     but the certificate is added to the author's DAG,
+     and thus there is no change to the set of proposals
+     signed by the certificate's signers (author and endorsers)
+     as far as validator states are concerned.
+     The addition of certificate messages to the network
+     does not contribute any new proposal to those signed sets.")
+   (xdoc::p
+    "If the author is faulty,
+     but the certificate has at least one endorser,
+     then there must be at least one endorsement message in the network,
+     which contributes the proposal to
+     the set of proposals signed by the author
+     and the set of proposals signed by the endorser.
+     In fact, every endorsers of the certificate
+     must have a corresponding endorsing message.
+     The endorsing messages are not removed from the network;
+     thus the generated certificate messages do not contribute new proposals.
+     However, if the certificate has no endorsers,
+     then there may be no endorsement messages;
+     the event can happen only if at least one certificate message is sent,
+     which contributes the proposal in the certificate
+     to the set of proposals signed by the author.
+     So this is the only case in which a new proposal
+     may be added to the sets of signed proposals.
+     Note that the addition may be a no-op, in case, for example,
+     there are in fact endorsement messages in the network,
+     but the faulty validators nondeterministically
+     chooses to not use any of them."))
+
+  (defruled signed-props-in-validator-of-certify-next
+    (implies (and (certify-possiblep cert dests systate)
+                  (set::in val (correct-addresses systate)))
+             (equal (signed-props-in-validator
+                     signer
+                     (get-validator-state
+                      val (certify-next cert dests systate)))
+                    (signed-props-in-validator
+                     signer (get-validator-state val systate))))
+    :enable (signed-props-in-validator
+             validator-state->dag-of-certify-next
+             validator-state->proposed-of-certify-next
+             signed-props-in-dag-of-insert
+             in-of-signed-props-in-proposed
+             certify-possiblep
+             certificate->author
+             certificate->signers
+             set::expensive-rules))
+
+  (defruled signed-props-in-validators-of-certify-next
+    (implies (and (certify-possiblep cert dests systate)
+                  (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (certify-next cert dests systate))
+                    (signed-props-in-validators signer vals systate)))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-certify-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-certify-next
+    (implies (certify-possiblep cert dests systate)
+             (equal (signed-props signer (certify-next cert dests systate))
+                    (if (and (not (set::in (certificate->author cert)
+                                           (correct-addresses systate)))
+                             (equal (address-fix signer)
+                                    (certificate->author cert))
+                             (set::emptyp (certificate->endorsers cert)))
+                        (set::insert (certificate->proposal cert)
+                                     (signed-props signer systate))
+                      (signed-props signer systate))))
+    :use (lemma-correct lemma-faulty)
+
+    :prep-lemmas
+
+    ((defruled lemma-correct
+       (implies (and (certify-possiblep cert dests systate)
+                     (set::in (certificate->author cert)
+                              (correct-addresses systate)))
+                (equal (signed-props signer (certify-next cert dests systate))
+                       (signed-props signer systate)))
+       :enable (signed-props
+                signed-props-in-validators-of-certify-next
+                get-network-state-of-certify-next
+                signed-props-in-message-set-of-union
+                signed-props-in-message-set-of-make-certificate-messages
+                certify-possiblep
+                certificate->author
+                certificate->signers)
+       :use (:instance prop-in-signed-props-in-validators-when-assoc-of-proposed
+                       (vals (correct-addresses systate))
+                       (val (certificate->author cert))
+                       (prop (certificate->proposal cert))
+                       (signer (address-fix signer))))
+
+     (defruled lemma-faulty
+       (implies (and (certify-possiblep cert dests systate)
+                     (not (set::in (certificate->author cert)
+                                   (correct-addresses systate))))
+                (equal (signed-props signer (certify-next cert dests systate))
+                       (if (and (equal (address-fix signer)
+                                       (certificate->author cert))
+                                (set::emptyp (certificate->endorsers cert)))
+                           (set::insert (certificate->proposal cert)
+                                        (signed-props signer systate))
+                         (signed-props signer systate))))
+       :enable (signed-props
+                signed-props-in-validators-of-certify-next
+                get-network-state-of-certify-next
+                signed-props-in-message-set-of-union
+                signed-props-in-message-set-of-make-certificate-messages
+                certify-possiblep
+                certificate->signers
+                certificate->author)
+       :use (:instance
+             in-signed-props-in-message-set-when-make-endorsement-messages
+             (prop (certificate->proposal cert))
+             (msgs (get-network-state systate))
+             (endors (certificate->endorsers cert)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-accept-next
+  :short "How signed proposals change under @('accept') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An @('accept') event does not change
+     the set of proposals signed by any validator.")
+   (xdoc::p
+    "This event only involves correct validators.
+     A certificate message is removed from the network,
+     but the certificate is added to the DAG of the validator.
+     Thus, there two changes compensate each other,
+     for every signer (author and endorser) of the certificate."))
+
+  (defruled signed-props-in-validator-of-accept-next
+    (implies (accept-possiblep val cert systate)
+             (equal (signed-props-in-validator
+                     signer
+                     (get-validator-state
+                      val1 (accept-next val cert systate)))
+                    (if (and (equal (address-fix val1)
+                                    (address-fix val))
+                             (set::in (address-fix signer)
+                                      (certificate->signers cert)))
+                        (set::insert (certificate->proposal cert)
+                                     (signed-props-in-validator
+                                      signer (get-validator-state val1 systate)))
+                      (signed-props-in-validator
+                       signer (get-validator-state val1 systate)))))
+    :enable (signed-props-in-validator
+             validator-state->dag-of-accept-next
+             signed-props-in-dag-of-insert
+             accept-possiblep))
+
+  (defruled signed-props-in-validators-of-accept-next
+    (implies (and (accept-possiblep val cert systate)
+                  (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (accept-next val cert systate))
+                    (if (and (set::in (address-fix val) vals)
+                             (set::in (address-fix signer)
+                                      (certificate->signers cert)))
+                        (set::insert (certificate->proposal cert)
+                                     (signed-props-in-validators
+                                      signer vals systate))
+                      (signed-props-in-validators signer vals systate))))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-accept-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-accept-next
+    (implies (accept-possiblep val cert systate)
+             (equal (signed-props signer (accept-next val cert systate))
+                    (signed-props signer systate)))
+    :enable (signed-props
+             signed-props-in-validators-of-accept-next
+             get-network-state-of-accept-next
+             in-of-signed-props-in-message-set-of-delete
+             signed-props-in-message
+             accept-possiblep
+             signed-props-in-message-set-monotone
+             in-signed-props-in-message-set-when-message-certificate
+             set::expensive-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-advance-next
+  :short "How signed proposals change under @('advance') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An @('advance') event does not change
+     the set of proposals signed by any validator.")
+   (xdoc::p
+    "This event does not change DAGs, pending proposal maps, or the network;
+     thus, there is no change to the sets of signer proposals."))
+
+  (defruled signed-props-in-validator-of-advance-next
+    (equal (signed-props-in-validator
+            signer
+            (get-validator-state val1 (advance-next val systate)))
+           (signed-props-in-validator
+            signer
+            (get-validator-state val1 systate)))
+    :enable signed-props-in-validator)
+
+  (defruled signed-props-in-validators-of-advance-next
+    (implies (and (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (advance-next val systate))
+                    (signed-props-in-validators signer vals systate)))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-advance-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-advance-next
+    (implies (advance-possiblep val systate)
+             (equal (signed-props signer (advance-next val systate))
+                    (signed-props signer systate)))
+    :enable (signed-props
+             signed-props-in-validators-of-advance-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signed-props-of-commit-next
+  :short "How signed proposals change under @('commit') events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @('commit') event does not change
+     the set of proposals signed by any validator.")
+   (xdoc::p
+    "This event does not change DAGs, pending proposal maps, or the network;
+     thus, there is no change to the sets of signer proposals."))
+
+  (defruled signed-props-in-validator-of-commit-next
+    (equal (signed-props-in-validator
+            signer
+            (get-validator-state val1 (commit-next val systate)))
+           (signed-props-in-validator
+            signer
+            (get-validator-state val1 systate)))
+    :enable signed-props-in-validator)
+
+  (defruled signed-props-in-validators-of-commit-next
+    (implies (and (address-setp vals)
+                  (set::subset vals (correct-addresses systate)))
+             (equal (signed-props-in-validators
+                     signer vals (commit-next val systate))
+                    (signed-props-in-validators signer vals systate)))
+    :induct t
+    :enable (signed-props-in-validators
+             signed-props-in-validator-of-commit-next
+             set::expensive-rules))
+
+  (defruled signed-props-of-commit-next
+    (implies (commit-possiblep val systate)
+             (equal (signed-props signer (commit-next val systate))
+                    (signed-props signer systate)))
+    :enable (signed-props
+             signed-props-in-validators-of-commit-next)))

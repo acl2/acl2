@@ -14,5 +14,8 @@
 (include-book "leftrotate")
 
 (defund leftrotate16 (amt val)
-  (declare (type integer amt val))
+  (declare (xargs :guard (and (natp amt)
+                              (integerp val))
+                  :split-types t)
+           (type integer amt val))
   (leftrotate 16 amt val))

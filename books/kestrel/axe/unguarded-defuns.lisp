@@ -310,7 +310,7 @@
   (declare (xargs :guard t))
   (if (equal 0 width)
       0
-    (let* ((amt (mod-unguarded (nfix amt) width)))
+    (let* ((amt (mod-unguarded (ifix amt) width)))
       ;; leftify?
       (bvcat-unguarded (binary-+-unguarded width (unary---unguarded amt))
                        (slice-unguarded (binary-+-unguarded -1 (binary-+-unguarded width (unary---unguarded amt))) 0 val)
@@ -329,7 +329,7 @@
 
 (defund leftrotate32-unguarded (amt val)
   (declare (xargs :guard t))
-  (leftrotate 32 (ifix amt) (ifix val)))
+  (leftrotate 32 (mod-unguarded (ifix amt) 32) (ifix val)))
 
 (defthm leftrotate32-unguarded-correct
   (equal (leftrotate32-unguarded amt val)
