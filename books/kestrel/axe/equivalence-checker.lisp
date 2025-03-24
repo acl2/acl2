@@ -17336,17 +17336,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp event state rand).
-(defun prove-equality-fn (dag-or-term1
-                          dag-or-term2
-                          assumptions ; (untranslated) terms we can assume are true (non-nil)
-                          types  ;todo: compute the types from the hyps?
-                          test-types
-                          tests
-                          name
-                          ;; todo: standardize argument order:
-                          tests-per-case print debug-nodes interpreted-function-alist check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
-                          random-seed unroll max-conflicts normalize-xors debug prove-constants whole-form
-                          state rand)
+(defun prove-equal-with-axe+-fn (dag-or-term1
+                                 dag-or-term2
+                                 assumptions ; (untranslated) terms we can assume are true (non-nil)
+                                 types  ;todo: compute the types from the hyps?
+                                 test-types
+                                 tests
+                                 name
+                                 ;; todo: standardize argument order:
+                                 tests-per-case print debug-nodes interpreted-function-alist check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
+                                 random-seed unroll max-conflicts normalize-xors debug prove-constants whole-form
+                                 state rand)
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
                               (or (eq :bits types)
                                   (eq :bytes types)
@@ -17372,98 +17372,98 @@
        ((mv erp dag-or-quotep2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand))
        ;; Compute and check var lists:
-       (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equality-fn))
+       (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equal-with-axe+-fn))
        ;; Make the equality DAG:
        ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2))
        ((when erp) (mv erp nil state rand))
        ;; Do the proof:
        ((mv erp provedp state rand)
         (prove-with-axe-core equality-dag-or-quotep
-                          assumptions
-                          types
-                          test-types
-                          :rewrite-and-sweep ; todo: pass this in?
-                          tests
-                          print
-                          debug-nodes ;do we use this?
-                          interpreted-function-alist
-                          ;; todo: allow the use of rule phases?!
-                          runes      ;used for both the rewriter and prover
-                          rules      ;used for both the rewriter and prover
-                          rewriter-runes ;used for the rewriter only (not the prover)
-                          prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                          initial-rule-set
-                          initial-rule-sets
-                          pre-simplifyp
-                          extra-stuff
-                          specialize-fnsp
-                          monitor ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
-                          use-context-when-miteringp
-                          random-seed
-                          unroll
-                          tests-per-case
-                          max-conflicts
-                          normalize-xors ;fixme use the more, deeper in?
-                          name ; the miter-name
-                          prove-constants
-                          debug
-                          state rand))
+                             assumptions
+                             types
+                             test-types
+                             :rewrite-and-sweep ; todo: pass this in?
+                             tests
+                             print
+                             debug-nodes ;do we use this?
+                             interpreted-function-alist
+                             ;; todo: allow the use of rule phases?!
+                             runes      ;used for both the rewriter and prover
+                             rules      ;used for both the rewriter and prover
+                             rewriter-runes ;used for the rewriter only (not the prover)
+                             prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                             initial-rule-set
+                             initial-rule-sets
+                             pre-simplifyp
+                             extra-stuff
+                             specialize-fnsp
+                             monitor ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                             use-context-when-miteringp
+                             random-seed
+                             unroll
+                             tests-per-case
+                             max-conflicts
+                             normalize-xors ;fixme use the more, deeper in?
+                             name ; the miter-name
+                             prove-constants
+                             debug
+                             state rand))
        ((when erp) (mv erp nil state rand))
        )
     (if provedp
         (let ((state (if debug state (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
           (let ((event '(progn))) ;todo: should return a theorem about the term-or-dags!
             (mv (erp-nil)
-                (extend-progn event `(table prove-equality-table ',whole-form ',event))
+                (extend-progn event `(table prove-equal-with-axe+-table ',whole-form ',event))
                 state rand)))
-      (progn$ (er hard? 'prove-equality "Failed to prove miter ~x0." name)
+      (progn$ (er hard? 'prove-equal-with-axe+ "Failed to prove miter ~x0." name)
               (mv (erp-t) nil state rand)))))
 
 ;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equal-with-axe, this supports all the exotic options to prove-with-axe.
 ;; Used in several loop examples.
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 ;; See also prove-equal-with-axe, which is preferable when it is sufficient (because it is simpler).
-(defmacro prove-equality (&whole
-                          whole-form
-                          dag-or-term1
-                          dag-or-term2
-                          &KEY
-                          (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                          (types 'nil)
-                          (test-types 'nil)
-                          (tests '100)
-                          (name ''unnamedmiter)
-                          (tests-per-case '512)
-                          (print 'nil)
-                          (debug-nodes 'nil)
-                          (interpreted-function-alist 'nil) ;affects soundness
-                          (check-vars 't)
-                          (runes 'nil) ;used for both the rewriter and prover, affects soundness
-                          (rules 'nil) ;used for both the rewriter and prover, affects soundness
-                          (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
-                          (prover-runes 'nil) ;used for the prover only (not the rewriter), affects soundness ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                          (initial-rule-set 'nil)
-                          (initial-rule-sets 'nil)
-                          (pre-simplifyp 't) ;was nil
-                          (extra-stuff 'nil) ;ffixme does any of this affect soundness?
-                          (specialize-fnsp 'nil) ;do we ever use this?
-                          (monitor 'nil)         ;a list of runes
-                          (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
-                          (random-seed 'nil)
-                          (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
-                          (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
-                          (normalize-xors 't)
-                          (debug 'nil) ;if t, the temp dir with STP files is not deleted
-                          (prove-constants 't) ;whether to attempt to prove probably-constant nodes
-                          )
+(defmacro prove-equal-with-axe+ (&whole
+                                  whole-form
+                                  dag-or-term1
+                                  dag-or-term2
+                                  &KEY
+                                  (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
+                                  (types 'nil)
+                                  (test-types 'nil)
+                                  (tests '100)
+                                  (name ''unnamedmiter)
+                                  (tests-per-case '512)
+                                  (print 'nil)
+                                  (debug-nodes 'nil)
+                                  (interpreted-function-alist 'nil) ;affects soundness
+                                  (check-vars 't)
+                                  (runes 'nil) ;used for both the rewriter and prover, affects soundness
+                                  (rules 'nil) ;used for both the rewriter and prover, affects soundness
+                                  (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
+                                  (prover-runes 'nil) ;used for the prover only (not the rewriter), affects soundness ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                                  (initial-rule-set 'nil)
+                                  (initial-rule-sets 'nil)
+                                  (pre-simplifyp 't) ;was nil
+                                  (extra-stuff 'nil) ;ffixme does any of this affect soundness?
+                                  (specialize-fnsp 'nil) ;do we ever use this?
+                                  (monitor 'nil)         ;a list of runes
+                                  (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
+                                  (random-seed 'nil)
+                                  (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
+                                  (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
+                                  (normalize-xors 't)
+                                  (debug 'nil) ;if t, the temp dir with STP files is not deleted
+                                  (prove-constants 't) ;whether to attempt to prove probably-constant nodes
+                                  )
   `(make-event ; use make-event-quiet?
-     (prove-equality-fn ,dag-or-term1
-                        ,dag-or-term2
-                        ,assumptions ,types ,test-types ,tests
-                        ,name
-                        ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                        ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants ',whole-form
-                        state rand)))
+     (prove-equal-with-axe+-fn ,dag-or-term1
+                               ,dag-or-term2
+                               ,assumptions ,types ,test-types ,tests
+                               ,name
+                               ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                               ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants ',whole-form
+                               state rand)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -19224,7 +19224,7 @@
 ;;             ;; (declare (ignore replacement-tag-array))
 ;;             ;; Call STP on the proof obligation without replacement:
 ;;             (mv-let (erp result state)
-;;                     (prove-equality -with-stp dag-array
+;;                     (prove-equal-with-axe+ -with-stp dag-array
 ;;                                         dag-len
 ;;                                         translation-tag-array
 ;;                                         (string-append "/tmp/tmpstpfilefull" (nat-to-string nodenum1))
@@ -19898,7 +19898,7 @@
 ;;                  method-info
 ;;                  class-name))
 
-;; (defun prove-equality-fn (term1 term2
+;; (defun prove-equal-with-axe+-fn (term1 term2
 ;;                           test-case-count input-type-alist
 ;;                           name
 ;;                           tests-per-case
@@ -19952,8 +19952,8 @@
 ;; ;TODO: start by making sure we can call STP on a simple example..
 ;; ;TODO: does this export a theorem?
 ;; ;TODO: add to this all keywords that prove-with-axe takes
-;; (defmacro prove-equality (term1 term2 &rest rest)
-;;   `(make-event (prove-equality-fn ',term1
+;; (defmacro prove-equal-with-axe+ (term1 term2 &rest rest)
+;;   `(make-event (prove-equal-with-axe+-fn ',term1
 ;;                                   ',term2
 ;;                                   ;;todo: check for extra keywords in rest
 ;;                                   ,(lookup-keyword-safe :test-case-count rest)
