@@ -1,4 +1,4 @@
-; Tests of prove-equivalence
+; Tests of prove-equal-with-axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2025 Kestrel Institute
@@ -16,7 +16,7 @@
 
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "equivalence-checker")
-;;TODO: prove-equivalence should include these since it refers to them:
+;;TODO: prove-equal-with-axe should include these since it refers to them:
 ;(include-book "kestrel/bv/rotate" :dir :system) ;for LEFTROTATE32-OF-BVCHOP-5
 (include-book "rules1") ;for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
 ;(include-book "axe-rules") ;for BVAND-OF-CONSTANT-TIGHTEN-AXE
@@ -30,75 +30,75 @@
 (include-book "kestrel/utilities/deftest" :dir :system)
 
 (must-fail
- (prove-equivalence (dagify-term! '(bvplus '32 '1 x))
-                    (dagify-term! '(bvplus '32 '2 x))))
+  (prove-equal-with-axe (dagify-term! '(bvplus '32 '1 x))
+                        (dagify-term! '(bvplus '32 '2 x))))
 
 (deftest ;; turns on extensive guard-checking
-  (prove-equivalence (dagify-term! '(bvplus '32 '7 x))
-                     (dagify-term! '(bvplus '32 x '7))))
+  (prove-equal-with-axe (dagify-term! '(bvplus '32 '7 x))
+                        (dagify-term! '(bvplus '32 x '7))))
 
 ;; A test where sweeping-and-merging happens:
 (deftest ;; turns on extensive guard-checking
-  (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
-                     (dagify-term! '(bvplus '8 x '7))
-                     ;; prevent rewriting from getting it:
-                     :initial-rule-sets nil
-                     :types :bytes))
+  (prove-equal-with-axe (dagify-term! '(bvplus '8 '7 x))
+                        (dagify-term! '(bvplus '8 x '7))
+                        ;; prevent rewriting from getting it:
+                        :initial-rule-sets nil
+                        :types :bytes))
 
 ;; Tests :max-conflicts nil
 (deftest ;; turns on extensive guard-checking
-  (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
-                     (dagify-term! '(bvplus '8 x '7))
-                     ;; prevent rewriting from getting it:
-                     :initial-rule-sets nil
-                     :types :bytes
-                     :max-conflicts nil))
+  (prove-equal-with-axe (dagify-term! '(bvplus '8 '7 x))
+                        (dagify-term! '(bvplus '8 x '7))
+                        ;; prevent rewriting from getting it:
+                        :initial-rule-sets nil
+                        :types :bytes
+                        :max-conflicts nil))
 
 ;; Tests :max-conflicts <nat>
 (deftest ;; turns on extensive guard-checking
-  (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
-                     (dagify-term! '(bvplus '8 x '7))
-                     ;; prevent rewriting from getting it:
-                     :initial-rule-sets nil
-                     :types :bytes
-                     :max-conflicts 1000000))
+  (prove-equal-with-axe (dagify-term! '(bvplus '8 '7 x))
+                        (dagify-term! '(bvplus '8 x '7))
+                        ;; prevent rewriting from getting it:
+                        :initial-rule-sets nil
+                        :types :bytes
+                        :max-conflicts 1000000))
 
 ;; TODO: Guard violation:
 ;; ;; Tests the :range type
 ;; (deftest ;; turns on extensive guard-checking
-;;   (prove-equivalence (dagify-term! '(bvplus '8 '7 x))
+;;   (prove-equal-with-axe (dagify-term! '(bvplus '8 '7 x))
 ;;                      (dagify-term! '(bvplus '8 x '7))
 ;;                      ;; prevent rewriting from getting it:
 ;;                      :initial-rule-sets nil
 ;;                      :types (acons 'x '(:range 0 6) nil)))
 
 (must-fail ;the dags have different vars
- (prove-equivalence (dagify-term! '(bvplus '32 x y))
-                    (dagify-term! '(bvplus '32 x z))))
+  (prove-equal-with-axe (dagify-term! '(bvplus '32 x y))
+                        (dagify-term! '(bvplus '32 x z))))
 
 ;TODO: Improve the error message here:
 ;Sweeping-and-merging should just fail with no types provided -- or infer types.
 (must-fail
- (prove-equivalence (dagify-term! '(bvplus '32 x y))
-                    (dagify-term! '(bvmult '32 x y))))
+  (prove-equal-with-axe (dagify-term! '(bvplus '32 x y))
+                        (dagify-term! '(bvmult '32 x y))))
 
 (must-fail
- (prove-equivalence (dagify-term! '(bvplus '32 x y))
-                    (dagify-term! '(bvmult '32 x y))
-                    :local nil))
+  (prove-equal-with-axe (dagify-term! '(bvplus '32 x y))
+                        (dagify-term! '(bvmult '32 x y))
+                        :local nil))
 
 ;try with terms instead of dags:
-(prove-equivalence '(bvplus '32 '7 x)
-                   '(bvplus '32 x '7))
+(prove-equal-with-axe '(bvplus '32 '7 x)
+                      '(bvplus '32 x '7))
 
 ; try with one term and one dag:
-(prove-equivalence '(bvplus '32 '7 x)
-                   (dagify-term! '(bvplus '32 x '7)))
+(prove-equal-with-axe '(bvplus '32 '7 x)
+                      (dagify-term! '(bvplus '32 x '7)))
 
 ;; TODO: Currently fails because we don't get induced types for X and Y
 ;; (that requires a parent-array, and sweeping does not maintain one), and
 ;; we don't call the Axe prover because the DAG is pure.
-;; (prove-equivalence '(bvand '32 x y)
+;; (prove-equal-with-axe '(bvand '32 x y)
 ;;                    '(bvand '32 y x)
 ;;                    ;; avoid proving it via rewriting:
 ;;                    :initial-rule-sets nil)
@@ -107,21 +107,21 @@
 ;; But proper test cases are not really made.
 (defun foo (x) x)
 (defun bar (x) x)
-(prove-equivalence '(bvand '32 (foo x) (bar y))
-                   '(bvand '32 (bar y) (foo x))
-                   :print t
-                   ;; avoid proving it via rewriting:
-                   :initial-rule-sets nil)
+(prove-equal-with-axe '(bvand '32 (foo x) (bar y))
+                      '(bvand '32 (bar y) (foo x))
+                      :print t
+                      ;; avoid proving it via rewriting:
+                      :initial-rule-sets nil)
 
 ;; trying to make a bvif with an irrelevant branch
-;; (prove-equivalence '(bvif 32 x (bvif x 32 y z) y)
+;; (prove-equal-with-axe '(bvif 32 x (bvif x 32 y z) y)
 ;;                    '(bvchop 32 y)
 ;;                    :print t
 ;;                    :check-vars nil
 ;;                    ;; avoid proving it via rewriting:
 ;;                    :initial-rule-sets nil)
 
-;; (prove-equivalence '(bvif 32 x (bvif x 32 y (foo z)) y)
+;; (prove-equal-with-axe '(bvif 32 x (bvif x 32 y (foo z)) y)
 ;;                    '(bvchop 32 y)
 ;;                    :print t
 ;;                    :check-vars nil

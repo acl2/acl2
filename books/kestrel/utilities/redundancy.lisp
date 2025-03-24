@@ -13,7 +13,7 @@
 
 (include-book "pack")
 
-;WHOLE-FORM is a call of the command, e.g, (prove-equivalence ...)
+;WHOLE-FORM is a call of the command, e.g, (prove-equal-with-axe ...)
 (defund command-is-redundantp (whole-form state)
   (declare (xargs :guard (and (consp whole-form)
                               (symbolp (car whole-form)))

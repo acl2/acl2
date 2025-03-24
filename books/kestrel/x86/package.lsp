@@ -1476,7 +1476,7 @@
     term-should-be-trimmed-axe
     lighter-dargp
 
-    prove-equivalence
+    prove-equal-with-axe
     prove-equality
     prove-with-axe
     prove-equal-with-tactics

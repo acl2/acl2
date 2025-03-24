@@ -17419,10 +17419,10 @@
       (progn$ (er hard? 'prove-equality "Failed to prove miter ~x0." name)
               (mv (erp-t) nil state rand)))))
 
-;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equivalence, this supports all the exotic options to prove-with-axe.
+;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equal-with-axe, this supports all the exotic options to prove-with-axe.
 ;; Used in several loop examples.
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
-;; See also prove-equivalence, which is preferable when it is sufficient (because it is simpler).
+;; See also prove-equal-with-axe, which is preferable when it is sufficient (because it is simpler).
 (defmacro prove-equality (&whole
                           whole-form
                           dag-or-term1
@@ -17471,58 +17471,58 @@
 
 ;; Returns (mv erp event state rand).
 ;; TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
-(defun prove-equivalence-fn (dag-or-term1
-                             dag-or-term2
-                             assumptions ; (untranslated) terms we can assume are true (non-nil)
-                             types
-                             test-types
-                             tests ;a natp indicating how many tests to run
-                             tactic
-                             name  ; may be :auto
-                             print
-                             debug ; whether to keep temp-dirs around
-                             debug-nodes
-                             max-conflicts extra-rules initial-rule-sets
-                             monitor
-                             use-context-when-miteringp
-                             normalize-xors
-                             interpreted-function-alist
-                             check-vars
-                             prove-theorem
-                             local
-                             whole-form
-                             state rand)
+(defun prove-equal-with-axe-fn (dag-or-term1
+                                dag-or-term2
+                                assumptions ; (untranslated) terms we can assume are true (non-nil)
+                                types
+                                test-types
+                                tests ;a natp indicating how many tests to run
+                                tactic
+                                name  ; may be :auto
+                                print
+                                debug ; whether to keep temp-dirs around
+                                debug-nodes
+                                max-conflicts extra-rules initial-rule-sets
+                                monitor
+                                use-context-when-miteringp
+                                normalize-xors
+                                interpreted-function-alist
+                                check-vars
+                                prove-theorem
+                                local
+                                whole-form
+                                state rand)
   (declare (xargs :guard (and ;; dag-or-term1 is a DAG or (untranslated) term
-                              ;; dag-or-term2 is a DAG or (untranslated) term
-                              (true-listp assumptions) ; untranslated
-                              (or (eq :bits types) ; todo: consider supporting other things, like :u32
-                                  (eq :bytes types)
-                                  (and (var-type-alistp types)
-                                       (no-duplicatesp (strip-cars types))
-                                       (not (assoc-eq nil types)) ;consider relaxing this?
-                                       (not (assoc-eq t types)) ;consider relaxing this?
-                                       ))
-                              (test-case-type-alistp test-types)
-                              (natp tests)
-                              (or (eq tactic :rewrite)
-                                  (eq tactic :rewrite-and-sweep))
-                              (symbolp name)
-                              ;; print
-                              (booleanp debug)
-                              (nat-listp debug-nodes)
-                              (or (eq :auto max-conflicts)
-                                  (null max-conflicts)
-                                  (natp max-conflicts))
-                              (symbol-listp extra-rules)
-                              (or (eq :auto initial-rule-sets)
-                                  (axe-rule-setsp initial-rule-sets))
-                              (symbol-listp monitor)
-                              (booleanp use-context-when-miteringp)
-                              (booleanp normalize-xors)
-                              (interpreted-function-alistp interpreted-function-alist)
-                              (member-eq check-vars '(t nil :warn))
-                              (booleanp prove-theorem)
-                              (booleanp local))
+                           ;; dag-or-term2 is a DAG or (untranslated) term
+                           (true-listp assumptions) ; untranslated
+                           (or (eq :bits types) ; todo: consider supporting other things, like :u32
+                               (eq :bytes types)
+                               (and (var-type-alistp types)
+                                    (no-duplicatesp (strip-cars types))
+                                    (not (assoc-eq nil types)) ;consider relaxing this?
+                                    (not (assoc-eq t types)) ;consider relaxing this?
+                                    ))
+                           (test-case-type-alistp test-types)
+                           (natp tests)
+                           (or (eq tactic :rewrite)
+                               (eq tactic :rewrite-and-sweep))
+                           (symbolp name)
+                           ;; print
+                           (booleanp debug)
+                           (nat-listp debug-nodes)
+                           (or (eq :auto max-conflicts)
+                               (null max-conflicts)
+                               (natp max-conflicts))
+                           (symbol-listp extra-rules)
+                           (or (eq :auto initial-rule-sets)
+                               (axe-rule-setsp initial-rule-sets))
+                           (symbol-listp monitor)
+                           (booleanp use-context-when-miteringp)
+                           (booleanp normalize-xors)
+                           (interpreted-function-alistp interpreted-function-alist)
+                           (member-eq check-vars '(t nil :warn))
+                           (booleanp prove-theorem)
+                           (booleanp local))
                   :mode :program
                   :stobjs (state rand)))
   ;;TODO: error or warning if :tactic is rewrite and :tests is given?
@@ -17538,7 +17538,7 @@
        ((mv erp dag-or-quotep2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil state rand))
        ;; Compute and check var lists:
-       (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equivalence-fn))
+       (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equal-with-axe-fn))
        ;; Make the equality DAG:
        ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2)) ; todo: check for constant result and finish immediately
        ((when erp) (mv erp nil state rand))
@@ -17562,34 +17562,34 @@
        ;; Try to prove the equality:
        ((mv erp provedp state rand)
         (prove-with-axe-core equality-dag-or-quotep
-                          assumptions
-                          types
-                          test-types
-                          tactic
-                          tests ; number of tests to run
-                          print
-                          debug-nodes
-                          interpreted-function-alist
-                          nil ;runes
-                          nil ;rules
-                          nil ;rewriter-runes
-                          nil ;prover-runes
-                          nil ;initial-rule-set
-                          initial-rule-sets
-                          t   ;pre-simplifyp
-                          nil ;extra-stuff
-                          nil ;specialize-fnsp
-                          monitor
-                          use-context-when-miteringp
-                          nil ;random seed
-                          nil ;unroll
-                          512 ; tests-per-case
-                          max-conflicts
-                          normalize-xors
-                          miter-name
-                          t   ;prove-constants
-                          debug
-                          state rand))
+                             assumptions
+                             types
+                             test-types
+                             tactic
+                             tests ; number of tests to run
+                             print
+                             debug-nodes
+                             interpreted-function-alist
+                             nil ;runes
+                             nil ;rules
+                             nil ;rewriter-runes
+                             nil ;prover-runes
+                             nil ;initial-rule-set
+                             initial-rule-sets
+                             t   ;pre-simplifyp
+                             nil ;extra-stuff
+                             nil ;specialize-fnsp
+                             monitor
+                             use-context-when-miteringp
+                             nil ;random seed
+                             nil ;unroll
+                             512 ; tests-per-case
+                             max-conflicts
+                             normalize-xors
+                             miter-name
+                             t   ;prove-constants
+                             debug
+                             state rand))
        ;; Remove the temp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
        (state (if debug state (maybe-remove-temp-dir state)))
        ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")
@@ -17620,7 +17620,7 @@
                     (extend-progn event defthm))
                 event))
        ;; Table event for redundancy checking:
-       (event (extend-progn event `(with-output :off :all (table prove-equivalence-table ',whole-form ',event))))
+       (event (extend-progn event `(with-output :off :all (table prove-equal-with-axe-table ',whole-form ',event))))
        ;; Arrange to print the miter name when the event is submitted:
        (event (extend-progn event `(value-triple ',miter-name)))
        ;; Make the whole thing local if instructed:
@@ -17628,53 +17628,53 @@
     (mv (erp-nil) event state rand)))
 
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
-(defmacrodoc prove-equivalence (&whole
-                                whole-form
-                                dag-or-term1
-                                dag-or-term2
-                                &key
-                                (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                                (types 'nil) ;gives types to the vars for the proofs
-                                (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
-                                (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
-                                (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
-                                (print ':brief)
-                                (name ':auto) ;the name of the miter, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
-                                (debug 'nil)
-                                (debug-nodes 'nil)
-                                (max-conflicts ':auto) ;1000 here broke proofs
-                                (extra-rules 'nil)
-                                (initial-rule-sets ':auto)
-                                (monitor 'nil)
-                                (use-context-when-miteringp 'nil) ;todo: try t
-                                (normalize-xors 't)
-                                (interpreted-function-alist 'nil) ;affects soundness
-                                (check-vars 't)
-                                (prove-theorem 'nil)
-                                (local 't))
-  `(make-event-quiet (prove-equivalence-fn ,dag-or-term1
-                                           ,dag-or-term2
-                                           ,assumptions
-                                           ,types
-                                           ,test-types
-                                           ,tests
-                                           ,tactic
-                                           ,name
-                                           ,print
-                                           ,debug
-                                           ,debug-nodes
-                                           ,max-conflicts
-                                           ,extra-rules
-                                           ,initial-rule-sets
-                                           ,monitor
-                                           ,use-context-when-miteringp
-                                           ,normalize-xors
-                                           ,interpreted-function-alist
-                                           ,check-vars
-                                           ,prove-theorem
-                                           ,local
-                                           ',whole-form
-                                           state rand))
+(defmacrodoc prove-equal-with-axe (&whole
+                                    whole-form
+                                    dag-or-term1
+                                    dag-or-term2
+                                    &key
+                                    (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
+                                    (types 'nil) ;gives types to the vars for the proofs
+                                    (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
+                                    (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
+                                    (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                                    (print ':brief)
+                                    (name ':auto) ;the name of the miter, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
+                                    (debug 'nil)
+                                    (debug-nodes 'nil)
+                                    (max-conflicts ':auto) ;1000 here broke proofs
+                                    (extra-rules 'nil)
+                                    (initial-rule-sets ':auto)
+                                    (monitor 'nil)
+                                    (use-context-when-miteringp 'nil) ;todo: try t
+                                    (normalize-xors 't)
+                                    (interpreted-function-alist 'nil) ;affects soundness
+                                    (check-vars 't)
+                                    (prove-theorem 'nil)
+                                    (local 't))
+  `(make-event-quiet (prove-equal-with-axe-fn ,dag-or-term1
+                                              ,dag-or-term2
+                                              ,assumptions
+                                              ,types
+                                              ,test-types
+                                              ,tests
+                                              ,tactic
+                                              ,name
+                                              ,print
+                                              ,debug
+                                              ,debug-nodes
+                                              ,max-conflicts
+                                              ,extra-rules
+                                              ,initial-rule-sets
+                                              ,monitor
+                                              ,use-context-when-miteringp
+                                              ,normalize-xors
+                                              ,interpreted-function-alist
+                                              ,check-vars
+                                              ,prove-theorem
+                                              ,local
+                                              ',whole-form
+                                              state rand))
   :parents (axe)
   :short "Prove that two items (DAGs or terms) are equivalent for all values of all of their variables."
   :args ((dag-or-term1 "The first DAG or term to compare")
@@ -17698,7 +17698,7 @@
          (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
          (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
          (local "whether to make the generated events local"))
-  :description ("If the call to @('prove-equivalence') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."
+  :description ("If the call to @('prove-equal-with-axe') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."
                 "Usually, the two items (DAGs or terms) have the same set of free variables."
                 "See also prove-equiality, for a variant that supports more exotic options."))
 

@@ -36,23 +36,23 @@
                                         acl2::car-becomes-nth-of-0
                                         acl2::leftrotate))
 
-(acl2::prove-equivalence *sha-3-keccak-256-256bit*
-                         *keccak-256-256bit*
-                         ;; :initial-rule-sets (list (make-axe-rules! (amazing-rules-bv) (w state))) ;don't bit-blast
-                         :normalize-xors nil ; todo: heap exhaustion (many xor nests, each with thousands of nodes) !
-                         :tactic :rewrite-and-sweep)
+(acl2::prove-equal-with-axe *sha-3-keccak-256-256bit*
+                            *keccak-256-256bit*
+                            ;; :initial-rule-sets (list (make-axe-rules! (amazing-rules-bv) (w state))) ;don't bit-blast
+                            :normalize-xors nil ; todo: heap exhaustion (many xor nests, each with thousands of nodes) !
+                            :tactic :rewrite-and-sweep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Alternative proof, using rewriting alone:
 
-(acl2::prove-equivalence *sha-3-keccak-256-256bit*
-                         *keccak-256-256bit*
-                         :extra-rules (append '(bitand-commutative-axe
-                                                bitand-commutative-2-axe
-                                                bitand-associative
-                                                equal-same)
-                                              (acl2::bit-blast-rules-basic)
-                                              (acl2::core-rules-bv))
-                         :normalize-xors nil ; prevents heap exhaustion (many xor nests, each with thousands of nodes) !
-                         :tactic :rewrite)
+(acl2::prove-equal-with-axe *sha-3-keccak-256-256bit*
+                            *keccak-256-256bit*
+                            :extra-rules (append '(bitand-commutative-axe
+                                                   bitand-commutative-2-axe
+                                                   bitand-associative
+                                                   equal-same)
+                                                 (acl2::bit-blast-rules-basic)
+                                                 (acl2::core-rules-bv))
+                            :normalize-xors nil ; prevents heap exhaustion (many xor nests, each with thousands of nodes) !
+                            :tactic :rewrite)
