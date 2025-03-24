@@ -51,14 +51,14 @@
 
 ;; Prove equivalence of popcount_32 and bvcount (which we take as the spec).
 ;; This combines the spec unrolling with the equivalence proof.
-(prove-equivalence '(popcount_32 v)
-                   '(bvcount '32 v) ; spec
-                   ;; Rules to open and unroll functions:
-                   :extra-rules (append '(popcount_32
-                                          bvcount-unroll
-                                          bvcount-of-0-arg1)
-                                        (core-rules-bv))
-                   :types '((v . 32))
-                   :initial-rule-sets nil ;; avoid bit-blasting
-                   ;; :print t
-                   )
+(prove-equal-with-axe '(popcount_32 v)
+                      '(bvcount '32 v) ; spec
+                      ;; Rules to open and unroll functions:
+                      :extra-rules (append '(popcount_32
+                                             bvcount-unroll
+                                             bvcount-of-0-arg1)
+                                           (core-rules-bv))
+                      :types '((v . 32))
+                      :initial-rule-sets nil ;; avoid bit-blasting
+                      ;; :print t
+                      )

@@ -14,6 +14,7 @@
 
 (include-book "../typed-lists-light/all-integerp")
 (include-book "all-unsigned-byte-p")
+(include-book "unsigned-byte-listp-def")
 (include-book "../bv/bvxor")
 
 (defund bvxor-list (size x y)
@@ -56,6 +57,11 @@
   (implies (natp size)
            (all-unsigned-byte-p size (bvxor-list size x y)))
   :hints (("Goal" :in-theory (enable bvxor-list))))
+
+(defthm unsigned-byte-listp-of-bvxor-list
+  (implies (natp size)
+           (unsigned-byte-listp size (bvxor-list size x y)))
+  :hints (("Goal" :in-theory (enable bvxor-list unsigned-byte-listp))))
 
 (defthm all-integerp-of-bvxor-list
   (all-integerp (bvxor-list size x y))
