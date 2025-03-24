@@ -67,3 +67,31 @@
            (var-type-alistp alist))
   :hints (("Goal" :in-theory (enable var-type-alistp
                                      strict-var-type-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a list of (untranslated) terms.
+(defund assumptions-from-var-type-alist (alist acc)
+  (declare (xargs :guard (and (var-type-alistp alist)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable var-type-alistp)))))
+  (if (endp alist)
+      (reverse acc)
+    (let* ((entry (first alist))
+           (var (car entry))
+           (type (cdr entry))
+           (assumption (if (boolean-typep type)
+                           `(booleanp ,var)
+                         (if (bv-typep type)
+                             `(unsigned-byte-p ,(bv-type-width type) ,var)
+                           (if (bv-array-typep type)
+                               ;; todo: or should we produce the 3 conjuncts of this?:
+                               `(bv-arrayp ,(bv-array-type-element-width type)
+                                           ,(bv-array-type-len type)
+                                           ,var)
+                             (if (most-general-typep type)
+                                 t
+                               (if (empty-typep type)
+                                   (er hard? 'assumptions-from-var-type-alist "False type encountered for ~x0." var) ; could make this error optional
+                                 (er hard? 'assumptions-from-var-type-alist "Unknown type, ~x0, for ~x1." type var))))))))
+      (assumptions-from-var-type-alist (rest alist) (cons assumption acc)))))
