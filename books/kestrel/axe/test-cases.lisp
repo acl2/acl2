@@ -464,7 +464,8 @@
          ((mv erp value) (eval-axe-evaluator-basic test-case assumption
                                                    nil ;interpreted-function-alist
                                                    1000000000))
-         ((when erp) (mv erp value)))
+         ((when erp) (prog2$ (er hard? 'test-case-satisfies-assumptionsp "Error: ~x0." erp)
+                             (mv erp value))))
       (if (equal t value)
           (test-case-satisfies-assumptionsp test-case (rest assumptions))
         (mv (erp-nil) nil)))))
