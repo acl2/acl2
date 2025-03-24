@@ -1485,6 +1485,88 @@
 ;            alist-of-thread-table-of-one-loop-iteration
             )))
 
+(defun sbvlt-of-bvif-rules ()
+  (declare (xargs :guard t))
+  '(sbvlt-of-bvif-when-sbvlt-arg3
+    sbvlt-of-bvif-when-sbvlt-arg4
+    sbvlt-of-bvif-when-not-sbvlt-arg3
+    sbvlt-of-bvif-when-not-sbvlt-arg4
+    sbvlt-of-bvif-when-sbvlt-arg3-alt
+    sbvlt-of-bvif-when-sbvlt-arg4-alt
+    sbvlt-of-bvif-when-not-sbvlt-arg3-alt
+    sbvlt-of-bvif-when-not-sbvlt-arg4-alt))
+
+;; Used during lifting and after
+(defun formal-unit-testing-extra-simplification-rules ()
+  (declare (xargs :guard t))
+  (append (sbvlt-of-bvif-rules)
+          '(bv-array-read-of-bv-array-write
+            ;;todo: when prove-with-tactics sees a not applied to a boolor, it should try to prove both cases
+            ;;boolor  ;might have a loop
+            equal-of-bvif
+            equal-of-bvif-alt
+            bvplus-of-bvif-arg2 ;perhaps restrict to the case when the duplicated term is a constant
+            bvplus-of-bvif-arg3 ;perhaps restrict to the case when the duplicated term is a constant
+            sbvlt-of-myif-arg2-safe
+            sbvlt-of-myif-arg3-safe
+            integerp-when-unsigned-byte-p-free ;needed for update-nth reasoning for object arrays (but we may change that)
+            <-of-constant-when-usb ;needed for update-nth reasoning for object arrays (but we may change that)a
+            max                    ;used in object array reasoning
+            SBVLT-OF-+-ARG2        ;used in object array reasoning
+            ;;SBVLT-OF-+-ARG3
+            <-OF-+-COMBINE-CONSTANTS-1 ;used in object array reasoning
+            not-<-when-sbvlt-alt       ;used in object array reasoning
+            <-OF-BVCHOP-ARG1 ; since BV-ARRAY-READ-OF-BV-ARRAY-WRITE introduces <
+            bvlt-of-bvif-arg2
+            bvlt-of-bvif-arg3
+            equal-of-myif-arg1-safe
+            equal-of-myif-arg2-safe
+            bv-array-read-of-bvif-arg2
+            bvmult-of-bvif-arg3
+            bvshl-of-bvif-arg3
+            bv-array-read-of-bv-array-write-diff ;can help when the indices are not constant but are provably unequal (might be ITEs)
+
+            ;;todo: move these next few to core-rules-bv:
+            equal-of-bvchop-and-bvplus-of-same
+            equal-of-bvchop-and-bvplus-of-same-alt
+            sbvlt-of-bvplus-of-constant-and-constant-2
+            signed-addition-overflowsp
+            signed-addition-underflowsp
+            <-of-bvplus-becomes-bvlt-arg1 ;the < may come from array rules (todo: avoid even introducing it?)
+
+            ;; move these?:
+            sbvlt-when-sbvlt-of-bvplus-of-constant
+            sbvlt-when-sbvlt-of-bvminus-of-constant
+            sbvlt-of-bvplus-of-constant-and-constant-2
+            sbvlt-of-bvplus-of-constant-and-constant-2b
+            bvlt-of-bvdiv-constants
+            sbvlt-of-0-and-sbvdiv
+            sbvlt-false-when-sbvlt-gen ; move to more basic rule set (but this is in a big expensive file that we may not want to depend on)
+            )
+          (amazing-rules-spec-and-dag)))
+
+;;only used just below?
+(defun formal-unit-testing-extra-simplification-rules-no-boolif ()
+  (declare (xargs :guard t))
+  (set-difference-eq
+   (formal-unit-testing-extra-simplification-rules)
+   ;; since pruning doesn't know about booland/boolor/etc:
+   '(MYIF-BECOMES-BOOLIF-T-ARG1 ;rename
+     ;;MYIF-BECOMES-BOOLIF-T-ARG2
+     ;;MYIF-BECOMES-BOOLIF-NIL-ARG1
+     MYIF-BECOMES-BOOLIF-NIL-ARG2 ;rename
+     ;;MYIF-BECOMES-BOOLIF-AXE
+     )))
+
+(defun formal-unit-tester-extra-lifting-rules ()
+  (declare (xargs :guard t))
+  (append '(;addressp-when-address-or-nullp-and-not-null-refp ;loops with address-or-nullp
+            equal-of-addressfix-same
+            jvm::execute-model-static-boolean-method
+            boolif booland ; why?
+            )
+          (formal-unit-testing-extra-simplification-rules-no-boolif)))
+
 ;These should only be tried if the usual rules don't apply (constants are rare):
 (set-axe-rule-priority jvm::pc-opener 1)
 (set-axe-rule-priority jvm::locals-opener 1)
