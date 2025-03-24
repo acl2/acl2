@@ -43,7 +43,7 @@
      with the latter being an extension of the former with endorsing signatures.
      Currently we do not model proposals, but just certificates,
      because we treat the Narwhal aspects of AleoBFT somewhat abstractly;
-     see @(tsee transitions-create-certificate)."))
+     see @(tsee transitions-create)."))
   :order-subtopics t
   :default-parent t)
 
