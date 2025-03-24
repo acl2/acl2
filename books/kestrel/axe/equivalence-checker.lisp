@@ -301,21 +301,23 @@
 (local (in-theory (disable NAT-LISTP))) ;prevent inductions
 
 ;; can combine names like *foo-spec-dag* and *foo-java-dag*
-;; (choose-miter-name '*foo-spec-dag* '*foo-java-dag*)
+;; (choose-equality-proof-name '*foo-spec-dag* '*foo-java-dag*)
 ;todo: move up
-(defund choose-miter-name (name quoted-form1 quoted-form2 wrld)
+(defund choose-equality-proof-name (name dag-or-term-form1 dag-or-term-form2 wrld)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))
                   :mode :program ; todo, because of fresh-name-in-world-with-$s
                   ))
   (let ((desired-name (if (eq :auto name)
-                          (if (and (symbolp quoted-form1)
-                                   (symbolp quoted-form2)
-                                   (starts-and-ends-with-starsp quoted-form1)
-                                   (starts-and-ends-with-starsp quoted-form2))
-                              ;; todo: remove "-dag" from the names here:
-                              ;; todo: handle common parts of the names here, like foo in *foo-spec-dag* and *foo-java-dag*:
-                              (pack$ (strip-stars-from-name quoted-form1) '-and- (strip-stars-from-name quoted-form2))
+                          (if (and (symbolp dag-or-term-form1)
+                                   (symbolp dag-or-term-form2)
+                                   (starts-and-ends-with-starsp dag-or-term-form1)
+                                   (starts-and-ends-with-starsp dag-or-term-form2))
+                              (let ((name1 (strip-stars-from-name dag-or-term-form1))
+                                    (name2 (strip-stars-from-name dag-or-term-form2)))
+                                ;; todo: remove "-dag" from the names here:
+                                ;; todo: handle common parts of the names here, like foo in *foo-spec-dag* and *foo-java-dag*:
+                                (pack$ name1 '-equal- name2))
                             ;; Just use a generic default name:
                             'main-miter)
                         ;; not :auto, so use the specified name:
@@ -324,8 +326,25 @@
     (fresh-name-in-world-with-$s desired-name nil wrld)))
 
 ;; todo
-;; (defthm symbolp-of-choose-miter-name
-;;   (symbolp (choose-miter-name name quoted-form1 quoted-form2 wrld)))
+;; (defthm symbolp-of-choose-equality-proof-name
+;;   (symbolp (choose-equality-proof-name name dag-or-term-form1 dag-or-term-form2 wrld)))
+
+(defund choose-proof-name (name dag-or-term-form wrld)
+  (declare (xargs :guard (and (symbolp name)
+                              (plist-worldp wrld))
+                  :mode :program ; todo, because of fresh-name-in-world-with-$s
+                  ))
+  (let ((desired-name (if (eq :auto name)
+                          (if (and (symbolp dag-or-term-form) ; for example, *foo-dag*
+                                   (starts-and-ends-with-starsp dag-or-term-form))
+                              ;; todo: remove "-dag" from the name here:
+                              (pack$ (strip-stars-from-name dag-or-term-form) '-proof)
+                            ;; Just use a generic default name:
+                            'main-proof)
+                        ;; not :auto, so use the specified name:
+                        name)))
+    ;; avoid name clashes, since we may use the same name for the theorem:
+    (fresh-name-in-world-with-$s desired-name nil wrld)))
 
 ;; (mutual-recursion
 ;;  (defun first-nodenum-aux-lst (objects)
@@ -16903,9 +16922,9 @@
                             tests-per-case
                             max-conflicts
                             normalize-xors ;fixme use the more, deeper in?
-                            miter-name     ;the name of this proof
                             prove-constants
                             debug
+                            proof-name     ; should no longer be :auto
                             state rand)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
@@ -16935,11 +16954,11 @@
                                   (null max-conflicts)
                                   (natp max-conflicts))
                               (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
-                              (symbolp miter-name)
+                              (symbolp proof-name)
                               )
                   :mode :program
                   :stobjs (state rand)))
-  (b* ((- (cw "~%(Proving top-level miter ~x0:~%" miter-name))
+  (b* ((- (cw "~%(Proving top-level miter ~x0:~%" proof-name))
        ;; Desugar the special values :bits and :bytes for the types:
        (dag-vars (if (quotep dag-or-quotep) nil (dag-vars dag-or-quotep))) ; todo: make a dag-or-quotep-vars
        (var-type-alist (if (eq :bits types) ;todo: optimize this stuff:
@@ -17073,7 +17092,7 @@
             (mv :no-test-cases nil state rand))
            ;; Tactic is :rewrite-and-sweep:
            (state (if (and simplifyp (print-level-at-least-tp print))
-                      (print-dag-to-temp-file dag (symbol-name (pack$ miter-name '-after-initial-simplification)) state)
+                      (print-dag-to-temp-file dag (symbol-name (pack$ proof-name '-after-initial-simplification)) state)
                     state))
            ;;(state (f-put-global 'fmt-hard-right-margin 197 state)) fixme illegal in ACL2 4.3. work around?
            ;;(state (f-put-global 'fmt-soft-right-margin 187 state))
@@ -17119,7 +17138,7 @@
            ((mv erp provedp rand state) ;fixme could just pass the constant to miter-and-merge
             ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
             (miter-and-merge dag
-                             miter-name
+                             proof-name ; move later in arg list
                              0
                              var-type-alist
                              interpreted-function-alist print debug-nodes
@@ -17175,11 +17194,9 @@
                           tests-per-case
                           max-conflicts
                           normalize-xors ;fixme use the more, deeper in?
-                          miter-name     ;the name of this proof
                           prove-constants
                           debug
-                          whole-form
-                          state rand)
+                          proof-name whole-form state rand)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (true-listp assumptions) ; untranslated
@@ -17210,12 +17227,14 @@
                               (or (eq :auto max-conflicts)
                                   (null max-conflicts)
                                   (natp max-conflicts))
-                              (symbolp miter-name))
+                              (symbolp proof-name))
                   :mode :program
                   :stobjs (state rand)))
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
         (mv nil '(value-triple :invisible) state rand))
+       (dag-or-term-form (farg1 whole-form))
+       (proof-name (choose-proof-name proof-name dag-or-term-form (w state)))
        ((mv erp provedp state rand)
         (prove-with-axe-core dag-or-quotep
                              assumptions
@@ -17243,10 +17262,9 @@
                              tests-per-case
                              max-conflicts
                              normalize-xors ;fixme use the more, deeper in?
-                             miter-name
                              prove-constants
                              debug
-                             state rand)))
+                             proof-name state rand)))
     ;; Depending on how it went, maybe introduce a theorem:
     (if erp
         (mv erp nil state rand)
@@ -17278,7 +17296,6 @@
                            (types 'nil)  ; derive from the assumptions?  also used when calling stp..
                            (test-types 'nil)
                            (tests '100)
-                           (name ''unnamedmiter)
                            (tests-per-case '512)
                            (print 'nil)
                            (debug-nodes 'nil)
@@ -17300,7 +17317,7 @@
                            (normalize-xors 't)
                            (debug 'nil) ;if t, the temp dir with STP files is not deleted
                            (prove-constants 't) ;whether to attempt to prove probably-constant nodes
-                           )
+                           (proof-name ':auto))
   ;; note: we can't put a make-event inside an acl2-unwind-protect, so we do it
   ;; this way:
   `(make-event
@@ -17314,8 +17331,8 @@
                                   ,dag-or-quotep ,assumptions ,types ,test-types
                                   ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                                   ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                                  ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name ,prove-constants ,debug
-                                  ',whole-form state rand)
+                                  ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,debug
+                                  ,proof-name ',whole-form state rand)
                                 'prove-with-axe
                                 state
                                 t)
@@ -17343,11 +17360,10 @@
                                  types  ;todo: compute the types from the hyps?
                                  test-types
                                  tests
-                                 name
                                  ;; todo: standardize argument order:
                                  tests-per-case print debug-nodes interpreted-function-alist check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
-                                 random-seed unroll max-conflicts normalize-xors debug prove-constants whole-form
-                                 state rand)
+                                 random-seed unroll max-conflicts normalize-xors debug prove-constants
+                                 proof-name whole-form state rand)
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
                               (or (eq :bits types)
                                   (eq :bytes types)
@@ -17377,6 +17393,10 @@
        ;; Make the equality DAG:
        ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2))
        ((when erp) (mv erp nil state rand))
+       ;; Choose a name for the miter:
+       (dag-or-term-form1 (farg1 whole-form)) ; todo: why "quoted"?
+       (dag-or-term-form2 (farg2 whole-form))
+       (proof-name (choose-equality-proof-name proof-name dag-or-term-form1 dag-or-term-form2 wrld))
        ;; Do the proof:
        ((mv erp provedp state rand)
         (prove-with-axe-core equality-dag-or-quotep
@@ -17405,10 +17425,9 @@
                              tests-per-case
                              max-conflicts
                              normalize-xors ;fixme use the more, deeper in?
-                             name ; the miter-name
                              prove-constants
                              debug
-                             state rand))
+                             proof-name state rand))
        ((when erp) (mv erp nil state rand))
        )
     (if provedp
@@ -17417,7 +17436,7 @@
             (mv (erp-nil)
                 (extend-progn event `(table prove-equal-with-axe+-table ',whole-form ',event))
                 state rand)))
-      (progn$ (er hard? 'prove-equal-with-axe+ "Failed to prove miter ~x0." name)
+      (progn$ (er hard? 'prove-equal-with-axe+ "Failed to prove miter ~x0." proof-name)
               (mv (erp-t) nil state rand)))))
 
 ;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equal-with-axe, this supports all the exotic options to prove-with-axe.
@@ -17434,7 +17453,6 @@
                                   (types 'nil)
                                   (test-types 'nil)
                                   (tests '100)
-                                  (name ''unnamedmiter)
                                   (tests-per-case '512)
                                   (print 'nil)
                                   (debug-nodes 'nil)
@@ -17457,15 +17475,15 @@
                                   (normalize-xors 't)
                                   (debug 'nil) ;if t, the temp dir with STP files is not deleted
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
+                                  (proof-name ':auto)
                                   )
   `(make-event ; use make-event-quiet?
      (prove-equal-with-axe+-fn ,dag-or-term1
                                ,dag-or-term2
                                ,assumptions ,types ,test-types ,tests
-                               ,name
                                ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                               ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants ',whole-form
-                               state rand)))
+                               ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants
+                               ,proof-name ',whole-form state rand)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17480,7 +17498,6 @@
                                 test-types
                                 tests ;a natp indicating how many tests to run
                                 tactic
-                                name  ; may be :auto
                                 print
                                 debug ; whether to keep temp-dirs around
                                 debug-nodes
@@ -17492,6 +17509,7 @@
                                 check-vars
                                 prove-theorem
                                 local
+                                proof-name  ; may be :auto
                                 whole-form
                                 state rand)
   (declare (xargs :guard (and ;; dag-or-term1 is a DAG or (untranslated) term
@@ -17508,7 +17526,6 @@
                            (natp tests)
                            (or (eq tactic :rewrite)
                                (eq tactic :rewrite-and-sweep))
-                           (symbolp name)
                            ;; print
                            (booleanp debug)
                            (nat-listp debug-nodes)
@@ -17524,7 +17541,8 @@
                            (interpreted-function-alistp interpreted-function-alist)
                            (member-eq check-vars '(t nil :warn))
                            (booleanp prove-theorem)
-                           (booleanp local))
+                           (booleanp local)
+                           (symbolp proof-name))
                   :mode :program
                   :stobjs (state rand)))
   ;;TODO: error or warning if :tactic is rewrite and :tests is given?
@@ -17558,9 +17576,9 @@
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state rand))
        ;; Choose a name for the miter:
-       (quoted-dag-or-term1 (farg1 whole-form)) ; todo: why "quoted"?
-       (quoted-dag-or-term2 (farg2 whole-form))
-       (miter-name (choose-miter-name name quoted-dag-or-term1 quoted-dag-or-term2 wrld))
+       (dag-or-term-form1 (farg1 whole-form)) ; todo: why "quoted"?
+       (dag-or-term-form2 (farg2 whole-form))
+       (proof-name (choose-equality-proof-name proof-name dag-or-term-form1 dag-or-term-form2 wrld))
        ;; Try to prove the equality:
        ((mv erp provedp state rand)
         (prove-with-axe-core equality-dag-or-quotep
@@ -17588,10 +17606,9 @@
                              512 ; tests-per-case
                              max-conflicts
                              normalize-xors
-                             miter-name
                              t   ;prove-constants
                              debug
-                             state rand))
+                             proof-name state rand))
        ;; Remove the temp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
        (state (if debug state (maybe-remove-temp-dir state)))
        ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")
@@ -17615,7 +17632,7 @@
                   (let* ((term1 (dag-or-term-to-term dag-or-term1 state))
                          (term2 (dag-or-term-to-term dag-or-term2 state))
                          (defthm `(skip-proofs ;todo: have prove-with-axe return a theorem and use it to prove this
-                                    (defthmd ,miter-name
+                                    (defthmd ,proof-name
                                       (implies (and ,@assumptions)
                                                (equal ,term1
                                                       ,term2))))))
@@ -17624,7 +17641,7 @@
        ;; Table event for redundancy checking:
        (event (extend-progn event `(with-output :off :all (table prove-equal-with-axe-table ',whole-form ',event))))
        ;; Arrange to print the miter name when the event is submitted:
-       (event (extend-progn event `(value-triple ',miter-name)))
+       (event (extend-progn event `(value-triple ',proof-name)))
        ;; Make the whole thing local if instructed:
        (event (if local `(local ,event) event)))
     (mv (erp-nil) event state rand)))
@@ -17642,7 +17659,6 @@
                                     (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                     (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                                     (print ':brief)
-                                    (name ':auto) ;the name of the miter, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
                                     (debug 'nil)
                                     (debug-nodes 'nil)
                                     (max-conflicts ':auto) ;1000 here broke proofs
@@ -17654,7 +17670,9 @@
                                     (interpreted-function-alist 'nil) ;affects soundness
                                     (check-vars 't)
                                     (prove-theorem 'nil)
-                                    (local 't))
+                                    (local 't)
+                                    (proof-name ':auto) ;the name of the proof, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
+                                    )
   `(make-event-quiet (prove-equal-with-axe-fn ,dag-or-term1
                                               ,dag-or-term2
                                               ,assumptions
@@ -17662,7 +17680,6 @@
                                               ,test-types
                                               ,tests
                                               ,tactic
-                                              ,name
                                               ,print
                                               ,debug
                                               ,debug-nodes
@@ -17676,8 +17693,7 @@
                                               ,check-vars
                                               ,prove-theorem
                                               ,local
-                                              ',whole-form
-                                              state rand))
+                                              ,proof-name ',whole-form state rand))
   :parents (axe)
   :short "Prove that two items (DAGs or terms) are equivalent for all values of all of their variables."
   :args ((dag-or-term1 "The first DAG or term to compare")
@@ -17688,7 +17704,6 @@
          (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (tests "How many tests to use to find internal equivalences (a natp)")
          (print "Print verbosity (allows nil, :brief, t, and :verbose)")
-         (name "A name to assign to the equivalence term, if desired")
          (debug "Whether to leave temp files in place, for debugging")
          (debug-nodes "Nodenums whose values should be printed for each test-case.")
          (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
@@ -17700,7 +17715,9 @@
          (interpreted-function-alist "Provides definitions for non-built-in functions")
          (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
          (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
-         (local "whether to make the generated events local"))
+         (local "whether to make the generated events local")
+         (proof-name "A name to assign to the proof, if desired.  A symbol, or :auto to let Axe choose a name.")
+         )
   :description ("If the call to @('prove-equal-with-axe') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."
                 "Usually, the two items (DAGs or terms) have the same set of free variables."
                 "See also prove-equiality, for a variant that supports more exotic options."))

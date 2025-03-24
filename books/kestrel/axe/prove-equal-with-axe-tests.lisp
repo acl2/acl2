@@ -16,6 +16,7 @@
 
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "equivalence-checker")
+(include-book "def-simplified")
 ;;TODO: prove-equal-with-axe should include these since it refers to them:
 ;(include-book "kestrel/bv/rotate" :dir :system) ;for LEFTROTATE32-OF-BVCHOP-5
 (include-book "rules1") ;for UNSIGNED-BYTE-P-FORCED-OF-BV-ARRAY-READ
@@ -127,3 +128,10 @@
 ;;                    :check-vars nil
 ;;                    ;; avoid proving it via rewriting:
 ;;                    :initial-rule-sets nil)
+
+;; A typical use, where the 2 items are named DAGs.
+;; Axe generates a proof-name based on the names of the 2 constants.
+(deftest
+  (def-simplified *dag1* '(bvplus '32 '7 x))
+  (def-simplified *dag2* '(bvplus '32 x '7))
+  (prove-equal-with-axe *dag1* *dag2*))
