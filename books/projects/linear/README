@@ -2,15 +2,11 @@ David M. Russinoff
 david@russinoff.com
 http://www.russinoff.com
 
-This directory contains an ACL2 formalization of elementary elementary linear algebra, a work in progress.  The books of the top-level directory are listed below.  Once completed, the content will approximate that of a rigorous introductory course in the subject.
+This directory contains an ACL2 formalization of elementary linear algebra, a work in progress.  The books of the top-level directory are listed below.  Once completed, the content will approximate that of a rigorous introductory undergraduate course in the subject.
 
-The ordering of topics, however, does not resemble the table of contents of any textbook on the subject, which invariably initially focuses on the algebra of matrices over a field.  The main drawback of this approach is that upon reaching the topic of eigenvalues, we find that the fundamental notion of the characteristic polynomial of a matrix over a field F is defined as the determinant of a certain matrix over the polynomial ring F[X].  We are then faced with the inconvenience that all results up to that point have been stated and proved only in the context of matrices over a field.  The usual way of dealing with this problem is simply to ignore it and hope the reader doesn't notice it.  The only exception of which I am aware is Hoffman and Kunze, "Linear Algebra", from which I learned the subject as a college sophomore and on which this formalization is largely based.  Before addressing the characteristic polynomial, the authors acknowledge the problem and advise the reader to backtrack and verify that proofs of all the properties of matrices that are relevant to this issue, though explicitly presented in the context of a field, apply to commutative rings as well.
+This work is documented in two papers that appear in the 2025 ACL2 Workshop.  As explained in the first of these papers, we separate those aspects of the theory that apply to matrices over an arbitrary commutative ring with unity from those that are restricted to matrices over a field (i.e., that depend on the existence of a multiplicative inverse).  The first three books address matrices over a ring:
 
-Neither of these solutions will work here.  Thus, we begin by proving the basic properties of matrix algebra and determinants explicitly for matrices over an arbitrary commutative ring with unity.  We define such a ring by means of an encapsulated set of constrained functions: the binary ring operations, the additive and multiplicative identities as constant functions, and a predicate the recognizes ring elements.  Theorems corresponding to the ring axioms are exported from the encapsulation.  Any theorems subsequently proved about these constrained functions may be applied to any ring of interest by functional instantiation.
-
-Thus, the first 3 books deal with matrices over a commutative ring with unity:
-
-  * ring
+* ring
     - Encapsulation of the axioms for a commutative ring with unity
     - Properties of lists of ring elemants
 
@@ -25,7 +21,7 @@ Thus, the first 3 books deal with matrices over a commutative ring with unity:
     - Multiplicativity of the determinant
     - Cofactor expansion and the classical adjoint
 
-An arbitrary field is similarly defined by a separate set of constrained functions, the only difference being an additional axiom that guarantees the existence of multiplicative inverses.  The next 3 books simply contain repetitions of the above results based on these functions, i.e., in the context of matrices over an arbitrary field.  In principle, these could all be derived from the above results by functional instantiation, but it was found to be easier just to repeat the proofs:
+An arbitrary field is defined by a separate encapsulation.  The only difference between this and the first, aside from function names, is an additional function and a pair of associated axioms guaranteeing the existence of multiplicative inverses.  Two other books simply contain repetitions of the above results based on these functions, i.e., in the context of matrices over an arbitrary field.  In principle, these could all be derived from the above results by functional instantiation, but it was found to be more expedient just to repeat the proofs:
   
   * field
 
@@ -36,12 +32,13 @@ An arbitrary field is similarly defined by a separate set of constrained functio
 The next book, which depends on the last 3, deals with topics that apply only to matrices over a field:
 
   * reduction
-    - Elementary row reduction
+    - Reduced row-echelon form
+    - Conversion to reduced row-echelon form
     - Row reduction as matrix multiplication
     - Invertibility
     - Systems of linear equations and Cramer's rule
 
-In the book "rational", which is incompatible with the other books, we replace the constrained functions in field.lisp with the corresponding rational functions and in this context, we reproduce the function definitions in field.lisp, fmat.lisp, fdet.lisp, and reduction.lisp.  The result is that these definitions are now executable and may be used for the purpose of illustration.
+In the book "rational", which is incompatible with the other books, we replace the constrained functions in field.lisp with the corresponding rational functions and in this context, we reproduce the function definitions in field.lisp, fmat.lisp, fdet.lisp, and reduction.lisp.  The result is that these definitions are now executable and may be used for the purposes of testing and illustration.
 
 Several additional books are planned.  The first 2 are based on the theory of matrices oever a field:
 
