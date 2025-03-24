@@ -65,32 +65,21 @@
     (xdoc::li
      "The addresses that, together with the previous round number,
       identify the certificates from the previous round
-      that this certificate is based on.")
+      that this certificate references;
+      these define the edges of the DAG.
+      It is a system invariant, proved elsewhere,
+      that certificates in DAGs are uniquely identified by
+      their author and round.")
     (xdoc::li
      "The addresses of the validators that endorsed this certificate,
-      by signing it in addition to the author.
-      We do not model the signing process here,
-      but having a record of the signers (author and endorsers) serves
-      to define the behavior and invariants of the model."))
+      by signing it in addition to the author."))
    (xdoc::p
-    "A validator generates at most one certificate per round.
-     Thus, the combination of author and round number identifies
-     (at most) a unique certificate in a DAG.")
-   (xdoc::p
-    "A certificate is a vertex of the DAG.
-     The @('previous') component of this fixtype models
-     the edges of the DAG, from this certificate to
-     the certificates in the previous round
-     with the authors specified by the set of addresses.")
-   (xdoc::p
-    "Since we model the exchange of proposals and signatures
-     at a high level here,
-     we do not distinguish between batch headers and batch certificates,
-     and instead model certificates directly,
-     as containing the information that is relevant to our model.
-     The signatures are implicit:
-     a certificate as modeled here is implicitly validated and signed
-     by a quorum of validators (author and endorsers)."))
+    "We do not model cryptographic signatures explicitly.
+     The presence of the author and endorser addresses in a certificate
+     models the fact that the author and endorsers signed the certificate
+     (more precisely, the proposal that the certificate extends;
+     but as explained in @(see certificates),
+     we do not model proposals explicitly)."))
   ((author address)
    (round pos)
    (transactions transaction-list)

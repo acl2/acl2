@@ -57,28 +57,16 @@
     (xdoc::li
      "The addresses that, together with the previous round number,
       identify the certificates from the previous round
-      that this proposal is based on.
-      (More on this below.)"))
-   (xdoc::p
-    "A validator generates at most one proposal per round.
-     Thus, the combination of author and round number identifies
-     (at most) a unique proposal, and a unique certificate in a DAG.
-     This uniqueness is a critical and non-trivial property,
-     which we prove as an invariant elsewhere.")
-   (xdoc::p
-    "A certificate is a vertex of the DAG.
-     The @('previous') component of this fixtype models
-     the edges of the DAG (once the proposal becomes a certificate),
-     from this proposal/certificate to
-     the certificates in the previous round
-     with the authors specified by the set of addresses.
-     Because of the invariant mentioned above,
-     those certificates are uniquely determined.")
+      that this certificate references.
+      When the proposal is turned into a certificate,
+      these define the edges of the DAG.
+      It is a system invariant, proved elsewhere,
+      that certificates in DAGs are uniquely identified by
+      their author and round."))
    (xdoc::p
     "We do not model cryptographic signatures explicitly.
      The presence of the author address in a proposal
-     models the fact that
-     the validator with that address has signed the proposal."))
+     models the fact that the author signed the proposal."))
   ((author address)
    (round pos)
    (transactions transaction-list)
