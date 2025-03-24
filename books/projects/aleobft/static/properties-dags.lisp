@@ -590,20 +590,9 @@
         set::expensive-rules
         nil-not-in-certificate-set
         certificates-with-authors+round-subset
-        path-to-author+round-round-lte))
-      '(:use ((:instance element-of-certificate-set-not-nil
-                         (certs dag)
-                         (cert (path-to-author+round cert1
-                                                     '(:address (unwrap))
-                                                     1
-                                                     dag)))
-              (:instance element-of-certificate-set-not-nil
-                         (certs dag)
-                         (cert (path-to-author+round cert1
-                                                     (certificate->author cert)
-                                                     (certificate->round cert)
-                                                     dag))))
-        :expand (path-to-author+round-set certs
+        path-to-author+round-round-lte
+        element-of-certificate-set-not-nil))
+      '(:expand (path-to-author+round-set certs
                                           (certificate->author cert2)
                                           (certificate->round cert2)
                                           dag)))))
