@@ -41,9 +41,9 @@
                                                 acl2::bvcount-of-0-arg1)))
 
 ;; Prove equivalence of the lifted code and the spec:
-(prove-equivalence *popcount_64* ; lifted code
-                   *popcount-64-spec*
-                   :max-conflicts 4000000
-                   :types '((v . 64))
-                   ;; avoid bit-blasting:
-                   :initial-rule-sets nil)
+(prove-equal-with-axe *popcount_64* ; lifted code
+                      *popcount-64-spec*
+                      :max-conflicts 4000000
+                      :types '((v . 64))
+                      ;; avoid bit-blasting:
+                      :initial-rule-sets nil)
