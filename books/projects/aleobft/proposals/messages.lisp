@@ -120,6 +120,11 @@
 
   ///
 
+  (defret emptyp-of-make-proposal-messages
+    (equal (set::emptyp msgs)
+           (set::emptyp (address-set-fix dests)))
+    :hints (("Goal" :induct t)))
+
   (defruled in-of-make-proposal-messages
     (equal (set::in msg (make-proposal-messages prop dests))
            (and (messagep msg)
@@ -157,6 +162,11 @@
 
   ///
 
+  (defret emptyp-of-make-endorsement-messages
+    (equal (set::emptyp msgs)
+           (set::emptyp (address-set-fix endors)))
+    :hints (("Goal" :induct t)))
+
   (defruled in-of-make-endorsement-messages
     (equal (set::in msg (make-endorsement-messages prop endors))
            (and (messagep msg)
@@ -193,6 +203,11 @@
   :hooks (:fix)
 
   ///
+
+  (defret emptyp-of-make-certificate-messages
+    (equal (set::emptyp msgs)
+           (set::emptyp (address-set-fix dests)))
+    :hints (("Goal" :induct t)))
 
   (defruled in-of-make-certificate-messages
     (equal (set::in msg (make-certificate-messages cert dests))

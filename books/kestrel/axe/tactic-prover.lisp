@@ -1177,7 +1177,7 @@
              (term1 (dag-or-term-to-term dag-or-term1 state))
              (term2 (dag-or-term-to-term dag-or-term2 state))
              (defthm-name (or name (FRESH-NAME-IN-WORLD-WITH-$S 'prove-equal-with-tactics-fn nil (w state))))
-             (defthm `(skip-proofs ;todo: have prove-miter return a theorem and use it to prove this
+             (defthm `(skip-proofs ;todo: have make-problem return a theorem and use it to prove this
                        (defthmd ,defthm-name
                          (implies (and ,@assumptions)
                                   (equal ,term1

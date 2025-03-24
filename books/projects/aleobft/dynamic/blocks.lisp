@@ -13,6 +13,8 @@
 
 (include-book "transactions")
 
+(local (include-book "../library-extensions/arithmetic-theorems"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -99,7 +101,9 @@
                   (consp blocks))
              (>= (block->round (car blocks))
                  (block->round (car (last blocks)))))
-    :rule-classes :linear
+    :rule-classes ((:linear
+                    :trigger-terms ((block->round (car blocks))
+                                    (block->round (car (last blocks))))))
     :induct t
     :enable last)
 
@@ -131,19 +135,9 @@
                     (>= (block->round (car (last blocks1)))
                         (+ 2 (block->round (car blocks2)))))))
     :induct t
-    :enable (append last)
-    :hints ('(:use ((:instance lemma
-                               (x (block->round (car blocks2)))
-                               (y (block->round (car (last blocks1))))))))
-    :prep-lemmas
-    ((defruled lemma
-       (implies (and (natp x)
-                     (natp y)
-                     (evenp x)
-                     (evenp y)
-                     (< x y))
-                (<= (+ 2 x) y))
-       :enable evenp))))
+    :enable (append
+             last
+             aleobft::lt-to-2+le-when-both-evenp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -156,8 +150,20 @@
     "If @(tsee blocks-ordered-even-p) holds,
      block rounds are in strictly increading order from right to left.
      This function then returns the latest, i.e. highest, round.
-     If there are no blocks, we totalize this function to return 0.
-     However, we do not require @(tsee blocks-ordered-even-p) in the guard."))
+     If there are no blocks, this function returns 0.")
+   (xdoc::p
+    "Although it may seem natural
+     to add @(tsee blocks-ordered-even-p) to this function's guard,
+     we deliberately avoid that, for the following reason.
+     Adding that guard here requires adding it to other operations,
+     particularly @(tsee active-committee-at-round).
+     The latter is used to define system transistions,
+     and is applied to blockchains of validators,
+     which are just lists of blocks,
+     not necessarily satisfying @(tsee blocks-ordered-even-p).
+     It is an invariant that they satisfy that predicate,
+     but that invariant is proved after defining the transitions,
+     and so it is not available when defining the transitions."))
   (if (consp blocks)
       (block->round (car blocks))
     0)
@@ -175,4 +181,7 @@
                   (consp blocks1))
              (> (block->round (car (last blocks1)))
                 (blocks-last-round blocks2)))
+    :rule-classes ((:linear
+                    :trigger-terms ((block->round (car (last blocks1)))
+                                    (blocks-last-round blocks2))))
     :enable blocks-ordered-even-p-of-append))

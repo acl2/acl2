@@ -760,7 +760,7 @@
 ;; Add aliases in the X86ISA package of some common utilities:
 
 ;; (defmacro defconst-computed2 (&rest args) `(acl2::defconst-computed2 ,@args))
-;; (defmacro prove-equivalence (&rest args) `(acl2::prove-equivalence ,@args))
+;; (defmacro prove-equal-with-axe (&rest args) `(acl2::prove-equal-with-axe ,@args))
 ;; (defmacro dag-info (&rest args) `(acl2::dag-info ,@args))
 ;; (defmacro simp-dag (&rest args) `(acl2::simp-dag ,@args))
 ;; (defmacro make-axe-rules (&rest args) `(acl2::make-axe-rules ,@args))
