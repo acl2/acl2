@@ -16878,35 +16878,35 @@
 ;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
 ;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-with-axe-core (dag-or-quotep
-                         assumptions ; (untranslated) terms we can assume are true (non-nil)
-                         types ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
-                         test-types
-                         tactic
-                         test-case-count ;the total number of tests to generate?  some may not be used
-                         print
-                         debug-nodes ;do we use this?
-                         user-interpreted-function-alist ;todo: just pass in the fn names and look them up in the state?
-                         ;; ttodo: allow the use of rule phases?!
-                         runes          ;used for both the rewriter and prover
-                         rules          ;used for both the rewriter and prover
-                         rewriter-runes ;used for the rewriter only (not the prover)
-                         prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                         initial-rule-set
-                         initial-rule-sets
-                         pre-simplifyp ;todo: get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
-                         extra-stuff
-                         specialize-fnsp
-                         monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
-                         use-context-when-miteringp
-                         random-seed
-                         unroll
-                         tests-per-case
-                         max-conflicts
-                         normalize-xors ;fixme use the more, deeper in?
-                         miter-name     ;the name of this proof
-                         prove-constants
-                         debug
-                         state rand)
+                            assumptions ; (untranslated) terms we can assume are true (non-nil)
+                            types ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
+                            test-types
+                            tactic
+                            test-case-count ;the total number of tests to generate?  some may not be used
+                            print
+                            debug-nodes ;do we use this?
+                            user-interpreted-function-alist ;todo: just pass in the fn names and look them up in the state?
+                            ;; ttodo: allow the use of rule phases?!
+                            runes          ;used for both the rewriter and prover
+                            rules          ;used for both the rewriter and prover
+                            rewriter-runes ;used for the rewriter only (not the prover)
+                            prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                            initial-rule-set
+                            initial-rule-sets
+                            pre-simplifyp ;todo: get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
+                            extra-stuff
+                            specialize-fnsp
+                            monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                            use-context-when-miteringp
+                            random-seed
+                            unroll
+                            tests-per-case
+                            max-conflicts
+                            normalize-xors ;fixme use the more, deeper in?
+                            miter-name     ;the name of this proof
+                            prove-constants
+                            debug
+                            state rand)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (true-listp assumptions) ; untranslated
@@ -16993,7 +16993,7 @@
        (wrld (w state)) ; todo: use more below
        (assumptions (translate-terms assumptions 'prove-with-axe-core wrld)) ;throws an error on bad input
        (interpreted-function-alist (make-interpreted-function-alist
-                                    (get-non-built-in-supporting-fns-list (dag-fns dag) *axe-evaluator-functions* (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
+                                     (get-non-built-in-supporting-fns-list (dag-fns dag) *axe-evaluator-functions* (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
        ;;doesn't actually check that the user supplied alist is consistent with the state (fixme just pass in the names and look them up in the current state)?
        (interpreted-function-alist (if (not (consistent-alists interpreted-function-alist user-interpreted-function-alist))
                                        (prog2$ (hard-error 'prove-with-axe-core "inconsistent interpreted function alists." nil) ;print more?
@@ -17087,22 +17087,22 @@
             (if (not specialize-fnsp)
                 (mv (erp-nil) dag interpreted-function-alist state)
               (prog2$
-               (cw "(Specializing fns:~%")
-               (mv-let (erp new-function-names new-rule-names state)
-                 (specialize-fns dag state)
-                 (if erp
-                     (mv erp nil nil state)
-                   (prog2$ (cw "(Rewriting to introduce specialized functions.~%")
-                           (mv-let (erp dag state)
-                             (quick-simp-dag dag ;fixme - use some more rules?!
-                                             :rules new-rule-names ;ffffixme return new-rule-names ?
-                                             :print :brief)
-                             (if erp
-                                 (mv erp nil nil state)
-                               (let ((interpreted-function-alist
-                                      (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
-                                 (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
-                                         (mv (erp-nil) dag interpreted-function-alist state)))))))))))
+                (cw "(Specializing fns:~%")
+                (mv-let (erp new-function-names new-rule-names state)
+                  (specialize-fns dag state)
+                  (if erp
+                      (mv erp nil nil state)
+                    (prog2$ (cw "(Rewriting to introduce specialized functions.~%")
+                            (mv-let (erp dag state)
+                              (quick-simp-dag dag ;fixme - use some more rules?!
+                                              :rules new-rule-names ;ffffixme return new-rule-names ?
+                                              :print :brief)
+                              (if erp
+                                  (mv erp nil nil state)
+                                (let ((interpreted-function-alist
+                                        (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
+                                  (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
+                                          (mv (erp-nil) dag interpreted-function-alist state)))))))))))
            ((when erp) (mv erp nil state rand))
            ;; Generate test-inputs:
            ;; TODO: Can we use something like with-local-stobj to isolate the use of rand here?:
@@ -17151,35 +17151,35 @@
 ;; Returns (mv erp event state rand) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
 (defun prove-with-axe-fn (dag-or-quotep
-                       assumptions ; (untranslated) terms we can assume are true (non-nil)
-                       types  ;compute this from the hyps
-                       test-types
-                       tests ;the total number of tests to generate?  some may not be used
-                       print
-                       debug-nodes ;do we use this?
-                       interpreted-function-alist
-;; todo: allow the use of rule phases?!
-                       runes          ;used for both the rewriter and prover
-                       rules          ;used for both the rewriter and prover
-                       rewriter-runes ;used for the rewriter only (not the prover)
-                       prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                       initial-rule-set
-                       initial-rule-sets
-                       pre-simplifyp
-                       extra-stuff
-                       specialize-fnsp
-                       monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
-                       use-context-when-miteringp
-                       random-seed
-                       unroll
-                       tests-per-case
-                       max-conflicts
-                       normalize-xors ;fixme use the more, deeper in?
-                       miter-name     ;the name of this proof
-                       prove-constants
-                       debug
-                       whole-form
-                       state rand)
+                          assumptions ; (untranslated) terms we can assume are true (non-nil)
+                          types  ;compute this from the hyps
+                          test-types
+                          tests ;the total number of tests to generate?  some may not be used
+                          print
+                          debug-nodes ;do we use this?
+                          interpreted-function-alist
+                          ;; todo: allow the use of rule phases?!
+                          runes          ;used for both the rewriter and prover
+                          rules          ;used for both the rewriter and prover
+                          rewriter-runes ;used for the rewriter only (not the prover)
+                          prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                          initial-rule-set
+                          initial-rule-sets
+                          pre-simplifyp
+                          extra-stuff
+                          specialize-fnsp
+                          monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                          use-context-when-miteringp
+                          random-seed
+                          unroll
+                          tests-per-case
+                          max-conflicts
+                          normalize-xors ;fixme use the more, deeper in?
+                          miter-name     ;the name of this proof
+                          prove-constants
+                          debug
+                          whole-form
+                          state rand)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (true-listp assumptions) ; untranslated
@@ -17218,35 +17218,35 @@
         (mv nil '(value-triple :invisible) state rand))
        ((mv erp provedp state rand)
         (prove-with-axe-core dag-or-quotep
-                          assumptions
-                          types ;compute this from the hyps?
-                          test-types
-                          :rewrite-and-sweep ; todo: pass this in?
-                          tests
-                          print
-                          debug-nodes ;do we use this?
-                          interpreted-function-alist
-                          ;; todo: allow the use of rule phases?!
-                          runes      ;used for both the rewriter and prover
-                          rules      ;used for both the rewriter and prover
-                          rewriter-runes ;used for the rewriter only (not the prover)
-                          prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                          initial-rule-set
-                          initial-rule-sets
-                          pre-simplifyp
-                          extra-stuff
-                          specialize-fnsp
-                          monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
-                          use-context-when-miteringp
-                          random-seed
-                          unroll
-                          tests-per-case
-                          max-conflicts
-                          normalize-xors ;fixme use the more, deeper in?
-                          miter-name
-                          prove-constants
-                          debug
-                          state rand)))
+                             assumptions
+                             types ;compute this from the hyps?
+                             test-types
+                             :rewrite-and-sweep ; todo: pass this in?
+                             tests
+                             print
+                             debug-nodes ;do we use this?
+                             interpreted-function-alist
+                             ;; todo: allow the use of rule phases?!
+                             runes      ;used for both the rewriter and prover
+                             rules      ;used for both the rewriter and prover
+                             rewriter-runes ;used for the rewriter only (not the prover)
+                             prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                             initial-rule-set
+                             initial-rule-sets
+                             pre-simplifyp
+                             extra-stuff
+                             specialize-fnsp
+                             monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                             use-context-when-miteringp
+                             random-seed
+                             unroll
+                             tests-per-case
+                             max-conflicts
+                             normalize-xors ;fixme use the more, deeper in?
+                             miter-name
+                             prove-constants
+                             debug
+                             state rand)))
     ;; Depending on how it went, maybe introduce a theorem:
     (if erp
         (mv erp nil state rand)
@@ -17269,69 +17269,70 @@
 ;BOZO consider changing the default for cut-proofs...- huh?
 ;;EXTRA-HYPS is an alist from theorem-names (without mention of hides) to lists of hyps
 ;the variables in dag list should be the final ones (i.e., we shouldn't expect assumptions to introduce new vars)
+;; This tool was formerly called prove-miter.
 (defmacro prove-with-axe (&whole
-                       whole-form
-                       dag-or-quotep
-                       &KEY
-                       (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                       (types 'nil)  ; derive from the assumptions?  also used when calling stp..
-                       (test-types 'nil)
-                       (tests '100)
-                       (name ''unnamedmiter)
-                       (tests-per-case '512)
-                       (print 'nil)
-                       (debug-nodes 'nil)
-                       (interpreted-function-alist 'nil) ;affects soundness
-                       (runes 'nil) ;used for both the rewriter and prover, affects soundness
-                       (rules 'nil) ;used for both the rewriter and prover, affects soundness
-                       (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
-                       (prover-runes 'nil) ;used for the prover only (not the rewriter), affects soundness ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
-                       (initial-rule-set 'nil)
-                       (initial-rule-sets 'nil)
-                       (pre-simplifyp 't) ;was nil
-                       (extra-stuff 'nil) ;ffixme does any of this affect soundness?
-                       (specialize-fnsp 'nil) ;do we ever use this?
-                       (monitor 'nil)         ;a list of runes
-                       (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
-                       (random-seed 'nil)
-                       (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
-                       (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
-                       (normalize-xors 't)
-                       (debug 'nil) ;if t, the temp dir with STP files is not deleted
-                       (prove-constants 't) ;whether to attempt to prove probably-constant nodes
-                       )
+                           whole-form
+                           dag-or-quotep
+                           &KEY
+                           (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
+                           (types 'nil)  ; derive from the assumptions?  also used when calling stp..
+                           (test-types 'nil)
+                           (tests '100)
+                           (name ''unnamedmiter)
+                           (tests-per-case '512)
+                           (print 'nil)
+                           (debug-nodes 'nil)
+                           (interpreted-function-alist 'nil) ;affects soundness
+                           (runes 'nil) ;used for both the rewriter and prover, affects soundness
+                           (rules 'nil) ;used for both the rewriter and prover, affects soundness
+                           (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
+                           (prover-runes 'nil) ;used for the prover only (not the rewriter), affects soundness ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
+                           (initial-rule-set 'nil)
+                           (initial-rule-sets 'nil)
+                           (pre-simplifyp 't) ;was nil
+                           (extra-stuff 'nil) ;ffixme does any of this affect soundness?
+                           (specialize-fnsp 'nil) ;do we ever use this?
+                           (monitor 'nil)         ;a list of runes
+                           (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
+                           (random-seed 'nil)
+                           (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
+                           (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
+                           (normalize-xors 't)
+                           (debug 'nil) ;if t, the temp dir with STP files is not deleted
+                           (prove-constants 't) ;whether to attempt to prove probably-constant nodes
+                           )
   ;; note: we can't put a make-event inside an acl2-unwind-protect, so we do it
   ;; this way:
   `(make-event
-    (acl2-unwind-protect ; enable cleanup on abort
-     "acl2-unwind-protect for prove-with-axe"
-     ;; Can't call prove-with-axe-fn directly here, because it returns extra
-     ;; stobjs (does not return an error triple), so we use trans-eval as
-     ;; suggested by MK:
-     (mv-let (erp val state)
-       (trans-eval-no-warning '(prove-with-axe-fn
-                                ,dag-or-quotep ,assumptions ,types ,test-types
-                                ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
-                                ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                                ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name ,prove-constants ,debug
-                                ',whole-form state rand)
-                              'prove-with-axe
-                              state
-                              t)
-       (if erp
-           ;; error translating (should not happen):
-           (mv erp nil state)
-         (let* ( ;; (stobjs-out (car val))
-                (values-returned (cdr val))
-                ;; Get the non-stobj values returned by prove-with-axe-fn:
-                (erp (first values-returned))
-                (event (second values-returned)))
-           (mv erp event state))))
-     ;; The acl2-unwind-protect ensures that this is called if the user aborts:
-     ;; TODO: Don't do this if the debug arg is set
-     (maybe-remove-temp-dir state)
-     ;; No need to clean up anything if no abort and no error:
-     state)))
+     (acl2-unwind-protect ; enable cleanup on abort
+       "acl2-unwind-protect for prove-with-axe"
+       ;; Can't call prove-with-axe-fn directly here, because it returns extra
+       ;; stobjs (does not return an error triple), so we use trans-eval as
+       ;; suggested by MK:
+       (mv-let (erp val state)
+         (trans-eval-no-warning '(prove-with-axe-fn
+                                  ,dag-or-quotep ,assumptions ,types ,test-types
+                                  ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+                                  ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                                  ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name ,prove-constants ,debug
+                                  ',whole-form state rand)
+                                'prove-with-axe
+                                state
+                                t)
+         (if erp
+             ;; error translating (should not happen):
+             (mv erp nil state)
+           (let* ( ;; (stobjs-out (car val))
+                  (values-returned (cdr val))
+                  ;; Get the non-stobj values returned by prove-with-axe-fn:
+                  (erp (first values-returned))
+                  (event (second values-returned)))
+             (mv erp event state))))
+       ;; The acl2-unwind-protect ensures that this is called if the user aborts:
+       ;; TODO: Don't do this if the debug arg is set
+       (maybe-remove-temp-dir state)
+       ;; No need to clean up anything if no abort and no error:
+       state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17423,6 +17424,7 @@
 ;; Used in several loop examples.
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 ;; See also prove-equal-with-axe, which is preferable when it is sufficient (because it is simpler).
+;; This tool was formerly called prove-equality.
 (defmacro prove-equal-with-axe+ (&whole
                                   whole-form
                                   dag-or-term1
@@ -17628,6 +17630,7 @@
     (mv (erp-nil) event state rand)))
 
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
+;; This tool was formerly called prove-equivalence.
 (defmacrodoc prove-equal-with-axe (&whole
                                     whole-form
                                     dag-or-term1
