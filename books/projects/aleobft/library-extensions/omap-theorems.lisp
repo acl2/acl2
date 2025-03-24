@@ -57,4 +57,12 @@
            (if (equal key1 key)
                nil
              (omap::lookup key1 map)))
-    :enable omap::lookup))
+    :enable omap::lookup)
+
+  (defruled omap::assoc-of-submap-is-assoc-of-supermap-when-present
+    (implies (omap::submap map1 map2)
+             (implies (omap::assoc key map1)
+                      (equal (omap::assoc key map1)
+                             (omap::assoc key map2))))
+    :induct t
+    :enable omap::submap))
