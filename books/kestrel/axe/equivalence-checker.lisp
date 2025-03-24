@@ -16880,6 +16880,7 @@
 (defun prove-miter-core (dag-or-quotep
                          assumptions ; (untranslated) terms we can assume are true (non-nil)
                          types ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
+                         test-types
                          tactic
                          test-case-count ;the total number of tests to generate?  some may not be used
                          print
@@ -16914,11 +16915,12 @@
                               (natp test-case-count)
                               (or (eq :bits types)
                                   (eq :bytes types)
-                                  (and (test-case-type-alistp types)
+                                  (and (var-type-alistp types)
                                        (no-duplicatesp (strip-cars types))
                                        (not (assoc-eq nil types)) ;consider relaxing this?
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
+                              (test-case-type-alistp test-types)
                               (extra-stuff-okayp extra-stuff)
                               (symbol-listp monitored-symbols)
                               (symbol-listp runes)
@@ -16940,17 +16942,21 @@
   (b* ((- (cw "~%(Proving top-level miter ~x0:~%" miter-name))
        ;; Desugar the special values :bits and :bytes for the types:
        (dag-vars (if (quotep dag-or-quotep) nil (dag-vars dag-or-quotep))) ; todo: make a dag-or-quotep-vars
-       (test-case-type-alist (if (eq :bits types) ;todo: optimize this stuff:
-                                 (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len dag-vars))
-                                         (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 1))))
-                               (if (eq :bytes types)
-                                   (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bytes.~%" (len dag-vars))
-                                           (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 8))))
-                                 types)))
-       ;; Compare the vars in the DAG to the vars given types in TEST-CASE-TYPE-ALIST:
+       (var-type-alist (if (eq :bits types) ;todo: optimize this stuff:
+                           (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len dag-vars))
+                                   (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 1))))
+                         (if (eq :bytes types)
+                             (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bytes.~%" (len dag-vars))
+                                     (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 8))))
+                           types)))
+       ;; we have to reverse the alist here, because types can refer to later types
+       (test-case-type-alist (reverse-list (uniquify-alist-eq (append test-types var-type-alist)))) ; the test-types, if any, override the types
+       ;; Compare the vars in the DAG to the vars given types:
        (sorted-dag-vars (merge-sort-symbol< dag-vars))
-       (vars-given-types (strip-cars test-case-type-alist))
+       (vars-given-types (strip-cars var-type-alist))
+       (vars-given-test-types (strip-cars test-case-type-alist))
        (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
+       (sorted-vars-given-test-types (merge-sort-symbol< vars-given-test-types))
        ;; todo: optimize the subset tests here and below, since the lists are sorted:
        (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types))
                ;; (hard-error 'prove-miter-core
@@ -16969,6 +16975,11 @@
         (if (quotep dag-or-quotep)
             (er hard? 'prove-miter-core "The following variables are given types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
           (er hard? 'prove-miter-core "The following variables are given types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil))
+        (mv :input-error nil state rand))
+       ((when (not (subsetp-eq sorted-vars-given-test-types sorted-dag-vars)))
+        (if (quotep dag-or-quotep)
+            (er hard? 'prove-miter-core "The following variables are given test-types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil)
+          (er hard? 'prove-miter-core "The following variables are given test-types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil))
         (mv :input-error nil state rand))
        ;; Handle the case when dag-or-quotep is already a constant:
        ((when (quotep dag-or-quotep))
@@ -17110,7 +17121,7 @@
             (miter-and-merge dag
                              miter-name
                              0
-                             (var-type-alist-from-test-case-type-alist test-case-type-alist) ; removes stuff only used for test case gen? ; todo: some vars may then not have types
+                             var-type-alist
                              interpreted-function-alist print debug-nodes
                              rewriter-rule-alist
                              prover-rule-alist
@@ -17141,7 +17152,8 @@
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
                        assumptions ; (untranslated) terms we can assume are true (non-nil)
-                       types  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from one to the other (when possible), or pass both?
+                       types  ;compute this from the hyps
+                       test-types
                        tests ;the total number of tests to generate?  some may not be used
                        print
                        debug-nodes ;do we use this?
@@ -17174,11 +17186,12 @@
                               (natp tests)
                               (or (eq :bits types)
                                   (eq :bytes types)
-                                  (and (test-case-type-alistp types)
+                                  (and (var-type-alistp types)
                                        (no-duplicatesp (strip-cars types))
                                        (not (assoc-eq nil types)) ;consider relaxing this?
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
+                              (test-case-type-alistp test-types)
                               (if (extra-stuff-okayp extra-stuff)
                                   t
                                 (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff)
@@ -17207,6 +17220,7 @@
         (prove-miter-core dag-or-quotep
                           assumptions
                           types ;compute this from the hyps?
+                          test-types
                           :rewrite-and-sweep ; todo: pass this in?
                           tests
                           print
@@ -17260,7 +17274,8 @@
                        dag-or-quotep
                        &KEY
                        (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                       (types 'nil)  ; derive from the assumptions?  this is only used for generated test cases? no! also used when calling stp.. ffffixme sometimes restricts the range of test cases - don't use those restricted ranges as assumptions?!
+                       (types 'nil)  ; derive from the assumptions?  also used when calling stp..
+                       (test-types 'nil)
                        (tests '100)
                        (name ''unnamedmiter)
                        (tests-per-case '512)
@@ -17295,7 +17310,7 @@
      ;; suggested by MK:
      (mv-let (erp val state)
        (trans-eval-no-warning '(prove-miter-fn
-                                ,dag-or-quotep ,assumptions ,types
+                                ,dag-or-quotep ,assumptions ,types ,test-types
                                 ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                                 ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                                 ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,name ,prove-constants ,debug
@@ -17325,6 +17340,7 @@
                           dag-or-term2
                           assumptions ; (untranslated) terms we can assume are true (non-nil)
                           types  ;todo: compute the types from the hyps?
+                          test-types
                           tests
                           name
                           ;; todo: standardize argument order:
@@ -17334,11 +17350,12 @@
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
                               (or (eq :bits types)
                                   (eq :bytes types)
-                                  (and (test-case-type-alistp types)
+                                  (and (var-type-alistp types)
                                        (no-duplicatesp (strip-cars types))
                                        (not (assoc-eq nil types)) ;consider relaxing this?
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
+                              (test-case-type-alistp test-types)
                               (natp tests)
                               ; todo: more
                               (member-eq check-vars '(t nil :warn))
@@ -17364,6 +17381,7 @@
         (prove-miter-core equality-dag-or-quotep
                           assumptions
                           types
+                          test-types
                           :rewrite-and-sweep ; todo: pass this in?
                           tests
                           print
@@ -17412,6 +17430,7 @@
                           &KEY
                           (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
                           (types 'nil)
+                          (test-types 'nil)
                           (tests '100)
                           (name ''unnamedmiter)
                           (tests-per-case '512)
@@ -17440,7 +17459,7 @@
   `(make-event ; use make-event-quiet?
      (prove-equality-fn ,dag-or-term1
                         ,dag-or-term2
-                        ,assumptions ,types ,tests
+                        ,assumptions ,types ,test-types ,tests
                         ,name
                         ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                         ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants ',whole-form
@@ -17455,7 +17474,8 @@
 (defun prove-equivalence-fn (dag-or-term1
                              dag-or-term2
                              assumptions ; (untranslated) terms we can assume are true (non-nil)
-                             types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
+                             types
+                             test-types
                              tests ;a natp indicating how many tests to run
                              tactic
                              name  ; may be :auto
@@ -17477,11 +17497,12 @@
                               (true-listp assumptions) ; untranslated
                               (or (eq :bits types) ; todo: consider supporting other things, like :u32
                                   (eq :bytes types)
-                                  (and (test-case-type-alistp types)
+                                  (and (var-type-alistp types)
                                        (no-duplicatesp (strip-cars types))
                                        (not (assoc-eq nil types)) ;consider relaxing this?
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
+                              (test-case-type-alistp test-types)
                               (natp tests)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
@@ -17543,6 +17564,7 @@
         (prove-miter-core equality-dag-or-quotep
                           assumptions
                           types
+                          test-types
                           tactic
                           tests ; number of tests to run
                           print
@@ -17612,7 +17634,8 @@
                                 dag-or-term2
                                 &key
                                 (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                                (types 'nil) ;gives types to the vars so we can generate tests for sweeping
+                                (types 'nil) ;gives types to the vars for the proofs
+                                (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
                                 (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                 (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                                 (print ':brief)
@@ -17633,6 +17656,7 @@
                                            ,dag-or-term2
                                            ,assumptions
                                            ,types
+                                           ,test-types
                                            ,tests
                                            ,tactic
                                            ,name
@@ -17656,7 +17680,8 @@
   :args ((dag-or-term1 "The first DAG or term to compare")
          (dag-or-term2 "The second DAG or term to compare")
          (assumptions "Assumptions to use when proving equivalence, a list of terms (not necessarily translated).  The proof is done assuming all of the :assumptions are non-nil.")
-         (types "A test-case-type-alist (alist mapping variables to their test-case-types), or one of the special values :bits or :bytes.")
+         (types "A var-type-alist (alist mapping variables to their axe-types), or one of the special values :bits or :bytes.  Entries in this alist can be overridden for testing purposes by the :test-types option.")
+         (test-types "Overrides of the :types for use in the testing that identifies probable facts for sweeping-and-merging (example, to restrict the length of arrays).")
          (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (tests "How many tests to use to find internal equivalences (a natp)")
          (print "Print verbosity (allows nil, :brief, t, and :verbose)")
