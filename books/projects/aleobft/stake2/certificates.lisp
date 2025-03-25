@@ -88,6 +88,25 @@
    (endorsers address-set))
   :pred certificatep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define certificate->signers ((cert certificatep))
+  :returns (signers address-setp)
+  :short "Signers of a certificate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the author and the endorsers,
+     i.e. all the validators who signed the certificate."))
+  (b* (((certificate cert) cert))
+    (set::insert cert.author cert.endorsers))
+  :hooks (:fix)
+
+  ///
+
+  (defret not-emptyp-of-certificate->signers
+    (not (set::emptyp signers))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption certificate-option
@@ -247,25 +266,6 @@
   :elementp-of-nil nil
   :pred certificate-listp
   :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define certificate->signers ((cert certificatep))
-  :returns (signers address-setp)
-  :short "Signers of a certificate."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the author and the endorsers,
-     i.e. all the validators who signed the certificate."))
-  (b* (((certificate cert) cert))
-    (set::insert cert.author cert.endorsers))
-  :hooks (:fix)
-
-  ///
-
-  (defret not-emptyp-of-certificate->signers
-    (not (set::emptyp signers))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
