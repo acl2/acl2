@@ -814,17 +814,6 @@ bool TypingAction::VisitSymDec(SymDec *s) {
 
     if (isa<const EnumType *>(s->get_type())) {
       sym_type = intType;
-
-      if (!s->init->isStaticallyEvaluable()) {
-        diag_
-            .new_error(
-                s->init->loc(),
-                format("Expected an integral constant expression, got % s.",
-                       s->init->get_type()->to_string().c_str()))
-            .context(s->loc())
-            .report();
-        return error();
-      }
     }
 
     return check_assignement(s->loc(), sym_type, s->init->get_type());
@@ -858,14 +847,7 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
 
       auto is_correct =
           std::all_of(t->types().begin(), t->types().end(), [&](const Type *t) {
-            if (!t->canBeImplicitlyCastTo(arrayBaseType)) {
-              diag_
-                  .new_error(
-                      where,
-                      format("Wrong type provided, expected %s but got %s",
-                             array->baseType->to_string().c_str(),
-                             t->to_string().c_str()))
-                  .report();
+            if (!check_assignement(where, arrayBaseType, t)) {
               return false;
             }
             return true;
@@ -891,14 +873,7 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
       auto is_correct =
           std::all_of(t->types().begin(), t->types().end(), [&](const Type *t) {
             const Type *field_type = struct_->fields()[i]->get_type();
-            if (!t->canBeImplicitlyCastTo(deref(field_type))) {
-              diag_
-                  .new_error(
-                      where,
-                      format("Wrong type provided, expected %s but got %s",
-                             field_type->to_string().c_str(),
-                             t->to_string().c_str()))
-                  .report();
+            if (!check_assignement(where, deref(field_type), t)) {
               return false;
             }
             ++i;

@@ -29,3 +29,5 @@
   should_report_error: true 
 
 - name: prefix-expr
+
+- name: shift-signed

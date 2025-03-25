@@ -372,7 +372,7 @@ Sexpression *ArrayRef::ACL2Expr() {
     Sexpression *s = nullptr;
 
     SymRef *ref = dynamic_cast<SymRef *>(array);
-    if (ref && ref->symDec->get_type()->isConst()) {
+    if (ref && ref->symDec->get_type()->isConst() && ref->symDec->isGlobal()) {
       s = new Plist({&s_nth, index->ACL2Expr(), new Plist({ref->symDec->sym})});
     } else {
       s = new Plist({&s_ag, index->ACL2Expr(), array->ACL2Expr()});
@@ -771,7 +771,7 @@ Sexpression *BinaryExpr::ACL2Expr() {
     break;
   case Op::RShift:
     ptr = &s_ash;
-    sexpr2 = new Plist({&s_minus, sexpr2});
+    sexpr2_val = new Plist({&s_minus, sexpr2_val});
     break;
   case Op::BitAnd:
     ptr = &s_logand;
@@ -839,7 +839,7 @@ Sexpression *BinaryExpr::ACL2Expr() {
   //    assert(!"missing type");
   //  }
   Sexpression *val = nullptr;
-  if (isOpShift(op) || isOpBitwise(op)) {
+  if (isOpBitwise(op)) {
     val = new Plist({ptr, sexpr1, sexpr2});
   } else {
     val = new Plist({ptr, sexpr1_val, sexpr2_val});

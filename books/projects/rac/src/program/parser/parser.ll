@@ -54,6 +54,7 @@ static void lineba();
 "struct"                    {return STRUCT;}
 "enum"                      {return ENUM;}
 "const"                     {return CONST;}
+"static"                    {return STATIC;}
 "int"                       {return INT;}
 "uint"                      {return UINT;}
 "int64"                     {return INT64;}

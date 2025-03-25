@@ -158,6 +158,11 @@
   disabled-checks:
     - stderr
 
-
-
 - name: defined-type-const-and-not
+
+- name: array-of-struct-init-list
+
+- name: static
+- name: static-invalid
+  should_report_error: true
+
