@@ -65,6 +65,58 @@
    (endorsers address-set))
   :pred certificatep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define certificate->author ((cert certificatep))
+  :returns (author addressp)
+  :short "Author of (the proposal in) a certificate."
+  (proposal->author (certificate->proposal cert))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define certificate->round ((cert certificatep))
+  :returns (round posp)
+  :short "Round number of (the proposal in) a certificate."
+  (proposal->round (certificate->proposal cert))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define certificate->transactions ((cert certificatep))
+  :returns (transactions transaction-listp)
+  :short "List of transactions of (the proposal in) a certificate."
+  (proposal->transactions (certificate->proposal cert))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define certificate->previous ((cert certificatep))
+  :returns (previous address-setp)
+  :short "Set of references to previous certificates
+          of (the proposal in) a certificate."
+  (proposal->previous (certificate->proposal cert))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define certificate->signers ((cert certificatep))
+  :returns (signers address-setp)
+  :short "Signers of a certificate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the author and the endorsers,
+     i.e. all the validators who signed the certificate."))
+  (set::insert (certificate->author cert)
+               (certificate->endorsers cert))
+  :hooks (:fix)
+
+  ///
+
+  (defret not-emptyp-of-certificate->signers
+    (not (set::emptyp signers))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption certificate-option
@@ -89,58 +141,6 @@
   :elementp-of-nil nil
   :pred certificate-listp
   :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define certificate->author ((cert certificatep))
-  :returns (author addressp)
-  :short "Author of (the proposal in) a certificate."
-  (proposal->author (certificate->proposal cert))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define certificate->round ((cert certificatep))
-  :returns (round posp)
-  :short "Round number of (the proposal in) a certificate."
-  (proposal->round (certificate->proposal cert))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define certificate->transactions ((cert certificatep))
-  :returns (transactions transaction-listp)
-  :short "List of transactions of (the proposal in) a certificate."
-  (proposal->transactions (certificate->proposal cert))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define certificate->previous ((cert certificatep))
-  :returns (previous address-setp)
-  :short "Set of references to previous certificates
-          of (the proposal in) a certificate."
-  (proposal->previous (certificate->proposal cert))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define certificate->signers ((cert certificatep))
-  :returns (signers address-setp)
-  :short "Signers of a certificate."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are the author and the endorsers,
-     i.e. all the validators who signed the certificate."))
-  (set::insert (certificate->author cert)
-               (certificate->endorsers cert))
-  :hooks (:fix)
-
-  ///
-
-  (defret not-emptyp-of-certificate->signers
-    (not (set::emptyp signers))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
