@@ -14,10 +14,18 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integers-from-to ((min integerp) (max integerp))
-  :returns (ints integer-listp)
+  :returns (ints integer-listp
+                 :hints (("Goal"
+                          :induct t
+                          :in-theory (enable integer-listp))))
   :parents (kestrel-utilities)
   :short "Ordered list of all the integers in a range."
   :long
@@ -30,6 +38,7 @@
                       (t (cons min (integers-from-to (1+ min) max)))))
        :exec (integers-from-to-aux min max nil))
   :measure (nfix (- (1+ (ifix max)) (ifix min)))
+  :hints (("Goal" :in-theory (enable nfix ifix fix o-p o< o-finp)))
   :verify-guards nil ; done below
 
   :prepwork
@@ -40,27 +49,37 @@
           (max (mbe :logic (ifix max) :exec max)))
        (cond ((> min max) ints)
              (t (integers-from-to-aux min (1- max) (cons max ints)))))
-     :measure (nfix (- (1+ (ifix max)) (ifix min)))))
+     :measure (nfix (- (1+ (ifix max)) (ifix min)))
+     :hints (("Goal" :in-theory (enable nfix ifix fix o-p o< o-finp)))
+     :guard-hints (("Goal" :in-theory (enable ifix integer-listp)))))
 
   ///
 
   (defrule integers-from-to-of-ifix-min
     (equal (integers-from-to (ifix min) max)
-           (integers-from-to min max)))
+           (integers-from-to min max))
+    :induct t
+    :enable ifix)
 
   (defrule integers-from-to-of-ifix-max
     (equal (integers-from-to min (ifix max))
-           (integers-from-to min max)))
+           (integers-from-to min max))
+    :induct t
+    :enable ifix)
 
   (defruled integers-from-to-of-noninteger-min
     (implies (not (integerp min))
              (equal (integers-from-to min max)
-                    (integers-from-to 0 max))))
+                    (integers-from-to 0 max)))
+    :induct t
+    :enable ifix)
 
   (defruled integers-from-to-of-noninteger-max
     (implies (not (integerp max))
              (equal (integers-from-to min max)
-                    (integers-from-to min 0))))
+                    (integers-from-to min 0)))
+    :induct t
+    :enable ifix)
 
   (more-returns
    (ints true-listp
@@ -70,16 +89,22 @@
   (defrule nat-listp-of-integers-from-to
     (equal (nat-listp (integers-from-to min max))
            (or (> (ifix min) (ifix max))
-               (natp (ifix min)))))
+               (natp (ifix min))))
+    :induct t
+    :enable (ifix nat-listp))
 
   (defrule pos-listp-of-integers-from-to
     (equal (pos-listp (integers-from-to min max))
            (or (> (ifix min) (ifix max))
-               (posp (ifix min)))))
+               (posp (ifix min))))
+    :induct t
+    :enable (ifix pos-listp))
 
-  (defcong int-equiv equal (integers-from-to min max) 1)
+  (defcong int-equiv equal (integers-from-to min max) 1
+    :hints (("Goal" :induct t)))
 
-  (defcong int-equiv equal (integers-from-to min max) 2)
+  (defcong int-equiv equal (integers-from-to min max) 2
+    :hints (("Goal" :induct t)))
 
   (defrule integers-from-to-nil-when-min>max
     (implies (> (ifix min) (ifix max))
@@ -88,14 +113,16 @@
 
   (defrule integers-from-to-iff-min<=max
     (iff (integers-from-to min max)
-         (<= (ifix min) (ifix max))))
+         (<= (ifix min) (ifix max)))
+    :induct t)
 
   (defrule member-equal-of-integers-from-to
     (iff (member-equal x (integers-from-to min max))
          (and (integerp x)
               (<= (ifix min) x)
               (<= x (ifix max))))
-    :enable integers-from-to-of-noninteger-max)
+    :induct t
+    :enable (integers-from-to-of-noninteger-max ifix member-equal))
 
   (defrulel verify-guards-lemma-1
     (implies (and (integerp min)
@@ -103,7 +130,9 @@
                   (integer-listp ints))
              (equal (integers-from-to-aux min max ints)
                     (append (integers-from-to min max) ints)))
-    :enable integers-from-to-aux)
+    :induct t
+    :enable (integers-from-to-aux ifix append integer-listp)
+    :prep-books ((local (set-induction-depth-limit 2))))
 
   (defrulel verify-guards-lemma-2
     (implies (and (integerp min)
