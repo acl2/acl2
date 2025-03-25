@@ -150,8 +150,7 @@
              (equal (integers-from-to-aux min max ints)
                     (append (integers-from-to min max) ints)))
     :induct t
-    :enable (integers-from-to-aux ifix append integer-listp)
-    :prep-books ((local (set-induction-depth-limit 2))))
+    :enable (integers-from-to-aux ifix integer-listp integer-from-to-separate-max))
 
   (defrulel verify-guards-lemma-2
     (implies (and (integerp min)
