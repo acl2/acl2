@@ -17138,11 +17138,11 @@
            ;; TODO: Can we use something like with-local-stobj to isolate the use of rand here?:
            (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
            ;;todo: rename test-cases test-inputs?
-           ((mv erp test-cases rand)
+           ((mv erp test-cases)
             ;; Make the random test cases (each assigns values to the input vars):
             ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
             ;; This drops cases that don't satisfy the assumptions (but what if none survive?):
-            (make-test-cases test-case-count test-case-type-alist assumptions rand))
+            (make-test-cases test-case-count test-case-type-alist assumptions))
            ((when erp) (mv erp nil nil state rand))
            ;; could move a lot of stuff into these options:
            ;; todo: should we move any stuff above here into miter-and-merge?

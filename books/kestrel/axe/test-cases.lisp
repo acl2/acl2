@@ -516,24 +516,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp test-cases rand), where each test case is an alist from vars to values.
+;; Returns (mv erp test-cases), where each test case is an alist from vars to values.
 ;; We drop any test cases that fail to satisfy the assumptions.
 ;; TODO: Consider passing in interpreted-functions?
 ;; TODO: Add print arg and pass to make-test-cases-aux.
-(defund make-test-cases (test-case-count test-case-type-alist assumptions rand)
+(defund make-test-cases (test-case-count test-case-type-alist assumptions)
   (declare (xargs :guard (and (natp test-case-count)
                               (test-case-type-alistp test-case-type-alist)
-                              (pseudo-term-listp assumptions))
-                  :stobjs rand))
+                              (pseudo-term-listp assumptions))))
   (prog2$ (cw "(Making ~x0 test cases:~%" test-case-count)
-          (mv-let (erp test-cases rand)
-                  (make-test-cases-aux test-case-count 0 test-case-type-alist assumptions nil nil rand)
-                  (prog2$ (cw ")~%")
-                          (mv erp test-cases rand)))))
+          (with-local-stobj
+            rand
+            (mv-let (erp test-cases rand)
+              (make-test-cases-aux test-case-count 0 test-case-type-alist assumptions nil nil rand)
+              (prog2$ (cw ")~%")
+                      (mv erp test-cases))))))
+
 
 (defthm test-casesp-of-mv-nth-1-of-make-test-cases
   (implies (test-case-type-alistp test-case-type-alist)
-           (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions rand))))
+           (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions))))
   :hints (("Goal" :in-theory (enable make-test-cases))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
