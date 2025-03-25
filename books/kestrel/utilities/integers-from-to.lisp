@@ -1,10 +1,10 @@
 ; Lists of Contiguous Integers
 ;
-; Copyright (C) 2019 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,7 +22,7 @@
   :short "Ordered list of all the integers in a range."
   :long
   (xdoc::topstring-p
-   "The range goes from @('min') to @('max'), inclusive.
+   "The range goes from @('min') to @('max'), both inclusive.
     If @('min') exceeds @('max'), the result is @('nil').")
   (mbe :logic (b* ((min (ifix min))
                    (max (ifix max)))
