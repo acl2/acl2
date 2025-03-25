@@ -119,15 +119,15 @@
                 (equal (certificate->round cert2)
                        (+ 2 (certificate->round cert1))))
            (<= (set::cardinality
-                (certificate-set->round-set
+                (cert-set->round-set
                  (set::union (successors cert1 dag1)
                              (predecessors cert2 dag2))))
                1))
   :rule-classes :linear
   :enable (set::cardinality
-           certificate-set->round-set-of-successors
-           certificate-set->round-set-of-predecessors
-           certificate-set->round-set-of-union))
+           cert-set->round-set-of-successors
+           cert-set->round-set-of-predecessors
+           cert-set->round-set-of-union))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

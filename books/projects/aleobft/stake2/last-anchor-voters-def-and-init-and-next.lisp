@@ -341,7 +341,7 @@
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
                   (addressp prev)
-                  (<= (set::cardinality (certificate-set->round-set certs)) 1))
+                  (<= (set::cardinality (cert-set->round-set certs)) 1))
              (equal (committee-members-stake
                      (cert-set->author-set
                       (successors-loop certs prev))
@@ -358,7 +358,7 @@
              cert-set->author-set-monotone)
     :hints ('(:use
               (head-author-not-in-tail-authors-when-unequiv-and-all-same-round
-               (:instance certificate-set->round-set-monotone
+               (:instance cert-set->round-set-monotone
                           (certs1 (set::tail certs))
                           (certs2 certs))))))
 
