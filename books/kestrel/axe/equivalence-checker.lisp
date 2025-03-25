@@ -17338,31 +17338,36 @@
   `(make-event
      (acl2-unwind-protect ; enable cleanup on abort
        "acl2-unwind-protect for prove-with-axe"
-       ;; Can't call prove-with-axe-fn directly here, because it returns extra
-       ;; stobjs (does not return an error triple), so we use trans-eval as
-       ;; suggested by MK:
-       (mv-let (erp val state)
-         (trans-eval-no-warning '(prove-with-axe-fn
-                                  ,dag-or-quotep ,assumptions ,types ,test-types
-                                  ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
-                                  ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                                  ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,debug
-                                  ,proof-name ',whole-form state)
-                                'prove-with-axe
-                                state
-                                t)
-         (if erp
-             ;; error translating (should not happen):
-             (mv erp nil state)
-           (let* ( ;; (stobjs-out (car val))
-                  (values-returned (cdr val))
-                  ;; Get the non-stobj values returned by prove-with-axe-fn:
-                  (erp (first values-returned))
-                  (event (second values-returned)))
-             (mv erp event state))))
+       (prove-with-axe-fn ,dag-or-quotep ,assumptions ,types ,test-types
+                          ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+                          ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                          ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,debug
+                          ,proof-name ',whole-form state)
+       ;; ;; Can't call prove-with-axe-fn directly here, because it returns extra
+       ;; ;; stobjs (does not return an error triple), so we use trans-eval as
+       ;; ;; suggested by MK:
+       ;; (mv-let (erp val state)
+       ;;   (trans-eval-no-warning '(prove-with-axe-fn
+       ;;                            ,dag-or-quotep ,assumptions ,types ,test-types
+       ;;                            ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+       ;;                            ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+       ;;                            ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,debug
+       ;;                            ,proof-name ',whole-form state)
+       ;;                          'prove-with-axe
+       ;;                          state
+       ;;                          t)
+       ;;   (if erp
+       ;;       ;; error translating (should not happen):
+       ;;       (mv erp nil state)
+       ;;     (let* ( ;; (stobjs-out (car val))
+       ;;            (values-returned (cdr val))
+       ;;            ;; Get the non-stobj values returned by prove-with-axe-fn:
+       ;;            (erp (first values-returned))
+       ;;            (event (second values-returned)))
+       ;;       (mv erp event state))))
+
        ;; The acl2-unwind-protect ensures that this is called if the user aborts:
-       ;; TODO: Don't do this if the debug arg is set
-       (maybe-remove-temp-dir state)
+       (if ,debug state (maybe-remove-temp-dir state))
        ;; No need to clean up anything if no abort and no error:
        state)))
 
