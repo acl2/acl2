@@ -14,6 +14,7 @@
 (include-book "integers")
 (include-book "integer-conversions")
 (include-book "integer-operations")
+(include-book "shallow-deep-relation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
