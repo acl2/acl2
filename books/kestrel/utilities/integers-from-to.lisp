@@ -44,6 +44,24 @@
 
   ///
 
+  (defrule integers-from-to-of-ifix-min
+    (equal (integers-from-to (ifix min) max)
+           (integers-from-to min max)))
+
+  (defrule integers-from-to-of-ifix-max
+    (equal (integers-from-to min (ifix max))
+           (integers-from-to min max)))
+
+  (defruled integers-from-to-of-noninteger-min
+    (implies (not (integerp min))
+             (equal (integers-from-to min max)
+                    (integers-from-to 0 max))))
+
+  (defruled integers-from-to-of-noninteger-max
+    (implies (not (integerp max))
+             (equal (integers-from-to min max)
+                    (integers-from-to min 0))))
+
   (more-returns
    (ints true-listp
          :name true-listp-of-integers-from-to
@@ -85,8 +103,7 @@
                    (integer-listp ints))
               (equal (integers-from-to-aux min max ints)
                      (append (integers-from-to min max) ints)))
-     :enable integers-from-to-aux
-    :prep-books ((set-induction-depth-limit 2))))
+     :enable integers-from-to-aux))
 
   (local
    (defrule verify-guards-lemma-2
