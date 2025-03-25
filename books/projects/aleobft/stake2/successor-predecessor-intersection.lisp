@@ -154,19 +154,19 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (equal (certificate->round cert2)
                        (+ 2 (certificate->round cert1)))
-                (set::subset (certificate-set->author-set
+                (set::subset (cert-set->author-set
                               (successors cert1 dag1))
                              (committee-members commtt))
-                (set::subset (certificate-set->author-set
+                (set::subset (cert-set->author-set
                               (predecessors cert2 dag2))
                              (committee-members commtt))
                 (> (committee-members-stake
-                    (certificate-set->author-set
+                    (cert-set->author-set
                      (successors cert1 dag1))
                     commtt)
                    (committee-max-faulty-stake commtt))
                 (>= (committee-members-stake
-                     (certificate-set->author-set
+                     (cert-set->author-set
                       (predecessors cert2 dag2))
                      commtt)
                     (committee-quorum-stake commtt)))
@@ -181,9 +181,9 @@
            successors+predecessors-same-round
            certs-same-round-unequiv-intersect-when-authors-intersect)
   :use (:instance not-empty-successor-predecessor-author-intersection
-                  (successor-vals (certificate-set->author-set
+                  (successor-vals (cert-set->author-set
                                    (successors cert1 dag1)))
-                  (predecessor-vals (certificate-set->author-set
+                  (predecessor-vals (cert-set->author-set
                                      (predecessors cert2 dag2)))
                   (n (committee-total-stake commtt))
                   (f (committee-max-faulty-stake commtt))))
@@ -258,19 +258,19 @@
                   (certificate-sets-unequivocalp dag1 dag2)
                   (equal (certificate->round cert2)
                          (+ 2 (certificate->round cert1)))
-                  (set::subset (certificate-set->author-set
+                  (set::subset (cert-set->author-set
                                 (successors cert1 dag1))
                                (committee-members commtt))
-                  (set::subset (certificate-set->author-set
+                  (set::subset (cert-set->author-set
                                 (predecessors cert2 dag2))
                                (committee-members commtt))
                   (> (committee-members-stake
-                      (certificate-set->author-set
+                      (cert-set->author-set
                        (successors cert1 dag1))
                       commtt)
                      (committee-max-faulty-stake commtt))
                   (>= (committee-members-stake
-                       (certificate-set->author-set
+                       (cert-set->author-set
                         (predecessors cert2 dag2))
                        commtt)
                       (committee-quorum-stake commtt)))
@@ -315,7 +315,7 @@
                 (same-active-committees-p blockchain1 blockchain2)
                 (dag-predecessor-quorum-p dag2 blockchain2)
                 (> (committee-members-stake
-                    (certificate-set->author-set (successors cert1 dag1))
+                    (cert-set->author-set (successors cert1 dag1))
                     (active-committee-at-round (1+ (certificate->round cert1))
                                                blockchain1))
                    (committee-max-faulty-stake
@@ -344,7 +344,7 @@
   ((defruled lemma1
      (implies (and (certificate-setp dag1)
                    (dag-in-committees-p dag1 blockchain1))
-              (set::subset (certificate-set->author-set
+              (set::subset (cert-set->author-set
                             (successors cert1 dag1))
                            (committee-members
                             (active-committee-at-round
@@ -357,7 +357,7 @@
                       (x (successors cert1 dag1))
                       (y (certs-with-round (1+ (certificate->round cert1))
                                            dag1))))
-     :enable (certificate-set->author-set-monotone
+     :enable (cert-set->author-set-monotone
               set::expensive-rules)
      :disable set::emptyp-subset-2)
 
@@ -366,7 +366,7 @@
                    (dag-in-committees-p dag2 blockchain2)
                    (equal (certificate->round cert2)
                           (+ 2 (certificate->round cert1))))
-              (set::subset (certificate-set->author-set
+              (set::subset (cert-set->author-set
                             (predecessors cert2 dag2))
                            (committee-members
                             (active-committee-at-round
@@ -379,7 +379,7 @@
                       (x (predecessors cert2 dag2))
                       (y (certs-with-round (1- (certificate->round cert2))
                                            dag2))))
-     :enable (certificate-set->author-set-monotone
+     :enable (cert-set->author-set-monotone
               set::expensive-rules)
      :disable set::emptyp-subset-2)
 
@@ -394,7 +394,7 @@
                    (equal (certificate->round cert2)
                           (+ 2 (certificate->round cert1)))
                    (> (committee-members-stake
-                       (certificate-set->author-set (successors cert1 dag1))
+                       (cert-set->author-set (successors cert1 dag1))
                        (active-committee-at-round
                         (1+ (certificate->round cert1))
                         blockchain1))
@@ -444,7 +444,7 @@
                           (+ 2 (certificate->round cert1)))
                    (dag-predecessor-quorum-p dag2 blockchain2))
               (>= (committee-members-stake
-                   (certificate-set->author-set
+                   (cert-set->author-set
                     (predecessors cert2 dag2))
                    (active-committee-at-round (1+ (certificate->round cert1))
                                               blockchain2))
