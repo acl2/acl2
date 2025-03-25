@@ -15,6 +15,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
+(local (include-book "std/typed-lists/integer-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -24,10 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integers-from-to ((min integerp) (max integerp))
-  :returns (ints integer-listp
-                 :hints (("Goal"
-                          :induct t
-                          :in-theory (enable integer-listp))))
+  :returns (ints integer-listp)
   :parents (kestrel-utilities)
   :short "Ordered list of all the integers in a range."
   :long
@@ -53,7 +51,7 @@
              (t (integers-from-to-aux min (1- max) (cons max ints)))))
      :measure (nfix (- (1+ (ifix max)) (ifix min)))
      :hints (("Goal" :in-theory (enable nfix ifix fix o-p o< o-finp)))
-     :guard-hints (("Goal" :in-theory (enable ifix integer-listp)))))
+     :guard-hints (("Goal" :in-theory (enable ifix)))))
 
   ///
 
@@ -150,7 +148,7 @@
              (equal (integers-from-to-aux min max ints)
                     (append (integers-from-to min max) ints)))
     :induct t
-    :enable (integers-from-to-aux ifix integer-listp integer-from-to-separate-max))
+    :enable (integers-from-to-aux ifix integer-from-to-separate-max))
 
   (defrulel verify-guards-lemma-2
     (implies (and (integerp min)
