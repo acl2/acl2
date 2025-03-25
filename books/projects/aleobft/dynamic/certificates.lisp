@@ -150,6 +150,11 @@
   :verify-guards :after-returns
   ///
 
+  (defruled emptyp-of-cert-set->author-set
+    (equal (set::emptyp (cert-set->author-set certs))
+           (set::emptyp certs))
+    :induct t)
+
   (defruled certificate->author-in-cert-set->author-set
     (implies (set::in cert certs)
              (set::in (certificate->author cert)
@@ -171,11 +176,6 @@
     :induct t
     :enable (set::union
              cert-set->author-set-of-insert))
-
-  (defruled emptyp-of-cert-set->author-set
-    (equal (set::emptyp (cert-set->author-set certs))
-           (set::emptyp certs))
-    :induct t)
 
   (defruled cert-set->author-set-monotone
     (implies (set::subset certs1 certs2)
