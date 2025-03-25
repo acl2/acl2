@@ -14,6 +14,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(local (include-book "std/lists/top" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -116,13 +118,30 @@
          (<= (ifix min) (ifix max)))
     :induct t)
 
+  (defruled integer-from-to-separate-min
+    (implies (and (integerp min)
+                  (integerp max)
+                  (<= min max))
+             (equal (integers-from-to min max)
+                    (cons min (integers-from-to (1+ min) max))))
+    :enable ifix)
+
+  (defruled integer-from-to-separate-max
+    (implies (and (integerp min)
+                  (integerp max)
+                  (<= min max))
+             (equal (integers-from-to min max)
+                    (append (integers-from-to min (1- max)) (list max))))
+    :induct t
+    :enable (integers-from-to ifix append))
+
   (defrule member-equal-of-integers-from-to
     (iff (member-equal x (integers-from-to min max))
          (and (integerp x)
               (<= (ifix min) x)
               (<= x (ifix max))))
     :induct t
-    :enable (integers-from-to-of-noninteger-max ifix member-equal))
+    :enable (integers-from-to-of-noninteger-max ifix))
 
   (defrulel verify-guards-lemma-1
     (implies (and (integerp min)
