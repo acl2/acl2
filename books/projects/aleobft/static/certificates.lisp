@@ -95,7 +95,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the author and the endorsers."))
+    "These are the author and the endorsers,
+     i.e. all the validators who signed the certificate."))
   (b* (((certificate cert) cert))
     (set::insert cert.author cert.endorsers)))
 
