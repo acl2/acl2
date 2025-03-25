@@ -17112,8 +17112,7 @@
            ;;(prog2$ (mv nil state rand))
            ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
            ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
-           ((mv erp dag ; todo: can this ever be a quotep?
-                interpreted-function-alist state)
+           ((mv erp dag-or-quotep interpreted-function-alist state)
             (if (not specialize-fnsp)
                 (mv (erp-nil) dag interpreted-function-alist state)
               (prog2$
@@ -17134,15 +17133,19 @@
                                   (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
                                           (mv (erp-nil) dag interpreted-function-alist state)))))))))))
            ((when erp) (mv erp nil nil state rand))
-           ;; Generate test-inputs:
-           ;; TODO: Can we use something like with-local-stobj to isolate the use of rand here?:
-           (rand (if random-seed (update-seed random-seed rand) rand)) ;this happens even if the dag is a quotep - dumb?
-           ;;todo: rename test-cases test-inputs?
+           ((when (quotep dag-or-quotep))
+            (if (equal *t* dag-or-quotep) ; todo: allow any non-nil constant?
+                (prog2$ (cw "The DAG has been rewritten to true!)~%") ;move this message?
+                        (mv (erp-nil) t all-untranslated-assumptions state rand))
+              (prog2$ (er hard? 'prove-with-axe-core "Tried to prove the goal is t, but it's the non-t constant ~x0" dag-or-quotep)
+                      (mv :non-t-constant nil nil state rand))))
+           (dag dag-or-quotep) ; it wasn't a quotep
+           ;; Generate test-inputs:     ;;todo: rename test-cases test-inputs?
            ((mv erp test-cases)
             ;; Make the random test cases (each assigns values to the input vars):
-            ;;fixme consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
+            ;;todo: consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
             ;; This drops cases that don't satisfy the assumptions (but what if none survive?):
-            (make-test-cases test-case-count test-case-type-alist assumptions))
+            (make-test-cases test-case-count test-case-type-alist assumptions random-seed))
            ((when erp) (mv erp nil nil state rand))
            ;; could move a lot of stuff into these options:
            ;; todo: should we move any stuff above here into miter-and-merge?

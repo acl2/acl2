@@ -520,22 +520,24 @@
 ;; We drop any test cases that fail to satisfy the assumptions.
 ;; TODO: Consider passing in interpreted-functions?
 ;; TODO: Add print arg and pass to make-test-cases-aux.
-(defund make-test-cases (test-case-count test-case-type-alist assumptions)
+(defund make-test-cases (test-case-count test-case-type-alist assumptions maybe-random-seed)
   (declare (xargs :guard (and (natp test-case-count)
                               (test-case-type-alistp test-case-type-alist)
-                              (pseudo-term-listp assumptions))))
+                              (pseudo-term-listp assumptions)
+                              (or (null maybe-random-seed)
+                                  (natp maybe-random-seed)))))
   (prog2$ (cw "(Making ~x0 test cases:~%" test-case-count)
           (with-local-stobj
             rand
             (mv-let (erp test-cases rand)
-              (make-test-cases-aux test-case-count 0 test-case-type-alist assumptions nil nil rand)
+              (let ((rand (if maybe-random-seed (update-seed maybe-random-seed rand) rand)))
+                (make-test-cases-aux test-case-count 0 test-case-type-alist assumptions nil nil rand))
               (prog2$ (cw ")~%")
                       (mv erp test-cases))))))
 
-
 (defthm test-casesp-of-mv-nth-1-of-make-test-cases
   (implies (test-case-type-alistp test-case-type-alist)
-           (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions))))
+           (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions maybe-random-seed))))
   :hints (("Goal" :in-theory (enable make-test-cases))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
