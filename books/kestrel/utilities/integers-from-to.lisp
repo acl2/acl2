@@ -72,8 +72,8 @@
     (iff (integers-from-to min max)
          (<= (ifix min) (ifix max))))
 
-  (defrule member-of-integers-from-to
-    (iff (member x (integers-from-to min max))
+  (defrule member-equal-of-integers-from-to
+    (iff (member-equal x (integers-from-to min max))
          (and (integerp x)
               (<= (ifix min) x)
               (<= x (ifix max)))))
@@ -85,7 +85,8 @@
                    (integer-listp ints))
               (equal (integers-from-to-aux min max ints)
                      (append (integers-from-to min max) ints)))
-     :enable integers-from-to-aux))
+     :enable integers-from-to-aux
+    :prep-books ((set-induction-depth-limit 2))))
 
   (local
    (defrule verify-guards-lemma-2
