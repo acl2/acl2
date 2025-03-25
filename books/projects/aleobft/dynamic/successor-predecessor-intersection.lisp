@@ -148,7 +148,7 @@
                    (set::union (successors cert1 dag1)
                                (predecessors cert2 dag2)))
                   (set::cardinality
-                   (certificate-set->author-set
+                   (cert-set->author-set
                     (set::union (successors cert1 dag1)
                                 (predecessors cert2 dag2))))))
   :enable (cardinality-of-authors-when-unequiv-and-all-same-rounds
@@ -187,10 +187,10 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (equal (certificate->round cert2)
                        (+ 2 (certificate->round cert1)))
-                (set::subset (certificate-set->author-set
+                (set::subset (cert-set->author-set
                               (successors cert1 dag1))
                              (committee-members commtt))
-                (set::subset (certificate-set->author-set
+                (set::subset (cert-set->author-set
                               (predecessors cert2 dag2))
                              (committee-members commtt)))
            (<= (set::cardinality
@@ -199,7 +199,7 @@
                (committee-total commtt)))
   :enable (committee-total
            cardinality-of-successors+predecessors
-           certificate-set->author-set-of-union)
+           cert-set->author-set-of-union)
   :disable set::expand-cardinality-of-union)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -221,10 +221,10 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (equal (certificate->round cert2)
                        (+ 2 (certificate->round cert1)))
-                (set::subset (certificate-set->author-set
+                (set::subset (cert-set->author-set
                               (successors cert1 dag1))
                              (committee-members commtt))
-                (set::subset (certificate-set->author-set
+                (set::subset (cert-set->author-set
                               (predecessors cert2 dag2))
                              (committee-members commtt))
                 (>= (set::cardinality (successors cert1 dag1))
@@ -314,10 +314,10 @@
                   (certificate-sets-unequivocalp dag1 dag2)
                   (equal (certificate->round cert2)
                          (+ 2 (certificate->round cert1)))
-                  (set::subset (certificate-set->author-set
+                  (set::subset (cert-set->author-set
                                 (successors cert1 dag1))
                                (committee-members commtt))
-                  (set::subset (certificate-set->author-set
+                  (set::subset (cert-set->author-set
                                 (predecessors cert2 dag2))
                                (committee-members commtt))
                   (>= (set::cardinality (successors cert1 dag1))
@@ -393,7 +393,7 @@
 
   ((defruled lemma1
      (implies (dag-rounds-in-committees-p dag1 blocks1 all-vals)
-              (set::subset (certificate-set->author-set
+              (set::subset (cert-set->author-set
                             (successors cert1 dag1))
                            (committee-members
                             (active-committee-at-round
@@ -407,9 +407,9 @@
                       (y (certificates-with-round (1+ (certificate->round cert1))
                                                   dag1))))
      :enable (successors-subset-of-next-round
-              certificate-set->author-set-monotone
+              cert-set->author-set-monotone
               set::expensive-rules
-              emptyp-of-certificate-set->author-set)
+              emptyp-of-cert-set->author-set)
      :disable set::emptyp-subset-2)
 
    (defruled lemma2
@@ -417,7 +417,7 @@
                    (dag-rounds-in-committees-p dag2 blocks2 all-vals)
                    (equal (certificate->round cert2)
                           (+ 2 (certificate->round cert1))))
-              (set::subset (certificate-set->author-set
+              (set::subset (cert-set->author-set
                             (predecessors cert2 dag2))
                            (committee-members
                             (active-committee-at-round
@@ -431,9 +431,9 @@
                       (y (certificates-with-round (1- (certificate->round cert2))
                                                   dag2))))
      :enable (predecessors-subset-of-previous-round
-              certificate-set->author-set-monotone
+              cert-set->author-set-monotone
               set::expensive-rules
-              emptyp-of-certificate-set->author-set)
+              emptyp-of-cert-set->author-set)
      :disable set::emptyp-subset-2)
 
    (defruled lemma3

@@ -666,7 +666,7 @@
   (b* (((certificate cert) cert))
     (or (= cert.round 1)
         (set::subset cert.previous
-                     (certificate-set->author-set
+                     (cert-set->author-set
                       (certificates-with-round (1- cert.round) dag)))))
   :guard-hints (("Goal" :in-theory (enable posp)))
 
@@ -679,7 +679,7 @@
                   (certificate-setp dag1))
              (certificate-previous-in-dag-p cert dag1))
     :enable (certificates-with-round-monotone
-             certificate-set->author-set-monotone
+             cert-set->author-set-monotone
              set::subset-transitive)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -842,7 +842,7 @@
                    (b* ((commtt (active-committee-at-round round
                                                            blocks
                                                            all-vals))
-                        (authors (certificate-set->author-set
+                        (authors (cert-set->author-set
                                   (certificates-with-round round dag))))
                      (implies (not (set::emptyp authors))
                               (set::subset authors
@@ -860,7 +860,7 @@
                              (dag-rounds-in-committees-p-witness
                               dag blocks all-vals)
                              dag)))))
-    :in-theory (e/d (emptyp-of-certificate-set->author-set
+    :in-theory (e/d (emptyp-of-cert-set->author-set
                      in-of-certificates-with-round)
                     (set::in-head)))))
 

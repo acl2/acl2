@@ -332,7 +332,7 @@
                            (validator-state->blockchain
                             (get-validator-state val systate))
                            (all-addresses systate))))
-               (set::subset (certificate-set->author-set
+               (set::subset (cert-set->author-set
                              (certificates-with-round
                               round
                               (validator-state->dag
@@ -350,7 +350,7 @@
                                (get-validator-state val systate))
                               (all-addresses systate))))
                   (implies (set::in author
-                                    (certificate-set->author-set
+                                    (cert-set->author-set
                                      (certificates-with-round
                                       round
                                       (validator-state->dag
@@ -359,7 +359,7 @@
        :enable (certificates-with-author-subset
                 in-of-certificates-with-author)
        :use ((:instance
-              in-certificate-set->author-set-to-nonempty-certs-with-author
+              in-cert-set->author-set-to-nonempty-certs-with-author
               (certs (certificates-with-round
                       round
                       (validator-state->dag (get-validator-state val systate)))))
