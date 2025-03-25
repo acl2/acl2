@@ -647,7 +647,7 @@
   (b* (((certificate cert) cert))
     (or (= cert.round 1)
         (set::subset cert.previous
-                     (certificate-set->author-set
+                     (cert-set->author-set
                       (certs-with-round (1- cert.round) dag)))))
   :guard-hints (("Goal" :in-theory (enable posp)))
 
@@ -660,7 +660,7 @@
                   (certificate-previous-in-dag-p cert dag))
              (certificate-previous-in-dag-p cert dag1))
     :enable (certs-with-round-monotone
-             certificate-set->author-set-monotone
+             cert-set->author-set-monotone
              set::subset-transitive)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -863,7 +863,7 @@
                   (set::subset certs dag)
                   (set::subset (certificate-set->round-set certs)
                                (set::insert round nil)))
-             (set::subset (certificate-set->author-set certs)
+             (set::subset (cert-set->author-set certs)
                           (committee-members
                            (active-committee-at-round round blockchain))))
     :enable set::expensive-rules
@@ -876,7 +876,7 @@
                      (set::subset (certificate-set->round-set certs)
                                   (set::insert round nil))
                      (set::in author
-                              (certificate-set->author-set certs)))
+                              (cert-set->author-set certs)))
                 (set::in author
                          (committee-members
                           (active-committee-at-round round blockchain))))
@@ -912,7 +912,7 @@
     (implies (and (certificate-setp dag)
                   (dag-in-committees-p dag blockchain)
                   (posp round))
-             (set::subset (certificate-set->author-set
+             (set::subset (cert-set->author-set
                            (certs-with-round round dag))
                           (committee-members
                            (active-committee-at-round round blockchain))))
@@ -980,7 +980,7 @@
                                  (1- (certificate->round cert))
                                  blockchain))
                         (stake (committee-members-stake
-                                (certificate-set->author-set
+                                (cert-set->author-set
                                  (predecessors cert dag))
                                 commtt)))
                      (and (> stake 0)
