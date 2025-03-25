@@ -94,7 +94,8 @@
     (iff (member-equal x (integers-from-to min max))
          (and (integerp x)
               (<= (ifix min) x)
-              (<= x (ifix max)))))
+              (<= x (ifix max))))
+    :enable integers-from-to-of-noninteger-max)
 
   (local
    (defrule verify-guards-lemma-1
