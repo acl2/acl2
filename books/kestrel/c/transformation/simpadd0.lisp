@@ -87,10 +87,9 @@
 (define simpadd0-process-inputs (const-old const-new (wrld plist-worldp))
   :returns (mv erp
                (tunits-old transunit-ensemblep)
-               (const-old$ symbolp)
                (const-new$ symbolp))
   :short "Process all the inputs."
-  (b* (((reterr) (c$::irr-transunit-ensemble) nil nil)
+  (b* (((reterr) (c$::irr-transunit-ensemble) nil)
        ((unless (symbolp const-old))
         (reterr (msg "The first input must be a symbol, ~
                       but it is ~x0 instead."
@@ -121,7 +120,7 @@
                       must contains validation information, ~
                       but it does not."
                      tunits-old const-old))))
-    (retok tunits-old const-old const-new))
+    (retok tunits-old const-new))
 
   ///
 
@@ -5012,7 +5011,7 @@
   :parents (simpadd0-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits-old & const-new)
+       ((erp tunits-old const-new)
         (simpadd0-process-inputs const-old const-new (w state))))
     (simpadd0-gen-everything tunits-old const-new state)))
 
