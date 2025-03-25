@@ -509,7 +509,15 @@
         (uinteger-bit-roles-exponents (cdr roles))))
     (cons (uinteger-bit-role-value->exp role)
           (uinteger-bit-roles-exponents (cdr roles))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled uinteger-bit-roles-exponents-of-append
+    (equal (uinteger-bit-roles-exponents (append roles1 roles2))
+           (append (uinteger-bit-roles-exponents roles1)
+                   (uinteger-bit-roles-exponents roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -528,7 +536,15 @@
         (sinteger-bit-roles-exponents (cdr roles))))
     (cons (sinteger-bit-role-value->exp role)
           (sinteger-bit-roles-exponents (cdr roles))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-exponents-of-append
+    (equal (sinteger-bit-roles-exponents (append roles1 roles2))
+           (append (sinteger-bit-roles-exponents roles1)
+                   (sinteger-bit-roles-exponents roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
