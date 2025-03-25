@@ -244,7 +244,9 @@
                              (myif (mv t (myif arg1 arg2 arg3)))
                              (boolif (mv t (boolif arg1 arg2 arg3)))
                              (array-elem-2d
-                                  (mv t (array-elem-2d arg1 arg2 arg3)))
+                               (mv t (array-elem-2d arg1 arg2 arg3)))
+                             (bv-arrayp
+                                  (mv t (bv-arrayp arg1 arg2 arg3)))
                              (update-nth (mv t (update-nth-unguarded arg1 arg2 arg3)))
                              (if (mv t (if arg1 arg2 arg3)))
                              (slice
@@ -840,7 +842,9 @@
                             (myif (mv t (myif arg1 arg2 arg3)))
                             (boolif (mv t (boolif arg1 arg2 arg3)))
                             (array-elem-2d
-                                 (mv t (array-elem-2d arg1 arg2 arg3)))
+                              (mv t (array-elem-2d arg1 arg2 arg3)))
+                            (bv-arrayp
+                                 (mv t (bv-arrayp arg1 arg2 arg3)))
                             (update-nth (mv t (update-nth-unguarded arg1 arg2 arg3)))
                             (if (mv t (if arg1 arg2 arg3)))
                             (slice
