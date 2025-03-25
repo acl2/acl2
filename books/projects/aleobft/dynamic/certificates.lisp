@@ -90,6 +90,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption certificate-option
+  certificate
+  :short "Fixtype of optional certificates."
+  :pred certificate-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defset certificate-set
   :short "Fixtype of sets of certificates."
   :elt-type certificate
@@ -228,13 +235,6 @@
                     (elem1 (certificate->round cert1))
                     (elem2 (certificate->round cert2))
                     (set (certificate-set->round-set certs)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption certificate-option
-  certificate
-  :short "Fixtype of optional certificates."
-  :pred certificate-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
