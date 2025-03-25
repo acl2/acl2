@@ -137,6 +137,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Remove the temp dir, if present and if instructed to.  If keep-temp-dir is
+;; :auto, remove it unless erp is non-nil (the contents of the temp-dir may
+;; help diagnose the error).
+(defun maybe-remove-temp-dir2 (keep-temp-dir erp interruptp state)
+  (declare (xargs :guard (and (member-eq keep-temp-dir '(t nil :auto))
+                              (booleanp interruptp))
+                  :stobjs state))
+  (let* ((removep (if (booleanp keep-temp-dir)
+                      (not keep-temp-dir)
+                    ;; must be :auto (remove the temp-dir if no error, but always remove it if interrupted):
+                    (if interruptp
+                        t ; don't leave temp dirs around when interrupting (we often interrupt builds)
+                      (if erp nil t))))
+         (state (if removep
+                    (maybe-remove-temp-dir state)
+                  state)))
+    state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; move, so we can use it in other tools?
 ;; Can throw an error or pring a warning if the vars disagree.  Returns nil.
 (defun maybe-check-dag-vars (check-vars
@@ -16929,7 +16949,6 @@
                             max-conflicts
                             normalize-xors ;fixme use the more, deeper in?
                             prove-constants
-                            debug
                             proof-name     ; should no longer be :auto
                             state)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
@@ -17172,7 +17191,7 @@
                                  pre-simplifyp
                                  normalize-xors
                                  ;; could move more stuff into these options:
-                                 (s :prove-constants prove-constants (s :debugp debug nil))
+                                 (s :prove-constants prove-constants nil)
                                  rand state)
                 (mv erp provedp state))))
            ((when erp) (mv erp nil nil state)))
@@ -17212,7 +17231,7 @@
                           max-conflicts
                           normalize-xors ;fixme use the more, deeper in?
                           prove-constants
-                          debug
+                          keep-temp-dir
                           proof-name whole-form state)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
@@ -17244,7 +17263,8 @@
                               (or (eq :auto max-conflicts)
                                   (null max-conflicts)
                                   (natp max-conflicts))
-                              (symbolp proof-name))
+                              (symbolp proof-name)
+                              (member-eq keep-temp-dir '(t nil :auto)))
                   :mode :program
                   :stobjs state))
   (b* (;; Handle redundant invocation:
@@ -17281,20 +17301,18 @@
                              max-conflicts
                              normalize-xors ;fixme use the more, deeper in?
                              prove-constants
-                             debug
                              proof-name state))
+       ;; Remove the temp-dir (usually):
+       (state (maybe-remove-temp-dir2 keep-temp-dir erp nil state))
        ((when erp) (prog2$ (er hard? 'prove-with-axe-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
                            (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-with-axe-fn "Proof attempt failed.~%")
                                      (mv :proof-failed nil state))))
-    ;; Depending on how it went, maybe introduce a theorem:
-    (let ((state (if debug
-                     state
-                   (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
-      (let ((event '(progn))) ;fixme should return a theorem about the dag!
-        (mv (erp-nil)
-            (extend-progn event `(table prove-with-axe-table ',whole-form ',event))
-            state)))))
+    ;; todo: Depending on how it went, maybe introduce a theorem:
+    (let ((event '(progn)))
+      (mv (erp-nil)
+          (extend-progn event `(table prove-with-axe-table ',whole-form ',event))
+          state))))
 
 ;; Returns (mv erp event state).
 ; todo: eventually, try to always use the same rules for the dag prover as the dag rewriter..
@@ -17330,18 +17348,18 @@
                            (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
                            (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                            (normalize-xors 't)
-                           (debug 'nil) ;if t, the temp dir with STP files is not deleted
                            (prove-constants 't) ;whether to attempt to prove probably-constant nodes
+                           (keep-temp-dir ':auto)
                            (proof-name ':auto))
   ;; note: we can't put a make-event inside an acl2-unwind-protect, so we do it
   ;; this way:
   `(make-event
-     (acl2-unwind-protect ; enable cleanup on abort
+     (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-with-axe"
        (prove-with-axe-fn ,dag-or-quotep ,assumptions ,types ,test-types
                           ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                           ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                          ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,debug
+                          ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
                           ,proof-name ',whole-form state)
        ;; ;; Can't call prove-with-axe-fn directly here, because it returns extra
        ;; ;; stobjs (does not return an error triple), so we use trans-eval as
@@ -17351,7 +17369,7 @@
        ;;                            ,dag-or-quotep ,assumptions ,types ,test-types
        ;;                            ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
        ;;                            ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-       ;;                            ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,debug
+       ;;                            ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
        ;;                            ,proof-name ',whole-form state)
        ;;                          'prove-with-axe
        ;;                          state
@@ -17366,9 +17384,10 @@
        ;;            (event (second values-returned)))
        ;;       (mv erp event state))))
 
-       ;; The acl2-unwind-protect ensures that this is called if the user aborts:
-       (if ,debug state (maybe-remove-temp-dir state))
-       ;; No need to clean up anything if no abort and no error:
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir (usually):
+       (maybe-remove-temp-dir2 ,keep-temp-dir nil t state)
+       ;; No need to clean up anything if no interrupt and no error:
        state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -17382,7 +17401,7 @@
                                  tests
                                  ;; todo: standardize argument order:
                                  tests-per-case print debug-nodes interpreted-function-alist check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
-                                 random-seed unroll max-conflicts normalize-xors debug prove-constants
+                                 random-seed unroll max-conflicts normalize-xors prove-constants keep-temp-dir
                                  proof-name whole-form state)
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
                               (or (eq :bits types)
@@ -17396,7 +17415,7 @@
                               (natp tests)
                               ; todo: more
                               (member-eq check-vars '(t nil :warn))
-                              )
+                              (member-eq keep-temp-dir '(t nil :auto)))
                   :mode :program
                   :stobjs state))
   (b* (;; Handle redundant invocation:
@@ -17447,21 +17466,20 @@
                              max-conflicts
                              normalize-xors ;fixme use the more, deeper in?
                              prove-constants
-                             debug
                              proof-name state))
+       ;; Remove the temp-dir (usually):
+       (state (maybe-remove-temp-dir2 keep-temp-dir erp nil state))
        ((when erp) (prog2$ (er hard? 'prove-equal-with-axe+-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
                            (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe+-fn "Proof attempt failed.~%")
                                      (mv :proof-failed nil state))))
-    (let ((state (if debug state (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
-      (let ((event '(progn))) ;todo: should return a theorem about the term-or-dags!
-        (mv (erp-nil)
-            (extend-progn event `(table prove-equal-with-axe+-table ',whole-form ',event))
-            state)))))
+    (let ((event '(progn))) ;todo: should return a theorem about the term-or-dags!
+      (mv (erp-nil)
+          (extend-progn event `(table prove-equal-with-axe+-table ',whole-form ',event))
+          state))))
 
 ;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equal-with-axe, this supports all the exotic options to prove-with-axe.
 ;; Used in several loop examples.
-;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 ;; See also prove-equal-with-axe, which is preferable when it is sufficient (because it is simpler).
 ;; This tool was formerly called prove-equality.
 (defmacro prove-equal-with-axe+ (&whole
@@ -17493,17 +17511,23 @@
                                   (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
                                   (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                                   (normalize-xors 't)
-                                  (debug 'nil) ;if t, the temp dir with STP files is not deleted
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
-                                  (proof-name ':auto)
-                                  )
+                                  (keep-temp-dir ':auto)
+                                  (proof-name ':auto))
   `(make-event ; use make-event-quiet?
-     (prove-equal-with-axe+-fn ,dag-or-term1
-                               ,dag-or-term2
-                               ,assumptions ,types ,test-types ,tests
-                               ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                               ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants
-                               ,proof-name ',whole-form state)))
+     (acl2-unwind-protect ; enable cleanup on interrupt
+       "acl2-unwind-protect for prove-equal-with-axe+"
+       (prove-equal-with-axe+-fn ,dag-or-term1
+                                 ,dag-or-term2
+                                 ,assumptions ,types ,test-types ,tests
+                                 ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                                 ,random-seed ,unroll ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
+                                 ,proof-name ',whole-form state)
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir (usually):
+       (maybe-remove-temp-dir2 ,keep-temp-dir nil t state)
+       ;; No need to clean up anything if no interrupt and no error:
+       state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -17519,7 +17543,6 @@
                                 tests ;a natp indicating how many tests to run
                                 tactic
                                 print
-                                debug ; whether to keep temp-dirs around
                                 debug-nodes
                                 max-conflicts extra-rules initial-rule-sets
                                 monitor
@@ -17528,6 +17551,7 @@
                                 interpreted-function-alist
                                 check-vars
                                 prove-theorem
+                                keep-temp-dir
                                 local
                                 proof-name  ; may be :auto
                                 whole-form
@@ -17547,7 +17571,6 @@
                            (or (eq tactic :rewrite)
                                (eq tactic :rewrite-and-sweep))
                            ;; print
-                           (booleanp debug)
                            (nat-listp debug-nodes)
                            (or (eq :auto max-conflicts)
                                (null max-conflicts)
@@ -17561,6 +17584,7 @@
                            (interpreted-function-alistp interpreted-function-alist)
                            (member-eq check-vars '(t nil :warn))
                            (booleanp prove-theorem)
+                           (member-eq keep-temp-dir '(t nil :auto))
                            (booleanp local)
                            (symbolp proof-name))
                   :mode :program
@@ -17627,10 +17651,9 @@
                              max-conflicts
                              normalize-xors
                              t   ;prove-constants
-                             debug
                              proof-name state))
-       ;; Remove the temp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
-       (state (if debug state (maybe-remove-temp-dir state)))
+       ;; Remove the temp-dir (usually):
+       (state (maybe-remove-temp-dir2 keep-temp-dir erp nil state))
        ((when erp) (prog2$ (er hard? 'prove-equal-with-axe-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
                            (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe-fn "Proof attempt failed.~%")
@@ -17661,7 +17684,6 @@
        (event (if local `(local ,event) event)))
     (mv (erp-nil) event state)))
 
-;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 ;; This tool was formerly called prove-equivalence.
 (defmacrodoc prove-equal-with-axe (&whole
                                     whole-form
@@ -17674,7 +17696,6 @@
                                     (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                     (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                                     (print ':brief)
-                                    (debug 'nil)
                                     (debug-nodes 'nil)
                                     (max-conflicts ':auto) ;1000 here broke proofs
                                     (extra-rules 'nil)
@@ -17685,30 +17706,39 @@
                                     (interpreted-function-alist 'nil) ;affects soundness
                                     (check-vars 't)
                                     (prove-theorem 'nil) ; very rarely used
+                                    (keep-temp-dir ':auto)
                                     (local 't)
                                     (proof-name ':auto) ;the name of the proof, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
                                     )
-  `(make-event-quiet (prove-equal-with-axe-fn ,dag-or-term1
-                                              ,dag-or-term2
-                                              ,assumptions
-                                              ,types
-                                              ,test-types
-                                              ,tests
-                                              ,tactic
-                                              ,print
-                                              ,debug
-                                              ,debug-nodes
-                                              ,max-conflicts
-                                              ,extra-rules
-                                              ,initial-rule-sets
-                                              ,monitor
-                                              ,use-context-when-miteringp
-                                              ,normalize-xors
-                                              ,interpreted-function-alist
-                                              ,check-vars
-                                              ,prove-theorem
-                                              ,local
-                                              ,proof-name ',whole-form state))
+  `(make-event-quiet
+     (acl2-unwind-protect ; enable cleanup on interrupt
+       "acl2-unwind-protect for prove-equal-with-axe"
+       (prove-equal-with-axe-fn ,dag-or-term1
+                                ,dag-or-term2
+                                ,assumptions
+                                ,types
+                                ,test-types
+                                ,tests
+                                ,tactic
+                                ,print
+                                ,debug-nodes
+                                ,max-conflicts
+                                ,extra-rules
+                                ,initial-rule-sets
+                                ,monitor
+                                ,use-context-when-miteringp
+                                ,normalize-xors
+                                ,interpreted-function-alist
+                                ,check-vars
+                                ,prove-theorem
+                                ,keep-temp-dir
+                                ,local
+                                ,proof-name ',whole-form state)
+       ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
+       ;; Remove the temp-dir (usually):
+       (maybe-remove-temp-dir2 ,keep-temp-dir nil t state)
+       ;; No need to clean up anything if no interrupt and no error:
+       state))
   :parents (axe)
   :short "Prove that two items (DAGs or terms) are equivalent for all values of all of their variables."
   :args ((dag-or-term1 "The first DAG or term to compare")
@@ -17719,7 +17749,6 @@
          (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (tests "How many tests to use to find internal equivalences (a natp)")
          (print "Print verbosity (allows nil, :brief, t, and :verbose)")
-         (debug "Whether to leave temp files in place, for debugging")
          (debug-nodes "Nodenums whose values should be printed for each test-case.")
          (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
          (extra-rules "The names of extra rules to use when simplifying (a symbol list)")
@@ -17730,6 +17759,7 @@
          (interpreted-function-alist "Provides definitions for non-built-in functions")
          (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
          (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
+         (keep-temp-dir "Whether to keep the directory with temp files in place, for debugging.  If :auto, the temp-dir is kept whenever there is an error.")
          (local "whether to make the generated events local")
          (proof-name "A name to assign to the proof, if desired.  A symbol, or :auto to let Axe choose a name.")
          )
