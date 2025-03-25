@@ -666,18 +666,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-gen-init-scope-thm ((params paramdecl-listp)
-                                     (gin simpadd0-ginp))
-  :guard (paramdecl-list-unambp params)
+(define simpadd0-gen-init-scope-thm ((params c::param-declon-listp)
+                                     (args symbol-listp)
+                                     (parargs true-listp)
+                                     (arg-types true-listp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp))
   :short "Generate a theorem about the initial scope of a function."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now this is generated only if all the parameters have @('int') type.
-     If no theorem is generated, we return @('nil') as its name (second result)
-     and a dummy event as first result.")
+    "The @('args'), @('parargs'), and @('arg-types') inputs to this function
+     are the corresponding outputs of @(tsee simpadd0-gen-from-params).")
    (xdoc::p
     "The theorem says that, given @('int') values for the arguments,
      @(tsee c::init-scope) applied to the list of parameter declarations
@@ -686,13 +686,9 @@
      that associates parameter name and argument value.")
    (xdoc::p
     "The name of the theorem is used locally to another theorem,
-     so it does not have to be particularly unique."))
-  (b* (((mv erp params) (c$::ldm-paramdecl-list params))
-       ((when erp) (mv '(_) nil))
-       ((mv okp args parargs arg-types &)
-        (simpadd0-gen-from-params params gin))
-       ((unless okp) (mv '(_) nil))
-       (formula `(implies (and ,@arg-types)
+     so it does not have to be particularly distinguished.
+     But we should check and disambiguate this more thoroughly."))
+  (b* ((formula `(implies (and ,@arg-types)
                           (equal (c::init-scope ',params (list ,@args))
                                  (list ,@parargs))))
        (hints
@@ -4468,7 +4464,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We attempt to generate a theorem about
+    "For now we only generate a theorem if
+     the function has all @('int') parameters.
+     For now we generate a theorem about
      the initial scope of the function.
      We put that theorem inside a dummy theorem;
      we plan to replace this dummy enclosing theorem
@@ -4519,10 +4517,13 @@
        ((unless (dirdeclor-case declor.direct :function-params))
         (mv new-fundef gout-no-thm))
        (params (dirdeclor-function-params->params declor.direct))
-       ((mv init-scope-thm-event init-scope-thm-name)
-        (simpadd0-gen-init-scope-thm params gin))
-       ((unless init-scope-thm-name)
-        (mv new-fundef gout-no-thm))
+       ((mv erp ldm-params) (c$::ldm-paramdecl-list params))
+       ((when erp) (mv new-fundef gout-no-thm))
+       ((mv okp args parargs arg-types &)
+        (simpadd0-gen-from-params ldm-params gin))
+       ((unless okp) (mv new-fundef gout-no-thm))
+       ((mv init-scope-thm-event &)
+        (simpadd0-gen-init-scope-thm ldm-params args parargs arg-types))
        (thm-name (packn-pos (list gin.const-new '-thm- gin.thm-index)
                             gin.const-new))
        (thm-index (1+ gin.thm-index))
