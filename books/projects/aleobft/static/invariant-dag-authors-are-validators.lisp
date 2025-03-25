@@ -42,7 +42,7 @@
   :returns (yes/no booleanp)
   :short "Check if all the authors of certificates in a dag
           are a subset of a given set of validator addresses."
-  (set::subset (certificate-set->author-set dag) vals))
+  (set::subset (cert-set->author-set dag) vals))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,7 +103,7 @@
 
   (defrulel thecert-lemma
     (implies (and (certificate-setp certs)
-                  (set::in author (certificate-set->author-set certs)))
+                  (set::in author (cert-set->author-set certs)))
              (and (set::in (thecert author certs) certs)
                   (equal (certificate->author (thecert author certs))
                          author)))
@@ -116,7 +116,7 @@
     (implies (and (system-signers-are-validators-p systate)
                   (set::in val (correct-addresses systate))
                   (set::in author
-                           (certificate-set->author-set
+                           (cert-set->author-set
                             (validator-state->dag
                              (get-validator-state val systate)))))
              (set::in author (all-addresses systate)))

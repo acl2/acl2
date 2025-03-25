@@ -276,7 +276,7 @@
   (b* (((certificate cert) cert))
     (or (equal cert.round 1)
         (set::subset cert.previous
-                     (certificate-set->author-set
+                     (cert-set->author-set
                       (certificates-with-round (1- cert.round) dag)))))
   :guard-hints (("Goal" :in-theory (enable posp)))
   ///
@@ -292,7 +292,7 @@
                   (certificate-setp dag1))
              (certificate-previous-in-dag-p cert dag1))
     :enable (certificates-with-round-monotone
-             certificate-set->author-set-monotone
+             cert-set->author-set-monotone
              set::subset-transitive)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -161,7 +161,7 @@
                     (and (set::in cert certs)
                          (equal (certificate->author cert) author))))
     :induct t
-    :enable certificate-set->author-set-of-insert)
+    :enable cert-set->author-set-of-insert)
 
   (defruled certificates-with-author-when-emptyp
     (implies (set::emptyp certs)
@@ -196,9 +196,9 @@
 
   (defruled emptyp-of-certificates-with-author-if-no-author
     (equal (set::emptyp (certificates-with-author author certs))
-           (not (set::in author (certificate-set->author-set certs))))
+           (not (set::in author (cert-set->author-set certs))))
     :induct t
-    :enable certificate-set->author-set)
+    :enable cert-set->author-set)
 
   (defruled certificates-with-author-of-intersect
     (implies (and (certificate-setp certs1)
@@ -213,16 +213,16 @@
              set::expensive-rules
              set::double-containment-no-backchain-limit))
 
-  (defruled certificate-set->author-set-of-certificates-with-author
+  (defruled cert-set->author-set-of-certificates-with-author
     (implies (certificate-setp certs)
-             (equal (certificate-set->author-set
+             (equal (cert-set->author-set
                      (certificates-with-author author certs))
-                    (if (set::in author (certificate-set->author-set certs))
+                    (if (set::in author (cert-set->author-set certs))
                         (set::insert author nil)
                       nil)))
     :induct t
-    :enable (certificate-set->author-set
-             certificate-set->author-set-of-insert)))
+    :enable (cert-set->author-set
+             cert-set->author-set-of-insert)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,7 +286,7 @@
   (defruled certificate-with-author+round-when-author-in-round
     (implies (and (certificate-setp certs)
                   (set::in author
-                           (certificate-set->author-set
+                           (cert-set->author-set
                             (certificates-with-round round certs))))
              (certificate-with-author+round author round certs))
     :use (:instance set::in-head
@@ -393,15 +393,15 @@
   (defruled author-set-of-certificates-with-authors
     (implies (and (address-setp authors)
                   (certificate-setp certs))
-             (equal (certificate-set->author-set
+             (equal (cert-set->author-set
                      (certificates-with-authors authors certs))
                     (set::intersect authors
-                                    (certificate-set->author-set certs))))
+                                    (cert-set->author-set certs))))
     :induct t
-    :enable (certificate-set->author-set
+    :enable (cert-set->author-set
              set::expensive-rules
-             certificate-set->author-set-of-certificates-with-author
-             certificate-set->author-set-of-union)))
+             cert-set->author-set-of-certificates-with-author
+             cert-set->author-set-of-union)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -436,11 +436,11 @@
 
   (defruled certificates-authors-of-certificates-with-authors+round-subset
     (b* ((returned-authors
-          (certificate-set->author-set
+          (cert-set->author-set
            (certificates-with-authors+round authors round certs))))
       (set::subset returned-authors authors))
     :induct t
-    :enable certificate-set->author-set-of-insert)
+    :enable cert-set->author-set-of-insert)
 
   (defruled round-set-of-certificates-with-authors+round
     (equal (certificate-set->round-set

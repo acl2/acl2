@@ -225,7 +225,7 @@
                 (set::subset certs1 certs2)
                 (certificate-set-unequivocalp certs2)
                 (set::subset authors
-                             (certificate-set->author-set
+                             (cert-set->author-set
                               (certificates-with-round round certs1))))
            (equal (certificates-with-authors+round authors round certs2)
                   (certificates-with-authors+round authors round certs1)))
@@ -280,10 +280,10 @@
                 (certificate-setp certs2)
                 (certificate-sets-unequivocalp certs1 certs2)
                 (set::subset authors
-                             (certificate-set->author-set
+                             (cert-set->author-set
                               (certificates-with-round round certs1)))
                 (set::subset authors
-                             (certificate-set->author-set
+                             (cert-set->author-set
                               (certificates-with-round round certs2))))
            (equal (certificates-with-authors+round authors round certs1)
                   (certificates-with-authors+round authors round certs2)))
@@ -304,7 +304,7 @@
   ((defrule lemma1
      (implies (and
                (set::subset authors ; bind authors
-                            (certificate-set->author-set
+                            (cert-set->author-set
                              (certificates-with-round
                               (certificate->round cert) certs1))) ; bind certs1
                (certificate-setp certs1)
@@ -313,7 +313,7 @@
                (set::in cert certs1)
                (set::in (certificate->author cert) authors)
                (set::subset authors
-                            (certificate-set->author-set
+                            (cert-set->author-set
                              (certificates-with-round
                               (certificate->round cert) certs2))))
               (set::in cert certs2))
@@ -335,7 +335,7 @@
    (defrule lemma2
      (implies (and
                (set::subset authors ; bind authors
-                            (certificate-set->author-set
+                            (cert-set->author-set
                              (certificates-with-round
                               (certificate->round cert) certs2))) ; bind certs2
                (certificate-setp certs1)
@@ -344,7 +344,7 @@
                (set::in cert certs2)
                (set::in (certificate->author cert) authors)
                (set::subset authors
-                            (certificate-set->author-set
+                            (cert-set->author-set
                              (certificates-with-round
                               (certificate->round cert) certs1))))
               (set::in cert certs1))
@@ -374,7 +374,7 @@
                 (certificate-set-unequivocalp certs)
                 (address-setp authors)
                 (set::subset authors
-                             (certificate-set->author-set
+                             (cert-set->author-set
                               (certificates-with-round round certs))))
            (equal (set::cardinality
                    (certificates-with-authors+round authors round certs))

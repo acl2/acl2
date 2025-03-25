@@ -114,62 +114,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define certificate-set->author-set ((certs certificate-setp))
+(define cert-set->author-set ((certs certificate-setp))
   :returns (addrs address-setp)
   :short "Lift @(tsee certificate->author) to sets."
   (cond ((set::emptyp certs) nil)
         (t (set::insert (certificate->author (set::head certs))
-                        (certificate-set->author-set (set::tail certs)))))
+                        (cert-set->author-set (set::tail certs)))))
   :verify-guards :after-returns
   ///
 
-  (defruled certificate->author-in-certificate-set->author-set
+  (defruled certificate->author-in-cert-set->author-set
     (implies (set::in cert certs)
              (set::in (certificate->author cert)
-                      (certificate-set->author-set certs)))
+                      (cert-set->author-set certs)))
     :induct t)
 
-  (defruled certificate-set->author-set-of-insert
-    (equal (certificate-set->author-set (set::insert cert certs))
+  (defruled cert-set->author-set-of-insert
+    (equal (cert-set->author-set (set::insert cert certs))
            (set::insert (certificate->author cert)
-                        (certificate-set->author-set certs)))
+                        (cert-set->author-set certs)))
     :induct t
     :enable (set::in
-             certificate->author-in-certificate-set->author-set))
+             certificate->author-in-cert-set->author-set))
 
-  (defruled certificate-set->author-set-of-union
+  (defruled cert-set->author-set-of-union
     (implies (certificate-setp certs2)
-             (equal (certificate-set->author-set (set::union certs1 certs2))
-                    (set::union (certificate-set->author-set certs1)
-                                (certificate-set->author-set certs2))))
+             (equal (cert-set->author-set (set::union certs1 certs2))
+                    (set::union (cert-set->author-set certs1)
+                                (cert-set->author-set certs2))))
     :induct t
-    :enable (certificate-set->author-set-of-insert
+    :enable (cert-set->author-set-of-insert
              set::union))
 
-  (defruled emptyp-of-certificate-set->author-set
-    (equal (set::emptyp (certificate-set->author-set certs))
+  (defruled emptyp-of-cert-set->author-set
+    (equal (set::emptyp (cert-set->author-set certs))
            (set::emptyp certs))
     :induct t)
 
-  (defruled certificate-set->author-set-monotone
+  (defruled cert-set->author-set-monotone
     (implies (set::subset certs1 certs2)
-             (set::subset (certificate-set->author-set certs1)
-                          (certificate-set->author-set certs2)))
+             (set::subset (cert-set->author-set certs1)
+                          (cert-set->author-set certs2)))
     :induct t
     :enable (set::subset
-             certificate->author-in-certificate-set->author-set))
+             certificate->author-in-cert-set->author-set))
 
   (defruled same-certificate-author-when-cardinality-leq-1
-    (implies (and (<= (set::cardinality (certificate-set->author-set certs)) 1)
+    (implies (and (<= (set::cardinality (cert-set->author-set certs)) 1)
                   (set::in cert1 certs)
                   (set::in cert2 certs))
              (equal (certificate->author cert1)
                     (certificate->author cert2)))
-    :enable certificate->author-in-certificate-set->author-set
+    :enable certificate->author-in-cert-set->author-set
     :use (:instance set::same-element-when-cardinality-leq-1
                     (elem1 (certificate->author cert1))
                     (elem2 (certificate->author cert2))
-                    (set (certificate-set->author-set certs)))))
+                    (set (cert-set->author-set certs)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 

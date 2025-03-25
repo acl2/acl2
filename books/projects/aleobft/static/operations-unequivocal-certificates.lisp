@@ -113,7 +113,7 @@
                   (not (set::emptyp certs))
                   (<= (set::cardinality (certificate-set->round-set certs)) 1))
              (not (set::in (certificate->author (set::head certs))
-                           (certificate-set->author-set (set::tail certs)))))
+                           (cert-set->author-set (set::tail certs)))))
     :use ((:instance emptyp-of-certificates-with-author-if-no-author
                      (author (certificate->author (set::head certs)))
                      (certs (set::tail certs)))
@@ -138,11 +138,11 @@
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
                   (<= (set::cardinality (certificate-set->round-set certs)) 1))
-             (equal (set::cardinality (certificate-set->author-set certs))
+             (equal (set::cardinality (cert-set->author-set certs))
                     (set::cardinality certs)))
     :induct t
     :enable (set::cardinality
-             certificate-set->author-set
+             cert-set->author-set
              head-author-not-in-tail-authors-when-same-round-and-unequiv
              set::expensive-rules)
     :disable (certificate-set->round-set-monotone
@@ -169,7 +169,7 @@
   (defruled cardinality-bound-when-same-round-and-unequiv
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
-                  (set::subset (certificate-set->author-set certs) vals)
+                  (set::subset (cert-set->author-set certs) vals)
                   (<= (set::cardinality (certificate-set->round-set certs)) 1))
              (<= (set::cardinality certs)
                  (set::cardinality vals)))
