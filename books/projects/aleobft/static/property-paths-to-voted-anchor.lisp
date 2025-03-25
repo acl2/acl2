@@ -250,7 +250,7 @@
                 (equal (certificate->round cert1)
                        (+ 2 (certificate->round cert))))
            (<= (set::cardinality
-                (certificate-set->round-set
+                (cert-set->round-set
                  (set::union (incoming cert dag)
                              (outgoing cert1 dag))))
                1))
@@ -259,7 +259,7 @@
            cert-set->author-set-monotone)
   :use incoming+outgoing-subset-same-round
   :disable (incoming+outgoing-subset-same-round
-            certificate-set->round-set-of-union))
+            cert-set->round-set-of-union))
 
 ; We show that, given again certificates CERT and CERT1 two rounds apart,
 ; the number of incoming certificates of CERT and outgoing certificates of CERT1
@@ -284,7 +284,7 @@
            outgoing-subset
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
-            certificate-set->round-set-of-union))
+            cert-set->round-set-of-union))
 
 ; Finally, we instantiate the abstract fact proved earlier,
 ; namely CARDINALITY-OF-VOTERS/PREVIOUS-INTERSECTION.
@@ -320,7 +320,7 @@
                    (x (set::intersect (incoming cert dag)
                                       (outgoing cert1 dag)))))
   :disable (set::cardinality-zero-emptyp
-            certificate-set->round-set-of-union))
+            cert-set->round-set-of-union))
 
 ; Above we have shown that there is an intersection between
 ; the incoming and outgoing certificates of two certificates two rounds apart.

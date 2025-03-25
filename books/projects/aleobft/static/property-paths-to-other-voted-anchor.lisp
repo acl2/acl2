@@ -91,7 +91,7 @@
                 (equal (certificate->round cert2)
                        (+ 2 (certificate->round cert1))))
            (<= (set::cardinality
-                (certificate-set->round-set
+                (cert-set->round-set
                  (set::union (incoming cert1 dag1)
                              (outgoing cert2 dag2))))
                1))
@@ -99,7 +99,7 @@
   :enable (set::cardinality
            round-set-of-incoming
            round-set-of-outgoing
-           certificate-set->round-set-of-union))
+           cert-set->round-set-of-union))
 
 ; This is similar to the homonymous theorem for the single-DAG property
 ; (in property-paths-to-voted-anchor.lisp), but it involves two DAGs.
@@ -133,7 +133,7 @@
            outgoing-subset
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
-            certificate-set->round-set-of-union))
+            cert-set->round-set-of-union))
 
 ; This is similar to the homonymous theorem for the single-DAG property
 ; (in property-paths-to-voted-anchor.lisp), but it involves two DAGs.
@@ -169,7 +169,7 @@
                    (x (set::intersect (incoming cert1 dag1)
                                       (outgoing cert2 dag2)))))
   :disable (set::cardinality-zero-emptyp
-            certificate-set->round-set-of-union))
+            cert-set->round-set-of-union))
 
 ; Similarly to the proof of the single-DAG property,
 ; having shown the non-empty intersection,

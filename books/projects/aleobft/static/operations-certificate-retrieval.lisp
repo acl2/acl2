@@ -312,28 +312,28 @@
              in-of-certificates-with-round))
 
   (defruled round-set-of-certificates-with-round
-    (equal (certificate-set->round-set
+    (equal (cert-set->round-set
             (certificates-with-round round certs))
            (if (set::emptyp (certificates-with-round round certs))
                nil
              (set::insert round nil)))
     :induct t
-    :enable certificate-set->round-set-of-insert)
+    :enable cert-set->round-set-of-insert)
 
   (defruled round-set-of-certificates-with-round-possibilities
-    (or (equal (certificate-set->round-set
+    (or (equal (cert-set->round-set
                 (certificates-with-round round certs))
                nil)
-        (equal (certificate-set->round-set
+        (equal (cert-set->round-set
                 (certificates-with-round round certs))
                (set::insert round nil)))
     :induct t
-    :enable (certificate-set->round-set
-             certificate-set->round-set-of-insert))
+    :enable (cert-set->round-set
+             cert-set->round-set-of-insert))
 
   (defruled cardinality-of-round-set-of-certificates-with-round
     (<= (set::cardinality
-         (certificate-set->round-set
+         (cert-set->round-set
           (certificates-with-round round certs)))
         1)
     :rule-classes :linear
@@ -344,14 +344,14 @@
     (implies (set::subset certs0
                           (certificates-with-round round certs))
              (<= (set::cardinality
-                  (certificate-set->round-set certs0))
+                  (cert-set->round-set certs0))
                  1))
     :rule-classes :linear
     :enable (cardinality-of-round-set-of-certificates-with-round
-             certificate-set->round-set-monotone)
+             cert-set->round-set-monotone)
     :use ((:instance set::subset-cardinality
-                     (x (certificate-set->round-set certs0))
-                     (y (certificate-set->round-set
+                     (x (cert-set->round-set certs0))
+                     (y (cert-set->round-set
                          (certificates-with-round round certs)))))
     :disable set::subset-cardinality))
 
@@ -443,23 +443,23 @@
     :enable cert-set->author-set-of-insert)
 
   (defruled round-set-of-certificates-with-authors+round
-    (equal (certificate-set->round-set
+    (equal (cert-set->round-set
             (certificates-with-authors+round authors round certs))
            (if (set::emptyp
                 (certificates-with-authors+round authors round certs))
                nil
              (set::insert round nil)))
     :induct t
-    :enable certificate-set->round-set-of-insert)
+    :enable cert-set->round-set-of-insert)
 
-  (defruled certificate-set->round-set-of-certificates-with-authors+round
-    (b* ((rounds (certificate-set->round-set
+  (defruled cert-set->round-set-of-certificates-with-authors+round
+    (b* ((rounds (cert-set->round-set
                   (certificates-with-authors+round authors round certs))))
       (implies (not (set::emptyp rounds))
                (equal rounds
                       (set::insert (pos-fix round) nil))))
     :induct t
-    :enable certificate-set->round-set-of-insert)
+    :enable cert-set->round-set-of-insert)
 
   (defruled in-of-certificates-with-authors+round
     (implies (certificate-setp certs)

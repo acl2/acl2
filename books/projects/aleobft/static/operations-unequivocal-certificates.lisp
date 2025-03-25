@@ -90,7 +90,7 @@
   (defrule same-certificate-when-unequivocal-same-authors-and-round-card-leq-1
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
-                  (<= (set::cardinality (certificate-set->round-set certs)) 1)
+                  (<= (set::cardinality (cert-set->round-set certs)) 1)
                   (set::in cert1 certs)
                   (set::in cert2 certs)
                   (equal (certificate->author cert1)
@@ -111,7 +111,7 @@
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
                   (not (set::emptyp certs))
-                  (<= (set::cardinality (certificate-set->round-set certs)) 1))
+                  (<= (set::cardinality (cert-set->round-set certs)) 1))
              (not (set::in (certificate->author (set::head certs))
                            (cert-set->author-set (set::tail certs)))))
     :use ((:instance emptyp-of-certificates-with-author-if-no-author
@@ -137,7 +137,7 @@
   (defruled cardinality-of-authors-when-same-round-and-unequiv
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
-                  (<= (set::cardinality (certificate-set->round-set certs)) 1))
+                  (<= (set::cardinality (cert-set->round-set certs)) 1))
              (equal (set::cardinality (cert-set->author-set certs))
                     (set::cardinality certs)))
     :induct t
@@ -145,14 +145,14 @@
              cert-set->author-set
              head-author-not-in-tail-authors-when-same-round-and-unequiv
              set::expensive-rules)
-    :disable (certificate-set->round-set-monotone
+    :disable (cert-set->round-set-monotone
               set::cardinality-of-tail-leq
               certificate-set-unequivocalp)
-    :hints ('(:use ((:instance certificate-set->round-set-monotone
+    :hints ('(:use ((:instance cert-set->round-set-monotone
                                (certs1 (set::tail certs))
                                (certs2 certs))
                     (:instance set::cardinality-of-tail-leq
-                               (set (certificate-set->round-set certs)))))))
+                               (set (cert-set->round-set certs)))))))
 
   ;; The number of certificates in a round
   ;; is limited by the total number of validators in the system,
@@ -170,7 +170,7 @@
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
                   (set::subset (cert-set->author-set certs) vals)
-                  (<= (set::cardinality (certificate-set->round-set certs)) 1))
+                  (<= (set::cardinality (cert-set->round-set certs)) 1))
              (<= (set::cardinality certs)
                  (set::cardinality vals)))
     :enable cardinality-of-authors-when-same-round-and-unequiv))

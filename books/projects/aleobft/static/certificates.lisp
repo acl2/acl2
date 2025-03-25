@@ -180,62 +180,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define certificate-set->round-set ((certs certificate-setp))
+(define cert-set->round-set ((certs certificate-setp))
   :returns (rounds pos-setp)
   :short "Lift @(tsee certificate->round) to sets."
   (cond ((set::emptyp certs) nil)
         (t (set::insert (certificate->round (set::head certs))
-                        (certificate-set->round-set (set::tail certs)))))
+                        (cert-set->round-set (set::tail certs)))))
   :verify-guards :after-returns
   ///
 
-  (defruled certificate->round-in-certificate-set->round-set
+  (defruled certificate->round-in-cert-set->round-set
     (implies (set::in cert certs)
              (set::in (certificate->round cert)
-                      (certificate-set->round-set certs)))
+                      (cert-set->round-set certs)))
     :induct t)
 
-  (defruled certificate-set->round-set-of-insert
-    (equal (certificate-set->round-set (set::insert cert certs))
+  (defruled cert-set->round-set-of-insert
+    (equal (cert-set->round-set (set::insert cert certs))
            (set::insert (certificate->round cert)
-                        (certificate-set->round-set certs)))
+                        (cert-set->round-set certs)))
     :induct t
     :enable (set::in
-             certificate->round-in-certificate-set->round-set))
+             certificate->round-in-cert-set->round-set))
 
-  (defruled certificate-set->round-set-of-union
+  (defruled cert-set->round-set-of-union
     (implies (certificate-setp certs2)
-             (equal (certificate-set->round-set (set::union certs1 certs2))
-                    (set::union (certificate-set->round-set certs1)
-                                (certificate-set->round-set certs2))))
+             (equal (cert-set->round-set (set::union certs1 certs2))
+                    (set::union (cert-set->round-set certs1)
+                                (cert-set->round-set certs2))))
     :induct t
     :enable (set::union
-             certificate-set->round-set-of-insert))
+             cert-set->round-set-of-insert))
 
-  (defruled emptyp-of-certificate-set->round-set
-    (equal (set::emptyp (certificate-set->round-set certs))
+  (defruled emptyp-of-cert-set->round-set
+    (equal (set::emptyp (cert-set->round-set certs))
            (set::emptyp certs))
     :induct t)
 
-  (defruled certificate-set->round-set-monotone
+  (defruled cert-set->round-set-monotone
     (implies (set::subset certs1 certs2)
-             (set::subset (certificate-set->round-set certs1)
-                          (certificate-set->round-set certs2)))
+             (set::subset (cert-set->round-set certs1)
+                          (cert-set->round-set certs2)))
     :induct t
     :enable (set::subset
-             certificate->round-in-certificate-set->round-set))
+             certificate->round-in-cert-set->round-set))
 
   (defruled same-certificate-round-when-cardinality-leq-1
-    (implies (and (<= (set::cardinality (certificate-set->round-set certs)) 1)
+    (implies (and (<= (set::cardinality (cert-set->round-set certs)) 1)
                   (set::in cert1 certs)
                   (set::in cert2 certs))
              (equal (certificate->round cert1)
                     (certificate->round cert2)))
-    :enable certificate->round-in-certificate-set->round-set
+    :enable certificate->round-in-cert-set->round-set
     :use (:instance set::same-element-when-cardinality-leq-1
                     (elem1 (certificate->round cert1))
                     (elem2 (certificate->round cert2))
-                    (set (certificate-set->round-set certs)))))
+                    (set (cert-set->round-set certs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
