@@ -100,7 +100,12 @@
      i.e. all the validators who signed the certificate."))
   (b* (((certificate cert) cert))
     (set::insert cert.author cert.endorsers))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret not-emptyp-of-certificate->signers
+    (not (set::emptyp signers))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
