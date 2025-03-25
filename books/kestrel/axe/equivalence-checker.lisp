@@ -8543,7 +8543,7 @@
        (or (and (call-of 'true-listp term)
                 (variablep (farg1 term)))
            (and (call-of 'unsigned-byte-p term)
-                (quotep (farg1 term))
+                (quotep (farg1 term)) ; todo: check for natp
                 (variablep (farg2 term)))
            (and (call-of 'all-unsigned-byte-p term) ;fixme what if we have only some of the 3 things needed for an array type?
                 (quotep (farg1 term))
@@ -8559,6 +8559,12 @@
                 (true-listp (farg1 term))
                 (call-of 'len (farg1 term))
                 (variablep (farg1 (farg1 term))))
+           (and (call-of 'bv-arrayp term) ; (bv-arrayp '<element-width> '<length> val)
+                (myquotep (farg1 term))
+                (natp (unquote (farg1 term)))
+                (myquotep (farg2 term))
+                (natp (unquote (farg2 term))) ; require posp? or even require at least 2?
+                )
 ;hopefully this will get substituted in - could in some cases drop assumptions about vars that no longer exist in the dag??
            (and (call-of 'equal term)
                 (variablep (farg1 term))
@@ -17008,7 +17014,7 @@
                         nil ; no assumptions or types were actually used
                         state rand)
                     )
-          (prog2$ (er hard? 'prove-with-axe-core "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
+          (prog2$ (er hard? 'prove-with-axe-core "Tried to prove the goal is t, but it's the non-t constant ~x0" dag-or-quotep)
                   (mv :non-t-constant nil nil state rand))))
        (dag dag-or-quotep)
        (untranslated-assumptions-from-types (assumptions-from-var-type-alist var-type-alist nil))  ; is it going to be slow to have all of these around?
@@ -17083,7 +17089,7 @@
         (if (equal *t* dag-or-quotep) ; todo: allow any non-nil constant?
             (prog2$ (cw "The DAG has been rewritten to true!)~%") ;move this message?
                     (mv (erp-nil) t all-untranslated-assumptions state rand))
-          (prog2$ (er hard? 'prove-with-axe-core "Tried to prove the dag is t, but it's the non-t constant ~x0" dag-or-quotep)
+          (prog2$ (er hard? 'prove-with-axe-core "Tried to prove the goal is t, but it's the non-t constant ~x0" dag-or-quotep)
                   (mv :non-t-constant nil nil state rand)))
       ;; Did not simplify to a constant:
       (b* ((dag dag-or-quotep)
@@ -17270,22 +17276,19 @@
                              normalize-xors ;fixme use the more, deeper in?
                              prove-constants
                              debug
-                             proof-name state rand)))
+                             proof-name state rand))
+       ((when erp) (prog2$ (er hard? 'prove-with-axe-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
+                           (mv erp nil state rand)))
+       ((when (not provedp)) (prog2$ (er hard? 'prove-with-axe-fn "Proof attempt failed.~%")
+                                     (mv :proof-failed nil state rand))))
     ;; Depending on how it went, maybe introduce a theorem:
-    (if erp
-        (mv erp nil state rand)
-      (if provedp
-          (let ((state (if debug
-                           state
-                         (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
-            (let ((event '(progn))) ;fixme should return a theorem about the dag!
-              (mv (erp-nil)
-                  (extend-progn event `(table prove-with-axe-table ',whole-form ',event))
-                  state rand)))
-        (progn$ (hard-error 'prove-with-axe "Failed to prove miter." nil)
-                (mv (erp-t)
-                    nil
-                    state rand))))))
+    (let ((state (if debug
+                     state
+                   (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
+      (let ((event '(progn))) ;fixme should return a theorem about the dag!
+        (mv (erp-nil)
+            (extend-progn event `(table prove-with-axe-table ',whole-form ',event))
+            state rand)))))
 
 ;; Returns (mv erp event state rand).
 ; todo: eventually, try to always use the same rules for the dag prover as the dag rewriter..
@@ -17435,16 +17438,15 @@
                              prove-constants
                              debug
                              proof-name state rand))
-       ((when erp) (mv erp nil state rand))
-       )
-    (if provedp
-        (let ((state (if debug state (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
-          (let ((event '(progn))) ;todo: should return a theorem about the term-or-dags!
-            (mv (erp-nil)
-                (extend-progn event `(table prove-equal-with-axe+-table ',whole-form ',event))
-                state rand)))
-      (progn$ (er hard? 'prove-equal-with-axe+ "Failed to prove miter ~x0." proof-name)
-              (mv (erp-t) nil state rand)))))
+       ((when erp) (prog2$ (er hard? 'prove-equal-with-axe+-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
+                           (mv erp nil state rand)))
+       ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe+-fn "Proof attempt failed.~%")
+                                     (mv :proof-failed nil state rand))))
+    (let ((state (if debug state (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
+      (let ((event '(progn))) ;todo: should return a theorem about the term-or-dags!
+        (mv (erp-nil)
+            (extend-progn event `(table prove-equal-with-axe+-table ',whole-form ',event))
+            state rand)))))
 
 ;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equal-with-axe, this supports all the exotic options to prove-with-axe.
 ;; Used in several loop examples.
@@ -17618,10 +17620,9 @@
                              proof-name state rand))
        ;; Remove the temp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
        (state (if debug state (maybe-remove-temp-dir state)))
-       ((when erp) (prog2$ (cw "ERROR: Proof of equivalence encountered an error.~%")
+       ((when erp) (prog2$ (er hard? 'prove-equal-with-axe-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
                            (mv erp nil state rand)))
-       ((when (not provedp)) (prog2$ (cw "ERROR: Proof of equivalence failed.~%")
-                                     ;; Convert this to an error
+       ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe-fn "Proof attempt failed.~%")
                                      (mv :proof-failed nil state rand)))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
        (- (cw "Proof of equivalence succeeded in ")
