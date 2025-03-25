@@ -15,6 +15,7 @@
 (include-book "../syntax/validation-information")
 (include-book "../syntax/langdef-mapping")
 (include-book "../atc/symbolic-execution-rules/top")
+(include-book "../representation/shallow-deep-relation")
 
 (include-book "kestrel/fty/pseudo-event-form-list" :dir :system)
 (include-book "std/lists/index-of" :dir :system)
@@ -30,23 +31,6 @@
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This should be moved to a more central place.
-; It is used to relieve some hypotheses in theorems proved in this file,
-; which involve hypotheses in terms of C::VALUEP and C::VALUE-KIND,
-; using existing rules,
-; which involve hypotheses in terms of C::SINTP;
-; this theorem rewrites the latter to the former.
-
-(defruledl c::sintp-alt-def
-  (equal (c::sintp x)
-         (and (c::valuep x)
-              (c::value-case x :sint)))
-  :enable (c::sintp
-           c::valuep
-           c::value-kind))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -611,6 +595,276 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-gen-from-params ((params c::param-declon-listp)
+                                  (gin simpadd0-ginp))
+  :returns (mv (okp booleanp)
+               (args symbol-listp)
+               (parargs true-listp)
+               (arg-types true-listp)
+               (arg-types-compst true-listp))
+  :short "Generate certain pieces of information
+          from the formal parameters of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The results of this function are used to generate
+     theorems about function calls.")
+   (xdoc::p
+    "We generate the following:")
+   (xdoc::ul
+    (xdoc::li
+     "A list @('args') of symbols used as ACL2 variables
+      that denote the C values passed as arguments to the function.")
+    (xdoc::li
+     "A list @('parargs') of terms that denote
+      the @(tsee cons) pairs that form
+      the initial scope of the function.
+      Each @(tsee cons) pair consists of the name of the parameter
+      and the variable for the corresponding argument.")
+    (xdoc::li
+     "A list @('arg-types') of terms that assert that
+      each variable in @('args') is a value of type @('int').")
+    (xdoc::li
+     "A list @('arg-types-compst') of terms that assert that
+      each parameter in @('params') can be read from a computation state
+      and its reading yields a value of type @('int')."))
+   (xdoc::p
+    "These results are generated only if all the parameters have type @('int'),
+     which we check as we go through the parameters.
+     This is because for now we only support theorem generation
+     for functions whose parameters are all @('int');
+     we will generalize this.
+     The @('okp') result says whether this is the case;
+     if it is @('nil'), the other results are @('nil') too."))
+  (b* (((when (endp params)) (mv t nil nil nil nil))
+       ((c::param-declon param) (car params))
+       ((unless (c::tyspecseq-case param.tyspec :sint))
+        (mv nil nil nil nil nil))
+       ((unless (c::obj-declor-case param.declor :ident))
+        (mv nil nil nil nil nil))
+       (ident (c::obj-declor-ident->get param.declor))
+       (par (c::ident->name ident))
+       (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
+       (pararg `(cons (c::ident ,par) ,arg))
+       (arg-type `(and (c::valuep ,arg)
+                       (equal (c::value-kind ,arg) :sint)))
+       (arg-type-compst
+        `(b* ((var (mv-nth 1 (c$::ldm-ident (ident ,par))))
+              (objdes (c::objdesign-of-var var compst))
+              (val (c::read-object objdes compst)))
+           (and objdes
+                (c::valuep val)
+                (c::value-case val :sint))))
+       ((mv okp more-args more-parargs more-arg-types more-arg-types-compst)
+        (simpadd0-gen-from-params (cdr params) gin))
+       ((unless okp) (mv nil nil nil nil nil)))
+    (mv t
+        (cons arg more-args)
+        (cons pararg more-parargs)
+        (cons arg-type more-arg-types)
+        (cons arg-type-compst more-arg-types-compst)))
+
+  ///
+
+  (defret len-of-simpadd0-gen-from-params.parargs
+    (equal (len parargs)
+           (len args))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defret len-of-simpadd0-gen-from-params.arg-types
+    (equal (len arg-types)
+           (len args))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defret len-of-simpadd0-gen-from-params.arg-types-compst
+    (equal (len arg-types-compst)
+           (len args))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-gen-init-scope-thm ((params c::param-declon-listp)
+                                     (args symbol-listp)
+                                     (parargs true-listp)
+                                     (arg-types true-listp))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp))
+  :short "Generate a theorem about the initial scope of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('args'), @('parargs'), and @('arg-types') inputs
+     are the corresponding outputs of @(tsee simpadd0-gen-from-params).")
+   (xdoc::p
+    "The theorem says that, given @('int') values for the arguments,
+     @(tsee c::init-scope) applied to the list of parameter declarations
+     and to the list of parameter values
+     yields an omap (which we express it directly as an alist)
+     that associates parameter name and argument value.")
+   (xdoc::p
+    "The name of the theorem is used locally to another theorem,
+     so it does not have to be particularly distinguished.
+     But we should check and disambiguate this more thoroughly."))
+  (b* ((formula `(implies (and ,@arg-types)
+                          (equal (c::init-scope ',params (list ,@args))
+                                 (list ,@parargs))))
+       (hints
+        '(("Goal" :in-theory '(omap::mapp
+                               omap::mfix-when-mapp
+                               omap::head
+                               omap::tail
+                               omap::update
+                               omap::assoc
+                               omap::mapp-non-nil-implies-not-emptyp
+                               (:e omap::emptyp)
+                               c::errorp
+                               c::init-scope
+                               c::not-flexible-array-member-p-when-sintp
+                               c::remove-flexible-array-member-when-absent
+                               c::sintp-alt-def
+                               c::type-of-value-when-sintp
+                               c::value-fix-when-valuep
+                               c::value-list-fix-of-cons
+                               (:e c::adjust-type)
+                               (:e c::apconvert-type)
+                               (:e c::ident)
+                               (:e c::param-declon-list-fix$inline)
+                               (:e c::param-declon-to-ident+tyname)
+                               (:e c::tyname-to-type)
+                               (:e c::type-sint)
+                               (:e c::value-list-fix$inline)
+                               mv-nth
+                               car-cons
+                               cdr-cons
+                               (:e <<)))))
+       (thm-name 'init-scope-thm)
+       (thm-event `(defruled ,thm-name
+                     ,formula
+                     :hints ,hints)))
+    (mv thm-event thm-name)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-gen-param-thms ((args symbol-listp)
+                                 (arg-types true-listp)
+                                 (arg-types-compst true-listp)
+                                 (all-params c::param-declon-listp)
+                                 (all-args symbol-listp))
+  :guard (and (equal (len arg-types) (len args))
+              (equal (len arg-types-compst) (len args)))
+  :returns (mv (thm-events pseudo-event-form-listp)
+               (thm-names symbol-listp))
+  :short "Generate theorems about the parameters of a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('args'), @('arg-types') and @('arg-types-compst') inputs
+     are the corresponding outputs of @(tsee simpadd0-gen-from-params).")
+   (xdoc::p
+    "We return the theorem events, along with the theorem names.")
+   (xdoc::p
+    "The theorem names are used locally in an enclosing theorem,
+     so they do not need to be particularly unique.
+     But we should check and disambiguate them more thoroughly.")
+   (xdoc::p
+    "For each parameter of the function,
+     we generate a theorem saying that,
+     in the computation state resulting from
+     pushing the initial scope to the frame stack,
+     if the value corresponding to the parameter is an @('int') value,
+     then reading the parameter from the computation state
+     succeeds and yields an @('int') value."))
+  (b* (((when (endp args)) (mv nil nil))
+       (arg (car args))
+       (formula
+        `(b* ((compst
+               (c::push-frame
+                (c::frame fun
+                          (list
+                           (c::init-scope ',all-params (list ,@all-args))))
+                compst0)))
+           (implies ,(car arg-types)
+                    ,(car arg-types-compst))))
+       (hints
+        '(("Goal" :in-theory '(init-scope-thm
+                               (:e c$::ident)
+                               (:e c$::ldm-ident)
+                               c::push-frame
+                               c::objdesign-of-var
+                               c::objdesign-of-var-aux
+                               c::compustate-frames-number
+                               c::top-frame
+                               c::read-object
+                               c::scopep
+                               c::compustate->frames-of-compustate
+                               c::frame->scopes-of-frame
+                               c::frame-fix-when-framep
+                               c::frame-list-fix-of-cons
+                               c::mapp-when-scopep
+                               c::framep-of-frame
+                               c::objdesign-auto->frame-of-objdesign-auto
+                               c::objdesign-auto->name-of-objdesign-auto
+                               c::objdesign-auto->scope-of-objdesign-auto
+                               c::return-type-of-objdesign-auto
+                               c::scope-fix-when-scopep
+                               c::scope-list-fix-of-cons
+                               (:e c::ident)
+                               (:e c::ident-fix$inline)
+                               (:e c::identp)
+                               (:t c::objdesign-auto)
+                               omap::assoc
+                               omap::head
+                               omap::tail
+                               omap::mfix-when-mapp
+                               omap::mapp-non-nil-implies-not-emptyp
+                               simpadd0-param-thm-list-lemma
+                               nfix
+                               fix
+                               len
+                               car-cons
+                               cdr-cons
+                               commutativity-of-+
+                               acl2::fold-consts-in-+
+                               acl2::len-of-append
+                               acl2::len-of-rev
+                               acl2::rev-of-cons
+                               unicity-of-0
+                               (:e rev)
+                               (:t len)))))
+       (thm-name (packn-pos (list arg '-param-thm) arg))
+       (thm-event `(defruled ,thm-name
+                     ,formula
+                     :hints ,hints))
+       ((mv more-thm-events more-thm-names)
+        (simpadd0-gen-param-thms (cdr args)
+                                 (cdr arg-types)
+                                 (cdr arg-types-compst)
+                                 all-params
+                                 all-args)))
+    (mv (cons thm-event more-thm-events)
+        (cons thm-name more-thm-names)))
+  :guard-hints (("Goal" :in-theory (enable len)))
+
+  ///
+
+  (defret len-of-simpadd-gen-param-thms.thm-names
+    (equal (len thm-names)
+           (len thm-events))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defruled simpadd0-param-thm-list-lemma
+    (equal (nth (len l) (append (rev l) (list x)))
+           x)
+    :use (:instance lemma (l (rev l)))
+    :prep-lemmas
+    ((defruled lemma
+       (equal (nth (len l) (append l (list x)))
+              x)
+       :induct t
+       :enable len))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-expr-ident ((ident identp)
                              (info c$::var-infop)
                              (gin simpadd0-ginp))
@@ -663,7 +917,7 @@
         (make-simpadd0-gout :events (list thm-event)
                             :thm-name thm-name
                             :thm-index thm-index
-                            :names-to-avoid (list thm-name)
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
                             :vars vars
                             :diffp nil)))
   :prepwork ((local (in-theory (enable identity))))
@@ -754,7 +1008,7 @@
         (make-simpadd0-gout :events (list thm-event)
                             :thm-name thm-name
                             :thm-index thm-index
-                            :names-to-avoid (list thm-name)
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
                             :vars vars
                             :diffp nil)))
   :hooks (:fix)
@@ -4344,8 +4598,18 @@
   :returns (mv (new-fundef fundefp)
                (gout simpadd0-goutp))
   :short "Transform a function definition."
-  (b* (((simpadd0-gin gin) gin)
-       ((fundef fundef) fundef)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only generate a theorem if
+     the function has all @('int') parameters
+     and a theorem was generated for the functions's body.
+     The theorem contains local theorems that are used
+     in the proof of the main theorem.
+     The local theorems are about the initial scope of the function,
+     and about the parameters in the computation state
+     at the beginning of the execution of the function body."))
+  (b* (((fundef fundef) fundef)
        ((mv new-spec (simpadd0-gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin state))
        (gin (simpadd0-gin-update gin gout-spec))
@@ -4355,23 +4619,135 @@
        ((mv new-decls (simpadd0-gout gout-decls))
         (simpadd0-decl-list fundef.decls gin state))
        (gin (simpadd0-gin-update gin gout-decls))
-       ((mv new-body (simpadd0-gout gout-body))
-        (simpadd0-stmt fundef.body gin state)))
-    (mv (make-fundef :extension fundef.extension
-                     :spec new-spec
-                     :declor new-declor
-                     :asm? fundef.asm?
-                     :attribs fundef.attribs
-                     :decls new-decls
-                     :body new-body)
+       ((unless (stmt-case fundef.body :compound))
+        (raise "Internal error: the body of ~x0 is not a compound statement."
+               (fundef-fix fundef))
+        (mv (c$::irr-fundef) (irr-simpadd0-gout)))
+       (items (c$::stmt-compound->items fundef.body))
+       ((mv new-items (simpadd0-gout gout-body))
+        (simpadd0-block-item-list items gin state))
+       ((simpadd0-gin gin) (simpadd0-gin-update gin gout-body))
+       (new-body (stmt-compound new-items))
+       (new-fundef (make-fundef :extension fundef.extension
+                                :spec new-spec
+                                :declor new-declor
+                                :asm? fundef.asm?
+                                :attribs fundef.attribs
+                                :decls new-decls
+                                :body new-body))
+       (gout-no-thm
         (make-simpadd0-gout
          :events (append gout-spec.events
                          gout-declor.events
                          gout-decls.events
                          gout-body.events)
          :thm-name nil
-         :thm-index gout-body.thm-index
-         :names-to-avoid gout-body.names-to-avoid
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :vars (set::union gout-spec.vars
+                           (set::union gout-declor.vars
+                                       (set::union gout-decls.vars
+                                                   gout-body.vars)))
+         :diffp (or gout-spec.diffp
+                    gout-declor.diffp
+                    gout-decls.diffp
+                    gout-body.diffp)))
+       ((unless gout-body.thm-name)
+        (mv new-fundef gout-no-thm))
+       ((unless (c$::fundef-formalp fundef))
+        (mv new-fundef gout-no-thm))
+       ((declor declor) fundef.declor)
+       ((when (consp declor.pointers))
+        (mv new-fundef gout-no-thm))
+       ((unless (dirdeclor-case declor.direct :function-params))
+        (mv new-fundef gout-no-thm))
+       (params (dirdeclor-function-params->params declor.direct))
+       (dirdeclor (c$::dirdeclor-function-params->decl declor.direct))
+       ((unless (dirdeclor-case dirdeclor :ident))
+        (raise "Internal error: ~x0 is not just the function name."
+               dirdeclor)
+        (mv (c$::irr-fundef) (irr-simpadd0-gout)))
+       (fun (c$::ident->unwrap (c$::dirdeclor-ident->unwrap dirdeclor)))
+       ((unless (stringp fun))
+        (raise "Internal error: non-string identifier ~x0." fun)
+        (mv (c$::irr-fundef) (irr-simpadd0-gout)))
+       ((mv erp ldm-params) (c$::ldm-paramdecl-list params))
+       ((when erp) (mv new-fundef gout-no-thm))
+       ((mv okp args parargs arg-types arg-types-compst)
+        (simpadd0-gen-from-params ldm-params gin))
+       ((unless okp) (mv new-fundef gout-no-thm))
+       ((mv init-scope-thm-event init-scope-thm-name)
+        (simpadd0-gen-init-scope-thm ldm-params args parargs arg-types))
+       ((mv param-thm-events param-thm-names)
+        (simpadd0-gen-param-thms
+         args arg-types arg-types-compst ldm-params args))
+       (thm-name (packn-pos (list gin.const-new '-thm- gin.thm-index)
+                            gin.const-new))
+       (thm-index (1+ gin.thm-index))
+       (formula
+        `(b* ((old ',(fundef-fix fundef))
+              (new ',new-fundef)
+              (fun (mv-nth 1 (c$::ldm-ident (c$::ident ,fun))))
+              ((mv old-result old-compst)
+               (c::exec-fun fun (list ,@args) compst old-fenv limit))
+              ((mv new-result new-compst)
+               (c::exec-fun fun (list ,@args) compst new-fenv limit)))
+           (implies (and ,@arg-types
+                         (equal (c::fun-env-lookup fun old-fenv)
+                                (c::fun-info-from-fundef
+                                 (mv-nth 1 (c$::ldm-fundef old))))
+                         (equal (c::fun-env-lookup fun new-fenv)
+                                (c::fun-info-from-fundef
+                                 (mv-nth 1 (c$::ldm-fundef new))))
+                         (not (c::errorp old-result)))
+                    (and (not (c::errorp new-result))
+                         (equal old-result new-result)
+                         (equal old-compst new-compst)
+                         old-result
+                         (equal (c::value-kind old-result) :sint)))))
+       (hints
+        `(("Goal"
+           :expand ((c::exec-fun
+                     ',(c::ident fun) (list ,@args) compst old-fenv limit)
+                    (c::exec-fun
+                     ',(c::ident fun) (list ,@args) compst new-fenv limit))
+           :use (,init-scope-thm-name
+                 ,@(simpadd0-fundef-loop param-thm-names fun)
+                 (:instance ,gout-body.thm-name
+                            (compst
+                             (c::push-frame
+                              (c::frame (mv-nth 1 (c$::ldm-ident
+                                                   (c$::ident ,fun)))
+                                        (list
+                                         (c::init-scope
+                                          ',ldm-params
+                                          (list ,@args))))
+                              compst))
+                            (limit (1- limit))))
+           :in-theory '((:e c::fun-info->body$inline)
+                        (:e c::fun-info->params$inline)
+                        (:e c::fun-info->result$inline)
+                        (:e c::fun-info-from-fundef)
+                        (:e c$::ident)
+                        (:e c$::ldm-block-item-list)
+                        (:e c$::ldm-fundef)
+                        (:e c$::ldm-ident)
+                        c::errorp-of-error))))
+       (thm-event `(defruled ,thm-name
+                     ,formula
+                     :hints ,hints
+                     :prep-lemmas (,init-scope-thm-event
+                                   ,@param-thm-events))))
+    (mv new-fundef
+        (make-simpadd0-gout
+         :events (append gout-spec.events
+                         gout-declor.events
+                         gout-decls.events
+                         gout-body.events
+                         (list thm-event))
+         :thm-name thm-name
+         :thm-index thm-index
+         :names-to-avoid (cons thm-name gout-body.names-to-avoid)
          :vars (set::union gout-spec.vars
                            (set::union gout-declor.vars
                                        (set::union gout-decls.vars
@@ -4382,10 +4758,25 @@
                     gout-body.diffp))))
   :hooks (:fix)
 
+  :prepwork
+  ((define simpadd0-fundef-loop ((thms symbol-listp) (fun stringp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (endp thms)) nil)
+          (thm (car thms))
+          (lemma-instance
+           `(:instance ,thm
+                       (fun (mv-nth 1 (c$::ldm-ident (c$::ident ,fun))))
+                       (compst0 compst)))
+          (more-lemma-instances
+           (simpadd0-fundef-loop (cdr thms) fun)))
+       (cons lemma-instance more-lemma-instances))))
+
   ///
 
   (defret fundef-unambp-of-simpadd0-fundef
-    (fundef-unambp new-fundef)))
+    (fundef-unambp new-fundef)
+    :hints (("Goal" :in-theory (enable (:e c$::irr-fundef))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
