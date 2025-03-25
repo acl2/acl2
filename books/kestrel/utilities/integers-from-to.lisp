@@ -97,20 +97,18 @@
               (<= x (ifix max))))
     :enable integers-from-to-of-noninteger-max)
 
-  (local
-   (defrule verify-guards-lemma-1
-     (implies (and (integerp min)
-                   (integerp max)
-                   (integer-listp ints))
-              (equal (integers-from-to-aux min max ints)
-                     (append (integers-from-to min max) ints)))
-     :enable integers-from-to-aux))
+  (defrulel verify-guards-lemma-1
+    (implies (and (integerp min)
+                  (integerp max)
+                  (integer-listp ints))
+             (equal (integers-from-to-aux min max ints)
+                    (append (integers-from-to min max) ints)))
+    :enable integers-from-to-aux)
 
-  (local
-   (defrule verify-guards-lemma-2
-     (implies (and (integerp min)
-                   (integerp max))
-              (equal (integers-from-to-aux min max nil)
-                     (integers-from-to min max)))))
+  (defrulel verify-guards-lemma-2
+    (implies (and (integerp min)
+                  (integerp max))
+             (equal (integers-from-to-aux min max nil)
+                    (integers-from-to min max))))
 
   (verify-guards integers-from-to))
