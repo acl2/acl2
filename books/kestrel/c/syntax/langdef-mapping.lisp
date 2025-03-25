@@ -426,7 +426,7 @@
      not a function declarator, for which we have a separate function."))
   (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
        ((when (dirdeclor-case dirdeclor :ident))
-        (b* ((ident (dirdeclor-ident->unwrap dirdeclor))
+        (b* ((ident (dirdeclor-ident->ident dirdeclor))
              ((erp ident1) (ldm-ident ident)))
           (retok (c::obj-declor-ident ident1))))
        ((when (dirdeclor-case dirdeclor :array))
@@ -1182,7 +1182,7 @@
        ((unless (dirdeclor-case inner-dirdeclor :ident))
         (reterr (msg "Unsupported direct declarator ~x0 for function."
                      (dirdeclor-fix dirdeclor))))
-       (ident (dirdeclor-ident->unwrap inner-dirdeclor))
+       (ident (dirdeclor-ident->ident inner-dirdeclor))
        ((erp ident1) (ldm-ident ident))
        ((erp params1) (ldm-paramdecl-list params)))
     (retok (c::make-fun-declor-base :name ident1 :params params1)))

@@ -1998,7 +1998,7 @@
       (dirdeclor-case
        dirdeclor
        :ident
-       (retok (dirdeclor-fix dirdeclor) dirdeclor.unwrap (dimb-table-fix table))
+       (retok (dirdeclor-fix dirdeclor) dirdeclor.ident (dimb-table-fix table))
        :paren
        (b* (((erp new-declor ident table)
              (dimb-declor dirdeclor.unwrap fundefp table)))

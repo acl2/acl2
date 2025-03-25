@@ -4631,7 +4631,7 @@
         (raise "Internal error: ~x0 is not just the function name."
                dirdeclor)
         (mv (c$::irr-fundef) (irr-simpadd0-gout)))
-       (fun (c$::ident->unwrap (c$::dirdeclor-ident->unwrap dirdeclor)))
+       (fun (c$::ident->unwrap (c$::dirdeclor-ident->ident dirdeclor)))
        ((unless (stringp fun))
         (raise "Internal error: non-string identifier ~x0." fun)
         (mv (c$::irr-fundef) (irr-simpadd0-gout)))
