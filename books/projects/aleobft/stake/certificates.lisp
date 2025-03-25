@@ -181,62 +181,62 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define certificate-set->round-set ((certs certificate-setp))
+(define cert-set->round-set ((certs certificate-setp))
   :returns (rounds pos-setp)
   :short "Lift @(tsee certificate->round) to sets."
   (cond ((set::emptyp certs) nil)
         (t (set::insert (certificate->round (set::head certs))
-                        (certificate-set->round-set (set::tail certs)))))
+                        (cert-set->round-set (set::tail certs)))))
   :verify-guards :after-returns
 
   ///
 
-  (defrule emptyp-of-certificate-set->round-set
-    (equal (set::emptyp (certificate-set->round-set certs))
+  (defrule emptyp-of-cert-set->round-set
+    (equal (set::emptyp (cert-set->round-set certs))
            (set::emptyp certs))
     :induct t)
 
-  (defruled certificate->round-in-certificate-set->round-set
+  (defruled certificate->round-in-cert-set->round-set
     (implies (set::in cert certs)
              (set::in (certificate->round cert)
-                      (certificate-set->round-set certs)))
+                      (cert-set->round-set certs)))
     :induct t)
 
-  (defruled certificate-set->round-set-of-insert
-    (equal (certificate-set->round-set (set::insert cert certs))
+  (defruled cert-set->round-set-of-insert
+    (equal (cert-set->round-set (set::insert cert certs))
            (set::insert (certificate->round cert)
-                        (certificate-set->round-set certs)))
+                        (cert-set->round-set certs)))
     :induct t
     :enable (set::in
-             certificate->round-in-certificate-set->round-set))
+             certificate->round-in-cert-set->round-set))
 
-  (defruled certificate-set->round-set-of-union
-    (equal (certificate-set->round-set (set::union certs1 certs2))
-           (set::union (certificate-set->round-set certs1)
-                       (certificate-set->round-set (set::sfix certs2))))
+  (defruled cert-set->round-set-of-union
+    (equal (cert-set->round-set (set::union certs1 certs2))
+           (set::union (cert-set->round-set certs1)
+                       (cert-set->round-set (set::sfix certs2))))
     :induct t
     :enable (set::union
-             certificate-set->round-set-of-insert))
+             cert-set->round-set-of-insert))
 
-  (defruled certificate-set->round-set-monotone
+  (defruled cert-set->round-set-monotone
     (implies (set::subset certs1 certs2)
-             (set::subset (certificate-set->round-set certs1)
-                          (certificate-set->round-set certs2)))
+             (set::subset (cert-set->round-set certs1)
+                          (cert-set->round-set certs2)))
     :induct t
     :enable (set::subset
-             certificate->round-in-certificate-set->round-set))
+             certificate->round-in-cert-set->round-set))
 
   (defruled same-certificate-round-when-cardinality-leq-1
-    (implies (and (<= (set::cardinality (certificate-set->round-set certs)) 1)
+    (implies (and (<= (set::cardinality (cert-set->round-set certs)) 1)
                   (set::in cert1 certs)
                   (set::in cert2 certs))
              (equal (certificate->round cert1)
                     (certificate->round cert2)))
-    :enable certificate->round-in-certificate-set->round-set
+    :enable certificate->round-in-cert-set->round-set
     :use (:instance set::same-element-when-cardinality-leq-1
                     (elem1 (certificate->round cert1))
                     (elem2 (certificate->round cert2))
-                    (set (certificate-set->round-set certs)))))
+                    (set (cert-set->round-set certs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -543,9 +543,9 @@
   (defruled emptyp-of-certs-with-round-to-no-round
     (equal (set::emptyp (certs-with-round round certs))
            (not (set::in (pos-fix round)
-                         (certificate-set->round-set certs))))
+                         (cert-set->round-set certs))))
     :induct t
-    :enable certificate-set->round-set)
+    :enable cert-set->round-set)
 
   (defruled in-of-certs-with-round
     (implies (certificate-setp certs)
@@ -555,17 +555,17 @@
                                 (pos-fix round)))))
     :induct t)
 
-  (defruled certificate-set->round-set-of-certs-with-round
+  (defruled cert-set->round-set-of-certs-with-round
     (implies (certificate-setp certs)
-             (equal (certificate-set->round-set
+             (equal (cert-set->round-set
                      (certs-with-round round certs))
                     (if (set::in (pos-fix round)
-                                 (certificate-set->round-set certs))
+                                 (cert-set->round-set certs))
                         (set::insert (pos-fix round) nil)
                       nil)))
     :induct t
-    :enable (certificate-set->round-set
-             certificate-set->round-set-of-insert))
+    :enable (cert-set->round-set
+             cert-set->round-set-of-insert))
 
   (defruled certs-with-round-monotone
     (implies (and (certificate-setp certs1)
@@ -577,39 +577,39 @@
              set::expensive-rules)
     :disable certs-with-round)
 
-  (defruled certificate-set->round-set-of-certs-with-round-not-empty
-    (b* ((rounds (certificate-set->round-set
+  (defruled cert-set->round-set-of-certs-with-round-not-empty
+    (b* ((rounds (cert-set->round-set
                   (certs-with-round round certs))))
       (implies (not (set::emptyp rounds))
                (equal rounds
                       (set::insert (pos-fix round) nil))))
     :induct t
-    :enable certificate-set->round-set-of-insert)
+    :enable cert-set->round-set-of-insert)
 
   (defruled cardinality-of-round-set-of-certs-with-round-leq-1
     (<= (set::cardinality
-         (certificate-set->round-set
+         (cert-set->round-set
           (certs-with-round round certs)))
         1)
     :rule-classes :linear
     :expand (set::cardinality
-             (certificate-set->round-set
+             (cert-set->round-set
               (certs-with-round round certs)))
-    :enable certificate-set->round-set-of-certs-with-round-not-empty
+    :enable cert-set->round-set-of-certs-with-round-not-empty
     :disable certs-with-round)
 
   (defruled cardinality-of-subset-of-round-set-of-round-leq-1
     (implies (set::subset certs0
                           (certs-with-round round certs))
              (<= (set::cardinality
-                  (certificate-set->round-set certs0))
+                  (cert-set->round-set certs0))
                  1))
     :rule-classes :linear
     :enable (cardinality-of-round-set-of-certs-with-round-leq-1
-             certificate-set->round-set-monotone)
+             cert-set->round-set-monotone)
     :use ((:instance set::subset-cardinality
-                     (x (certificate-set->round-set certs0))
-                     (y (certificate-set->round-set
+                     (x (cert-set->round-set certs0))
+                     (y (cert-set->round-set
                          (certs-with-round round certs)))))
     :disable (set::subset-cardinality
               certs-with-round))
@@ -764,25 +764,25 @@
              in-of-certs-with-round)
     :disable certs-with-authors+round)
 
-  (defruled certificate-set->round-set-of-certs-with-authors+round
-    (equal (certificate-set->round-set
+  (defruled cert-set->round-set-of-certs-with-authors+round
+    (equal (cert-set->round-set
             (certs-with-authors+round authors round certs))
            (if (set::emptyp
                 (certs-with-authors+round authors round certs))
                nil
              (set::insert (pos-fix round) nil)))
     :induct t
-    :enable certificate-set->round-set-of-insert)
+    :enable cert-set->round-set-of-insert)
 
   (defruled
-    certificate-set->round-set-of-certs-with-authors+round-not-empty
-    (b* ((rounds (certificate-set->round-set
+    cert-set->round-set-of-certs-with-authors+round-not-empty
+    (b* ((rounds (cert-set->round-set
                   (certs-with-authors+round authors round certs))))
       (implies (not (set::emptyp rounds))
                (equal rounds
                       (set::insert (pos-fix round) nil))))
     :induct t
-    :enable certificate-set->round-set-of-insert))
+    :enable cert-set->round-set-of-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -980,7 +980,7 @@
 
   (defruled equal-certificate-authors-when-unequiv-and-same-round
     (implies (and (certificate-set-unequivocalp certs)
-                  (<= (set::cardinality (certificate-set->round-set certs)) 1)
+                  (<= (set::cardinality (cert-set->round-set certs)) 1)
                   (set::in cert1 certs)
                   (set::in cert2 certs))
              (equal (equal (certificate->author cert1)
@@ -994,7 +994,7 @@
   (defruled head-author-not-in-tail-authors-when-unequiv-and-all-same-round
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
-                  (<= (set::cardinality (certificate-set->round-set certs)) 1)
+                  (<= (set::cardinality (cert-set->round-set certs)) 1)
                   (not (set::emptyp certs)))
              (not (set::in (certificate->author (set::head certs))
                            (cert-set->author-set (set::tail certs)))))
@@ -1015,7 +1015,7 @@
   (defruled cardinality-of-authors-when-unequiv-and-all-same-rounds
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
-                  (<= (set::cardinality (certificate-set->round-set certs)) 1))
+                  (<= (set::cardinality (cert-set->round-set certs)) 1))
              (equal (set::cardinality (cert-set->author-set certs))
                     (set::cardinality certs)))
     :induct t
@@ -1024,10 +1024,10 @@
              head-author-not-in-tail-authors-when-unequiv-and-all-same-round
              certificate-set-unequivocalp-when-subset
              set::expensive-rules)
-    :disable (certificate-set->round-set-monotone
+    :disable (cert-set->round-set-monotone
               certificate-set-unequivocalp
               certificate-set-unequivocalp-necc)
-    :hints ('(:use (:instance certificate-set->round-set-monotone
+    :hints ('(:use (:instance cert-set->round-set-monotone
                               (certs1 (set::tail certs))
                               (certs2 certs)))))
 
@@ -1066,7 +1066,7 @@
                   (certificate-setp certs2)
                   (certificate-set-unequivocalp (set::union certs1 certs2))
                   (<= (set::cardinality
-                       (certificate-set->round-set
+                       (cert-set->round-set
                         (set::union certs1 certs2)))
                       1)
                   (not (set::emptyp (set::intersect
