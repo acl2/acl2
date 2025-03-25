@@ -16,6 +16,7 @@
 
 (local (include-book "std/lists/top" :dir :system))
 (local (include-book "std/typed-lists/integer-listp" :dir :system))
+(local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -91,7 +92,7 @@
            (or (> (ifix min) (ifix max))
                (natp (ifix min))))
     :induct t
-    :enable (ifix nat-listp))
+    :enable ifix)
 
   (defrule pos-listp-of-integers-from-to
     (equal (pos-listp (integers-from-to min max))
