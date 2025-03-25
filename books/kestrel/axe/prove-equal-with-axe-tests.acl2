@@ -1,4 +1,4 @@
-; Cert params for prove-equivalence-tests.lisp
+; Cert params for prove-equal-with-axe-tests.lisp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2021 Kestrel Institute

@@ -553,7 +553,6 @@
            (equal (jnl-condition (x86isa::sf-spec32$inline (acl2::bvplus 32 x (acl2::bvuminus 32 y)))
                                  (x86isa::of-spec32$inline (binary-+ (logext 32 x) (unary-- (logext 32 y)))))
                   (acl2::sbvle 32 y x)))
-  :otf-flg t
   :hints (("Goal"
            :use ((:instance acl2::split-signed-bv-top
                             (x x)
@@ -692,7 +691,6 @@
                                (+ (logext 32 x)
                                   (- (logext 32 y)))))))
          (sbvlt 32 y x))
-  :otf-flg t
   :hints (("Goal"
            :use (:instance acl2::split-bv
                            (x (bvchop 32 x))
@@ -732,7 +730,6 @@
                                (+ (logext 32 x)
                                   (- (logext 32 y)))))))
          (sbvlt 32 y x))
-  :otf-flg t
   :hints (("Goal"
            :use (:instance acl2::split-bv
                            (x (bvchop 32 x))
@@ -761,7 +758,6 @@
                                   (x86isa::sf-spec64 (acl2::bvplus 64 x (acl2::bvuminus 64 y)))
                                   (x86isa::of-spec64 (+ x (- y))))
                   (sbvlt 64 y x)))
-  :otf-flg t
   :HINTS
   (("Goal"
     :USE ((:INSTANCE acl2::split-signed-bv-top (size 64))
@@ -790,7 +786,6 @@
                          (x86isa::sf-spec32 (acl2::bvplus 32 x (acl2::bvuminus 32 y)))
                          (x86isa::of-spec32 (+ (logext 32 x) (- (logext 32 y)))))
          (sbvlt 32 y x))
-  :otf-flg t
   :HINTS
   (("Goal"
     :USE ()

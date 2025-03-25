@@ -12,7 +12,8 @@
 (in-package "ACL2")
 
 (include-book "bvchop-def")
-(include-book "../arithmetic-light/power-of-2p")
+(include-book "../arithmetic-light/power-of-2p") ; todo: only include the def?
+(include-book "../arithmetic-light/lg-def")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/times"))
@@ -574,6 +575,19 @@
                       0
                     (expt 2 size2))))
   :hints (("Goal" :in-theory (e/d (bvchop) ()))))
+
+;rename
+(defthm bvchop-of-expt-alt
+  (implies (and (syntaxp (quotep k)) ;new
+                (power-of-2p k)
+                (natp size1))
+           (equal (bvchop size1 k)
+                  (if (<= size1 (lg k))
+                      0
+                    k)))
+  ;; The :use hint included just for speed:
+  :hints (("Goal" :use (:instance bvchop-of-expt (size2 (lg k)))
+           :in-theory (e/d (power-of-2p lg) (bvchop-of-expt)))))
 
 ;can this be expensive?
 ;rename?

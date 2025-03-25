@@ -136,8 +136,8 @@
 
 ;; (defthm map-subset-helper
 ;;   (implies (in (head X) Y)
-;; 	   (equal (subset (tail X) Y)
-;; 		  (subset X Y)))
+;;         (equal (subset (tail X) Y)
+;;                (subset X Y)))
 ;;   :hints(("Goal" :expand (subset X Y))))
 
 ;; (defthm map-subset-helper-2
@@ -166,18 +166,18 @@
   (defun map-list (x)
     (declare (xargs :guard (true-listp x)))
     (if (endp x)
-	nil
+        nil
       (cons (transform (car X))
-	    (map-list (cdr X)))))
+            (map-list (cdr X)))))
 
   (defun map (X)
     (declare (xargs :guard (setp X)))
     (declare (xargs :verify-guards nil))
     (mbe :logic (if (emptyp X)
-		    nil
-		  (insert (transform (head X))
-			  (map (tail X))))
-	 :exec (mergesort (map-list X))))
+                    nil
+                  (insert (transform (head X))
+                          (map (tail X))))
+         :exec (mergesort (map-list X))))
 
 ; A crucial component of our reasoning is the notion of the inverse of the
 ; transform.  We define the relation (inversep a b), which is true if and only
@@ -209,7 +209,7 @@
 
   (defthm map-sfix
     (equal (map (sfix X))
-	   (map X)))
+           (map X)))
 
 
 ; The ordered sets library works really well when you can provide a
@@ -222,7 +222,7 @@
 
   (defthm map-in
     (equal (in a (map X))
-	   (not (all<not-inversep> X a))))
+           (not (all<not-inversep> X a))))
 
 
 ; With this notion of membership in play, we can now use the
@@ -231,31 +231,31 @@
 
   (defthm map-subset
     (implies (subset X Y)
-	     (subset (map X) (map Y))))
+             (subset (map X) (map Y))))
 
   (defthm map-insert
     (equal (map (insert a X))
-	   (insert (transform a) (map X))))
+           (insert (transform a) (map X))))
 
   (defthm map-delete
     (subset (delete (transform a) (map X))
-	    (map (delete a X))))
+            (map (delete a X))))
 
   (defthm map-union
     (equal (map (union X Y))
-	   (union (map X) (map Y))))
+           (union (map X) (map Y))))
 
   (defthm map-intersect
     (subset (map (intersect X Y))
-	    (intersect (map X) (map Y))))
+            (intersect (map X) (map Y))))
 
   (defthm map-difference
     (subset (difference (map X) (map Y))
-	    (map (difference X Y))))
+            (map (difference X Y))))
 
   (defthm map-cardinality
     (<= (cardinality (map X))
-	(cardinality X))
+        (cardinality X))
     :rule-classes :linear)
 
 
@@ -272,7 +272,7 @@
 
   (defthm map-mergesort
     (equal (map (mergesort X))
-	   (mergesort (map-list X))))
+           (mergesort (map-list X))))
 
 
 
@@ -281,8 +281,8 @@
 
   (defthm map-mbe-equivalence
     (implies (setp X)
-	     (equal (mergesort (map-list X))
-		    (map X))))
+             (equal (mergesort (map-list X))
+                    (map X))))
 
 
 ; We finish up our theory with some more, basic theorems about
@@ -290,29 +290,29 @@
 
   (defthm map-list-cons
     (equal (map-list (cons a x))
-	   (cons (transform a)
-		 (map-list x))))
+           (cons (transform a)
+                 (map-list x))))
 
   (defthm map-list-append
     (equal (map-list (append x y))
-	   (append (map-list x)
-		   (map-list y))))
+           (append (map-list x)
+                   (map-list y))))
 
   (defthm map-list-nth
     (implies (and (integerp n)
-		  (<= 0 n)
-		  (< n (len x)))
-	     (equal (nth n (map-list x))
-		    (transform (nth n x)))))
+                  (<= 0 n)
+                  (< n (len x)))
+             (equal (nth n (map-list x))
+                    (transform (nth n x)))))
 
   (defthm map-list-revappend
     (equal (map-list (revappend x acc))
-	   (revappend (map-list x)
-		      (map-list acc))))
+           (revappend (map-list x)
+                      (map-list acc))))
 
   (defthm map-list-reverse
     (equal (map-list (reverse x))
-	   (reverse (map-list x))))
+           (reverse (map-list x))))
 
 ))
 
@@ -329,135 +329,135 @@
 ; macro.
 
 (defun map-function-fn (function in-package
-				 set-guard
-				 list-guard
-				 element-guard
-				 arg-guard)
+                                 set-guard
+                                 list-guard
+                                 element-guard
+                                 arg-guard)
 
   (declare (xargs :mode :program))
 
   (let* ((name          (car function))
-	 (extra-args    (cddr function))
-	 (wrap          (app "<" (app (symbol-name name) ">")))
+         (extra-args    (cddr function))
+         (wrap          (app "<" (app (symbol-name name) ">")))
 
-	 ;; First we build up all the symbols that we will use.
+         ;; First we build up all the symbols that we will use.
 
-	 (map<f>                   (mksym (app "map" wrap) in-package))
-	 (map-list<f>              (mksym (app "map-list" wrap) in-package))
-	 (inversep                 (app "inversep" wrap))
-	 (ipw                      (app "<" (app inversep ">")))
-	 (not-ipw                  (app "<not-" (app inversep ">")))
-	 (inversep<f>              (mksym inversep in-package))
+         (map<f>                   (mksym (app "map" wrap) in-package))
+         (map-list<f>              (mksym (app "map-list" wrap) in-package))
+         (inversep                 (app "inversep" wrap))
+         (ipw                      (app "<" (app inversep ">")))
+         (not-ipw                  (app "<not-" (app inversep ">")))
+         (inversep<f>              (mksym inversep in-package))
 
-	 (all<inversep<f>>     (mksym (app "all" ipw) in-package))
-	 (exists<inversep<f>>  (mksym (app "exists" ipw) in-package))
-	 (find<inversep<f>>    (mksym (app "find" ipw) in-package))
-	 (filter<inversep<f>>  (mksym (app "filter" ipw) in-package))
-	 (all-list<inversep<f>>     (mksym (app "all-list" ipw) in-package))
-	 (exists-list<inversep<f>>  (mksym (app "exists-list" ipw) in-package))
-	 (find-list<inversep<f>>    (mksym (app "find-list" ipw) in-package))
-	 (filter-list<inversep<f>>  (mksym (app "filter-list" ipw) in-package))
+         (all<inversep<f>>     (mksym (app "all" ipw) in-package))
+         (exists<inversep<f>>  (mksym (app "exists" ipw) in-package))
+         (find<inversep<f>>    (mksym (app "find" ipw) in-package))
+         (filter<inversep<f>>  (mksym (app "filter" ipw) in-package))
+         (all-list<inversep<f>>     (mksym (app "all-list" ipw) in-package))
+         (exists-list<inversep<f>>  (mksym (app "exists-list" ipw) in-package))
+         (find-list<inversep<f>>    (mksym (app "find-list" ipw) in-package))
+         (filter-list<inversep<f>>  (mksym (app "filter-list" ipw) in-package))
 
-	 (all<not-inversep<f>>     (mksym (app "all" not-ipw) in-package))
-	 (exists<not-inversep<f>>  (mksym (app "exists" not-ipw) in-package))
-	 (find<not-inversep<f>>    (mksym (app "find" not-ipw) in-package))
-	 (filter<not-inversep<f>>  (mksym (app "filter" not-ipw) in-package))
-	 (all-list<not-inversep<f>>     (mksym (app "all-list" not-ipw) in-package))
-	 (exists-list<not-inversep<f>>  (mksym (app "exists-list" not-ipw) in-package))
-	 (find-list<not-inversep<f>>    (mksym (app "find-list" not-ipw) in-package))
-	 (filter-list<not-inversep<f>>  (mksym (app "filter-list" not-ipw) in-package))
+         (all<not-inversep<f>>     (mksym (app "all" not-ipw) in-package))
+         (exists<not-inversep<f>>  (mksym (app "exists" not-ipw) in-package))
+         (find<not-inversep<f>>    (mksym (app "find" not-ipw) in-package))
+         (filter<not-inversep<f>>  (mksym (app "filter" not-ipw) in-package))
+         (all-list<not-inversep<f>>     (mksym (app "all-list" not-ipw) in-package))
+         (exists-list<not-inversep<f>>  (mksym (app "exists-list" not-ipw) in-package))
+         (find-list<not-inversep<f>>    (mksym (app "find-list" not-ipw) in-package))
+         (filter-list<not-inversep<f>>  (mksym (app "filter-list" not-ipw) in-package))
 
 
-	 (subs `(((transform ?x) (,name ?x ,@extra-args))
-		 ((map ?x) (,map<f> ?x ,@extra-args))
-		 ((map-list ?x) (,map-list<f> ?x ,@extra-args))
-		 ((inversep ?a ?b) (,inversep<f> ?a ?b ,@extra-args))
+         (subs `(((transform ?x) (,name ?x ,@extra-args))
+                 ((map ?x) (,map<f> ?x ,@extra-args))
+                 ((map-list ?x) (,map-list<f> ?x ,@extra-args))
+                 ((inversep ?a ?b) (,inversep<f> ?a ?b ,@extra-args))
 
-		 ((all<inversep> ?a ?b)    (,all<inversep<f>> ?a ?b ,@extra-args))
-		 ((exists<inversep> ?a ?b) (,exists<inversep<f>> ?a ?b ,@extra-args))
-		 ((find<inversep> ?a ?b)   (,find<inversep<f>> ?a ?b ,@extra-args))
-		 ((filter<inversep> ?a ?b) (,filter<inversep<f>> ?a ?b ,@extra-args))
+                 ((all<inversep> ?a ?b)    (,all<inversep<f>> ?a ?b ,@extra-args))
+                 ((exists<inversep> ?a ?b) (,exists<inversep<f>> ?a ?b ,@extra-args))
+                 ((find<inversep> ?a ?b)   (,find<inversep<f>> ?a ?b ,@extra-args))
+                 ((filter<inversep> ?a ?b) (,filter<inversep<f>> ?a ?b ,@extra-args))
 
-		 ((all-list<inversep> ?a ?b)    (,all-list<inversep<f>> ?a ?b ,@extra-args))
-		 ((exists-list<inversep> ?a ?b) (,exists-list<inversep<f>> ?a ?b ,@extra-args))
-		 ((find-list<inversep> ?a ?b)   (,find-list<inversep<f>> ?a ?b ,@extra-args))
-		 ((filter-list<inversep> ?a ?b) (,filter-list<inversep<f>> ?a ?b ,@extra-args))
+                 ((all-list<inversep> ?a ?b)    (,all-list<inversep<f>> ?a ?b ,@extra-args))
+                 ((exists-list<inversep> ?a ?b) (,exists-list<inversep<f>> ?a ?b ,@extra-args))
+                 ((find-list<inversep> ?a ?b)   (,find-list<inversep<f>> ?a ?b ,@extra-args))
+                 ((filter-list<inversep> ?a ?b) (,filter-list<inversep<f>> ?a ?b ,@extra-args))
 
-		 ((all<not-inversep> ?a ?b)    (,all<not-inversep<f>> ?a ?b ,@extra-args))
-		 ((exists<not-inversep> ?a ?b) (,exists<not-inversep<f>> ?a ?b ,@extra-args))
-		 ((find<not-inversep> ?a ?b)   (,find<not-inversep<f>> ?a ?b ,@extra-args))
-		 ((filter<not-inversep> ?a ?b) (,filter<not-inversep<f>> ?a ?b ,@extra-args))
+                 ((all<not-inversep> ?a ?b)    (,all<not-inversep<f>> ?a ?b ,@extra-args))
+                 ((exists<not-inversep> ?a ?b) (,exists<not-inversep<f>> ?a ?b ,@extra-args))
+                 ((find<not-inversep> ?a ?b)   (,find<not-inversep<f>> ?a ?b ,@extra-args))
+                 ((filter<not-inversep> ?a ?b) (,filter<not-inversep<f>> ?a ?b ,@extra-args))
 
-		 ((all-list<not-inversep> ?a ?b)    (,all-list<not-inversep<f>> ?a ?b ,@extra-args))
-		 ((exists-list<not-inversep> ?a ?b) (,exists-list<not-inversep<f>> ?a ?b ,@extra-args))
-		 ((find-list<not-inversep> ?a ?b)   (,find-list<not-inversep<f>> ?a ?b ,@extra-args))
-		 ((filter-list<not-inversep> ?a ?b) (,filter-list<not-inversep<f>> ?a ?b ,@extra-args))
-	 ))
+                 ((all-list<not-inversep> ?a ?b)    (,all-list<not-inversep<f>> ?a ?b ,@extra-args))
+                 ((exists-list<not-inversep> ?a ?b) (,exists-list<not-inversep<f>> ?a ?b ,@extra-args))
+                 ((find-list<not-inversep> ?a ?b)   (,find-list<not-inversep<f>> ?a ?b ,@extra-args))
+                 ((filter-list<not-inversep> ?a ?b) (,filter-list<not-inversep<f>> ?a ?b ,@extra-args))
+         ))
 
-	 (theory<f>         (mksym (app "map-theory" wrap) in-package))
-	 (suffix            (mksym wrap in-package))
-	 (thm-names         (INSTANCE::defthm-names *map-theorems*))
-	 (thm-name-map      (INSTANCE::create-new-names thm-names suffix))
-	 (theory<f>-defthms (sublis thm-name-map thm-names))
-	 )
+         (theory<f>         (mksym (app "map-theory" wrap) in-package))
+         (suffix            (mksym wrap in-package))
+         (thm-names         (INSTANCE::defthm-names *map-theorems*))
+         (thm-name-map      (INSTANCE::create-new-names thm-names suffix))
+         (theory<f>-defthms (sublis thm-name-map thm-names))
+         )
 
   `(encapsulate ()
 
-		(instance-*map-functions*
-		 :subs ,(list* `((declare (xargs :guard (setp ?set)))
-				 (declare (xargs :guard (and (setp ?set)
-							     ,@set-guard
-							     ,@arg-guard))))
-			       `((declare (xargs :guard (true-listp ?list)))
-				 (declare (xargs :guard (and (true-listp ?list)
-							     ,@list-guard
-							     ,@arg-guard))))
-			       `((declare (xargs :guard t))
-				 (declare (xargs :guard (and ,@element-guard
-							     ,@arg-guard))))
-			       subs)
-		 :suffix ,name)
+                (instance-*map-functions*
+                 :subs ,(list* `((declare (xargs :guard (setp ?set)))
+                                 (declare (xargs :guard (and (setp ?set)
+                                                             ,@set-guard
+                                                             ,@arg-guard))))
+                               `((declare (xargs :guard (true-listp ?list)))
+                                 (declare (xargs :guard (and (true-listp ?list)
+                                                             ,@list-guard
+                                                             ,@arg-guard))))
+                               `((declare (xargs :guard t))
+                                 (declare (xargs :guard (and ,@element-guard
+                                                             ,@arg-guard))))
+                               subs)
+                 :suffix ,name)
 
-		(quantify-predicate (,inversep<f> a b ,@extra-args)
-		 :in-package-of ,in-package
-		 :set-guard ,set-guard
-		 :list-guard ,list-guard
-		 :arg-guard ,arg-guard)
+                (quantify-predicate (,inversep<f> a b ,@extra-args)
+                 :in-package-of ,in-package
+                 :set-guard ,set-guard
+                 :list-guard ,list-guard
+                 :arg-guard ,arg-guard)
 
-		(instance-*map-theorems*
-		 :subs ,subs
-		 :suffix ,(mksym wrap in-package))
+                (instance-*map-theorems*
+                 :subs ,subs
+                 :suffix ,(mksym wrap in-package))
 
-		(verify-guards ,map<f>)
+                (verify-guards ,map<f>)
 
-		(deftheory ,theory<f>
-		  (union-theories
-		   (theory ',(mksym (app "theory" ipw) in-package))
-		   '(,map<f> ,map-list<f> ,inversep<f>
-	             ,@theory<f>-defthms)))
+                (deftheory ,theory<f>
+                  (union-theories
+                   (theory ',(mksym (app "theory" ipw) in-package))
+                   '(,map<f> ,map-list<f> ,inversep<f>
+                     ,@theory<f>-defthms)))
 
-		)))
+                )))
 
 
 (defmacro map-function (function &key in-package-of
-				      set-guard
-				      list-guard
-				      element-guard
-				      arg-guard)
+                                      set-guard
+                                      list-guard
+                                      element-guard
+                                      arg-guard)
   (map-function-fn function
-		   (if in-package-of in-package-of 'in)
-		   (standardize-to-package "?SET" '?set set-guard)
-		   (standardize-to-package "?LIST" '?list list-guard)
-		   (standardize-to-package "A" 'a element-guard)
-		   arg-guard
-		   ))
+                   (if in-package-of in-package-of 'in)
+                   (standardize-to-package "?SET" '?set set-guard)
+                   (standardize-to-package "?LIST" '?list list-guard)
+                   (standardize-to-package "A" 'a element-guard)
+                   arg-guard
+                   ))
 
 
 (deftheory generic-map-theory
   (union-theories (theory 'theory<inversep>)
-		  `(,@(INSTANCE::defthm-names *map-theorems*)
-		      map
-		      map-list
-		      inversep)))
+                  `(,@(INSTANCE::defthm-names *map-theorems*)
+                      map
+                      map-list
+                      inversep)))
 
 (in-theory (disable generic-map-theory))

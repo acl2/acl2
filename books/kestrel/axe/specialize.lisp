@@ -56,7 +56,7 @@
     true-listp                     ;new
     all-true-listp                ;new
     items-have-len                 ;new
-    map-packword ;ffixme we need a better way to tell prove-miter not to generate lemmas for this..
+    map-packword ;ffixme we need a better way to tell prove-with-axe not to generate lemmas for this..
     map-byte-to-bit-list    ;ffixme
     bvchop-list            ;new
 ;    map-ungroup

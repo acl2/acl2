@@ -537,34 +537,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: At least handle :range (round up to a power of 2)
-(defund var-type-alist-from-test-case-type-alist (a)
-  (declare (xargs :guard (test-case-type-alistp a)
-                  :guard-hints (("Goal" :in-theory (enable test-case-type-alistp)))
-                  :verify-guards nil ; done below
-                  ))
-  (if (endp a)
-      nil
-    (let* ((entry (first a))
-           (var (car entry))
-           (type (cdr entry)))
-      (if (axe-typep type)
-          (acons var
-                 type
-                 (var-type-alist-from-test-case-type-alist (rest a)))
-        (prog2$ (cw "WARNING: Not converting test-type ~x0 to a var-type.~%" type)
-                (var-type-alist-from-test-case-type-alist (rest a)))))))
-
-(defthm var-type-alistp-of-var-type-alist-from-test-case-type-alist
-  (implies (test-case-type-alistp a)
-           (var-type-alistp (var-type-alist-from-test-case-type-alist a)))
-  :hints (("Goal" :in-theory (enable var-type-alist-from-test-case-type-alist
-                                     test-case-type-alistp
-                                     var-type-alistp))))
-
-(defthmd alistp-whenvar-type-alistp
+(defthmd alistp-when-var-type-alistp
   (implies (var-type-alistp a)
            (alistp a))
   :hints (("Goal" :in-theory (enable var-type-alistp alistp))))
 
-(verify-guards var-type-alist-from-test-case-type-alist)
+;; ;; TODO: At least handle :range (round up to a power of 2)
+;; (defund var-type-alist-from-test-case-type-alist (a)
+;;   (declare (xargs :guard (test-case-type-alistp a)
+;;                   :guard-hints (("Goal" :in-theory (enable test-case-type-alistp)))
+;;                   :verify-guards nil ; done below
+;;                   ))
+;;   (if (endp a)
+;;       nil
+;;     (let* ((entry (first a))
+;;            (var (car entry))
+;;            (type (cdr entry)))
+;;       (if (axe-typep type)
+;;           (acons var
+;;                  type
+;;                  (var-type-alist-from-test-case-type-alist (rest a)))
+;;         (prog2$ (cw "WARNING: Not converting test-type ~x0 to a var-type.~%" type)
+;;                 (var-type-alist-from-test-case-type-alist (rest a)))))))
+
+;; (defthm var-type-alistp-of-var-type-alist-from-test-case-type-alist
+;;   (implies (test-case-type-alistp a)
+;;            (var-type-alistp (var-type-alist-from-test-case-type-alist a)))
+;;   :hints (("Goal" :in-theory (enable var-type-alist-from-test-case-type-alist
+;;                                      test-case-type-alistp
+;;                                      var-type-alistp))))
+
+
+;; (verify-guards var-type-alist-from-test-case-type-alist)

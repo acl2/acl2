@@ -424,6 +424,7 @@
     unsigned-byte-p-forced-of-bv-array-read
     ))
 
+;; todo: can these be included in more general convert-to-bv rules?
 (defun if-becomes-bvif-rules ()
   (declare (xargs :guard t))
   '(bvchop-of-if-becomes-bvif
@@ -812,7 +813,7 @@
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvshr-becomes-slice-safe ;newish: remove?? with bvshr we can split into cases easily.
      bvchop-of-bvashr-safe ; introduces slice
-     bvchop-of-bvif
+     bvchop-of-bvif ; drop, if we keep bvchop-of-bv-rules?
 
      ;; TODO: More like this:
      bvcat-of-getbit-arg2
@@ -974,6 +975,7 @@
      bvor-1-becomes-bitor
 
      bvand-with-constant-mask-arg2
+     bvand-of-constant-when-power-of-2p
      bvand-of-constant-when-low-byte-0 ; for masks that pick out bytes
      ;; trying without
 ;            bvor-appending-idiom-low
@@ -1106,6 +1108,9 @@
      bvxor-of-bvcat-becomes-bvcat-arg3
      bvplus-of-bvcat-becomes-bvcat-arg2
      bvplus-of-bvcat-becomes-bvcat-arg3
+
+     ;; this made one of the mavlink dags much longer (too big) but the culprit was the subsequent xor normalization:
+     getbit-of-bvif-quoteps ; more like this?  slice bvchop, etc.?  any term with everything constant but the bvif, like (bvcat 8 1 8 (bvif 8 test 5 7))?
      )))
 
 ;todo combine this with core-rules-bv
@@ -1961,12 +1966,12 @@
 
 (defun array-reduction-rules ()
   (declare (xargs :guard t))
-  '(;bbbozo are these slow??
+  '(; todo: are these slow??  make axe versions of more of these?
     array-reduction-when-top-bit-is-xored-in ;; at least one of these seems needed for aes-128-decrypt
     array-reduction-when-top-bit-is-irrelevant  ;; at least one of these seems needed for aes-128-decrypt
     array-reduction-0-1
     array-reduction-1-0
-    bv-array-read-when-all-same
+    bv-array-read-when-all-same-axe
     bv-array-read-of-bvmult-discard-vals
     bv-array-read-of-bvplus-of-bvmult-discard-vals
     bv-array-read-of-+-of-constant-shorten ; for when we have + for the index (but we may prefer a bvplus) ; todo: make a bvplus version

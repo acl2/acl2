@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -32,9 +32,17 @@
   (xdoc::topstring
    (xdoc::p
     "Validators generate and exchange certificates,
-     which contain proposed transactions along with signatures.
-     Certificates are the nodes of the DAG,
-     in the Narwhal part of AleoBFT."))
+     which contain proposed transactions along with other information.
+     Certificates are the vertices of the DAG.")
+   (xdoc::p
+    "Certificates have a rich structure,
+     but we model only the information needed for our purposes.")
+   (xdoc::p
+    "In AleoBFT, there is a distinction between proposals and certificates,
+     with the latter being an extension of the former with endorsing signatures.
+     Currently we do not model proposals, but just certificates,
+     because we treat the Narwhal aspects of AleoBFT somewhat abstractly;
+     see @(tsee transitions-create-certificate)."))
   :order-subtopics t
   :default-parent t)
 
@@ -52,37 +60,26 @@
     (xdoc::li
      "The round number of the certificate.")
     (xdoc::li
-     "The transactions that the certificate is proposing
+     "The transactions that the validator is proposing
       for inclusion in the blockchain.")
     (xdoc::li
      "The addresses that, together with the previous round number,
       identify the certificates from the previous round
-      that this certificate is based on.")
+      that this certificate references;
+      these define the edges of the DAG.
+      It is a system invariant, proved elsewhere,
+      that certificates in DAGs are uniquely identified by
+      their author and round.")
     (xdoc::li
      "The addresses of the validators that endorsed this certificate,
-      by signing it in addition to the author.
-      We do not model the signing process here,
-      but having a record of the signers (author and endorsers) serves
-      to define the behavior and invariants of the model."))
+      by signing it in addition to the author."))
    (xdoc::p
-    "A validator generates at most one certificate per round.
-     Thus, the combination of author and round number identifies
-     (at most) a unique certificate in a DAG.")
-   (xdoc::p
-    "A certificate is a vertex of the DAG.
-     The @('previous') component of this fixtype models
-     the edges of the DAG, from this certificate to
-     the certificates in the previous round
-     with the authors specified by the set of addresses.")
-   (xdoc::p
-    "Since we model the exchange of proposals and signatures
-     at a high level here,
-     we do not distinguish between batch headers and batch certificates,
-     and instead model certificates directly,
-     as containing the information that is relevant to our model.
-     The signatures are implicit:
-     a certificate as modeled here is implicitly validated and signed
-     by a quorum of validators (author and endorsers)."))
+    "We do not model cryptographic signatures explicitly.
+     The presence of the author and endorser addresses in a certificate
+     models the fact that the author and endorsers signed the certificate
+     (more precisely, the proposal that the certificate extends;
+     but as explained in @(see certificates),
+     we do not model proposals explicitly)."))
   ((author address)
    (round pos)
    (transactions transaction-list)
