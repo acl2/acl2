@@ -132,17 +132,7 @@
   :elementp-of-nil nil
   :pred certificate-setp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist certificate-list
-  :short "Fixtype of lists of certificates."
-  :elt-type certificate
-  :true-listp t
-  :elementp-of-nil nil
-  :pred certificate-listp
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define cert-set->author-set ((certs certificate-setp))
   :returns (addrs address-setp)
@@ -186,7 +176,7 @@
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->author-in-cert-set->author-set))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define cert-set->round-set ((certs certificate-setp))
   :returns (rounds pos-setp)
@@ -230,7 +220,7 @@
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->round-in-cert-set->round-set))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define cert-set->prop-set ((certs certificate-setp))
   :returns (props proposal-setp)
@@ -273,6 +263,16 @@
                                  (cert-set->prop-set certs))))
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->proposal-in-cert-set->prop-set))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist certificate-list
+  :short "Fixtype of lists of certificates."
+  :elt-type certificate
+  :true-listp t
+  :elementp-of-nil nil
+  :pred certificate-listp
+  :prepwork ((local (in-theory (enable nfix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
