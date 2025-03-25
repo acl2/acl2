@@ -16931,7 +16931,7 @@
                             prove-constants
                             debug
                             proof-name     ; should no longer be :auto
-                            state rand)
+                            state)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (true-listp assumptions) ; untranslated
@@ -16963,7 +16963,7 @@
                               (symbolp proof-name)
                               )
                   :mode :program
-                  :stobjs (state rand)))
+                  :stobjs state))
   (b* ((- (cw "~%(Proving top-level miter ~x0:~%" proof-name))
        ;; Desugar the special values :bits and :bytes for the types:
        (dag-vars (if (quotep dag-or-quotep) nil (dag-vars dag-or-quotep))) ; todo: make a dag-or-quotep-vars
@@ -17000,22 +17000,22 @@
         (if (quotep dag-or-quotep)
             (er hard? 'prove-with-axe-core "The following variables are given types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
           (er hard? 'prove-with-axe-core "The following variables are given types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil))
-        (mv :input-error nil nil state rand))
+        (mv :input-error nil nil state))
        ((when (not (subsetp-eq sorted-vars-given-test-types sorted-dag-vars)))
         (if (quotep dag-or-quotep)
             (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil)
           (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil))
-        (mv :input-error nil nil state rand))
+        (mv :input-error nil nil state))
        ;; Handle the case when dag-or-quotep is already a constant: ; todo: move this up?
        ((when (quotep dag-or-quotep))
         (if (equal *t* dag-or-quotep)
             (prog2$ (cw "The DAG is already the constant t!)~%")
                     (mv (erp-nil) t
                         nil ; no assumptions or types were actually used
-                        state rand)
+                        state)
                     )
           (prog2$ (er hard? 'prove-with-axe-core "Tried to prove the goal is t, but it's the non-t constant ~x0" dag-or-quotep)
-                  (mv :non-t-constant nil nil state rand))))
+                  (mv :non-t-constant nil nil state))))
        (dag dag-or-quotep)
        (untranslated-assumptions-from-types (assumptions-from-var-type-alist var-type-alist nil))  ; is it going to be slow to have all of these around?
        (all-untranslated-assumptions (append assumptions untranslated-assumptions-from-types))
@@ -17081,16 +17081,16 @@
                                   :check-inputs nil))))
           (prog2$ (cw "(We don't simplify the miter to start, because no rules are given.)~%")
                   (mv (erp-nil) dag state))))
-       ((when erp) (mv erp nil nil state rand))
+       ((when erp) (mv erp nil nil state))
        ;;should we print the simplified dag?  we print it at the start of the sweep?
        (- (and simplifyp (cw "Done simplifying.)~%"))))
     (if (quotep dag-or-quotep)
         ;; the simplified DAG is a quotep:
         (if (equal *t* dag-or-quotep) ; todo: allow any non-nil constant?
             (prog2$ (cw "The DAG has been rewritten to true!)~%") ;move this message?
-                    (mv (erp-nil) t all-untranslated-assumptions state rand))
+                    (mv (erp-nil) t all-untranslated-assumptions state))
           (prog2$ (er hard? 'prove-with-axe-core "Tried to prove the goal is t, but it's the non-t constant ~x0" dag-or-quotep)
-                  (mv :non-t-constant nil nil state rand)))
+                  (mv :non-t-constant nil nil state)))
       ;; Did not simplify to a constant:
       (b* ((dag dag-or-quotep)
            ((when (eq :rewrite tactic))
@@ -17100,7 +17100,7 @@
                 (cw "~%(Term: ~X01)~%" (dag-to-term dag) nil)
               nil)
             (er hard? 'prove-with-axe-core "If the tactic is :rewrite, the DAG must simplify to true, but it simplified to the above. Functions in the DAG: ~X01" (dag-fns dag) nil)
-            (mv :no-test-cases nil nil state rand))
+            (mv :no-test-cases nil nil state))
            ;; Tactic is :rewrite-and-sweep:
            (state (if (and simplifyp (print-level-at-least-tp print))
                       (print-dag-to-temp-file dag (symbol-name (pack$ proof-name '-after-initial-simplification)) state)
@@ -17132,13 +17132,13 @@
                                         (add-fns-to-interpreted-function-alist new-function-names interpreted-function-alist (w state))))
                                   (prog2$ (cw "Done rewriting to introduce specialized functions.)~%Done specializing.)~%")
                                           (mv (erp-nil) dag interpreted-function-alist state)))))))))))
-           ((when erp) (mv erp nil nil state rand))
+           ((when erp) (mv erp nil nil state))
            ((when (quotep dag-or-quotep))
             (if (equal *t* dag-or-quotep) ; todo: allow any non-nil constant?
                 (prog2$ (cw "The DAG has been rewritten to true!)~%") ;move this message?
-                        (mv (erp-nil) t all-untranslated-assumptions state rand))
+                        (mv (erp-nil) t all-untranslated-assumptions state))
               (prog2$ (er hard? 'prove-with-axe-core "Tried to prove the goal is t, but it's the non-t constant ~x0" dag-or-quotep)
-                      (mv :non-t-constant nil nil state rand))))
+                      (mv :non-t-constant nil nil state))))
            (dag dag-or-quotep) ; it wasn't a quotep
            ;; Generate test-inputs:     ;;todo: rename test-cases test-inputs?
            ((mv erp test-cases)
@@ -17146,42 +17146,45 @@
             ;;todo: consider waiting on this until we see how many we need?  consider making targeted test cases to try to make certain nodes not :unused?
             ;; This drops cases that don't satisfy the assumptions (but what if none survive?):
             (make-test-cases test-case-count test-case-type-alist assumptions random-seed))
-           ((when erp) (mv erp nil nil state rand))
-           ;; could move a lot of stuff into these options:
-           ;; todo: should we move any stuff above here into miter-and-merge?
-           ((mv erp provedp rand state) ;fixme could just pass the constant to miter-and-merge
-            ;;fixme should miter-and-merge do the specialize and/or the pre-simplify?
-            (miter-and-merge dag
-                             proof-name ; move later in arg list
-                             0
-                             var-type-alist
-                             interpreted-function-alist print debug-nodes
-                             rewriter-rule-alist
-                             prover-rule-alist
-                             assumptions
-                             extra-stuff
-                             test-cases
-                             monitored-symbols
-                             use-context-when-miteringp
-                             (empty-analyzed-function-table)
-                             unroll
-                             tests-per-case
-                             (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts)
-                             t ;must-succeedp=t
-                             pre-simplifyp
-                             normalize-xors
-                             (s :prove-constants prove-constants (s :debugp debug nil))
-                             rand state))
-           ((when erp) (mv erp nil nil state rand)))
+           ((when erp) (mv erp nil nil state))
+           ;; todo: should we move any stuff above here into miter-and-merge (like, specialize and/or the pre-simplify)?
+           ((mv erp provedp state)
+            (with-local-stobj
+              rand
+              (mv-let (erp provedp rand state)
+                (miter-and-merge dag
+                                 proof-name ; move later in arg list
+                                 0
+                                 var-type-alist
+                                 interpreted-function-alist print debug-nodes
+                                 rewriter-rule-alist
+                                 prover-rule-alist
+                                 assumptions
+                                 extra-stuff
+                                 test-cases
+                                 monitored-symbols
+                                 use-context-when-miteringp
+                                 (empty-analyzed-function-table)
+                                 unroll
+                                 tests-per-case
+                                 (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts)
+                                 t ;must-succeedp=t
+                                 pre-simplifyp
+                                 normalize-xors
+                                 ;; could move more stuff into these options:
+                                 (s :prove-constants prove-constants (s :debugp debug nil))
+                                 rand state)
+                (mv erp provedp state))))
+           ((when erp) (mv erp nil nil state)))
         (if provedp
             (prog2$ (cw "Finished proving top-level miter!)~%")
-                    (mv (erp-nil) t  all-untranslated-assumptions state rand))
+                    (mv (erp-nil) t  all-untranslated-assumptions state))
           (prog2$ (cw "failed to prove by mitering and merging.)") ;todo: error or not?
-                  (mv (erp-nil) nil all-untranslated-assumptions state rand)))))))
+                  (mv (erp-nil) nil all-untranslated-assumptions state)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp event state rand) where ERP is non-nil iff
+;; Returns (mv erp event state) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
 (defun prove-with-axe-fn (dag-or-quotep
                           assumptions ; (untranslated) terms we can assume are true (non-nil)
@@ -17210,7 +17213,7 @@
                           normalize-xors ;fixme use the more, deeper in?
                           prove-constants
                           debug
-                          proof-name whole-form state rand)
+                          proof-name whole-form state)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (true-listp assumptions) ; untranslated
@@ -17243,14 +17246,14 @@
                                   (natp max-conflicts))
                               (symbolp proof-name))
                   :mode :program
-                  :stobjs (state rand)))
+                  :stobjs state))
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
-        (mv nil '(value-triple :invisible) state rand))
+        (mv (erp-nil) '(value-triple :invisible) state))
        (dag-or-term-form (farg1 whole-form))
        (proof-name (choose-proof-name proof-name dag-or-term-form (w state)))
        ((mv erp provedp & ;all-assumptions
-            state rand)
+            state)
         (prove-with-axe-core dag-or-quotep
                              assumptions
                              types ;compute this from the hyps?
@@ -17279,11 +17282,11 @@
                              normalize-xors ;fixme use the more, deeper in?
                              prove-constants
                              debug
-                             proof-name state rand))
+                             proof-name state))
        ((when erp) (prog2$ (er hard? 'prove-with-axe-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
-                           (mv erp nil state rand)))
+                           (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-with-axe-fn "Proof attempt failed.~%")
-                                     (mv :proof-failed nil state rand))))
+                                     (mv :proof-failed nil state))))
     ;; Depending on how it went, maybe introduce a theorem:
     (let ((state (if debug
                      state
@@ -17291,9 +17294,9 @@
       (let ((event '(progn))) ;fixme should return a theorem about the dag!
         (mv (erp-nil)
             (extend-progn event `(table prove-with-axe-table ',whole-form ',event))
-            state rand)))))
+            state)))))
 
-;; Returns (mv erp event state rand).
+;; Returns (mv erp event state).
 ; todo: eventually, try to always use the same rules for the dag prover as the dag rewriter..
 ;fixme - need to gather up and return the events created, since make-event protects the logical world..
 ;BOZO consider changing the default for cut-proofs...- huh?
@@ -17344,7 +17347,7 @@
                                   ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                                   ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                                   ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,debug
-                                  ,proof-name ',whole-form state rand)
+                                  ,proof-name ',whole-form state)
                                 'prove-with-axe
                                 state
                                 t)
@@ -17365,7 +17368,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp event state rand).
+;; Returns (mv erp event state).
 (defun prove-equal-with-axe+-fn (dag-or-term1
                                  dag-or-term2
                                  assumptions ; (untranslated) terms we can assume are true (non-nil)
@@ -17375,7 +17378,7 @@
                                  ;; todo: standardize argument order:
                                  tests-per-case print debug-nodes interpreted-function-alist check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
                                  random-seed unroll max-conflicts normalize-xors debug prove-constants
-                                 proof-name whole-form state rand)
+                                 proof-name whole-form state)
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
                               (or (eq :bits types)
                                   (eq :bytes types)
@@ -17390,28 +17393,28 @@
                               (member-eq check-vars '(t nil :warn))
                               )
                   :mode :program
-                  :stobjs (state rand)))
+                  :stobjs state))
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state rand))
+        (mv (erp-nil) '(value-triple :invisible) state))
        ;; Make term args (if any) into DAGs:
        (wrld (w state))
        ((mv erp dag-or-quotep1) (dag-or-term-to-dag dag-or-term1 wrld))
-       ((when erp) (mv erp nil state rand))
+       ((when erp) (mv erp nil state))
        ((mv erp dag-or-quotep2) (dag-or-term-to-dag dag-or-term2 wrld))
-       ((when erp) (mv erp nil state rand))
+       ((when erp) (mv erp nil state))
        ;; Compute and check var lists:
        (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equal-with-axe+-fn))
        ;; Make the equality DAG:
        ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2))
-       ((when erp) (mv erp nil state rand))
+       ((when erp) (mv erp nil state))
        ;; Choose a name for the miter:
        (dag-or-term-form1 (farg1 whole-form)) ; todo: why "quoted"?
        (dag-or-term-form2 (farg2 whole-form))
        (proof-name (choose-equality-proof-name proof-name dag-or-term-form1 dag-or-term-form2 wrld))
        ;; Do the proof:
        ((mv erp provedp & ;all-assumptions
-            state rand)
+            state)
         (prove-with-axe-core equality-dag-or-quotep
                              assumptions
                              types
@@ -17440,16 +17443,16 @@
                              normalize-xors ;fixme use the more, deeper in?
                              prove-constants
                              debug
-                             proof-name state rand))
+                             proof-name state))
        ((when erp) (prog2$ (er hard? 'prove-equal-with-axe+-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
-                           (mv erp nil state rand)))
+                           (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe+-fn "Proof attempt failed.~%")
-                                     (mv :proof-failed nil state rand))))
+                                     (mv :proof-failed nil state))))
     (let ((state (if debug state (maybe-remove-temp-dir state)))) ;remove the temp dir unless we are debugging
       (let ((event '(progn))) ;todo: should return a theorem about the term-or-dags!
         (mv (erp-nil)
             (extend-progn event `(table prove-equal-with-axe+-table ',whole-form ',event))
-            state rand)))))
+            state)))))
 
 ;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equal-with-axe, this supports all the exotic options to prove-with-axe.
 ;; Used in several loop examples.
@@ -17495,13 +17498,13 @@
                                ,assumptions ,types ,test-types ,tests
                                ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                                ,random-seed ,unroll ,max-conflicts ,normalize-xors ,debug ,prove-constants
-                               ,proof-name ',whole-form state rand)))
+                               ,proof-name ',whole-form state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Nicer wrappers for the miter proofs (TODO: use these everywhere)
 
-;; Returns (mv erp event state rand).
+;; Returns (mv erp event state).
 ;; TODO: Build the types from the assumptions or vice versa (types for testing may have additional restrictions to avoid huge inputs)
 (defun prove-equal-with-axe-fn (dag-or-term1
                                 dag-or-term2
@@ -17523,7 +17526,7 @@
                                 local
                                 proof-name  ; may be :auto
                                 whole-form
-                                state rand)
+                                state)
   (declare (xargs :guard (and ;; dag-or-term1 is a DAG or (untranslated) term
                            ;; dag-or-term2 is a DAG or (untranslated) term
                            (true-listp assumptions) ; untranslated
@@ -17556,43 +17559,43 @@
                            (booleanp local)
                            (symbolp proof-name))
                   :mode :program
-                  :stobjs (state rand)))
+                  :stobjs state))
   ;;TODO: error or warning if :tactic is rewrite and :tests is given?
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
-        (mv (erp-nil) '(value-triple :redundant) state rand))
+        (mv (erp-nil) '(value-triple :redundant) state))
        ;; Start timing:
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; Make term args (if any) into DAGs:
        (wrld (w state))
        ((mv erp dag-or-quotep1) (dag-or-term-to-dag dag-or-term1 wrld))
-       ((when erp) (mv erp nil state rand))
+       ((when erp) (mv erp nil state))
        ((mv erp dag-or-quotep2) (dag-or-term-to-dag dag-or-term2 wrld))
-       ((when erp) (mv erp nil state rand))
+       ((when erp) (mv erp nil state))
        ;; Compute and check var lists:
        (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equal-with-axe-fn))
        ;; Make the equality DAG:
        ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2)) ; todo: check for constant result and finish immediately
-       ((when erp) (mv erp nil state rand))
+       ((when erp) (mv erp nil state))
        ;; Make the initial rule sets:
        ((mv erp initial-rule-sets) (if (eq :auto initial-rule-sets)
                                        ;;todo: make this a named rule set:
                                        (add-rules-to-rule-sets (list-rules)
                                                                (phased-bv-axe-rule-sets state) wrld) ;todo: overkill?
                                      (mv (erp-nil) initial-rule-sets)))
-       ((when erp) (mv erp nil state rand))
+       ((when erp) (mv erp nil state))
        ;; Always add the extra rules:
        ((mv erp initial-rule-sets) (if initial-rule-sets
                                        (add-rules-to-rule-sets extra-rules initial-rule-sets wrld)
                                      ;; special case: no initial-rule-sets, but extra rules are given (TODO: Think about this):
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
-       ((when erp) (mv erp nil state rand))
+       ((when erp) (mv erp nil state))
        ;; Choose a name for the miter:
        (dag-or-term-form1 (farg1 whole-form)) ; todo: why "quoted"?
        (dag-or-term-form2 (farg2 whole-form))
        (proof-name (choose-equality-proof-name proof-name dag-or-term-form1 dag-or-term-form2 wrld))
        ;; Try to prove the equality:
-       ((mv erp provedp all-assumptions state rand)
+       ((mv erp provedp all-assumptions state)
         (prove-with-axe-core equality-dag-or-quotep
                              assumptions
                              types
@@ -17620,13 +17623,13 @@
                              normalize-xors
                              t   ;prove-constants
                              debug
-                             proof-name state rand))
+                             proof-name state))
        ;; Remove the temp dir unless we have been told to keep it (TODO: consider using an unwind-protect):
        (state (if debug state (maybe-remove-temp-dir state)))
        ((when erp) (prog2$ (er hard? 'prove-equal-with-axe-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
-                           (mv erp nil state rand)))
+                           (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe-fn "Proof attempt failed.~%")
-                                     (mv :proof-failed nil state rand)))
+                                     (mv :proof-failed nil state)))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
        (- (cw "Proof of equivalence succeeded in ")
           (acl2::print-to-hundredths elapsed)
@@ -17651,7 +17654,7 @@
        (event (extend-progn event `(value-triple ',proof-name)))
        ;; Make the whole thing local if instructed:
        (event (if local `(local ,event) event)))
-    (mv (erp-nil) event state rand)))
+    (mv (erp-nil) event state)))
 
 ;; TODO: Use acl2-unwind-protect (see above) to do cleanup on abort
 ;; This tool was formerly called prove-equivalence.
@@ -17700,7 +17703,7 @@
                                               ,check-vars
                                               ,prove-theorem
                                               ,local
-                                              ,proof-name ',whole-form state rand))
+                                              ,proof-name ',whole-form state))
   :parents (axe)
   :short "Prove that two items (DAGs or terms) are equivalent for all values of all of their variables."
   :args ((dag-or-term1 "The first DAG or term to compare")
