@@ -16929,7 +16929,7 @@
                             tactic
                             test-case-count ;the total number of tests to generate?  some may not be used
                             print
-                            debug-nodes ;do we use this?
+                            debug-nodes
                             user-interpreted-function-alist ;todo: just pass in the fn names and look them up in the state?
                             ;; ttodo: allow the use of rule phases?!
                             runes          ;used for both the rewriter and prover
@@ -16947,16 +16947,13 @@
                             unroll
                             tests-per-case
                             max-conflicts
-                            normalize-xors ;fixme use the more, deeper in?
+                            normalize-xors ; todo: use this more, deeper in?
                             prove-constants
                             proof-name     ; should no longer be :auto
                             state)
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (true-listp assumptions) ; untranslated
-                              (or (eq tactic :rewrite)
-                                  (eq tactic :rewrite-and-sweep))
-                              (natp test-case-count)
                               (or (eq :bits types)
                                   (eq :bytes types)
                                   (and (var-type-alistp types)
@@ -16965,22 +16962,36 @@
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
                               (test-case-type-alistp test-types)
-                              (extra-stuff-okayp extra-stuff)
-                              (symbol-listp monitored-symbols)
+                              (or (eq tactic :rewrite)
+                                  (eq tactic :rewrite-and-sweep))
+                              (natp test-case-count)
+                              (print-levelp print)
+                              (nat-listp debug-nodes)
+                              (all-< debug-nodes (if (quotep dag-or-quotep) 0 (+ 1 (top-nodenum dag-or-quotep)))) ; all < the len
+                              (interpreted-function-alistp user-interpreted-function-alist)
                               (symbol-listp runes)
+                              (axe-rule-listp rules)
                               (symbol-listp rewriter-runes)
                               (symbol-listp prover-runes)
-                              (axe-rule-listp rules)
                               (axe-rule-listp initial-rule-set)
                               (all-axe-rule-listp initial-rule-sets)
+                              (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
+                              (booleanp pre-simplifyp)
+                              (extra-stuff-okayp extra-stuff)
+                              (booleanp specialize-fnsp)
+                              (symbol-listp monitored-symbols)
+                              (booleanp use-context-when-miteringp)
+                              (or (null random-seed) ; todo: rename to maybe-random-seed
+                                  (natp random-seed))
                               (or (eq :all unroll)
                                   (symbol-listp unroll))
+                              (natp tests-per-case)
                               (or (eq :auto max-conflicts)
                                   (null max-conflicts)
                                   (natp max-conflicts))
-                              (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
-                              (symbolp proof-name)
-                              )
+                              (booleanp normalize-xors) ; todo: support :compact
+                              (booleanp prove-constants)
+                              (symbolp proof-name))
                   :mode :program
                   :stobjs state))
   (b* ((- (cw "~%(Proving top-level miter ~x0:~%" proof-name))
@@ -17299,7 +17310,7 @@
                              unroll
                              tests-per-case
                              max-conflicts
-                             normalize-xors ;fixme use the more, deeper in?
+                             normalize-xors
                              prove-constants
                              proof-name state))
        ;; Remove the temp-dir (usually):
@@ -17429,7 +17440,7 @@
        ((when erp) (mv erp nil state))
        ;; Compute and check var lists:
        (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equal-with-axe+-fn))
-       ;; Make the equality DAG:
+       ;; Make the equality DAG: ; TODO: Consider which DAG to add first
        ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2))
        ((when erp) (mv erp nil state))
        ;; Choose a name for the miter:
@@ -17603,7 +17614,7 @@
        ((when erp) (mv erp nil state))
        ;; Compute and check var lists:
        (- (maybe-check-dag-vars check-vars dag-or-quotep1 dag-or-quotep2 'prove-equal-with-axe-fn))
-       ;; Make the equality DAG:
+       ;; Make the equality DAG: ; TODO: Consider which DAG to add first
        ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2)) ; todo: check for constant result and finish immediately
        ((when erp) (mv erp nil state))
        ;; Make the initial rule sets:
