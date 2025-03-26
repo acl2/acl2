@@ -31,6 +31,16 @@
    (xdoc::p
     "This ACL2 library is being developed by "
     (xdoc::ahref "https://provable.com" "Provable")
-    "."))
+    ".")
+   (xdoc::p
+    "Currently this library contains two sub-libraries:")
+   (xdoc::ul
+    (xdoc::li
+     "A sub-library about AleoBFT,
+      the consensus protocol of the Aleo blockchain.")
+    (xdoc::li
+     "A sub-library about Leo,
+      a programming language for zero-knowledge applications
+      to be deployed on the Aleo blockchain.")))
   :order-subtopics (aleobft::aleobft
                     leo::leo))
