@@ -17377,7 +17377,7 @@
                            (initial-rule-sets 'nil)
                            (pre-simplifyp 't) ;was nil
                            (extra-stuff 'nil) ;ffixme does any of this affect soundness?
-                           (specialize-fnsp 'nil) ;do we ever use this?
+                           (specialize-fnsp 'nil)
                            (monitor 'nil)         ;a list of runes
                            (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
                            (random-seed 'nil)
@@ -17561,7 +17561,7 @@
                                   (initial-rule-sets 'nil)
                                   (pre-simplifyp 't) ;was nil
                                   (extra-stuff 'nil) ;ffixme does any of this affect soundness?
-                                  (specialize-fnsp 'nil) ;do we ever use this?
+                                  (specialize-fnsp 'nil)
                                   (monitor 'nil)         ;a list of runes
                                   (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
                                   (random-seed 'nil)
@@ -17613,7 +17613,7 @@
                                 extra-rules initial-rule-sets ;; these differ from the + version
                                 monitor use-context-when-miteringp
                                 ;;;
-                                max-conflicts normalize-xors
+                                max-conflicts normalize-xors prove-constants
                                 ;;;
                                 proof-name  ; may be :auto
                                 check-vars
@@ -17648,6 +17648,7 @@
                            (symbol-listp monitor)
                            (booleanp use-context-when-miteringp)
                            (booleanp normalize-xors)
+                           (booleanp prove-constants)
                            (member-eq check-vars '(t nil :warn))
                            (booleanp prove-theorem)
                            (member-eq keep-temp-dir '(t nil :auto))
@@ -17715,7 +17716,7 @@
                              512 ; tests-per-case
                              max-conflicts
                              normalize-xors
-                             t   ;prove-constants
+                             prove-constants
                              proof-name state))
        ;; Remove the temp-dir (usually):
        (state (maybe-remove-temp-dir2 keep-temp-dir erp nil state))
@@ -17769,6 +17770,7 @@
                                     (use-context-when-miteringp 'nil) ;todo: try t
                                     (max-conflicts ':auto) ;1000 here broke proofs
                                     (normalize-xors 't)
+                                    (prove-constants 't)
                                     (proof-name ':auto) ;the name of the proof, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
                                     (check-vars 't)
                                     (keep-temp-dir ':auto)
@@ -17780,7 +17782,7 @@
        (prove-equal-with-axe-fn ,dag-or-term1 ,dag-or-term2 ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
                                 ,print ,debug-nodes ,extra-rules ,initial-rule-sets
                                 ,monitor ,use-context-when-miteringp
-                                ,max-conflicts ,normalize-xors
+                                ,max-conflicts ,normalize-xors ,prove-constants
                                 ,proof-name ,check-vars ,keep-temp-dir
                                 ,prove-theorem ,local ',whole-form state)
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
@@ -17806,6 +17808,7 @@
          (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")
          (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
          (normalize-xors "Whether to normalize XOR nests when simplifying")
+         (prove-constants "Whether, when sweeping, to try to prove nodes are constants (and replace them with those constants if the proof succeeds).")
          (proof-name "A name to assign to the proof, if desired.  A symbol, or :auto to let Axe choose a name.")
          (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
          (keep-temp-dir "Whether to keep the directory with temp files in place, for debugging.  If :auto, the temp-dir is kept whenever there is an error.")
