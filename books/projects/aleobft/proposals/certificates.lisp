@@ -297,6 +297,10 @@
 
   ///
 
+  (defrule certs-with-author+round-of-nil
+    (equal (certs-with-author+round author round nil)
+           nil))
+
   (defruled cert-set->author-set-of-certs-with-author+round
     (equal (cert-set->author-set
             (certs-with-author+round author round certs))

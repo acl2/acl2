@@ -105,7 +105,13 @@
       (props-with-author+round author round (set::tail props))))
   :prepwork ((local (in-theory (enable emptyp-of-proposal-set-fix))))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule props-with-author+round-of-nil
+    (equal (props-with-author+round author round nil)
+           nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
