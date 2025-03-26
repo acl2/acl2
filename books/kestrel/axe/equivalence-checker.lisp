@@ -17374,7 +17374,7 @@
                            (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
                            (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                            (tactic ':rewrite-and-sweep)
-                           (print 'nil)
+                           (print ':brief)
                            (debug-nodes 'nil)
                            (runes 'nil) ;used for both the rewriter and prover, affects soundness
                            (rules 'nil) ;used for both the rewriter and prover, affects soundness
@@ -17586,7 +17586,7 @@
                                   (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
                                   (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                                   (tactic ':rewrite-and-sweep)
-                                  (print 'nil)
+                                  (print ':brief)
                                   (debug-nodes 'nil)
                                   (runes 'nil) ;used for both the rewriter and prover, affects soundness
                                   (rules 'nil) ;used for both the rewriter and prover, affects soundness
