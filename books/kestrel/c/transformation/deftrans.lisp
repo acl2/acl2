@@ -1177,7 +1177,7 @@
    extra-args
    `(dirdeclor-case
       dirdeclor
-      :ident (dirdeclor-ident (,(cdr (assoc-eq 'ident names)) dirdeclor.unwrap ,@extra-args-names))
+      :ident (dirdeclor-ident (,(cdr (assoc-eq 'ident names)) dirdeclor.ident ,@extra-args-names))
       :paren (dirdeclor-paren (,(cdr (assoc-eq 'declor names)) dirdeclor.unwrap ,@extra-args-names))
       :array (make-dirdeclor-array
                :decl (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.decl ,@extra-args-names)

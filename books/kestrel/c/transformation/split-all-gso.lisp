@@ -128,7 +128,7 @@
     :returns (ident? ident-optionp)
     (dirdeclor-case
      dirdeclor
-     :ident dirdeclor.unwrap
+     :ident dirdeclor.ident
      :paren (declor-get-simple-ident dirdeclor.unwrap)
      :array nil
      :array-static1 nil

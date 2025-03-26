@@ -31,7 +31,13 @@
     (xdoc::p
      "This is a very simple proof-of-concept transformation,
       which replaces expressions of the form @('E + 0') with @('E'),
-      when @('E') is a variable of type @('int')."))
+      when @('E') is a variable of type @('int').")
+    (xdoc::p
+     "The transformation also generates proofs of equivalence
+      between old (original) and new (transformed) constructs,
+      for a subset of the constructs.
+      In particular, the transformation generates equivalence proofs
+      for C functions of a certain form, detailed below."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,7 +46,6 @@
     (xdoc::codeblock
      "(simpadd0 const-old"
      "          const-new"
-     "          :proofs ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,16 +80,7 @@
       "This must be a symbol that is valid name for a new ACL2 constant.")
      (xdoc::p
       "In the rest of this documentation page,
-       we refer to this constant as @('*new*')."))
-
-    (xdoc::p
-     "@(':proofs') &mdash; default @('nil')"
-     (xdoc::p
-      "Specifies whether proofs of correctness should be generated or not.")
-     (xdoc::p
-      "This is a very preliminary proof-of-concept capability.
-       It works only on very restricted forms of the code.
-       This is why, for now, it is turned off by default.")))
+       we refer to this constant as @('*new*').")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,78 +109,29 @@
     (xdoc::desc
      "Equivalence theorems."
      (xdoc::p
-      "These are generated only if @(':proofs') is @('t').")
+      "One theorem is generated for every function definition in @('*old*')
+       that has all @('int') parameters and
+       whose body consists of a single @('return') statement
+       with an expression consisting of
+       @('int') constants,
+       function parameters,
+       the unary operators that do not involve pointers
+       (i.e. @('+'), @('-'), @('~'), @('!')),
+       and the binary operators that are pure and strict
+       (i.e. @('*'), @('/'), @('%'), @('+'), @('-'), @('<<'), @('>>'),
+       @('<'), @('>'), @('<='), @('>='), @('=='), @('!='),
+       @('&'), @('^'), @('|')).
+       Note that the transformed function definition in @('*new*')
+       satisfies the same restrictions.")
      (xdoc::p
-      "One theorem is generated for every function definition in @('*old*').")
+      "These theorems are proved by proving a sequence of theorems,
+       in a bottom-up fashion, for the sub-constructs of the functions.
+       Theorems for sub-constructs in the supported subset of C
+       are also generated for functions that are not in the subset.")
      (xdoc::p
-      "If @('<f>') is the name of a defined function in @('*old*'),
-       the generated theorem has the form")
-     (xdoc::codeblock
-      "(defruled |<f>|-equivalence"
-      "  (equal (c::exec-fun (c::ident \"<f>\")"
-      "                      nil"
-      "                      compst"
-      "                      (c::init-fun-env"
-      "                       (mv-nth"
-      "                        1"
-      "                        (c$::ldm-transunit"
-      "                         (omap::lookup"
-      "                          <path> (transunit-ensemble->unwrap *old*)))))"
-      "                      1000)"
-      "         (c::exec-fun (c::ident ,string)"
-      "                      nil"
-      "                      compst"
-      "                      (c::init-fun-env"
-      "                       (mv-nth"
-      "                        1"
-      "                        (c$::ldm-transunit"
-      "                         (omap::lookup"
-      "                          <path> (transunit-ensemble->unwrap *new*)))))"
-      "                      1000)))")
+      "The generated theorems are designed to always prove.
+       It is a bug in the transformation
+       if a generated theorem fails to prove.")
      (xdoc::p
-      "where:")
-     (xdoc::ul
-      (xdoc::li
-       "@(tsee c::exec-fun) is part of our dynamic semantics for C.")
-      (xdoc::li
-       "The @('nil') passed as second argument to @(tsee c::exec-fun)
-        signifies that we only generate proofs
-        for C functions that take no arguments.
-        (As noted above, this proof generation capability is very preliminary.")
-      (xdoc::li
-       "@('<path>') is the path of the translation unit that defines @('<f>').")
-      (xdoc::li
-       "@(tsee c$::ldm-transunit) is part of the mapping from "
-       (xdoc::seetopic "c$::syntax-for-tools" "our abstract syntax for tools")
-       " to the "
-       (xdoc::seetopic "c::abstract-syntax"
-                       "the abstract syntax of our C formalization")
-       ". This is a partial mapping,
-        because our C formalization only covers a subset of C.
-        If any of the translation units in @('*old*')
-        falls outside the domain of the mapping,
-        the @('simpadd0') transformation fails,
-        because proofs cannot be generated;
-        in this case, the transformation must be run with @(':proofs nil').")
-      (xdoc::li
-       "The @('1000') passed to @(tsee c::exec-fun) is just an arbitrary limit,
-        for this very preliminary proof generation capability."))
-     (xdoc::p
-      "Any of these generated theorems may actually fail to prove.
-       Currently @('simpadd0') does not generate robust proofs,
-       and does not make thorough checks to provide
-       user-friendly error messages if proof generation is not possible."))
-
-    (xdoc::desc
-     "Modular theorems."
-     (xdoc::p
-      "These are actually generated regardless of the @(':proofs') input.
-       They are modular theorems, generated bottom-up,
-       in a robust way, such that they are never expected to fail.
-       This is a preliminary capability for now,
-       but eventually it will be used to generate
-       more robust and general forms of
-       the C-function-level equivalence theorems mentioned above.")
-     (xdoc::p
-      "These theorems have names of the form @('*new*-thm-<i>'),
+      "The generated theorems have names of the form @('*new*-thm-<i>'),
        where @('<i>') are increasing positive integers.")))))

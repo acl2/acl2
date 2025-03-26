@@ -30,6 +30,7 @@
 (include-book "endorsed-previous-closed")
 (include-book "dag-previous-closed")
 (include-book "signed-proposals")
+(include-book "signer-record")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,6 +63,7 @@
                     proposed-previous-closed
                     endorsed-previous-closed
                     dag-previous-closed
-                    signed-proposals))
+                    signed-proposals
+                    signer-record))
 
 ; TODO: continue

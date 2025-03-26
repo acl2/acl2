@@ -145,7 +145,7 @@
                            (1- (certificate->round cert))
                            (validator-state->blockchain vstate)))
                   (stake (committee-members-stake
-                          (certificate-set->author-set
+                          (cert-set->author-set
                            (predecessors cert (validator-state->dag vstate)))
                           commtt)))
                (and (> stake 0)
@@ -153,7 +153,7 @@
                         (committee-quorum-stake commtt)))))
     :enable (predecessors
              certs-with-authors+round-to-authors-of-round
-             certificate-set->author-set-of-certs-with-authors
+             cert-set->author-set-of-certs-with-authors
              certificate-previous-in-dag-p
              committee-members-stake-0-to-emptyp-members
              set::expensive-rules)))

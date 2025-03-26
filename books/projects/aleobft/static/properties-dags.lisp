@@ -72,14 +72,14 @@
                      (certificate-setp dag2)
                      (certificate-sets-unequivocalp dag1 dag2)
                      (set::in author
-                              (certificate-set->author-set
+                              (cert-set->author-set
                                (certificates-with-round round dag1)))
                      (set::in author
-                              (certificate-set->author-set
+                              (cert-set->author-set
                                (certificates-with-round round dag2)))
                      (posp round))
                 (set::in author
-                         (certificate-set->author-set
+                         (cert-set->author-set
                           (set::intersect
                            (certificates-with-round round dag1)
                            (certificates-with-round round dag2)))))
@@ -88,7 +88,7 @@
                 certificate->author-of-certificate-with-author+round
                 certificate->round-of-certificate-with-author+round
                 in-of-certificates-with-round)
-       :disable certificate->author-in-certificate-set->author-set
+       :disable certificate->author-in-cert-set->author-set
        :use ((:instance certificate-sets-unequivocalp-necc
                         (cert1 (certificate-with-author+round
                                 author round dag1))
@@ -96,7 +96,7 @@
                                 author round dag2))
                         (certs1 dag1)
                         (certs2 dag2))
-             (:instance certificate->author-in-certificate-set->author-set
+             (:instance certificate->author-in-cert-set->author-set
                         (cert (certificate-with-author+round
                                author round dag1))
                         (certs (set::intersect
@@ -590,20 +590,9 @@
         set::expensive-rules
         nil-not-in-certificate-set
         certificates-with-authors+round-subset
-        path-to-author+round-round-lte))
-      '(:use ((:instance element-of-certificate-set-not-nil
-                         (certs dag)
-                         (cert (path-to-author+round cert1
-                                                     '(:address (unwrap))
-                                                     1
-                                                     dag)))
-              (:instance element-of-certificate-set-not-nil
-                         (certs dag)
-                         (cert (path-to-author+round cert1
-                                                     (certificate->author cert)
-                                                     (certificate->round cert)
-                                                     dag))))
-        :expand (path-to-author+round-set certs
+        path-to-author+round-round-lte
+        element-of-certificate-set-not-nil))
+      '(:expand (path-to-author+round-set certs
                                           (certificate->author cert2)
                                           (certificate->round cert2)
                                           dag)))))

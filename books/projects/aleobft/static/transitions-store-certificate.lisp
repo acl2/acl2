@@ -74,7 +74,7 @@
        (all-previous-round-certs
         (certificates-with-round (1- cert.round) dag))
        (all-previous-round-authors
-        (certificate-set->author-set all-previous-round-certs))
+        (cert-set->author-set all-previous-round-certs))
        ((unless (set::subset cert.previous all-previous-round-authors)) nil))
     t)
   :guard-hints

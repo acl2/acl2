@@ -265,7 +265,7 @@
                 (same-active-committees-p blockchain1 blockchain2)
                 (dag-predecessor-quorum-p dag2 blockchain2)
                 (> (committee-members-stake
-                    (certificate-set->author-set (successors cert1 dag1))
+                    (cert-set->author-set (successors cert1 dag1))
                     (active-committee-at-round (1+ (certificate->round cert1))
                                                blockchain1))
                    (committee-max-faulty-stake
@@ -322,7 +322,7 @@
                 (same-active-committees-p blockchain1 blockchain2)
                 (dag-predecessor-quorum-p dag2 blockchain2)
                 (> (committee-members-stake
-                    (certificate-set->author-set (successors cert1 dag1))
+                    (cert-set->author-set (successors cert1 dag1))
                     (active-committee-at-round (1+ (certificate->round cert1))
                                                blockchain1))
                    (committee-max-faulty-stake
@@ -372,7 +372,7 @@
                 (same-active-committees-p blockchain1 blockchain2)
                 (dag-predecessor-quorum-p dag2 blockchain2)
                 (> (committee-members-stake
-                    (certificate-set->author-set (successors cert dag1))
+                    (cert-set->author-set (successors cert dag1))
                     (active-committee-at-round (1+ (certificate->round cert))
                                                blockchain1))
                    (committee-max-faulty-stake
@@ -542,7 +542,7 @@
                 (dag-predecessor-quorum-p dag2 blockchain2)
                 (set::in cert dag1)
                 (> (committee-members-stake
-                    (certificate-set->author-set (successors cert dag1))
+                    (cert-set->author-set (successors cert dag1))
                     (active-committee-at-round (1+ (certificate->round cert))
                                                blockchain1))
                    (committee-max-faulty-stake
@@ -589,7 +589,7 @@
                 (dag-predecessor-quorum-p dag2 blockchain2)
                 (set::in cert dag1)
                 (> (committee-members-stake
-                    (certificate-set->author-set (successors cert dag1))
+                    (cert-set->author-set (successors cert dag1))
                     (active-committee-at-round (1+ (certificate->round cert))
                                                blockchain1))
                    (committee-max-faulty-stake
@@ -632,7 +632,7 @@
                 (dag-predecessor-quorum-p dag2 blockchain2)
                 (set::in cert dag1)
                 (> (committee-members-stake
-                    (certificate-set->author-set (successors cert dag1))
+                    (cert-set->author-set (successors cert dag1))
                     (active-committee-at-round (1+ (certificate->round cert))
                                                blockchain1))
                    (committee-max-faulty-stake
