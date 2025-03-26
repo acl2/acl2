@@ -54,6 +54,7 @@
 
     (xdoc::codeblock
      "(input-files :files             ...  ; no default"
+     "             :path              ...  ; default \".\""
      "             :preprocess        ...  ; default nil"
      "             :preprocess-args   ...  ; no default"
      "             :process           ...  ; default :validate"
@@ -75,17 +76,28 @@
      (xdoc::p
       "List of zero or more file paths that specify the files to be read.")
      (xdoc::p
-      "This must be a list of strings that are valid path names in the system.
-       Non-absolute paths are relative to
-       the connected book directory (see @(tsee cbd)).")
+      "These paths are relative to
+       the path specified by the @(':path') input.")
      (xdoc::p
       "This input to this macro is not evaluated."))
+
+    (xdoc::desc
+     "@(':path') &mdash; default @('\".\"')"
+     (xdoc::p
+      "Path that the file paths are relative to.")
+     (xdoc::p
+      "This must a non-empty string that is a valid path name in the system.
+       It may or may not end with a slash.
+       A non-absolute path is relative to
+       the connected book directory (see @(tsee cbd)).
+       In particular, the @('\".\"') path (which is the default)
+       specifies the connected book directory."))
 
     (xdoc::desc
      "@(':preprocess') &mdash; default @('nil')"
      (xdoc::p
       "Specifies the preprocessor to use, if any,
-       on the files specified by the @(':files') input.")
+       on the files specified by the @(':files') and @(':path') inputs.")
      (xdoc::p
       "This input must be one of the following:")
      (xdoc::ul
@@ -135,7 +147,7 @@
      "@(':process') &mdash; default @(':validate')"
      (xdoc::p
       "Specifies the processing to perform
-       on the files specified by the @(':files') input
+       on the files specified by the @(':files') and @(':path') inputs
        (if @(':preprocess') is @('nil'))
        or on the result of preprocessing those files
        (if @(':preprocess') is not @('nil')).")
@@ -191,7 +203,7 @@
      (xdoc::p
       "Name of the generated ACL2 constant whose value is
        the final result of processing (and preprocessing)
-       the files specified in the @(':files') input.")
+       the files specified in the @(':files') and @(':path') inputs.")
      (xdoc::p
       "If @(':process') is @(':parse'),
        the value of the constant named by @(':const') is
@@ -277,7 +289,7 @@
      (xdoc::p
       "The named constant containing the result of processing,
        as specified by @(':process'),
-       the files specified by @(':files')
+       the files specified by the @(':files') and @(':path') inputs
        (if @(':preprocess') is @('nil'))
        or the files resulting from preprocessing those
        (if @(':preprocess') is not @('nil')).")))))

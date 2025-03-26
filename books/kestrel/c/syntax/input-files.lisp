@@ -23,6 +23,7 @@
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/system/pseudo-event-form-listp" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/lists/top" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -66,6 +67,7 @@
 (defval *input-files-allowed-options*
   :short "Keyword options accepted by @(tsee input-files)."
   (list :files
+        :path
         :preprocess
         :preprocess-args
         :process
@@ -82,12 +84,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-strings-to-paths ((strings string-listp))
-  :returns (paths filepath-setp)
+(define input-files-strings-to-filepaths ((strings string-listp))
+  :returns (filepaths filepath-setp)
   :short "Turn a list of strings into a set of file paths."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Wrap each string into a file path."))
   (cond ((endp strings) nil)
         (t (set::insert (filepath (car strings))
-                        (input-files-strings-to-paths (cdr strings)))))
+                        (input-files-strings-to-filepaths (cdr strings)))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,7 +115,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-process-files ((options symbol-alistp))
-  :returns (mv erp (paths filepath-setp))
+  :returns (mv erp (filepaths filepath-setp))
   :short "Process the @(':files') input."
   (b* (((reterr) nil)
        (files-option (assoc-eq :files options))
@@ -125,8 +131,38 @@
         (reterr (msg "The :FILES input must be a list without duplicates, ~
                       but the supplied ~x0 has duplicates."
                      files)))
-       (paths (input-files-strings-to-paths files)))
-    (retok paths)))
+       (filepaths (input-files-strings-to-filepaths files)))
+    (retok filepaths)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-path ((options symbol-alistp))
+  :returns (mv erp (path stringp))
+  :short "Process the @(':path') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the string does not end with @('/'), we add @('/') at the end.
+     This is to facilitate concatenation with
+     the file paths specified in the @(':files') input."))
+  (b* (((reterr) "")
+       (path-option (assoc-eq :path options))
+       (path (if path-option
+                 (cdr path-option)
+               "."))
+       ((unless (stringp path))
+        (reterr (msg "The :PATH input must be a string, ~
+                      but it is ~x0 instead."
+                     path)))
+       (path-chars (str::explode path))
+       ((unless (consp path-chars))
+        (reterr (msg "The :PATH input must be not empty, ~
+                      but it is the empty string instead.")))
+       (path-chars (if (eql (nth (1- (len path-chars)) path-chars) #\/)
+                       path-chars
+                     (append path-chars (list #\/))))
+       (path (str::implode path-chars)))
+    (retok path)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -349,7 +385,8 @@
 
 (define input-files-process-inputs ((args true-listp) (progp booleanp))
   :returns (mv erp
-               (paths filepath-setp)
+               (filepaths filepath-setp)
+               (path stringp)
                (preprocessor string-optionp)
                (preprocess-args-presentp booleanp)
                (preprocess-extra-args string-listp)
@@ -361,8 +398,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('paths') result of this function
+    "The @('filepaths') result of this function
      is calculated from the @(':files') input.")
+   (xdoc::p
+    "The @('path') result of this function
+     is calculated from the @(':path') input.")
    (xdoc::p
     "The @('preprocessor') result of this function
      is calculated from the @(':preprocess') input.
@@ -371,7 +411,7 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil nil nil nil :parse nil nil (ienv-default))
+  (b* (((reterr) nil "" nil nil nil :parse nil nil (ienv-default))
        ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -387,7 +427,8 @@
                      *input-files-allowed-options*
                      extra)))
        ;; Process the inputs.
-       ((erp paths) (input-files-process-files options))
+       ((erp filepaths) (input-files-process-files options))
+       ((erp path) (input-files-process-path options))
        ((erp preprocessor) (input-files-process-preprocess options))
        ((erp preprocess-args-presentp preprocess-extra-args)
         (input-files-process-preprocess-args options preprocessor))
@@ -395,7 +436,8 @@
        ((erp const) (input-files-process-const options progp))
        ((erp gcc) (input-files-process-gcc options))
        ((erp ienv) (input-files-process-ienv options)))
-    (retok paths
+    (retok filepaths
+           path
            preprocessor
            preprocess-args-presentp
            preprocess-extra-args
@@ -422,6 +464,16 @@
   (in-theory (disable input-files-process-inputs.process-to-cdr-assoc-args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+
+
+
+
+
+
 
 (define input-files-read-files ((paths filepath-setp) state)
   :returns (mv erp (fileset filesetp) state)
