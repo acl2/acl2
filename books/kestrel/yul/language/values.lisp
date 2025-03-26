@@ -13,6 +13,9 @@
 (include-book "kestrel/fty/defresult" :dir :system)
 (include-book "kestrel/fty/ubyte256" :dir :system)
 
+; to generate more theorems from FTY::DEFLIST
+(local (include-book "std/lists/top" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ values
