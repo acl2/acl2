@@ -16926,8 +16926,8 @@
                             assumptions ; (untranslated) terms we can assume are true (non-nil)
                             types ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
                             test-types
-                            tactic
-                            test-case-count ;the total number of tests to generate?  some may not be used
+                            test-case-count
+                            tactic ;the total number of tests to generate?  some may not be used
                             print
                             debug-nodes
                             user-interpreted-function-alist ;todo: just pass in the fn names and look them up in the state?
@@ -17221,6 +17221,7 @@
                           types  ;compute this from the hyps
                           test-types
                           tests ;the total number of tests to generate?  some may not be used
+                          tactic
                           print
                           debug-nodes ;do we use this?
                           interpreted-function-alist
@@ -17248,6 +17249,8 @@
                                   (weak-dagp dag-or-quotep))
                               (true-listp assumptions) ; untranslated
                               (natp tests)
+                              (or (eq tactic :rewrite)
+                                  (eq tactic :rewrite-and-sweep))
                               (or (eq :bits types)
                                   (eq :bytes types)
                                   (and (var-type-alistp types)
@@ -17289,8 +17292,8 @@
                              assumptions
                              types ;compute this from the hyps?
                              test-types
-                             :rewrite-and-sweep ; todo: pass this in?
                              tests
+                             tactic
                              print
                              debug-nodes ;do we use this?
                              interpreted-function-alist
@@ -17340,6 +17343,7 @@
                            (types 'nil)  ; derive from the assumptions?  also used when calling stp..
                            (test-types 'nil)
                            (tests '100)
+                           (tactic ':rewrite-and-sweep)
                            (tests-per-case '512)
                            (print 'nil)
                            (debug-nodes 'nil)
@@ -17368,7 +17372,7 @@
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-with-axe"
        (prove-with-axe-fn ,dag-or-quotep ,assumptions ,types ,test-types
-                          ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+                          ,tests ,tactic ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
                           ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                           ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
                           ,proof-name ',whole-form state)
@@ -17378,7 +17382,7 @@
        ;; (mv-let (erp val state)
        ;;   (trans-eval-no-warning '(prove-with-axe-fn
        ;;                            ,dag-or-quotep ,assumptions ,types ,test-types
-       ;;                            ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+       ;;                            ,tests ,tactic ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
        ;;                            ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
        ;;                            ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
        ;;                            ,proof-name ',whole-form state)
@@ -17410,6 +17414,7 @@
                                  types  ;todo: compute the types from the hyps?
                                  test-types
                                  tests
+                                 tactic
                                  ;; todo: standardize argument order:
                                  tests-per-case print debug-nodes interpreted-function-alist check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
                                  random-seed unroll max-conflicts normalize-xors prove-constants keep-temp-dir
@@ -17424,6 +17429,8 @@
                                        ))
                               (test-case-type-alistp test-types)
                               (natp tests)
+                              (or (eq tactic :rewrite)
+                                  (eq tactic :rewrite-and-sweep))
                               ; todo: more
                               (member-eq check-vars '(t nil :warn))
                               (member-eq keep-temp-dir '(t nil :auto)))
@@ -17454,8 +17461,8 @@
                              assumptions
                              types
                              test-types
-                             :rewrite-and-sweep ; todo: pass this in?
                              tests
+                             tactic
                              print
                              debug-nodes ;do we use this?
                              interpreted-function-alist
@@ -17493,6 +17500,7 @@
 ;; Used in several loop examples.
 ;; See also prove-equal-with-axe, which is preferable when it is sufficient (because it is simpler).
 ;; This tool was formerly called prove-equality.
+  ;;TODO: error or warning if :tactic is rewrite and :tests is given?
 (defmacro prove-equal-with-axe+ (&whole
                                   whole-form
                                   dag-or-term1
@@ -17502,6 +17510,7 @@
                                   (types 'nil)
                                   (test-types 'nil)
                                   (tests '100)
+                                  (tactic ':rewrite-and-sweep)
                                   (tests-per-case '512)
                                   (print 'nil)
                                   (debug-nodes 'nil)
@@ -17530,7 +17539,7 @@
        "acl2-unwind-protect for prove-equal-with-axe+"
        (prove-equal-with-axe+-fn ,dag-or-term1
                                  ,dag-or-term2
-                                 ,assumptions ,types ,test-types ,tests
+                                 ,assumptions ,types ,test-types ,tests ,tactic
                                  ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                                  ,random-seed ,unroll ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
                                  ,proof-name ',whole-form state)
@@ -17600,7 +17609,6 @@
                            (symbolp proof-name))
                   :mode :program
                   :stobjs state))
-  ;;TODO: error or warning if :tactic is rewrite and :tests is given?
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :redundant) state))
@@ -17640,8 +17648,8 @@
                              assumptions
                              types
                              test-types
-                             tactic
                              tests ; number of tests to run
+                             tactic
                              print
                              debug-nodes
                              interpreted-function-alist
@@ -17704,8 +17712,8 @@
                                     (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
                                     (types 'nil) ;gives types to the vars for the proofs
                                     (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
-                                    (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                     (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                                    (tactic ':rewrite-and-sweep)
                                     (print ':brief)
                                     (debug-nodes 'nil)
                                     (max-conflicts ':auto) ;1000 here broke proofs
@@ -17757,8 +17765,8 @@
          (assumptions "Assumptions to use when proving equivalence, a list of terms (not necessarily translated).  The proof is done assuming all of the :assumptions are non-nil.")
          (types "A var-type-alist (alist mapping variables to their axe-types), or one of the special values :bits or :bytes.  Entries in this alist can be overridden for testing purposes by the :test-types option.")
          (test-types "Overrides of the :types for use in the testing that identifies probable facts for sweeping-and-merging (example, to restrict the length of arrays).")
-         (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (tests "How many tests to use to find internal equivalences (a natp)")
+         (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (print "Print verbosity (allows nil, :brief, t, and :verbose)")
          (debug-nodes "Nodenums whose values should be printed for each test-case.")
          (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
