@@ -90,6 +90,8 @@
 
 ;; TODO: Add a tactic for the Axe prover
 ;; TODO: Add a bit-blasting tactic?
+;; TODO: Add case-splitting
+;; TODO: What about increasing the timeout and trying again?
 (defun tacticp (tac)
   (declare (xargs :guard t))
   (or (member-eq tac '(:rewrite
