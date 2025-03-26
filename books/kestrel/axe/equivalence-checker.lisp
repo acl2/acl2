@@ -17220,12 +17220,12 @@
 
 ;; Returns (mv erp event state) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
-(defun prove-with-axe-fn (dag-or-quotep
+(defun prove-with-axe-fn (dag-or-term
                           assumptions ; (untranslated) terms we can assume are true (non-nil)
-                          types  ;compute this from the hyps
+                          types
                           interpreted-function-alist
                           test-types
-                          tests ;the total number of tests to generate?  some may not be used
+                          tests ; the total number of tests to generate?  some may not be used
                           tactic
                           print
                           debug-nodes
@@ -17239,18 +17239,17 @@
                           pre-simplifyp
                           extra-stuff
                           specialize-fnsp
-                          monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                          monitored-symbols
                           use-context-when-miteringp
                           random-seed
                           unroll
                           tests-per-case
                           max-conflicts
-                          normalize-xors ;fixme use the more, deeper in?
+                          normalize-xors
                           prove-constants
                           keep-temp-dir
                           proof-name whole-form state)
-  (declare (xargs :guard (and (or (quotep dag-or-quotep)
-                                  (weak-dagp dag-or-quotep))
+  (declare (xargs :guard (and ;; dag-or-term is a dag or (untranslated) term
                               (true-listp assumptions) ; untranslated
                               (or (eq :bits types)
                                   (eq :bytes types)
@@ -17297,10 +17296,15 @@
                   :mode :program
                   :stobjs state))
   (b* (;; Handle redundant invocation:
-       ((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
+       ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :invisible) state))
        ;; Start timing:
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       ;; Make term args (if present) into a DAG:
+       (wrld (w state))
+       ((mv erp dag-or-quotep) (dag-or-term-to-dag dag-or-term wrld))
+       ((when erp) (mv erp nil state))
+       ;; Choose a name for the miter:
        (dag-or-term-form (farg1 whole-form))
        (proof-name (choose-proof-name proof-name dag-or-term-form (w state)))
        ;; Do the proof:
@@ -17308,7 +17312,7 @@
             state)
         (prove-with-axe-core dag-or-quotep
                              assumptions
-                             types ;compute this from the hyps?
+                             types
                              interpreted-function-alist
                              test-types
                              tests
@@ -17341,7 +17345,7 @@
        ((when (not provedp)) (prog2$ (er hard? 'prove-with-axe-fn "Proof attempt failed.~%")
                                      (mv :proof-failed nil state)))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
-       (- (cw "Proof of succeeded in ")
+       (- (cw "Proof succeeded in ")
           (acl2::print-to-hundredths elapsed)
           (cw "s.~%"))
        ;; Assemble the event to return:
@@ -17436,7 +17440,7 @@
 (defun prove-equal-with-axe+-fn (dag-or-term1
                                  dag-or-term2
                                  assumptions ; (untranslated) terms we can assume are true (non-nil)
-                                 types  ;todo: compute the types from the hyps?
+                                 types
                                  interpreted-function-alist
                                  test-types
                                  tests
@@ -17513,7 +17517,7 @@
        ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2))
        ((when erp) (mv erp nil state))
        ;; Choose a name for the miter:
-       (dag-or-term-form1 (farg1 whole-form)) ; todo: why "quoted"?
+       (dag-or-term-form1 (farg1 whole-form))
        (dag-or-term-form2 (farg2 whole-form))
        (proof-name (choose-equality-proof-name proof-name dag-or-term-form1 dag-or-term-form2 wrld))
        ;; Do the proof:
@@ -17544,7 +17548,7 @@
                              unroll
                              tests-per-case
                              max-conflicts
-                             normalize-xors ;fixme use the more, deeper in?
+                             normalize-xors
                              prove-constants
                              proof-name state))
        ;; Remove the temp-dir (usually):
