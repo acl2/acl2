@@ -17247,8 +17247,8 @@
                           max-conflicts
                           normalize-xors
                           prove-constants
-                          keep-temp-dir
-                          proof-name whole-form state)
+                          proof-name
+                          keep-temp-dir whole-form state)
   (declare (xargs :guard (and ;; dag-or-term is a dag or (untranslated) term
                               (true-listp assumptions) ; untranslated
                               (or (eq :bits types)
@@ -17291,8 +17291,8 @@
                                   (natp max-conflicts))
                               (booleanp normalize-xors)
                               (booleanp prove-constants)
-                              (member-eq keep-temp-dir '(t nil :auto))
-                              (symbolp proof-name))
+                              (symbolp proof-name)
+                              (member-eq keep-temp-dir '(t nil :auto)))
                   :mode :program
                   :stobjs state))
   (b* (;; Handle redundant invocation:
@@ -17393,8 +17393,8 @@
                            (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                            (normalize-xors 't)
                            (prove-constants 't) ;whether to attempt to prove probably-constant nodes
-                           (keep-temp-dir ':auto)
-                           (proof-name ':auto))
+                           (proof-name ':auto)
+                           (keep-temp-dir ':auto))
   ;; note: we can't put a make-event inside an acl2-unwind-protect, so we do it
   ;; this way:
   `(make-event
@@ -17403,8 +17403,8 @@
        (prove-with-axe-fn ,dag-or-quotep ,assumptions ,types ,interpreted-function-alist ,test-types
                           ,tests ,tactic ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes
                           ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                          ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
-                          ,proof-name ',whole-form state)
+                          ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,proof-name ,keep-temp-dir
+                          ',whole-form state)
        ;; ;; Can't call prove-with-axe-fn directly here, because it returns extra
        ;; ;; stobjs (does not return an error triple), so we use trans-eval as
        ;; ;; suggested by MK:
@@ -17413,8 +17413,8 @@
        ;;                            ,dag-or-quotep ,assumptions ,types ,interpreted-function-alist ,test-types
        ;;                            ,tests ,tactic ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes
        ;;                            ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-       ;;                            ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
-       ;;                            ,proof-name ',whole-form state)
+       ;;                            ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,proof-name ,keep-temp-dir
+       ;;                            ',whole-form state)
        ;;                          'prove-with-axe
        ;;                          state
        ;;                          t)
@@ -17451,8 +17451,8 @@
                                  random-seed unroll tests-per-case
                                  max-conflicts normalize-xors prove-constants
                                  proof-name
-                                 check-vars
                                  keep-temp-dir
+                                 check-vars
                                  whole-form state)
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
                               (or (eq :bits types)
@@ -17496,8 +17496,8 @@
                               (booleanp normalize-xors)
                               (booleanp prove-constants)
                               (symbolp proof-name)
-                              (member-eq check-vars '(t nil :warn))
-                              (member-eq keep-temp-dir '(t nil :auto)))
+                              (member-eq keep-temp-dir '(t nil :auto))
+                              (member-eq check-vars '(t nil :warn)))
                   :mode :program
                   :stobjs state))
   (b* (;; Handle redundant invocation:
@@ -17606,8 +17606,8 @@
                                   (normalize-xors 't)
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
                                   (proof-name ':auto)
-                                  (check-vars 't)
-                                  (keep-temp-dir ':auto))
+                                  (keep-temp-dir ':auto)
+                                  (check-vars 't))
   `(make-event ; use make-event-quiet?
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-equal-with-axe+"
@@ -17620,8 +17620,8 @@
                                  ,random-seed ,unroll ,tests-per-case
                                  ,max-conflicts ,normalize-xors ,prove-constants
                                  ,proof-name
-                                 ,check-vars
                                  ,keep-temp-dir
+                                 ,check-vars
                                  ',whole-form state)
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
        ;; Remove the temp-dir (usually):
@@ -17649,10 +17649,9 @@
                                 monitored-symbols use-context-when-miteringp
                                 ;;;
                                 max-conflicts normalize-xors prove-constants
-                                ;;;
                                 proof-name  ; may be :auto
-                                check-vars
                                 keep-temp-dir
+                                check-vars
                                 prove-theorem ;; todo: add to other tools?
                                 local ;; todo: add to other tools?
                                 whole-form
@@ -17684,11 +17683,11 @@
                            (booleanp use-context-when-miteringp)
                            (booleanp normalize-xors)
                            (booleanp prove-constants)
+                           (symbolp proof-name)
+                           (member-eq keep-temp-dir '(t nil :auto))
                            (member-eq check-vars '(t nil :warn))
                            (booleanp prove-theorem)
-                           (member-eq keep-temp-dir '(t nil :auto))
-                           (booleanp local)
-                           (symbolp proof-name))
+                           (booleanp local))
                   :mode :program
                   :stobjs state))
   (b* (;; Handle redundant invocation:
@@ -17807,8 +17806,8 @@
                                     (normalize-xors 't)
                                     (prove-constants 't)
                                     (proof-name ':auto) ;the name of the proof, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
-                                    (check-vars 't)
                                     (keep-temp-dir ':auto)
+                                    (check-vars 't)
                                     (prove-theorem 'nil) ; very rarely used
                                     (local 't))
   `(make-event-quiet
@@ -17818,7 +17817,7 @@
                                 ,print ,debug-nodes ,extra-rules ,initial-rule-sets
                                 ,monitor ,use-context-when-miteringp
                                 ,max-conflicts ,normalize-xors ,prove-constants
-                                ,proof-name ,check-vars ,keep-temp-dir
+                                ,proof-name ,keep-temp-dir ,check-vars
                                 ,prove-theorem ,local ',whole-form state)
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
        ;; Remove the temp-dir (usually):
@@ -17845,8 +17844,8 @@
          (normalize-xors "Whether to normalize XOR nests when simplifying")
          (prove-constants "Whether, when sweeping, to try to prove nodes are constants (and replace them with those constants if the proof succeeds).")
          (proof-name "A name to assign to the proof, if desired.  A symbol, or :auto to let Axe choose a name.")
-         (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
          (keep-temp-dir "Whether to keep the directory with temp files in place, for debugging.  If :auto, the temp-dir is kept whenever there is an error.")
+         (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
          (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
          (local "whether to make the generated events local"))
   :description ("If the call to @('prove-equal-with-axe') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."
