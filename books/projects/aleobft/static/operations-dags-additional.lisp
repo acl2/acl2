@@ -116,7 +116,6 @@
        :induct t
        :enable (cert-set->round-set
                 cert-set->round-set-of-insert
-                emptyp-of-cert-set->round-set
                 set::expensive-rules)
        :hints ('(:use (:instance set::emptyp-when-proper-subset-of-singleton
                                  (x (cert-set->round-set (tail certs)))
