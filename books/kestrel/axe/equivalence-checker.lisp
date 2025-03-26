@@ -17440,7 +17440,7 @@
                                  tactic
                                  print debug-nodes runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets
                                  pre-simplifyp extra-stuff specialize-fnsp
-                                 monitor use-context-when-miteringp
+                                 monitored-symbols use-context-when-miteringp
                                  random-seed unroll tests-per-case
                                  max-conflicts normalize-xors prove-constants
                                  proof-name
@@ -17460,7 +17460,36 @@
                               (natp tests)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
-                              ; todo: more
+                              (print-levelp print)
+                              (nat-listp debug-nodes)
+                              ;; (all-< debug-nodes (if (quotep dag-or-quotep) 0 (+ 1 (top-nodenum dag-or-quotep)))) ; all < the len ; todo: check this?
+                              (symbol-listp runes)
+                              (axe-rule-listp rules)
+                              (symbol-listp rewriter-runes)
+                              (symbol-listp prover-runes)
+                              (axe-rule-listp initial-rule-set)
+                              (all-axe-rule-listp initial-rule-sets)
+                              (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
+                              (booleanp pre-simplifyp)
+                              (if (extra-stuff-okayp extra-stuff)
+                                  t
+                                (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff) ;drop?
+                                        nil))
+                              (booleanp specialize-fnsp)
+                              (symbol-listp monitored-symbols)
+                              (booleanp use-context-when-miteringp)
+                              (or (null random-seed)
+                                  (natp random-seed))
+                              ;;:unroll is either a list of function names to unroll (can be empty), or :all
+                              (or (eq :all unroll)
+                                  (symbol-listp unroll))
+                              (natp tests-per-case)
+                              (or (eq :auto max-conflicts)
+                                  (null max-conflicts)
+                                  (natp max-conflicts))
+                              (booleanp normalize-xors)
+                              (booleanp prove-constants)
+                              (symbolp proof-name)
                               (member-eq check-vars '(t nil :warn))
                               (member-eq keep-temp-dir '(t nil :auto)))
                   :mode :program
@@ -17507,7 +17536,7 @@
                              pre-simplifyp
                              extra-stuff
                              specialize-fnsp
-                             monitor ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                             monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
                              use-context-when-miteringp
                              random-seed
                              unroll
@@ -17611,7 +17640,7 @@
                                 print
                                 debug-nodes
                                 extra-rules initial-rule-sets ;; these differ from the + version
-                                monitor use-context-when-miteringp
+                                monitored-symbols use-context-when-miteringp
                                 ;;;
                                 max-conflicts normalize-xors prove-constants
                                 ;;;
@@ -17637,15 +17666,16 @@
                            (natp tests)
                            (or (eq tactic :rewrite)
                                (eq tactic :rewrite-and-sweep))
-                           ;; print
+                           (print-levelp print)
                            (nat-listp debug-nodes)
+                           ;; (all-< debug-nodes (if (quotep dag-or-quotep) 0 (+ 1 (top-nodenum dag-or-quotep)))) ; all < the len ; todo: check this?
                            (or (eq :auto max-conflicts)
                                (null max-conflicts)
                                (natp max-conflicts))
                            (symbol-listp extra-rules)
                            (or (eq :auto initial-rule-sets)
                                (axe-rule-setsp initial-rule-sets))
-                           (symbol-listp monitor)
+                           (symbol-listp monitored-symbols)
                            (booleanp use-context-when-miteringp)
                            (booleanp normalize-xors)
                            (booleanp prove-constants)
@@ -17709,7 +17739,7 @@
                              t   ;pre-simplifyp
                              nil ;extra-stuff
                              nil ;specialize-fnsp
-                             monitor
+                             monitored-symbols
                              use-context-when-miteringp
                              nil ;random seed
                              nil ;unroll
