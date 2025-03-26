@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ aleobft
-  :parents (acl2::projects)
+  :parents (aleo::aleo)
   :short "Formal specification and correctness proofs of AleoBFT."
   :long
   (xdoc::topstring

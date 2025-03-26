@@ -11,11 +11,11 @@
 
 (in-package "ALEO")
 
-(include-book "xdoc/constructors" :dir :system)
+(include-book "bft/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc aleo
+(defxdoc+ aleo
   :parents (acl2::projects)
   :short "An ACL2 library about the Aleo blockchain and ecosystem."
   :long
@@ -30,4 +30,5 @@
    (xdoc::p
     "This ACL2 library is being developed by "
     (xdoc::ahref "https://provable.com" "Provable")
-    ".")))
+    "."))
+  :order-subtopics (aleobft::aleobft))
