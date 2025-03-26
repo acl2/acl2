@@ -16311,7 +16311,8 @@
              (mv (erp-nil) :done miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state)
            (if (eq :did-something result)
                (perform-miter-sweeps miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
-                                     print debug-nodes
+                                     print
+                                     nil ; debug-nodes (can't pass these on because they are likely meaningless after the first sweep)
                                      rewriter-rule-alist prover-rule-alist transformation-rules
                                      assumptions
                                      extra-stuff
@@ -16617,7 +16618,7 @@
                          var-type-alist ;used if we need to call STP (callers can compute from the assumptions using make-var-type-alist-from-hyps) ; can only contain axe-types, so may not give types to all vars
                          interpreted-function-alist
                          print
-                         debug-nodes ;do we still use this?
+                         debug-nodes
                          rewriter-rule-alist
                          prover-rule-alist
                          assumptions ; terms to be assumed non-nil
@@ -16693,6 +16694,9 @@
                (mv nil ;todo: use t?
                    (hard-error 'miter-and-merge "no test cases!" nil)
                    rand state))
+              ((when (not (all-< debug-nodes miter-len)))
+               (er hard? 'miter-and-merge "At least one of the :debug-nodes is too large.")
+               (mv :debug-node-too-large nil rand state))
               ((mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist
                    & ; new-analyzed-function-table
                    monitored-symbols rand state)
@@ -16920,8 +16924,7 @@
 
 ;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not merely non-nil).
 ; Returns (mv erp provedp all-assumptions state rand).
-;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
-;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
+; todo: separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-with-axe-core (dag-or-quotep
                             assumptions ; (untranslated) terms we can assume are true (non-nil)
                             types ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
@@ -16968,7 +16971,6 @@
                               (natp test-case-count)
                               (print-levelp print)
                               (nat-listp debug-nodes)
-                              (all-< debug-nodes (if (quotep dag-or-quotep) 0 (+ 1 (top-nodenum dag-or-quotep)))) ; all < the len
                               (symbol-listp runes)
                               (axe-rule-listp rules)
                               (symbol-listp rewriter-runes)
@@ -17262,7 +17264,6 @@
                                   (eq tactic :rewrite-and-sweep))
                               (print-levelp print)
                               (nat-listp debug-nodes)
-                              (all-< debug-nodes (if (quotep dag-or-quotep) 0 (+ 1 (top-nodenum dag-or-quotep)))) ; all < the len
                               (symbol-listp runes)
                               (axe-rule-listp rules)
                               (symbol-listp rewriter-runes)
@@ -17311,7 +17312,7 @@
                              tests
                              tactic
                              print
-                             debug-nodes ;do we use this?
+                             debug-nodes
                              ;; todo: allow the use of rule phases?!
                              runes      ;used for both the rewriter and prover
                              rules      ;used for both the rewriter and prover
@@ -17462,7 +17463,6 @@
                                   (eq tactic :rewrite-and-sweep))
                               (print-levelp print)
                               (nat-listp debug-nodes)
-                              ;; (all-< debug-nodes (if (quotep dag-or-quotep) 0 (+ 1 (top-nodenum dag-or-quotep)))) ; all < the len ; todo: check this?
                               (symbol-listp runes)
                               (axe-rule-listp rules)
                               (symbol-listp rewriter-runes)
@@ -17525,7 +17525,7 @@
                              tests
                              tactic
                              print
-                             debug-nodes ;do we use this?
+                             debug-nodes
                              ;; todo: allow the use of rule phases?!
                              runes      ;used for both the rewriter and prover
                              rules      ;used for both the rewriter and prover
@@ -17668,7 +17668,6 @@
                                (eq tactic :rewrite-and-sweep))
                            (print-levelp print)
                            (nat-listp debug-nodes)
-                           ;; (all-< debug-nodes (if (quotep dag-or-quotep) 0 (+ 1 (top-nodenum dag-or-quotep)))) ; all < the len ; todo: check this?
                            (or (eq :auto max-conflicts)
                                (null max-conflicts)
                                (natp max-conflicts))
@@ -17831,7 +17830,7 @@
          (tests "How many tests to use to find internal equivalences (a natp)")
          (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (print "Print verbosity (allows nil, :brief, t, and :verbose)")
-         (debug-nodes "Nodenums whose values should be printed for each test-case.")
+         (debug-nodes "Nodenums whose values should be printed for each test-case, and whose subdags should be printing when attempting a merge.  These nodenums refer to the DAG used for sweeping-and-merging (after pre-simplification, etc, if any), specifically the DAG for the first sweep.")
          (extra-rules "The names of extra rules to use when simplifying (a symbol list)")
          (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets)")
          (monitor "Rule names (symbols) to monitor when rewriting")
