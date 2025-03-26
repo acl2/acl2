@@ -127,7 +127,7 @@
                          (validator-state->blockchain
                           (get-validator-state val systate))
                          (all-addresses systate))))
-             (set::subset (certificate-set->author-set
+             (set::subset (cert-set->author-set
                            (certificates-with-round
                             round
                             (validator-state->dag
@@ -144,14 +144,14 @@
                              (get-validator-state val systate))
                             (all-addresses systate))))
                 (implies (set::in author
-                                  (certificate-set->author-set
+                                  (cert-set->author-set
                                    (certificates-with-round
                                     round
                                     (validator-state->dag
                                      (get-validator-state val systate)))))
                          (set::in author
                                   (committee-members commtt)))))
-     :enable (in-certificate-set->author-set-to-nonempty-certs-with-author
+     :enable (in-cert-set->author-set-to-nonempty-certs-with-author
               in-of-certificates-with-author
               in-of-certificates-with-round
               accepted-certificates
@@ -189,7 +189,6 @@
            (rounds-in-committees-p systate))
   :enable (rounds-in-committees-p
            dag-rounds-in-committees-p
-           emptyp-of-certificate-set->author-set
            authors-in-committee-when-signer-quorum-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -402,7 +402,7 @@
     :returns (ident identp)
     (dirdeclor-case
      dirdeclor
-     :ident dirdeclor.unwrap
+     :ident dirdeclor.ident
      :paren (declor->ident dirdeclor.unwrap)
      :array (dirdeclor->ident dirdeclor.decl)
      :array-static1 (dirdeclor->ident dirdeclor.decl)

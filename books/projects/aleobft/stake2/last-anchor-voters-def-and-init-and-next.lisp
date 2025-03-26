@@ -94,7 +94,7 @@
        ((when (equal vstate.last 0)) t)
        (commtt (active-committee-at-round (1+ vstate.last) vstate.blockchain)))
     (and commtt
-         (> (committee-members-stake (certificate-set->author-set
+         (> (committee-members-stake (cert-set->author-set
                                       (successors (last-anchor vstate)
                                                   vstate.dag))
                                      commtt)
@@ -105,10 +105,10 @@
                      (cert (last-anchor vstate))
                      (dag (validator-state->dag vstate)))
           (:instance set::subset-transitive
-                     (x (certificate-set->author-set
+                     (x (cert-set->author-set
                          (successors (last-anchor vstate)
                                      (validator-state->dag vstate))))
-                     (y (certificate-set->author-set
+                     (y (cert-set->author-set
                          (certs-with-round (1+ (validator-state->last vstate))
                                            (validator-state->dag vstate))))
                      (z (committee-members
@@ -116,7 +116,7 @@
                           (1+ (validator-state->last vstate))
                           (validator-state->blockchain vstate))))))
     :in-theory (e/d (last-anchor-in-dag
-                     certificate-set->author-set-monotone
+                     cert-set->author-set-monotone
                      certificate->round-of-last-anchor
                      round-in-committee-when-dag-in-committees-p)
                     (successors-subset-of-next-round))))
@@ -188,7 +188,7 @@
      to the voting stake returned by @(tsee leader-stake-votes);
      this needs non-equivocation because @(tsee leader-stake-votes)
      would count the stake of equivocal certificates multiple times,
-     while @(tsee certificate-set->author-set) applied to @('successors-loop')
+     while @(tsee cert-set->author-set) applied to @('successors-loop')
      counts the stake of each author only once.
      Since the event also extends the blockchain,
      as in other proofs we need to show that the extension of the blockchain
@@ -217,14 +217,14 @@
     :use (:instance
           committee-members-stake-monotone
           (members1
-           (certificate-set->author-set
+           (cert-set->author-set
             (successors
              (last-anchor
               (get-validator-state (certificate->author cert) systate))
              (validator-state->dag
               (get-validator-state (certificate->author cert) systate)))))
           (members2
-           (certificate-set->author-set
+           (cert-set->author-set
             (successors
              (last-anchor
               (get-validator-state (certificate->author cert)
@@ -242,7 +242,7 @@
     :enable (validator-last-anchor-voters-p
              validator-state->dag-of-create-next
              successors-monotone
-             certificate-set->author-set-monotone))
+             cert-set->author-set-monotone))
 
   (defruled last-anchor-voters-p-of-create-next
     (implies (and (last-anchor-voters-p systate)
@@ -278,14 +278,14 @@
     :use (:instance
           committee-members-stake-monotone
           (members1
-           (certificate-set->author-set
+           (cert-set->author-set
             (successors
              (last-anchor
               (get-validator-state val systate))
              (validator-state->dag
               (get-validator-state val systate)))))
           (members2
-           (certificate-set->author-set
+           (cert-set->author-set
             (successors
              (last-anchor
               (get-validator-state val (accept-next msg systate)))
@@ -299,7 +299,7 @@
     :enable (validator-last-anchor-voters-p
              validator-state->dag-of-accept-next
              successors-monotone
-             certificate-set->author-set-monotone))
+             cert-set->author-set-monotone))
 
   (defruled last-anchor-voters-p-of-accept-next
     (implies (and (last-anchor-voters-p systate)
@@ -341,9 +341,9 @@
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
                   (addressp prev)
-                  (<= (set::cardinality (certificate-set->round-set certs)) 1))
+                  (<= (set::cardinality (cert-set->round-set certs)) 1))
              (equal (committee-members-stake
-                     (certificate-set->author-set
+                     (cert-set->author-set
                       (successors-loop certs prev))
                      commtt)
                     (leader-stake-votes prev certs commtt)))
@@ -351,14 +351,14 @@
     :enable (leader-stake-votes
              successors-loop
              in-of-successors-loop
-             certificate-set->author-set-of-insert
+             cert-set->author-set-of-insert
              committee-members-stake-of-insert
              certificate-set-unequivocalp-when-subset
              set::expensive-rules
-             certificate-set->author-set-monotone)
+             cert-set->author-set-monotone)
     :hints ('(:use
               (head-author-not-in-tail-authors-when-unequiv-and-all-same-round
-               (:instance certificate-set->round-set-monotone
+               (:instance cert-set->round-set-monotone
                           (certs1 (set::tail certs))
                           (certs2 certs))))))
 
@@ -366,7 +366,7 @@
     (implies (and (certificate-setp dag)
                   (certificate-set-unequivocalp dag))
              (equal (committee-members-stake
-                     (certificate-set->author-set (successors cert dag))
+                     (cert-set->author-set (successors cert dag))
                      commtt)
                     (leader-stake-votes
                      (certificate->author cert)

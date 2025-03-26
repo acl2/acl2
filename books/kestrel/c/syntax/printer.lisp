@@ -2306,7 +2306,7 @@
        as required in the grammar."))
     (dirdeclor-case
      dirdeclor
-     :ident (print-ident dirdeclor.unwrap pstate)
+     :ident (print-ident dirdeclor.ident pstate)
      :paren (b* ((pstate (print-astring "(" pstate))
                  (pstate (print-declor dirdeclor.unwrap pstate))
                  (pstate (print-astring ")" pstate)))

@@ -55,11 +55,8 @@
    which we may want to partially automate,
    via things like generalized `folds' over the abstract syntax."
 
-  "We are extending these functions
-   to also return correctness theorems in a bottom-up fashion.
-   We will eventually replace the top-level theorems,
-   which are currently very specific and brittle,
-   with robust ones that emerge from the bottom-up generation.
+  "These functions also return correctness theorems in a bottom-up fashion,
+   for a growing subset of constructs currently supported.
    This is one of a few different or slightly different approaches
    to proof generation, which we are exploring."
 
@@ -83,45 +80,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled simpadd0-exec-binary-strict-pure-when-add-alt
-  :parents (simpadd0-implementation)
-  :short "Alternative symbolic execution theorem."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in the function equivalence proofs.")
-   (xdoc::p
-    "It is a temporary rule, just like the current function equivalence proofs,
-     which we are in the process of replacing with
-     more robust proofs generated bottom-up."))
-  (implies (and (equal c::op (c::binop-add))
-                (equal c::y (c::expr-value->value eval))
-                (equal c::objdes-y (c::expr-value->object eval))
-                (not (equal (c::value-kind c::x) :array))
-                (not (equal (c::value-kind c::y) :array))
-                (equal c::val (c::add-values c::x c::y))
-                (c::valuep c::val))
-           (equal (c::exec-binary-strict-pure
-                   c::op
-                   (c::expr-value c::x c::objdes-x)
-                   eval)
-                  (c::expr-value c::val nil)))
-  :use c::exec-binary-strict-pure-when-add)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (xdoc::evmac-topic-input-processing simpadd0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-process-inputs (const-old const-new proofs (wrld plist-worldp))
+(define simpadd0-process-inputs (const-old const-new (wrld plist-worldp))
   :returns (mv erp
                (tunits-old transunit-ensemblep)
-               (const-old$ symbolp)
-               (const-new$ symbolp)
-               (proofs$ booleanp))
+               (const-new$ symbolp))
   :short "Process all the inputs."
-  (b* (((reterr) (c$::irr-transunit-ensemble) nil nil nil)
+  (b* (((reterr) (c$::irr-transunit-ensemble) nil)
        ((unless (symbolp const-old))
         (reterr (msg "The first input must be a symbol, ~
                       but it is ~x0 instead."
@@ -130,10 +98,6 @@
         (reterr (msg "The second input must be a symbol, ~
                       but it is ~x0 instead."
                      const-new)))
-       ((unless (booleanp proofs))
-        (reterr (msg "The :PROOFS input must be a boolean, ~
-                      but it is ~x0 instead."
-                     proofs)))
        ((unless (constant-symbolp const-old wrld))
         (reterr (msg "The first input, ~x0, must be a named constant, ~
                       but it is not."
@@ -156,7 +120,7 @@
                       must contains validation information, ~
                       but it does not."
                      tunits-old const-old))))
-    (retok tunits-old const-old const-new proofs))
+    (retok tunits-old const-new))
 
   ///
 
@@ -4667,7 +4631,7 @@
         (raise "Internal error: ~x0 is not just the function name."
                dirdeclor)
         (mv (c$::irr-fundef) (irr-simpadd0-gout)))
-       (fun (c$::ident->unwrap (c$::dirdeclor-ident->unwrap dirdeclor)))
+       (fun (c$::ident->unwrap (c$::dirdeclor-ident->ident dirdeclor)))
        ((unless (stringp fun))
         (raise "Internal error: non-string identifier ~x0." fun)
         (mv (c$::irr-fundef) (irr-simpadd0-gout)))
@@ -5022,217 +4986,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-gen-proof-for-fun ((term-old "A term.")
-                                    (term-new "A term.")
-                                    (fun identp))
-  :returns (event pseudo-event-formp)
-  :short "Generate equivalence theorem for a function."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The theorem just says that executing the the function,
-     in the old and new translation unit,
-     returns the same result.
-     We use an arbitrary 1000 as the limit value.
-     Clearly, all of this is very simple and ad hoc."))
-  (b* ((string (ident->unwrap fun))
-       ((unless (stringp string))
-        (raise "Misusage error: function name ~x0 is not a string." string)
-        '(_))
-       (thm-name (packn-pos (list string '-equivalence) 'c2c))
-       (event
-        `(defruled ,thm-name
-           (equal (c::exec-fun (c::ident ,string)
-                               nil
-                               compst
-                               (c::init-fun-env
-                                (mv-nth 1 (c$::ldm-transunit ,term-old)))
-                               1000)
-                  (c::exec-fun (c::ident ,string)
-                               nil
-                               compst
-                               (c::init-fun-env
-                                (mv-nth 1 (c$::ldm-transunit ,term-new)))
-                               1000))
-           :enable (c::atc-all-rules
-                    c::fun-env-lookup
-                    omap::assoc
-                    simpadd0-exec-binary-strict-pure-when-add-alt)
-           :disable ((:e c::ident)))))
-    event)
-  :guard-hints (("Goal" :in-theory (enable atom-listp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define simpadd0-gen-proofs-for-transunit ((term-old "A term.")
-                                           (term-new "A term.")
-                                           (tunit transunitp))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate equivalence theorems
-          for all the functions in a translation unit."
-  (simpadd0-gen-proofs-for-transunit-loop term-old
-                                          term-new
-                                          (transunit->decls tunit))
-  :prepwork
-  ((define simpadd0-gen-proofs-for-transunit-loop ((term-old "A term.")
-                                                   (term-new "A term.")
-                                                   (extdecls extdecl-listp))
-     :returns (events pseudo-event-form-listp)
-     :parents nil
-     (b* (((when (endp extdecls)) nil)
-          (extdecl (car extdecls))
-          ((unless (extdecl-case extdecl :fundef))
-           (simpadd0-gen-proofs-for-transunit-loop term-old
-                                                   term-new
-                                                   (cdr extdecls)))
-          (fundef (extdecl-fundef->unwrap extdecl))
-          (declor (fundef->declor fundef))
-          (dirdeclor (declor->direct declor))
-          ((unless (member-eq (dirdeclor-kind dirdeclor)
-                              '(:function-params :function-names)))
-           (raise "Internal error: ~
-                   direct declarator of function definition ~x0 ~
-                   is not a function declarator."
-                  fundef))
-          ((unless (cond
-                    ((dirdeclor-case dirdeclor :function-params)
-                     (endp (dirdeclor-function-params->params dirdeclor)))
-                    ((dirdeclor-case dirdeclor :function-names)
-                     (endp (dirdeclor-function-names->names dirdeclor)))))
-           (raise "Proof generation is currently supported ~
-                   only for functions with no parameters, ~
-                   but the function definition ~x0 has parameters."
-                  fundef))
-          (fun (declor->ident declor))
-          (event (simpadd0-gen-proof-for-fun term-old
-                                             term-new
-                                             fun))
-          (events (simpadd0-gen-proofs-for-transunit-loop term-old
-                                                          term-new
-                                                          (cdr extdecls))))
-       (cons event events)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define simpadd0-gen-proofs-for-transunit-ensemble
-  ((const-old symbolp)
-   (const-new symbolp)
-   (tunits-old transunit-ensemblep)
-   (tunits-new transunit-ensemblep))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate equivalence theorems for all functions in
-          a translation unit ensemble."
-  (simpadd0-gen-proofs-for-transunit-ensemble-loop
-   const-old
-   const-new
-   (transunit-ensemble->unwrap tunits-old)
-   (transunit-ensemble->unwrap tunits-new))
-  :prepwork
-  ((define simpadd0-gen-proofs-for-transunit-ensemble-loop
-     ((const-old symbolp)
-      (const-new symbolp)
-      (tunitmap-old filepath-transunit-mapp)
-      (tunitmap-new filepath-transunit-mapp))
-     :returns (events pseudo-event-form-listp)
-     :parents nil
-     (b* (((when (omap::emptyp tunitmap-old)) nil)
-          ((when (omap::emptyp tunitmap-new))
-           (raise "Internal error: extra translation units ~x0." tunitmap-new))
-          ((mv path-old tunit) (omap::head tunitmap-old))
-          ((mv path-new &) (omap::head tunitmap-new))
-          (term-old `(omap::lookup
-                      ',path-old
-                      (transunit-ensemble->unwrap ,const-old)))
-          (term-new `(omap::lookup
-                      ',path-new
-                      (transunit-ensemble->unwrap ,const-new)))
-          (events (simpadd0-gen-proofs-for-transunit term-old
-                                                     term-new
-                                                     tunit))
-          (more-events (simpadd0-gen-proofs-for-transunit-ensemble-loop
-                        const-old
-                        const-new
-                        (omap::tail tunitmap-old)
-                        (omap::tail tunitmap-new))))
-       (append events more-events)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define simpadd0-gen-everything ((tunits-old transunit-ensemblep)
-                                 (const-old symbolp)
                                  (const-new symbolp)
-                                 (proofs booleanp)
                                  state)
   :guard (and (transunit-ensemble-unambp tunits-old)
               (transunit-ensemble-annop tunits-old))
   :returns (mv erp (event pseudo-event-formp))
   :short "Event expansion of the transformation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The modular bottom-up theorems in @(tsee simpadd0-gout)
-     are always generated, because they are never expected to fail.
-     The function equivalence theorems, which are brittle,
-     are generated only if @(':proofs') is @('t')."))
   (b* (((reterr) '(_))
        (gin (make-simpadd0-gin :const-new const-new
                                :thm-index 1
                                :names-to-avoid nil))
        ((mv tunits-new (simpadd0-gout gout))
         (simpadd0-transunit-ensemble tunits-old gin state))
-       ((mv erp &) (if (not proofs)
-                       (retok :irrelevant)
-                     (c$::ldm-transunit-ensemble tunits-old)))
-       ((when erp)
-        (reterr (msg "The old translation unit ensemble ~x0 ~
-                      is not within the subset of C ~
-                      covered by our formal semantics. ~
-                      ~@1 ~
-                      Thus, proofs cannot be generated: ~
-                      re-run the transformation with :PROOFS NIL."
-                     tunits-old erp)))
-       ((mv erp &) (if (not proofs)
-                       (retok :irrelevant)
-                     (c$::ldm-transunit-ensemble tunits-new)))
-       ((when erp)
-        (reterr (msg "The new translation unit ensemble ~x0 ~
-                      is not within the subset of C ~
-                      covered by our formal semantics. ~
-                      ~@1 ~
-                      Thus, proofs cannot be generated: ~
-                      re-run the transformation with :PROOFS NIL."
-                     tunits-new erp)))
-       (thm-events (append gout.events
-                           (and proofs
-                                (simpadd0-gen-proofs-for-transunit-ensemble
-                                 const-old const-new tunits-old tunits-new))))
        (const-event `(defconst ,const-new ',tunits-new)))
-    (retok `(encapsulate () ,const-event ,@thm-events))))
+    (retok `(encapsulate () ,const-event ,@gout.events))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-process-inputs-and-gen-everything (const-old
                                                     const-new
-                                                    proofs
                                                     state)
   :returns (mv erp (event pseudo-event-formp))
   :parents (simpadd0-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp tunits-old const-old const-new proofs)
-        (simpadd0-process-inputs const-old const-new proofs (w state))))
-    (simpadd0-gen-everything tunits-old const-old const-new proofs state)))
+       ((erp tunits-old const-new)
+        (simpadd0-process-inputs const-old const-new (w state))))
+    (simpadd0-gen-everything tunits-old const-new state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-fn (const-old const-new proofs (ctx ctxp) state)
+(define simpadd0-fn (const-old const-new (ctx ctxp) state)
   :returns (mv erp (event pseudo-event-formp) state)
   :parents (simpadd0-implementation)
   :short "Event expansion of @(tsee simpadd0)."
   (b* (((mv erp event)
         (simpadd0-process-inputs-and-gen-everything const-old
                                                     const-new
-                                                    proofs
                                                     state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
@@ -5242,6 +5033,6 @@
 (defsection simpadd0-macro-definition
   :parents (simpadd0-implementation)
   :short "Definition of the @(tsee simpadd0) macro."
-  (defmacro simpadd0 (const-old const-new &key proofs)
+  (defmacro simpadd0 (const-old const-new)
     `(make-event
-      (simpadd0-fn ',const-old ',const-new ,proofs 'simpadd0 state))))
+      (simpadd0-fn ',const-old ',const-new 'simpadd0 state))))

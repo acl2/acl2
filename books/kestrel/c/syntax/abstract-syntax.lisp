@@ -2188,7 +2188,7 @@
        So, during parsing, we always generate the @(':function-params') case,
        which may be re-classified into the @(':function-names') case
        during post-parsing semantic analysis."))
-    (:ident ((unwrap ident)))
+    (:ident ((ident ident)))
     (:paren ((unwrap declor)))
     (:array ((decl dirdeclor)
              (tyquals typequal/attribspec-list)

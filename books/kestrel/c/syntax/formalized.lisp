@@ -522,7 +522,7 @@
      that is not an array declarator.
      So we can only have an identifier."))
   (and (dirdeclor-case dirdeclor :ident)
-       (ident-formalp (dirdeclor-ident->unwrap dirdeclor)))
+       (ident-formalp (dirdeclor-ident->ident dirdeclor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -696,7 +696,7 @@
      also see @(tsee ldm-dirdeclor-obj)."))
   (dirdeclor-case
    dirdeclor
-   :ident (ident-formalp dirdeclor.unwrap)
+   :ident (ident-formalp dirdeclor.ident)
    :paren nil
    :array (and (dirdeclor-obj-formalp dirdeclor.decl)
                (endp dirdeclor.tyquals)
@@ -957,11 +957,11 @@
    dirdeclor
    :function-params
    (and (dirdeclor-case dirdeclor.decl :ident)
-        (ident-formalp (dirdeclor-ident->unwrap dirdeclor.decl))
+        (ident-formalp (dirdeclor-ident->ident dirdeclor.decl))
         (paramdecl-list-formalp dirdeclor.params))
    :function-names
    (and (dirdeclor-case dirdeclor.decl :ident)
-        (ident-formalp (dirdeclor-ident->unwrap dirdeclor.decl))
+        (ident-formalp (dirdeclor-ident->ident dirdeclor.decl))
         (endp dirdeclor.names))
    :otherwise nil)
   :hooks (:fix))

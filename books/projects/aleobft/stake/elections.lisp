@@ -105,7 +105,7 @@
 (define tally-leader-stake-votes ((leader addressp)
                                   (voters certificate-setp)
                                   (commtt committeep))
-  :guard (set::subset (certificate-set->author-set voters)
+  :guard (set::subset (cert-set->author-set voters)
                       (committee-members commtt))
   :returns (mv (yes-stake natp) (no-stake natp))
   :short "Count the `yes' and `no' stake votes for a leader."
@@ -154,7 +154,7 @@
   :verify-guards :after-returns
   :guard-hints
   (("Goal"
-    :in-theory (enable* certificate->author-in-certificate-set->author-set
-                        certificate-set->author-set-monotone
+    :in-theory (enable* certificate->author-in-cert-set->author-set
+                        cert-set->author-set-monotone
                         set::expensive-rules)))
   :hooks (:fix))

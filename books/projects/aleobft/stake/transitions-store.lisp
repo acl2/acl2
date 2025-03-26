@@ -135,7 +135,7 @@
        ((when (= cert.round 1))
         t)
        ((unless (set::subset cert.previous
-                             (certificate-set->author-set
+                             (cert-set->author-set
                               (certs-with-round (1- cert.round) vstate.dag))))
         nil))
     t)
