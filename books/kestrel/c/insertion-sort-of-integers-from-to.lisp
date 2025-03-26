@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled insertion-sort-of-integers-from-to
-  :parents (insertion-sort acl2::integers-from-to)
+  :parents (insertion-sort integers-from-to)
   :short "Applying insertion sort to an ordered list of integers in a range
           yields the same list."
   :long
@@ -31,10 +31,10 @@
     "This should be moved to a more general library."))
   (implies (and (integerp min)
                 (integerp max))
-           (equal (insertion-sort (acl2::integers-from-to min max))
-                  (acl2::integers-from-to min max)))
+           (equal (insertion-sort (integers-from-to min max))
+                  (integers-from-to min max)))
   :induct t
-  :enable (acl2::integers-from-to
+  :enable (integers-from-to
            insertion-sort
            ifix)
   :prep-lemmas
@@ -43,10 +43,10 @@
                    (integerp max)
                    (<= min max))
               (equal (insertion-sort-insert min
-                                            (acl2::integers-from-to (1+ min) max))
-                     (acl2::integers-from-to min max)))
+                                            (integers-from-to (1+ min) max))
+                     (integers-from-to min max)))
      :induct t
-     :enable (acl2::integers-from-to
+     :enable (integers-from-to
               insertion-sort-insert
               ifix
               <<

@@ -585,7 +585,7 @@
        ((when (= n 0)) nil)
        (sorted-exponents (insertion-sort exponents))
        ((unless (equal sorted-exponents
-                       (acl2::integers-from-to 0 (1- n))))
+                       (integers-from-to 0 (1- n))))
         nil))
     t)
   :hooks (:fix))
@@ -616,7 +616,7 @@
        ((when (= m 0)) nil)
        (sorted-exponents (insertion-sort exponents))
        ((unless (equal sorted-exponents
-                       (acl2::integers-from-to 0 (1- m))))
+                       (integers-from-to 0 (1- m))))
         nil)
        ((unless (= (sinteger-bit-roles-sign-count roles) 1)) nil))
     t)
