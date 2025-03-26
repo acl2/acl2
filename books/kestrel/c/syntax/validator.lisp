@@ -3719,10 +3719,10 @@
       (dirdeclor-case
        dirdeclor
        :ident
-       (retok (dirdeclor-ident dirdeclor.unwrap)
+       (retok (dirdeclor-ident dirdeclor.ident)
               (bool-fix fundef-params-p)
               (type-fix type)
-              dirdeclor.unwrap
+              dirdeclor.ident
               nil
               (valid-table-fix table))
        :paren

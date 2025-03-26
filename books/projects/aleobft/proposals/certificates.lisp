@@ -65,32 +65,7 @@
    (endorsers address-set))
   :pred certificatep)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption certificate-option
-  certificate
-  :short "Fixtype of optional certificates."
-  :pred certificate-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defset certificate-set
-  :short "Fixtype of sets of certificates."
-  :elt-type certificate
-  :elementp-of-nil nil
-  :pred certificate-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist certificate-list
-  :short "Fixtype of lists of certificates."
-  :elt-type certificate
-  :true-listp t
-  :elementp-of-nil nil
-  :pred certificate-listp
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define certificate->author ((cert certificatep))
   :returns (author addressp)
@@ -98,7 +73,7 @@
   (proposal->author (certificate->proposal cert))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define certificate->round ((cert certificatep))
   :returns (round posp)
@@ -106,7 +81,7 @@
   (proposal->round (certificate->proposal cert))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define certificate->transactions ((cert certificatep))
   :returns (transactions transaction-listp)
@@ -114,7 +89,7 @@
   (proposal->transactions (certificate->proposal cert))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define certificate->previous ((cert certificatep))
   :returns (previous address-setp)
@@ -123,7 +98,7 @@
   (proposal->previous (certificate->proposal cert))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define certificate->signers ((cert certificatep))
   :returns (signers address-setp)
@@ -142,7 +117,22 @@
   (defret not-emptyp-of-certificate->signers
     (not (set::emptyp signers))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption certificate-option
+  certificate
+  :short "Fixtype of optional certificates."
+  :pred certificate-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset certificate-set
+  :short "Fixtype of sets of certificates."
+  :elt-type certificate
+  :elementp-of-nil nil
+  :pred certificate-setp)
+
+;;;;;;;;;;;;;;;;;;;;
 
 (define cert-set->author-set ((certs certificate-setp))
   :returns (addrs address-setp)
@@ -186,7 +176,7 @@
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->author-in-cert-set->author-set))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define cert-set->round-set ((certs certificate-setp))
   :returns (rounds pos-setp)
@@ -230,7 +220,7 @@
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->round-in-cert-set->round-set))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (define cert-set->prop-set ((certs certificate-setp))
   :returns (props proposal-setp)
@@ -274,6 +264,16 @@
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->proposal-in-cert-set->prop-set))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist certificate-list
+  :short "Fixtype of lists of certificates."
+  :elt-type certificate
+  :true-listp t
+  :elementp-of-nil nil
+  :pred certificate-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define certs-with-author+round ((author addressp)
@@ -296,6 +296,10 @@
   :hooks (:fix)
 
   ///
+
+  (defrule certs-with-author+round-of-nil
+    (equal (certs-with-author+round author round nil)
+           nil))
 
   (defruled cert-set->author-set-of-certs-with-author+round
     (equal (cert-set->author-set

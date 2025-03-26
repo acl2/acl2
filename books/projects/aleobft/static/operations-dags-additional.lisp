@@ -105,21 +105,20 @@
        :induct t)
 
      (defruled round-set-of-incoming-loop
-       (implies (equal (certificate-set->round-set certs)
+       (implies (equal (cert-set->round-set certs)
                        (if (set::emptyp certs)
                            nil
                          (set::insert round nil)))
-                (equal (certificate-set->round-set (incoming-loop certs prev))
+                (equal (cert-set->round-set (incoming-loop certs prev))
                        (if (set::emptyp (incoming-loop certs prev))
                            nil
                          (set::insert round nil))))
        :induct t
-       :enable (certificate-set->round-set
-                certificate-set->round-set-of-insert
-                emptyp-of-certificate-set->round-set
+       :enable (cert-set->round-set
+                cert-set->round-set-of-insert
                 set::expensive-rules)
        :hints ('(:use (:instance set::emptyp-when-proper-subset-of-singleton
-                                 (x (certificate-set->round-set (tail certs)))
+                                 (x (cert-set->round-set (tail certs)))
                                  (a (certificate->round (head certs)))))))))
 
   ///
@@ -147,7 +146,7 @@
   (in-theory (disable incoming-subset-of-next-round))
 
   (defret incoming-same-round
-    (<= (set::cardinality (certificate-set->round-set certs))
+    (<= (set::cardinality (cert-set->round-set certs))
         1)
     :hyp (certificate-setp dag)
     :rule-classes :linear
@@ -171,7 +170,7 @@
                     (prev (certificate->author cert))))
 
   (defruled round-set-of-incoming
-    (equal (certificate-set->round-set (incoming cert dag))
+    (equal (cert-set->round-set (incoming cert dag))
            (if (set::emptyp (incoming cert dag))
                nil
              (set::insert (1+ (certificate->round cert)) nil)))
@@ -246,7 +245,7 @@
     :enable in-of-certificates-with-authors+round)
 
   (defruled round-set-of-outgoing
-    (equal (certificate-set->round-set (outgoing cert dag))
+    (equal (cert-set->round-set (outgoing cert dag))
            (if (set::emptyp (outgoing cert dag))
                nil
              (set::insert (1- (certificate->round cert)) nil)))
@@ -276,7 +275,7 @@
   (b* (((certificate cert) cert))
     (or (equal cert.round 1)
         (set::subset cert.previous
-                     (certificate-set->author-set
+                     (cert-set->author-set
                       (certificates-with-round (1- cert.round) dag)))))
   :guard-hints (("Goal" :in-theory (enable posp)))
   ///
@@ -292,7 +291,7 @@
                   (certificate-setp dag1))
              (certificate-previous-in-dag-p cert dag1))
     :enable (certificates-with-round-monotone
-             certificate-set->author-set-monotone
+             cert-set->author-set-monotone
              set::subset-transitive)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

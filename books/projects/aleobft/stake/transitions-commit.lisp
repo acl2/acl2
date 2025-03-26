@@ -137,7 +137,7 @@
        ((unless anchor?)
         nil)
        (voters (certs-with-round vstate.round vstate.dag))
-       ((unless (set::subset (certificate-set->author-set voters)
+       ((unless (set::subset (cert-set->author-set voters)
                              (committee-members commtt)))
         nil)
        ((mv yes-stake &) (tally-leader-stake-votes leader voters commtt))

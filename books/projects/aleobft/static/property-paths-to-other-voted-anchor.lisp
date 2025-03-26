@@ -91,7 +91,7 @@
                 (equal (certificate->round cert2)
                        (+ 2 (certificate->round cert1))))
            (<= (set::cardinality
-                (certificate-set->round-set
+                (cert-set->round-set
                  (set::union (incoming cert1 dag1)
                              (outgoing cert2 dag2))))
                1))
@@ -99,7 +99,7 @@
   :enable (set::cardinality
            round-set-of-incoming
            round-set-of-outgoing
-           certificate-set->round-set-of-union))
+           cert-set->round-set-of-union))
 
 ; This is similar to the homonymous theorem for the single-DAG property
 ; (in property-paths-to-voted-anchor.lisp), but it involves two DAGs.
@@ -114,8 +114,8 @@
                 (certificate-set-unequivocalp dag1)
                 (certificate-set-unequivocalp dag2)
                 (certificate-sets-unequivocalp dag1 dag2)
-                (set::subset (certificate-set->author-set dag1) vals)
-                (set::subset (certificate-set->author-set dag2) vals)
+                (set::subset (cert-set->author-set dag1) vals)
+                (set::subset (cert-set->author-set dag2) vals)
                 (equal (certificate->round cert2)
                        (+ 2 (certificate->round cert1))))
            (<= (set::cardinality (set::union (incoming cert1 dag1)
@@ -126,14 +126,14 @@
            certificate-sets-unequivocalp-when-subsets
            incoming+outgoing-same-round
            certificate-set-unequivocalp-when-subset
-           certificate-set->author-set-of-union
-           certificate-set->author-set-monotone
+           cert-set->author-set-of-union
+           cert-set->author-set-monotone
            certificate-set-unequivocalp-of-union
            incoming-subset
            outgoing-subset
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
-            certificate-set->round-set-of-union))
+            cert-set->round-set-of-union))
 
 ; This is similar to the homonymous theorem for the single-DAG property
 ; (in property-paths-to-voted-anchor.lisp), but it involves two DAGs.
@@ -147,8 +147,8 @@
                 (certificate-set-unequivocalp dag1)
                 (certificate-set-unequivocalp dag2)
                 (certificate-sets-unequivocalp dag1 dag2)
-                (set::subset (certificate-set->author-set dag1) vals)
-                (set::subset (certificate-set->author-set dag2) vals)
+                (set::subset (cert-set->author-set dag1) vals)
+                (set::subset (cert-set->author-set dag2) vals)
                 (equal (certificate->round cert2)
                        (+ 2 (certificate->round cert1)))
                 (>= (set::cardinality (incoming cert1 dag1))
@@ -169,7 +169,7 @@
                    (x (set::intersect (incoming cert1 dag1)
                                       (outgoing cert2 dag2)))))
   :disable (set::cardinality-zero-emptyp
-            certificate-set->round-set-of-union))
+            cert-set->round-set-of-union))
 
 ; Similarly to the proof of the single-DAG property,
 ; having shown the non-empty intersection,
@@ -191,8 +191,8 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (anchorp anchor dag1 vals)
                 (not (set::emptyp vals))
-                (set::subset (certificate-set->author-set dag1) vals)
-                (set::subset (certificate-set->author-set dag2) vals)
+                (set::subset (cert-set->author-set dag1) vals)
+                (set::subset (cert-set->author-set dag2) vals)
                 (dag-previous-in-dag-p dag2)
                 (dag-previous-are-quorum-p dag2
                                            (- (set::cardinality vals) f))
@@ -237,8 +237,8 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (anchorp anchor dag1 vals)
                 (not (set::emptyp vals))
-                (set::subset (certificate-set->author-set dag1) vals)
-                (set::subset (certificate-set->author-set dag2) vals)
+                (set::subset (cert-set->author-set dag1) vals)
+                (set::subset (cert-set->author-set dag2) vals)
                 (dag-previous-in-dag-p dag1)
                 (dag-previous-in-dag-p dag2)
                 (dag-previous-are-quorum-p dag2
@@ -273,8 +273,8 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (anchorp anchor dag1 vals)
                 (not (set::emptyp vals))
-                (set::subset (certificate-set->author-set dag1) vals)
-                (set::subset (certificate-set->author-set dag2) vals)
+                (set::subset (cert-set->author-set dag1) vals)
+                (set::subset (cert-set->author-set dag2) vals)
                 (dag-previous-in-dag-p dag1)
                 (dag-previous-in-dag-p dag2)
                 (dag-previous-are-quorum-p dag2
@@ -310,8 +310,8 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (anchorp anchor dag1 vals)
                 (not (set::emptyp vals))
-                (set::subset (certificate-set->author-set dag1) vals)
-                (set::subset (certificate-set->author-set dag2) vals)
+                (set::subset (cert-set->author-set dag1) vals)
+                (set::subset (cert-set->author-set dag2) vals)
                 (dag-previous-in-dag-p dag1)
                 (dag-previous-in-dag-p dag2)
                 (dag-previous-are-quorum-p dag2
@@ -350,8 +350,8 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (anchorp anchor dag1 vals)
                 (not (set::emptyp vals))
-                (set::subset (certificate-set->author-set dag1) vals)
-                (set::subset (certificate-set->author-set dag2) vals)
+                (set::subset (cert-set->author-set dag1) vals)
+                (set::subset (cert-set->author-set dag2) vals)
                 (dag-previous-in-dag-p dag1)
                 (dag-previous-in-dag-p dag2)
                 (dag-previous-are-quorum-p dag2
@@ -484,7 +484,7 @@
 (defruledl f-below-cardinality-of-vals
   (implies (and (certificate-setp dag)
                 (certificate-set-unequivocalp dag)
-                (set::subset (certificate-set->author-set dag) vals)
+                (set::subset (cert-set->author-set dag) vals)
                 (>= (set::cardinality (incoming anchor dag))
                     (1+ f)))
            (> (set::cardinality vals) f))
@@ -495,11 +495,11 @@
            incoming-same-round)
   :use ((:instance cardinality-of-authors-when-same-round-and-unequiv
                    (certs (incoming anchor dag)))
-        (:instance certificate-set->author-set-monotone
+        (:instance cert-set->author-set-monotone
                    (certs1 (incoming anchor dag))
                    (certs2 dag)))
   :disable (cardinality-of-authors-when-same-round-and-unequiv
-            certificate-set->author-set-monotone))
+            cert-set->author-set-monotone))
 
 ; This is almost the same as the homonymous theorem in the single-DAG proof,
 ; but with the weaker hypothesis that ANCHOR is not NIL,
@@ -512,7 +512,7 @@
                 (certificate-set-unequivocalp dag)
                 anchor ; weaker than (anchorp anchor dag vals)
                 (not (set::emptyp vals))
-                (set::subset (certificate-set->author-set dag) vals)
+                (set::subset (cert-set->author-set dag) vals)
                 (dag-previous-in-dag-p dag)
                 (dag-previous-are-quorum-p dag (- (set::cardinality vals) f))
                 (> (set::cardinality vals) f)
@@ -545,8 +545,8 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (anchorp anchor dag1 vals)
                 (not (set::emptyp vals))
-                (set::subset (certificate-set->author-set dag1) vals)
-                (set::subset (certificate-set->author-set dag2) vals)
+                (set::subset (cert-set->author-set dag1) vals)
+                (set::subset (cert-set->author-set dag2) vals)
                 (dag-previous-in-dag-p dag1)
                 (dag-previous-in-dag-p dag2)
                 (dag-previous-are-quorum-p dag2
@@ -580,8 +580,8 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (anchorp anchor dag1 vals)
                 (not (set::emptyp vals))
-                (set::subset (certificate-set->author-set dag1) vals)
-                (set::subset (certificate-set->author-set dag2) vals)
+                (set::subset (cert-set->author-set dag1) vals)
+                (set::subset (cert-set->author-set dag2) vals)
                 (dag-previous-in-dag-p dag1)
                 (dag-previous-in-dag-p dag2)
                 (dag-previous-are-quorum-p dag2
@@ -610,8 +610,8 @@
                 (certificate-sets-unequivocalp dag1 dag2)
                 (anchorp anchor dag1 vals)
                 (not (set::emptyp vals))
-                (set::subset (certificate-set->author-set dag1) vals)
-                (set::subset (certificate-set->author-set dag2) vals)
+                (set::subset (cert-set->author-set dag1) vals)
+                (set::subset (cert-set->author-set dag2) vals)
                 (dag-previous-in-dag-p dag1)
                 (dag-previous-in-dag-p dag2)
                 (dag-previous-are-quorum-p dag2

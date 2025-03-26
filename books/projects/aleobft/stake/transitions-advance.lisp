@@ -171,7 +171,7 @@
              (anchor? (cert-with-author+round leader
                                               vstate.round
                                               vstate.dag))
-             (authors (certificate-set->author-set
+             (authors (cert-set->author-set
                        (certs-with-round vstate.round vstate.dag))))
           (or (and anchor? t)
               (and (timer-case vstate.timer :expired)
@@ -187,7 +187,7 @@
                                             (1- vstate.round)
                                             vstate.dag))
            (voters (certs-with-round vstate.round vstate.dag))
-           ((unless (set::subset (certificate-set->author-set voters)
+           ((unless (set::subset (cert-set->author-set voters)
                                  (committee-members commtt)))
             nil)
            ((mv yes-stake no-stake)
