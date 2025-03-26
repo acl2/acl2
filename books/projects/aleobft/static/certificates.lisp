@@ -175,8 +175,8 @@
                     (set::union (cert-set->author-set certs1)
                                 (cert-set->author-set certs2))))
     :induct t
-    :enable (cert-set->author-set-of-insert
-             set::union))
+    :enable (set::union
+             cert-set->author-set-of-insert))
 
   (defruled cert-set->author-set-monotone
     (implies (set::subset certs1 certs2)
