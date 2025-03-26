@@ -1,6 +1,6 @@
 ; Leo Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "../portcullis")
 (include-book "projects/abnf/portcullis" :dir :system)
 (include-book "kestrel/crypto/ecurve/portcullis" :dir :system)
 (include-book "centaur/fty/portcullis" :dir :system)

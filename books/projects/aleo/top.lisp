@@ -12,6 +12,7 @@
 (in-package "ALEO")
 
 (include-book "bft/top")
+(include-book "leo/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,4 +32,5 @@
     "This ACL2 library is being developed by "
     (xdoc::ahref "https://provable.com" "Provable")
     "."))
-  :order-subtopics (aleobft::aleobft))
+  :order-subtopics (aleobft::aleobft
+                    leo::leo))
