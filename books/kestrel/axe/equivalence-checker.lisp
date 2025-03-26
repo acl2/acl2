@@ -17397,7 +17397,7 @@
                            (keep-temp-dir ':auto))
   ;; note: we can't put a make-event inside an acl2-unwind-protect, so we do it
   ;; this way:
-  `(make-event
+  `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-with-axe"
        (prove-with-axe-fn ,dag-or-quotep ,assumptions ,types ,interpreted-function-alist ,test-types
@@ -17608,7 +17608,7 @@
                                   (proof-name ':auto)
                                   (keep-temp-dir ':auto)
                                   (check-vars 't))
-  `(make-event ; use make-event-quiet?
+  `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-equal-with-axe+"
        (prove-equal-with-axe+-fn ,dag-or-term1
