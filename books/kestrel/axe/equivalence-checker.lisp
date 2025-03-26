@@ -12070,25 +12070,25 @@
                                            nodenum
                                            miter-array-name miter-array miter-len
                                            var-type-alist print
-                                           interpreted-function-alist
-                                           rewriter-rule-alist
-                                           assumptions
-                                           monitored-symbols
+                                           ;; interpreted-function-alist
+                                           ;; rewriter-rule-alist
+                                           ;; assumptions
+                                           ;; monitored-symbols
                                            max-conflicts miter-name state)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp miter-array-name miter-array miter-len)
                               (< nodenum miter-len)
                               (var-type-alistp var-type-alist)
                               (print-levelp print)
-                              (interpreted-function-alistp interpreted-function-alist)
-                              (rule-alistp rewriter-rule-alist)
-                              (pseudo-term-listp assumptions)
-                              (symbol-listp monitored-symbols)
+                              ;; (interpreted-function-alistp interpreted-function-alist)
+                              ;; (rule-alistp rewriter-rule-alist)
+                              ;; (pseudo-term-listp assumptions)
+                              ;; (symbol-listp monitored-symbols)
                               (or (null max-conflicts) (natp max-conflicts))
                               (symbolp miter-name))
-                  :mode :program ; todo: because we call simplify-tree-and-add-to-dag-wrapper (try the basic rewriter?)
+;                  :mode :program ; todo: because we call simplify-tree-and-add-to-dag-wrapper (try the basic rewriter?)
                   :stobjs state)
-           (ignore assumptions interpreted-function-alist rewriter-rule-alist monitored-symbols)
+           ;; (ignore assumptions interpreted-function-alist rewriter-rule-alist monitored-symbols)
            )
   (b* (
        ;; ;; First try to simplify the equality of the node and the constant:
@@ -15636,7 +15636,9 @@
                         nil)))
          ;; Pure node:
          (mv-let (erp provedp state)
-           (try-to-prove-pure-node-is-constant constant-value nodenum miter-array-name miter-array miter-len var-type-alist print interpreted-function-alist rewriter-rule-alist assumptions monitored-symbols max-conflicts miter-name state)
+           (try-to-prove-pure-node-is-constant constant-value nodenum miter-array-name miter-array miter-len var-type-alist print
+                                               ;; interpreted-function-alist rewriter-rule-alist assumptions monitored-symbols
+                                               max-conflicts miter-name state)
            (if erp
                (mv erp nil analyzed-function-table rand state)
              (if provedp
@@ -16311,7 +16313,8 @@
              (mv (erp-nil) :done miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist analyzed-function-table monitored-symbols rand state)
            (if (eq :did-something result)
                (perform-miter-sweeps miter-array-name miter-array miter-len miter-depth var-type-alist test-cases interpreted-function-alist
-                                     print debug-nodes
+                                     print
+                                     nil ; debug-nodes (can't pass these on because they are likely meaningless after the first sweep)
                                      rewriter-rule-alist prover-rule-alist transformation-rules
                                      assumptions
                                      extra-stuff
@@ -16617,7 +16620,7 @@
                          var-type-alist ;used if we need to call STP (callers can compute from the assumptions using make-var-type-alist-from-hyps) ; can only contain axe-types, so may not give types to all vars
                          interpreted-function-alist
                          print
-                         debug-nodes ;do we still use this?
+                         debug-nodes
                          rewriter-rule-alist
                          prover-rule-alist
                          assumptions ; terms to be assumed non-nil
@@ -16693,6 +16696,9 @@
                (mv nil ;todo: use t?
                    (hard-error 'miter-and-merge "no test cases!" nil)
                    rand state))
+              ((when (not (all-< debug-nodes miter-len)))
+               (er hard? 'miter-and-merge "At least one of the :debug-nodes is too large.")
+               (mv :debug-node-too-large nil rand state))
               ((mv erp result miter-array miter-len interpreted-function-alist rewriter-rule-alist prover-rule-alist
                    & ; new-analyzed-function-table
                    monitored-symbols rand state)
@@ -16920,17 +16926,16 @@
 
 ;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not merely non-nil).
 ; Returns (mv erp provedp all-assumptions state rand).
-;there are really 2 alists that we should pass in: 1 for the true types of the vars, and one for the test cases (for a list of length max. 2^64, you don't want to generate a list of length random-number-in-0-to-2^64...) - i guess the true types currently come in via the ASSUMPTIONS?
-;fixme separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
+; todo: separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-with-axe-core (dag-or-quotep
                             assumptions ; (untranslated) terms we can assume are true (non-nil)
                             types ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
+                            user-interpreted-function-alist ;todo: just pass in the fn names and look them up in the state?
                             test-types
-                            tactic
-                            test-case-count ;the total number of tests to generate?  some may not be used
+                            test-case-count
+                            tactic ;the total number of tests to generate?  some may not be used
                             print
                             debug-nodes
-                            user-interpreted-function-alist ;todo: just pass in the fn names and look them up in the state?
                             ;; ttodo: allow the use of rule phases?!
                             runes          ;used for both the rewriter and prover
                             rules          ;used for both the rewriter and prover
@@ -16961,14 +16966,13 @@
                                        (not (assoc-eq nil types)) ;consider relaxing this?
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
+                              (interpreted-function-alistp user-interpreted-function-alist)
                               (test-case-type-alistp test-types)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
                               (natp test-case-count)
                               (print-levelp print)
                               (nat-listp debug-nodes)
-                              (all-< debug-nodes (if (quotep dag-or-quotep) 0 (+ 1 (top-nodenum dag-or-quotep)))) ; all < the len
-                              (interpreted-function-alistp user-interpreted-function-alist)
                               (symbol-listp runes)
                               (axe-rule-listp rules)
                               (symbol-listp rewriter-runes)
@@ -17216,14 +17220,15 @@
 
 ;; Returns (mv erp event state) where ERP is non-nil iff
 ;; we failed to reduce the miter to T.
-(defun prove-with-axe-fn (dag-or-quotep
+(defun prove-with-axe-fn (dag-or-term
                           assumptions ; (untranslated) terms we can assume are true (non-nil)
-                          types  ;compute this from the hyps
-                          test-types
-                          tests ;the total number of tests to generate?  some may not be used
-                          print
-                          debug-nodes ;do we use this?
+                          types
                           interpreted-function-alist
+                          test-types
+                          tests ; the total number of tests to generate?  some may not be used
+                          tactic
+                          print
+                          debug-nodes
                           ;; todo: allow the use of rule phases?!
                           runes          ;used for both the rewriter and prover
                           rules          ;used for both the rewriter and prover
@@ -17234,20 +17239,18 @@
                           pre-simplifyp
                           extra-stuff
                           specialize-fnsp
-                          monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                          monitored-symbols
                           use-context-when-miteringp
                           random-seed
                           unroll
                           tests-per-case
                           max-conflicts
-                          normalize-xors ;fixme use the more, deeper in?
+                          normalize-xors
                           prove-constants
-                          keep-temp-dir
-                          proof-name whole-form state)
-  (declare (xargs :guard (and (or (quotep dag-or-quotep)
-                                  (weak-dagp dag-or-quotep))
+                          proof-name
+                          keep-temp-dir whole-form state)
+  (declare (xargs :guard (and ;; dag-or-term is a dag or (untranslated) term
                               (true-listp assumptions) ; untranslated
-                              (natp tests)
                               (or (eq :bits types)
                                   (eq :bytes types)
                                   (and (var-type-alistp types)
@@ -17255,45 +17258,67 @@
                                        (not (assoc-eq nil types)) ;consider relaxing this?
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
+                              (interpreted-function-alistp interpreted-function-alist)
                               (test-case-type-alistp test-types)
-                              (if (extra-stuff-okayp extra-stuff)
-                                  t
-                                (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff)
-                                        nil))
-                              (symbol-listp monitored-symbols)
+                              (natp tests)
+                              (or (eq tactic :rewrite)
+                                  (eq tactic :rewrite-and-sweep))
+                              (print-levelp print)
+                              (nat-listp debug-nodes)
                               (symbol-listp runes)
+                              (axe-rule-listp rules)
                               (symbol-listp rewriter-runes)
                               (symbol-listp prover-runes)
-                              (axe-rule-listp rules)
                               (axe-rule-listp initial-rule-set)
                               (all-axe-rule-listp initial-rule-sets)
+                              (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
+                              (booleanp pre-simplifyp)
+                              (if (extra-stuff-okayp extra-stuff)
+                                  t
+                                (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff) ;drop?
+                                        nil))
+                              (booleanp specialize-fnsp)
+                              (symbol-listp monitored-symbols)
+                              (booleanp use-context-when-miteringp)
+                              (or (null random-seed)
+                                  (natp random-seed))
                               ;;:unroll is either a list of function names to unroll (can be empty), or :all
                               (or (eq :all unroll)
                                   (symbol-listp unroll))
-                              (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
+                              (natp tests-per-case)
                               (or (eq :auto max-conflicts)
                                   (null max-conflicts)
                                   (natp max-conflicts))
+                              (booleanp normalize-xors)
+                              (booleanp prove-constants)
                               (symbolp proof-name)
                               (member-eq keep-temp-dir '(t nil :auto)))
                   :mode :program
                   :stobjs state))
   (b* (;; Handle redundant invocation:
-       ((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
+       ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :invisible) state))
+       ;; Start timing:
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       ;; Make term args (if present) into a DAG:
+       (wrld (w state))
+       ((mv erp dag-or-quotep) (dag-or-term-to-dag dag-or-term wrld))
+       ((when erp) (mv erp nil state))
+       ;; Choose a name for the miter:
        (dag-or-term-form (farg1 whole-form))
        (proof-name (choose-proof-name proof-name dag-or-term-form (w state)))
+       ;; Do the proof:
        ((mv erp provedp & ;all-assumptions
             state)
         (prove-with-axe-core dag-or-quotep
                              assumptions
-                             types ;compute this from the hyps?
-                             test-types
-                             :rewrite-and-sweep ; todo: pass this in?
-                             tests
-                             print
-                             debug-nodes ;do we use this?
+                             types
                              interpreted-function-alist
+                             test-types
+                             tests
+                             tactic
+                             print
+                             debug-nodes
                              ;; todo: allow the use of rule phases?!
                              runes      ;used for both the rewriter and prover
                              rules      ;used for both the rewriter and prover
@@ -17318,12 +17343,19 @@
        ((when erp) (prog2$ (er hard? 'prove-with-axe-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
                            (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-with-axe-fn "Proof attempt failed.~%")
-                                     (mv :proof-failed nil state))))
-    ;; todo: Depending on how it went, maybe introduce a theorem:
-    (let ((event '(progn)))
-      (mv (erp-nil)
-          (extend-progn event `(table prove-with-axe-table ',whole-form ',event))
-          state))))
+                                     (mv :proof-failed nil state)))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (- (cw "Proof succeeded in ")
+          (acl2::print-to-hundredths elapsed)
+          (cw "s.~%"))
+       ;; Assemble the event to return:
+       (event '(progn)) ; empty progn to be extended
+       ;;todo: should return a theorem about the term-or-dag!
+       ;; Table event for redundancy checking:
+       (event (extend-progn event `(with-output :off :all (table prove-with-axe-table ',whole-form ',event))))
+       ;; Arrange to print the miter name when the event is submitted:
+       (event (extend-progn event `(value-triple ',proof-name))))
+    (mv (erp-nil) event state)))
 
 ;; Returns (mv erp event state).
 ; todo: eventually, try to always use the same rules for the dag prover as the dag rewriter..
@@ -17335,15 +17367,15 @@
 (defmacro prove-with-axe (&whole
                            whole-form
                            dag-or-quotep
-                           &KEY
+                           &key
                            (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                           (types 'nil)  ; derive from the assumptions?  also used when calling stp..
-                           (test-types 'nil)
-                           (tests '100)
-                           (tests-per-case '512)
-                           (print 'nil)
-                           (debug-nodes 'nil)
+                           (types 'nil)  ; gives types to the vars for the proofs
                            (interpreted-function-alist 'nil) ;affects soundness
+                           (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
+                           (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                           (tactic ':rewrite-and-sweep)
+                           (print ':brief)
+                           (debug-nodes 'nil)
                            (runes 'nil) ;used for both the rewriter and prover, affects soundness
                            (rules 'nil) ;used for both the rewriter and prover, affects soundness
                            (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
@@ -17352,36 +17384,37 @@
                            (initial-rule-sets 'nil)
                            (pre-simplifyp 't) ;was nil
                            (extra-stuff 'nil) ;ffixme does any of this affect soundness?
-                           (specialize-fnsp 'nil) ;do we ever use this?
+                           (specialize-fnsp 'nil)
                            (monitor 'nil)         ;a list of runes
                            (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
                            (random-seed 'nil)
                            (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
+                           (tests-per-case '512)
                            (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                            (normalize-xors 't)
                            (prove-constants 't) ;whether to attempt to prove probably-constant nodes
-                           (keep-temp-dir ':auto)
-                           (proof-name ':auto))
+                           (proof-name ':auto)
+                           (keep-temp-dir ':auto))
   ;; note: we can't put a make-event inside an acl2-unwind-protect, so we do it
   ;; this way:
-  `(make-event
+  `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-with-axe"
-       (prove-with-axe-fn ,dag-or-quotep ,assumptions ,types ,test-types
-                          ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+       (prove-with-axe-fn ,dag-or-quotep ,assumptions ,types ,interpreted-function-alist ,test-types
+                          ,tests ,tactic ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes
                           ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                          ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
-                          ,proof-name ',whole-form state)
+                          ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,proof-name ,keep-temp-dir
+                          ',whole-form state)
        ;; ;; Can't call prove-with-axe-fn directly here, because it returns extra
        ;; ;; stobjs (does not return an error triple), so we use trans-eval as
        ;; ;; suggested by MK:
        ;; (mv-let (erp val state)
        ;;   (trans-eval-no-warning '(prove-with-axe-fn
-       ;;                            ,dag-or-quotep ,assumptions ,types ,test-types
-       ;;                            ,tests ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+       ;;                            ,dag-or-quotep ,assumptions ,types ,interpreted-function-alist ,test-types
+       ;;                            ,tests ,tactic ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes
        ;;                            ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-       ;;                            ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
-       ;;                            ,proof-name ',whole-form state)
+       ;;                            ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,proof-name ,keep-temp-dir
+       ;;                            ',whole-form state)
        ;;                          'prove-with-axe
        ;;                          state
        ;;                          t)
@@ -17407,13 +17440,20 @@
 (defun prove-equal-with-axe+-fn (dag-or-term1
                                  dag-or-term2
                                  assumptions ; (untranslated) terms we can assume are true (non-nil)
-                                 types  ;todo: compute the types from the hyps?
+                                 types
+                                 interpreted-function-alist
                                  test-types
                                  tests
-                                 ;; todo: standardize argument order:
-                                 tests-per-case print debug-nodes interpreted-function-alist check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
-                                 random-seed unroll max-conflicts normalize-xors prove-constants keep-temp-dir
-                                 proof-name whole-form state)
+                                 tactic
+                                 print debug-nodes runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets
+                                 pre-simplifyp extra-stuff specialize-fnsp
+                                 monitored-symbols use-context-when-miteringp
+                                 random-seed unroll tests-per-case
+                                 max-conflicts normalize-xors prove-constants
+                                 proof-name
+                                 keep-temp-dir
+                                 check-vars
+                                 whole-form state)
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
                               (or (eq :bits types)
                                   (eq :bytes types)
@@ -17422,17 +17462,50 @@
                                        (not (assoc-eq nil types)) ;consider relaxing this?
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
+                              (interpreted-function-alistp interpreted-function-alist)
                               (test-case-type-alistp test-types)
                               (natp tests)
-                              ; todo: more
-                              (member-eq check-vars '(t nil :warn))
-                              (member-eq keep-temp-dir '(t nil :auto)))
+                              (or (eq tactic :rewrite)
+                                  (eq tactic :rewrite-and-sweep))
+                              (print-levelp print)
+                              (nat-listp debug-nodes)
+                              (symbol-listp runes)
+                              (axe-rule-listp rules)
+                              (symbol-listp rewriter-runes)
+                              (symbol-listp prover-runes)
+                              (axe-rule-listp initial-rule-set)
+                              (all-axe-rule-listp initial-rule-sets)
+                              (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
+                              (booleanp pre-simplifyp)
+                              (if (extra-stuff-okayp extra-stuff)
+                                  t
+                                (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff) ;drop?
+                                        nil))
+                              (booleanp specialize-fnsp)
+                              (symbol-listp monitored-symbols)
+                              (booleanp use-context-when-miteringp)
+                              (or (null random-seed)
+                                  (natp random-seed))
+                              ;;:unroll is either a list of function names to unroll (can be empty), or :all
+                              (or (eq :all unroll)
+                                  (symbol-listp unroll))
+                              (natp tests-per-case)
+                              (or (eq :auto max-conflicts)
+                                  (null max-conflicts)
+                                  (natp max-conflicts))
+                              (booleanp normalize-xors)
+                              (booleanp prove-constants)
+                              (symbolp proof-name)
+                              (member-eq keep-temp-dir '(t nil :auto))
+                              (member-eq check-vars '(t nil :warn)))
                   :mode :program
                   :stobjs state))
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :invisible) state))
-       ;; Make term args (if any) into DAGs:
+       ;; Start timing:
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+      ;; Make term args (if any) into DAGs:
        (wrld (w state))
        ((mv erp dag-or-quotep1) (dag-or-term-to-dag dag-or-term1 wrld))
        ((when erp) (mv erp nil state))
@@ -17444,7 +17517,7 @@
        ((mv erp equality-dag-or-quotep) (make-equality-dag dag-or-quotep1 dag-or-quotep2))
        ((when erp) (mv erp nil state))
        ;; Choose a name for the miter:
-       (dag-or-term-form1 (farg1 whole-form)) ; todo: why "quoted"?
+       (dag-or-term-form1 (farg1 whole-form))
        (dag-or-term-form2 (farg2 whole-form))
        (proof-name (choose-equality-proof-name proof-name dag-or-term-form1 dag-or-term-form2 wrld))
        ;; Do the proof:
@@ -17453,12 +17526,12 @@
         (prove-with-axe-core equality-dag-or-quotep
                              assumptions
                              types
-                             test-types
-                             :rewrite-and-sweep ; todo: pass this in?
-                             tests
-                             print
-                             debug-nodes ;do we use this?
                              interpreted-function-alist
+                             test-types
+                             tests
+                             tactic
+                             print
+                             debug-nodes
                              ;; todo: allow the use of rule phases?!
                              runes      ;used for both the rewriter and prover
                              rules      ;used for both the rewriter and prover
@@ -17469,13 +17542,13 @@
                              pre-simplifyp
                              extra-stuff
                              specialize-fnsp
-                             monitor ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
+                             monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
                              use-context-when-miteringp
                              random-seed
                              unroll
                              tests-per-case
                              max-conflicts
-                             normalize-xors ;fixme use the more, deeper in?
+                             normalize-xors
                              prove-constants
                              proof-name state))
        ;; Remove the temp-dir (usually):
@@ -17483,30 +17556,38 @@
        ((when erp) (prog2$ (er hard? 'prove-equal-with-axe+-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
                            (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe+-fn "Proof attempt failed.~%")
-                                     (mv :proof-failed nil state))))
-    (let ((event '(progn))) ;todo: should return a theorem about the term-or-dags!
-      (mv (erp-nil)
-          (extend-progn event `(table prove-equal-with-axe+-table ',whole-form ',event))
-          state))))
+                                     (mv :proof-failed nil state)))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (- (cw "Proof of equivalence succeeded in ")
+          (acl2::print-to-hundredths elapsed)
+          (cw "s.~%"))
+       ;; Assemble the event to return:
+       (event '(progn)) ; empty progn to be extended
+       ;;todo: should return a theorem about the term-or-dags!
+       ;; Table event for redundancy checking:
+       (event (extend-progn event `(with-output :off :all (table prove-equal-with-axe+-table ',whole-form ',event))))
+       ;; Arrange to print the miter name when the event is submitted:
+       (event (extend-progn event `(value-triple ',proof-name))))
+    (mv (erp-nil) event state)))
 
 ;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equal-with-axe, this supports all the exotic options to prove-with-axe.
 ;; Used in several loop examples.
 ;; See also prove-equal-with-axe, which is preferable when it is sufficient (because it is simpler).
 ;; This tool was formerly called prove-equality.
+  ;;TODO: error or warning if :tactic is rewrite and :tests is given?
 (defmacro prove-equal-with-axe+ (&whole
                                   whole-form
                                   dag-or-term1
                                   dag-or-term2
-                                  &KEY
+                                  &key
                                   (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                                  (types 'nil)
-                                  (test-types 'nil)
-                                  (tests '100)
-                                  (tests-per-case '512)
-                                  (print 'nil)
-                                  (debug-nodes 'nil)
+                                  (types 'nil) ; gives types to the vars for the proofs
                                   (interpreted-function-alist 'nil) ;affects soundness
-                                  (check-vars 't)
+                                  (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
+                                  (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                                  (tactic ':rewrite-and-sweep)
+                                  (print ':brief)
+                                  (debug-nodes 'nil)
                                   (runes 'nil) ;used for both the rewriter and prover, affects soundness
                                   (rules 'nil) ;used for both the rewriter and prover, affects soundness
                                   (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
@@ -17515,25 +17596,33 @@
                                   (initial-rule-sets 'nil)
                                   (pre-simplifyp 't) ;was nil
                                   (extra-stuff 'nil) ;ffixme does any of this affect soundness?
-                                  (specialize-fnsp 'nil) ;do we ever use this?
+                                  (specialize-fnsp 'nil)
                                   (monitor 'nil)         ;a list of runes
                                   (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
                                   (random-seed 'nil)
                                   (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
+                                  (tests-per-case '512)
                                   (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                                   (normalize-xors 't)
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
+                                  (proof-name ':auto)
                                   (keep-temp-dir ':auto)
-                                  (proof-name ':auto))
-  `(make-event ; use make-event-quiet?
+                                  (check-vars 't))
+  `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-equal-with-axe+"
        (prove-equal-with-axe+-fn ,dag-or-term1
                                  ,dag-or-term2
-                                 ,assumptions ,types ,test-types ,tests
-                                 ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                                 ,random-seed ,unroll ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
-                                 ,proof-name ',whole-form state)
+                                 ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
+                                 ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets
+                                 ,pre-simplifyp ,extra-stuff ,specialize-fnsp
+                                 ,monitor ,use-context-when-miteringp
+                                 ,random-seed ,unroll ,tests-per-case
+                                 ,max-conflicts ,normalize-xors ,prove-constants
+                                 ,proof-name
+                                 ,keep-temp-dir
+                                 ,check-vars
+                                 ',whole-form state)
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
        ;; Remove the temp-dir (usually):
        (maybe-remove-temp-dir2 ,keep-temp-dir nil t state)
@@ -17550,21 +17639,22 @@
                                 dag-or-term2
                                 assumptions ; (untranslated) terms we can assume are true (non-nil)
                                 types
+                                interpreted-function-alist
                                 test-types
                                 tests ;a natp indicating how many tests to run
                                 tactic
                                 print
                                 debug-nodes
-                                max-conflicts extra-rules initial-rule-sets
-                                monitor
-                                use-context-when-miteringp
-                                normalize-xors
-                                interpreted-function-alist
-                                check-vars
-                                prove-theorem
-                                keep-temp-dir
-                                local
+                                extra-rules initial-rule-sets ;; these differ from the + version
+                                monitored-symbols use-context-when-miteringp
+                                random-seed
+                                ;;;
+                                max-conflicts normalize-xors prove-constants
                                 proof-name  ; may be :auto
+                                keep-temp-dir
+                                check-vars
+                                prove-theorem ;; todo: add to other tools?
+                                local ;; todo: add to other tools?
                                 whole-form
                                 state)
   (declare (xargs :guard (and ;; dag-or-term1 is a DAG or (untranslated) term
@@ -17577,11 +17667,12 @@
                                     (not (assoc-eq nil types)) ;consider relaxing this?
                                     (not (assoc-eq t types)) ;consider relaxing this?
                                     ))
+                           (interpreted-function-alistp interpreted-function-alist)
                            (test-case-type-alistp test-types)
                            (natp tests)
                            (or (eq tactic :rewrite)
                                (eq tactic :rewrite-and-sweep))
-                           ;; print
+                           (print-levelp print)
                            (nat-listp debug-nodes)
                            (or (eq :auto max-conflicts)
                                (null max-conflicts)
@@ -17589,18 +17680,19 @@
                            (symbol-listp extra-rules)
                            (or (eq :auto initial-rule-sets)
                                (axe-rule-setsp initial-rule-sets))
-                           (symbol-listp monitor)
+                           (symbol-listp monitored-symbols)
                            (booleanp use-context-when-miteringp)
+                           (or (null random-seed)
+                               (natp random-seed))
                            (booleanp normalize-xors)
-                           (interpreted-function-alistp interpreted-function-alist)
+                           (booleanp prove-constants)
+                           (symbolp proof-name)
+                           (member-eq keep-temp-dir '(t nil :auto))
                            (member-eq check-vars '(t nil :warn))
                            (booleanp prove-theorem)
-                           (member-eq keep-temp-dir '(t nil :auto))
-                           (booleanp local)
-                           (symbolp proof-name))
+                           (booleanp local))
                   :mode :program
                   :stobjs state))
-  ;;TODO: error or warning if :tactic is rewrite and :tests is given?
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :redundant) state))
@@ -17624,10 +17716,10 @@
                                                                (phased-bv-axe-rule-sets state) wrld) ;todo: overkill?
                                      (mv (erp-nil) initial-rule-sets)))
        ((when erp) (mv erp nil state))
-       ;; Always add the extra rules:
+       ;; Always add the extra-rules:
        ((mv erp initial-rule-sets) (if initial-rule-sets
                                        (add-rules-to-rule-sets extra-rules initial-rule-sets wrld)
-                                     ;; special case: no initial-rule-sets, but extra rules are given (TODO: Think about this):
+                                     ;; special case: no initial-rule-sets, but extra-rules are given (TODO: Think about this):
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state))
        ;; Choose a name for the miter:
@@ -17639,12 +17731,12 @@
         (prove-with-axe-core equality-dag-or-quotep
                              assumptions
                              types
+                             interpreted-function-alist
                              test-types
-                             tactic
                              tests ; number of tests to run
+                             tactic
                              print
                              debug-nodes
-                             interpreted-function-alist
                              nil ;runes
                              nil ;rules
                              nil ;rewriter-runes
@@ -17654,14 +17746,14 @@
                              t   ;pre-simplifyp
                              nil ;extra-stuff
                              nil ;specialize-fnsp
-                             monitor
+                             monitored-symbols
                              use-context-when-miteringp
-                             nil ;random seed
+                             random-seed
                              nil ;unroll
                              512 ; tests-per-case
                              max-conflicts
                              normalize-xors
-                             t   ;prove-constants
+                             prove-constants
                              proof-name state))
        ;; Remove the temp-dir (usually):
        (state (maybe-remove-temp-dir2 keep-temp-dir erp nil state))
@@ -17702,49 +17794,35 @@
                                     dag-or-term2
                                     &key
                                     (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                                    (types 'nil) ;gives types to the vars for the proofs
+                                    (types 'nil) ; gives types to the vars for the proofs
+                                    (interpreted-function-alist 'nil) ;affects soundness
                                     (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
-                                    (tactic ':rewrite-and-sweep) ;can be :rewrite or :rewrite-and-sweep
                                     (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                                    (tactic ':rewrite-and-sweep)
                                     (print ':brief)
                                     (debug-nodes 'nil)
-                                    (max-conflicts ':auto) ;1000 here broke proofs
                                     (extra-rules 'nil)
                                     (initial-rule-sets ':auto)
                                     (monitor 'nil)
                                     (use-context-when-miteringp 'nil) ;todo: try t
+                                    (random-seed 'nil)
+                                    (max-conflicts ':auto) ;1000 here broke proofs
                                     (normalize-xors 't)
-                                    (interpreted-function-alist 'nil) ;affects soundness
+                                    (prove-constants 't)
+                                    (proof-name ':auto) ;the name of the proof, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
+                                    (keep-temp-dir ':auto)
                                     (check-vars 't)
                                     (prove-theorem 'nil) ; very rarely used
-                                    (keep-temp-dir ':auto)
-                                    (local 't)
-                                    (proof-name ':auto) ;the name of the proof, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
-                                    )
+                                    (local 't))
   `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-equal-with-axe"
-       (prove-equal-with-axe-fn ,dag-or-term1
-                                ,dag-or-term2
-                                ,assumptions
-                                ,types
-                                ,test-types
-                                ,tests
-                                ,tactic
-                                ,print
-                                ,debug-nodes
-                                ,max-conflicts
-                                ,extra-rules
-                                ,initial-rule-sets
-                                ,monitor
-                                ,use-context-when-miteringp
-                                ,normalize-xors
-                                ,interpreted-function-alist
-                                ,check-vars
-                                ,prove-theorem
-                                ,keep-temp-dir
-                                ,local
-                                ,proof-name ',whole-form state)
+       (prove-equal-with-axe-fn ,dag-or-term1 ,dag-or-term2 ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
+                                ,print ,debug-nodes ,extra-rules ,initial-rule-sets
+                                ,monitor ,use-context-when-miteringp ,random-seed
+                                ,max-conflicts ,normalize-xors ,prove-constants
+                                ,proof-name ,keep-temp-dir ,check-vars
+                                ,prove-theorem ,local ',whole-form state)
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
        ;; Remove the temp-dir (usually):
        (maybe-remove-temp-dir2 ,keep-temp-dir nil t state)
@@ -17755,28 +17833,29 @@
   :args ((dag-or-term1 "The first DAG or term to compare")
          (dag-or-term2 "The second DAG or term to compare")
          (assumptions "Assumptions to use when proving equivalence, a list of terms (not necessarily translated).  The proof is done assuming all of the :assumptions are non-nil.")
-         (types "A var-type-alist (alist mapping variables to their axe-types), or one of the special values :bits or :bytes.  Entries in this alist can be overridden for testing purposes by the :test-types option.")
+         (types "A var-type-alist (alist mapping variables to their axe-types), or one of the special values :bits or :bytes.  The proof is done assuming the variables have their associated types.  Entries in this alist can be overridden for testing purposes by the :test-types option.")
+         (interpreted-function-alist "Provides definitions for non-built-in functions.  An alist mapping function symbols to their bodies.")
          (test-types "Overrides of the :types for use in the testing that identifies probable facts for sweeping-and-merging (example, to restrict the length of arrays).")
-         (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (tests "How many tests to use to find internal equivalences (a natp)")
+         (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (print "Print verbosity (allows nil, :brief, t, and :verbose)")
-         (debug-nodes "Nodenums whose values should be printed for each test-case.")
-         (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
+         (debug-nodes "Nodenums whose values should be printed for each test-case, and whose subdags should be printing when attempting a merge.  These nodenums refer to the DAG used for sweeping-and-merging (after pre-simplification, etc, if any), specifically the DAG for the first sweep.")
          (extra-rules "The names of extra rules to use when simplifying (a symbol list)")
          (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets)")
          (monitor "Rule names (symbols) to monitor when rewriting")
          (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")
+         (random-seed "Seed for the random number generator used to make test cases, or nil meaning use the default.")
+         (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
          (normalize-xors "Whether to normalize XOR nests when simplifying")
-         (interpreted-function-alist "Provides definitions for non-built-in functions")
+         (prove-constants "Whether, when sweeping, to try to prove nodes are constants (and replace them with those constants if the proof succeeds).")
+         (proof-name "A name to assign to the proof, if desired.  A symbol, or :auto to let Axe choose a name.")
+         (keep-temp-dir "Whether to keep the directory with temp files in place, for debugging.  If :auto, the temp-dir is kept whenever there is an error.")
          (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
          (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
-         (keep-temp-dir "Whether to keep the directory with temp files in place, for debugging.  If :auto, the temp-dir is kept whenever there is an error.")
-         (local "whether to make the generated events local")
-         (proof-name "A name to assign to the proof, if desired.  A symbol, or :auto to let Axe choose a name.")
-         )
+         (local "whether to make the generated events local"))
   :description ("If the call to @('prove-equal-with-axe') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."
                 "Usually, the two items (DAGs or terms) have the same set of free variables."
-                "See also prove-equiality, for a variant that supports more exotic options."))
+                "See also @('prove-equal-with-axe+'), for a variant that supports more exotic options."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
