@@ -17579,12 +17579,12 @@
                                   whole-form
                                   dag-or-term1
                                   dag-or-term2
-                                  &KEY
+                                  &key
                                   (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                                  (types 'nil)
+                                  (types 'nil) ; gives types to the vars for the proofs
                                   (interpreted-function-alist 'nil) ;affects soundness
-                                  (test-types 'nil)
-                                  (tests '100)
+                                  (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
+                                  (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                                   (tactic ':rewrite-and-sweep)
                                   (print 'nil)
                                   (debug-nodes 'nil)
@@ -17647,6 +17647,7 @@
                                 debug-nodes
                                 extra-rules initial-rule-sets ;; these differ from the + version
                                 monitored-symbols use-context-when-miteringp
+                                random-seed
                                 ;;;
                                 max-conflicts normalize-xors prove-constants
                                 proof-name  ; may be :auto
@@ -17681,6 +17682,8 @@
                                (axe-rule-setsp initial-rule-sets))
                            (symbol-listp monitored-symbols)
                            (booleanp use-context-when-miteringp)
+                           (or (null random-seed)
+                               (natp random-seed))
                            (booleanp normalize-xors)
                            (booleanp prove-constants)
                            (symbolp proof-name)
@@ -17745,7 +17748,7 @@
                              nil ;specialize-fnsp
                              monitored-symbols
                              use-context-when-miteringp
-                             nil ;random seed
+                             random-seed
                              nil ;unroll
                              512 ; tests-per-case
                              max-conflicts
@@ -17802,6 +17805,7 @@
                                     (initial-rule-sets ':auto)
                                     (monitor 'nil)
                                     (use-context-when-miteringp 'nil) ;todo: try t
+                                    (random-seed 'nil)
                                     (max-conflicts ':auto) ;1000 here broke proofs
                                     (normalize-xors 't)
                                     (prove-constants 't)
@@ -17815,7 +17819,7 @@
        "acl2-unwind-protect for prove-equal-with-axe"
        (prove-equal-with-axe-fn ,dag-or-term1 ,dag-or-term2 ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
                                 ,print ,debug-nodes ,extra-rules ,initial-rule-sets
-                                ,monitor ,use-context-when-miteringp
+                                ,monitor ,use-context-when-miteringp ,random-seed
                                 ,max-conflicts ,normalize-xors ,prove-constants
                                 ,proof-name ,keep-temp-dir ,check-vars
                                 ,prove-theorem ,local ',whole-form state)
@@ -17840,6 +17844,7 @@
          (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets)")
          (monitor "Rule names (symbols) to monitor when rewriting")
          (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")
+         (random-seed "Seed for the random number generator used to make test cases, or nil meaning use the default.")
          (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
          (normalize-xors "Whether to normalize XOR nests when simplifying")
          (prove-constants "Whether, when sweeping, to try to prove nodes are constants (and replace them with those constants if the proof succeeds).")
