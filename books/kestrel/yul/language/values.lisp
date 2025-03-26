@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -29,7 +29,7 @@
      it is best to view this as a type of 256-bit words,
      rather than as a type of 256-bit unsigned integers,
      because the intent is to match the EVM notion of word,
-     which can be operated upon as an either unsigned or signed integer.
+     which can be operated upon as either an unsigned or a signed integer.
      Nonetheless, in our ACL2 formalization,
      we represent 256-bit words as 256-bit unsigned integers,
      which can be thought of as bit vectors.
