@@ -17428,10 +17428,15 @@
                                  test-types
                                  tests
                                  tactic
-                                 ;; todo: standardize argument order:
-                                 tests-per-case print debug-nodes check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
-                                 random-seed unroll max-conflicts normalize-xors prove-constants keep-temp-dir
-                                 proof-name whole-form state)
+                                 print debug-nodes runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets
+                                 pre-simplifyp extra-stuff specialize-fnsp
+                                 monitor use-context-when-miteringp
+                                 random-seed unroll tests-per-case
+                                 max-conflicts normalize-xors prove-constants
+                                 proof-name
+                                 check-vars
+                                 keep-temp-dir
+                                 whole-form state)
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
                               (or (eq :bits types)
                                   (eq :bytes types)
@@ -17526,10 +17531,8 @@
                                   (test-types 'nil)
                                   (tests '100)
                                   (tactic ':rewrite-and-sweep)
-                                  (tests-per-case '512)
                                   (print 'nil)
                                   (debug-nodes 'nil)
-                                  (check-vars 't)
                                   (runes 'nil) ;used for both the rewriter and prover, affects soundness
                                   (rules 'nil) ;used for both the rewriter and prover, affects soundness
                                   (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
@@ -17543,20 +17546,28 @@
                                   (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
                                   (random-seed 'nil)
                                   (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
+                                  (tests-per-case '512)
                                   (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                                   (normalize-xors 't)
                                   (prove-constants 't) ;whether to attempt to prove probably-constant nodes
-                                  (keep-temp-dir ':auto)
-                                  (proof-name ':auto))
+                                  (proof-name ':auto)
+                                  (check-vars 't)
+                                  (keep-temp-dir ':auto))
   `(make-event ; use make-event-quiet?
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-equal-with-axe+"
        (prove-equal-with-axe+-fn ,dag-or-term1
                                  ,dag-or-term2
                                  ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
-                                 ,tests-per-case ,print ,debug-nodes ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
-                                 ,random-seed ,unroll ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
-                                 ,proof-name ',whole-form state)
+                                 ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets
+                                 ,pre-simplifyp ,extra-stuff ,specialize-fnsp
+                                 ,monitor ,use-context-when-miteringp
+                                 ,random-seed ,unroll ,tests-per-case
+                                 ,max-conflicts ,normalize-xors ,prove-constants
+                                 ,proof-name
+                                 ,check-vars
+                                 ,keep-temp-dir
+                                 ',whole-form state)
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
        ;; Remove the temp-dir (usually):
        (maybe-remove-temp-dir2 ,keep-temp-dir nil t state)
@@ -17579,15 +17590,16 @@
                                 tactic
                                 print
                                 debug-nodes
-                                max-conflicts extra-rules initial-rule-sets
-                                monitor
-                                use-context-when-miteringp
-                                normalize-xors
-                                check-vars
-                                prove-theorem
-                                keep-temp-dir
-                                local
+                                extra-rules initial-rule-sets ;; these differ from the + version
+                                monitor use-context-when-miteringp
+                                ;;;
+                                max-conflicts normalize-xors
+                                ;;;
                                 proof-name  ; may be :auto
+                                check-vars
+                                keep-temp-dir
+                                prove-theorem ;; todo: add to other tools?
+                                local ;; todo: add to other tools?
                                 whole-form
                                 state)
   (declare (xargs :guard (and ;; dag-or-term1 is a DAG or (untranslated) term
@@ -17616,7 +17628,6 @@
                            (symbol-listp monitor)
                            (booleanp use-context-when-miteringp)
                            (booleanp normalize-xors)
-
                            (member-eq check-vars '(t nil :warn))
                            (booleanp prove-theorem)
                            (member-eq keep-temp-dir '(t nil :auto))
@@ -17732,24 +17743,26 @@
                                     (tactic ':rewrite-and-sweep)
                                     (print ':brief)
                                     (debug-nodes 'nil)
-                                    (max-conflicts ':auto) ;1000 here broke proofs
                                     (extra-rules 'nil)
                                     (initial-rule-sets ':auto)
                                     (monitor 'nil)
                                     (use-context-when-miteringp 'nil) ;todo: try t
+                                    (max-conflicts ':auto) ;1000 here broke proofs
                                     (normalize-xors 't)
-                                    (check-vars 't)
-                                    (prove-theorem 'nil) ; very rarely used
-                                    (keep-temp-dir ':auto)
-                                    (local 't)
                                     (proof-name ':auto) ;the name of the proof, if we care to give it one.  also used for the name of the theorem.  :auto means try to create a name from the defconsts provided
-                                    )
+                                    (check-vars 't)
+                                    (keep-temp-dir ':auto)
+                                    (prove-theorem 'nil) ; very rarely used
+                                    (local 't))
   `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-equal-with-axe"
        (prove-equal-with-axe-fn ,dag-or-term1 ,dag-or-term2 ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
-                                ,print ,debug-nodes ,max-conflicts ,extra-rules ,initial-rule-sets ,monitor ,use-context-when-miteringp
-                                ,normalize-xors ,check-vars ,prove-theorem ,keep-temp-dir ,local ,proof-name ',whole-form state)
+                                ,print ,debug-nodes ,extra-rules ,initial-rule-sets
+                                ,monitor ,use-context-when-miteringp
+                                ,max-conflicts ,normalize-xors
+                                ,proof-name ,check-vars ,keep-temp-dir
+                                ,prove-theorem ,local ',whole-form state)
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
        ;; Remove the temp-dir (usually):
        (maybe-remove-temp-dir2 ,keep-temp-dir nil t state)
@@ -17767,18 +17780,17 @@
          (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (print "Print verbosity (allows nil, :brief, t, and :verbose)")
          (debug-nodes "Nodenums whose values should be printed for each test-case.")
-         (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
          (extra-rules "The names of extra rules to use when simplifying (a symbol list)")
          (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets)")
          (monitor "Rule names (symbols) to monitor when rewriting")
          (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")
+         (max-conflicts "Initial value of STP max-conflicts (number of conflicts), or :auto (meaning use the default of 60000), or nil (meaning no maximum).")
          (normalize-xors "Whether to normalize XOR nests when simplifying")
-         (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
-         (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
-         (keep-temp-dir "Whether to keep the directory with temp files in place, for debugging.  If :auto, the temp-dir is kept whenever there is an error.")
-         (local "whether to make the generated events local")
          (proof-name "A name to assign to the proof, if desired.  A symbol, or :auto to let Axe choose a name.")
-         )
+         (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
+         (keep-temp-dir "Whether to keep the directory with temp files in place, for debugging.  If :auto, the temp-dir is kept whenever there is an error.")
+         (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
+         (local "whether to make the generated events local"))
   :description ("If the call to @('prove-equal-with-axe') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."
                 "Usually, the two items (DAGs or terms) have the same set of free variables."
                 "See also prove-equiality, for a variant that supports more exotic options."))
