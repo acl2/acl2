@@ -17296,8 +17296,11 @@
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state)) ; may not always be appropriate, depending on the caller
         (mv (erp-nil) '(value-triple :invisible) state))
+       ;; Start timing:
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (dag-or-term-form (farg1 whole-form))
        (proof-name (choose-proof-name proof-name dag-or-term-form (w state)))
+       ;; Do the proof:
        ((mv erp provedp & ;all-assumptions
             state)
         (prove-with-axe-core dag-or-quotep
@@ -17333,12 +17336,19 @@
        ((when erp) (prog2$ (er hard? 'prove-with-axe-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
                            (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-with-axe-fn "Proof attempt failed.~%")
-                                     (mv :proof-failed nil state))))
-    ;; todo: Depending on how it went, maybe introduce a theorem:
-    (let ((event '(progn)))
-      (mv (erp-nil)
-          (extend-progn event `(table prove-with-axe-table ',whole-form ',event))
-          state))))
+                                     (mv :proof-failed nil state)))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (- (cw "Proof of succeeded in ")
+          (acl2::print-to-hundredths elapsed)
+          (cw "s.~%"))
+       ;; Assemble the event to return:
+       (event '(progn)) ; empty progn to be extended
+       ;;todo: should return a theorem about the term-or-dag!
+       ;; Table event for redundancy checking:
+       (event (extend-progn event `(with-output :off :all (table prove-with-axe-table ',whole-form ',event))))
+       ;; Arrange to print the miter name when the event is submitted:
+       (event (extend-progn event `(value-triple ',proof-name))))
+    (mv (erp-nil) event state)))
 
 ;; Returns (mv erp event state).
 ; todo: eventually, try to always use the same rules for the dag prover as the dag rewriter..
@@ -17458,7 +17468,9 @@
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :invisible) state))
-       ;; Make term args (if any) into DAGs:
+       ;; Start timing:
+       ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+      ;; Make term args (if any) into DAGs:
        (wrld (w state))
        ((mv erp dag-or-quotep1) (dag-or-term-to-dag dag-or-term1 wrld))
        ((when erp) (mv erp nil state))
@@ -17509,11 +17521,19 @@
        ((when erp) (prog2$ (er hard? 'prove-equal-with-axe+-fn "ERROR in proof ~x0: ~x1.~%" proof-name erp)
                            (mv erp nil state)))
        ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe+-fn "Proof attempt failed.~%")
-                                     (mv :proof-failed nil state))))
-    (let ((event '(progn))) ;todo: should return a theorem about the term-or-dags!
-      (mv (erp-nil)
-          (extend-progn event `(table prove-equal-with-axe+-table ',whole-form ',event))
-          state))))
+                                     (mv :proof-failed nil state)))
+       ((mv elapsed state) (acl2::real-time-since start-real-time state))
+       (- (cw "Proof of equivalence succeeded in ")
+          (acl2::print-to-hundredths elapsed)
+          (cw "s.~%"))
+       ;; Assemble the event to return:
+       (event '(progn)) ; empty progn to be extended
+       ;;todo: should return a theorem about the term-or-dags!
+       ;; Table event for redundancy checking:
+       (event (extend-progn event `(with-output :off :all (table prove-equal-with-axe+-table ',whole-form ',event))))
+       ;; Arrange to print the miter name when the event is submitted:
+       (event (extend-progn event `(value-triple ',proof-name))))
+    (mv (erp-nil) event state)))
 
 ;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equal-with-axe, this supports all the exotic options to prove-with-axe.
 ;; Used in several loop examples.
