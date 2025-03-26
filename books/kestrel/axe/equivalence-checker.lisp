@@ -12070,25 +12070,25 @@
                                            nodenum
                                            miter-array-name miter-array miter-len
                                            var-type-alist print
-                                           interpreted-function-alist
-                                           rewriter-rule-alist
-                                           assumptions
-                                           monitored-symbols
+                                           ;; interpreted-function-alist
+                                           ;; rewriter-rule-alist
+                                           ;; assumptions
+                                           ;; monitored-symbols
                                            max-conflicts miter-name state)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp miter-array-name miter-array miter-len)
                               (< nodenum miter-len)
                               (var-type-alistp var-type-alist)
                               (print-levelp print)
-                              (interpreted-function-alistp interpreted-function-alist)
-                              (rule-alistp rewriter-rule-alist)
-                              (pseudo-term-listp assumptions)
-                              (symbol-listp monitored-symbols)
+                              ;; (interpreted-function-alistp interpreted-function-alist)
+                              ;; (rule-alistp rewriter-rule-alist)
+                              ;; (pseudo-term-listp assumptions)
+                              ;; (symbol-listp monitored-symbols)
                               (or (null max-conflicts) (natp max-conflicts))
                               (symbolp miter-name))
-                  :mode :program ; todo: because we call simplify-tree-and-add-to-dag-wrapper (try the basic rewriter?)
+;                  :mode :program ; todo: because we call simplify-tree-and-add-to-dag-wrapper (try the basic rewriter?)
                   :stobjs state)
-           (ignore assumptions interpreted-function-alist rewriter-rule-alist monitored-symbols)
+           ;; (ignore assumptions interpreted-function-alist rewriter-rule-alist monitored-symbols)
            )
   (b* (
        ;; ;; First try to simplify the equality of the node and the constant:
@@ -15636,7 +15636,9 @@
                         nil)))
          ;; Pure node:
          (mv-let (erp provedp state)
-           (try-to-prove-pure-node-is-constant constant-value nodenum miter-array-name miter-array miter-len var-type-alist print interpreted-function-alist rewriter-rule-alist assumptions monitored-symbols max-conflicts miter-name state)
+           (try-to-prove-pure-node-is-constant constant-value nodenum miter-array-name miter-array miter-len var-type-alist print
+                                               ;; interpreted-function-alist rewriter-rule-alist assumptions monitored-symbols
+                                               max-conflicts miter-name state)
            (if erp
                (mv erp nil analyzed-function-table rand state)
              (if provedp
@@ -17361,12 +17363,12 @@
 (defmacro prove-with-axe (&whole
                            whole-form
                            dag-or-quotep
-                           &KEY
+                           &key
                            (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                           (types 'nil)  ; derive from the assumptions?  also used when calling stp..
+                           (types 'nil)  ; gives types to the vars for the proofs
                            (interpreted-function-alist 'nil) ;affects soundness
-                           (test-types 'nil)
-                           (tests '100)
+                           (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
+                           (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                            (tactic ':rewrite-and-sweep)
                            (print 'nil)
                            (debug-nodes 'nil)
@@ -17708,10 +17710,10 @@
                                                                (phased-bv-axe-rule-sets state) wrld) ;todo: overkill?
                                      (mv (erp-nil) initial-rule-sets)))
        ((when erp) (mv erp nil state))
-       ;; Always add the extra rules:
+       ;; Always add the extra-rules:
        ((mv erp initial-rule-sets) (if initial-rule-sets
                                        (add-rules-to-rule-sets extra-rules initial-rule-sets wrld)
-                                     ;; special case: no initial-rule-sets, but extra rules are given (TODO: Think about this):
+                                     ;; special case: no initial-rule-sets, but extra-rules are given (TODO: Think about this):
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state))
        ;; Choose a name for the miter:
@@ -17786,7 +17788,7 @@
                                     dag-or-term2
                                     &key
                                     (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
-                                    (types 'nil) ;gives types to the vars for the proofs
+                                    (types 'nil) ; gives types to the vars for the proofs
                                     (interpreted-function-alist 'nil) ;affects soundness
                                     (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
                                     (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
