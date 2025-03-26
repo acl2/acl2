@@ -403,7 +403,7 @@
     (dirdeclor-case
      dirdeclor
      :ident dirdeclor.ident
-     :paren (declor->ident dirdeclor.unwrap)
+     :paren (declor->ident dirdeclor.inner)
      :array (dirdeclor->ident dirdeclor.decl)
      :array-static1 (dirdeclor->ident dirdeclor.decl)
      :array-static2 (dirdeclor->ident dirdeclor.decl)
