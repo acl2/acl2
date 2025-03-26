@@ -407,7 +407,7 @@
     (dirdeclor-case
      dirdeclor
      :ident (mv nil
-                (insert dirdeclor.unwrap (ident-set-fix bound-vars)))
+                (insert dirdeclor.ident (ident-set-fix bound-vars)))
      :paren (free-vars-declor dirdeclor.unwrap bound-vars)
      :array
      (b* ((free-vars0

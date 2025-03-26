@@ -18,6 +18,7 @@
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "std/lists/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -129,6 +130,23 @@
   (defret uchar-format->max-lower-bound
     (>= max 255)
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uchar-format-8 ()
+  :returns (format uchar-formatp)
+  :short "The @('unsigned char') format defined by 8 bits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and most common format for @('unsigned char')."))
+  (make-uchar-format :size 8)
+
+  ///
+
+  (defruled uchar-format->max-of-uchar-format-8
+    (equal (uchar-format->max (uchar-format-8))
+           255)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,6 +304,29 @@
     ((:linear
       :trigger-terms ((schar-format->min schar-format uchar-format))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-format-8tcnt ()
+  :returns (format schar-formatp)
+  :short "The @('signed char') format defined by
+          8 bits, two's complement, and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and most common format for @('signed char')."))
+  (make-schar-format :signed (signed-format-twos-complement)
+                     :trap nil)
+
+  ///
+
+  (defruled schar-format->max-of-schar-format-8tcnt
+    (equal (schar-format->max (schar-format-8tcnt) (uchar-format-8))
+           127))
+
+  (defruled schar-format->min-of-schar-format-8tcnt
+    (equal (schar-format->min (schar-format-8tcnt) (uchar-format-8))
+           -128)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod char-format
@@ -363,6 +404,32 @@
     ((:linear
       :trigger-terms
       ((char-format->min char-format uchar-format schar-format))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-format-8u ()
+  :returns (format char-formatp)
+  :short "The @('char') format defined by 8 bits and unsignedness."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest format of @('char').
+     It is not clear whether it is the most common or not."))
+  (make-char-format :signedp nil)
+
+  ///
+
+  (defruled char-format->max-of-char-format-8u
+    (equal (char-format->max (char-format-8u)
+                             (uchar-format-8)
+                             (schar-format-8tcnt))
+           255))
+
+  (defruled char-format->min-of-char-format-8u
+    (equal (char-format->min (char-format-8u)
+                             (uchar-format-8)
+                             (schar-format-8tcnt))
+           0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -442,7 +509,15 @@
         (uinteger-bit-roles-exponents (cdr roles))))
     (cons (uinteger-bit-role-value->exp role)
           (uinteger-bit-roles-exponents (cdr roles))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled uinteger-bit-roles-exponents-of-append
+    (equal (uinteger-bit-roles-exponents (append roles1 roles2))
+           (append (uinteger-bit-roles-exponents roles1)
+                   (uinteger-bit-roles-exponents roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,7 +536,15 @@
         (sinteger-bit-roles-exponents (cdr roles))))
     (cons (sinteger-bit-role-value->exp role)
           (sinteger-bit-roles-exponents (cdr roles))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-exponents-of-append
+    (equal (sinteger-bit-roles-exponents (append roles1 roles2))
+           (append (sinteger-bit-roles-exponents roles1)
+                   (sinteger-bit-roles-exponents roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
