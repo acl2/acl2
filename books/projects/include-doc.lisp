@@ -34,6 +34,7 @@
             :endif)
      (include-book "pfcs/top")
      (include-book "poseidon/top")
+     (include-book "aleo/top")
      (include-book "aleobft/top")
      (include-book "leo/top")
      (include-book "abnf/top")
