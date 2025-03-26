@@ -24,10 +24,10 @@
   (xdoc::topstring
    (xdoc::p
     "Yul is a programming language
-     that is being used as an intermediate language
+     used as an intermediate language
      in the compilation of "
     (xdoc::ahref "https://ethereum.org" "Ethereum")
-    " smart contracts written in in the Solidity language.
+    " smart contracts written in the Solidity language.
      However, Yul is designed to be more general than Solidity,
      and may find additional uses.")
    (xdoc::p
@@ -43,7 +43,7 @@
     ", precisely in the "
     (xdoc::ahref "https://docs.soliditylang.org/en/latest/yul.html"
                  "`Yul' section")
-    ". However, since Yul is designed to be more general than Solidity.")
+    ".")
    (xdoc::p
     "In the documentation of this ACL2 library,
      the Yul documentation (part of the Solidity documentation)
