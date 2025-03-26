@@ -266,7 +266,7 @@
 ;;                 (consp x))
 ;;            (<= 0 (maxelem x)))))
 
-;FIXME: Some functions in this file should call remove-temp-dir (think about exactly which ones)
+;FIXME: Some functions in this file should call remove-temp-dir (think about exactly which ones), ideally using acl2-unwind-protect as well
 
 ;;;
 ;;; unify-tree-with-any-dag-node-no-wrap
