@@ -158,7 +158,6 @@
     :in-theory (enable set::cardinality
                        pos-fix
                        cert-set->round-set-monotone
-                       emptyp-of-cert-set->round-set
                        certificate->round-in-cert-set->round-set)
     :use
     ((:instance acl2::pos-set-max->=-element
@@ -180,7 +179,6 @@
                        acl2::pos-set->=-pos-element
                        acl2::pos-set->=-pos-subset
                        cert-set->round-set-monotone
-                       emptyp-of-cert-set->round-set
                        certificate->round-in-cert-set->round-set)
     :use
     (:instance
@@ -473,7 +471,6 @@
        :induct t
        :enable (cert-set->round-set
                 cert-set->round-set-of-insert
-                emptyp-of-cert-set->round-set
                 set::expensive-rules)
        :hints ('(:use (:instance set::emptyp-when-proper-subset-of-singleton
                                  (x (cert-set->round-set (tail certs)))
@@ -860,8 +857,7 @@
                              (dag-rounds-in-committees-p-witness
                               dag blocks all-vals)
                              dag)))))
-    :in-theory (e/d (emptyp-of-cert-set->author-set
-                     in-of-certificates-with-round)
+    :in-theory (e/d (in-of-certificates-with-round)
                     (set::in-head)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

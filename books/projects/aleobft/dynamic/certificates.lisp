@@ -151,7 +151,7 @@
 
   ///
 
-  (defruled emptyp-of-cert-set->author-set
+  (defrule emptyp-of-cert-set->author-set
     (equal (set::emptyp (cert-set->author-set certs))
            (set::emptyp certs))
     :induct t)
@@ -210,7 +210,7 @@
 
   ///
 
-  (defruled emptyp-of-cert-set->round-set
+  (defrule emptyp-of-cert-set->round-set
     (equal (set::emptyp (cert-set->round-set certs))
            (set::emptyp certs))
     :induct t)

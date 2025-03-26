@@ -408,8 +408,7 @@
                                                   dag1))))
      :enable (successors-subset-of-next-round
               cert-set->author-set-monotone
-              set::expensive-rules
-              emptyp-of-cert-set->author-set)
+              set::expensive-rules)
      :disable set::emptyp-subset-2)
 
    (defruled lemma2
@@ -432,8 +431,7 @@
                                                   dag2))))
      :enable (predecessors-subset-of-previous-round
               cert-set->author-set-monotone
-              set::expensive-rules
-              emptyp-of-cert-set->author-set)
+              set::expensive-rules)
      :disable set::emptyp-subset-2)
 
    (defruled lemma3

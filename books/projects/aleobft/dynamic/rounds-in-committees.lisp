@@ -189,7 +189,6 @@
            (rounds-in-committees-p systate))
   :enable (rounds-in-committees-p
            dag-rounds-in-committees-p
-           emptyp-of-cert-set->author-set
            authors-in-committee-when-signer-quorum-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
