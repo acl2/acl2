@@ -17855,7 +17855,7 @@
          (local "whether to make the generated events local"))
   :description ("If the call to @('prove-equal-with-axe') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."
                 "Usually, the two items (DAGs or terms) have the same set of free variables."
-                "See also prove-equiality, for a variant that supports more exotic options."))
+                "See also @('prove-equal-with-axe+'), for a variant that supports more exotic options."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
