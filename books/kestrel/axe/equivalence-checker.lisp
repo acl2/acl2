@@ -16925,12 +16925,12 @@
 (defun prove-with-axe-core (dag-or-quotep
                             assumptions ; (untranslated) terms we can assume are true (non-nil)
                             types ;compute this from the hyps?  well, it can contain :range guidance for test case generation...
+                            user-interpreted-function-alist ;todo: just pass in the fn names and look them up in the state?
                             test-types
                             test-case-count
                             tactic ;the total number of tests to generate?  some may not be used
                             print
                             debug-nodes
-                            user-interpreted-function-alist ;todo: just pass in the fn names and look them up in the state?
                             ;; ttodo: allow the use of rule phases?!
                             runes          ;used for both the rewriter and prover
                             rules          ;used for both the rewriter and prover
@@ -16961,6 +16961,7 @@
                                        (not (assoc-eq nil types)) ;consider relaxing this?
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
+                              (interpreted-function-alistp user-interpreted-function-alist)
                               (test-case-type-alistp test-types)
                               (or (eq tactic :rewrite)
                                   (eq tactic :rewrite-and-sweep))
@@ -16968,7 +16969,6 @@
                               (print-levelp print)
                               (nat-listp debug-nodes)
                               (all-< debug-nodes (if (quotep dag-or-quotep) 0 (+ 1 (top-nodenum dag-or-quotep)))) ; all < the len
-                              (interpreted-function-alistp user-interpreted-function-alist)
                               (symbol-listp runes)
                               (axe-rule-listp rules)
                               (symbol-listp rewriter-runes)
@@ -17219,12 +17219,12 @@
 (defun prove-with-axe-fn (dag-or-quotep
                           assumptions ; (untranslated) terms we can assume are true (non-nil)
                           types  ;compute this from the hyps
+                          interpreted-function-alist
                           test-types
                           tests ;the total number of tests to generate?  some may not be used
                           tactic
                           print
-                          debug-nodes ;do we use this?
-                          interpreted-function-alist
+                          debug-nodes
                           ;; todo: allow the use of rule phases?!
                           runes          ;used for both the rewriter and prover
                           rules          ;used for both the rewriter and prover
@@ -17248,9 +17248,6 @@
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (true-listp assumptions) ; untranslated
-                              (natp tests)
-                              (or (eq tactic :rewrite)
-                                  (eq tactic :rewrite-and-sweep))
                               (or (eq :bits types)
                                   (eq :bytes types)
                                   (and (var-type-alistp types)
@@ -17258,27 +17255,42 @@
                                        (not (assoc-eq nil types)) ;consider relaxing this?
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
+                              (interpreted-function-alistp interpreted-function-alist)
                               (test-case-type-alistp test-types)
-                              (if (extra-stuff-okayp extra-stuff)
-                                  t
-                                (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff)
-                                        nil))
-                              (symbol-listp monitored-symbols)
+                              (natp tests)
+                              (or (eq tactic :rewrite)
+                                  (eq tactic :rewrite-and-sweep))
+                              (print-levelp print)
+                              (nat-listp debug-nodes)
+                              (all-< debug-nodes (if (quotep dag-or-quotep) 0 (+ 1 (top-nodenum dag-or-quotep)))) ; all < the len
                               (symbol-listp runes)
+                              (axe-rule-listp rules)
                               (symbol-listp rewriter-runes)
                               (symbol-listp prover-runes)
-                              (axe-rule-listp rules)
                               (axe-rule-listp initial-rule-set)
                               (all-axe-rule-listp initial-rule-sets)
+                              (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
+                              (booleanp pre-simplifyp)
+                              (if (extra-stuff-okayp extra-stuff)
+                                  t
+                                (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff) ;drop?
+                                        nil))
+                              (booleanp specialize-fnsp)
+                              (symbol-listp monitored-symbols)
+                              (booleanp use-context-when-miteringp)
+                              (or (null random-seed)
+                                  (natp random-seed))
                               ;;:unroll is either a list of function names to unroll (can be empty), or :all
                               (or (eq :all unroll)
                                   (symbol-listp unroll))
-                              (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
+                              (natp tests-per-case)
                               (or (eq :auto max-conflicts)
                                   (null max-conflicts)
                                   (natp max-conflicts))
-                              (symbolp proof-name)
-                              (member-eq keep-temp-dir '(t nil :auto)))
+                              (booleanp normalize-xors)
+                              (booleanp prove-constants)
+                              (member-eq keep-temp-dir '(t nil :auto))
+                              (symbolp proof-name))
                   :mode :program
                   :stobjs state))
   (b* (;; Handle redundant invocation:
@@ -17291,12 +17303,12 @@
         (prove-with-axe-core dag-or-quotep
                              assumptions
                              types ;compute this from the hyps?
+                             interpreted-function-alist
                              test-types
                              tests
                              tactic
                              print
                              debug-nodes ;do we use this?
-                             interpreted-function-alist
                              ;; todo: allow the use of rule phases?!
                              runes      ;used for both the rewriter and prover
                              rules      ;used for both the rewriter and prover
@@ -17341,13 +17353,12 @@
                            &KEY
                            (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
                            (types 'nil)  ; derive from the assumptions?  also used when calling stp..
+                           (interpreted-function-alist 'nil) ;affects soundness
                            (test-types 'nil)
                            (tests '100)
                            (tactic ':rewrite-and-sweep)
-                           (tests-per-case '512)
                            (print 'nil)
                            (debug-nodes 'nil)
-                           (interpreted-function-alist 'nil) ;affects soundness
                            (runes 'nil) ;used for both the rewriter and prover, affects soundness
                            (rules 'nil) ;used for both the rewriter and prover, affects soundness
                            (rewriter-runes 'nil) ;used for the rewriter only (not the prover), affects soundness
@@ -17361,6 +17372,7 @@
                            (use-context-when-miteringp 'nil) ;fffixme may cause huge blowups!  why? because memoization gets turned off?
                            (random-seed 'nil)
                            (unroll 'nil) ;fixme make :all the default (or should we use t instead of all?)
+                           (tests-per-case '512)
                            (max-conflicts ':auto) ;initial value to use for max-conflicts (may be increased when there's nothing else to do), nil would mean don't use max-conflicts
                            (normalize-xors 't)
                            (prove-constants 't) ;whether to attempt to prove probably-constant nodes
@@ -17371,8 +17383,8 @@
   `(make-event
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-with-axe"
-       (prove-with-axe-fn ,dag-or-quotep ,assumptions ,types ,test-types
-                          ,tests ,tactic ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+       (prove-with-axe-fn ,dag-or-quotep ,assumptions ,types ,interpreted-function-alist ,test-types
+                          ,tests ,tactic ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes
                           ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                           ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
                           ,proof-name ',whole-form state)
@@ -17381,8 +17393,8 @@
        ;; ;; suggested by MK:
        ;; (mv-let (erp val state)
        ;;   (trans-eval-no-warning '(prove-with-axe-fn
-       ;;                            ,dag-or-quotep ,assumptions ,types ,test-types
-       ;;                            ,tests ,tactic ,print ,debug-nodes ,interpreted-function-alist ,runes ,rules ,rewriter-runes ,prover-runes
+       ;;                            ,dag-or-quotep ,assumptions ,types ,interpreted-function-alist ,test-types
+       ;;                            ,tests ,tactic ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes
        ;;                            ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
        ;;                            ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
        ;;                            ,proof-name ',whole-form state)
@@ -17412,11 +17424,12 @@
                                  dag-or-term2
                                  assumptions ; (untranslated) terms we can assume are true (non-nil)
                                  types  ;todo: compute the types from the hyps?
+                                 interpreted-function-alist
                                  test-types
                                  tests
                                  tactic
                                  ;; todo: standardize argument order:
-                                 tests-per-case print debug-nodes interpreted-function-alist check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
+                                 tests-per-case print debug-nodes check-vars runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets pre-simplifyp extra-stuff specialize-fnsp monitor use-context-when-miteringp
                                  random-seed unroll max-conflicts normalize-xors prove-constants keep-temp-dir
                                  proof-name whole-form state)
   (declare (xargs :guard (and (true-listp assumptions) ; untranslated
@@ -17427,6 +17440,7 @@
                                        (not (assoc-eq nil types)) ;consider relaxing this?
                                        (not (assoc-eq t types)) ;consider relaxing this?
                                        ))
+                              (interpreted-function-alistp interpreted-function-alist)
                               (test-case-type-alistp test-types)
                               (natp tests)
                               (or (eq tactic :rewrite)
@@ -17460,12 +17474,12 @@
         (prove-with-axe-core equality-dag-or-quotep
                              assumptions
                              types
+                             interpreted-function-alist
                              test-types
                              tests
                              tactic
                              print
                              debug-nodes ;do we use this?
-                             interpreted-function-alist
                              ;; todo: allow the use of rule phases?!
                              runes      ;used for both the rewriter and prover
                              rules      ;used for both the rewriter and prover
@@ -17508,13 +17522,13 @@
                                   &KEY
                                   (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
                                   (types 'nil)
+                                  (interpreted-function-alist 'nil) ;affects soundness
                                   (test-types 'nil)
                                   (tests '100)
                                   (tactic ':rewrite-and-sweep)
                                   (tests-per-case '512)
                                   (print 'nil)
                                   (debug-nodes 'nil)
-                                  (interpreted-function-alist 'nil) ;affects soundness
                                   (check-vars 't)
                                   (runes 'nil) ;used for both the rewriter and prover, affects soundness
                                   (rules 'nil) ;used for both the rewriter and prover, affects soundness
@@ -17539,8 +17553,8 @@
        "acl2-unwind-protect for prove-equal-with-axe+"
        (prove-equal-with-axe+-fn ,dag-or-term1
                                  ,dag-or-term2
-                                 ,assumptions ,types ,test-types ,tests ,tactic
-                                 ,tests-per-case ,print ,debug-nodes ,interpreted-function-alist ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                                 ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
+                                 ,tests-per-case ,print ,debug-nodes ,check-vars ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                                  ,random-seed ,unroll ,max-conflicts ,normalize-xors ,prove-constants ,keep-temp-dir
                                  ,proof-name ',whole-form state)
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
@@ -17559,6 +17573,7 @@
                                 dag-or-term2
                                 assumptions ; (untranslated) terms we can assume are true (non-nil)
                                 types
+                                interpreted-function-alist
                                 test-types
                                 tests ;a natp indicating how many tests to run
                                 tactic
@@ -17568,7 +17583,6 @@
                                 monitor
                                 use-context-when-miteringp
                                 normalize-xors
-                                interpreted-function-alist
                                 check-vars
                                 prove-theorem
                                 keep-temp-dir
@@ -17586,6 +17600,7 @@
                                     (not (assoc-eq nil types)) ;consider relaxing this?
                                     (not (assoc-eq t types)) ;consider relaxing this?
                                     ))
+                           (interpreted-function-alistp interpreted-function-alist)
                            (test-case-type-alistp test-types)
                            (natp tests)
                            (or (eq tactic :rewrite)
@@ -17601,7 +17616,7 @@
                            (symbol-listp monitor)
                            (booleanp use-context-when-miteringp)
                            (booleanp normalize-xors)
-                           (interpreted-function-alistp interpreted-function-alist)
+
                            (member-eq check-vars '(t nil :warn))
                            (booleanp prove-theorem)
                            (member-eq keep-temp-dir '(t nil :auto))
@@ -17647,12 +17662,12 @@
         (prove-with-axe-core equality-dag-or-quotep
                              assumptions
                              types
+                             interpreted-function-alist
                              test-types
                              tests ; number of tests to run
                              tactic
                              print
                              debug-nodes
-                             interpreted-function-alist
                              nil ;runes
                              nil ;rules
                              nil ;rewriter-runes
@@ -17711,6 +17726,7 @@
                                     &key
                                     (assumptions 'nil) ; (untranslated) terms we can assume are true (non-nil)
                                     (types 'nil) ;gives types to the vars for the proofs
+                                    (interpreted-function-alist 'nil) ;affects soundness
                                     (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
                                     (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                                     (tactic ':rewrite-and-sweep)
@@ -17722,7 +17738,6 @@
                                     (monitor 'nil)
                                     (use-context-when-miteringp 'nil) ;todo: try t
                                     (normalize-xors 't)
-                                    (interpreted-function-alist 'nil) ;affects soundness
                                     (check-vars 't)
                                     (prove-theorem 'nil) ; very rarely used
                                     (keep-temp-dir ':auto)
@@ -17732,27 +17747,9 @@
   `(make-event-quiet
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-equal-with-axe"
-       (prove-equal-with-axe-fn ,dag-or-term1
-                                ,dag-or-term2
-                                ,assumptions
-                                ,types
-                                ,test-types
-                                ,tests
-                                ,tactic
-                                ,print
-                                ,debug-nodes
-                                ,max-conflicts
-                                ,extra-rules
-                                ,initial-rule-sets
-                                ,monitor
-                                ,use-context-when-miteringp
-                                ,normalize-xors
-                                ,interpreted-function-alist
-                                ,check-vars
-                                ,prove-theorem
-                                ,keep-temp-dir
-                                ,local
-                                ,proof-name ',whole-form state)
+       (prove-equal-with-axe-fn ,dag-or-term1 ,dag-or-term2 ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
+                                ,print ,debug-nodes ,max-conflicts ,extra-rules ,initial-rule-sets ,monitor ,use-context-when-miteringp
+                                ,normalize-xors ,check-vars ,prove-theorem ,keep-temp-dir ,local ,proof-name ',whole-form state)
        ;; The acl2-unwind-protect ensures that this is called if the user interrupts:
        ;; Remove the temp-dir (usually):
        (maybe-remove-temp-dir2 ,keep-temp-dir nil t state)
@@ -17763,7 +17760,8 @@
   :args ((dag-or-term1 "The first DAG or term to compare")
          (dag-or-term2 "The second DAG or term to compare")
          (assumptions "Assumptions to use when proving equivalence, a list of terms (not necessarily translated).  The proof is done assuming all of the :assumptions are non-nil.")
-         (types "A var-type-alist (alist mapping variables to their axe-types), or one of the special values :bits or :bytes.  Entries in this alist can be overridden for testing purposes by the :test-types option.")
+         (types "A var-type-alist (alist mapping variables to their axe-types), or one of the special values :bits or :bytes.  The proof is done assuming the variables have their associated types.  Entries in this alist can be overridden for testing purposes by the :test-types option.")
+         (interpreted-function-alist "Provides definitions for non-built-in functions.  An alist mapping function symbols to their bodies.")
          (test-types "Overrides of the :types for use in the testing that identifies probable facts for sweeping-and-merging (example, to restrict the length of arrays).")
          (tests "How many tests to use to find internal equivalences (a natp)")
          (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
@@ -17775,7 +17773,6 @@
          (monitor "Rule names (symbols) to monitor when rewriting")
          (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")
          (normalize-xors "Whether to normalize XOR nests when simplifying")
-         (interpreted-function-alist "Provides definitions for non-built-in functions")
          (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
          (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
          (keep-temp-dir "Whether to keep the directory with temp files in place, for debugging.  If :auto, the temp-dir is kept whenever there is an error.")
