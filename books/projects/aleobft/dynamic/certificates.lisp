@@ -148,6 +148,7 @@
         (t (set::insert (certificate->author (set::head certs))
                         (cert-set->author-set (set::tail certs)))))
   :verify-guards :after-returns
+
   ///
 
   (defruled emptyp-of-cert-set->author-set
@@ -206,7 +207,13 @@
         (t (set::insert (certificate->round (set::head certs))
                         (cert-set->round-set (set::tail certs)))))
   :verify-guards :after-returns
+
   ///
+
+  (defruled emptyp-of-cert-set->round-set
+    (equal (set::emptyp (cert-set->round-set certs))
+           (set::emptyp certs))
+    :induct t)
 
   (defruled certificate->round-in-cert-set->round-set
     (implies (set::in cert certs)
@@ -229,11 +236,6 @@
     :induct t
     :enable (set::union
              cert-set->round-set-of-insert))
-
-  (defruled emptyp-of-cert-set->round-set
-    (equal (set::emptyp (cert-set->round-set certs))
-           (set::emptyp certs))
-    :induct t)
 
   (defruled cert-set->round-set-monotone
     (implies (set::subset certs1 certs2)
