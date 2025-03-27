@@ -227,6 +227,14 @@
                       (cert-set->round-set certs)))
     :induct t)
 
+  (defruled cert-set->round-set-monotone
+    (implies (set::subset certs1 certs2)
+             (set::subset (cert-set->round-set certs1)
+                          (cert-set->round-set certs2)))
+    :induct t
+    :enable (set::subset
+             certificate->round-in-cert-set->round-set))
+
   (defruled cert-set->round-set-of-insert
     (equal (cert-set->round-set (set::insert cert certs))
            (set::insert (certificate->round cert)
@@ -242,14 +250,6 @@
     :induct t
     :enable (set::union
              cert-set->round-set-of-insert))
-
-  (defruled cert-set->round-set-monotone
-    (implies (set::subset certs1 certs2)
-             (set::subset (cert-set->round-set certs1)
-                          (cert-set->round-set certs2)))
-    :induct t
-    :enable (set::subset
-             certificate->round-in-cert-set->round-set))
 
   (defruled same-certificate-round-when-cardinality-leq-1
     (implies (and (<= (set::cardinality (cert-set->round-set certs)) 1)
