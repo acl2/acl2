@@ -1985,6 +1985,7 @@
 
 ; despite the name, this also includes bv-array-rules and list rules!
 ;; TODO: Remove non-bv stuff from this:
+;; TODO: Consider removing the trim-rules from this, as they can cause blowup and perhaps also obscure rotate patterns
 (defun amazing-rules-bv ()
   (declare (xargs :guard t))
   (append (bvplus-rules) ; todo: maybe drop, as these are bad for md5, for example
@@ -4021,8 +4022,9 @@
            ;;                      ))
            ;; (unsigned-byte-p-forced-rules)
            )
-   ;; can lead to blowup in lifting md5:
-   (bvplus-rules)))
+   (append (bvplus-rules) ;; can lead to blowup in lifting md5
+           (trim-rules) ;; can make things a lot bigger?
+           )))
 
 ;outside-in rules.  Only used in rewriter-alt.lisp.
 (defun oi-rules ()
