@@ -199,8 +199,7 @@
              (equal (set::emptyp (certificates-with-author author certs))
                     (not (set::in author (cert-set->author-set certs)))))
     :induct t
-    :enable (cert-set->author-set
-             emptyp-of-certificate-set-fix))
+    :enable cert-set->author-set)
 
   (defruled certificates-with-author-of-intersect
     (implies (and (certificate-setp certs1)
