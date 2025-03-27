@@ -93,6 +93,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define join-filepath
+  ((x filepathp)
+   (y filepathp))
+  :returns (filepath filepathp)
+  (b* (((filepath x) x)
+       ((filepath y) y)
+       (x-str (if (stringp x.unwrap)
+                  x.unwrap
+                ""))
+       (y-str (if (stringp y.unwrap)
+                  y.unwrap
+                "")))
+    ;; TODO: avoid redundant slashes
+    (filepath (concatenate 'string x-str "/" y-str))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define preprocess-file
   ((file filepathp
          "The C file to preprocess.")
@@ -224,11 +241,15 @@
   ((files filepath-setp
           "The set of C files to preprocess.")
    &key
+   ((path stringp
+          "The base path to which @('files') are relative. By default, the
+           value is @('\".\"') (the current working directory).")
+    '".")
    ((out-dir (or (not out-dir)
                  (stringp out-dir))
              "This specifies the directory that preprocessed output files are
-              saved to with posfix @('\".i\"'). If @('nil'), temporary files will be
-              created (see @(see oslib::tempfile)).")
+              saved to with posfix @('\".i\"'). If @('nil'), temporary files
+              will be created (see @(see oslib::tempfile)).")
     'nil)
    ((save "If @('t'), the output files are saved. If @('nil'), the files are
            removed after reading them in. If @(':auto'), the default value,
@@ -271,7 +292,7 @@
                                      filename
                                      ".i")))))
        ((erp - filedata state)
-        (preprocess-file (head files)
+        (preprocess-file (join-filepath (filepath path) (head files))
                          :out out
                          :save save
                          :preprocessor preprocessor
@@ -279,6 +300,7 @@
                          :state state))
        ((erp (fileset fileset) state)
         (preprocess-files (rest files)
+                          :path path
                           :out-dir out-dir
                           :save save
                           :preprocessor preprocessor

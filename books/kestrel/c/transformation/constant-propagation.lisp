@@ -1222,7 +1222,7 @@
         dirdeclor
         :ident (mv (dirdeclor-fix dirdeclor) env)
         :paren (b* (((mv unwrap env)
-                     (const-prop-declor dirdeclor.unwrap env)))
+                     (const-prop-declor dirdeclor.inner env)))
                  (mv (dirdeclor-paren unwrap) env))
         :array (b* (((mv decl env)
                      (const-prop-dirdeclor dirdeclor.decl env))
