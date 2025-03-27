@@ -94,4 +94,8 @@
      but we use the unqualified `grammar' to denote the new grammar,
      except in a few cases when talking about both new and old grammar.
      We qualify the old grammar with `old'."))
-  :order-subtopics t)
+  :order-subtopics (grammar
+                    grammar-old
+                    lexer
+                    tokenizer
+                    parser))
