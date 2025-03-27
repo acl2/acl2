@@ -187,7 +187,7 @@
                   (certificate-setp certs2))
              (equal (cert-set->author-set (set::union certs1 certs2))
                     (set::union (cert-set->author-set certs1)
-                                (cert-set->author-set (set::sfix certs2)))))
+                                (cert-set->author-set certs2))))
     :induct t
     :enable (set::union
              cert-set->author-set-of-insert))
