@@ -47,7 +47,7 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system))
+(local (include-book "kestrel/bv/arith" :dir :system)) ; todo: drop
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -1166,25 +1166,11 @@
          (not (equal 0 (acl2::getbit 255 x))))
   :hints (("Goal" :in-theory (enable acl2::logext-cases))))
 
-(defthm equal-of-unary--and-constant
-  (implies (syntaxp (quotep k))
-           (equal (equal k (- x))
-                  (and (acl2-numberp k)
-                       (equal (fix x) (- k))))))
-
-(defthm equal-of-constant-and-unary-
-  (implies (syntaxp (quotep k))
-           (equal (< k (- x))
-                  (< x (- k))))
-  :rule-classes ((:rewrite :loop-stopper nil)))
-
-
 ;; (thm
 ;;  (implies (and (unsigned-byte-p 256 x)
 ;;                (not (equal 0 x)))
 ;;           (equal (< 0 (BVCHOP '255 x))
 ;;                  (not (equal
-
 
 (defthm logext-negative-type
   (implies (EQUAL (ACL2::GETBIT 255 x) 1)
