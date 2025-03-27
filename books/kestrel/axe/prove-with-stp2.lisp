@@ -217,23 +217,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This currently does no cutting.
+;; This currently does no cutting.  Assumes the node is pure.
 ;; Returns (mv result state) where result is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-(defund prove-node-is-constant-with-stp (nodenum constant-value
-                                                 miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state)
+(defund prove-node-is-constant-with-stp (nodenum
+                                         constant-value
+                                         dag-array-name dag-array dag-len
+                                         var-type-alist
+                                         print
+                                         max-conflicts
+                                         proof-name
+                                         state)
   (declare (xargs :guard (and (natp nodenum)
-                              (pseudo-dag-arrayp miter-array-name miter-array miter-len)
-                              (< nodenum miter-len)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< nodenum dag-len)
+                              ;; constant-value can be any pure value?
                               (var-type-alistp var-type-alist)
                               (print-levelp print)
                               (or (null max-conflicts) (natp max-conflicts))
-                              (symbolp miter-name))
+                              (symbolp proof-name))
                   :stobjs state))
   (b* ((needed-for-node1-tag-array (make-empty-array 'needed-for-node1-tag-array (+ 1 nodenum))) ; todo: rename the array
        (needed-for-node1-tag-array (aset1 'needed-for-node1-tag-array needed-for-node1-tag-array nodenum t))
        ;; Choose which nodes to translate (no cutting):
        ((mv erp nodenums-to-translate cut-nodenum-type-alist)
-        (gather-nodes-for-translation nodenum miter-array-name miter-array miter-len var-type-alist needed-for-node1-tag-array nil nil))
+        (gather-nodes-for-translation nodenum dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array nil nil))
        ((when (not (consp nodenums-to-translate))) ; todo: can this happen?  should this be an error or a failure? can the node be a constant node?  a var?
         (cw "ERROR: No nodes to translate.")
         (mv *error* state))
@@ -242,17 +249,17 @@
        ;; Call STP on the proof obligation without replacement:
        ((mv result state)
         (prove-equality-with-stp (enquote constant-value)
-                                       nodenum
-                                       miter-array-name miter-array miter-len
-                                       nodenums-to-translate
-                                       (concatenate 'string (symbol-name miter-name) "-CONSTANT-" (nat-to-string nodenum))
-                                       cut-nodenum-type-alist
-                                       nil ;extra-asserts ;fixme
-                                       print
-                                       max-conflicts
-                                       nil ;no counterexample (for now)
-                                       nil ; print-cex-as-signedp (irrelevant?)
-                                       state)))
+                                 nodenum
+                                 dag-array-name dag-array dag-len
+                                 nodenums-to-translate
+                                 (concatenate 'string (symbol-name proof-name) "-CONSTANT-" (nat-to-string nodenum))
+                                 cut-nodenum-type-alist
+                                 nil ;extra-asserts ;todo
+                                 print
+                                 max-conflicts
+                                 nil ;no counterexample (for now)
+                                 nil ; print-cex-as-signedp (irrelevant?)
+                                 state)))
     (if (eq *error* result)
         (prog2$ (er hard? 'prove-node-is-constant-with-stp "Error calling STP.")
                 (mv result state))
@@ -488,7 +495,7 @@
                                                 dag-array ;this is the miter-array
                                                 dag-len
                                                 var-type-alist ;gives types to the variables in the dag (are these really needed? maybe not if we use induced types?)
-                                                print max-conflicts miter-name
+                                                print max-conflicts proof-name
                                                 state)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
@@ -499,7 +506,7 @@
                               (var-type-alistp var-type-alist)
                               (print-levelp print) ; tighter?
                               (or (null max-conflicts) (natp max-conflicts))
-                              (symbolp miter-name))
+                              (symbolp proof-name))
                   :stobjs state))
   (b* ((- (and print (cw " (Cutting at shared nodes...")))
        (num-nodes-to-consider (+ 1 larger-nodenum))
@@ -541,7 +548,7 @@
        ((mv result state)
         (prove-equality-with-stp smaller-nodenum larger-nodenum dag-array-name dag-array dag-len
                                  nodenums-to-translate
-                                 (n-string-append (symbol-name miter-name) ;use concatenate? ;todo: pass the miter-name as a string throughout?
+                                 (n-string-append (symbol-name proof-name) ;use concatenate? ;todo: pass the proof-name as a string throughout?
                                                   "-"
                                                   (nat-to-string smaller-nodenum)
                                                   "="
@@ -576,8 +583,8 @@
                   (var-type-alistp var-type-alist)
                   (print-levelp print) ; tighter?
                   ;; (natp max-conflicts) ; allow nil?
-                  (symbolp miter-name))
-             (nat-listp (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))))
+                  (symbolp proof-name))
+             (nat-listp (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts proof-name state))))
     :hints (("Goal" :in-theory (enable try-aggressively-cut-equivalence-proof)))))
 
 (local
@@ -591,8 +598,8 @@
                   (var-type-alistp var-type-alist)
                   (print-levelp print) ; tighter?
                   ;; (natp max-conflicts) ; allow nil?
-                  (symbolp miter-name))
-             (all-< (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
+                  (symbolp proof-name))
+             (all-< (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts proof-name state))
                     (+ 1 larger-nodenum)))
     :hints (("Goal" :in-theory (enable try-aggressively-cut-equivalence-proof)))))
 
@@ -607,8 +614,8 @@
 ;;                 (var-type-alistp var-type-alist)
 ;;                 (print-levelp print) ; tighter?
 ;;                 ;; (natp max-conflicts) ; allow nil?
-;;                 (symbolp miter-name))
-;;            (all-< (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts miter-name state))
+;;                 (symbolp proof-name))
+;;            (all-< (mv-nth 2 (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum dag-array-name dag-array dag-len var-type-alist print max-conflicts proof-name state))
 ;;                   bound))
 ;;   :hints (("Goal" :use all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof
 ;;            :in-theory (disable all-<-of-mv-nth-2-of-try-aggressively-cut-equivalence-proof))))
@@ -918,7 +925,7 @@
                                                larger-nodenum ; could one of these have been replaced by a constant?
                                                miter-array-name miter-array miter-len
                                                var-type-alist
-                                               print max-conflicts miter-name state)
+                                               print max-conflicts proof-name state)
   (declare (xargs :guard (and (natp smaller-nodenum)
                               (natp larger-nodenum)
                               (<= smaller-nodenum larger-nodenum)
@@ -928,7 +935,7 @@
                               (var-type-alistp var-type-alist)
                               (print-levelp print) ; tighten?
                               (or (null max-conflicts) (natp max-conflicts))
-                              (symbolp miter-name))
+                              (symbolp proof-name))
                   :guard-hints (("Goal"
                                  :use (:instance natp-of-max-array-elem2-when-depth-arrayp
                                                  (indices (MV-NTH 2
@@ -936,7 +943,7 @@
                                                                     SMALLER-NODENUM
                                                                     LARGER-NODENUM MITER-ARRAY-NAME
                                                                     MITER-ARRAY MITER-LEN VAR-TYPE-ALIST
-                                                                    PRINT MAX-CONFLICTS MITER-NAME STATE)))
+                                                                    PRINT MAX-CONFLICTS PROOF-NAME STATE)))
                                                  (current-max 0)
                                                  (array-name 'DEPTH-ARRAY)
                                                  (array (MV-NTH 0
@@ -955,7 +962,7 @@
             provedp
             nodenums-translated ;below we check these to determine the depth of the deepest translated node
             state)
-        (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts miter-name state))
+        (try-aggressively-cut-equivalence-proof smaller-nodenum larger-nodenum miter-array-name miter-array miter-len var-type-alist print max-conflicts proof-name state))
        ;; todo: can the aggressively cut proof return a non-spurious counterexample?  if so, don't bother with the rest of this function
        ((when erp)
         (cw "  ERROR.)~%")
@@ -989,7 +996,7 @@
                                     miter-len
                                     var-type-alist
                                     print max-conflicts
-                                    (n-string-append (symbol-name miter-name)
+                                    (n-string-append (symbol-name proof-name)
                                                      "-"
                                                      (nat-to-string smaller-nodenum)
                                                      "="
