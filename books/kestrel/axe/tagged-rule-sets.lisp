@@ -40,6 +40,8 @@
              nil)))))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Recognizes a true-list of tagged-rule-sets (e.g., to be used in sequence for
+;; several calls to a rewriter).
 (defund tagged-rule-setsp (tagged-rule-sets)
   (declare (xargs :guard t))
   (if (atom tagged-rule-sets)
@@ -58,8 +60,9 @@
 ;; Throws an error if anything is ill-formed, or if rules are supplied in
 ;; multiple ways.  Returns a boolean indicating whether everything is ok, but
 ;; the main consideration is whether this throws an error.
+;; todo: allow giving a list of lists of rule-names?
 (defund ensure-rules-etc-ok (ctx rules rule-alist rule-alists)
-  (declare (xargs :guard (symbolp ctx))) ;todo: strengthen
+  (declare (xargs :guard (symbolp ctx))) ; strengthen?
   (b* (((when (not (or (eq :none rules)
                        (symbol-listp rules))))
         (er hard? ctx "ERROR: Bad :rules given!"))
@@ -87,6 +90,7 @@
 ;; RULE-ALISTS should be a value other than :none.
 ;; TODO: Relax the restruction on :none?
 ;; TODO: Avoid returning an erp.
+;; todo: allow giving a list of lists of rule-names?
 (defund make-tagged-rule-sets (rules rule-alist rule-alists)
   (declare (xargs :guard (and (or (eq :none rules)
                                   (symbol-listp rules))
