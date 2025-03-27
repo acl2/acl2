@@ -162,6 +162,14 @@
                       (cert-set->author-set certs)))
     :induct t)
 
+  (defruled cert-set->author-set-monotone
+    (implies (set::subset certs1 certs2)
+             (set::subset (cert-set->author-set certs1)
+                          (cert-set->author-set certs2)))
+    :induct t
+    :enable (set::subset
+             certificate->author-in-cert-set->author-set))
+
   (defruled cert-set->author-set-of-insert
     (equal (cert-set->author-set (set::insert cert certs))
            (set::insert (certificate->author cert)
@@ -177,14 +185,6 @@
     :induct t
     :enable (set::union
              cert-set->author-set-of-insert))
-
-  (defruled cert-set->author-set-monotone
-    (implies (set::subset certs1 certs2)
-             (set::subset (cert-set->author-set certs1)
-                          (cert-set->author-set certs2)))
-    :induct t
-    :enable (set::subset
-             certificate->author-in-cert-set->author-set))
 
   (defruled same-certificate-author-when-cardinality-leq-1
     (implies (and (<= (set::cardinality (cert-set->author-set certs)) 1)
