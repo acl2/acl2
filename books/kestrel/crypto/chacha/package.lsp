@@ -13,6 +13,7 @@
 (defpkg "CHACHA"
   (append '(bvplus
             bvxor
+            slice
             leftrotate
             unsigned-byte-listp
             unpackbv-little
