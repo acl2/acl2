@@ -144,26 +144,29 @@
 (define cert-set->author-set ((certs certificate-setp))
   :returns (addrs address-setp)
   :short "Lift @(tsee certificate->author) to sets."
-  (cond ((set::emptyp certs) nil)
+  (cond ((set::emptyp (certificate-set-fix certs)) nil)
         (t (set::insert (certificate->author (set::head certs))
                         (cert-set->author-set (set::tail certs)))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
+  :hooks (:fix)
 
   ///
 
   (defrule emptyp-of-cert-set->author-set
     (equal (set::emptyp (cert-set->author-set certs))
-           (set::emptyp certs))
+           (set::emptyp (certificate-set-fix certs)))
     :induct t)
 
   (defruled certificate->author-in-cert-set->author-set
-    (implies (set::in cert certs)
+    (implies (set::in (certificate-fix cert)
+                      (certificate-set-fix certs))
              (set::in (certificate->author cert)
                       (cert-set->author-set certs)))
     :induct t)
 
   (defruled cert-set->author-set-monotone
-    (implies (set::subset certs1 certs2)
+    (implies (set::subset certs1 (certificate-set-fix certs2))
              (set::subset (cert-set->author-set certs1)
                           (cert-set->author-set certs2)))
     :induct t
@@ -171,25 +174,28 @@
              certificate->author-in-cert-set->author-set))
 
   (defruled cert-set->author-set-of-insert
-    (equal (cert-set->author-set (set::insert cert certs))
-           (set::insert (certificate->author cert)
-                        (cert-set->author-set certs)))
-    :induct t
-    :enable (set::in
-             certificate->author-in-cert-set->author-set))
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (equal (cert-set->author-set (set::insert cert certs))
+                    (set::insert (certificate->author cert)
+                                 (cert-set->author-set certs))))
+    :induct (set::weak-insert-induction cert certs)
+    :enable certificate->author-in-cert-set->author-set)
 
   (defruled cert-set->author-set-of-union
-    (equal (cert-set->author-set (set::union certs1 certs2))
-           (set::union (cert-set->author-set certs1)
-                       (cert-set->author-set (set::sfix certs2))))
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2))
+             (equal (cert-set->author-set (set::union certs1 certs2))
+                    (set::union (cert-set->author-set certs1)
+                                (cert-set->author-set (set::sfix certs2)))))
     :induct t
     :enable (set::union
              cert-set->author-set-of-insert))
 
   (defruled same-certificate-author-when-cardinality-leq-1
     (implies (and (<= (set::cardinality (cert-set->author-set certs)) 1)
-                  (set::in cert1 certs)
-                  (set::in cert2 certs))
+                  (set::in cert1 (certificate-set-fix certs))
+                  (set::in cert2 (certificate-set-fix certs)))
              (equal (certificate->author cert1)
                     (certificate->author cert2)))
     :enable certificate->author-in-cert-set->author-set
@@ -479,9 +485,10 @@
     :disable certificates-with-author)
 
   (defruled emptyp-of-certificates-with-author-if-no-author
-    (equal (set::emptyp (certificates-with-author author certs))
-           (not (set::in (address-fix author)
-                         (cert-set->author-set certs))))
+    (implies (certificate-setp certs)
+             (equal (set::emptyp (certificates-with-author author certs))
+                    (not (set::in (address-fix author)
+                                  (cert-set->author-set certs)))))
     :induct t
     :enable cert-set->author-set))
 
@@ -631,10 +638,11 @@
     :induct t)
 
   (defruled cert-set->author-set-of-certificates-with-authors
-    (equal (cert-set->author-set
-            (certificates-with-authors authors certs))
-           (set::intersect (address-set-fix authors)
-                           (cert-set->author-set certs)))
+    (implies (certificate-setp certs)
+             (equal (cert-set->author-set
+                     (certificates-with-authors authors certs))
+                    (set::intersect (address-set-fix authors)
+                                    (cert-set->author-set certs))))
     :induct t
     :enable (cert-set->author-set
              cert-set->author-set-of-insert
