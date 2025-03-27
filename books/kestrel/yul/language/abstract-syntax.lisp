@@ -27,7 +27,7 @@
    (xdoc::p
     "We introduce an abstract syntax of Yul based on its "
     (xdoc::seetopic "concrete-syntax" "concrete syntax")
-    "; more precisely, on the new grammar (see description there).")
+    ".")
    (xdoc::p
     "The abstract syntax defined here is fairly close to the concrete syntax.
      The reason for this closeness is to reduce incidental differences
@@ -38,12 +38,7 @@
      In some cases our abstract syntax may be broader than the concrete syntax,
      to keep the definition of the abstract syntax slightly simpler;
      the important thing is that all the concrete syntax
-     is representable in abstract syntax.")
-   (xdoc::p
-    "It is not yet clear whether the proper handling of Yul dialects
-     will require extending this abstract syntax with types
-     (which are not present in the new grammar).
-     For now we omit types, but we may revisit this at some point."))
+     is representable in abstract syntax."))
   :order-subtopics t
   :default-parent t)
 

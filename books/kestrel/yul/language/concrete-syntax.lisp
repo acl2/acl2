@@ -10,8 +10,8 @@
 
 (in-package "YUL")
 
+(include-book "grammar")
 (include-book "grammar-old")
-(include-book "grammar-new")
 
 (include-book "lexer")
 (include-book "tokenizer")
