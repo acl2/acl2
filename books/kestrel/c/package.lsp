@@ -109,6 +109,7 @@
                implode
                impossible
                install-not-normalized-event
+               integers-from-to
                irecursivep+
                keyword-listp
                keyword-symbol-alistp
