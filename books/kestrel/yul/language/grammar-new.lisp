@@ -16,7 +16,7 @@
 
 (local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))
 
-; (depends-on "grammar-new.abnf")
+; (depends-on "grammar.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,7 +50,7 @@
     ", and only "
     (xdoc::seetopic "abnf::in-terminal-set" "generates terminals")
     " in the ASCII character set."))
-  :file "grammar-new.abnf"
+  :file "grammar.abnf"
   :untranslate t
   :well-formed t
   :closed t
