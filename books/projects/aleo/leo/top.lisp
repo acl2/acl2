@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ leo
-  :parents (acl2::projects)
+  :parents (aleo::aleo)
   :short "An ACL2 library for the Leo language."
   :long
   (xdoc::topstring

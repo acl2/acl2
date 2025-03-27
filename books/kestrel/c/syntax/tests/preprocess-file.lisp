@@ -12,12 +12,10 @@
 
 ; cert_param: (uses-cpp)
 
-
 (include-book "std/testing/must-eval-to-t" :dir :system)
 (include-book "std/testing/must-succeed" :dir :system)
 
 (include-book "../preprocess-file")
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,3 +63,11 @@
         (preprocess-files nil)))
     (value (and (not erp)
                 (equal fileset (fileset nil))))))
+
+(acl2::must-succeed
+  (b* (((mv erp - state)
+        (preprocess-files
+          (mergesort (list (filepath "stdbool.c")
+                           (filepath "stdint.c")))
+          :path "../tests")))
+    (value (not erp))))

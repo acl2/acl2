@@ -1184,7 +1184,7 @@
   (defrule declor-unambp-of-dirdeclor-paren->unwrap
     (implies (and (dirdeclor-unambp dirdeclor)
                   (dirdeclor-case dirdeclor :paren))
-             (declor-unambp (dirdeclor-paren->unwrap dirdeclor)))
+             (declor-unambp (dirdeclor-paren->inner dirdeclor)))
     :expand (dirdeclor-unambp dirdeclor))
 
   (defrule dirdeclor-unambp-of-dirdeclor-array->decl
