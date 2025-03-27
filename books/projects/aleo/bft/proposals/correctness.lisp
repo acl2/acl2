@@ -30,8 +30,8 @@
 (include-book "endorsed-previous-closed")
 (include-book "dag-previous-closed")
 (include-book "signed-proposals")
-(include-book "signer-record")
 (include-book "author-round-pairs-in-validators")
+(include-book "signed-in-signer")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,7 +65,7 @@
                     endorsed-previous-closed
                     dag-previous-closed
                     signed-proposals
-                    signer-record
-                    author-round-pairs-in-validators))
+                    author-round-pairs-in-validators
+                    signed-in-signer))
 
 ; TODO: continue
