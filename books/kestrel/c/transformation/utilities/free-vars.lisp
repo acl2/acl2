@@ -408,7 +408,7 @@
      dirdeclor
      :ident (mv nil
                 (insert dirdeclor.ident (ident-set-fix bound-vars)))
-     :paren (free-vars-declor dirdeclor.unwrap bound-vars)
+     :paren (free-vars-declor dirdeclor.inner bound-vars)
      :array
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.tyquals bound-vars))

@@ -234,7 +234,7 @@
     (:linear c$::decl-count-of-stmt-for-decl->init)
     (:linear c$::decl-list-count-of-cdr)
     (:linear c$::declor-count-of-declor-option-some->val)
-    (:linear c$::declor-count-of-dirdeclor-paren->unwrap)
+    (:linear c$::declor-count-of-dirdeclor-paren->inner)
     (:linear c$::declor-count-of-initdeclor->declor)
     (:linear c$::declor-count-of-paramdeclor-declor->unwrap)
     (:linear c$::declor-option-count-of-structdeclor->declor?)
@@ -1178,7 +1178,7 @@
    `(dirdeclor-case
       dirdeclor
       :ident (dirdeclor-ident (,(cdr (assoc-eq 'ident names)) dirdeclor.ident ,@extra-args-names))
-      :paren (dirdeclor-paren (,(cdr (assoc-eq 'declor names)) dirdeclor.unwrap ,@extra-args-names))
+      :paren (dirdeclor-paren (,(cdr (assoc-eq 'declor names)) dirdeclor.inner ,@extra-args-names))
       :array (make-dirdeclor-array
                :decl (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.decl ,@extra-args-names)
                :tyquals dirdeclor.tyquals

@@ -2308,7 +2308,7 @@
      dirdeclor
      :ident (print-ident dirdeclor.ident pstate)
      :paren (b* ((pstate (print-astring "(" pstate))
-                 (pstate (print-declor dirdeclor.unwrap pstate))
+                 (pstate (print-declor dirdeclor.inner pstate))
                  (pstate (print-astring ")" pstate)))
               pstate)
      :array

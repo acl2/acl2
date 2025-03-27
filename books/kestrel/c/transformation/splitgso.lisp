@@ -689,7 +689,7 @@
     (dirdeclor-case
      dirdeclor
      :ident (equal dirdeclor.ident ident)
-     :paren (match-simple-declor-ident dirdeclor.unwrap ident)
+     :paren (match-simple-declor-ident dirdeclor.inner ident)
      :array nil
      :array-static1 nil
      :array-static2 nil

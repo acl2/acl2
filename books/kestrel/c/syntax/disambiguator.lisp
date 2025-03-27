@@ -2001,7 +2001,7 @@
        (retok (dirdeclor-fix dirdeclor) dirdeclor.ident (dimb-table-fix table))
        :paren
        (b* (((erp new-declor ident table)
-             (dimb-declor dirdeclor.unwrap fundefp table)))
+             (dimb-declor dirdeclor.inner fundefp table)))
          (retok (dirdeclor-paren new-declor) ident table))
        :array
        (b* (((erp new-dirdeclor ident table)

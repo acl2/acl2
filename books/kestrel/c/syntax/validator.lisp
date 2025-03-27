@@ -3727,7 +3727,7 @@
               (valid-table-fix table))
        :paren
        (b* (((erp new-declor fundef-params-p type ident types table)
-             (valid-declor dirdeclor.unwrap fundef-params-p type table ienv)))
+             (valid-declor dirdeclor.inner fundef-params-p type table ienv)))
          (retok (dirdeclor-paren new-declor)
                 fundef-params-p
                 type

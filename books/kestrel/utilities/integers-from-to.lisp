@@ -117,6 +117,11 @@
          (<= (ifix min) (ifix max)))
     :induct t)
 
+  (defruled consp-of-integers-from-to-equal-min<=max
+    (equal (consp (integers-from-to min max))
+           (<= (ifix min) (ifix max)))
+    :induct t)
+
   (defruled integers-from-to-separate-min
     (implies (and (integerp min)
                   (integerp max)
@@ -141,6 +146,12 @@
               (<= x (ifix max))))
     :induct t
     :enable (integers-from-to-of-noninteger-max ifix))
+
+  (defruled len-of-integers-from-to
+    (equal (len (integers-from-to min max))
+           (nfix (1+ (- (ifix max) (ifix min)))))
+    :induct t
+    :enable (integers-from-to-of-noninteger-max ifix nfix fix))
 
   (defrulel verify-guards-lemma-1
     (implies (and (integerp min)

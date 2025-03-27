@@ -2189,7 +2189,7 @@
        which may be re-classified into the @(':function-names') case
        during post-parsing semantic analysis."))
     (:ident ((ident ident)))
-    (:paren ((unwrap declor)))
+    (:paren ((inner declor)))
     (:array ((decl dirdeclor)
              (tyquals typequal/attribspec-list)
              (expr? expr-option)))

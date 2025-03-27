@@ -11,7 +11,7 @@
 
 (in-package "YUL")
 
-(include-book "grammar-new")
+(include-book "grammar")
 
 (include-book "projects/abnf/parsing-tools/defdefparse" :dir :system)
 
@@ -29,7 +29,7 @@
    (xdoc::p
     "This is a simple lexer for the Yul lexical grammar.
      The grammar is defined in ABNF.
-     See @(see grammar-new).")
+     See @(see grammar).")
    (xdoc::p
     "The primary API for lexing Yul is
      @(see lexemeize-yul) and @(see lexemeize-yul-bytes).")
@@ -56,7 +56,7 @@
 
 (abnf::defdefparse yul
   :package "YUL"
-  :grammar *grammar-new*
+  :grammar *grammar*
   :prefix lex)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

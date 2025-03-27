@@ -3143,7 +3143,7 @@
                    :vars nil
                    :diffp nil))
        :paren (b* (((mv new-declor (simpadd0-gout gout-declor))
-                    (simpadd0-declor dirdeclor.unwrap gin state)))
+                    (simpadd0-declor dirdeclor.inner gin state)))
                 (mv (dirdeclor-paren new-declor)
                     (make-simpadd0-gout
                      :events gout-declor.events
