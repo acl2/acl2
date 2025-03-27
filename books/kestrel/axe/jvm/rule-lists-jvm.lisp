@@ -1315,7 +1315,7 @@
            (update-nth-rules)
            (jvm-rules-unfiled-misc)
 ;           (bitxor-rules)
-;           (bit-blast-rules3) ;bozo
+;           (bit-blast-rules) ;bozo
            (more-rules-yuck)
            (trim-rules)
            (trim-helper-rules)
@@ -1377,7 +1377,7 @@
            (update-nth-rules)
            (jvm-rules-unfiled-misc)
 ;           (bitxor-rules)
-;           (bit-blast-rules3) ;bozo
+;           (bit-blast-rules) ;bozo
            (more-rules-yuck)
            (trim-rules)
            (trim-helper-rules)
