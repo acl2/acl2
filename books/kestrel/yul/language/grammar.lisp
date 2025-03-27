@@ -16,28 +16,26 @@
 
 (local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))
 
-; (depends-on "grammar-new.abnf")
+; (depends-on "grammar.abnf")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ grammar-new
+(defxdoc+ grammar
   :parents (concrete-syntax)
-  :short "New ABNF grammar of Yul."
+  :short "ABNF grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p
     "We use our "
     (xdoc::seetopic "abnf::grammar-parser" "verified ABNF grammar parser")
-    " to parse the new ABNF grammar of Yul into a representation in ACL2.")
-   (xdoc::p
-    "This is the new grammar of Yul; see @(see concrete-syntax)."))
+    " to parse the ABNF grammar of Yul into a representation in ACL2."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::defgrammar *grammar-new*
-  :short "The parsed new ABNF grammar of Yul."
+(abnf::defgrammar *grammar*
+  :short "The parsed ABNF grammar of Yul."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -50,14 +48,14 @@
     ", and only "
     (xdoc::seetopic "abnf::in-terminal-set" "generates terminals")
     " in the ASCII character set."))
-  :file "grammar-new.abnf"
+  :file "grammar.abnf"
   :untranslate t
   :well-formed t
   :closed t
   ///
 
-  (defruled ascii-only-*grammar-new*
-    (abnf::rulelist-in-termset-p *grammar-new*
+  (defruled ascii-only-*grammar*
+    (abnf::rulelist-in-termset-p *grammar*
                                  (integers-from-to 0 #x7f))
     :enable (abnf::rule-in-termset-p
              abnf::repetition-in-termset-p
@@ -70,7 +68,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(abnf::deftreeops *grammar-new* :prefix cst)
+(abnf::deftreeops *grammar* :prefix cst)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,7 +85,7 @@
        (abnf::tree-match-element-p tree
                                    (abnf::element-rulename
                                     (abnf::rulename rulename))
-                                   *grammar-new*))
+                                   *grammar*))
   :no-function t
   :hooks (:fix)
   ///
