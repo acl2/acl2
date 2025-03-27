@@ -105,10 +105,11 @@
        :induct t)
 
      (defruled round-set-of-incoming-loop
-       (implies (equal (cert-set->round-set certs)
-                       (if (set::emptyp certs)
-                           nil
-                         (set::insert round nil)))
+       (implies (and (certificate-setp certs)
+                     (equal (cert-set->round-set certs)
+                            (if (set::emptyp certs)
+                                nil
+                              (set::insert round nil))))
                 (equal (cert-set->round-set (incoming-loop certs prev))
                        (if (set::emptyp (incoming-loop certs prev))
                            nil
