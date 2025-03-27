@@ -14646,6 +14646,8 @@
         (dag-lst (acons-fast (+ 1 (top-nodenum dag-lst)) `(equal ,renamed-smaller-nodenum ,renamed-larger-nodenum) dag-lst))
         (- (prog2$ (cw " (Rewriting equality: (~x0 nodes)~%" (+ 1 (top-nodenum dag-lst)))
                    (and print (or (eq t print) (eq :verbose print) (eq :verbose! print)) (print-list dag-lst))))
+        (- (and (not rewriter-rule-alist)
+                (cw "WARNING: Empty rewriter-rule-alist.~%")))
         ((mv erp simplified-dag-lst state)
          (simp-dag dag-lst ;no longer contains irrelevant nodes
                    :rule-alists
@@ -15371,7 +15373,8 @@
                        ;;ffixme could cut out the common stuff when calling the prover?  or the rewriter (above)?
                        (- (cw "(Calling DAG prover for ~s0 (dag len ~x1, print ~x2):~%" case-name (len simplified-dag-lst) print))
                        ;;(cw "(~x0 monitored rules)" (len monitored-symbols))
-                       )
+                       (- (and (not prover-rule-alist)
+                               (cw "WARNING: Empty prover-rule-alist.~%"))))
                     (mv-let (erp result state)
                       ;;might be nice to get an array above and pass it straight to the prover here:
                       (prove-dag-with-axe-prover simplified-dag-lst
@@ -15677,6 +15680,8 @@
             (dag-lst (acons-fast dag-len `(equal ,(top-nodenum dag-lst) ',constant-value) dag-lst))
             ;;ffixme should we use contexts here (same question for the analogous call for two probably-equal nodes)?
             ;;fixme option to turn this off?
+            (- (and (not rewriter-rule-alist)
+                    (cw "WARNING: Empty rewriter-rule-alist.~%")))
             ((mv erp simplified-dag-lst state)
              (simp-dag dag-lst
                        :rule-alists
@@ -15711,16 +15716,18 @@
                                "!! ERROR The equality rewrote to a constant other than t or nil, namely ~x0.  This should never happen (unless your assumptions contradict))."
                                (acons #\0 simplified-dag-lst nil))
                    (mv (erp-t) nil analyzed-function-table rand state))))
-           ;;The equality didn't rewrite to a constant, so call the dag prover:
+           ;;The equality didn't rewrite to a constant, so call the axe-prover:
            (b* ((- (and (eq t print)
                         (prog2$ (cw "Equality rewrote to:~%")
                                 (print-list simplified-dag-lst))))
                 (- (cw ")~%"))
                 (case-name (concatenate 'string "depth" (nat-to-string miter-depth) "step" (nat-to-string step-num) "-"))
+                (- (and (not prover-rule-alist)
+                    (cw "WARNING: Empty prover-rule-alist.~%")))
                 ((mv erp prover-result state)
                  (if use-proverp-flag
                      (prog2$
-                       (cw "(Calling DAG prover for ~s0 (dag len ~x1, print ~x2):~%" case-name (len simplified-dag-lst) print)
+                       (cw "(Calling Axe Prover for ~s0 (dag len ~x1, print ~x2):~%" case-name (len simplified-dag-lst) print)
                        ;; This rewrites all the assumptions (and the context) too?
                        ;;fixme pass in miter name? for creating the temp file names?
                        (prove-dag-with-axe-prover simplified-dag-lst
