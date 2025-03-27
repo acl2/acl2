@@ -1799,9 +1799,8 @@
     ;;leftrotate32 ;todo: try
     ))
 
-;fixme rename?
 ;bozo blast the arithmetic functions in a second pass?
-(defun bit-blast-rules3 ()
+(defun bit-blast-rules ()
   (declare (xargs :guard t))
   (append (bit-blast-rules-basic)
           '(blast-bvmult-into-bvplus-constant-version-arg1 ;
@@ -4281,4 +4280,4 @@
   (list (make-axe-rules! (amazing-rules-bv) (w state))
         (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules-basic)) (w state))
         ;;we do need to blast the mult of a constant (and the resulting pluses??), it seems
-        (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules3)) (w state))))
+        (make-axe-rules! (append (amazing-rules-bv) (bit-blast-rules)) (w state))))

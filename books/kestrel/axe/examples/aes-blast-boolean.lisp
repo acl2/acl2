@@ -59,7 +59,7 @@
                                        (aes::aes-128-encrypt (bits-to-bytes (map-bool-to-bit (list ,@(make-var-names 'in 128))))
                                                              (bits-to-bytes (map-bool-to-bit (list ,@(make-var-names 'key 128)))))))
                    :rules :auto
-                   :extra-rules (append (bit-blast-rules3)
+                   :extra-rules (append (bit-blast-rules)
                                         (introduce-bv-array-rules)) ; turns nth into bv-array-read
                    :remove-rules '(bit-to-bool bool-to-bit) ; todo, these rules interfer with pushing these functions to do conversions
                    )
