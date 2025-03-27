@@ -149,7 +149,8 @@
                         )
                     (fns-supporting-term term
                                          ;; Don't open these functions:
-                                         (append '(leftrotate
+                                         (append '(leftrotate ; what about the sized versions of this?
+                                                   rightrotate ; what about the sized versions of this?
                                                    nth update-nth len true-listp
                                                    nthcdr ; opener could loop with nth-of-cdr, etc.
                                                    firstn
