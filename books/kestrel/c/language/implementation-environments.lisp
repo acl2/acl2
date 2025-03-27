@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "../insertion-sort")
+(include-book "../insertion-sort-of-integers-from-to")
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
@@ -560,7 +561,15 @@
         ((sinteger-bit-role-case (car roles) :sign)
          (1+ (sinteger-bit-roles-sign-count (cdr roles))))
         (t (sinteger-bit-roles-sign-count (cdr roles))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-sign-count-of-append
+    (equal (sinteger-bit-roles-sign-count (append roles1 roles2))
+           (+ (sinteger-bit-roles-sign-count roles1)
+              (sinteger-bit-roles-sign-count roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -749,7 +758,15 @@
                  (uinteger-bit-roles-value-count uroles)))
     :induct t
     :enable (sinteger-bit-roles-value-count
-             uinteger-bit-roles-value-count)))
+             uinteger-bit-roles-value-count))
+
+  (defruled uinteger-sinteger-bit-roles-wfp-of-append
+    (implies (equal (len uroles1) (len sroles1))
+             (equal (uinteger-sinteger-bit-roles-wfp (append uroles1 uroles2)
+                                                     (append sroles1 sroles2))
+                    (and (uinteger-sinteger-bit-roles-wfp uroles1 sroles1)
+                         (uinteger-sinteger-bit-roles-wfp uroles2 sroles2))))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
