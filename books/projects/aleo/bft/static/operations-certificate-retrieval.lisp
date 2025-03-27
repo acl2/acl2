@@ -195,10 +195,12 @@
              set::pick-a-point-subset-strategy))
 
   (defruled emptyp-of-certificates-with-author-if-no-author
-    (equal (set::emptyp (certificates-with-author author certs))
-           (not (set::in author (cert-set->author-set certs))))
+    (implies (certificate-setp certs)
+             (equal (set::emptyp (certificates-with-author author certs))
+                    (not (set::in author (cert-set->author-set certs)))))
     :induct t
-    :enable cert-set->author-set)
+    :enable (cert-set->author-set
+             emptyp-of-certificate-set-fix))
 
   (defruled certificates-with-author-of-intersect
     (implies (and (certificate-setp certs1)
