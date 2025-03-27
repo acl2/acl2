@@ -30,6 +30,7 @@
 (include-book "kestrel/lists-light/group" :dir :system)
 (include-book "kestrel/lists-light/ungroup" :dir :system)
 (include-book "kestrel/lists-light/subrange" :dir :system)
+(local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -134,17 +135,20 @@
   :hints (("Goal" :in-theory (enable quarterround))))
 
 ;; Sec 2.3
-(defun initial-state (key counter nonce)
+(defun initial-state (key counter nonce carry)
   (declare (xargs :guard (and (unsigned-byte-listp 8 key)
                               (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
                               (unsigned-byte-p 32 counter)
                               (unsigned-byte-listp 8 nonce) ; nonce is 12 8-bit bytes = 96 bits
-                              (= 12 (len nonce)))))
+                              (= 12 (len nonce))
+                              (unsigned-byte-p 32 carry))))
   (append '(#x61707865 #x3320646e #x79622d32 #x6b206574) ; words 0-3
           (map-packbv-little 4 8 (group 4 key))          ; words 4-11
           (list counter)                                 ; word 12
-          (map-packbv-little 4 8 (group 4 nonce))        ; words 13-15
-          ))
+          (let ((nonce-words (map-packbv-little 4 8 (group 4 nonce))))        ; words 13-15
+            (if (not (equal 0 carry))
+                (cons (bvplus 32 carry (first nonce-words)) (rest nonce-words))
+              nonce-words))))
 
 ;; Sec 2.3
 ;; a column round followed by a diagonal round
@@ -177,23 +181,54 @@
            (statep (double-rounds n state)))
   :hints (("Goal" :in-theory (enable double-rounds))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Sec 2.3
-(defun chacha20-block (key counter nonce)
+(defund chacha20-block (key counter nonce carry)
   (declare (xargs :guard (and (unsigned-byte-listp 8 key)
                               (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
                               (unsigned-byte-p 32 counter)
                               (unsigned-byte-listp 8 nonce) ; nonce is 12 8-bit bytes = 96 bits
-                              (= 12 (len nonce)))))
-  (let* ((state (initial-state key counter nonce))
+                              (= 12 (len nonce))
+                              (unsigned-byte-p 32 carry))))
+  (let* ((state (initial-state key counter nonce carry))
          (initial-state state) ; saved for later
          (state (double-rounds 1 state))
          (state (bvplus-list 32 state initial-state)))
     (ungroup 4 (map-unpackbv-little 4 8 state))))
 
+(defthm len-of-chacha20-block
+  (implies  (and (unsigned-byte-listp 8 key)
+                 (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
+                 (unsigned-byte-p 32 counter)
+                 (unsigned-byte-listp 8 nonce) ; nonce is 12 8-bit bytes = 96 bits
+                 (= 12 (len nonce))
+                 (unsigned-byte-p 32 carry))
+            (equal (len (chacha20-block key counter nonce carry))
+                   64))
+  :hints (("Goal" :in-theory (enable chacha20-block))))
+
+(local (include-book "kestrel/bv-lists/packing" :dir :system))
+(defthm unsigned-byte-listp-8-of-chacha20-block
+  (implies  (and (unsigned-byte-listp 8 key)
+                 (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
+                 (unsigned-byte-p 32 counter)
+                 (unsigned-byte-listp 8 nonce) ; nonce is 12 8-bit bytes = 96 bits
+                 (= 12 (len nonce))
+                 (unsigned-byte-p 32 carry))
+            (unsigned-byte-listp 8 (chacha20-block key counter nonce carry)))
+  :hints (("Goal" :in-theory (enable chacha20-block acl2::unsigned-byte-listp-rewrite))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Sec 2.4
-(defun chacha20-loop (j key counter nonce plaintext encrypted-message)
+;; The for loop in 2.4.1.
+;; Note: It would be more idiomatic to just increment counter, instead of having a
+;; separate j parameter, but here we follow the pseudocode as closely as we can.
+;; Note: The term (floor (/ (len plaintext) 64) 1) could instead be written
+;; (floor (len plaintext) 64), but the former seemed closer to the pseudocode,
+;; with the unary floor function in the pseudocode represented by passing
+;; 1 as the second of the two arguments to our floor function.
+(defun chacha20-loop (j key counter nonce plaintext encrypted-message carryp)
   (declare (xargs :guard (and (natp j)
                               (unsigned-byte-listp 8 key)
                               (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
@@ -201,40 +236,96 @@
                               (unsigned-byte-listp 8 nonce) ; nonce is 12 8-bit bytes = 96 bits
                               (= 12 (len nonce))
                               (unsigned-byte-listp 8 plaintext)
-                              (unsigned-byte-listp 8 encrypted-message))
+                              (unsigned-byte-listp 8 encrypted-message)
+                              (booleanp carryp))
                   :measure (nfix (+ 1 (- (+ (floor (/ (len plaintext) 64) 1) -1) j)))
                   :guard-hints (("Goal" :in-theory (enable acl2::unsigned-byte-listp-rewrite)))))
   (if (or (not (mbt (natp j)))
-          (> j (+ (floor (/ (len plaintext) 64) 1) -1)))
+          (> j (+ (floor (/ (len plaintext) 64) 1) -1)) ; stop when j exceeds floor(len(plaintext)/64)-1
+          )
       encrypted-message
-    (let* ((key-stream (chacha20-block key (bvplus 32 counter j) nonce))
-           (block (subrange (* j 64) (+ (* j 64) 63) plaintext))
-           (encrypted-message (append encrypted-message (bvxor-list 8 block key-stream))) ;assuming "encrypted_message += means append
-           )
-      (chacha20-loop (+ 1 j) key counter nonce plaintext encrypted-message))))
+    (let* (;; the pseudocode calls this "keystream" but it is just one block:
+           (keystream-block (chacha20-block key
+                                             ;; Since 2.3 indicates the block
+                                             ;; count parameter is 32-bits, we
+                                             ;; use a modular sum here:
+                                             (bvplus 32 counter j)
+                                             nonce
+                                             ;; if the carry flag is set, we pass the high half of counter+j
+                                             (if carryp (slice 63 32 (bvplus 64 counter j)) 0)))
+           ;; the pseudocode calls this just "block":
+           (plaintext-block (subrange (* j 64) (+ (* j 64) 63) plaintext))
+           ;; we assume the "+=" operation on the encrypted message represents a concatenation of byte lists:
+           (encrypted-message (append encrypted-message (bvxor-list 8 plaintext-block keystream-block))))
+      ;; same key and nonce:
+      (chacha20-loop (+ 1 j) key counter nonce plaintext encrypted-message carryp))))
+
+(defthm unsigned-byte-listp-8-of-chacha20-loop
+  (implies (unsigned-byte-listp 8 encrypted-message)
+           (unsigned-byte-listp 8 (chacha20-loop j key counter nonce plaintext encrypted-message carryp))))
+
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+
+(local
+  (defthmd len-of-chacha20-loop-helper
+    (implies (and (natp j)
+                  (<= j (floor (/ (len plaintext) 64) 1)))
+             (equal (len (chacha20-loop j key counter nonce plaintext encrypted-message carryp))
+                    (+ (len encrypted-message)
+                       (* 64 (- (floor (/ (len plaintext) 64) 1)
+                                j)))))))
+
+(defthm len-of-chacha20-loop
+  (equal (len (chacha20-loop 0 key counter nonce plaintext nil carryp))
+         (* 64 (floor (/ (len plaintext) 64) 1)))
+  :hints (("Goal" :use (:instance len-of-chacha20-loop-helper (j 0)
+                                  (encrypted-message nil))
+           :in-theory (disable len-of-chacha20-loop-helper))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Sec 2.4
-(defun chacha20 (key counter nonce plaintext)
+;; WARNING: The carryp flag should be nil for RFC compliance.  However,
+;; implementations tend to implement the carry!
+;; Returns the ciphertext.
+(defun chacha20 (key counter nonce plaintext carryp)
   (declare (xargs :guard (and (unsigned-byte-listp 8 key)
                               (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
                               (unsigned-byte-p 32 counter)
                               (unsigned-byte-listp 8 nonce) ; nonce is 12 8-bit bytes = 96 bits
                               (= 12 (len nonce))
-                              (unsigned-byte-listp 8 plaintext))))
+                              (unsigned-byte-listp 8 plaintext)
+                              (booleanp carryp))))
   (let* ((encrypted_message (chacha20-loop 0
                                            key
                                            counter
                                            nonce
                                            plaintext
-                                           nil ; encrypted_message
-                                           ))
-         (encrypted_message (if (not (equal (mod (len plaintext) 64) 0))
-                                (let* ((j (floor (/ (len plaintext) 64) 1))
-                                       (key-stream (chacha20-block key (bvplus 32 counter j) nonce))
-                                       (block (subrange (* j 64) (+ (len plaintext) -1) plaintext)) ; might be shorter than a full block
-                                       (encrypted_message (append encrypted_message ;assuming "encrypted_message += means append
-                                                                  (bvxor-list 8 block key-stream) ; stops when block is exhausted
-                                                                  )))
-                                  encrypted_message)
-                              encrypted_message)))
+                                           nil ; initial encrypted_message
+                                           carryp))
+         (encrypted_message
+           (if (not (equal (mod (len plaintext) 64) 0))
+               (let* ((j (floor (/ (len plaintext) 64) 1))
+                      ;; the pseudocode calls this "keystream" but it is just one block:
+                      (keystream-block (chacha20-block key
+                                                        (bvplus 32 counter j)
+                                                        nonce
+                                                        ;; see comment above about the carry flag:
+                                                        (if carryp (slice 63 32 (bvplus 64 counter j)) 0)))
+                      ;; the pseudocode calls this just "block":
+                      (plaintext-block (subrange (* j 64) (+ (len plaintext) -1) plaintext)) ; might be shorter than a full block
+                      ;; we assume the "+=" operation on the encrypted message represents a concatenation of byte lists:
+                      (encrypted_message (append encrypted_message ;assuming "encrypted_message += means append
+                                                 ;; note that bvxor-list stops once its first argument runs out:
+                                                 ;; TODO: In the RFC, in [0..len(plaintext)%64], len(plaintext)%64 should probably be len(plaintext)%64 - 1
+                                                 (bvxor-list 8 plaintext-block keystream-block) ; stops when block is exhausted
+                                                 )))
+                 encrypted_message)
+             encrypted_message)))
     encrypted_message))
+
+;; chacha20 returns a list of bytes, and that list has the same length as the plaintext.
+(defthm chacha20-return-type
+  (and (unsigned-byte-listp 8 (chacha20 key counter nonce plaintext carryp))
+       (equal (len (chacha20 key counter nonce plaintext carryp))
+              (len plaintext))))
