@@ -88,5 +88,10 @@
     (xdoc::li
      "The new grammar adds hex strings to the possible literals."))
    (xdoc::p
-    "The aforementioned parser is based on the new grammar."))
+    "Since the new grammar is newer,
+     the rest of our Yul formalization and tools is based on it.
+     We keep the old grammar around just for historical reasons,
+     but we use the unqualified `grammar' to denote the new grammar,
+     except in a few cases when talking about both new and old grammar.
+     We qualify the old grammar with `old'."))
   :order-subtopics t)
