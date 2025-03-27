@@ -16640,7 +16640,7 @@
                          tests-per-case
                          max-conflicts
                          must-succeedp ;if non-nil, this means we'll increase max-conflicts forever (fixme only do it as long as something is timing out!)
-                         pre-simplifyp
+                         pre-simplify-rec-fnsp
                          normalize-xors
                          options
                          rand state)
@@ -16665,7 +16665,7 @@
      ;;Pre-simplify:
      (b* ((dag dag-or-quotep)
           ((mv erp dag-or-quotep interpreted-function-alist analyzed-function-table rewriter-rule-alist prover-rule-alist monitored-symbols rand state)
-           (if pre-simplifyp
+           (if pre-simplify-rec-fnsp
                (pre-simplify-recursive-functions dag
                                                  interpreted-function-alist
                                                  rewriter-rule-alist
@@ -16803,7 +16803,7 @@
                                                        unroll
                                                        tests-per-case
                                                        max-conflicts must-succeedp
-                                                       pre-simplifyp
+                                                       pre-simplify-rec-fnsp
                                                        normalize-xors
                                                        options
                                                        rand state)
@@ -16873,7 +16873,7 @@
                                         use-context-when-miteringp
                                         (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
                                         unroll tests-per-case max-conflicts must-succeedp
-                                        pre-simplifyp
+                                        pre-simplify-rec-fnsp
                                         normalize-xors
                                         options
                                         rand state))
@@ -16919,7 +16919,7 @@
                                             use-context-when-miteringp
                                             (empty-analyzed-function-table) ;analyzed-function-table Mon Jan 24 15:32:32 2011
                                             unroll tests-per-case max-conflicts must-succeedp
-                                            pre-simplifyp normalize-xors options
+                                            pre-simplify-rec-fnsp normalize-xors options
                                             rand state))
                           ((when erp) (mv erp nil rand state))
                           (- (cw "End false case)~%")))
@@ -16950,7 +16950,7 @@
                             prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                             initial-rule-set
                             initial-rule-sets
-                            pre-simplifyp ;todo: get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
+                            pre-simplify-rec-fnsp ;todo: get rid of this (always use t) -- no, we sometimes want to suppress this (when irrelevant nodes have rec fns)
                             extra-stuff
                             specialize-fnsp
                             monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
@@ -16987,7 +16987,7 @@
                               (axe-rule-listp initial-rule-set)
                               (all-axe-rule-listp initial-rule-sets)
                               (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
-                              (booleanp pre-simplifyp)
+                              (booleanp pre-simplify-rec-fnsp)
                               (extra-stuff-okayp extra-stuff)
                               (booleanp specialize-fnsp)
                               (symbol-listp monitored-symbols)
@@ -17210,7 +17210,7 @@
                                  tests-per-case
                                  (if (eq :auto max-conflicts) *default-stp-max-conflicts* max-conflicts)
                                  t ;must-succeedp=t
-                                 pre-simplifyp
+                                 pre-simplify-rec-fnsp
                                  normalize-xors
                                  ;; could move more stuff into these options:
                                  (s :prove-constants prove-constants nil)
@@ -17243,7 +17243,7 @@
                           prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                           initial-rule-set
                           initial-rule-sets
-                          pre-simplifyp
+                          pre-simplify-rec-fnsp
                           extra-stuff
                           specialize-fnsp
                           monitored-symbols
@@ -17279,7 +17279,7 @@
                               (axe-rule-listp initial-rule-set)
                               (all-axe-rule-listp initial-rule-sets)
                               (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
-                              (booleanp pre-simplifyp)
+                              (booleanp pre-simplify-rec-fnsp)
                               (if (extra-stuff-okayp extra-stuff)
                                   t
                                 (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff) ;drop?
@@ -17333,7 +17333,7 @@
                              prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                              initial-rule-set
                              initial-rule-sets
-                             pre-simplifyp
+                             pre-simplify-rec-fnsp
                              extra-stuff
                              specialize-fnsp
                              monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
@@ -17389,7 +17389,7 @@
                            (prover-runes 'nil) ;used for the prover only (not the rewriter), affects soundness ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                            (initial-rule-set 'nil)
                            (initial-rule-sets 'nil)
-                           (pre-simplifyp 't) ;was nil
+                           (pre-simplify-rec-fns 't) ;was nil
                            (extra-stuff 'nil) ;ffixme does any of this affect soundness?
                            (specialize-fnsp 'nil)
                            (monitor 'nil)         ;a list of runes
@@ -17409,7 +17409,7 @@
        "acl2-unwind-protect for prove-with-axe"
        (prove-with-axe-fn ,dag-or-quotep ,assumptions ,types ,interpreted-function-alist ,test-types
                           ,tests ,tactic ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes
-                          ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+                          ,initial-rule-set ,initial-rule-sets ,pre-simplify-rec-fns ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
                           ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,proof-name ,keep-temp-dir
                           ',whole-form state)
        ;; ;; Can't call prove-with-axe-fn directly here, because it returns extra
@@ -17419,7 +17419,7 @@
        ;;   (trans-eval-no-warning '(prove-with-axe-fn
        ;;                            ,dag-or-quotep ,assumptions ,types ,interpreted-function-alist ,test-types
        ;;                            ,tests ,tactic ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes
-       ;;                            ,initial-rule-set ,initial-rule-sets ,pre-simplifyp ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
+       ;;                            ,initial-rule-set ,initial-rule-sets ,pre-simplify-rec-fns ,extra-stuff ,specialize-fnsp ,monitor ,use-context-when-miteringp
        ;;                            ,random-seed ,unroll ,tests-per-case ,max-conflicts ,normalize-xors ,prove-constants ,proof-name ,keep-temp-dir
        ;;                            ',whole-form state)
        ;;                          'prove-with-axe
@@ -17453,7 +17453,7 @@
                                  tests
                                  tactic
                                  print debug-nodes runes rules rewriter-runes prover-runes initial-rule-set initial-rule-sets
-                                 pre-simplifyp extra-stuff specialize-fnsp
+                                 pre-simplify-rec-fnsp extra-stuff specialize-fnsp
                                  monitored-symbols use-context-when-miteringp
                                  random-seed unroll tests-per-case
                                  max-conflicts normalize-xors prove-constants
@@ -17483,7 +17483,7 @@
                               (axe-rule-listp initial-rule-set)
                               (all-axe-rule-listp initial-rule-sets)
                               (not (and initial-rule-set initial-rule-sets)) ;it would be ambiguous which one to use
-                              (booleanp pre-simplifyp)
+                              (booleanp pre-simplify-rec-fnsp)
                               (if (extra-stuff-okayp extra-stuff)
                                   t
                                 (prog2$ (cw "Extra stuff not okay: ~x0" extra-stuff) ;drop?
@@ -17546,7 +17546,7 @@
                              prover-runes ;used for the prover only (not the rewriter) ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                              initial-rule-set
                              initial-rule-sets
-                             pre-simplifyp
+                             pre-simplify-rec-fnsp
                              extra-stuff
                              specialize-fnsp
                              monitored-symbols ;check these and maybe flesh out symbols into runes? or just use a list of symbols?
@@ -17601,7 +17601,7 @@
                                   (prover-runes 'nil) ;used for the prover only (not the rewriter), affects soundness ;; it may be okay to put more expensive rules (e.g., those that split into cases here?)
                                   (initial-rule-set 'nil)
                                   (initial-rule-sets 'nil)
-                                  (pre-simplifyp 't) ;was nil
+                                  (pre-simplify-rec-fns 't) ;was nil
                                   (extra-stuff 'nil) ;ffixme does any of this affect soundness?
                                   (specialize-fnsp 'nil)
                                   (monitor 'nil)         ;a list of runes
@@ -17622,7 +17622,7 @@
                                  ,dag-or-term2
                                  ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
                                  ,print ,debug-nodes ,runes ,rules ,rewriter-runes ,prover-runes ,initial-rule-set ,initial-rule-sets
-                                 ,pre-simplifyp ,extra-stuff ,specialize-fnsp
+                                 ,pre-simplify-rec-fns ,extra-stuff ,specialize-fnsp
                                  ,monitor ,use-context-when-miteringp
                                  ,random-seed ,unroll ,tests-per-case
                                  ,max-conflicts ,normalize-xors ,prove-constants
@@ -17652,7 +17652,7 @@
                                 tactic
                                 print
                                 debug-nodes
-                                extra-rules initial-rule-sets ;; these differ from the + version
+                                extra-rules initial-rule-sets ;; these differ from prove-equal-with-axe+
                                 monitored-symbols use-context-when-miteringp
                                 random-seed
                                 ;;;
@@ -17750,7 +17750,7 @@
                              nil ;prover-runes
                              nil ;initial-rule-set
                              initial-rule-sets
-                             t   ;pre-simplifyp
+                             t   ;pre-simplify-rec-fnsp ; todo: try nil
                              nil ;extra-stuff
                              nil ;specialize-fnsp
                              monitored-symbols
@@ -20074,7 +20074,7 @@
 ;;                           prover-runes
 ;;                           initial-rule-set
 ;;                           initial-rule-sets
-;;                           pre-simplifyp
+;;                           pre-simplify-rec-fnsp
 ;;                           extra-stuff
 ;;                           specialize-fnsp
 ;;                           monitor
@@ -20101,7 +20101,7 @@
 ;;                :prover-runes prover-runes
 ;;                :initial-rule-set initial-rule-set
 ;;                :initial-rule-sets initial-rule-sets
-;;                :pre-simplifyp pre-simplifyp
+;;                :pre-simplify-rec-fnsp pre-simplify-rec-fnsp
 ;;                :extra-stuff extra-stuff
 ;;                :specialize-fnsp specialize-fnsp
 ;;                :monitor monitor
@@ -20132,7 +20132,7 @@
 ;;                                   ,(lookup-keyword :prover-runes rest)
 ;;                                   ,(lookup-keyword :initial-rule-set rest)
 ;;                                   ,(lookup-keyword :initial-rule-sets rest)
-;;                                   ,(lookup-keyword :pre-simplifyp rest)
+;;                                   ,(lookup-keyword :pre-simplify-rec-fnsp rest)
 ;;                                   ,(lookup-keyword :extra-stuff rest)
 ;;                                   ,(lookup-keyword :specialize-fnsp rest)
 ;;                                   ,(lookup-keyword :monitor rest)
