@@ -47,9 +47,9 @@
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-(local (include-book "kestrel/bv/arith" :dir :system)) ; todo: drop
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 (local (in-theory (disable mv-nth)))
@@ -1195,7 +1195,9 @@
                                          acl2::<-of-mod
                                          ACL2::BVCAT
                                          acl2::logapp
-                                         acl2::getbit)
+                                         acl2::getbit
+                                         acl2::logext-cases
+                                         abs)
                                         (acl2::mod-of-minus-arg1
                                          acl2::mod-of-minus-arg2
                                          acl2::bvcat-of-getbit-and-x-adjacent
