@@ -23,10 +23,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ signer-record
+(defxdoc+ signed-in-signer
   :parents (correctness)
   :short "Invariant that each correct signer of each proposal
-          has a record of the proposal in its state."
+          has the proposal in its state."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -56,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk signer-record-p ((systate system-statep))
+(define-sk signed-in-signer-p ((systate system-statep))
   :returns (yes/no booleanp)
   :short "Definition of the invariant."
   (forall (signer prop)
@@ -69,150 +69,150 @@
                          (set::in prop (omap::keys vstate.proposed))
                          (set::in prop vstate.endorsed)))))
   ///
-  (fty::deffixequiv-sk signer-record-p
+  (fty::deffixequiv-sk signed-in-signer-p
     :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled signer-record-p-when-init
+(defruled signed-in-signer-p-when-init
   :short "Establishment of the invariant in the initial states."
   (implies (system-initp systate)
-           (signer-record-p systate))
-  :enable (signer-record-p
+           (signed-in-signer-p systate))
+  :enable (signed-in-signer-p
            signed-props-when-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection signed-record-p-of-next
+(defsection signed-in-signer-p-of-next
   :short "Preservation of the invariant by single transitions."
 
-  (defruled signer-record-p-of-propose-next
+  (defruled signed-in-signer-p-of-propose-next
     (implies (and (propose-possiblep prop dests systate)
-                  (signer-record-p systate))
-             (signer-record-p (propose-next prop dests systate)))
-    :use (:instance signer-record-p-necc
-                    (signer (mv-nth 0 (signer-record-p-witness
+                  (signed-in-signer-p systate))
+             (signed-in-signer-p (propose-next prop dests systate)))
+    :use (:instance signed-in-signer-p-necc
+                    (signer (mv-nth 0 (signed-in-signer-p-witness
                                        (propose-next prop dests systate))))
-                    (prop (mv-nth 1 (signer-record-p-witness
+                    (prop (mv-nth 1 (signed-in-signer-p-witness
                                      (propose-next prop dests systate)))))
-    :enable (signer-record-p
+    :enable (signed-in-signer-p
              signed-props-of-propose-next
              validator-state->proposed-of-propose-next))
 
-  (defruled signer-record-p-of-endorse-next
+  (defruled signed-in-signer-p-of-endorse-next
     (implies (and (endorse-possiblep prop endor systate)
-                  (signer-record-p systate))
-             (signer-record-p (endorse-next prop endor systate)))
-    :use (:instance signer-record-p-necc
-                    (signer (mv-nth 0 (signer-record-p-witness
+                  (signed-in-signer-p systate))
+             (signed-in-signer-p (endorse-next prop endor systate)))
+    :use (:instance signed-in-signer-p-necc
+                    (signer (mv-nth 0 (signed-in-signer-p-witness
                                        (endorse-next prop endor systate))))
-                    (prop (mv-nth 1 (signer-record-p-witness
+                    (prop (mv-nth 1 (signed-in-signer-p-witness
                                      (endorse-next prop endor systate)))))
-    :enable (signer-record-p
+    :enable (signed-in-signer-p
              signed-props-of-endorse-next
              validator-state->endorsed-of-endorse-next))
 
-  (defruled signer-record-p-of-augment-next
+  (defruled signed-in-signer-p-of-augment-next
     (implies (and (augment-possiblep prop endor systate)
-                  (signer-record-p systate))
-             (signer-record-p (augment-next prop endor systate)))
-    :use (:instance signer-record-p-necc
-                    (signer (mv-nth 0 (signer-record-p-witness
+                  (signed-in-signer-p systate))
+             (signed-in-signer-p (augment-next prop endor systate)))
+    :use (:instance signed-in-signer-p-necc
+                    (signer (mv-nth 0 (signed-in-signer-p-witness
                                        (augment-next prop endor systate))))
-                    (prop (mv-nth 1 (signer-record-p-witness
+                    (prop (mv-nth 1 (signed-in-signer-p-witness
                                      (augment-next prop endor systate)))))
-    :enable (signer-record-p
+    :enable (signed-in-signer-p
              signed-props-of-augment-next
              validator-state->proposed-of-augment-next))
 
-  (defruled signer-record-p-of-certify-next
+  (defruled signed-in-signer-p-of-certify-next
     (implies (and (certify-possiblep cert dests systate)
-                  (signer-record-p systate))
-             (signer-record-p (certify-next cert dests systate)))
-    :use (:instance signer-record-p-necc
-                    (signer (mv-nth 0 (signer-record-p-witness
+                  (signed-in-signer-p systate))
+             (signed-in-signer-p (certify-next cert dests systate)))
+    :use (:instance signed-in-signer-p-necc
+                    (signer (mv-nth 0 (signed-in-signer-p-witness
                                        (certify-next cert dests systate))))
-                    (prop (mv-nth 1 (signer-record-p-witness
+                    (prop (mv-nth 1 (signed-in-signer-p-witness
                                      (certify-next cert dests systate)))))
-    :enable (signer-record-p
+    :enable (signed-in-signer-p
              signed-props-of-certify-next
              validator-state->dag-of-certify-next
              validator-state->proposed-of-certify-next
              cert-set->prop-set-of-insert
              omap::keys-of-delete))
 
-  (defruled signer-record-p-of-accept-next
+  (defruled signed-in-signer-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)
-                  (signer-record-p systate))
-             (signer-record-p (accept-next val cert systate)))
-    :use (:instance signer-record-p-necc
-                    (signer (mv-nth 0 (signer-record-p-witness
+                  (signed-in-signer-p systate))
+             (signed-in-signer-p (accept-next val cert systate)))
+    :use (:instance signed-in-signer-p-necc
+                    (signer (mv-nth 0 (signed-in-signer-p-witness
                                        (accept-next val cert systate))))
-                    (prop (mv-nth 1 (signer-record-p-witness
+                    (prop (mv-nth 1 (signed-in-signer-p-witness
                                      (accept-next val cert systate)))))
-    :enable (signer-record-p
+    :enable (signed-in-signer-p
              signed-props-of-accept-next
              validator-state->dag-of-accept-next
              validator-state->endorsed-of-accept-next
              cert-set->prop-set-of-insert))
 
-  (defruled signer-record-p-of-advance-next
+  (defruled signed-in-signer-p-of-advance-next
     (implies (and (advance-possiblep val systate)
-                  (signer-record-p systate))
-             (signer-record-p (advance-next val systate)))
-    :use (:instance signer-record-p-necc
-                    (signer (mv-nth 0 (signer-record-p-witness
+                  (signed-in-signer-p systate))
+             (signed-in-signer-p (advance-next val systate)))
+    :use (:instance signed-in-signer-p-necc
+                    (signer (mv-nth 0 (signed-in-signer-p-witness
                                        (advance-next val systate))))
-                    (prop (mv-nth 1 (signer-record-p-witness
+                    (prop (mv-nth 1 (signed-in-signer-p-witness
                                      (advance-next val systate)))))
-    :enable (signer-record-p
+    :enable (signed-in-signer-p
              signed-props-of-advance-next))
 
-  (defruled signer-record-p-of-commit-next
+  (defruled signed-in-signer-p-of-commit-next
     (implies (and (commit-possiblep val systate)
-                  (signer-record-p systate))
-             (signer-record-p (commit-next val systate)))
-    :use (:instance signer-record-p-necc
-                    (signer (mv-nth 0 (signer-record-p-witness
+                  (signed-in-signer-p systate))
+             (signed-in-signer-p (commit-next val systate)))
+    :use (:instance signed-in-signer-p-necc
+                    (signer (mv-nth 0 (signed-in-signer-p-witness
                                        (commit-next val systate))))
-                    (prop (mv-nth 1 (signer-record-p-witness
+                    (prop (mv-nth 1 (signed-in-signer-p-witness
                                      (commit-next val systate)))))
-    :enable (signer-record-p
+    :enable (signed-in-signer-p
              signed-props-of-commit-next))
 
-  (defruled signer-record-p-of-event-next
+  (defruled signed-in-signer-p-of-event-next
     (implies (and (event-possiblep event systate)
-                  (signer-record-p systate))
-             (signer-record-p (event-next event systate)))
+                  (signed-in-signer-p systate))
+             (signed-in-signer-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled signer-record-p-of-events-next
+(defruled signed-in-signer-p-of-events-next
   :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
-                (signer-record-p systate))
-           (signer-record-p (events-next events systate)))
+                (signed-in-signer-p systate))
+           (signed-in-signer-p (events-next events systate)))
   :induct t
   :enable (events-possiblep
            events-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled signer-record-p-when-reachable
+(defruled signed-in-signer-p-when-reachable
   :short "The invariant holds in every reachable state."
   (implies (system-state-reachablep systate)
-           (signer-record-p systate))
+           (signed-in-signer-p systate))
   :enable (system-state-reachablep
-           signer-record-p-when-init)
+           signed-in-signer-p-when-init)
   :prep-lemmas
   ((defrule lemma
      (implies (and (system-state-reachable-from-p systate from)
-                   (signer-record-p from))
-              (signer-record-p systate))
+                   (signed-in-signer-p from))
+              (signed-in-signer-p systate))
      :use (:instance
-           signer-record-p-of-events-next
+           signed-in-signer-p-of-events-next
            (events (system-state-reachable-from-p-witness systate from))
            (systate from))
      :enable system-state-reachable-from-p)))

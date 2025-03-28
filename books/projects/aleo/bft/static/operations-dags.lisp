@@ -145,7 +145,8 @@
                                     (dag certificate-setp))
     :guard (pos-set->=-pos (cert-set->round-set certs) round)
     :returns (previous-cert? certificate-optionp)
-    (and (not (set::emptyp certs))
+    (and (mbt (certificate-setp certs))
+         (not (set::emptyp certs))
          (or (path-to-author+round (set::head certs) author round dag)
              (path-to-author+round-set (set::tail certs) author round dag)))
     :measure (acl2::nat-list-measure (list (pos-set-max
@@ -259,7 +260,8 @@
                       round-leq-when-path-to-author+round-set))
 
   (defruled path-to-author+round-set-when-path-to-author+round-of-element
-    (implies (and (set::in cert certs)
+    (implies (and (certificate-setp certs)
+                  (set::in cert certs)
                   (path-to-author+round cert author round dag))
              (path-to-author+round-set certs author round dag))
     :induct (set::cardinality certs)
@@ -340,7 +342,7 @@
   (define certificate-set-causal-history ((certs certificate-setp)
                                           (dag certificate-setp))
     :returns (hist certificate-setp)
-    (cond ((set::emptyp certs) nil)
+    (cond ((set::emptyp (certificate-set-fix certs)) nil)
           (t (set::union
               (certificate-causal-history (set::head certs) dag)
               (certificate-set-causal-history (set::tail certs) dag))))
@@ -348,6 +350,8 @@
                                             (cert-set->round-set certs))
                                            1
                                            (set::cardinality certs))))
+
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
 
   :hints ; termination
   (("Goal"
