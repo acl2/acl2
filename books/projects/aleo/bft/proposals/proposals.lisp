@@ -146,6 +146,11 @@
 
   ///
 
+  (defret props-with-round-subset
+    (set::subset props-with-round props)
+    :hyp (proposal-setp props)
+    :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
+
   (defruled not-in-prop-set-when-none-with-round
     (implies (and (set::emptyp (props-with-round (proposal->round prop) props))
                   (proposal-setp props))
