@@ -601,26 +601,45 @@
            (weak-dagp x))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Recognize either a dag or a quoted constant (which can occur if rewriting
 ;; reduces a dag to simply a constant).
+;; Disable?
 (defun pseudo-dag-or-quotep (obj)
   (declare (xargs :guard t))
   (or (pseudo-dagp obj)
       (myquotep obj)))
 
-(defthm pseudo-dag-or-quotep-forward-to-pseudo-dagp-when-not-quote
+(defthm pseudo-dag-or-quotep-forward-to-pseudo-dagp-when-not-quotep
   (implies (and (pseudo-dag-or-quotep dag)
                 (not (quotep dag)))
            (pseudo-dagp dag))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dag-or-quotep))))
 
-(defthm PSEUDO-DAG-OR-QUOTEP-when-quotep-cheap
+(defthm pseudo-dag-or-quotep-when-quotep-cheap
   (implies (quotep x)
-           (equal (PSEUDO-DAG-OR-QUOTEP x)
+           (equal (pseudo-dag-or-quotep x)
                   (myquotep x)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable pseudo-dag-or-quotep))))
+
+;; ;; uses quotep as the normal form
+;; (defthmd pseudo-dagp-when-pseudo-dag-or-quotep-cheap
+;;   (implies (pseudo-dag-or-quotep obj)
+;;            (equal (pseudo-dagp obj)
+;;                   (not (quotep obj))))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+;; uses quotep as the normal form
+(defthmd myquotep-when-pseudo-dag-or-quotep-cheap
+  (implies (pseudo-dag-or-quotep obj)
+           (equal (myquotep obj)
+                  (quotep obj)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;
 ;; dag-vars
