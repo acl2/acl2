@@ -42,6 +42,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable state-p natp w
                            ;; for speed:
@@ -51,7 +52,7 @@
                            default-cdr
                            member-equal
                            nat-listp ; prevent induction
-                           )))
+                           ilks-plist-worldp)))
 
 ;move:
 
@@ -424,8 +425,8 @@
                                  ;; interpreted-fns
                                  ;; monitored-rules
                                  ;;call-stp
-                                 check-fnsp ; whether to check for prunable functions
                                  print
+                                 max-conflicts
                                  state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) *max-1d-array-length*)
@@ -435,16 +436,13 @@
                               ;; (symbol-listp monitored-rules)
                               ;; (or (booleanp call-stp)
                               ;;     (natp call-stp))
-                              (booleanp check-fnsp)
                               (print-levelp print)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (ilks-plist-worldp (w state)))
                   :guard-hints (("Goal" :in-theory (enable car-of-car-when-pseudo-dagp)))
                   :stobjs state))
-  (b* ((prunep (if check-fnsp (dag-fns-include-anyp dag '(if myif boolif bvif)) t))
-       ((when (not prunep))
-        (cw "(Note: No pruning to do.)~%")
-        (mv (erp-nil) dag state))
-       (- (cw "(Pruning DAG with approx. contexts (~x0 nodes, ~x1 unique):~%" (dag-or-quotep-size-fast dag) (len dag)))
+  (b* ((- (cw "(Pruning DAG with approx. contexts (~x0 nodes, ~x1 unique):~%" (dag-or-quotep-size-fast dag) (len dag)))
        (old-dag dag)
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; Generate the (approximate) contexts:
@@ -473,7 +471,7 @@
                                      dag-array dag-len dag-parent-array ; these do not get changed
                                      context-array
                                      print
-                                     60000 ;todo max-conflicts
+                                     max-conflicts
                                      nil   ; dag-acc
                                      state))
        ((when erp) (mv erp old-dag state))
@@ -504,7 +502,7 @@
                                                           ))
        ((when erp) (mv erp nil state))
        ((mv elapsed state) (real-time-since start-real-time state))
-       (- (cw " (Pruning took ")
+       (- (cw " (Pruning took ") ; todo: print for early exits above?
           (print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
           (cw "s.)~%"))
        ((when (quotep result-dag-or-quotep))
@@ -524,43 +522,44 @@
           (cw ")~%")))
     (mv (erp-nil) result-dag-or-quotep state)))
 
-(defthm w-of-mv-nth-2-of-prune-dag-approximately
-  (equal (w (mv-nth 2 (prune-dag-approximately dag assumptions check-fnsp print state)))
-         (w state))
-  :hints (("Goal" :in-theory (enable prune-dag-approximately))))
+(local
+  (defthm w-of-mv-nth-2-of-prune-dag-approximately
+    (equal (w (mv-nth 2 (prune-dag-approximately dag assumptions print max-conflicts state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable prune-dag-approximately)))))
 
-(local (in-theory (disable ilks-plist-worldp)))
-
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-
-(defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-approximately
-  (implies (and (not (mv-nth 0 (prune-dag-approximately dag assumptions check-fnsp print state))) ; no error
-                (pseudo-dagp dag)
-                (<= (len dag) *max-1d-array-length*)
-                (pseudo-term-listp assumptions)
-                (booleanp check-fnsp)
-                (print-levelp print)
-                (ilks-plist-worldp (w state))
-                (not (quotep (mv-nth 1 (prune-dag-approximately dag assumptions check-fnsp print state)))))
-           (pseudo-dagp (mv-nth 1 (prune-dag-approximately dag assumptions check-fnsp print state))))
-  :hints (("Goal" :in-theory (e/d (prune-dag-approximately car-of-car-when-pseudo-dagp)
-                                  (myquotep ; loop on simplify-dag-basic-return-type-corollary-2 without this
-                                   )))))
+(local
+  (defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-approximately
+    (implies (and (not (mv-nth 0 (prune-dag-approximately dag assumptions print max-conflicts state))) ; no error
+                  (pseudo-dagp dag)
+                  (<= (len dag) *max-1d-array-length*)
+                  (pseudo-term-listp assumptions)
+                  (ilks-plist-worldp (w state))
+                  (not (quotep (mv-nth 1 (prune-dag-approximately dag assumptions print max-conflicts state)))))
+             (pseudo-dagp (mv-nth 1 (prune-dag-approximately dag assumptions print max-conflicts state))))
+    :hints (("Goal" :in-theory (e/d (prune-dag-approximately car-of-car-when-pseudo-dagp)
+                                    (myquotep ; loop on simplify-dag-basic-return-type-corollary-2 without this
+                                     ))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp dag-or-quotep state).
-(defund maybe-prune-dag-approximately (prune-branches dag assumptions print state)
+;; TODO: Add option of which kinds of IF to prune
+;; TODO: Add support for pruning bv-array-ifs?
+(defund maybe-prune-dag-approximately (prune-branches ; t, nil, or a size limit
+                                       dag assumptions print max-conflicts state)
   (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
                               (pseudo-dagp dag)
                               (<= (len dag) *max-1d-array-length*)
                               (pseudo-term-listp assumptions)
                               (print-levelp print)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
   (b* (((when (not prune-branches))
-        ;; don't even print anything in this case, as we've been told not to prune
+        ;; We print nothing, as we've been told not to prune:
         (mv nil dag state))
        ((when (not (dag-fns-include-anyp dag '(if myif boolif bvif))))
         (cw "(Note: No pruning to do.)~%")
@@ -568,17 +567,30 @@
        ((when (and (natp prune-branches) ; it's a limit on the size
                    ;; todo: allow this to fail fast:
                    (not (dag-or-quotep-size-less-thanp dag prune-branches))))
-        ;; todo: don't recompute the size here:
-        (cw "(Note: Not pruning with approximate contexts since DAG size (~x0) exceeds ~x1.)~%" (dag-or-quotep-size-fast dag) prune-branches)
+        (cw "(Note: Not pruning with approximate contexts (DAG size exceeds ~x0.)~%" prune-branches)
         (mv nil dag state)))
     ;; prune-branches is either t or is a size limit and the dag is small enough, so we prune:
     (prune-dag-approximately dag
                              assumptions
-                             nil ; we already know there are prunable ops
-                             print
+                             print max-conflicts
                              state)))
 
 (defthm w-of-mv-nth-2-of-maybe-prune-dag-approximately
-  (equal (w (mv-nth 2 (maybe-prune-dag-approximately prune-branches dag assumptions print state)))
+  (equal (w (mv-nth 2 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state)))
          (w state))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-approximately))))
+
+(defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-approximately
+  (implies (and (not (mv-nth 0 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state))) ; no error
+                (not (quotep (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state))))
+                ;; (or (booleanp prune-branches)
+                ;;     (natp prune-branches))
+                (pseudo-dagp dag)
+                (<= (len dag) *max-1d-array-length*)
+                (pseudo-term-listp assumptions)
+                ;; (print-levelp print)
+                (or (null max-conflicts)
+                    (natp max-conflicts))
+                (ilks-plist-worldp (w state)))
+           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state))))
+  :hints (("Goal" :in-theory (e/d (maybe-prune-dag-approximately) (quotep)))))
