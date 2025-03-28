@@ -569,6 +569,83 @@
     bvchop-of-bvchop
     bvchop-of-bvcat-cases))
 
+
+;fixme a few of these are -all rules...
+;; todo: we shouldn't use these without the trim-helpers  - add them to this?
+(defun trim-rules ()
+  (declare (xargs :guard t))
+  '(;; -all and -non-all versions?
+    slice-trim-axe-all ;new
+    getbit-trim-axe-all  ;new
+    bvmult-trim-arg1-axe-all  ;seemed to need this for rc6 decrypt
+    bvmult-trim-arg2-axe-all  ;seemed to need this for rc6 decrypt
+    ;; bvmult-trim-arg1-axe
+    ;; bvmult-trim-arg2-axe
+    bvminus-trim-arg2-axe-all
+    bvminus-trim-arg3-axe-all
+    bvplus-trim-arg2-axe-all
+    bvplus-trim-arg3-axe-all
+    bvuminus-trim-axe-all
+    bvnot-trim-axe-all
+    bvand-trim-arg1-axe-all
+    bvand-trim-arg2-axe-all
+    ;; bvand-trim-arg1-axe
+    ;; bvand-trim-arg2-axe
+    bvor-trim-arg1-axe
+    bvor-trim-arg2-axe
+    ;; bvor-trim-arg1-axe-all ; use instead?
+    ;; bvor-trim-arg2-axe-all ; use instead?
+    bvxor-trim-arg1-axe
+    bvxor-trim-arg2-axe
+    ;; bvxor-trim-arg1-axe-all ; use instead?
+    ;; bvxor-trim-arg2-axe-all ; use instead?
+    bitnot-trim-axe-all
+    bitxor-trim-arg1-axe-all
+    bitxor-trim-arg2-axe-all
+    bitor-trim-arg1-axe-all
+    bitor-trim-arg2-axe-all
+    bitand-trim-arg1-axe-all
+    bitand-trim-arg2-axe-all
+    bvcat-trim-arg4-axe-all ;hope these are okay; seemed key for rc2 and maybe other proofs
+    bvcat-trim-arg2-axe-all
+    ;; bvcat-trim-arg2-axe
+    ;; bvcat-trim-arg4-axe
+    bvif-trim-arg1-axe
+    bvif-trim-arg2-axe
+    ;; bvif-trim-arg1-axe-all ; use instead?
+    ;; bvif-trim-arg2-axe-all ; use instead?
+    leftrotate32-trim-arg1-axe-all))
+
+(defun trim-helper-rules ()
+  (declare (xargs :guard t))
+  (append ;(bvchop-of-bv-rules) ; why?
+  '(;;need all of these if we are trimming (make sure we have the complete set for all ops we trim!)
+    trim-of-repeatbit ;improve?
+    trim-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
+    trim-of-bvmult
+    trim-of-bvminus
+    trim-of-bvuminus
+    trim-of-bvif
+    trim-of-bvnot
+    trim-of-bvand
+    trim-of-bvor
+    trim-of-bvxor
+    trim-of-bv-array-read
+    trim-of-bvsx
+    trim-of-slice
+    trim-of-bvchop
+    trim-of-bvcat
+    trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
+    ;; trim-does-nothing-axe ; should not be needed?
+    )))
+
+(defun all-trim-rules ()
+  (declare (xargs :guard t))
+  (append '(;;bvcat-trim-arg2-axe-all
+            ;;bvcat-trim-arg4-axe-all
+            )
+          (trim-rules)))
+
 ;;includes rules from bv-rules-axe.lisp and rules1.lisp and axe-rules-mixed.lisp and dagrules.lisp ?
 (defun core-rules-bv ()
   (declare (xargs :guard t))
@@ -578,6 +655,7 @@
    (bv-constant-chop-rules)
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
    (safe-trim-rules) ;in case trimming is disabled
+   (trim-helper-rules) ; in case some rule introduces trim (harmless if no rule does)
    (bv-function-of-bvchop-rules)
    (unsigned-byte-p-forced-rules) ; needed for some rules below
    '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
@@ -595,7 +673,7 @@
      leftrotate-of-0-arg3
      equal-of-leftrotate-and-leftrotate
      getbit-of-leftrotate-simple
-     bitand-of-leftrotate-arg1-trim
+     bitand-of-leftrotate-arg1-trim ; move these to trim-rules?
      bitand-of-leftrotate-arg2-trim
      bitor-of-leftrotate-arg1-trim
      bitor-of-leftrotate-arg2-trim
@@ -1852,81 +1930,6 @@
     ;; bvchop-of-bvnth
     ))
 
-;fixme a few of these are -all rules...
-;ffixme we shouldn't use these without the trim-helpers  - add them to this?
-(defun trim-rules ()
-  (declare (xargs :guard t))
-  '(;; -all and -non-all versions?
-    slice-trim-axe-all ;new
-    getbit-trim-axe-all  ;new
-    bvmult-trim-arg1-axe-all  ;seemed to need this for rc6 decrypt
-    bvmult-trim-arg2-axe-all  ;seemed to need this for rc6 decrypt
-    ;; bvmult-trim-arg1-axe
-    ;; bvmult-trim-arg2-axe
-    bvminus-trim-arg2-axe-all
-    bvminus-trim-arg3-axe-all
-    bvplus-trim-arg2-axe-all
-    bvplus-trim-arg3-axe-all
-    bvuminus-trim-axe-all
-    bvnot-trim-axe-all
-    bvand-trim-arg1-axe-all
-    bvand-trim-arg2-axe-all
-    ;; bvand-trim-arg1-axe
-    ;; bvand-trim-arg2-axe
-    bvor-trim-arg1-axe
-    bvor-trim-arg2-axe
-    ;; bvor-trim-arg1-axe-all ; use instead?
-    ;; bvor-trim-arg2-axe-all ; use instead?
-    bvxor-trim-arg1-axe
-    bvxor-trim-arg2-axe
-    ;; bvxor-trim-arg1-axe-all ; use instead?
-    ;; bvxor-trim-arg2-axe-all ; use instead?
-    bitnot-trim-axe-all
-    bitxor-trim-arg1-axe-all
-    bitxor-trim-arg2-axe-all
-    bitor-trim-arg1-axe-all
-    bitor-trim-arg2-axe-all
-    bitand-trim-arg1-axe-all
-    bitand-trim-arg2-axe-all
-    bvcat-trim-arg4-axe-all ;hope these are okay; seemed key for rc2 and maybe other proofs
-    bvcat-trim-arg2-axe-all
-    ;; bvcat-trim-arg2-axe
-    ;; bvcat-trim-arg4-axe
-    bvif-trim-arg1-axe
-    bvif-trim-arg2-axe
-    ;; bvif-trim-arg1-axe-all ; use instead?
-    ;; bvif-trim-arg2-axe-all ; use instead?
-    leftrotate32-trim-arg1-axe-all))
-
-(defun trim-helper-rules ()
-  (declare (xargs :guard t))
-  (append ;(bvchop-of-bv-rules) ; why?
-  '(;;need all of these if we are trimming (make sure we have the complete set for all ops we trim!)
-    trim-of-repeatbit ;improve?
-    trim-of-bvplus ;may not want these?  must have these if we have any of the -all trim rules?!
-    trim-of-bvmult
-    trim-of-bvminus
-    trim-of-bvuminus
-    trim-of-bvif
-    trim-of-bvnot
-    trim-of-bvand
-    trim-of-bvor
-    trim-of-bvxor
-    trim-of-bv-array-read
-    trim-of-bvsx
-    trim-of-slice
-    trim-of-bvchop
-    trim-of-bvcat
-    trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
-    ;; trim-does-nothing-axe ; should not be needed?
-    )))
-
-(defun all-trim-rules ()
-  (declare (xargs :guard t))
-  (append '(;;bvcat-trim-arg2-axe-all
-            ;;bvcat-trim-arg4-axe-all
-            )
-          (trim-rules)))
 
 (defun list-to-bv-array-rules ()
   (declare (xargs :guard t))
@@ -1985,6 +1988,7 @@
 
 ; despite the name, this also includes bv-array-rules and list rules!
 ;; TODO: Remove non-bv stuff from this:
+;; TODO: Consider removing the trim-rules from this, as they can cause blowup and perhaps also obscure rotate patterns
 (defun amazing-rules-bv ()
   (declare (xargs :guard t))
   (append (bvplus-rules) ; todo: maybe drop, as these are bad for md5, for example
@@ -2063,8 +2067,8 @@
           (unsigned-byte-p-rules)
           ;; probably more stuff needs to be added to this??  list stuff from more-rules / more-rules-yuck / jvm-rules-jvm?
           ;; (logext-rules)
-          (trim-rules)
-          (trim-helper-rules)      ;many dups here with the above...
+          (trim-rules) ; remove?
+          ;(trim-helper-rules)      ;many dups here with the above...
           (list-to-bv-array-rules) ;move to parents?
           ;;(yet-more-rules-jvm) ;TTODO: Drop this.  It includes JVM rules..  dropping this broke des-encrypt
           (yet-more-rules-non-jvm) ; not bv rules?
@@ -3994,6 +3998,7 @@
 
 ;; todo: compare to unroll-spec-rules above
 ;; todo: avoid trimming down things like xors (possibly to multiple different sizes)?
+;; todo: include reassemble-bv-rules, but they could loop with bit-blasting rules
 (defun unroll-spec-basic-rules ()
   (set-difference-eq
    (append (base-rules)
@@ -4021,8 +4026,10 @@
            ;;                      ))
            ;; (unsigned-byte-p-forced-rules)
            )
-   ;; can lead to blowup in lifting md5:
-   (bvplus-rules)))
+   (append (bvplus-rules) ;; can lead to blowup in lifting md5
+           (trim-rules) ;; can make things a lot bigger?
+           (bvchop-of-bv-rules)
+           )))
 
 ;outside-in rules.  Only used in rewriter-alt.lisp.
 (defun oi-rules ()
