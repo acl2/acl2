@@ -373,11 +373,13 @@
           (cw "Result is a constant!)~%") ; matches "(Running"
           (mv (erp-nil) dag-or-quote state))
          (dag dag-or-quote) ; it wasn't a quotep
-         ;; Prune the DAG quickly but possibly imprecisely:
-         ((mv erp dag-or-quotep state) (acl2::prune-dag-approximately dag
-                                                                      (remove-assumptions-about *non-stp-assumption-functions* assumptions)
-                                                                      t ; check-fnsp
-                                                                      print state))
+         ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
+         ((mv erp dag-or-quotep state) (acl2::maybe-prune-dag-approximately t ; todo: make an option?
+                                                                            dag
+                                                                            (remove-assumptions-about *non-stp-assumption-functions* assumptions)
+                                                                            print
+                                                                            60000 ; todo: pass in
+                                                                            state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
           (cw "Result is a constant!)~%") ; matches "(Running"

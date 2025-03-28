@@ -219,7 +219,9 @@
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
          ((mv erp dag-or-quotep state)
-          (maybe-prune-dag-approximately prune-branches-approximately dag assumptions print state))
+          (maybe-prune-dag-approximately prune-branches-approximately dag assumptions print
+                                         60000 ; todo: pass in
+                                         state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
