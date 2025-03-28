@@ -65,6 +65,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *unroll-spec-basic-functions-to-not-open*
+  (append '(leftrotate ; what about the sized versions of this?
+            rightrotate ; what about the sized versions of this?
+            nth update-nth len true-listp
+            nthcdr ; opener could loop with nth-of-cdr, etc.
+            firstn
+            take
+            append
+            list-to-bv-array
+            ifix nfix
+            floor mod
+            mv-nth
+            binary-logand
+            binary-logior
+            lognot
+            logorc1
+            binary-logeqv ; maybe
+            binary-logxor
+            integer-length
+            ;; group ; might as well unroll this
+            ;; ungroup ; might as well unroll this
+            fix
+            expt
+            repeat
+            make-list-ac
+            ;; these are not among the *bv-and-array-fns-we-can-translate*
+            ;; but we don't want to open then unconditionally:
+            bvshr
+            bvshl
+            bvashr)
+          *bv-and-array-fns-we-can-translate*))
+
 ;; TODO: Add more options, such as :print-interval, to pass through to simp-term
 ;; Returns (mv erp event state)
 ;; This function has invariant-risk but still seems quite fast.
@@ -143,45 +175,22 @@
             ;; Use the :standard rule set, which is (unroll-spec-basic-rules):
             (mv nil (unroll-spec-basic-rules))
           (if (eq :auto rules)
-              (b* (((mv defined-supporting-fns
+              (b* (;; Decide which functions should be opened:
+                   ((mv defined-supporting-fns-to-open
                         & ;undefined-fns
                         & ;stopper-fns-encountered
                         )
                     (fns-supporting-term term
                                          ;; Don't open these functions:
-                                         (append '(leftrotate ; what about the sized versions of this?
-                                                   rightrotate ; what about the sized versions of this?
-                                                   nth update-nth len true-listp
-                                                   nthcdr ; opener could loop with nth-of-cdr, etc.
-                                                   firstn
-                                                   take
-                                                   append
-                                                   list-to-bv-array
-                                                   ifix nfix
-                                                   floor mod
-                                                   mv-nth
-                                                   binary-logand
-                                                   binary-logior
-                                                   lognot
-                                                   logorc1
-                                                   binary-logeqv ; maybe
-                                                   binary-logxor
-                                                   integer-length
-                                                   ;; group ; might as well unroll this
-                                                   ;; ungroup ; might as well unroll this
-                                                   fix
-                                                   expt
-                                                   repeat
-                                                   make-list-ac
-                                                   ;; these are not among the *bv-and-array-fns-we-can-translate*
-                                                   ;; but we don't want to open then unconditionally:
-                                                   bvshr
-                                                   bvshl
-                                                   bvashr)
-                                                 *bv-and-array-fns-we-can-translate*)
+                                         *unroll-spec-basic-functions-to-not-open* ; todo: also stop at anything for which we have opener rules already (e.g., =)?
                                          (w state)))
+                   ;; Don't make openers for anything we've been told not to open (so including a recursive function in the :remove-rules
+                   ;; suppresses all of its automatic openers here):
+                   ;; (defined-supporting-fns-to-open (set-difference-eq defined-supporting-fns-to-open remove-rules)) ; todo: consider uncommenting
+                   ;; Don't make openers for functions like = that we will open anyway (todo: what about recursive openers):
+                   ;; (defined-supporting-fns-to-open (set-difference-eq defined-supporting-fns-to-open (unroll-spec-basic-rules))) ; todo: consider uncommenting
                    ((mv opener-events opener-rule-names)
-                    (opener-rules-for-fns defined-supporting-fns t '-for-unroll-spec-basic nil nil state))
+                    (opener-rules-for-fns defined-supporting-fns-to-open t '-for-unroll-spec-basic nil nil state))
                    (- (cw "Will use the following ~x0 additional opener rules: ~X12~%" (len opener-rule-names) opener-rule-names nil))
                    ;; todo: could loop with the openers (e.g., )?
                    (rule-names (append (unroll-spec-basic-rules)
@@ -190,8 +199,8 @@
             ;; rules is an explicit list of rules:
             (mv nil rules))))
        ;; Add the :extra-rules and remove the :remove-rules:
-       (rules (union-equal extra-rules base-rules))
-       (rules (set-difference-equal rules remove-rules))
+       (rules (union-eq extra-rules base-rules))
+       (rules (set-difference-eq rules remove-rules))
        ;; Submit any needed defopener rules:
        (state (submit-events-quiet pre-events state))
        ;; Make the rule-alist:
