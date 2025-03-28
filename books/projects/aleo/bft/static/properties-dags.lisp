@@ -400,7 +400,8 @@
      (("Goal" :in-theory (enable* certificate-causal-history
                                   certificate-set-causal-history
                                   set::expensive-rules
-                                  certificates-with-authors+round-subset))
+                                  certificates-with-authors+round-subset
+                                  emptyp-of-certificate-set-fix))
       (cond
        ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
         '(:expand ((certificate-causal-history cert dag2)))))
@@ -642,6 +643,7 @@
      which must be the same because of non-equivocation."))
   (implies (and (certificate-setp dag)
                 (certificate-set-unequivocalp dag)
+                (certificate-setp certs)
                 (set::subset certs dag)
                 (set::in cert certs)
                 (path-to-author+round cert author round dag))
@@ -887,7 +889,8 @@
                nil-not-in-certificate-set
                certificates-with-authors+round-subset
                certificate-causal-history-subset
-               certificate-set-causal-history-subset))
+               certificate-set-causal-history-subset
+               emptyp-of-certificate-set-fix))
      (cond
       ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
        '(:use (:instance round-leq-when-path-to-author+round-set

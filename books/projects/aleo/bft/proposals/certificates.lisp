@@ -276,6 +276,81 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define certs-with-prop ((prop proposalp) (certs certificate-setp))
+  :returns (certs-with-prop certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with a given proposal."
+  (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
+       (cert (set::head certs)))
+    (if (equal (certificate->proposal cert)
+               (proposal-fix prop))
+        (set::insert cert (certs-with-prop prop (set::tail certs)))
+      (certs-with-prop prop (set::tail certs))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret certs-with-prop-subset
+    (set::subset certs-with-prop certs)
+    :hyp (certificate-setp certs)
+    :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
+
+  (defruled cert-set->prop-set-of-certs-with-prop
+    (equal (cert-set->prop-set (certs-with-prop prop certs))
+           (if (set::emptyp (certs-with-prop prop certs))
+               nil
+             (set::insert (proposal-fix prop) nil)))
+    :induct t
+    :enable cert-set->prop-set-of-insert)
+
+  (defruled in-of-certs-with-prop
+    (equal (set::in cert (certs-with-prop prop certs))
+           (and (certificatep cert)
+                (set::in cert (certificate-set-fix certs))
+                (equal (certificate->proposal cert)
+                       (proposal-fix prop))))
+    :induct t)
+
+  (defruled certs-with-prop-monotone
+    (implies (set::subset (certificate-set-fix certs1)
+                          (certificate-set-fix certs2))
+             (set::subset (certs-with-prop prop certs1)
+                          (certs-with-prop prop certs2)))
+    :enable (in-of-certs-with-prop
+             set::expensive-rules)
+    :disable certs-with-prop)
+
+  (defruled emptyp-of-certs-with-prop
+    (equal (set::emptyp (certs-with-prop prop certs))
+           (not (set::in (proposal-fix prop)
+                         (cert-set->prop-set certs))))
+    :induct t
+    :enable cert-set->prop-set)
+
+  (defrule certs-with-prop-of-nil
+    (equal (certs-with-prop prop nil)
+           nil))
+
+  (defruled certificate->proposal-when-in-certs-with-prop
+    (implies (set::in cert (certs-with-prop prop certs))
+             (equal (certificate->proposal cert)
+                    (proposal-fix prop)))
+    :enable in-of-certs-with-prop
+    :disable certs-with-prop)
+
+  (defruled certificate->proposal-of-head-of-certs-with-prop
+    (implies (not (set::emptyp (certs-with-prop prop certs)))
+             (equal (certificate->proposal
+                     (set::head (certs-with-prop prop certs)))
+                    (proposal-fix prop)))
+    :use (:instance certificate->proposal-when-in-certs-with-prop
+                    (cert (set::head (certs-with-prop prop certs))))
+    :disable certs-with-prop))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define certs-with-author+round ((author addressp)
                                  (round posp)
                                  (certs certificate-setp))
@@ -297,9 +372,10 @@
 
   ///
 
-  (defrule certs-with-author+round-of-nil
-    (equal (certs-with-author+round author round nil)
-           nil))
+  (defret certs-with-author+round-subset
+    (set::subset certs-with-author+round certs)
+    :hyp (certificate-setp certs)
+    :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
 
   (defruled cert-set->author-set-of-certs-with-author+round
     (equal (cert-set->author-set
@@ -339,6 +415,10 @@
     :enable (in-of-certs-with-author+round
              set::expensive-rules)
     :disable certs-with-author+round)
+
+  (defrule certs-with-author+round-of-nil
+    (equal (certs-with-author+round author round nil)
+           nil))
 
   (defruled certs-with-author+round-of-insert
     (implies (and (certificatep cert)
@@ -427,6 +507,11 @@
 
   ///
 
+  (defret certs-with-round-subset
+    (set::subset certs-with-round certs)
+    :hyp (certificate-setp certs)
+    :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
+
   (defruled cert-set->round-set-of-certs-with-round
     (equal (cert-set->round-set (certs-with-round round certs))
            (if (set::emptyp (certs-with-round round certs))
@@ -494,6 +579,11 @@
   :hooks (:fix)
 
   ///
+
+  (defret certs-with-authors+round-subset
+    (set::subset certs-with-authors+round certs)
+    :hyp (certificate-setp certs)
+    :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
 
   (defruled cert-set->round-set-of-certs-with-authors+round
     (equal (cert-set->round-set
