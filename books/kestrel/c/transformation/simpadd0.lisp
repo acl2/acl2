@@ -4865,48 +4865,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-filepath ((path filepathp))
-  :returns (new-path filepathp)
-  :short "Transform a file path."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We only support file paths that consist of strings.
-     We transform the path by interposing @('.simpadd0')
-     just before the rightmost dot of the file extension, if any;
-     if there is no file extension, we just add @('.simpadd0') at the end.
-     So for instance a path @('path/to/file.c')
-     becomes @('path/to/file.simpadd0.c').")
-   (xdoc::p
-    "Note that this kind of file path transformations
-     supports chaining of transformations,
-     e.g. @('path/to/file.xform1.xform2.xform3.c')."))
-  (b* ((string (filepath->unwrap path))
-       ((unless (stringp string))
-        (raise "Misusage error: file path ~x0 is not a string." string)
-        (filepath "irrelevant"))
-       (chars (str::explode string))
-       (dot-pos-in-rev (index-of #\. (rev chars)))
-       ((when (not dot-pos-in-rev))
-        (filepath (str::implode (append chars
-                                        (str::explode ".simpadd0")))))
-       (last-dot-pos (- (len chars) dot-pos-in-rev))
-       (new-chars (append (take last-dot-pos chars)
-                          (str::explode "simpadd0.")
-                          (nthcdr last-dot-pos chars)))
-       (new-string (str::implode new-chars)))
-    (filepath new-string))
-  :guard-hints
-  (("Goal"
-    :use (:instance acl2::index-of-<-len
-                    (k #\.)
-                    (x (rev (str::explode (filepath->unwrap path)))))
-    :in-theory (e/d (nfix) (acl2::index-of-<-len))))
-  :hooks (:fix)
-  :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define simpadd0-filepath-transunit-map ((map filepath-transunit-mapp)
                                          (gin simpadd0-ginp)
                                          state)
@@ -4930,13 +4888,12 @@
              :vars nil
              :diffp nil)))
        ((mv path tunit) (omap::head map))
-       (new-path (simpadd0-filepath path))
        ((mv new-tunit (simpadd0-gout gout-tunit))
         (simpadd0-transunit tunit gin state))
        (gin (simpadd0-gin-update gin gout-tunit))
        ((mv new-map (simpadd0-gout gout-map))
         (simpadd0-filepath-transunit-map (omap::tail map) gin state)))
-    (mv (omap::update new-path new-tunit new-map)
+    (mv (omap::update path new-tunit new-map)
         (make-simpadd0-gout
          :events (append gout-tunit.events gout-map.events)
          :thm-name nil
