@@ -1979,7 +1979,7 @@
 
 (defthm bvplus-of-bvshl-becomes-bvcat-arg2
   (implies (and (<= amt size2)
-                (= size2 size) ; todo: gen!
+                (equal size2 size) ; todo: gen!
                 (natp size2)
                 (unsigned-byte-p amt x)
                 (natp size))
@@ -1989,7 +1989,7 @@
 
 (defthm bvplus-of-bvshl-becomes-bvcat-arg3
   (implies (and (<= amt size2)
-                (= size2 size) ; todo: gen!
+                (equal size2 size) ; todo: gen!
                 (natp size2)
                 (unsigned-byte-p amt x)
                 (natp size))

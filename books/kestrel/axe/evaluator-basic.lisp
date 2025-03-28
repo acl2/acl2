@@ -79,7 +79,6 @@
     (member-equal member-equal-unguarded)
     (unary-- unary---unguarded) ; primitive
     (expt expt-unguarded)
-    (= =-unguarded)
     (unary-/ unary-/-unguarded) ; primitive
     (binary-+ binary-+-unguarded) ; primitive
     (binary-* binary-*-unguarded) ; primitive
@@ -88,6 +87,7 @@
     (ceiling ceiling-unguarded)
     (lg lg-unguarded)
     power-of-2p ; unguarded
+    (= =-unguarded) ; not strictly needed if we turn = into EQUAL
     (eql eql-unguarded) ; not strictly needed if we turn EQL into EQUAL
     (eq eq-unguarded) ; not strictly needed if we turn EQ into EQUAL
     (< <-unguarded) ; primitive

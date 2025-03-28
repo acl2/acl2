@@ -337,8 +337,14 @@
 
 ;; This justifies evaluating calls to EQL below by calling EQUAL.
 (local
- (defthm eql-becomes-eql
+ (defthm eql-becomes-equal
    (equal (eql x y)
+          (equal x y))))
+
+;; This justifies evaluating calls to = below by calling EQUAL.
+(local
+ (defthm =-becomes-equal
+   (equal (= x y)
           (equal x y))))
 
 ;; (defund getbit-is-always-0-unguarded (n items)
@@ -448,8 +454,9 @@
                   (add-to-end add-to-end arg1 arg2)
                   (coerce coerce-unguarded arg1 arg2) ;see coerce-unguarded-correct
                   (< <-unguarded arg1 arg2) ;see <-unguarded-correct
-                  (equal equal arg1 arg2)   ;primitive
-                  (eql equal arg1 arg2)   ;to evaluate eql, just call equal (primitive)
+                  (equal equal arg1 arg2)   ;primitive, unguarded
+                  (eql equal arg1 arg2)   ;to evaluate eql, just call equal (primitive, unguarded)
+                  (= equal arg1 arg2)   ;to evaluate =, just call equal (primitive, unguarded)
                   (list-equiv list-equiv arg1 arg2) ;unguarded
                   (prefixp prefixp arg1 arg2) ;unguarded
                   (lookup-equal lookup-equal-unguarded arg1 arg2) ;or open to assoc-equal?
