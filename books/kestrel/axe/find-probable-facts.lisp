@@ -16,10 +16,12 @@
 
 (include-book "find-probable-facts-common")
 (include-book "evaluate-test-case") ; has skip-proofs
+(include-book "kestrel/utilities/print-levels" :dir :system)
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
+(local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 (local (in-theory (e/d (acl2-numberp-when-natp) (natp))))
 
@@ -323,7 +325,7 @@
   (declare (xargs :guard (and (nat-listp set)
                               (consp set)
                               (array1p test-case-array-name test-case-array)
-                              ;; print
+                              (print-levelp print)
                               (all-< set (alen1 test-case-array-name test-case-array))
                               (nat-list-listp acc))
                   :guard-hints (("Goal" :in-theory (enable true-listp-when-nat-list-listp)))))
@@ -333,7 +335,7 @@
     (if (not need-to-splitp)
         ;;in this case we don't recons the whole set
         (mv (cons set acc) 0 nil)
-      (b* ((- (and print (cw "~% (Splitting a set of ~x0 nodes.)" (len set))))
+      (b* ((- (and (print-level-at-least-tp print) (cw "~% (Splitting a set of ~x0 nodes.)" (len set))))
            ((mv node-to-value-alist unused-nodes)
             (node-to-value-alist-for-set set test-case-array-name test-case-array nil nil))
            ;; to group nodes with similar values:
@@ -428,7 +430,7 @@
                               (array1p test-case-array-name test-case-array)
                               (nat-list-listp acc)
                               (natp singleton-count-acc)
-                              ;; print
+                              (print-levelp print)
                               (all-all-< sets (alen1 test-case-array-name test-case-array))
                               (booleanp changep))
                   :guard-hints (("Goal" :in-theory (enable all-all-<)))))
@@ -714,7 +716,7 @@
                               (nat-listp (strip-cars probably-constant-node-alist))
                               (all-< (strip-cars probably-constant-node-alist) dag-len)
                               (interpreted-function-alistp interpreted-function-alist)
-                              ;; print
+                              (print-levelp print)
                               (symbolp test-case-array-name-base)
                               (booleanp keep-test-casesp)
                               (alistp test-case-array-alist)
@@ -945,7 +947,7 @@
                               (natp miter-depth)
                               (test-casesp test-cases)
                               (interpreted-function-alistp interpreted-function-alist)
-                              ;; print
+                              (print-levelp print)
                               (booleanp keep-test-casesp)
                               (nat-listp debug-nodes)
                               (all-< debug-nodes miter-len))
