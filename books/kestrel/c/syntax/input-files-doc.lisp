@@ -84,9 +84,9 @@
     (xdoc::desc
      "@(':path') &mdash; default @('\".\"')"
      (xdoc::p
-      "Path that the file paths are relative to.")
+      "Path that the file paths in @(':files') are relative to.")
      (xdoc::p
-      "This must a non-empty string that is a valid path name in the system.
+      "This must be a non-empty string that is a valid path name in the system.
        It may or may not end with a slash.
        A non-absolute path is relative to
        the connected book directory (see @(tsee cbd)).
@@ -104,17 +104,16 @@
       (xdoc::li
        "@('nil') (the default),
         in which case no preprocessing is done.
-        In this case, the files must be already in preprocessed form,
-        unless the @(':process') input (see below) is @('nil').")
+        In this case, the files must be already in preprocessed form.")
       (xdoc::li
        "A string,
         which names the preprocessor to use,
-        which must be in the current path.")
+        which must be in the current system path for executables.")
       (xdoc::li
        "@(':auto'),
         which implicitly names the preprocessor @('\"cpp\"')
         (a common default),
-        which must be in the current path."))
+        which must be in the current system path for executables."))
      (xdoc::p
       "The preprocessing (if this input is not @('nil')),
        is performed via the @(tsee preprocess-file) tool."))
@@ -124,7 +123,7 @@
      (xdoc::p
       "Specifies arguments to pass to the preprocessor.")
      (xdoc::p
-      "This must either absent or a list of zero or more strings,
+      "This must be either absent or a list of zero or more strings,
        each of which is an argument to pass, e.g. @('-I').")
      (xdoc::p
       "If @(':preprocess') is @('nil'),
@@ -229,6 +228,10 @@
        obtained by disambiguating the one resulting from the parser,
        and such that the abstract syntax representation passed validation;
        this abstract syntax is annotated with validation information.")
+     (xdoc::p
+      "In all cases, the keys of the translation unit ensemble map
+       are the file paths specified in the @(':files') input,
+       without the @(':path') prefix.")
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
