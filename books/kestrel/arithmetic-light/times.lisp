@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation *.
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -567,7 +567,7 @@
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
                 (< 0 k2) ;gen
-                (rationalp x)
+;                (rationalp x)
                 (rationalp k1)
                 (rationalp k2)
                 )
@@ -582,7 +582,7 @@
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
                 (< 0 k2) ;gen
-                (rationalp x)
+;                (rationalp x)
                 (rationalp k1)
                 (rationalp k2)
                 )
