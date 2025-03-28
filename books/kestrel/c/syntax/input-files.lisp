@@ -134,7 +134,10 @@
        ((unless (no-duplicatesp-equal files))
         (reterr (msg "The :FILES input must be a list without duplicates, ~
                       but the supplied ~x0 has duplicates."
-                     files))))
+                     files)))
+       ((unless (consp files))
+        (reterr (msg "The :FILES input must contain at least one element, ~
+                      but it does not contain any."))))
     (retok files)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

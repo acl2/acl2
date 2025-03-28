@@ -74,7 +74,7 @@
     (xdoc::desc
      "@(':files')"
      (xdoc::p
-      "List of zero or more file paths that specify the files to be read.")
+      "List of one or more file paths that specify the files to be read.")
      (xdoc::p
       "These paths are relative to
        the path specified by the @(':path') input.")
