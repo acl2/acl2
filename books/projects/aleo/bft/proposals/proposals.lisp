@@ -109,9 +109,24 @@
 
   ///
 
+  (defret props-with-author+round-subset
+    (set::subset props-with-author+round props)
+    :hyp (proposal-setp props)
+    :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
+
   (defrule props-with-author+round-of-nil
     (equal (props-with-author+round author round nil)
-           nil)))
+           nil))
+
+  (defruled in-of-props-with-author+round
+    (equal (set::in prop (props-with-author+round author round props))
+           (and (set::in prop (proposal-set-fix props))
+                (equal (proposal->author prop)
+                       (address-fix author))
+                (equal (proposal->round prop)
+                       (pos-fix round))))
+    :induct t
+    :enable emptyp-of-proposal-set-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
