@@ -1617,7 +1617,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rules) where rules is a list of axe-rules.
-; rename extend-rule-list
+; rename extend-rule-set
 (defun add-rules-to-rule-set (rule-names rule-set wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-listp rule-set)
@@ -1625,7 +1625,7 @@
   (b* (((mv erp rules) (make-axe-rules rule-names wrld))
        ((when erp) (mv erp rule-set)))
     (mv (erp-nil)
-        ;; todo: append here would be fasters: think about duplicates and ordering
+        ;; todo: append here would be faster: think about duplicates and ordering
         (union-equal rules rule-set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1646,7 +1646,7 @@
 ;; Returns (mv erp rule-sets).
 ;; Add the given rules to each rule set in RULE-SETS.
 ;todo: optimze?
-; rename extend-rule-lists
+; rename extend-rule-sets
 (defun add-rules-to-rule-sets (rule-names rule-sets wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
                               (axe-rule-setsp rule-sets)
@@ -1690,25 +1690,29 @@
 ;;       (cons (first rule-set)
 ;;             (remove-rule-from-rule-set rule (rest rule-set))))))
 
-;; (defun remove-rules-from-rule-set (rules rule-set)
-;;   (declare (xargs :guard (and (symbol-listp rules)
-;;                               (true-listp rules)
-;;                               (axe-rule-listp rule-set))))
-;;   (if (endp rules)
-;;       rule-set
-;;     (remove-rules-from-rule-set (rest rules)
-;;                                 (remove-rule-from-rule-set (first rules) rule-set))))
+(defund remove-rules-from-rule-set (rule-names rule-set acc)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (axe-rule-listp rule-set)
+                              (true-listp acc))))
+  (if (endp rule-set)
+      (reverse acc)
+    (let* ((this-axe-rule (first rule-set))
+           (this-rule-name (rule-symbol this-axe-rule)))
+      (remove-rules-from-rule-set rule-names
+                                  (rest rule-set)
+                                  (if (member-eq this-rule-name rule-names)
+                                      acc
+                                    (cons this-axe-rule acc))))))
 
-;; ;; Remove the RULES from each rule set in RULE-SETS.
-;; ;todo: optimze?
-;; (defun remove-rules-from-rule-sets (rules rule-sets)
-;;   (declare (xargs :guard (and (symbol-listp rules)
-;;                               (true-listp rules)
-;;                               (axe-rule-setsp rule-sets))))
-;;   (if (endp rule-sets)
-;;       nil
-;;     (cons (remove-rules-from-rule-set rules (first rule-sets))
-;;           (remove-rules-from-rule-sets rules (rest rule-sets)))))
+;; Remove the RULE-NAMES from each rule set in RULE-SETS.
+;todo: optimze?
+(defund remove-rules-from-rule-sets (rule-names rule-sets)
+  (declare (xargs :guard (and (symbol-listp rule-names)
+                              (axe-rule-setsp rule-sets))))
+  (if (endp rule-sets)
+      nil
+    (cons (remove-rules-from-rule-set rule-names (first rule-sets) nil)
+          (remove-rules-from-rule-sets rule-names (rest rule-sets)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
