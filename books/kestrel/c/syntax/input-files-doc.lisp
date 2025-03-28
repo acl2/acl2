@@ -53,12 +53,12 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files             ...  ; no default"
+     "(input-files :files             ...  ; required"
      "             :path              ...  ; default \".\""
      "             :preprocess        ...  ; default nil"
      "             :preprocess-args   ...  ; no default"
      "             :process           ...  ; default :validate"
-     "             :const             ...  ; no default"
+     "             :const             ...  ; required"
      "             :gcc               ...  ; default nil"
      "             :short-bytes       ...  ; default 2"
      "             :int-bytes         ...  ; default 4"

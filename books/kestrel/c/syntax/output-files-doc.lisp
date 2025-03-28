@@ -51,7 +51,7 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(output-files :const           ...  ; no default"
+     "(output-files :const           ...  ; required"
      "              :path            ...  ; default \".\""
      "              :printer-options ...  ; default nil"
      "  )"))

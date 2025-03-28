@@ -663,7 +663,7 @@
      a programmatic interface to the functionality of @(tsee input-files).
      It has the form:")
    (xdoc::codeblock
-    "(input-files-prog :files             ...  ; no default"
+    "(input-files-prog :files             ...  ; required"
     "                  :path              ...  ; default \".\""
     "                  :preprocess        ...  ; default nil"
     "                  :preprocess-args   ...  ; no default"
