@@ -498,10 +498,13 @@
 
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; A true counterexample returned in the info is fixed up to bind vars, not nodenums
-(defun apply-tactic-stp (problem rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts
-                                 counterexamplep
-                                 print-cex-as-signedp
-                                 state)
+(defun apply-tactic-stp (problem
+                         rule-alist ; do we want this?  it may apply unrelated rules
+                         interpreted-function-alist ; do we want this?  maybe it can't hurt
+                         monitor normalize-xors print max-conflicts
+                         counterexamplep
+                         print-cex-as-signedp
+                         state)
   (declare (xargs :guard (and (proof-problemp problem)
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
@@ -517,31 +520,35 @@
                                                          len-when-stp-resultp
                                                          true-listp-when-stp-resultp
                                                          cdr-when-stp-resultp-iff
-                                                         <-of-+-of-1-when-integers)
+                                                         <-of-+-of-1-when-integers
+                                                         myquotep-when-pseudo-dag-or-quotep-cheap
+                                                         ;; pseudo-dagp-when-pseudo-dag-or-quotep-cheap
+                                                         )
                                                         (myquotep quotep ilks-plist-worldp))
                                  :do-not '(generalize eliminate-destructors)))
                   :stobjs state))
-  (b* ((dag (first problem))
+  (b* ((dag-or-quotep (first problem))
        (assumptions (second problem))
-       ((when (quotep dag))
-        (if (unquote dag)
-            ;; Non-nil constant:
-            (prog2$ (cw "Note: The DAG is the constant ~x0.~%" (unquote dag))
-                    (mv *valid* nil state))
-          ;; The dag is the constant nil:
-          (prog2$
-           (cw "Note: The DAG is the constant NIL.~%")
-           (mv *invalid* nil state))))
-       ((when (not (< (car (car (first problem))) *max-1d-array-length*)))
-        (er hard? 'apply-tactic-stp "DAG too big.")
-        (mv *error* nil state))
+       ((when (quotep dag-or-quotep))
+        (let ((val (unquote dag-or-quotep)))
+          (prog2$ (cw "Note: The goal is the constant ~x0.~%" val)
+                  (if val
+                      ;; Non-nil constant:
+                      (mv *valid* nil state)
+                  ;; Nil constant:
+                  (mv *invalid* nil state)))))
+       (dag dag-or-quotep) ; it is in fact a dag
+       ;; todo: drop this check (simplify-dag-basic should do it):
+       ;; ((when (not (< (car (car dag)) *max-1d-array-length*)))
+       ;;  (er hard? 'apply-tactic-stp "DAG too big.")
+       ;;  (mv *error* nil state))
        ;; Replace stuff that STP can't handle (todo: push this into the STP translation)?:
        ((mv erp rule-alist) (add-to-rule-alist (pre-stp-rules) rule-alist (w state)))
        ((when erp)
         (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
         (mv *error* nil state))
-       ((mv erp dag & ;limits
-            ) ; todo: call dag dag-or-quotep
+       ((mv erp dag-or-quotep & ;limits
+            )
         (simplify-dag-basic dag
                             assumptions
                             rule-alist
@@ -556,19 +563,19 @@
                             nil ; fns-to-elide
                             ))
        ((when erp) (mv *error* nil state))
-       ((when (quotep dag))
-        (if (unquote dag)
-            ;; Non-nil constant:
-            (prog2$ (cw "Note: The DAG (after applying pre-STP rules) is the constant ~x0.~%" (unquote dag))
-                    (mv *valid* nil state))
-          ;; The dag is the constant nil:
-          (prog2$
-           (cw "Note: The DAG (after applying pre-STP rules) is the constant NIL.~%")
-           (mv *invalid* nil state))))
-       (- (and print (cw "(Pre-STP DAG: ~X01.)~%" dag nil)))
-       (- (and print (cw "(Using ~x0 assumptions: ~X12.)~%" (len assumptions) assumptions nil)))
+       ((when (quotep dag-or-quotep))
+        (let ((val (unquote dag-or-quotep)))
+          (prog2$ (cw "Note: The goal (after applying pre-STP rules) is the constant ~x0.~%" val)
+                  (if val
+                      ;; Non-nil constant:
+                      (mv *valid* nil state)
+                    ;; Nil constant:
+                    (mv *invalid* nil state)))))
+       (dag dag-or-quotep) ; it is in fact a dag
+       ;; Prepare to call STP:
        (dag-size (dag-size dag))
-       (- (and print (cw "(Applying STP tactic to prove: ~x0.~%" (if (< dag-size 100) (dag-to-term dag) dag))))
+       (- (and print (cw "(Applying STP tactic to prove: ~X01.~%" (if (< dag-size 100) (dag-to-term dag) dag) nil)))
+       (- (and print (cw "(Using ~x0 assumptions: ~X12.)~%" (len assumptions) assumptions nil)))
        ;; todo: pull out some of this machinery (given a dag and assumptions, set up a disjunction in a dag-array):
        (dag-array-name 'dag-array)
        (dag-array (make-dag-into-array dag-array-name dag 0))
@@ -577,13 +584,13 @@
        (dag-parent-array-name 'dag-parent-array)
        ((mv dag-parent-array dag-constant-alist dag-variable-alist)
         (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len))
-       ;; Add the assumptions to the DAG (todo: negating these may not be necessary once prove-disjunction-with-stp can take negated nodenums):
+       ;; Add the assumptions to the DAG (todo: negating these may not be necessary now that prove-disjunction-with-stp can take negated nodenums):
        ((mv erp negated-assumption-nodenum-or-quoteps dag-array dag-len dag-parent-array & &)
         (merge-trees-into-dag-array ;inefficient? call a merge-terms... function?  or call merge-trees-into-dag-array-basic?
          (negate-terms assumptions)
          nil
          dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-         nil ;fixme ifns
+         nil ; todo: ifns
          ))
        ((when erp) (mv *error* nil state))
        ;; Handle any disjuncts that are constants:
@@ -596,9 +603,9 @@
        (disjunct-nodenums (cons top-nodenum negated-assumption-nodenums))
        ((mv result state)
         (prove-disjunction-with-stp disjunct-nodenums ; Disjuncts that represent disjunctions are flattened
-                                    dag-array ;must be named 'dag-array (fixme generalize?)
+                                    dag-array ;must be named 'dag-array (todo generalize?)
                                     dag-len
-                                    dag-parent-array ;must be named 'dag-parent-array (fixme generalize?)
+                                    dag-parent-array ;must be named 'dag-parent-array (todo generalize?)
                                     "TACTIC-QUERY"
                                     print
                                     max-conflicts
