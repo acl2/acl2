@@ -10,7 +10,7 @@
 
 (in-package "CHACHA")
 
-;; The tests come from RFC 8439:
+;; The tests mostly come from RFC 8439:
 ;; https://datatracker.ietf.org/doc/html/rfc8439
 ;; Section numbers below refer to this RFC.
 
@@ -65,7 +65,7 @@
 
 ;; Sec 2.3.2
 (thm
-  (equal (initial-state *key* 1 *nonce*)
+  (equal (initial-state *key* 1 *nonce* 0)
          '(#x61707865 #x3320646e #x79622d32 #x6b206574
            #x03020100 #x07060504 #x0b0a0908 #x0f0e0d0c
            #x13121110 #x17161514 #x1b1a1918 #x1f1e1d1c
@@ -73,7 +73,7 @@
 
 ;; Sec 2.3.2
 (thm
-  (equal (double-rounds 1 (initial-state *key* 1 *nonce*))
+  (equal (double-rounds 1 (initial-state *key* 1 *nonce* 0))
          '(#x837778ab #xe238d763 #xa67ae21e #x5950bb2f
            #xc4f2d0c7 #xfc62bb2f #x8fa018fc #x3f5ec7b7
            #x335271c2 #xf29489f3 #xeabda8fc #x82e46ebd
@@ -81,7 +81,7 @@
 
 ;; Sec 2.3.2
 (thm
-  (let* ((state (initial-state *key* 1 *nonce*))
+  (let* ((state (initial-state *key* 1 *nonce* 0))
          (initial-state state)
          (state (double-rounds 1 state))
          (state (bvplus-list 32 state initial-state)))
@@ -93,7 +93,7 @@
 
 ;; Sec 2.3.2
 (thm
-  (equal (chacha20-block *key* 1 *nonce*)
+  (equal (chacha20-block *key* 1 *nonce* 0)
          '(#x10 #xf1 #xe7 #xe4 #xd1 #x3b #x59 #x15 #x50 #x0f #xdd #x1f #xa3 #x20 #x71 #xc4
            #xc7 #xd1 #xf4 #xc7 #x33 #xc0 #x68 #x03 #x04 #x22 #xaa #x9a #xc3 #xd4 #x6c #x4e
            #xd2 #x82 #x64 #x46 #x07 #x9f #xaa #x09 #x14 #xc2 #xd7 #x05 #xd9 #x8b #x02 #xa2
@@ -128,5 +128,40 @@
     #x87 #x4d))
 
 (thm
-  (equal (chacha20 *key* 1 *nonce2* *plaintext-sunscreen*)
+  (equal (chacha20 *key* 1 *nonce2* *plaintext-sunscreen* nil)
          *ciphertext-sunscreen*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tests involving the carry option:
+
+;; The 2 versions of the spec (with and without the carry option) agree for a single block:
+(thm
+  (equal (chacha20 (acl2::repeat 32 0) (+ -1 (expt 2 32)) (acl2::repeat 12 0) (acl2::repeat 64 0) nil)
+         (chacha20 (acl2::repeat 32 0) (+ -1 (expt 2 32)) (acl2::repeat 12 0) (acl2::repeat 64 0) t)))
+
+;; The 2 versions agree for a single block (general proof):
+(local (include-book "kestrel/bv/slice" :dir :system))
+(thm
+  (implies (and (= 64 (len plaintext)) ; only one block
+                (unsigned-byte-listp 8 key)
+                (= 32 (len key))
+                (unsigned-byte-p 32 counter)
+                (unsigned-byte-listp 8 nonce)
+                (= 12 (len nonce))
+                (unsigned-byte-listp 8 plaintext)
+                (booleanp carryp))
+           (equal (chacha20 key counter nonce plaintext nil)
+                  (chacha20 key counter nonce plaintext t)))
+  :hints (("Goal" :expand ((chacha20-loop 0 key counter nonce plaintext nil nil)
+                           (chacha20-loop 0 key counter nonce plaintext nil t))
+           :in-theory (enable chacha20-loop))))
+
+;; But the two versions can differ for multiple blocks, because the counter
+;; increment can overflow into the nonce.  Here we use the maximum 32-bit value
+;; for the counter so that incrementing it overflows (we use 0s for all other
+;; inputs):
+(thm
+  (not
+    (equal (chacha20 (acl2::repeat 32 0) (+ -1 (expt 2 32)) (acl2::repeat 12 0) (acl2::repeat 128 0) nil)
+           (chacha20 (acl2::repeat 32 0) (+ -1 (expt 2 32)) (acl2::repeat 12 0) (acl2::repeat 128 0) t))))

@@ -35,7 +35,6 @@
 ;(include-book "ihs/basic-definitions" :dir :system) ;for logext
 ;(include-book "to-signed")
 (include-book "bvcat2")
-(include-book "kestrel/arithmetic-light/power-of-2p" :dir :system)
 
 (local (include-book "sbvdiv")) ;; the verifies the guard of sbvdiv
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

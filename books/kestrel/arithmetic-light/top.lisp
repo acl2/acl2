@@ -52,6 +52,7 @@
 (include-book "lg-def")
 (include-book "lg")
 (include-book "log2")
+(include-book "power-of-2p-def")
 (include-book "power-of-2p")
 (include-book "rem")
 (include-book "ash")
