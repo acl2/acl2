@@ -145,7 +145,8 @@
                                     (dag certificate-setp))
     :guard (pos-set->=-pos (cert-set->round-set certs) round)
     :returns (previous-cert? certificate-optionp)
-    (and (not (set::emptyp certs))
+    (and (mbt (certificate-setp certs))
+         (not (set::emptyp certs))
          (or (path-to-author+round (set::head certs) author round dag)
              (path-to-author+round-set (set::tail certs) author round dag)))
     :measure (acl2::nat-list-measure (list (pos-set-max
@@ -263,7 +264,8 @@
                     cert)))
 
   (defruled path-to-author+round-set-when-path-to-author+round-of-element
-    (implies (and (set::in cert certs)
+    (implies (and (certificate-setp certs)
+                  (set::in cert certs)
                   (path-to-author+round cert author round dag))
              (path-to-author+round-set certs author round dag))
     :induct (set::cardinality certs)
@@ -331,7 +333,7 @@
   (define certificate-set-causal-history ((certs certificate-setp)
                                           (dag certificate-setp))
     :returns (hist certificate-setp)
-    (cond ((set::emptyp certs) nil)
+    (cond ((set::emptyp (certificate-set-fix certs)) nil)
           (t (set::union
               (certificate-causal-history (set::head certs) dag)
               (certificate-set-causal-history (set::tail certs) dag))))
@@ -339,6 +341,8 @@
                                             (cert-set->round-set certs))
                                            1
                                            (set::cardinality certs))))
+
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
 
   :hints
   (("Goal"
@@ -448,10 +452,11 @@
        :disable successors-loop)
 
      (defruled cert-set->round-set-of-successors-loop
-       (implies (equal (cert-set->round-set certs)
-                       (if (set::emptyp certs)
-                           nil
-                         (set::insert round nil)))
+       (implies (and (certificate-setp certs)
+                     (equal (cert-set->round-set certs)
+                            (if (set::emptyp certs)
+                                nil
+                              (set::insert round nil))))
                 (equal (cert-set->round-set (successors-loop certs prev))
                        (if (set::emptyp (successors-loop certs prev))
                            nil
@@ -1035,6 +1040,7 @@
      which must be the same because of non-equivocation."))
   (implies (and (certificate-setp dag)
                 (certificate-set-unequivocalp dag)
+                (certificate-setp certs)
                 (set::subset certs dag)
                 (set::in cert certs)
                 (path-to-author+round cert author round dag))
@@ -1601,7 +1607,8 @@
                 (enable* certificate-causal-history
                          certificate-set-causal-history
                          set::expensive-rules
-                         previous-certificates-of-unequivocal-superdag))))))
+                         previous-certificates-of-unequivocal-superdag
+                         emptyp-of-certificate-set-fix))))))
 
   (defruled certificate-causal-history-of-unequivocal-dags
     (implies (and (certificate-setp dag1)
@@ -1648,7 +1655,8 @@
                 (enable* certificate-causal-history
                          certificate-set-causal-history
                          set::expensive-rules
-                         previous-certificates-of-unequivocal-dags))
+                         previous-certificates-of-unequivocal-dags
+                         emptyp-of-certificate-set-fix))
                (cond
                 ((acl2::occur-lst
                   '(acl2::flag-is 'certificate-causal-history) clause)
@@ -1720,7 +1728,8 @@
                nil-not-in-certificate-set
                certs-with-authors+round-subset
                certificate-causal-history-subset
-               certificate-set-causal-history-subset))
+               certificate-set-causal-history-subset
+               emptyp-of-certificate-set-fix))
      (cond
       ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
        '(:use (:instance round-leq-when-path-to-author+round-set

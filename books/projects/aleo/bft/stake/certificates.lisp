@@ -209,26 +209,29 @@
 (define cert-set->round-set ((certs certificate-setp))
   :returns (rounds pos-setp)
   :short "Lift @(tsee certificate->round) to sets."
-  (cond ((set::emptyp certs) nil)
+  (cond ((set::emptyp (certificate-set-fix certs)) nil)
         (t (set::insert (certificate->round (set::head certs))
                         (cert-set->round-set (set::tail certs)))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
+  :hooks (:fix)
 
   ///
 
   (defrule emptyp-of-cert-set->round-set
     (equal (set::emptyp (cert-set->round-set certs))
-           (set::emptyp certs))
+           (set::emptyp (certificate-set-fix certs)))
     :induct t)
 
   (defruled certificate->round-in-cert-set->round-set
-    (implies (set::in cert certs)
+    (implies (set::in (certificate-fix cert)
+                      (certificate-set-fix certs))
              (set::in (certificate->round cert)
                       (cert-set->round-set certs)))
     :induct t)
 
   (defruled cert-set->round-set-monotone
-    (implies (set::subset certs1 certs2)
+    (implies (set::subset certs1 (certificate-set-fix certs2))
              (set::subset (cert-set->round-set certs1)
                           (cert-set->round-set certs2)))
     :induct t
@@ -236,25 +239,28 @@
              certificate->round-in-cert-set->round-set))
 
   (defruled cert-set->round-set-of-insert
-    (equal (cert-set->round-set (set::insert cert certs))
-           (set::insert (certificate->round cert)
-                        (cert-set->round-set certs)))
-    :induct t
-    :enable (set::in
-             certificate->round-in-cert-set->round-set))
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (equal (cert-set->round-set (set::insert cert certs))
+                    (set::insert (certificate->round cert)
+                                 (cert-set->round-set certs))))
+    :induct (set::weak-insert-induction cert certs)
+    :enable certificate->round-in-cert-set->round-set)
 
   (defruled cert-set->round-set-of-union
-    (equal (cert-set->round-set (set::union certs1 certs2))
-           (set::union (cert-set->round-set certs1)
-                       (cert-set->round-set (set::sfix certs2))))
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2))
+             (equal (cert-set->round-set (set::union certs1 certs2))
+                    (set::union (cert-set->round-set certs1)
+                                (cert-set->round-set certs2))))
     :induct t
     :enable (set::union
              cert-set->round-set-of-insert))
 
   (defruled same-certificate-round-when-cardinality-leq-1
     (implies (and (<= (set::cardinality (cert-set->round-set certs)) 1)
-                  (set::in cert1 certs)
-                  (set::in cert2 certs))
+                  (set::in cert1 (certificate-set-fix certs))
+                  (set::in cert2 (certificate-set-fix certs)))
              (equal (certificate->round cert1)
                     (certificate->round cert2)))
     :enable certificate->round-in-cert-set->round-set
@@ -548,9 +554,10 @@
            nil))
 
   (defruled emptyp-of-certs-with-round-to-no-round
-    (equal (set::emptyp (certs-with-round round certs))
-           (not (set::in (pos-fix round)
-                         (cert-set->round-set certs))))
+    (implies (certificate-setp certs)
+             (equal (set::emptyp (certs-with-round round certs))
+                    (not (set::in (pos-fix round)
+                                  (cert-set->round-set certs)))))
     :induct t
     :enable cert-set->round-set)
 
@@ -987,7 +994,8 @@
                 certificate->round-of-cert-with-author+round))))
 
   (defruled equal-certificate-authors-when-unequiv-and-same-round
-    (implies (and (certificate-set-unequivocalp certs)
+    (implies (and (certificate-setp certs)
+                  (certificate-set-unequivocalp certs)
                   (<= (set::cardinality (cert-set->round-set certs)) 1)
                   (set::in cert1 certs)
                   (set::in cert2 certs))
