@@ -3995,6 +3995,7 @@
 
 ;; todo: compare to unroll-spec-rules above
 ;; todo: avoid trimming down things like xors (possibly to multiple different sizes)?
+;; todo: include reassemble-bv-rules, but they could loop with bit-blasting rules
 (defun unroll-spec-basic-rules ()
   (set-difference-eq
    (append (base-rules)
@@ -4024,6 +4025,7 @@
            )
    (append (bvplus-rules) ;; can lead to blowup in lifting md5
            (trim-rules) ;; can make things a lot bigger?
+           (bvchop-of-bv-rules)
            )))
 
 ;outside-in rules.  Only used in rewriter-alt.lisp.
