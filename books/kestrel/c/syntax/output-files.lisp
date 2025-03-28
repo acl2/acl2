@@ -24,6 +24,8 @@
 (local (include-book "std/system/w" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -57,6 +59,7 @@
 (defval *output-files-allowed-options*
   :short "Keyword options accepted by @(tsee output-files)."
   (list :const
+        :path
         :printer-options)
   ///
   (assert-event (keyword-listp *output-files-allowed-options*))
@@ -117,6 +120,7 @@
                   :in-theory
                   (enable
                    transunit-ensemblep-when-output-files-process-tunits))))
+               (path stringp)
                (indent-size posp)
                (paren-nested-conds booleanp))
   :short "Process the inputs."
@@ -140,8 +144,13 @@
    (xdoc::p
     "The @('tunits') result of this function is the translation unit ensemble.
      The other results are the homonymous inputs
-     (some are sub-inputs of the @(':printer-options') input)."))
-  (b* (((reterr) (irr-transunit-ensemble) 1 nil)
+     (some are sub-inputs of the @(':printer-options') input).")
+   (xdoc::p
+    "If the @(':path') string is not @('/') but ends with @('/'),
+     we remove the ending @('/').
+     This is for uniformity when concatenating this
+     with the files specified in the @(':files') input."))
+  (b* (((reterr) (irr-transunit-ensemble) "" 1 nil)
        ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args args *output-files-allowed-options*))
@@ -186,6 +195,24 @@
                  (msg "the value of the ~x0 named constant, ~
                        specified by the :CONST input,"
                       (cdr const-option)))))
+       ;; Process :PATH input.
+       (path-option (assoc-eq :path options))
+       (path (if path-option
+                 (cdr path-option)
+               "."))
+       ((unless (stringp path))
+        (reterr (msg "The :PATH input must be a string, ~
+                      but it is ~x0 instead."
+                     path)))
+       (path-chars (str::explode path))
+       ((unless (consp path-chars))
+        (reterr (msg "The :PATH input must be not empty, ~
+                      but it is the empty string instead.")))
+       (path-chars (if (and (consp (cdr path-chars))
+                            (eql (car (last path-chars)) #\/))
+                       (butlast path-chars 1)
+                     path-chars))
+       (path (str::implode path-chars))
        ;; Process :PRINTER-OPTIONS input.
        (printer-options-option (assoc-eq :printer-options options))
        (printer-options (if printer-options-option
@@ -237,6 +264,7 @@
                       but it is ~x0 instead."
                      paren-nested-conds))))
     (retok tunits
+           path
            indent-size
            paren-nested-conds))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp
@@ -257,6 +285,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define output-files-gen-files ((tunits transunit-ensemblep)
+                                (path stringp)
                                 (indent-size posp)
                                 (paren-nested-conds booleanp)
                                 state)
@@ -270,27 +299,30 @@
        (files (print-fileset tunits options))
        ;; Write the files to the file system.
        ((erp state)
-        (output-files-gen-files-loop (fileset->unwrap files) state)))
+        (output-files-gen-files-loop (fileset->unwrap files) path state)))
     (retok state))
   :prepwork
-  ((define output-files-gen-files-loop ((map filepath-filedata-mapp) state)
+  ((define output-files-gen-files-loop ((map filepath-filedata-mapp)
+                                        (path stringp)
+                                        state)
      :returns (mv erp state)
      :parents nil
      (b* (((reterr) state)
           ((when (omap::emptyp map)) (retok state))
-          ((mv path data) (omap::head map))
-          (path-string (filepath->unwrap path))
-          ((unless (stringp path-string))
+          ((mv filepath data) (omap::head map))
+          (file-string (filepath->unwrap filepath))
+          ((unless (stringp file-string))
            (reterr (msg "File path must contain a string, ~
                          but it contains ~x0 instead."
-                        path-string)))
+                        file-string)))
+          (path-to-write (str::cat path "/" file-string))
           ((mv erp state) (acl2::write-bytes-to-file! (filedata->unwrap data)
-                                                      path-string
+                                                      path-to-write
                                                       'output-files
                                                       state))
           ((when erp)
-           (reterr (msg "Writing ~x0 failed." path-string))))
-       (output-files-gen-files-loop (omap::tail map) state)))))
+           (reterr (msg "Writing ~x0 failed." path-to-write))))
+       (output-files-gen-files-loop (omap::tail map) path state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -303,11 +335,13 @@
   :short "Process the inputs and generate the files."
   (b* (((reterr) state)
        ((erp tunits
+             path
              indent-size
              paren-nested-conds)
         (output-files-process-inputs arg args progp (w state)))
        ((erp state)
         (output-files-gen-files tunits
+                                path
                                 indent-size
                                 paren-nested-conds
                                 state)))
@@ -348,6 +382,7 @@
      It has the form:")
    (xdoc::codeblock
     "(output-files-prog tunits"
+    "                   :path            ...  ; default \".\""
     "                   :printer-options ...  ; default nil"
     "  )")
    (xdoc::p
