@@ -173,7 +173,11 @@
                                                    expt
                                                    repeat
                                                    make-list-ac
-                                                   )
+                                                   ;; these are not among the *bv-and-array-fns-we-can-translate*
+                                                   ;; but we don't want to open then unconditionally:
+                                                   bvshr
+                                                   bvshl
+                                                   bvashr)
                                                  *bv-and-array-fns-we-can-translate*)
                                          (w state)))
                    ((mv opener-events opener-rule-names)
