@@ -3153,11 +3153,11 @@
                      :vars gout-declor.vars
                      :diffp gout-declor.diffp)))
        :array (b* (((mv new-decl (simpadd0-gout gout-decl))
-                    (simpadd0-dirdeclor dirdeclor.decl gin state))
+                    (simpadd0-dirdeclor dirdeclor.declor gin state))
                    (gin (simpadd0-gin-update gin gout-decl))
                    ((mv new-expr? (simpadd0-gout gout-expr?))
                     (simpadd0-expr-option dirdeclor.expr? gin state)))
-                (mv (make-dirdeclor-array :decl new-decl
+                (mv (make-dirdeclor-array :declor new-decl
                                           :tyquals dirdeclor.tyquals
                                           :expr? new-expr?)
                     (make-simpadd0-gout
@@ -3168,12 +3168,12 @@
                      :vars (set::union gout-decl.vars gout-expr?.vars)
                      :diffp (or gout-decl.diffp gout-expr?.diffp))))
        :array-static1 (b* (((mv new-decl (simpadd0-gout gout-decl))
-                            (simpadd0-dirdeclor dirdeclor.decl gin state))
+                            (simpadd0-dirdeclor dirdeclor.declor gin state))
                            (gin (simpadd0-gin-update gin gout-decl))
                            ((mv new-expr (simpadd0-gout gout-expr))
                             (simpadd0-expr dirdeclor.expr gin state)))
                         (mv (make-dirdeclor-array-static1
-                             :decl new-decl
+                             :declor new-decl
                              :tyquals dirdeclor.tyquals
                              :expr new-expr)
                             (make-simpadd0-gout
@@ -3184,12 +3184,12 @@
                              :vars (set::union gout-decl.vars gout-expr.vars)
                              :diffp (or gout-decl.diffp gout-expr.diffp))))
        :array-static2 (b* (((mv new-decl (simpadd0-gout gout-decl))
-                            (simpadd0-dirdeclor dirdeclor.decl gin state))
+                            (simpadd0-dirdeclor dirdeclor.declor gin state))
                            (gin (simpadd0-gin-update gin gout-decl))
                            ((mv new-expr (simpadd0-gout gout-expr))
                             (simpadd0-expr dirdeclor.expr gin state)))
                         (mv (make-dirdeclor-array-static2
-                             :decl new-decl
+                             :declor new-decl
                              :tyquals dirdeclor.tyquals
                              :expr new-expr)
                             (make-simpadd0-gout
@@ -3200,8 +3200,8 @@
                              :vars (set::union gout-decl.vars gout-expr.vars)
                              :diffp (or gout-decl.diffp gout-expr.diffp))))
        :array-star (b* (((mv new-decl (simpadd0-gout gout-decl))
-                         (simpadd0-dirdeclor dirdeclor.decl gin state)))
-                     (mv (make-dirdeclor-array-star :decl new-decl
+                         (simpadd0-dirdeclor dirdeclor.declor gin state)))
+                     (mv (make-dirdeclor-array-star :declor new-decl
                                                     :tyquals dirdeclor.tyquals)
                          (make-simpadd0-gout
                           :events gout-decl.events
@@ -3211,14 +3211,14 @@
                           :vars gout-decl.vars
                           :diffp gout-decl.diffp)))
        :function-params (b* (((mv new-decl (simpadd0-gout gout-decl))
-                              (simpadd0-dirdeclor dirdeclor.decl gin state))
+                              (simpadd0-dirdeclor dirdeclor.declor gin state))
                              (gin (simpadd0-gin-update gin gout-decl))
                              ((mv new-params (simpadd0-gout gout-params))
                               (simpadd0-paramdecl-list dirdeclor.params
                                                        gin
                                                        state)))
                           (mv (make-dirdeclor-function-params
-                               :decl new-decl
+                               :declor new-decl
                                :params new-params
                                :ellipsis dirdeclor.ellipsis)
                               (make-simpadd0-gout
@@ -3231,9 +3231,9 @@
                                                  gout-params.vars)
                                :diffp (or gout-decl.diffp gout-params.diffp))))
        :function-names (b* (((mv new-decl (simpadd0-gout gout-decl))
-                             (simpadd0-dirdeclor dirdeclor.decl gin state)))
+                             (simpadd0-dirdeclor dirdeclor.declor gin state)))
                          (mv (make-dirdeclor-function-names
-                              :decl new-decl
+                              :declor new-decl
                               :names dirdeclor.names)
                              (make-simpadd0-gout
                               :events gout-decl.events
@@ -4626,7 +4626,7 @@
        ((unless (dirdeclor-case declor.direct :function-params))
         (mv new-fundef gout-no-thm))
        (params (dirdeclor-function-params->params declor.direct))
-       (dirdeclor (c$::dirdeclor-function-params->decl declor.direct))
+       (dirdeclor (c$::dirdeclor-function-params->declor declor.direct))
        ((unless (dirdeclor-case dirdeclor :ident))
         (raise "Internal error: ~x0 is not just the function name."
                dirdeclor)
