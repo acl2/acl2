@@ -17652,7 +17652,7 @@
                                 tactic
                                 print
                                 debug-nodes
-                                extra-rules initial-rule-sets ;; these differ from prove-equal-with-axe+
+                                extra-rules remove-rules initial-rule-sets ;; these differ from prove-equal-with-axe+
                                 monitored-symbols use-context-when-miteringp
                                 random-seed
                                 ;;;
@@ -17685,6 +17685,7 @@
                                (null max-conflicts)
                                (natp max-conflicts))
                            (symbol-listp extra-rules)
+                           (symbol-listp remove-rules)
                            (or (eq :auto initial-rule-sets)
                                (axe-rule-setsp initial-rule-sets))
                            (symbol-listp monitored-symbols)
@@ -17729,6 +17730,8 @@
                                      ;; special case: no initial-rule-sets, but extra-rules are given (TODO: Think about this):
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state))
+       ;; Then remove the remove-rules:
+       (initial-rule-sets (if remove-rules (remove-rules-from-rule-sets remove-rules initial-rule-sets) initial-rule-sets))
        ;; Choose a name for the miter:
        (dag-or-term-form1 (farg1 whole-form)) ; todo: why "quoted"?
        (dag-or-term-form2 (farg2 whole-form))
@@ -17809,6 +17812,7 @@
                                     (print ':brief)
                                     (debug-nodes 'nil)
                                     (extra-rules 'nil)
+                                    (remove-rules 'nil)
                                     (initial-rule-sets ':auto)
                                     (monitor 'nil)
                                     (use-context-when-miteringp 'nil) ;todo: try t
@@ -17825,7 +17829,7 @@
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-equal-with-axe"
        (prove-equal-with-axe-fn ,dag-or-term1 ,dag-or-term2 ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
-                                ,print ,debug-nodes ,extra-rules ,initial-rule-sets
+                                ,print ,debug-nodes ,extra-rules ,remove-rules ,initial-rule-sets
                                 ,monitor ,use-context-when-miteringp ,random-seed
                                 ,max-conflicts ,normalize-xors ,prove-constants
                                 ,proof-name ,keep-temp-dir ,check-vars
@@ -17847,7 +17851,8 @@
          (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (print "Print verbosity (allows nil, :brief, t, and :verbose)")
          (debug-nodes "Nodenums whose values should be printed for each test-case, and whose subdags should be printing when attempting a merge.  These nodenums refer to the DAG used for sweeping-and-merging (after pre-simplification, etc, if any), specifically the DAG for the first sweep.")
-         (extra-rules "The names of extra rules to use when simplifying (a symbol list)")
+         (extra-rules "A symbol list containing the names of extra rules to use when simplifying")
+         (remove-rules "A symbol list containing the names of rules to be removed from the set of rules used when simplifying")
          (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets)")
          (monitor "Rule names (symbols) to monitor when rewriting")
          (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")
