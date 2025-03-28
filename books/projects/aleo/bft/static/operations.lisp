@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -12,7 +12,6 @@
 (in-package "ALEOBFT-STATIC")
 
 (include-book "operations-faults-and-quora")
-(include-book "operations-certificate-retrieval")
 (include-book "operations-leaders")
 (include-book "operations-author-round-pairs")
 (include-book "operations-previous-certificates")
@@ -40,7 +39,6 @@
      to formulate and prove correctness
      are in @(see operations-additional)."))
   :order-subtopics (operations-faults-and-quora
-                    operations-certificate-retrieval
                     operations-leaders
                     operations-author-round-pairs
                     operations-previous-certificates

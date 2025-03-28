@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-STATIC")
 
-(include-book "operations-certificate-retrieval")
+(include-book "certificates")
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 
@@ -33,7 +33,7 @@
    (xdoc::p
     "We introduce operations on sets of certificates representing DAGs.
      Some operations on sets of certificates
-     are introduced in @(see operations-certificate-retrieval),
+     are introduced in @(see certificates),
      but those are really about general sets of certificates,
      while the ones introduced here are more specific to DAGs."))
   :order-subtopics t

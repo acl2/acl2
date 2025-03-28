@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-STATIC")
 
-(include-book "operations-certificate-retrieval")
+(include-book "certificates")
 
 (include-book "std/util/define-sk" :dir :system)
 
