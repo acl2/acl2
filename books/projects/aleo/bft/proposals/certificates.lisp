@@ -297,6 +297,11 @@
 
   ///
 
+  (defret certs-with-author+round-subset
+    (set::subset certs-with-author+round certs)
+    :hyp (certificate-setp certs)
+    :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
+
   (defrule certs-with-author+round-of-nil
     (equal (certs-with-author+round author round nil)
            nil))
