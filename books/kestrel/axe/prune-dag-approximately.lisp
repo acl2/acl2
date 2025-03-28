@@ -546,7 +546,8 @@
 ;; Returns (mv erp dag-or-quotep state).
 ;; TODO: Add option of which kinds of IF to prune
 ;; TODO: Add support for pruning bv-array-ifs?
-(defund maybe-prune-dag-approximately (prune-branches ; t, nil, or a size limit
+;; TODO: Add support for not trying to resolve conditions that are too large (e.g., top-level conjuncts of crypto tests).
+(defund maybe-prune-dag-approximately (prune-branches ; t, nil, or dag-size limit
                                        dag assumptions print max-conflicts state)
   (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
@@ -564,7 +565,7 @@
        ((when (not (dag-fns-include-anyp dag '(if myif boolif bvif))))
         (cw "(Note: No pruning to do.)~%")
         (mv nil dag state))
-       ((when (and (natp prune-branches) ; it's a limit on the size
+       ((when (and (natp prune-branches) ; it's a limit on the dag-size
                    ;; todo: allow this to fail fast:
                    (not (dag-or-quotep-size-less-thanp dag prune-branches))))
         (cw "(Note: Not pruning with approximate contexts (DAG size exceeds ~x0.)~%" prune-branches)
