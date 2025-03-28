@@ -335,7 +335,7 @@
     (if (not need-to-splitp)
         ;;in this case we don't recons the whole set
         (mv (cons set acc) 0 nil)
-      (b* ((- (and print (cw "~% (Splitting a set of ~x0 nodes.)" (len set))))
+      (b* ((- (and (print-level-at-least-tp print) (cw "~% (Splitting a set of ~x0 nodes.)" (len set))))
            ((mv node-to-value-alist unused-nodes)
             (node-to-value-alist-for-set set test-case-array-name test-case-array nil nil))
            ;; to group nodes with similar values:
