@@ -17,6 +17,7 @@
 ;We make this non-local because it is (currently) needed to have a full theory
 ;about expt when the base is 2:
 (include-book "expt")
+(include-book "power-of-2p-def")
 
 (local (include-book "times"))
 (local (include-book "times-and-divide"))
@@ -224,12 +225,6 @@
                        0
                      (+ 1 n))))
    :hints (("Goal" :in-theory (enable integer-length expt)))))
-
-;dup
-(defund power-of-2p (x)
-  (declare (xargs :guard t))
-  (and (natp x) ;otherwise, this would count 1/2 but not 1/4
-       (= x (expt 2 (+ -1 (integer-length x))))))
 
 ;; Solves for i.
 ;; See also equal-of-expt2-and-constant-gen, but we need log2 to state that.
