@@ -295,10 +295,7 @@
    (xdoc::p
     "If there is a certificate with the given author and round,
      the first one found is returned,
-     according to the total ordering of the set.
-     However, when a certificate set is unequivocal,
-     i.e. it has unique author-round combinations,
-     the first certificate found is the only one."))
+     according to the total ordering of the set."))
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs))
        ((when (and (equal author cert.author)

@@ -452,7 +452,7 @@
   (xdoc::topstring
    (xdoc::p
     "If there is no certificate with the given author and round,
-     or if there is more thatn one,
+     or if there is more than one,
      @('nil') is returned, for no certificate.
      Otherwise, if there is exactly one certificate with that author and round,
      the certificate is returned."))

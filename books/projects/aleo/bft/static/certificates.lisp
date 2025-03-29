@@ -284,8 +284,8 @@
                                        (round posp)
                                        (certs certificate-setp))
   :returns (cert? certificate-optionp)
-  :short "Retrieve the certificate from a set
-          with a given author and round."
+  :short "Retrieve, from a set of certificates,
+          a certificate with a given author and round."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -294,10 +294,7 @@
    (xdoc::p
     "If there is a certificate with the given author and round,
      the first one found is returned,
-     according to the total ordering of the set.
-     However, this function will be used in sets where certificates
-     have unique combinations of author and round,
-     which justifies the use of `the' above in `Retrieve the certificate...'."))
+     according to the total ordering of the set."))
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs))
        ((when (and (equal author cert.author)
