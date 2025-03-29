@@ -1188,7 +1188,7 @@
          (output "An indication of which state component(s) will hold the result of the computation being lifted.  See output-indicatorp.")
          (use-internal-contextsp "Whether to use contextual information from ovararching conditionals when simplifying DAG nodes.")
          ;; todo: better name?  only for precise pruning:
-         (prune "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing an (exclusive) limit on the maximum size of the DAG if represented as a term.  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
+         (prune "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
          ;; todo: how do these affect assumption simp:
          (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64).")
          (remove-rules "Rules to turn off.")
