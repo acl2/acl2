@@ -351,6 +351,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection cert-set->prop-set-ext
+  :extension cert-set->prop-set
+
+  (defruled in-of-cert-set->prop-set
+    (implies (certificate-setp certs)
+             (equal (set::in prop (cert-set->prop-set certs))
+                    (b* ((cert (set::head (certs-with-prop prop certs))))
+                      (and (not (set::emptyp (certs-with-prop prop certs)))
+                           (set::in cert certs)
+                           (equal (certificate->proposal cert) prop)))))
+    :enable (emptyp-of-certs-with-prop
+             in-of-certs-with-prop)
+    :use (:instance set::in-head (x (certs-with-prop prop certs)))
+    :disable set::in-head))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define certs-with-author+round ((author addressp)
                                  (round posp)
                                  (certs certificate-setp))
