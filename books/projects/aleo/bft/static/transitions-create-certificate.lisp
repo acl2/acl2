@@ -158,7 +158,7 @@
     (implies (and (create-certificate-possiblep cert systate)
                   (set::in (certificate->author cert)
                            (correct-addresses systate)))
-             (not (certificate-with-author+round
+             (not (cert-with-author+round
                    (certificate->author cert)
                    (certificate->round cert)
                    (validator-state->dag

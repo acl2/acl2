@@ -72,8 +72,8 @@
         (b* ((dag (validator-state->dag vstate))
              (buffer (validator-state->buffer vstate))
              (endorsed (validator-state->endorsed vstate)))
-          (and (not (certificate-with-author+round author round dag))
-               (not (certificate-with-author+round author round buffer))
+          (and (not (cert-with-author+round author round dag))
+               (not (cert-with-author+round author round buffer))
                (not (set::in (make-address+pos :address author :pos round)
                              endorsed))))))
 

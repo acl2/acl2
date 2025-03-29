@@ -96,7 +96,7 @@
                            val (create-certificate-next cert systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             certificate-with-author+round-of-insert-iff
+             cert-with-author+round-of-insert-iff
              validator-state->dag-of-create-certificate-next
              validator-state->last-of-create-certificate-next))
 
@@ -162,7 +162,7 @@
                            val (store-certificate-next cert val1 systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             certificate-with-author+round-of-insert-iff
+             cert-with-author+round-of-insert-iff
              validator-state->dag-of-store-certificate-next
              validator-state->last-of-store-certificate-next))
 

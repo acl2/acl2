@@ -56,7 +56,7 @@
   (b* (((validator-state vstate) vstate)
        ((when (equal vstate.last 0)) nil)
        (leader (leader-at-round vstate.last vals)))
-    (certificate-with-author+round leader vstate.last vstate.dag))
+    (cert-with-author+round leader vstate.last vstate.dag))
 
   ///
 
@@ -64,18 +64,18 @@
     (implies (last-anchor vstate vals)
              (equal (certificate->author (last-anchor vstate vals))
                     (leader-at-round (validator-state->last vstate) vals)))
-    :enable certificate->author-of-certificate-with-author+round)
+    :enable certificate->author-of-cert-with-author+round)
 
   (defruled certificate->round-of-last-anchor
     (implies (last-anchor vstate vals)
              (equal (certificate->round (last-anchor vstate vals))
                     (validator-state->last vstate)))
-    :enable certificate->round-of-certificate-with-author+round)
+    :enable certificate->round-of-cert-with-author+round)
 
   (defruled last-anchor-in-dag
     (implies (last-anchor vstate vals)
              (set::in (last-anchor vstate vals) (validator-state->dag vstate)))
-    :enable certificate-with-author+round-element))
+    :enable cert-with-author+round-element))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +118,7 @@
                       (validator-state->dag vstate)
                       vals))
     :enable (anchorp
-             certificate-with-author+round-element
+             cert-with-author+round-element
              certificate->author-of-last-anchor
              certificate->round-of-last-anchor
              last-anchor-in-dag)))

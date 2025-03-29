@@ -48,7 +48,7 @@
      However, since the last committed anchor is already present,
      the newly added certificate does not affect it.
      We use the transition invariant on certificate retrieval here:
-     see @(tsee invariant-certificate-with-author+round)."))
+     see @(tsee invariant-cert-with-author+round)."))
   (implies (and (system-signers-are-validators-p systate)
                 (system-signers-are-quorum-p systate)
                 (system-signers-have-author+round-p systate)
@@ -102,7 +102,7 @@
      However, since the last committed anchor is already present,
      the newly added certificate does not affect it.
      We use the transition invariant on certificate retrieval here:
-     see @(tsee invariant-certificate-with-author+round)."))
+     see @(tsee invariant-cert-with-author+round)."))
   (implies (and (system-signers-are-validators-p systate)
                 (system-signers-are-quorum-p systate)
                 (system-signers-have-author+round-p systate)
@@ -166,7 +166,7 @@
                   (if (equal val1 val)
                       (b* ((round (1- (validator-state->round
                                        (get-validator-state val systate)))))
-                        (certificate-with-author+round
+                        (cert-with-author+round
                          (leader-at-round round (all-addresses systate))
                          round
                          (validator-state->dag
