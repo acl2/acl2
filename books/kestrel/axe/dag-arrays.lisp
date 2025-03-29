@@ -538,9 +538,7 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
-
-
-(defthm pseudo-dag-arrayp-forward-4
+(defthm pseudo-dag-arrayp-forward-to-<=-arg3
   (implies (pseudo-dag-arrayp array-name array dag-len)
            (<= dag-len *max-1d-array-length*))
   :rule-classes :forward-chaining
