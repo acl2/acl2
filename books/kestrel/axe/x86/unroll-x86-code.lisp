@@ -281,6 +281,10 @@
     :rule-classes :forward-chaining
     :hints (("Goal" :in-theory (enable myquotep)))))
 
+;; If these break, consider how to update the uses of these step-opener functions below:
+(thm (equal (len (step-opener-rules32)) 1))
+(thm (equal (len (step-opener-rules64)) 1))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -331,7 +335,7 @@
                                               (step-opener-rules32))
                                             steps-for-this-iteration
                                             limits)) ; don't recompute for each small run?
-         ((mv erp dag-or-quote state)
+         ((mv erp dag-or-quote limits)
           ;; (if (eq :legacy rewriter)
           ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
           ;;                     :exhaustivep t
@@ -346,31 +350,36 @@
           ;;                     :limits limits
           ;;                     :memoizep memoizep
           ;;                     :check-inputs nil)
-            (mv-let (erp result limits)
-              (acl2::simplify-dag-x86 dag
-                                      assumptions
-                                      rule-alist
-                                      nil ; interpreted-function-alist
-                                      (acl2::known-booleans (w state))
-                                      normalize-xors
-                                      limits
-                                      memoizep
-                                      count-hits
-                                      print
-                                      rules-to-monitor
-                                      '(program-at) ; fns-to-elide
-                                      )
-              (declare (ignore limits)) ; todo: use the limits!
-              (mv erp result state))
+          (acl2::simplify-dag-x86 dag
+                                  assumptions
+                                  rule-alist
+                                  nil ; interpreted-function-alist
+                                  (acl2::known-booleans (w state))
+                                  normalize-xors
+                                  limits
+                                  memoizep
+                                  count-hits
+                                  print
+                                  rules-to-monitor
+                                  '(program-at) ; fns-to-elide
+                                  )
             ;)
-            )
+          )
          ((when erp) (mv erp nil state))
+         ;; usually 0, unless we are done (can this ever be negative?):
+         (remaining-limit ;; todo: clean this up: there is only a single rule:
+           (acl2::limit-for-rule (first (if 64-bitp
+                                            (step-opener-rules64)
+                                          (step-opener-rules32)))
+                                 limits))
+         (steps-done-this-time (- steps-for-this-iteration (ifix remaining-limit))) ; todo: drop the ifix
          ((mv elapsed state) (acl2::real-time-since start-real-time state))
-         (- (cw "  Took " steps-for-this-iteration)
+         (- (cw " (~x0 steps took " steps-done-this-time)
             (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
-            (cw "s.~%"))
+            (cw "s.)"))
+         (- (cw ")~%")) ; matches "(Running"
          ((when (quotep dag-or-quote))
-          (cw "Result is a constant!)~%") ; matches "(Running"
+          (cw "Result is a constant!~%")
           (mv (erp-nil) dag-or-quote state))
          (dag dag-or-quote) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
@@ -382,7 +391,7 @@
                                                                             state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
-          (cw "Result is a constant!)~%") ; matches "(Running"
+          (cw "Result is a constant!~%")
           (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep
          ;; (- (and print (progn$ (cw "(DAG after first pruning:~%")
@@ -406,7 +415,7 @@
                                            state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
-          (cw "Result is a constant!)~%") ; matches "(Running"
+          (cw "Result is a constant!~%")
           (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep
          (- (and print ;(acl2::print-level-at-least-tp print)
@@ -422,15 +431,15 @@
          ;; Stop if we hit an unimplemented instruction (what if it's on an unreachable branch?):
          ((when (member-eq 'x86isa::x86-step-unimplemented dag-fns))
           (progn$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
-                  (cw ")~%") ; matches "(Running"
-                  (mv (erp-nil) dag state))) ; todo: return an error?
+                  (cw "~%")
+                  (mv (erp-nil) dag state))) ; todo: return an error?  the instruction might be in dead code.
          ((mv erp nothing-changedp) (acl2::equivalent-dagsp2 dag old-dag)) ; todo: can we test equivalence up to xor nest normalization?
          ((when erp) (mv erp nil state))
          ((when nothing-changedp)
-          (cw "Note: Stopping the run because nothing changed.)~%") ; matches "(Running"
+          (cw "Note: Stopping the run because nothing changed.~%")
           (mv (erp-nil) dag state)) ; todo: return an error?  or maybe this can happen if we hit one of the stop-pcs
          (run-completedp (not (intersection-eq '(run-until-stack-shorter-than run-until-stack-shorter-than-or-reach-pc) dag-fns))) ;; stop if the run is done
-         (- (and run-completedp (cw " The run has completed.)~%"))) ; matches "(Running"
+         (- (and run-completedp (cw " The run has completed.~%")))
          )
       (if run-completedp
           ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
@@ -472,7 +481,7 @@
             (mv (erp-nil) dag-or-quote state))
         ;; Continue the symbolic execution:
         (b* ((steps-done (+ steps-for-this-iteration steps-done))
-             (- (cw " Steps so far: ~x0.)~%" steps-done)) ; matches (Running"
+             (- (cw "(Steps so far: ~x0.)~%" steps-done))
              (state ;; Print as a term unless it would be huge:
                (if (acl2::print-level-at-least-tp print)
                    (if (acl2::dag-or-quotep-size-less-than dag 1000)
@@ -487,7 +496,7 @@
                              state)
                             (- (cw "~X01" term nil))
                             (state (set-print-base-radix 10 state)) ;make-event sets it to 10
-                            (- (cw ")~%")))
+                            (- (cw ")~%"))) ; matches "(Term after"
                          state)
                      (b* ((- (cw "(DAG after ~x0 steps:~%" steps-done))
                           (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
@@ -495,8 +504,8 @@
                                    state))
                           (- (cw "~X01" dag nil))
                           (state (set-print-base-radix 10 state))
-                          (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag)))
-                          (- (cw ")~%")))
+                          (- (cw "(DAG has ~x0 IF-branches.)~%" (acl2::count-top-level-if-branches-in-dag dag))) ; todo: if 1, say "no ifs"
+                          (- (cw ")~%"))) ; matches "(DAG after"
                        state))
                  state)))
           (repeatedly-run steps-done step-limit

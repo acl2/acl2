@@ -15,11 +15,16 @@
 ;; See also make-equality-dag-basic
 
 (include-book "make-equality-dag")
-(include-book "dagify") ; reduce? ; for dag-or-term-to-dag ; todo: skip-proofs
+(include-book "dagify0") ; reduce?, for dag-or-term-to-dag
 
 ;; Returns (mv erp dag).
-(defun make-equality-dag-gen (dag-or-term1 dag-or-term2 different-vars-ok wrld)
-  (declare (xargs :mode :program ; todo
+;; todo: make and use a make-equality-dag-basic that doesn't depend on skip-proofs
+(defun make-equality-dag-gen (dag-or-term1 ; may be an untranslated term
+                              dag-or-term2 ; may be an untranslated term
+                              different-vars-ok
+                              wrld)
+  (declare (xargs :guard (booleanp different-vars-ok)
+                  :mode :program ; because dag-or-term-to-dag translates
                   ))
   (b* (((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld)) ; todo: try dag-or-term-to-dag-basic?
        ((when erp) (mv erp nil))

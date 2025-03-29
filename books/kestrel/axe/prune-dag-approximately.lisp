@@ -563,7 +563,7 @@
         ;; We print nothing, as we've been told not to prune:
         (mv nil dag state))
        ((when (not (dag-fns-include-anyp dag '(if myif boolif bvif))))
-        (cw "(Note: No pruning to do.)~%")
+        (and (print-level-at-least-tp print) (cw "(No approx pruning to do.)~%"))
         (mv nil dag state))
        ((when (and (natp prune-branches) ; it's a limit on the dag-size
                    ;; todo: allow this to fail fast:
