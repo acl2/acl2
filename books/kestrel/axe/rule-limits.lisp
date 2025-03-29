@@ -137,3 +137,10 @@
   :hints (("Goal" :in-theory (enable add-limit-for-rules rule-limitsp))))
 
 (verify-guards add-limit-for-rules)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund limit-for-rule (rule-name limits)
+  (declare (xargs :guard (and (symbolp rule-name)
+                              (rule-limitsp limits))))
+  (cdr (assoc-eq rule-name limits)))
