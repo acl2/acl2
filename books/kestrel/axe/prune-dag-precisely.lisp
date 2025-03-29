@@ -166,7 +166,7 @@
        ((when (not (<= (len dag) *max-1d-array-length*)))
         (mv :dag-too-big nil state))
        ((when (not (dag-fns-include-anyp dag '(if myif boolif bvif))))
-        (cw "(Note: No pruning to do.)~%")
+        (and (print-level-at-least-tp print) (cw "(No precise pruning to do.)~%"))
         (mv nil dag state))
        ((when (and (natp prune-branches) ; it's a limit on the size
                    ;; todo: allow this to fail fast:
