@@ -145,7 +145,7 @@
        ((when (= vstate.round 1)) t))
     (if (evenp vstate.round)
         (b* ((leader (leader-at-round vstate.round commtt))
-             (anchor? (certificate-with-author+round leader
+             (anchor? (cert-with-author+round leader
                                                      vstate.round
                                                      vstate.dag)))
           (or (and anchor? t)
@@ -158,7 +158,7 @@
                                        vstate.blockchain
                                        (all-addresses systate)))
            (leader (leader-at-round (1- vstate.round) prev-commtt))
-           (anchor? (certificate-with-author+round leader
+           (anchor? (cert-with-author+round leader
                                                    (1- vstate.round)
                                                    vstate.dag))
            (voters (certificates-with-round vstate.round vstate.dag))

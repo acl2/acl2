@@ -51,13 +51,13 @@
      but it extends the DAG.
      However, given the already proved invariant that
      the last committed anchor is already present,
-     we can use @('certificate-with-author+round-of-create-certificate-next')
+     we can use @('cert-with-author+round-of-create-certificate-next')
      to show that the last committed anchor does not change.")
    (xdoc::p
     "A @('commit-anchors') changes, for the target validator,
      the last committed round and the blockchain, but not the DAG.
      The last committed anchor is expressed
-     in terms of @(tsee certificate-with-author+round)
+     in terms of @(tsee cert-with-author+round)
      applied to the last committed round
      and the leader for that round;
      since the leader is expressed using the initial blockchain,
@@ -94,7 +94,7 @@
     :enable (last-anchor
              validator-state->last-of-create-certificate-next
              validator-state->blockchain-of-create-certificate-next
-             certificate-with-author+round-of-create-certificate-next)
+             cert-with-author+round-of-create-certificate-next)
     :use last-anchor-present-p-necc)
 
   (defruled last-anchor-of-receive-certificate-next
@@ -133,7 +133,7 @@
     :enable (last-anchor
              validator-state->last-of-store-certificate-next
              validator-state->blockchain-of-store-certificate-next
-             certificate-with-author+round-of-store-certificate-next)
+             cert-with-author+round-of-store-certificate-next)
     :use last-anchor-present-p-necc)
 
   (defruled last-anchor-of-advance-round-next
@@ -166,7 +166,7 @@
                                       (validator-state->blockchain
                                        (get-validator-state val systate))
                                       (all-addresses systate))))
-                          (certificate-with-author+round
+                          (cert-with-author+round
                            (leader-at-round round commtt)
                            round
                            (validator-state->dag
@@ -193,7 +193,7 @@
                                          (validator-state->blockchain
                                           (get-validator-state val systate))
                                          (all-addresses systate))))
-                             (certificate-with-author+round
+                             (cert-with-author+round
                               (leader-at-round round commtt)
                               round
                               (validator-state->dag
@@ -214,7 +214,7 @@
                 pos-fix
                 evenp
                 nfix
-                certificate->round-of-certificate-with-author+round))))
+                certificate->round-of-cert-with-author+round))))
 
   (defruled last-anchor-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))

@@ -157,7 +157,7 @@
     :enable (create-certificate-author-possiblep
              create-certificate-signer-possiblep
              signer-record-p
-             no-certificate-with-author+round-if-no-certificates-with-author
+             no-cert-with-author+round-if-no-certificates-with-author
              no-author+round-pair-if-no-pairs-with-author))
 
   (defruled no-signer-record-when-create-certificate-endorser-possiblep
@@ -223,23 +223,23 @@
      that @('create-certificate') preserves our invariant.")
    (xdoc::p
     "This theorem is a consequence of @(tsee signer-records-p).
-     If @(tsee certificate-with-author+round) returns a certificate,
+     If @(tsee cert-with-author+round) returns a certificate,
      from the set of certificates signed by a validator,
-     then we know from @('certificate-with-author+round-element')
+     then we know from @('cert-with-author+round-element')
      that the certificate must be in the set.
      But then we can use @('signer-records-p-necc') to conclude that
      the validator has a record for the author and round."))
   (implies (and (signer-records-p systate)
                 (set::in signer (correct-addresses systate))
-                (certificate-with-author+round
+                (cert-with-author+round
                  author round (signed-certificates signer systate)))
            (signer-record-p
             author round (get-validator-state signer systate)))
-  :enable (certificate-with-author+round-element
-           certificate->author-of-certificate-with-author+round
-           certificate->round-of-certificate-with-author+round)
+  :enable (cert-with-author+round-element
+           certificate->author-of-cert-with-author+round
+           certificate->round-of-cert-with-author+round)
   :use (:instance signer-records-p-necc
-                  (cert (certificate-with-author+round
+                  (cert (cert-with-author+round
                          author round (signed-certificates signer systate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -260,7 +260,7 @@
      should the new certificate have the same author and round
      as some existing certificate.
      The rule @('certificate-set-unequivocalp-of-insert')
-     introduces @(tsee certificate-with-author+round),
+     introduces @(tsee cert-with-author+round),
      which is why
      @(tsee signer-record-p-when-get-author+round-in-signed-certificates)
      is phrased in terms of that certificate retrieval function.")

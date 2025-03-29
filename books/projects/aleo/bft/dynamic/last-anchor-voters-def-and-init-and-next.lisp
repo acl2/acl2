@@ -391,9 +391,9 @@
              posp
              pos-fix
              evenp
-             certificate->round-of-certificate-with-author+round
+             certificate->round-of-cert-with-author+round
              cardinality-of-successors-to-tally-leader-votes
-             certificate->author-of-certificate-with-author+round))
+             certificate->author-of-cert-with-author+round))
 
   (defruled last-anchor-voters-p-of-commit-anchors-next
     (implies (and (ordered-even-p systate)
