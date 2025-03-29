@@ -19,6 +19,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/bv-lists/all-all-unsigned-byte-p" :dir :system)
+(include-book "kestrel/bv-lists/bvchop-list" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
 (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)
@@ -131,3 +132,9 @@
                     (firstn (bvplus (max xsize ysize) x (bvuminus (max xsize ysize) y)) z))))
   :hints (("Goal" :use (:instance firstn-of-+-of-minus)
            :in-theory (disable firstn-of-+-of-minus))))
+
+;; Permuted variant
+(defthmd equal-of-bvchop-list-and-nil
+  (equal (equal (bvchop-list n x) nil)
+         (not (consp x)))
+  :hints (("Goal" :in-theory (enable bvchop-list))))
