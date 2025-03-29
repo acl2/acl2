@@ -718,7 +718,7 @@
                               ;; (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               ;; (booleanp normalize-xors)
-                              )
+                              (print-levelp print))
                   :stobjs state))
   (b* ((dag (first problem))
        ;; Nothing can be done for a constant (TODO: Where should we check for a proof goal of T ?):
