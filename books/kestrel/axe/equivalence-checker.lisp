@@ -16058,9 +16058,10 @@
         (num-probably-equal-node-sets (count-merges-in-probably-equal-node-sets probably-equal-node-sets 0)) ;; TODO: Can we really count this ahead of time?
         (num-probable-constants (len probably-constant-node-alist))
         (- (progn$ (cw "(~x0 total probably-equal-node-sets.~%" num-probably-equal-node-sets) ;fixme this total should exclude the probably constant nodes..
-                   (and print (progn$ (cw "Here they are, after excluding probably-constant nodes:~%") ;count the nodes involved (or track that number)
-                                      (print-non-constant-probably-equal-sets probably-equal-node-sets sweep-array) ;sort these?
-                                      ))
+                   (and (print-level-at-least-tp print)
+                        (progn$ (cw "Here they are, after excluding probably-constant nodes:~%") ;count the nodes involved (or track that number)
+                                (print-non-constant-probably-equal-sets probably-equal-node-sets sweep-array) ;sort these?
+                                ))
                    (cw ")~%")
                    (cw "~%(Probably-constant nodes (~x0 total)" num-probable-constants)
                    (and print (progn$ (cw ":~%")
