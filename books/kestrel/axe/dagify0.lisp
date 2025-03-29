@@ -1536,3 +1536,16 @@
 ;;(compose-dags ''3 'x '((2 foo 1) (1 bar 0) (0 . x)) nil)
 ;;(compose-dags '((2 foo 1) (1 bar 0) (0 . x)) 'x ''3 t)
 ;;(compose-dags '((2 foo 1) (1 bar 0) (0 . x)) 'x '((2 baz 1) (1 box 0) (0 . newvar)) t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp dag-or-quotep).
+(defun dag-or-term-to-dag (item wrld)
+  (declare (xargs :mode :program)) ;; because this calls translate-term
+  (if (eq nil item) ; we assume nil is the constant nil, not an empty DAG
+      (mv (erp-nil) *nil*)
+    (if (weak-dagp item)
+        (mv (erp-nil) item) ;already a DAG
+      ;; translate the given form to obtain a pseudo-term and then make that into a DAG:
+      (dagify-term-unguarded
+       (translate-term item 'dag-or-term-to-dag wrld)))))
