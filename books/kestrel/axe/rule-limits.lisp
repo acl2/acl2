@@ -12,7 +12,8 @@
 
 (in-package "ACL2")
 
-;; TODO: Consider using a property list world for this
+;; We could use a property list world for this, or a hash table, or a
+;; fast-alist, but note that the limits alist is usually very small.
 
 (include-book "stored-rules")
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
