@@ -281,6 +281,10 @@
     :rule-classes :forward-chaining
     :hints (("Goal" :in-theory (enable myquotep)))))
 
+;; If these break, consider how to update the uses of these step-opener functions below:
+(thm (equal (len (step-opener-rules32)) 1))
+(thm (equal (len (step-opener-rules64)) 1))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
