@@ -1643,15 +1643,17 @@
 
 (defun bvchop-list-rules ()
   (declare (xargs :guard t))
-  '(bvchop-list-of-nil
-    bvchop-list-of-cons
+  '(consp-of-bvchop-list
     len-of-bvchop-list
+    equal-of-bvchop-list-and-nil
     equal-of-nil-and-bvchop-list
-    bvchop-list-does-nothing
+    true-listp-of-bvchop-list
+    all-unsigned-byte-p-of-bvchop-list-gen
+    bvchop-list-of-nil
+    bvchop-list-of-cons
+    bvchop-list-does-nothing ; rename
     bvchop-list-does-nothing-rewrite-alt ;rename
     bvchop-list-does-nothing-rewrite ;rename
-    all-unsigned-byte-p-of-bvchop-list-gen
-    true-listp-of-bvchop-list
     bvchop-list-of-bvchop-list))
 
 (defun bv-of-logext-rules ()
@@ -4008,6 +4010,7 @@
            ;; (introduce-bv-array-rules) ; todo: consider these
            ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
            (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
+           (bvchop-list-rules) ; I think some rule introduces bvchop-list, like a fixing function
            ;; Handle nth of a 2-d array:
            '(nth-becomes-nth-to-unroll-for-2d-array
              nth-to-unroll-opener
