@@ -191,7 +191,7 @@
       fundef.declor.direct
       :function-params
       (if (equal target-fn
-                 (c$::dirdeclor->ident fundef.declor.direct.decl))
+                 (c$::dirdeclor->ident fundef.declor.direct.declor))
           ;; Return
           (make-fundef
             :extension fundef.extension
@@ -199,7 +199,7 @@
             :declor (make-declor
                       :pointers fundef.declor.pointers
                       :direct (make-dirdeclor-function-params
-                               :decl (dirdeclor-ident new-fn)
+                               :declor (dirdeclor-ident new-fn)
                                :params fundef.declor.direct.params
                                :ellipsis fundef.declor.direct.ellipsis))
             :decls fundef.decls

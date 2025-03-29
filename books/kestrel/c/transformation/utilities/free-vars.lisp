@@ -415,7 +415,7 @@
           (free-vars1
             (free-vars-expr-option dirdeclor.expr? bound-vars))
           ((mv free-vars2 bound-vars)
-           (free-vars-dirdeclor dirdeclor.decl bound-vars)))
+           (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 (union free-vars1 free-vars2))
            bound-vars))
      :array-static1
@@ -424,7 +424,7 @@
           (free-vars1
             (free-vars-expr dirdeclor.expr bound-vars))
           ((mv free-vars2 bound-vars)
-           (free-vars-dirdeclor dirdeclor.decl bound-vars)))
+           (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 (union free-vars1 free-vars2))
            bound-vars))
      :array-static2
@@ -433,24 +433,24 @@
           (free-vars1
             (free-vars-expr dirdeclor.expr bound-vars))
           ((mv free-vars2 bound-vars)
-           (free-vars-dirdeclor dirdeclor.decl bound-vars)))
+           (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 (union free-vars1 free-vars2))
            bound-vars))
      :array-star
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.tyquals bound-vars))
           ((mv free-vars1 bound-vars)
-           (free-vars-dirdeclor dirdeclor.decl bound-vars)))
+           (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 free-vars1)
            bound-vars))
      :function-params
      (b* (((mv free-vars0 bound-vars)
-           (free-vars-dirdeclor dirdeclor.decl bound-vars))
+           (free-vars-dirdeclor dirdeclor.declor bound-vars))
           ((mv free-vars1 -)
             (free-vars-paramdecl-list dirdeclor.params bound-vars)))
        (mv (union free-vars0 free-vars1)
            bound-vars))
-     :function-names (free-vars-dirdeclor dirdeclor.decl bound-vars))
+     :function-names (free-vars-dirdeclor dirdeclor.declor bound-vars))
     :measure (dirdeclor-count dirdeclor))
 
   (define free-vars-absdeclor

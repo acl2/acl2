@@ -665,7 +665,13 @@
       :hints (("Goal"
                :in-theory (e/d (uinteger-bit-roles-wfp
                                 uinteger-bit-roles-value-count-alt-def)
-                               (uinteger-bit-roles-value-count)))))))
+                               (uinteger-bit-roles-value-count))))))
+
+  (defruled uinteger-bit-roles-value-count-of-append
+    (equal (uinteger-bit-roles-value-count (append roles1 roles2))
+           (+ (uinteger-bit-roles-value-count roles1)
+              (uinteger-bit-roles-value-count roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -701,7 +707,13 @@
       :hints (("Goal"
                :in-theory (e/d (sinteger-bit-roles-wfp
                                 sinteger-bit-roles-value-count-alt-def)
-                               (sinteger-bit-roles-value-count)))))))
+                               (sinteger-bit-roles-value-count))))))
+
+  (defruled sinteger-bit-roles-value-count-of-append
+    (equal (sinteger-bit-roles-value-count (append roles1 roles2))
+           (+ (sinteger-bit-roles-value-count roles1)
+              (sinteger-bit-roles-value-count roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -901,6 +913,16 @@
              ifix
              nfix))
 
+  (defruled uinteger-bit-roles-value-count-of-uinteger-bit-roles-inc-n
+    (equal (uinteger-bit-roles-value-count
+            (uinteger-bit-roles-inc-n n))
+           (nfix n))
+    :enable (uinteger-bit-roles-value-count-alt-def
+             uinteger-bit-roles-exponents-of-uinteger-bit-roles-inc-n
+             acl2::len-of-integers-from-to
+             ifix)
+    :disable uinteger-bit-roles-inc-n)
+
   (defruled uinteger-bit-roles-wfp-of-uinteger-bit-roles-inc-n
     (implies (not (zp n))
              (uinteger-bit-roles-wfp
@@ -944,6 +966,16 @@
              ifix
              nfix))
 
+  (defruled sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n
+    (equal (sinteger-bit-roles-value-count
+            (sinteger-bit-roles-inc-n n))
+           (nfix n))
+    :disable sinteger-bit-roles-inc-n
+    :enable (sinteger-bit-roles-value-count-alt-def
+             sinteger-bit-roles-exponents-of-sinteger-bit-roles-inc-n
+             acl2::len-of-integers-from-to
+             ifix))
+
   (defruled sinteger-bit-roles-sign-count-of-sinteger-bit-roles-inc-n
     (equal (sinteger-bit-roles-sign-count (sinteger-bit-roles-inc-n n))
            0)
@@ -980,7 +1012,21 @@
              sinteger-bit-roles-sign-count-of-append
              sinteger-bit-roles-sign-count-of-sinteger-bit-roles-inc-n
              insertion-sort-of-integers-from-to
-             acl2::len-of-integers-from-to)))
+             acl2::len-of-integers-from-to))
+
+  (defruled sinteger-bit-roles-exponents-of-sinteger-bit-roles-inc-n-and-sign
+    (equal (sinteger-bit-roles-exponents
+            (sinteger-bit-roles-inc-n-and-sign n))
+           (integers-from-to 0 (1- (nfix n))))
+    :enable (sinteger-bit-roles-exponents-of-append
+             sinteger-bit-roles-exponents-of-sinteger-bit-roles-inc-n))
+
+  (defruled sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign
+    (equal (sinteger-bit-roles-value-count
+            (sinteger-bit-roles-inc-n-and-sign n))
+           (nfix n))
+    :enable (sinteger-bit-roles-value-count-of-append
+             sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1141,6 +1187,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define uinteger-format-inc-npnt ((n posp))
+  :returns (format uinteger-formatp)
+  :short "The unsigned integer format defined by
+          @('n') increasing value bits,
+          no padding bits,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is parameterized over @('n'), which must be positiive."))
+  (make-uinteger-format
+   :bits (uinteger-bit-roles-inc-n (pos-fix n))
+   :traps nil)
+  :hooks (:fix)
+
+  ///
+
+  (defruled uinteger-format->max-of-uinteger-format-inc-npnt
+    (equal (uinteger-format->max (uinteger-format-inc-npnt n))
+           (1- (expt 2 (pos-fix n))))
+    :enable (uinteger-format->max
+             pos-fix
+             uinteger-bit-roles-value-count-of-uinteger-bit-roles-inc-n)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sinteger-format-inc-sign-tcnpnt ((n posp))
+  :returns (format sinteger-formatp)
+  :short "The signed integer format defined by
+          @('n') increasing value bits,
+          a sign bit at the end,
+          two's complement signed format,
+          no padding bits,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is parameterized over @('n'), which must be positiive."))
+  (make-sinteger-format
+   :bits (sinteger-bit-roles-inc-n-and-sign (pos-fix n))
+   :signed (signed-format-twos-complement)
+   :traps nil)
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
+    (equal (sinteger-format->max (sinteger-format-inc-sign-tcnpnt n))
+           (1- (expt 2 (pos-fix n))))
+    :enable
+    (sinteger-format->max
+     sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign))
+
+  (defruled sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
+    (equal (sinteger-format->min (sinteger-format-inc-sign-tcnpnt n))
+           (- (expt 2 (pos-fix n))))
+    :enable
+    (sinteger-format->min
+     sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod uinteger+sinteger-format
   :short "Fixtype of pairs consisting of
           a format of unsigned integer objects
@@ -1245,6 +1353,46 @@
                     (uroles (uinteger-format->bits
                              (uinteger+sinteger-format->unsigned
                               (integer-format->pair format)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format-inc-sign-tcnpnt ((size posp))
+  :guard (not (equal size 1))
+  :returns (format integer-formatp)
+  :short "The unsigned and signed integer format defined by
+          a size greater than 1,
+          increasing value bits,
+          a sign bit at the end (for the signed format),
+          two's complement signed format,
+          no padding bits,
+          and no trap representations."
+  (make-integer-format
+   :pair (make-uinteger+sinteger-format
+          :unsigned (uinteger-format-inc-npnt size)
+          :signed (sinteger-format-inc-sign-tcnpnt (1- (pos-fix size)))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable posp
+            uinteger-format-inc-npnt
+            sinteger-format-inc-sign-tcnpnt
+            uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
+            sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign)))
+  :hooks (:fix)
+
+  ///
+
+  (defruled integer-format->size-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (equal (integer-format->size (integer-format-inc-sign-tcnpnt size))
+                    (pos-fix size)))
+    :enable (integer-format->size
+             uinteger-format-inc-npnt
+             sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
+             sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
+             posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

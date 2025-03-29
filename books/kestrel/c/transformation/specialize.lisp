@@ -144,7 +144,7 @@
         fundef.declor.direct
         :function-params
         (b* (((unless (equal target-fn
-                             (c$::dirdeclor->ident fundef.declor.direct.decl)))
+                             (c$::dirdeclor->ident fundef.declor.direct.declor)))
               (mv nil (fundef-fix fundef)))
              ((mv success new-params removed-param)
               (paramdecl-list-remove-param-by-ident fundef.declor.direct.params target-param))
@@ -155,7 +155,7 @@
                       (mv nil (fundef-fix fundef))))
              (dirdeclor-params
                (make-dirdeclor-function-params
-                 :decl fundef.declor.direct.decl
+                 :declor fundef.declor.direct.declor
                  :params new-params
                  :ellipsis fundef.declor.direct.ellipsis))
              ((mv - decl)

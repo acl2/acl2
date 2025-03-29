@@ -12,11 +12,6 @@
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc output-files
@@ -56,7 +51,8 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(output-files :const           ...  ; no default"
+     "(output-files :const           ...  ; required"
+     "              :path            ...  ; default \".\""
      "              :printer-options ...  ; default nil"
      "  )"))
 
@@ -76,10 +72,29 @@
        (i.e. a value of type @(tsee transunit-ensemble)
        that additionally satisfies @(tsee transunit-ensemble-unambp)).
        The translation unit is printed to a file set,
-       whose files are written to the file system.")
+       whose files are written to the file system.
+       The keys of the file set map are the same as
+       the keys of the translation unit ensemble map.")
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
+
+    (xdoc::desc
+     "@(':path') &mdash; default @('\".\"')"
+     (xdoc::p
+      "Path that the files are written into.")
+     (xdoc::p
+      "This must be a non-empty string that is a valid path name in the system.
+       It may or may not end with a slash.
+       A non-absolute path is relative to
+       the connected book directory (see @(tsee cbd)).
+       In particular, the @('\".\"') path (which is the default)
+       specifies the connected book directory.")
+     (xdoc::p
+      "Each file in the file set obtained from the translation unit ensemble
+       is written to the path resulting from
+       prepending the corresponding key in the file set map
+       with the path specified by the @(':path') input."))
 
     (xdoc::desc
      "@(':printer-options') &mdash; default @('nil')"
@@ -125,6 +140,5 @@
     (xdoc::p
      "This macro generates one file in the file system
       for each element of the translation unit ensemble in @('*const*'),
-      at the paths that are the keys of the maps.
-      Non-absolute paths are relative to
-      the connected book directory (see @(tsee cbd))."))))
+      at the paths that are obtained by prepending the keys of the maps
+      with the path specified by the @(':path') input."))))

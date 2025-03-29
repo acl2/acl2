@@ -223,7 +223,7 @@
         :declor (make-declor
                   :pointers pointers
                   :direct (make-dirdeclor-function-params
-                            :decl (dirdeclor-ident new-fn-name)
+                            :declor (dirdeclor-ident new-fn-name)
                             :params params))
         :body (stmt-compound items))))
   :prepwork
@@ -328,7 +328,7 @@
       (dirdeclor-case
         fundef.declor.direct
         :function-params
-        (b* (((unless (equal target-fn (c$::dirdeclor->ident fundef.declor.direct.decl)))
+        (b* (((unless (equal target-fn (c$::dirdeclor->ident fundef.declor.direct.declor)))
               (retok (fundef-fix fundef) nil))
              ((erp new-fn truncated-items)
               (split-fn-block-item-list

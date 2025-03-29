@@ -53,11 +53,12 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files             ...  ; no default"
+     "(input-files :files             ...  ; required"
+     "             :path              ...  ; default \".\""
      "             :preprocess        ...  ; default nil"
      "             :preprocess-args   ...  ; no default"
      "             :process           ...  ; default :validate"
-     "             :const             ...  ; no default"
+     "             :const             ...  ; required"
      "             :gcc               ...  ; default nil"
      "             :short-bytes       ...  ; default 2"
      "             :int-bytes         ...  ; default 4"
@@ -73,36 +74,46 @@
     (xdoc::desc
      "@(':files')"
      (xdoc::p
-      "List of zero or more file paths that specify the files to be read.")
+      "List of one or more file paths that specify the files to be read.")
      (xdoc::p
-      "This must be a list of strings that are valid path names in the system.
-       Non-absolute paths are relative to
-       the connected book directory (see @(tsee cbd)).")
+      "These paths are relative to
+       the path specified by the @(':path') input.")
      (xdoc::p
       "This input to this macro is not evaluated."))
+
+    (xdoc::desc
+     "@(':path') &mdash; default @('\".\"')"
+     (xdoc::p
+      "Path that the file paths in @(':files') are relative to.")
+     (xdoc::p
+      "This must be a non-empty string that is a valid path name in the system.
+       It may or may not end with a slash.
+       A non-absolute path is relative to
+       the connected book directory (see @(tsee cbd)).
+       In particular, the @('\".\"') path (which is the default)
+       specifies the connected book directory."))
 
     (xdoc::desc
      "@(':preprocess') &mdash; default @('nil')"
      (xdoc::p
       "Specifies the preprocessor to use, if any,
-       on the files specified by the @(':files') input.")
+       on the files specified by the @(':files') and @(':path') inputs.")
      (xdoc::p
       "This input must be one of the following:")
      (xdoc::ul
       (xdoc::li
        "@('nil') (the default),
         in which case no preprocessing is done.
-        In this case, the files must be already in preprocessed form,
-        unless the @(':process') input (see below) is @('nil').")
+        In this case, the files must be already in preprocessed form.")
       (xdoc::li
        "A string,
         which names the preprocessor to use,
-        which must be in the current path.")
+        which must be in the current system path for executables.")
       (xdoc::li
        "@(':auto'),
         which implicitly names the preprocessor @('\"cpp\"')
         (a common default),
-        which must be in the current path."))
+        which must be in the current system path for executables."))
      (xdoc::p
       "The preprocessing (if this input is not @('nil')),
        is performed via the @(tsee preprocess-file) tool."))
@@ -112,7 +123,7 @@
      (xdoc::p
       "Specifies arguments to pass to the preprocessor.")
      (xdoc::p
-      "This must either absent or a list of zero or more strings,
+      "This must be either absent or a list of zero or more strings,
        each of which is an argument to pass, e.g. @('-I').")
      (xdoc::p
       "If @(':preprocess') is @('nil'),
@@ -135,7 +146,7 @@
      "@(':process') &mdash; default @(':validate')"
      (xdoc::p
       "Specifies the processing to perform
-       on the files specified by the @(':files') input
+       on the files specified by the @(':files') and @(':path') inputs
        (if @(':preprocess') is @('nil'))
        or on the result of preprocessing those files
        (if @(':preprocess') is not @('nil')).")
@@ -191,7 +202,7 @@
      (xdoc::p
       "Name of the generated ACL2 constant whose value is
        the final result of processing (and preprocessing)
-       the files specified in the @(':files') input.")
+       the files specified in the @(':files') and @(':path') inputs.")
      (xdoc::p
       "If @(':process') is @(':parse'),
        the value of the constant named by @(':const') is
@@ -217,6 +228,10 @@
        obtained by disambiguating the one resulting from the parser,
        and such that the abstract syntax representation passed validation;
        this abstract syntax is annotated with validation information.")
+     (xdoc::p
+      "In all cases, the keys of the translation unit ensemble map
+       are the file paths specified in the @(':files') input,
+       without the @(':path') prefix.")
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
@@ -277,7 +292,7 @@
      (xdoc::p
       "The named constant containing the result of processing,
        as specified by @(':process'),
-       the files specified by @(':files')
+       the files specified by the @(':files') and @(':path') inputs
        (if @(':preprocess') is @('nil'))
        or the files resulting from preprocessing those
        (if @(':preprocess') is not @('nil')).")))))

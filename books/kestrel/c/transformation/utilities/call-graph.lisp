@@ -648,7 +648,7 @@
     (dirdeclor-case
       fundef.declor.direct
       :function-params (b* ((fn-name
-                              (c$::dirdeclor->ident fundef.declor.direct.decl))
+                              (c$::dirdeclor->ident fundef.declor.direct.declor))
                             (qualified-fn-name
                               (qualify-ident filepath valid-table fn-name)))
                          (call-graph-stmt
@@ -658,7 +658,7 @@
                            valid-table
                            call-graph))
       :function-names (b* ((fn-name
-                             (c$::dirdeclor->ident fundef.declor.direct.decl))
+                             (c$::dirdeclor->ident fundef.declor.direct.declor))
                            (qualified-fn-name
                              (qualify-ident filepath valid-table fn-name)))
                         (call-graph-stmt

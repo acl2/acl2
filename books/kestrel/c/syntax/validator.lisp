@@ -3737,7 +3737,7 @@
        :array
        (b* ((type (type-array))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr? index-type? more-types table)
              (valid-expr-option dirdeclor.expr? table ienv))
             ((when (and index-type?
@@ -3748,7 +3748,7 @@
                            has type ~x1."
                           (dirdeclor-fix dirdeclor)
                           index-type?))))
-         (retok (make-dirdeclor-array :decl new-dirdeclor
+         (retok (make-dirdeclor-array :declor new-dirdeclor
                                       :tyquals dirdeclor.tyquals
                                       :expr? new-expr?)
                 fundef-params-p
@@ -3759,7 +3759,7 @@
        :array-static1
        (b* ((type (type-array))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr index-type more-types table)
              (valid-expr dirdeclor.expr table ienv))
             ((unless (or (type-integerp index-type)
@@ -3769,7 +3769,7 @@
                            has type ~x1."
                           (dirdeclor-fix dirdeclor)
                           index-type))))
-         (retok (make-dirdeclor-array-static1 :decl new-dirdeclor
+         (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
                                               :tyquals dirdeclor.tyquals
                                               :expr new-expr)
                 fundef-params-p
@@ -3780,7 +3780,7 @@
        :array-static2
        (b* ((type (type-array))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr index-type more-types table)
              (valid-expr dirdeclor.expr table ienv))
             ((unless (or (type-integerp index-type)
@@ -3790,7 +3790,7 @@
                            has type ~x1."
                           (dirdeclor-fix dirdeclor)
                           index-type))))
-         (retok (make-dirdeclor-array-static2 :decl new-dirdeclor
+         (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
                                               :tyquals dirdeclor.tyquals
                                               :expr new-expr)
                 fundef-params-p
@@ -3801,8 +3801,9 @@
        :array-star
        (b* ((type (type-array))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv)))
-         (retok (make-dirdeclor-array-star :decl new-dirdeclor
+             (valid-dirdeclor
+              dirdeclor.declor fundef-params-p type table ienv)))
+         (retok (make-dirdeclor-array-star :declor new-dirdeclor
                                            :tyquals dirdeclor.tyquals)
                 fundef-params-p
                 type
@@ -3818,7 +3819,7 @@
                           (type-fix type))))
             (type (type-function))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             (table (valid-push-scope table))
             ((erp new-params more-types table)
              (if (equal dirdeclor.params
@@ -3831,7 +3832,7 @@
             (table (if fundef-params-p
                        table
                      (valid-pop-scope table))))
-         (retok (make-dirdeclor-function-params :decl new-dirdeclor
+         (retok (make-dirdeclor-function-params :declor new-dirdeclor
                                                 :params new-params
                                                 :ellipsis dirdeclor.ellipsis)
                 nil
@@ -3848,7 +3849,7 @@
                           (type-fix type))))
             (type (type-function))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((when (and (consp dirdeclor.names)
                         (not fundef-params-p)))
              (reterr (msg "A non-empty list of parameter names ~
@@ -3856,7 +3857,7 @@
                            that is not part of a function definition."
                           (dirdeclor-fix dirdeclor))))
             ((when (not fundef-params-p))
-             (retok (make-dirdeclor-function-names :decl new-dirdeclor
+             (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                    :names dirdeclor.names)
                     nil
                     type
@@ -3869,7 +3870,7 @@
                            has duplicates."
                           (dirdeclor-fix dirdeclor))))
             (table (valid-push-scope table)))
-         (retok (make-dirdeclor-function-names :decl new-dirdeclor
+         (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
                 nil
                 type

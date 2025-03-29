@@ -2312,7 +2312,7 @@
                  (pstate (print-astring ")" pstate)))
               pstate)
      :array
-     (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
+     (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirdeclor.tyquals
                       (print-typequal/attribspec-list dirdeclor.tyquals pstate)
@@ -2329,7 +2329,7 @@
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static1
-     (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
+     (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "static " pstate))
           (pstate (if dirdeclor.tyquals
                       (b* ((pstate (print-typequal/attribspec-list
@@ -2342,7 +2342,7 @@
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static2
-     (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
+     (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           ((unless dirdeclor.tyquals)
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
@@ -2353,7 +2353,7 @@
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-star
-     (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
+     (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "[" pstate))
           (pstate (if dirdeclor.tyquals
                       (b* ((pstate (print-typequal/attribspec-list
@@ -2365,7 +2365,7 @@
           (pstate (print-astring "*]" pstate)))
        pstate)
      :function-params
-     (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
+     (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "(" pstate))
           ;; We relax this check for now, but we will re-introduce it
           ;; after we add an elaboration of the abstract syntax
@@ -2383,7 +2383,7 @@
                     (print-astring ")" pstate))))
        pstate)
      :function-names
-     (b* ((pstate (print-dirdeclor dirdeclor.decl pstate))
+     (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "(" pstate))
           (pstate (if dirdeclor.names
                       (print-ident-list dirdeclor.names pstate)

@@ -3153,11 +3153,11 @@
                      :vars gout-declor.vars
                      :diffp gout-declor.diffp)))
        :array (b* (((mv new-decl (simpadd0-gout gout-decl))
-                    (simpadd0-dirdeclor dirdeclor.decl gin state))
+                    (simpadd0-dirdeclor dirdeclor.declor gin state))
                    (gin (simpadd0-gin-update gin gout-decl))
                    ((mv new-expr? (simpadd0-gout gout-expr?))
                     (simpadd0-expr-option dirdeclor.expr? gin state)))
-                (mv (make-dirdeclor-array :decl new-decl
+                (mv (make-dirdeclor-array :declor new-decl
                                           :tyquals dirdeclor.tyquals
                                           :expr? new-expr?)
                     (make-simpadd0-gout
@@ -3168,12 +3168,12 @@
                      :vars (set::union gout-decl.vars gout-expr?.vars)
                      :diffp (or gout-decl.diffp gout-expr?.diffp))))
        :array-static1 (b* (((mv new-decl (simpadd0-gout gout-decl))
-                            (simpadd0-dirdeclor dirdeclor.decl gin state))
+                            (simpadd0-dirdeclor dirdeclor.declor gin state))
                            (gin (simpadd0-gin-update gin gout-decl))
                            ((mv new-expr (simpadd0-gout gout-expr))
                             (simpadd0-expr dirdeclor.expr gin state)))
                         (mv (make-dirdeclor-array-static1
-                             :decl new-decl
+                             :declor new-decl
                              :tyquals dirdeclor.tyquals
                              :expr new-expr)
                             (make-simpadd0-gout
@@ -3184,12 +3184,12 @@
                              :vars (set::union gout-decl.vars gout-expr.vars)
                              :diffp (or gout-decl.diffp gout-expr.diffp))))
        :array-static2 (b* (((mv new-decl (simpadd0-gout gout-decl))
-                            (simpadd0-dirdeclor dirdeclor.decl gin state))
+                            (simpadd0-dirdeclor dirdeclor.declor gin state))
                            (gin (simpadd0-gin-update gin gout-decl))
                            ((mv new-expr (simpadd0-gout gout-expr))
                             (simpadd0-expr dirdeclor.expr gin state)))
                         (mv (make-dirdeclor-array-static2
-                             :decl new-decl
+                             :declor new-decl
                              :tyquals dirdeclor.tyquals
                              :expr new-expr)
                             (make-simpadd0-gout
@@ -3200,8 +3200,8 @@
                              :vars (set::union gout-decl.vars gout-expr.vars)
                              :diffp (or gout-decl.diffp gout-expr.diffp))))
        :array-star (b* (((mv new-decl (simpadd0-gout gout-decl))
-                         (simpadd0-dirdeclor dirdeclor.decl gin state)))
-                     (mv (make-dirdeclor-array-star :decl new-decl
+                         (simpadd0-dirdeclor dirdeclor.declor gin state)))
+                     (mv (make-dirdeclor-array-star :declor new-decl
                                                     :tyquals dirdeclor.tyquals)
                          (make-simpadd0-gout
                           :events gout-decl.events
@@ -3211,14 +3211,14 @@
                           :vars gout-decl.vars
                           :diffp gout-decl.diffp)))
        :function-params (b* (((mv new-decl (simpadd0-gout gout-decl))
-                              (simpadd0-dirdeclor dirdeclor.decl gin state))
+                              (simpadd0-dirdeclor dirdeclor.declor gin state))
                              (gin (simpadd0-gin-update gin gout-decl))
                              ((mv new-params (simpadd0-gout gout-params))
                               (simpadd0-paramdecl-list dirdeclor.params
                                                        gin
                                                        state)))
                           (mv (make-dirdeclor-function-params
-                               :decl new-decl
+                               :declor new-decl
                                :params new-params
                                :ellipsis dirdeclor.ellipsis)
                               (make-simpadd0-gout
@@ -3231,9 +3231,9 @@
                                                  gout-params.vars)
                                :diffp (or gout-decl.diffp gout-params.diffp))))
        :function-names (b* (((mv new-decl (simpadd0-gout gout-decl))
-                             (simpadd0-dirdeclor dirdeclor.decl gin state)))
+                             (simpadd0-dirdeclor dirdeclor.declor gin state)))
                          (mv (make-dirdeclor-function-names
-                              :decl new-decl
+                              :declor new-decl
                               :names dirdeclor.names)
                              (make-simpadd0-gout
                               :events gout-decl.events
@@ -4626,7 +4626,7 @@
        ((unless (dirdeclor-case declor.direct :function-params))
         (mv new-fundef gout-no-thm))
        (params (dirdeclor-function-params->params declor.direct))
-       (dirdeclor (c$::dirdeclor-function-params->decl declor.direct))
+       (dirdeclor (c$::dirdeclor-function-params->declor declor.direct))
        ((unless (dirdeclor-case dirdeclor :ident))
         (raise "Internal error: ~x0 is not just the function name."
                dirdeclor)
@@ -4865,48 +4865,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-filepath ((path filepathp))
-  :returns (new-path filepathp)
-  :short "Transform a file path."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We only support file paths that consist of strings.
-     We transform the path by interposing @('.simpadd0')
-     just before the rightmost dot of the file extension, if any;
-     if there is no file extension, we just add @('.simpadd0') at the end.
-     So for instance a path @('path/to/file.c')
-     becomes @('path/to/file.simpadd0.c').")
-   (xdoc::p
-    "Note that this kind of file path transformations
-     supports chaining of transformations,
-     e.g. @('path/to/file.xform1.xform2.xform3.c')."))
-  (b* ((string (filepath->unwrap path))
-       ((unless (stringp string))
-        (raise "Misusage error: file path ~x0 is not a string." string)
-        (filepath "irrelevant"))
-       (chars (str::explode string))
-       (dot-pos-in-rev (index-of #\. (rev chars)))
-       ((when (not dot-pos-in-rev))
-        (filepath (str::implode (append chars
-                                        (str::explode ".simpadd0")))))
-       (last-dot-pos (- (len chars) dot-pos-in-rev))
-       (new-chars (append (take last-dot-pos chars)
-                          (str::explode "simpadd0.")
-                          (nthcdr last-dot-pos chars)))
-       (new-string (str::implode new-chars)))
-    (filepath new-string))
-  :guard-hints
-  (("Goal"
-    :use (:instance acl2::index-of-<-len
-                    (k #\.)
-                    (x (rev (str::explode (filepath->unwrap path)))))
-    :in-theory (e/d (nfix) (acl2::index-of-<-len))))
-  :hooks (:fix)
-  :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define simpadd0-filepath-transunit-map ((map filepath-transunit-mapp)
                                          (gin simpadd0-ginp)
                                          state)
@@ -4930,13 +4888,12 @@
              :vars nil
              :diffp nil)))
        ((mv path tunit) (omap::head map))
-       (new-path (simpadd0-filepath path))
        ((mv new-tunit (simpadd0-gout gout-tunit))
         (simpadd0-transunit tunit gin state))
        (gin (simpadd0-gin-update gin gout-tunit))
        ((mv new-map (simpadd0-gout gout-map))
         (simpadd0-filepath-transunit-map (omap::tail map) gin state)))
-    (mv (omap::update new-path new-tunit new-map)
+    (mv (omap::update path new-tunit new-map)
         (make-simpadd0-gout
          :events (append gout-tunit.events gout-map.events)
          :thm-name nil
