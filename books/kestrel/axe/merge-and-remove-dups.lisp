@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+;; Note that this removes both members of each pair of dupes.
 ;; See also merge-less-than-and-remove-dups.lisp.
 
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
