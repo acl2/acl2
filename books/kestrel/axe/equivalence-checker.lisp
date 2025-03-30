@@ -26,6 +26,7 @@
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "rewriter") ;TODO: brings in JVM stuff...
 (include-book "rewriter-alt") ;TODO: brings in JVM stuff...
+(include-book "identical-xor-nests")
 (include-book "kestrel/utilities/check-boolean" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
@@ -4267,49 +4268,94 @@
 ;this allows the exprs (and the nodes the refer to) to differ on whether constants are inlined (because when we replace a probably-constant node, we don't inline it)
 ;i think this allows for non-unique representation of expressions..
 ;;; TODO: what about deeper structural equivalence - all leaf nodes the same and all operator nodes corresponding? - better to merge up the dag aggressively at merge time?
-(skip-proofs
-  (mutual-recursion
-    (defun identical-darg-lists-up-to-constant-inlining (dargs1 dargs2 dag-array-name dag-array dag-len)
-      (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                                  (bounded-darg-listp dag-len dargs1)
-                                  (bounded-darg-listp dag-len dargs2))))
-      (if (endp dargs1)
-          (if (endp dargs2)
-              t
-            (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length" nil))
-        (if (endp dargs2)
-            (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length" nil)
-          (and
-            (let* ((darg1 (first dargs1))
-                   (darg2 (first dargs2)))
-              (if (quotep darg1)
-                  (if (quotep darg2)
-                      (equal darg1 darg2)
-                    ;; darg2 may be a nodenum of a constant:
-                    (equal darg1 (aref1 dag-array-name dag-array darg2)))
-                (if (quotep darg2)
-                    ;; darg1 may be a nodenum of a constant:
-                    (equal darg2 (aref1 dag-array-name dag-array darg1))
-                  ;;two nodenums:
-                  (or (equal darg1 darg2) ;this optimization should catch a lot of the cases where things actually are the same
-                      (identical-dag-exprs-up-to-constant-inlining (aref1 dag-array-name dag-array darg1)
-                                                                   (aref1 dag-array-name dag-array darg2)
-                                                                   dag-array-name dag-array dag-len)))))
-            (identical-darg-lists-up-to-constant-inlining (rest dargs1) (rest dargs2) dag-array-name dag-array dag-len)))))
+;; (skip-proofs
+;;   (mutual-recursion
+;;     (defun identical-darg-lists-up-to-constant-inlining (dargs1 dargs2 dag-array-name dag-array dag-len)
+;;       (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+;;                                   (bounded-darg-listp dargs1 dag-len)
+;;                                   (bounded-darg-listp dargs2 dag-len))))
+;;       (if (endp dargs1)
+;;           (if (endp dargs2)
+;;               t
+;;             (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length" nil))
+;;         (if (endp dargs2)
+;;             (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length" nil)
+;;           (and
+;;             (let* ((darg1 (first dargs1))
+;;                    (darg2 (first dargs2)))
+;;               (if (quotep darg1)
+;;                   (if (quotep darg2)
+;;                       (equal darg1 darg2)
+;;                     ;; darg2 may be a nodenum of a constant:
+;;                     (equal darg1 (aref1 dag-array-name dag-array darg2)))
+;;                 (if (quotep darg2)
+;;                     ;; darg1 may be a nodenum of a constant:
+;;                     (equal darg2 (aref1 dag-array-name dag-array darg1))
+;;                   ;;two nodenums:
+;;                   (or (equal darg1 darg2) ;this optimization should catch a lot of the cases where things actually are the same
+;;                       (identical-dag-exprs-up-to-constant-inlining (aref1 dag-array-name dag-array darg1)
+;;                                                                    (aref1 dag-array-name dag-array darg2)
+;;                                                                    dag-array-name dag-array dag-len)))))
+;;             (identical-darg-lists-up-to-constant-inlining (rest dargs1) (rest dargs2) dag-array-name dag-array dag-len)))))
 
-    ;;we could relax this even more and not require nodenums to be unique either... what if we have (foo (bar '2)) both with and without the inlined 2?
-    (defun identical-dag-exprs-up-to-constant-inlining (expr1 expr2 dag-array-name dag-array dag-len)
-      (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                                  (bounded-dag-exprp dag-len expr1)
-                                  (bounded-dag-exprp dag-len expr2))))
-      (if (or (symbolp expr1)
-              (symbolp expr2)
-              (quotep expr1)
-              (quotep expr2))
-          (equal expr1 expr2)
-        ;;function call:
-        (and (eq (ffn-symb expr1) (ffn-symb expr2))
-             (identical-darg-lists-up-to-constant-inlining (dargs expr1) (dargs expr2) dag-array-name dag-array dag-len))))))
+;;     ;;we could relax this even more and not require nodenums to be unique either... what if we have (foo (bar '2)) both with and without the inlined 2?
+;;     (defun identical-dag-exprs-up-to-constant-inlining (expr1 expr2 dag-array-name dag-array dag-len)
+;;       (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+;;                                   (bounded-dag-exprp dag-len expr1)
+;;                                   (bounded-dag-exprp dag-len expr2))))
+;;       (if (or (symbolp expr1)
+;;               (symbolp expr2)
+;;               (quotep expr1)
+;;               (quotep expr2))
+;;           (equal expr1 expr2)
+;;         ;;function call:
+;;         (and (eq (ffn-symb expr1) (ffn-symb expr2))
+;;              (identical-darg-lists-up-to-constant-inlining (dargs expr1) (dargs expr2) dag-array-name dag-array dag-len))))))
+
+(defun identical-darg-lists-up-to-constant-inlining (dargs1 dargs2 dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (bounded-darg-listp dargs1 dag-len)
+                              (bounded-darg-listp dargs2 dag-len))))
+  (if (endp dargs1)
+      (if (endp dargs2)
+          t
+        (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length"))
+    (if (endp dargs2)
+        (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length")
+      (and (let* ((darg1 (first dargs1))
+                  (darg2 (first dargs2)))
+             (if (quotep darg1)
+                 (if (quotep darg2)
+                     (equal darg1 darg2)
+                   ;; darg2 may be a nodenum of a constant:
+                   (equal darg1 (aref1 dag-array-name dag-array darg2)))
+               (if (quotep darg2)
+                   ;; darg1 may be a nodenum of a constant:
+                   (equal darg2 (aref1 dag-array-name dag-array darg1))
+                 ;;two nodenums:
+                 (equal darg1 darg2))))
+           (identical-darg-lists-up-to-constant-inlining (rest dargs1) (rest dargs2) dag-array-name dag-array dag-len)))))
+
+(defund identical-dag-exprs-up-to-constant-inlining (expr1 expr2 dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (bounded-dag-exprp dag-len expr1)
+                              (bounded-dag-exprp dag-len expr2))
+                  :guard-hints (("Goal" :in-theory (e/d (bounded-dag-exprp dag-exprp dag-function-call-exprp)
+                                                        (dag-function-call-exprp-redef))))))
+  (if (or (variablep expr1)
+          (variablep expr2))
+      nil ; won't be 2 nodes with the same var
+    (let ((fn1 (ffn-symb expr1))
+          (fn2 (ffn-symb expr2)))
+      (if (or (eq 'quote fn1)
+              (eq 'quote fn2))
+          (equal (unquote expr1) (unquote expr2))
+        ;; both are function calls:
+        (and (eq fn1 fn2)
+             (let ((dargs1 (dargs expr1))
+                   (dargs2 (dargs expr2)))
+               (identical-darg-lists-up-to-constant-inlining dargs1 dargs2 dag-array-name dag-array dag-len)))))))
+
 
 ;; (defun clean-up-hyps (hyps)
 ;;   (declare (xargs :guard (pseudo-term-listp hyps)))
@@ -15445,14 +15491,22 @@
    (b* (;; First, we check whether the nodes are calls of the same function on the same arguments (may be quite common):
         (expr1 (aref1 miter-array-name miter-array smaller-nodenum))
         (expr2 (aref1 miter-array-name miter-array larger-nodenum))
-        ;; todo: is identical-exprs-up-to-constant-inlining overkill (shouldn't things below the node already have been merged?)?
         ((when (identical-dag-exprs-up-to-constant-inlining expr1 expr2 miter-array-name miter-array miter-len))
          (and print (cw "  Structural equivalence between ~x0 and ~x1.~%" smaller-nodenum larger-nodenum))
+         (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state))
+        ;; Special case: Check for xor nests with the same leaves (above the shared nodes) -- may be very common:
+        ;; TODO: Also handle bvxor!
+        ((when (and (not (variablep expr1))
+                    (not (variablep expr2))
+                    (eq 'bitxor (ffn-symb expr1))
+                    (eq 'bitxor (ffn-symb expr2))
+                    ;; could optimize a bit since we know the nodes are bitxors?:
+                    (identical-bitxor-nestsp (list smaller-nodenum) (list larger-nodenum) 0 0 miter-array-name miter-array miter-len)))
+         (and print (cw "  Bitxor equivalence between ~x0 and ~x1.~%" smaller-nodenum larger-nodenum))
          (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state)))
      ;; Next, determine whether everything relevant is pure:
-     ;;ffffixme also check here that all supporting vars have bv or array types in the alist? - could cut if they don't?
      ;;ffixme also check that all necessary indices and sizes are constants (miter-is-purep could reflect that? maybe it does now?)
-     (if (and (or miter-is-purep
+     (if (and (or miter-is-purep ; common
                   ;; TODO: Instead of this, consider pre-computing which nodes are pure (updating that info when merging nodes):
                   (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array var-type-alist)
                   )

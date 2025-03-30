@@ -45,6 +45,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/typed-lists-light/integer-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)) ;drop?
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
@@ -57,32 +58,49 @@
 
 ;(local (in-theory (disable car-becomes-nth-of-0)))
 
-(local (in-theory (disable NAT-LISTP
-                           natp
-                           DAG-EXPRP
+(local (in-theory (e/d (consp-of-cdr
+                        nth-of-cdr
+                        myquotep-of-nth-when-darg-listp
+                        <-of-+-of-1-when-integers
+                        natp-of-+-of-1
+                        rationalp-when-integerp)
+                       (NAT-LISTP
+                        natp
+                        DAG-EXPRP
                            ;;LIST::LEN-WHEN-AT-MOST-1
-                           all-natp-when-not-consp
-                           all-<-when-not-consp
-                           darg-listp-when-not-consp
+                        all-natp-when-not-consp
+                        all-<-when-not-consp
+                        darg-listp-when-not-consp
                            ;; for speed:
-                           all-<=-when-not-consp
-                           ALL-<-TRANSITIVE-FREE
-                           NOT-<-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-2
-                           <=-OF-NTH-WHEN-ALL-<= ;disable globally?
-                           rational-listp
-                           strip-cdrs
+                        all-<=-when-not-consp
+                        ALL-<-TRANSITIVE-FREE
+                        NOT-<-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-2
+                        <=-of-nth-when-all-<= ;disable globally?
+                        rational-listp
+                        strip-cdrs
+                        ifix ; avoid case splits
+                        RATIONAL-LISTP MAXELEM ;prevent inductions
+                        not-<-of-nth-when-all-<
+                        ))))
 
-                           RATIONAL-LISTP MAXELEM ;prevent inductions
-                           )))
+(local
+ (defthm all-natp-of-reverse-list
+   (equal (all-natp (reverse-list x))
+          (all-natp x))
+   :hints (("Goal" :in-theory (enable reverse-list)))))
 
-(local (in-theory (enable consp-of-cdr
-                          nth-of-cdr
-                          myquotep-of-nth-when-darg-listp
-                          <=-of-nth-when-all-<= ;todo
-                          <-of-+-of-1-when-integers
-                          natp-of-+-of-1
-                          rationalp-when-integerp
-                          )))
+;move
+(local
+ (defthm nat-listp-of-reverse-list
+   (equal (nat-listp (reverse-list x))
+          (nat-listp (true-list-fix x)))
+   :hints (("Goal" :in-theory (enable reverse-list)))))
+
+(local
+ (defthm all-<=-of-reverse-list
+   (equal (all-<= (reverse-list x) bound)
+          (all-<= x bound))
+   :hints (("Goal" :in-theory (enable reverse-list)))))
 
 (local
   (defthm nat-listp-of-true-list-fix-when-all-natp
@@ -247,10 +265,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;move
+(defund increasingp (items)
+  (declare (xargs :guard (integer-listp items)))
+  (if (or (endp items)
+          (endp (cdr items)))
+      t
+    (and (< (first items) (second items))
+         (increasingp (rest items)))))
+
+(defthm increasingp-of-cons
+  (equal (increasingp (cons a x))
+         (if (endp x)
+             t
+           (and (< a (first x))
+                (increasingp x))))
+  :hints (("Goal" :in-theory (enable increasingp))))
+
+(defthm increasingp-of-append
+  (equal (increasingp (append x y))
+         (if (endp x)
+             (increasingp y)
+           (if (endp y)
+               (increasingp x)
+             (and (increasingp x)
+                  (increasingp y)
+                  (< (car (last x)) (car y))))))
+  :hints (("Goal" :in-theory (enable increasingp))))
+
+(defthm increasingp-of-reverse-list
+  (equal (increasingp (reverse-list x))
+         (decreasingp x))
+  :hints (("Goal" :in-theory (enable increasingp decreasingp REVERSE-LIST))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;list should be sorted in decreasing order
 ;the bitxor/bvxor of everything in the return value should be equal to the bitxor/bvxor of ITEM and everything in LIST
 ;slow? not sure i can get around it.  could we use a btree?
 ;todo: rename to clarify that we remove duplicate *pairs*
+;todo: rename to clarify that the list is decreasing
+;todo: specialize to a version that uses fixnums (unsigned-byte 60s)?
+;todo: reflect in the name that we are removing *pairs* of dups.
 (defund insert-into-sorted-list-and-remove-dups (item list)
   (declare (xargs :guard (and (integerp item)
                               (integer-listp list)
@@ -264,7 +320,7 @@
       (if (< first-item item)
           (cons item list) ;; item is larger than anything in the list
         (if (eql item first-item)
-            ;;drop them both:
+            ;; drop them both, since we are removing dups
             (cdr list)
           (cons first-item (insert-into-sorted-list-and-remove-dups item (cdr list))))))))
 
@@ -275,13 +331,12 @@
 ;;                   (all-integerp list)))
 ;;   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
 
-(local
- (defthm nat-listp-of-insert-into-sorted-list-and-remove-dups
-   (implies (and (natp item)
-                 (true-listp list))
-            (equal (nat-listp (insert-into-sorted-list-and-remove-dups item list))
-                   (nat-listp list)))
-   :hints (("Goal" :in-theory (enable nat-listp insert-into-sorted-list-and-remove-dups)))))
+(defthm nat-listp-of-insert-into-sorted-list-and-remove-dups
+  (implies (and (natp item)
+                (true-listp list))
+           (equal (nat-listp (insert-into-sorted-list-and-remove-dups item list))
+                  (nat-listp list)))
+  :hints (("Goal" :in-theory (enable nat-listp insert-into-sorted-list-and-remove-dups))))
 
 ;; todo: go to just using nat-listp?
 (local
@@ -297,12 +352,11 @@
             (true-listp (insert-into-sorted-list-and-remove-dups item list)))
    :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups)))))
 
-(local
- (defthm all-<-of-insert-into-sorted-list-and-remove-dups
-   (implies (and (< item bound)
-                 (all-< list bound))
-            (all-< (insert-into-sorted-list-and-remove-dups item list) bound))
-   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups)))))
+(defthm all-<-of-insert-into-sorted-list-and-remove-dups
+  (implies (and (< item bound)
+                (all-< list bound))
+           (all-< (insert-into-sorted-list-and-remove-dups item list) bound))
+  :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
 
 (local
  (defthm all-<=-of-insert-into-sorted-list-and-remove-dups
@@ -320,13 +374,13 @@
 ;;            (max item (maxelem list))))
 ;;   :hints (("Goal" :in-theory (enable MAXELEM))))
 
-(local
- (defthm decreasingp-of-insert-into-sorted-list-and-remove-dups
-   (implies (and (decreasingp list)
-                 (integerp item)
-                 (integer-listp list))
-            (decreasingp (insert-into-sorted-list-and-remove-dups item list)))
-   :hints (("Goal" :in-theory (enable decreasingp insert-into-sorted-list-and-remove-dups)))))
+;move?
+(defthm decreasingp-of-insert-into-sorted-list-and-remove-dups
+  (implies (and (decreasingp list)
+                (integerp item)
+                (integer-listp list))
+           (decreasingp (insert-into-sorted-list-and-remove-dups item list)))
+  :hints (("Goal" :in-theory (enable decreasingp insert-into-sorted-list-and-remove-dups))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -550,12 +604,11 @@
                                                      <-of-nth-when-all-<)))
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0 nth-of-cdr)))))
   (if (or (endp pending-list)
-          (not (mbt (all-natp pending-list)))
-          (not (mbt (decreasingp pending-list))) ;for termination
-          (not (mbt (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
-          (not (mbt (natp dag-len)))
-          (not (mbt (all-< pending-list dag-len)))
-          )
+          (not (mbt (and (all-natp pending-list)
+                         (decreasingp pending-list) ;for termination
+                         (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                         (natp dag-len)
+                         (all-< pending-list dag-len)))))
       (mv acc accumulated-constant)
     (let* ((highest-node (first pending-list))
            (expr (aref1 dag-array-name dag-array highest-node)))
@@ -565,13 +618,16 @@
         (let ((fn (ffn-symb expr)))
           (if (eq 'quote fn)
               ;; it's a constant, so xor it into the accumulated constant:
+              ;; todo: justify the ifix here:
               (bitxor-nest-leaves-aux (rest pending-list) dag-array-name dag-array dag-len acc (bitxor (ifix (unquote expr)) accumulated-constant))
             (if (eq 'bitxor fn)
                 ;; it is a bitxor, so handle the children:
                 (let ((args (dargs expr)))
                   (if (not (= 2 (len args)))
-                      (prog2$ (er hard? 'bitxor-nest-leaves-aux "bitxor with wrong number of args.")
-                              (mv (append pending-list acc) accumulated-constant))
+                      (prog2$ (er hard? 'bitxor-nest-leaves-aux "bitxor with wrong number of args.") ; todo: return an error?
+                              (mv (append (reverse-list pending-list) ; reverse to ensure the result is increasing ; todo: compare to what we do for bvxor
+                                          acc)
+                                  accumulated-constant))
                     (let* ((left-child (first args))
                            (right-child (second args)))
                       ;; next check is for termination
@@ -589,6 +645,7 @@
               ;;add the node to the result, since it's not a bitxor:
               (bitxor-nest-leaves-aux (rest pending-list) dag-array-name dag-array dag-len (cons highest-node acc) accumulated-constant))))))))
 
+;drop?
 (defthm all-natp-of-mv-nth-0-of-bitxor-nest-leaves-aux
    (implies (all-natp acc)
             (all-natp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))
@@ -637,7 +694,7 @@
            (all-<= (cdr pending-list) (nth '0 pending-list)))
   :hints (("Goal" :in-theory (enable decreasingp all-<=))))
 
-(defthm all-<=-when-<=-and-decreasingp
+(defthmd all-<=-when-<=-and-decreasingp
   (implies (and (<= (car x) bound)
                 (decreasingp x))
            (all-<= x bound))
@@ -657,7 +714,7 @@
                    t))
             (all-<= (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))
                     bound))
-   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux all-myquotep)
+   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux all-myquotep <=-of-nth-when-all-<= all-<=-when-<=-and-decreasingp)
                                    (pseudo-dag-arrayp quotep))))))
 
 (defthm all-<=-of-+-of--1
@@ -706,6 +763,20 @@
             (bitp (mv-nth 1 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))
    :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (quotep pseudo-dag-arrayp))))))
 
+;; may not be needed, but justifies comparing 2 leaf lists with equal
+(defthm increasingp-of-mv-nth-0-of-bitxor-nest-leaves-aux
+  (implies (and (nat-listp pending-list)
+                (decreasingp pending-list)
+                (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                (all-< pending-list dag-len)
+                (integerp accumulated-constant)
+                (increasingp acc)
+                (if (consp acc)
+                    (all-< pending-list (car acc))
+                  t))
+           (increasingp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))
+  :hints (("Goal" :induct t
+           :in-theory (e/d (bitxor-nest-leaves-aux) ()))))
 
 ;; KEEP IN SYNC WITH BVXOR-NEST-LEAVES
 ;nodenum is the root of a bitxor nest
@@ -1093,7 +1164,7 @@
                    t))
             (all-<= (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))
                     bound))
-   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
+   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux <=-of-nth-when-all-<= all-<=-when-<=-and-decreasingp)
                                    (pseudo-dag-arrayp quotep))))))
 
 (local
