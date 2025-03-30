@@ -161,7 +161,7 @@
               ;; variable; we'll cut:
               (let ((type (lookup-eq expr var-type-alist)))
                 (if (not type)
-                    (prog2$ (cw "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist)
+                    (prog2$ (er hard? 'gather-nodes-for-translation "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist)
                             (mv :type-error nil nil nil))
                   (mv (erp-nil) needed-for-node1-tag-array nodenums-to-translate-acc (acons-fast n type cut-nodenum-type-alist))))
             (if (fquotep expr)
@@ -324,7 +324,7 @@
               ;; if it's a variable, we will cut (the variable generated in STP will be named NODEXXX, so we don't have to worry about the actual name of expr clashing with something) and add info about its type to cut-nodenum-type-alist:
               (b* ((type (lookup-eq expr var-type-alist))
                    ((when (not type)) ; should not happen (var-type-alist should assign types to all vars in the dag)
-                    (cw "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist)
+                    (er hard? 'gather-nodes-to-translate-for-aggressively-cut-proof "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist) ; (cw "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist)
                     (mv :type-error nil nil extra-asserts)))
                 (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array
                                                                       nodenums-to-translate ;not adding n
@@ -345,7 +345,7 @@
                       (b* ((- (and print (cw "~%  (Cutting at shared node ~x0" n)))
                            (type (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
                            ((when (not (axe-typep type)))
-                            (cw "ERROR: Bad type for ~x0.~%" expr)
+                            (er hard? 'gather-nodes-for-translation "ERROR: Bad type for ~x0.~%" expr)
                             (mv :type-error nil nil extra-asserts))
                            ;;Special handling for BVMULT when the arguments
                            ;;are small.  Consider the product of two 4-bit
