@@ -171,6 +171,8 @@
 (include-book "node-replacement-array2")
 (include-book "node-replacement-array3")
 (include-book "nodenum-type-alists")
+(include-book "normalize-xors")
+(include-book "identical-xor-nests")
 (include-book "numeric-lists")
 (include-book "packbv-axe")
 (include-book "possibly-negated-nodenums")
