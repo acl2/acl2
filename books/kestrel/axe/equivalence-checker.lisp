@@ -7914,9 +7914,11 @@
     (+ (len (cdr (car alist)))
        (sum-of-cdr-lens (cdr alist)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; todo: see dag-is-purep
-(defun miter-is-purep-aux (index len miter-array-name miter-array)
-  (declare (xargs :guard (and (pseudo-dag-arrayp miter-array-name miter-array len)
+(defun dag-array-is-purep-aux (index len dag-array-name dag-array)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array len)
                               (natp index)
                               (<= index len))
                   :guard-hints (("Goal" :in-theory (enable expr-is-purep)))
@@ -7925,23 +7927,22 @@
           (not (natp index))
           (not (natp len)))
       t
-    (let ((expr (aref1 miter-array-name miter-array index)))
+    (let ((expr (aref1 dag-array-name dag-array index)))
       (if (expr-is-purep expr)
-          (miter-is-purep-aux (+ 1 index) len miter-array-name miter-array)
-        (prog2$ (cw "(Node ~x0 is not pure (call of ~x1).)~%" index (car expr) ; must be a cons since vars are pure
-                    )
+          (dag-array-is-purep-aux (+ 1 index) len dag-array-name dag-array)
+        (prog2$ (cw "(Node ~x0 is not pure: ~x1.)~%" index expr) ; todo: elide (e.g., if some darg is a big constant)?
                 nil)))))
 
+; todo: pass in a var-type-alist and ensure all var nodes have entries in it
 ; todo: ;use property lists?
-;ffixme check indices, sizes, and shift amounts, etc.!
-(defun miter-is-purep (miter-array-name miter-array miter-len)
-  (declare (xargs :guard (pseudo-dag-arrayp miter-array-name miter-array miter-len)))
-          ;  (let ((supporting-fns (fns-that-support-node (+ -1 miter-len) miter-array-name miter-array))) ;inefficient to cons this up?
-;    (subsetp-eq supporting-fns *bv-and-array-fns-we-can-translate*)
-  (let ((result (miter-is-purep-aux 0 miter-len miter-array-name miter-array)))
+; todo: faster to count down?
+;checks all nodes, not just supporting nodes
+(defun dag-array-is-purep (dag-array-name dag-array dag-len)
+  (declare (xargs :guard (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
+  (let ((result (dag-array-is-purep-aux 0 dag-len dag-array-name dag-array)))
     (prog2$ (if result
-                (cw "(Miter is pure.)~%")
-              (cw "(Miter is not pure.)~%"))
+                (cw "(Dag is pure.)~%")
+              (cw "(Dag is not pure.)~%"))
             result)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -16080,7 +16081,7 @@
                  (prog2$ (cw "(DAG: :elided (~x0 nodes))~%" miter-len)
                          state)))
         ;;fixme this should also check that every var has a good type for stp; otherwise there may be errors in translating?  or not, since the type can be inferred?
-        (miter-is-purep (miter-is-purep miter-array-name miter-array miter-len)) ;optimization for the ciphers (it was slow to check whether each pair was pure
+        (miter-is-purep (dag-array-is-purep miter-array-name miter-array miter-len)) ;optimization for the ciphers (it was slow to check whether each pair was pure
         ((mv shuffled-test-cases rand) ;fixme can we do this less often?  we want the test cases in their original order when analyzing traces of rec fns..
          (shuffle-list test-cases rand))
         ((mv all-passedp ; actually a hard error will already have been thrown
@@ -16093,7 +16094,7 @@
          (find-probable-facts miter-array-name miter-array miter-len miter-depth
                               shuffled-test-cases
                               interpreted-function-alist print
-                              (not miter-is-purep) ;keep test cases if the miter is not pure (fixme what if there are no real rec fns but the miter is somehow not pure?)
+                              (not miter-is-purep) ;keep test cases if the miter is not pure (fixme what if there are no real rec-fns but the miter is somehow not pure?)
                               debug-nodes
                               ;;(equal 0 miter-depth) ;abandon-testing-when-boringp (only do it on top-level miters since nested miters test are not in random order (may start with many tests from the same trace)
                               ))
