@@ -13,6 +13,8 @@
 
 (include-book "proposals")
 
+(include-book "../library-extensions/oset-nonemptyp")
+
 (include-book "kestrel/fty/pos-set" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -357,14 +359,40 @@
   (defruled in-of-cert-set->prop-set
     (implies (certificate-setp certs)
              (equal (set::in prop (cert-set->prop-set certs))
-                    (b* ((cert (set::head (certs-with-prop prop certs))))
-                      (and (not (set::emptyp (certs-with-prop prop certs)))
-                           (set::in cert certs)
-                           (equal (certificate->proposal cert) prop)))))
-    :enable (emptyp-of-certs-with-prop
-             in-of-certs-with-prop)
-    :use (:instance set::in-head (x (certs-with-prop prop certs)))
-    :disable set::in-head))
+                    (b* ((cert (set::nonempty-witness
+                                (certs-with-prop prop certs))))
+                      (and (set::in cert certs)
+                           (equal (certificate->proposal cert)
+                                  prop)))))
+    :use (only-if-part if-part)
+
+    :prep-lemmas
+
+    ((defruled only-if-part
+       (implies (certificate-setp certs)
+                (implies (set::in prop (cert-set->prop-set certs))
+                         (b* ((cert (set::nonempty-witness
+                                     (certs-with-prop prop certs))))
+                           (and (set::in cert certs)
+                                (equal (certificate->proposal cert)
+                                       prop)))))
+       :use (:instance set::nonemptyp-when-not-emptyp
+                       (set (certs-with-prop prop certs)))
+       :enable (set::nonemptyp
+                in-of-certs-with-prop
+                emptyp-of-certs-with-prop))
+
+     (defruled if-part
+       (implies (certificate-setp certs)
+                (b* ((cert (set::nonempty-witness
+                            (certs-with-prop prop certs))))
+                  (implies (and (set::in cert certs)
+                                (equal (certificate->proposal cert)
+                                       prop))
+                           (set::in prop (cert-set->prop-set certs)))))
+       :use (:instance certificate->proposal-in-cert-set->prop-set
+                       (cert (set::nonempty-witness
+                              (certs-with-prop prop certs))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
