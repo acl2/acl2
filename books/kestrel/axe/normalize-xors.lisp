@@ -245,7 +245,7 @@
   :hints (("Goal" :in-theory (enable decreasingp))))
 
 (defthm decreasingp-of-singleton
-  (decreasingp (list item))
+  (decreasingp (list num))
   :hints (("Goal" :in-theory (enable decreasingp))))
 
 ;; (defthmd maxelem-when-decreasingp
@@ -259,22 +259,16 @@
 ;; (local (in-theory (enable maxelem-when-decreasingp)))
 
 (defthmd <-of-nth-1-and-nth-0-when-decreasingp
-  (implies (and (decreasingp l)
-                (consp (cdr l)))
-           (< (nth 1 l) (nth 0 l)))
+  (implies (and (decreasingp nums)
+                (consp (cdr nums)))
+           (< (nth 1 nums) (nth 0 nums)))
   :hints (("Goal" :in-theory (enable decreasingp))))
 
-;; (defthmd <-of-nth-1-and-nth-0-when-decreasingp-alt
-;;   (implies (and (decreasingp l)
-;;                 (< 1 (len l)))
-;;            (< (nth 1 l) (nth 0 l)))
-;;   :hints (("Goal" :in-theory (enable decreasingp))))
-
-(defthm all-<-of-cdr-and-nth-0-when-decreasingp
-  (implies (and (decreasingp l)
-                (consp l))
-           (all-< (cdr l) (nth 0 l)))
-  :hints (("Goal" :in-theory (e/d (decreasingp nth all-<) (nth-of-cdr)))))
+(defthmd <-of-nth-1-and-nth-0-when-decreasingp-alt
+  (implies (and (decreasingp nums)
+                (< 1 (len nums)))
+           (< (nth 1 nums) (nth 0 nums)))
+  :hints (("Goal" :in-theory (enable decreasingp))))
 
 (defthmd not-<-of-nth-0-and-nth-1-when-decreasingp
   (implies (and (decreasingp nums)
@@ -282,22 +276,43 @@
                 (consp nums)
                 ;; (consp (cdr nums))
                 )
-           (not (< (nth '0 nums) (nth '1 nums))))
+           (not (< (nth 0 nums) (nth 1 nums))))
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (enable decreasingp))))
 
-(local (in-theory (enable not-<-of-nth-0-and-nth-1-when-decreasingp)))
+; try this instead
+(defthmd not-<-of-nth-0-and-nth-1-when-decreasingp2
+  (implies (and (decreasingp nums)
+                ;(all-natp nums) ; (nat-listp nums) ; gen?
+                ;(consp nums)
+                (consp (cdr nums))
+                )
+           (not (< (nth 0 nums) (nth 1 nums))))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable decreasingp))))
+
+(defthm all-<-of-cdr-and-nth-0-when-decreasingp
+  (implies (and (decreasingp nums)
+                (consp nums))
+           (all-< (cdr nums) (nth 0 nums)))
+  :hints (("Goal" :in-theory (e/d (decreasingp nth all-<) (nth-of-cdr)))))
 
 (defthm all-<=of-cdr-and-nth-0-when-decreasingp
   (implies (decreasingp nums)
-           (all-<= (cdr nums) (nth '0 nums)))
+           (all-<= (cdr nums) (nth 0 nums)))
   :hints (("Goal" :in-theory (enable decreasingp all-<=))))
 
-(defthmd all-<=-when-<=-and-decreasingp
+(defthmd all-<=-when-<=-and-decreasingp ; add of-car to name
   (implies (and (<= (car nums) bound)
                 (decreasingp nums))
            (all-<= nums bound))
   :hints (("Goal" :in-theory (enable all-<= decreasingp))))
+
+(defthmd all-<-when-<-of-car-and-decreasingp
+  (implies (and (< (car nums) bound)
+                (decreasingp nums))
+           (all-< nums bound))
+  :hints (("Goal" :in-theory (enable all-< decreasingp))))
 
 (local
   (defthm not-equal-of-nth-0-and-nth-1-when-decreasingp
@@ -439,15 +454,12 @@
   (declare (type integer combined-constant)
            (type (integer 0 *) xor-size)
            (xargs :guard (and (natp dag-len)
-                              (true-listp nodenums)
-                              (all-natp nodenums)
+                              (nat-listp nodenums)
                               (all-< nodenums dag-len)
                               (array1p 'translation-array translation-array)
                               (equal dag-len (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 dag-len) translation-array)
-                              (true-listp nodenum-acc))
-                  :guard-hints (("Goal" :in-theory (enable))) ;todo: make a fw-chaining rule for the dims
-                  ))
+                              (true-listp nodenum-acc))))
   (if (endp nodenums)
       (mv nodenum-acc combined-constant)
     (let* ((nodenum (first nodenums))
@@ -639,7 +651,8 @@
                                                      nth-of-cdr
                                                      <-of-nth-when-all-<
                                                      integerp-when-natp
-                                                     <-of-nth-1-and-nth-0-when-decreasingp)))
+                                                     <-of-nth-1-and-nth-0-when-decreasingp
+                                                     not-<-of-nth-0-and-nth-1-when-decreasingp)))
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0 nth-of-cdr)))))
   (if (or (endp pending-list)
           (not (mbt (and (all-natp pending-list)
@@ -682,12 +695,6 @@
                           (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))))
               ;;add the node to the result, since it's not a bitxor:
               (bitxor-nest-leaves-aux (rest pending-list) dag-array-name dag-array dag-len (cons highest-node acc) accumulated-constant))))))))
-
-;drop?
-(defthm all-natp-of-mv-nth-0-of-bitxor-nest-leaves-aux
-   (implies (all-natp acc)
-            (all-natp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))))
-  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
 
 (defthm nat-listp-of-mv-nth-0-of-bitxor-nest-leaves-aux
    (implies (nat-listp acc)
@@ -764,7 +771,7 @@
             (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))
                    bound))
    :hints (("Goal" :use (:instance all-<=-of-mv-nth-0-of-bitxor-nest-leaves-aux-new (bound (+ -1 bound)))
-            :in-theory (e/d (BITXOR-NEST-LEAVES-AUX ALL-INTEGERP-WHEN-ALL-NATP)
+            :in-theory (e/d (BITXOR-NEST-LEAVES-AUX ALL-INTEGERP-WHEN-ALL-NATP all-<-when-<-of-car-and-decreasingp <-of-nth-when-all-<)
                             (all-<=-of-mv-nth-0-of-bitxor-nest-leaves-aux-new))))))
 
 (defthm integerp-of-mv-nth-1-of-bitxor-nest-leaves-aux
@@ -805,7 +812,7 @@
                               (array1p 'translation-array translation-array)
                               (equal dag-len (alen1 'translation-array translation-array))
                               (translation-arrayp-aux (+ -1 dag-len) translation-array))
-                  :guard-hints (("Goal" :in-theory (enable integer-listp-rewrite ALL-RATIONALP-WHEN-ALL-NATP ALL-INTEGERP-WHEN-ALL-NATP)))))
+                  :guard-hints (("Goal" :in-theory (enable integer-listp-rewrite all-rationalp-when-all-natp all-integerp-when-all-natp all-natp-when-nat-listp)))))
   (b* ( ;; Extract the xor leaves of this node from the old-dag:
        ((mv nodenum-leaves combined-constant)
         (bitxor-nest-leaves-aux (list nodenum) 'normalize-xors-old-array dag-array dag-len nil 0) ;;TODO: consider this: (bitxor-nest-leaves-for-node nodenum 'normalize-xors-old-array dag-array)
@@ -1083,7 +1090,8 @@
                   :hints (("Goal" :in-theory (enable car-becomes-nth-of-0
                                                      nth-of-cdr
                                                      <-of-nth-when-all-<
-                                                     integerp-when-natp)))
+                                                     integerp-when-natp
+                                                     <-of-nth-1-and-nth-0-when-decreasingp-alt)))
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0 nth-of-cdr)))))
   (if (or (endp pending-list)
           (not (mbt (all-natp pending-list)))
