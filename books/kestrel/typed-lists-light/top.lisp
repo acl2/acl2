@@ -52,11 +52,14 @@
 (include-book "all-less")
 (include-book "all-less-rules")
 (include-book "all-less-than-or-equal")
+(include-book "less-than-all")
 (include-book "less-than-or-equal-all")
 (include-book "all-less-than-or-equal-all")
 (include-book "rational-lists")
 
 (include-book "all-greater")
+(include-book "all-greater-than-or-equal")
+(include-book "all-greater-than-or-equal-all")
 
 (include-book "cons-listp-dollar")
 
