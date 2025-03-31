@@ -366,7 +366,7 @@
 ;todo: rename to clarify that the list is decreasing
 ;todo: specialize to a version that uses fixnums (unsigned-byte 60s)?
 ;todo: reflect in the name that we are removing *pairs* of dups.
-(defund insert-into-sorted-list-and-remove-dups (item list)
+(defund insert-into-decreasing-list-and-remove-pairs-of-dups (item list)
   (declare (xargs :guard (and (integerp item)
                               (integer-listp list)
                               (decreasingp list))
@@ -379,66 +379,67 @@
       (if (< first-item item)
           (cons item list) ;; item is larger than anything in the list
         (if (eql item first-item)
-            ;; drop them both, since we are removing dups
+            ;; drop them both, since we are removing pairs of dups
             (cdr list)
-          (cons first-item (insert-into-sorted-list-and-remove-dups item (cdr list))))))))
+          ;; first-item is bigger, so continue inward:
+          (cons first-item (insert-into-decreasing-list-and-remove-pairs-of-dups item (cdr list))))))))
 
 ;drop?
-;; (defthmd all-integerp-of-insert-into-sorted-list-and-remove-dups
+;; (defthmd all-integerp-of-insert-into-decreasing-list-and-remove-pairs-of-dups
 ;;   (implies (integerp item)
-;;            (equal (all-integerp (insert-into-sorted-list-and-remove-dups item list))
+;;            (equal (all-integerp (insert-into-decreasing-list-and-remove-pairs-of-dups item list))
 ;;                   (all-integerp list)))
-;;   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
+;;   :hints (("Goal" :in-theory (enable insert-into-decreasing-list-and-remove-pairs-of-dups))))
 
-(defthm nat-listp-of-insert-into-sorted-list-and-remove-dups
+(defthm nat-listp-of-insert-into-decreasing-list-and-remove-pairs-of-dups
   (implies (and (natp item)
                 (true-listp list))
-           (equal (nat-listp (insert-into-sorted-list-and-remove-dups item list))
+           (equal (nat-listp (insert-into-decreasing-list-and-remove-pairs-of-dups item list))
                   (nat-listp list)))
-  :hints (("Goal" :in-theory (enable nat-listp insert-into-sorted-list-and-remove-dups))))
+  :hints (("Goal" :in-theory (enable nat-listp insert-into-decreasing-list-and-remove-pairs-of-dups))))
 
 ;; todo: go to just using nat-listp?
 (local
- (defthm all-natp-of-insert-into-sorted-list-and-remove-dups
+ (defthm all-natp-of-insert-into-decreasing-list-and-remove-pairs-of-dups
    (implies (natp item)
-            (equal (all-natp (insert-into-sorted-list-and-remove-dups item list))
+            (equal (all-natp (insert-into-decreasing-list-and-remove-pairs-of-dups item list))
                    (all-natp list)))
-   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups)))))
+   :hints (("Goal" :in-theory (enable insert-into-decreasing-list-and-remove-pairs-of-dups)))))
 
 (local
- (defthm true-listp-of-insert-into-sorted-list-and-remove-dups
+ (defthm true-listp-of-insert-into-decreasing-list-and-remove-pairs-of-dups
    (implies (true-listp list)
-            (true-listp (insert-into-sorted-list-and-remove-dups item list)))
-   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups)))))
+            (true-listp (insert-into-decreasing-list-and-remove-pairs-of-dups item list)))
+   :hints (("Goal" :in-theory (enable insert-into-decreasing-list-and-remove-pairs-of-dups)))))
 
-(defthm all-<-of-insert-into-sorted-list-and-remove-dups
+(defthm all-<-of-insert-into-decreasing-list-and-remove-pairs-of-dups
   (implies (and (< item bound)
                 (all-< list bound))
-           (all-< (insert-into-sorted-list-and-remove-dups item list) bound))
-  :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
+           (all-< (insert-into-decreasing-list-and-remove-pairs-of-dups item list) bound))
+  :hints (("Goal" :in-theory (enable insert-into-decreasing-list-and-remove-pairs-of-dups))))
 
 (local
- (defthm all-<=-of-insert-into-sorted-list-and-remove-dups
+ (defthm all-<=-of-insert-into-decreasing-list-and-remove-pairs-of-dups
    (implies (and (<= val2 val)
                  (all-<= lst val))
-            (all-<= (insert-into-sorted-list-and-remove-dups val2 lst)
+            (all-<= (insert-into-decreasing-list-and-remove-pairs-of-dups val2 lst)
                     val))
-   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups)))))
+   :hints (("Goal" :in-theory (enable insert-into-decreasing-list-and-remove-pairs-of-dups)))))
 
 ;; ;not quite right because of dups
-;; (defthm maxelem-of-insert-into-sorted-list-and-remove-dups
-;;   (equal (maxelem (insert-into-sorted-list-and-remove-dups item list))
+;; (defthm maxelem-of-insert-into-decreasing-list-and-remove-pairs-of-dups
+;;   (equal (maxelem (insert-into-decreasing-list-and-remove-pairs-of-dups item list))
 ;;          (if (member-equal item list)
 ;;              (maxelem (remove1-equal item list))
 ;;            (max item (maxelem list))))
 ;;   :hints (("Goal" :in-theory (enable MAXELEM))))
 
-(defthm decreasingp-of-insert-into-sorted-list-and-remove-dups
+(defthm decreasingp-of-insert-into-decreasing-list-and-remove-pairs-of-dups
   (implies (and (decreasingp list)
                 (integerp item)
                 (integer-listp list))
-           (decreasingp (insert-into-sorted-list-and-remove-dups item list)))
-  :hints (("Goal" :in-theory (enable decreasingp insert-into-sorted-list-and-remove-dups))))
+           (decreasingp (insert-into-decreasing-list-and-remove-pairs-of-dups item list)))
+  :hints (("Goal" :in-theory (enable decreasingp insert-into-decreasing-list-and-remove-pairs-of-dups))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -687,8 +688,8 @@
                           (mv (er hard? 'bitxor-nest-leaves-aux "child nodes not smaller.")
                               0)
                         (let* ((pending-list (rest pending-list)) ;remove the current node
-                               (pending-list (if (consp left-child) pending-list (insert-into-sorted-list-and-remove-dups left-child pending-list))) ;can be slow?
-                               (pending-list (if (consp right-child) pending-list (insert-into-sorted-list-and-remove-dups right-child pending-list)))
+                               (pending-list (if (consp left-child) pending-list (insert-into-decreasing-list-and-remove-pairs-of-dups left-child pending-list))) ;can be slow?
+                               (pending-list (if (consp right-child) pending-list (insert-into-decreasing-list-and-remove-pairs-of-dups right-child pending-list)))
                                (accumulated-constant (if (consp left-child) (bitxor (ifix (unquote left-child)) accumulated-constant) accumulated-constant))
                                (accumulated-constant (if (consp right-child) (bitxor (ifix (unquote right-child)) accumulated-constant) accumulated-constant))
                                )
@@ -1121,8 +1122,8 @@
               (mv (er hard? 'bvxor-nest-leaves-aux "child nodes not smaller.")
                   0)
             (let* ((pending-list (rest pending-list)) ;remove the current node
-                   (pending-list (if (consp left-child) pending-list (insert-into-sorted-list-and-remove-dups left-child pending-list))) ;can be slow?
-                   (pending-list (if (consp right-child) pending-list (insert-into-sorted-list-and-remove-dups right-child pending-list)))
+                   (pending-list (if (consp left-child) pending-list (insert-into-decreasing-list-and-remove-pairs-of-dups left-child pending-list))) ;can be slow?
+                   (pending-list (if (consp right-child) pending-list (insert-into-decreasing-list-and-remove-pairs-of-dups right-child pending-list)))
                    (accumulated-constant (if (consp left-child) (bvxor size (ifix (unquote left-child)) accumulated-constant) accumulated-constant))
                    (accumulated-constant (if (consp right-child) (bvxor size (ifix (unquote right-child)) accumulated-constant) accumulated-constant)))
               (bvxor-nest-leaves-aux pending-list size dag-array-name dag-array dag-len acc accumulated-constant))))))))

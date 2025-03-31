@@ -64,7 +64,7 @@
       ;; todo: print a warning if the constant is not a bit?  or not an integer?
       (mv worklist (bitxor (ifix (unquote darg)) constant))
     ;; darg is a nodenum:
-    (mv (insert-into-sorted-list-and-remove-dups darg worklist) constant)))
+    (mv (insert-into-decreasing-list-and-remove-pairs-of-dups darg worklist) constant)))
 
 (local
  (defthm nat-listp-of-mv-nth-0-of-combine-bitxor-darg-with-worklist-or-constant
