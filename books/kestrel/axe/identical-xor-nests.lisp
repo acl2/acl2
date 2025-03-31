@@ -124,7 +124,8 @@
                                 0))
                   :hints (("Goal"
                            :in-theory (enable not-equal-of-nth-0-and-nth1-when-decreasingp
-                                              <-of-nth-when-all-<)))))
+                                              <-of-nth-when-all-<
+                                              <-of-nth-1-and-nth-0-when-decreasingp)))))
   (if (not (mbt (and (nat-listp worklist1)  ;; for termination
                      (decreasingp worklist1)
                      (nat-listp worklist2)
