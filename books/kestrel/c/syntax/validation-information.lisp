@@ -31,7 +31,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The validator calculates and uses information, such as types,
+    "The @(see validator) calculates and uses information, such as types,
      and annotates the abstract syntax with some of this information.
      Here we introduce fixtypes for this information,
      and operations on those fixtypes.")
