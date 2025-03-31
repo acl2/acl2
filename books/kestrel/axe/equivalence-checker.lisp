@@ -94,6 +94,7 @@
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
 (local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
+(local (include-book "kestrel/utilities/split-list-fast" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))

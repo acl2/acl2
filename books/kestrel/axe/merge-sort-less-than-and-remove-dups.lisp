@@ -12,8 +12,9 @@
 
 ;; TODO: Consider specializing for lists of fixnums
 
-(include-book "kestrel/utilities/split-list-fast" :dir :system)
+(include-book "kestrel/utilities/split-list-fast-defs" :dir :system)
 (include-book "merge-less-than-and-remove-dups")
+(local (include-book "kestrel/utilities/split-list-fast" :dir :system))
 
 ;move
 (local
