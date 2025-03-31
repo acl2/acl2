@@ -432,7 +432,7 @@
        ((when (dirdeclor-case dirdeclor :array))
         (b* (((dirdeclor-array dirdeclor) dirdeclor)
              ((erp declor1) (ldm-dirdeclor-obj dirdeclor.declor))
-             ((when dirdeclor.tyquals)
+             ((when dirdeclor.quals)
               (reterr (msg "Unsupported type qualifiers ~
                             or attribute specifiers ~
                             in direct declarator ~x0 for object."

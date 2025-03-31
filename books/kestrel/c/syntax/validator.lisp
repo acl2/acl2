@@ -3749,7 +3749,7 @@
                           (dirdeclor-fix dirdeclor)
                           index-type?))))
          (retok (make-dirdeclor-array :declor new-dirdeclor
-                                      :tyquals dirdeclor.tyquals
+                                      :quals dirdeclor.quals
                                       :expr? new-expr?)
                 fundef-params-p
                 type
@@ -3770,7 +3770,7 @@
                           (dirdeclor-fix dirdeclor)
                           index-type))))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
-                                              :tyquals dirdeclor.tyquals
+                                              :quals dirdeclor.quals
                                               :expr new-expr)
                 fundef-params-p
                 type
@@ -3791,7 +3791,7 @@
                           (dirdeclor-fix dirdeclor)
                           index-type))))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
-                                              :tyquals dirdeclor.tyquals
+                                              :quals dirdeclor.quals
                                               :expr new-expr)
                 fundef-params-p
                 type
@@ -3804,7 +3804,7 @@
              (valid-dirdeclor
               dirdeclor.declor fundef-params-p type table ienv)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
-                                           :tyquals dirdeclor.tyquals)
+                                           :quals dirdeclor.quals)
                 fundef-params-p
                 type
                 ident
