@@ -292,8 +292,7 @@
   :hints (("Goal" :in-theory (enable decreasingp))))
 
 (defthm all-<-of-cdr-and-nth-0-when-decreasingp
-  (implies (and (decreasingp nums)
-                (consp nums))
+  (implies (decreasingp nums)
            (all-< (cdr nums) (nth 0 nums)))
   :hints (("Goal" :in-theory (e/d (decreasingp nth all-<) (nth-of-cdr)))))
 
