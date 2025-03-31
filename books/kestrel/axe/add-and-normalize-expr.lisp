@@ -16,7 +16,7 @@
 (include-book "def-dag-builder-theorems")
 (include-book "leaves-of-normalized-bitxor-nest")
 (include-book "leaves-of-normalized-bvxor-nest")
-(include-book "merge-and-remove-dups")
+(include-book "merge-and-remove-pairs-of-dups")
 (include-book "add-bitxor-nest-to-dag-array")
 (include-book "add-bvxor-nest-to-dag-array")
 (include-book "rewrite-stobj")
@@ -35,12 +35,12 @@
             (consp x))
    :rule-classes :forward-chaining))
 
-(defthm bounded-darg-listp-of-merge-and-remove-dups
+(defthm bounded-darg-listp-of-merge-and-remove-pairs-of-dups
   (implies (and (bounded-darg-listp lst1 dag-len)
                 (bounded-darg-listp lst2 dag-len)
                 (bounded-darg-listp acc dag-len))
-           (bounded-darg-listp (merge-and-remove-dups lst1 lst2 acc) dag-len))
-  :hints (("Goal" :in-theory (enable merge-and-remove-dups))))
+           (bounded-darg-listp (merge-and-remove-pairs-of-dups lst1 lst2 acc) dag-len))
+  :hints (("Goal" :in-theory (enable merge-and-remove-pairs-of-dups))))
 
 ;; Returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; TODO: Don't pass through the dag-variable-alist?
@@ -71,7 +71,7 @@
            ((mv arg3-constant arg3-leaves-increasing)
             (leaves-of-normalized-bvxor-nest (third simplified-args) bvxor-width dag-array dag-len))
            ;; Make the leaves of the new nest:
-           (nodenum-leaves-decreasing (merge-and-remove-dups arg2-leaves-increasing arg3-leaves-increasing nil))
+           (nodenum-leaves-decreasing (merge-and-remove-pairs-of-dups arg2-leaves-increasing arg3-leaves-increasing nil))
            (accumulated-constant (bvxor bvxor-width arg2-constant arg3-constant))
            (leaves-increasing (if (eql 0 accumulated-constant)
                                   (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it
@@ -96,7 +96,7 @@
              ((mv arg2-constant arg2-leaves-increasing)
               (leaves-of-normalized-bitxor-nest (second simplified-args) dag-array dag-len))
              ;; Make the leaves of the new nest:
-             (nodenum-leaves-decreasing (merge-and-remove-dups arg1-leaves-increasing arg2-leaves-increasing nil))
+             (nodenum-leaves-decreasing (merge-and-remove-pairs-of-dups arg1-leaves-increasing arg2-leaves-increasing nil))
              (accumulated-constant (bitxor arg1-constant arg2-constant))
              (leaves-increasing (if (eql 0 accumulated-constant)
                                     (reverse-list nodenum-leaves-decreasing) ;if the constant is 0, drop it

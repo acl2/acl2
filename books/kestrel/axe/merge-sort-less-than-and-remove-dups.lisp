@@ -1,6 +1,6 @@
-; Extracting variable from an R1CS
+; Sorting a list and removing extra copies of duplicate items
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,6 +9,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; TODO: Consider specializing for lists of fixnums
 
 (include-book "kestrel/utilities/split-list-fast" :dir :system)
 (include-book "merge-less-than-and-remove-dups")
@@ -140,14 +142,16 @@
            (true-listp (merge-sort-<-and-remove-dups l)))
   :hints (("Goal" :in-theory (enable merge-sort-<-and-remove-dups))))
 
+(verify-guards merge-sort-<-and-remove-dups
+  :hints (("Goal" :in-theory (enable all-rationalp-when-rational-listp))))
+
+;; special case
 (defthm nat-listp-of-merge-sort-<-and-remove-dups
   (implies (nat-listp l)
            (nat-listp (merge-sort-<-and-remove-dups l)))
   :hints (("Goal" :in-theory (enable merge-sort-<-and-remove-dups))))
 
-(verify-guards merge-sort-<-and-remove-dups
-  :hints (("Goal" :in-theory (enable all-rationalp-when-rational-listp))))
-
+;; could do sortedp-<, which should imply no dupes
 (defthm sortedp-<=-of-merge-sort-<-and-remove-dups
   (sortedp-<= (merge-sort-<-and-remove-dups l))
   :hints (("Goal" :in-theory (enable merge-sort-<-and-remove-dups))))
@@ -161,3 +165,5 @@
   (implies (all-< l bound)
            (all-< (merge-sort-<-and-remove-dups l) bound))
   :hints (("Goal" :in-theory (enable merge-sort-<-and-remove-dups))))
+
+;; (= (merge-sort-<-and-remove-dups '(4 4 1 2 3 1 0 2 3 2)) (0 1 2 3 4))
