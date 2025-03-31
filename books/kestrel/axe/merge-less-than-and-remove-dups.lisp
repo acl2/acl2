@@ -123,10 +123,10 @@
 
 (local
  (defthm all-<-of-merge-<-and-remove-dups-aux
-   (implies (and (all-< l1 bound)
-                 (all-< l2 bound)
-                 (all-< acc bound))
-            (all-< (merge-<-and-remove-dups-aux l1 l2 acc) bound))
+   (equal (all-< (merge-<-and-remove-dups-aux l1 l2 acc) bound)
+          (and (all-< l1 bound)
+               (all-< l2 bound)
+               (all-< acc bound)))
    :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -180,9 +180,9 @@
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
 
 (defthm all-<-of-merge-<-and-remove-dups
-  (implies (and (all-< l1 bound)
-                (all-< l2 bound))
-           (all-< (merge-<-and-remove-dups l1 l2) bound))
+  (equal (all-< (merge-<-and-remove-dups l1 l2) bound)
+         (and (all-< l1 bound)
+              (all-< l2 bound)))
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
 
 ;(equal (merge-<-and-remove-dups '(1 2 2 3 4 4 5) '(0 1 2 3 3 4 6)) '(0 1 2 3 3 4 5 6)) ; note the two 3s in the result
