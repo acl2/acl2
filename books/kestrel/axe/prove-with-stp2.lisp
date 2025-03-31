@@ -20,6 +20,7 @@
 ;(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "supporting-nodes") ;for tag-nodenums-with-name
 (include-book "supporting-vars") ; for vars-that-support-dag-node
+(include-book "kestrel/typed-lists-light/decreasingp" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
@@ -493,8 +494,6 @@
 ;move up
 
 (include-book "merge-sort-greater-than-and-remove-dups")
-(include-book "normalize-xors") ; todo: reduce
-;(include-book "identical-xor-nests") ; todo: reduce
 
 ;dup
 (local
