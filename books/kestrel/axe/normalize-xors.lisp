@@ -38,6 +38,7 @@
 (include-book "def-dag-builder-theorems")
 (include-book "translation-array")
 (include-book "merge-sort-less-than")
+(include-book "kestrel/typed-lists-light/decreasingp" :dir :system)
 (local (include-book "rational-lists"))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -226,100 +227,6 @@
   (implies (bounded-darg-listp items bound)
            (bounded-darg-listp (merge-sort-< items) bound))
   :hints (("Goal" :in-theory (enable merge-sort-<))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Check that NUMS are strictly decreasing.
-;; Note that this implies that NUMS contains no duplicates.
-(defund decreasingp (nums)
-  (declare (xargs :guard (rational-listp nums)))
-  (if (or (endp nums)
-          (endp (cdr nums)))
-      t
-    (and (> (first nums) (second nums))
-         (decreasingp (rest nums)))))
-
-(defthm decreasingp-of-cdr
-  (implies (decreasingp nums)
-           (decreasingp (cdr nums)))
-  :hints (("Goal" :in-theory (enable decreasingp))))
-
-(defthm decreasingp-of-singleton
-  (decreasingp (list num))
-  :hints (("Goal" :in-theory (enable decreasingp))))
-
-;; (defthmd maxelem-when-decreasingp
-;;   (implies (decreasingp nums)
-;;            (equal (maxelem nums)
-;;                   (if (consp nums)
-;;                       (car nums)
-;;                     (negative-infinity))))
-;;   :hints (("Goal" :in-theory (enable decreasingp))))
-
-;; (local (in-theory (enable maxelem-when-decreasingp)))
-
-(defthmd <-of-nth-1-and-nth-0-when-decreasingp
-  (implies (and (decreasingp nums)
-                (consp (cdr nums)))
-           (< (nth 1 nums) (nth 0 nums)))
-  :hints (("Goal" :in-theory (enable decreasingp))))
-
-(defthmd <-of-nth-1-and-nth-0-when-decreasingp-alt
-  (implies (and (decreasingp nums)
-                (< 1 (len nums)))
-           (< (nth 1 nums) (nth 0 nums)))
-  :hints (("Goal" :in-theory (enable decreasingp))))
-
-(defthmd not-<-of-nth-0-and-nth-1-when-decreasingp
-  (implies (and (decreasingp nums)
-                (all-natp nums) ; (nat-listp nums) ; gen?
-                (consp nums)
-                ;; (consp (cdr nums))
-                )
-           (not (< (nth 0 nums) (nth 1 nums))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable decreasingp))))
-
-; try this instead
-(defthmd not-<-of-nth-0-and-nth-1-when-decreasingp2
-  (implies (and (decreasingp nums)
-                ;(all-natp nums) ; (nat-listp nums) ; gen?
-                ;(consp nums)
-                (consp (cdr nums))
-                )
-           (not (< (nth 0 nums) (nth 1 nums))))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable decreasingp))))
-
-(defthm all-<-of-cdr-and-nth-0-when-decreasingp
-  (implies (decreasingp nums)
-           (all-< (cdr nums) (nth 0 nums)))
-  :hints (("Goal" :in-theory (e/d (decreasingp nth all-<) (nth-of-cdr)))))
-
-(defthm all-<=of-cdr-and-nth-0-when-decreasingp
-  (implies (decreasingp nums)
-           (all-<= (cdr nums) (nth 0 nums)))
-  :hints (("Goal" :in-theory (enable decreasingp all-<=))))
-
-(defthmd all-<=-when-<=-and-decreasingp ; add of-car to name
-  (implies (and (<= (car nums) bound)
-                (decreasingp nums))
-           (all-<= nums bound))
-  :hints (("Goal" :in-theory (enable all-<= decreasingp))))
-
-(defthmd all-<-when-<-of-car-and-decreasingp
-  (implies (and (< (car nums) bound)
-                (decreasingp nums))
-           (all-< nums bound))
-  :hints (("Goal" :in-theory (enable all-< decreasingp))))
-
-(local
-  (defthm not-equal-of-nth-0-and-nth-1-when-decreasingp
-    (implies (and (decreasingp nums)
-                  (all-integerp nums)
-                  (consp nums))
-             (not (equal (nth 1 nums) (nth 0 nums))))
-    :hints (("Goal" :in-theory (enable decreasingp all-integerp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

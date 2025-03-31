@@ -37,6 +37,7 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
+(local (include-book "kestrel/typed-lists-light/decreasingp" :dir :system))
 (local (include-book "kestrel/utilities/make-ord" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/bv-lists/bv-arrays" :dir :system))
@@ -613,7 +614,7 @@
                                  (+ 1 (nfix (first worklist2)))
                                0))
                   :ruler-extenders :lambdas
-                  :hints (("Goal" :in-theory (enable not-equal-of-nth-0-and-nth1-when-decreasingp
+                  :hints (("Goal" :in-theory (enable not-equal-of-nth-0-and-nth-1-when-decreasingp
                                                      <-OF-NTH-1-AND-NTH-0-WHEN-DECREASINGP
                                                      <-of-nth-when-all-<
                                                      car-becomes-nth-of-0
@@ -896,7 +897,7 @@
             :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof2
                                car-becomes-nth-of-0
                                <-of-nth-when-all-<
-                              ;; not-equal-of-nth-0-and-nth1-when-decreasingp
+                              ;; not-equal-of-nth-0-and-nth-1-when-decreasingp
                               ;; <-of-nth-1-and-nth-0-when-decreasingp
                               ;; not-<-of-nth-0-and-nth-1-when-decreasingp
                               ;; all-<-when-<-of-car-and-decreasingp
