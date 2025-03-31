@@ -433,6 +433,22 @@
              set::expensive-rules)
     :disable certs-with-author+round)
 
+  (defruled certificate->author-when-in-certs-with-author+round
+    (implies (set::in cert (certs-with-author+round author round certs))
+             (equal (certificate->author cert)
+                    (address-fix author)))
+    :rule-classes :forward-chaining
+    :enable in-of-certs-with-author+round
+    :disable certs-with-author+round)
+
+  (defruled certificate->round-when-in-certs-with-author+round
+    (implies (set::in cert (certs-with-author+round author round certs))
+             (equal (certificate->round cert)
+                    (pos-fix round)))
+    :rule-classes :forward-chaining
+    :enable in-of-certs-with-author+round
+    :disable certs-with-author+round)
+
   (defrule certs-with-author+round-of-nil
     (equal (certs-with-author+round author round nil)
            nil))
