@@ -243,9 +243,9 @@
 
   (defruled certificate->proposal-in-cert-set->prop-set
     (implies (and (certificate-setp certs)
-                  (set::in cert certs))
-             (set::in (certificate->proposal cert)
-                      (cert-set->prop-set certs)))
+                  (set::in cert certs)
+                  (equal (certificate->proposal cert) prop))
+             (set::in prop (cert-set->prop-set certs)))
     :induct t)
 
   (defruled cert-set->prop-set-monotone
