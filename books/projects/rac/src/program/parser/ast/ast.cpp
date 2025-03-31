@@ -9,9 +9,9 @@ AST::AST() {
   globals_.reserve(256);
   //  templates_.reserve(256);
   funDefs_.reserve(256);
-  funDefs_.push_back(
-      new FunDef(Location::builtin(), "abs", intType,
-                  {new VarDec(Location::builtin(), "", intType)}, nullptr));
+  funDefs_.push_back(new FunDef(Location::builtin(), "abs", intType,
+                                {new VarDec(Location::builtin(), "", intType)},
+                                nullptr));
 }
 
 AST::AST(AST &&other)

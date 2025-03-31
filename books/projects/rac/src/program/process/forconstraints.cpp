@@ -38,8 +38,8 @@ bool ForConstraints::TraverseForStmt(ForStmt *s) {
   if (!found_) {
     diag_
         .new_error(s->update()->loc(), format("The variable `%s` used in the "
-                                            "loop is never updated",
-                                            var_name_))
+                                              "loop is never updated",
+                                              var_name_))
         .context(s->loc())
         .report();
 

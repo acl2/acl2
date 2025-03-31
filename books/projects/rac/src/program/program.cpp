@@ -59,11 +59,15 @@ void Program::displayGlobals(std::ostream &os, DispMode mode) const {
 
 void Program::displayFunDefs(std::ostream &os, DispMode mode) const {
   if (mode == DispMode::rac)
-    std::for_each(funDefs_.begin(), funDefs_.end(),
-                  [&os](auto v) { if (!v->loc().is_builtin) v->display(os, 0); });
+    std::for_each(funDefs_.begin(), funDefs_.end(), [&os](auto v) {
+      if (!v->loc().is_builtin)
+        v->display(os, 0);
+    });
   else
-    std::for_each(funDefs_.begin(), funDefs_.end(),
-                  [&os](auto v) { if (!v->loc().is_builtin) v->ACL2Expr()->display(os); });
+    std::for_each(funDefs_.begin(), funDefs_.end(), [&os](auto v) {
+      if (!v->loc().is_builtin)
+        v->ACL2Expr()->display(os);
+    });
 }
 
 void Program::display(std::ostream &os, DispMode mode) const {

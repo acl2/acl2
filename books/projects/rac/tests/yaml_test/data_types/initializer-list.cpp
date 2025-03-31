@@ -1,5 +1,4 @@
 #include <array>
-#include <tuple>
 using namespace std;
 
 // RAC begin
