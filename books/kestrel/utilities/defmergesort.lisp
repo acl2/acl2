@@ -1,7 +1,7 @@
 ; A tool to define a merge sort function, given a comparison function.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -48,7 +48,7 @@
        ;; Always needed:
        (include-book "kestrel/utilities/split-list-fast-defs" :dir :system)
        ;; Reasoning support for basic theorems:
-;       (local (include-book "kestrel/utilities/split-list-fast" :dir :system))
+       (local (include-book "kestrel/utilities/split-list-fast" :dir :system))
        ;; Needed to express the extra theorems, but sometimes causes name clashes:
        ,@(and extra-theorems `((include-book "kestrel/lists-light/perm-def" :dir :system)))
        (encapsulate
