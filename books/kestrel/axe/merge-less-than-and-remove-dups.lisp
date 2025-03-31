@@ -15,7 +15,7 @@
 ;; TODO: Consider specializing for lists of fixnums
 
 ;; Note that this keeps one copy of each set of dupes (when each arg has no dupes).
-;; See also merge-and-remove-dups.lisp.
+;; See also merge-and-remove-pairs-of-dups.lisp.
 
 (include-book "sortedp-less-than-or-equal")
 (include-book "kestrel/typed-lists-light/all-rationalp" :dir :system)

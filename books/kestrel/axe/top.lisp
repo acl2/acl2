@@ -154,7 +154,7 @@
 (include-book "match-hyp-with-nodenum-to-assume-false")
 (include-book "math-rules")
 (include-book "memoization")
-(include-book "merge-and-remove-dups")
+(include-book "merge-and-remove-pairs-of-dups")
 (include-book "merge-less-than-and-remove-dups")
 (include-book "merge-dag-into-dag-quick")
 (include-book "merge-nodes-into-dag-array")

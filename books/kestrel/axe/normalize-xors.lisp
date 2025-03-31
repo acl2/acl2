@@ -30,7 +30,7 @@
 ;BBOZO handle negations! -well, we handle xoring with 1, right?
 
 (include-book "equivalent-dags")
-(include-book "merge-and-remove-dups")
+;(include-book "merge-and-remove-pairs-of-dups")
 (include-book "add-bitxor-nest-to-dag-array-with-name")
 (include-book "add-bvxor-nest-to-dag-array-with-name")
 (include-book "supporting-nodes") ;for drop-non-supporters-array-with-name
