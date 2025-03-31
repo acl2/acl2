@@ -138,6 +138,7 @@
 ;;            (consp x))
 ;;   :rule-classes :forward-chaining)
 
+; todo: get rid of the maxelem stuff in this book
 ;move?
 (local
  (defthm <-of-maxelem-and-maxelem-of-cdr
@@ -246,15 +247,15 @@
   (decreasingp (list item))
   :hints (("Goal" :in-theory (enable decreasingp))))
 
-(defthmd maxelem-when-decreasingp
-  (implies (decreasingp items)
-           (equal (maxelem items)
-                  (if (consp items)
-                      (car items)
-                    (negative-infinity))))
-  :hints (("Goal" :in-theory (enable decreasingp))))
+;; (defthmd maxelem-when-decreasingp
+;;   (implies (decreasingp items)
+;;            (equal (maxelem items)
+;;                   (if (consp items)
+;;                       (car items)
+;;                     (negative-infinity))))
+;;   :hints (("Goal" :in-theory (enable decreasingp))))
 
-(local (in-theory (enable maxelem-when-decreasingp)))
+;; (local (in-theory (enable maxelem-when-decreasingp)))
 
 (defthm <-of-nth-1-and-nth-0-when-decreasingp
   (implies (and (decreasingp l)
@@ -598,10 +599,11 @@
                               (integerp accumulated-constant))
                   :measure (if (endp pending-list)
                                0
-                             (+ 1 (nfix (maxelem pending-list))))
+                             (+ 1 (nfix (car pending-list))))
                   :hints (("Goal" :in-theory (enable car-becomes-nth-of-0
                                                      nth-of-cdr
-                                                     <-of-nth-when-all-<)))
+                                                     <-of-nth-when-all-<
+                                                     integerp-when-natp)))
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0 nth-of-cdr)))))
   (if (or (endp pending-list)
           (not (mbt (and (all-natp pending-list)
@@ -1071,10 +1073,11 @@
                               (natp size))
                   :measure (if (endp pending-list)
                                0
-                             (+ 1 (nfix (maxelem pending-list))))
+                             (+ 1 (nfix (car pending-list))))
                   :hints (("Goal" :in-theory (enable car-becomes-nth-of-0
                                                      nth-of-cdr
-                                                     <-of-nth-when-all-<)))
+                                                     <-of-nth-when-all-<
+                                                     integerp-when-natp)))
                   :guard-hints (("Goal" :in-theory (enable car-becomes-nth-of-0 nth-of-cdr)))))
   (if (or (endp pending-list)
           (not (mbt (all-natp pending-list)))
