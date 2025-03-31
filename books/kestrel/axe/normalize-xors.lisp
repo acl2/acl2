@@ -528,16 +528,7 @@
 
 (local (in-theory (enable CAR-BECOMES-NTH-OF-0)))
 
-
-
-(defthmd not-<-of-nth-and-0-when-all-natp
-  (implies (all-natp l)
-           (not (< (nth n l) 0)))
-  :hints (("Goal" :in-theory (e/d (all-natp nth) (nth-of-cdr)))))
-
 (local (in-theory (enable not-<-of-nth-and-0-when-all-natp)))
-
-
 
 ;keeps pending-list sorted in a decreasing order
 ;the whole point of this is to avoid exploring the same subtree twice (so now we explore the dag in decreasing node order and remove duplicates in the pending list)

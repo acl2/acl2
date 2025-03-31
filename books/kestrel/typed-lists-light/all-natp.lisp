@@ -50,3 +50,8 @@
                 (natp n))
            (natp (nth n x)))
   :rule-classes :type-prescription)
+
+(defthmd not-<-of-nth-and-0-when-all-natp
+  (implies (all-natp l)
+           (not (< (nth n l) 0)))
+  :hints (("Goal" :in-theory (enable all-natp nth))))
