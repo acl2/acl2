@@ -215,8 +215,6 @@
 (include-book "safe-unquote")
 (include-book "set-rules")
 (include-book "shorter-list")
-(include-book "sortedp-less-than-or-equal")
-(include-book "sortedp-greater-than-or-equal")
 (include-book "splitting")
 (include-book "step-increments")
 (include-book "stored-rules")

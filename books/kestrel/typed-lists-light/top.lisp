@@ -61,6 +61,9 @@
 (include-book "all-greater-than-or-equal")
 (include-book "all-greater-than-or-equal-all")
 
+(include-book "sortedp-less-than-or-equal")
+(include-book "sortedp-greater-than-or-equal")
+
 (include-book "cons-listp-dollar")
 
 (include-book "append-all")

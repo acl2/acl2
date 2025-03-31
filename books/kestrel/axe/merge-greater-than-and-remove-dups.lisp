@@ -20,7 +20,7 @@
 
 ;; TODO: Avoid nested inductions
 
-(include-book "sortedp-greater-than-or-equal")
+(include-book "kestrel/typed-lists-light/sortedp-greater-than-or-equal" :dir :system)
 (include-book "kestrel/typed-lists-light/all-rationalp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-greater-than-or-equal-all" :dir :system)
 (local (include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system))
