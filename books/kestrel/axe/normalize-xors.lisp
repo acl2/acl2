@@ -530,12 +530,12 @@
 
 
 
-(defthmd not-<-of-nth-and-0-when-natp-list
+(defthmd not-<-of-nth-and-0-when-all-natp
   (implies (all-natp l)
            (not (< (nth n l) 0)))
   :hints (("Goal" :in-theory (e/d (all-natp nth) (nth-of-cdr)))))
 
-(local (in-theory (enable not-<-of-nth-and-0-when-natp-list)))
+(local (in-theory (enable not-<-of-nth-and-0-when-all-natp)))
 
 
 

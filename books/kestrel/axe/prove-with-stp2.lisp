@@ -622,7 +622,7 @@
                                                      ALL-<-WHEN-<-OF-CAR-AND-DECREASINGP
                                                      ALL-<-OF-CDR-AND-NTH-0-WHEN-DECREASINGP
                                                      INTEGERP-WHEN-NATP
-                                                     NOT-<-OF-NTH-AND-0-WHEN-NATP-LIST)))
+                                                     NOT-<-OF-NTH-AND-0-WHEN-ALL-NATP)))
                   :guard-hints (("Goal" :in-theory (enable no-duplicatesp-equal-when-decreasingp)))))
   (if (not (mbt (and (nat-listp worklist1)  ;; for termination
                      (decreasingp worklist1)
@@ -903,7 +903,7 @@
                               ;; all-<-when-<-of-car-and-decreasingp
                               ;; all-<-of-cdr-and-nth-0-when-decreasingp
                               ;; integerp-when-natp
-                              ;; not-<-of-nth-and-0-when-natp-list
+                              ;; not-<-of-nth-and-0-when-all-natp
                                )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
