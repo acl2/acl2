@@ -1240,7 +1240,8 @@ one such form may affect what you might think of as the proof of another.</p>
       (progn . ,(flag-table-events alist `(,flag-fn-name
                                            ,alist
                                            ,defthm-macro-name
-                                           ,equiv-thm-name)))
+                                           ,equiv-thm-name
+                                           ,flag-var)))
       (,(if local 'local 'id)
        (in-theory (disable (:definition ,flag-fn-name)))))))
 
@@ -1313,6 +1314,9 @@ one such form may affect what you might think of as the proof of another.</p>
 
 (defun flag-equivs-name (fn world)
   (nth 3 (cdr (assoc-eq fn (table-alist 'flag::flag-fns world)))))
+
+(defun flag-var-name (fn world)
+  (nth 4 (cdr (assoc-eq fn (table-alist 'flag::flag-fns world)))))
 
 
 
