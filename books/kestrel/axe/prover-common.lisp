@@ -1454,7 +1454,7 @@
                 (progn$ (cw "~s0 clause:~%(OR " case-adjective)
               ;; warning: can blow up:
               ;; todo: should this respect the no-print-fns?  maybe not, if this is for debugging
-                        (print-dag-nodes-as-terms literal-nodenums dag-array-name dag-array dag-len)
+                        (print-dag-array-nodes-as-terms literal-nodenums dag-array-name dag-array dag-len)
                         (cw ")~%"))
               (progn$
                 (cw "(Negated lits (~x0) for ~s1 case" (len literal-nodenums) case-adjective)
