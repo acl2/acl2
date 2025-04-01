@@ -549,6 +549,7 @@
        (- (and print (cw ")~%")))
        ;; Call STP:
        (- (and print ;(cw "Proving with STP...~%" nil)
+               (cw "  ~x0 nodes to translate.~%" (len nodenums-to-translate))
                ))
        ((mv result state)
         (prove-equality-with-stp smaller-nodenum larger-nodenum dag-array-name dag-array dag-len
