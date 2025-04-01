@@ -265,7 +265,7 @@
                            remove-rules remove-lift-rules remove-proof-rules
                            normalize-xors count-hits print monitor
                            step-limit step-increment
-                           prune tactics
+                           prune-precise tactics
                            max-conflicts  ;a number of conflicts, or nil for no max
                            inputs-disjoint-from
                            stack-slots
@@ -284,9 +284,9 @@
                               (natp step-increment)
                               (acl2::normalize-xors-optionp normalize-xors)
                               (acl2::count-hits-argp count-hits)
-                              (or (eq nil prune)
-                                  (eq t prune)
-                                  (natp prune))
+                              (or (eq nil prune-precise)
+                                  (eq t prune-precise)
+                                  (natp prune-precise))
                               (acl2::tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
@@ -352,7 +352,7 @@
           :skip ; no input assumptions -- todo
           '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
           t                   ; use-internal-contextsp
-          prune
+          prune-precise
           ;; extra-rules:
           (append extra-rules
                   extra-lift-rules
@@ -495,7 +495,7 @@
                          remove-rules remove-lift-rules remove-proof-rules
                          normalize-xors count-hits print monitor
                          step-limit step-increment
-                         prune tactics
+                         prune-precise tactics
                          max-conflicts inputs-disjoint-from stack-slots
                          position-independent
                          expected-result
@@ -513,9 +513,9 @@
                                   (symbol-listp monitor))
                               (natp step-limit)
                               (natp step-increment)
-                              (or (eq nil prune)
-                                  (eq t prune)
-                                  (natp prune))
+                              (or (eq nil prune-precise)
+                                  (eq t prune-precise)
+                                  (natp prune-precise))
                               (acl2::tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
@@ -549,7 +549,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print monitor step-limit step-increment prune tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
+                            normalize-xors count-hits print monitor step-limit step-increment prune-precise tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -584,7 +584,7 @@
                          (monitor 'nil)
                          (step-limit '1000000)
                          (step-increment '100)
-                         (prune '10000)             ; t, nil, or a max size
+                         (prune-precise '10000)             ; t, nil, or a max size
                          (tactics '(:rewrite :stp)) ; todo: try something with :prune
                          (expected-result ':pass)
                          (inputs-disjoint-from ':code)
@@ -605,7 +605,7 @@
                                              ',count-hits
                                              ',print
                                              ,monitor ; gets evaluated
-                                             ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent ',expected-result state)))
+                                             ',step-limit ',step-increment ',prune-precise ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent ',expected-result state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -616,7 +616,7 @@
                               extra-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-lift-rules remove-proof-rules
                               normalize-xors count-hits
-                              print monitor step-limit step-increment prune
+                              print monitor step-limit step-increment prune-precise
                               tactics max-conflicts
                               inputs-disjoint-from
                               stack-slots
@@ -640,9 +640,9 @@
                                   (symbol-listp monitor))
                               (natp step-limit)
                               (natp step-increment)
-                              (or (eq nil prune)
-                                  (eq t prune)
-                                  (natp prune))
+                              (or (eq nil prune-precise)
+                                  (eq t prune-precise)
+                                  (natp prune-precise))
                               (acl2::tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
@@ -663,7 +663,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits print monitor step-limit step-increment prune tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
+                              normalize-xors count-hits print monitor step-limit step-increment prune-precise tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -674,7 +674,7 @@
       (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
                              extra-rules extra-lift-rules extra-proof-rules
                              remove-rules remove-lift-rules remove-proof-rules
-                             normalize-xors count-hits print monitor step-limit step-increment prune
+                             normalize-xors count-hits print monitor step-limit step-increment prune-precise
                              tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
                              expected-failures
                              (acons function-name (list result expected-result elapsed) result-alist)
@@ -688,7 +688,7 @@
                           assumptions
                           extra-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-lift-rules remove-proof-rules
-                          normalize-xors count-hits print monitor step-limit step-increment prune
+                          normalize-xors count-hits print monitor step-limit step-increment prune-precise
                           tactics max-conflicts inputs-disjoint-from stack-slots position-independent
                           expected-failures
                           state)
@@ -709,9 +709,9 @@
                               (symbol-listp monitor))
                           (natp step-limit)
                           (natp step-increment)
-                          (or (eq nil prune)
-                              (eq t prune)
-                              (natp prune))
+                          (or (eq nil prune-precise)
+                              (eq t prune-precise)
+                              (natp prune-precise))
                           (acl2::tacticsp tactics)
                           (or (null max-conflicts)
                               (natp max-conflicts))
@@ -790,7 +790,7 @@
                                assumption-alist
                                extra-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-lift-rules remove-proof-rules
-                               normalize-xors count-hits print monitor step-limit step-increment prune
+                               normalize-xors count-hits print monitor step-limit step-increment prune-precise
                                tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
@@ -825,7 +825,7 @@
                           (monitor 'nil)
                           (step-limit '1000000)
                           (step-increment '100)
-                          (prune '10000)             ; t, nil, or a max size
+                          (prune-precise '10000)             ; t, nil, or a max size
                           (tactics '(:rewrite :stp)) ; todo: try something with :prune
                           (max-conflicts '1000000)
                           (inputs-disjoint-from ':code)
@@ -848,7 +848,7 @@
                                               ',count-hits
                                               ',print
                                               ,monitor ; gets evaluated
-                                              ',step-limit ',step-increment ',prune
+                                              ',step-limit ',step-increment ',prune-precise
                                               ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent
                                               ',expected-failures
                                               state)))
@@ -874,7 +874,7 @@
                      (monitor 'nil)
                      (step-limit '1000000)
                      (step-increment '100)
-                     (prune '10000)             ; t, nil, or a max size
+                     (prune-precise '10000)             ; t, nil, or a max size
                      (tactics '(:rewrite :stp)) ; todo: try something with :prune
                      (max-conflicts '1000000)
                      (inputs-disjoint-from ':code)
@@ -896,7 +896,7 @@
                                               ',normalize-xors
                                               ',count-hits ',print
                                               ,monitor ; gets evaluated
-                                              ',step-limit ',step-increment ',prune
+                                              ',step-limit ',step-increment ',prune-precise
                                               ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent
                                               ',expected-failures
                                               state)))
