@@ -114,6 +114,12 @@
               (nat-listp y)))
   :hints (("Goal" :in-theory (enable nat-listp revappend))))
 
+(defthm nat-listp-of-reverse
+  (equal (nat-listp (reverse x))
+         (and (not (stringp x)) ;odd
+              (nat-listp (true-list-fix x))))
+  :hints (("Goal" :in-theory (enable nat-listp reverse))))
+
 (defthm natp-of-car-of-last-when-nat-listp
   (implies (nat-listp x)
            (equal (natp (car (last x)))
