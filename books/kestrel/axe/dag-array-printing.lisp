@@ -139,3 +139,15 @@
       nil
     (prog2$ (fmt-to-comment-window "~x0~%" (acons #\0 (dag-to-term-aux-array dag-array-name dag-array (first nodenums)) nil) 2 nil 10)
             (print-dag-array-nodes-as-terms (rest nodenums) dag-array-name dag-array dag-len))))
+
+;; Smashes the array named 'print-dag-nodes-as-terms-array
+(defun print-dag-nodes-as-terms (nodenums dag)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (nat-listp nodenums)
+                              (all-< nodenums (+ 1 (top-nodenum dag))))
+                  :guard-hints (("Goal" :in-theory (enable car-of-car-when-pseudo-dagp-cheap)))))
+  (mv-let (erp dag-array)
+    (make-dag-into-array2 'print-dag-nodes-as-terms-array dag 0)
+    (if erp
+        (er hard? 'print-dag-nodes-as-terms "Error: ~x0." erp)
+      (print-dag-array-nodes-as-terms nodenums 'print-dag-nodes-as-terms-array dag-array (+ 1 (top-nodenum dag))))))
