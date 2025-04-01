@@ -708,8 +708,8 @@
                                       (extra-rules 'nil) ; to add to the usual set of rules
                                       (remove-rules 'nil)
                                       (normalize-xors 'nil) ; defaults to nil, since it's better to normalize the xors of the spec and code dags together
-                                      (prune-precise 'nil) ; can blow up!
-                                      (prune-approx 'nil) ;todo: make t the default (but that slows down DES a lot)
+                                      (prune-precise 'nil) ; can blow up! was called prune-branches-precisely
+                                      (prune-approx 'nil) ;todo: make t the default (but that slows down DES a lot), was called prune-branches-approximately
                                       (call-stp 'nil)
                                       ;; Options affecting performance:
                                       (memoizep 't)

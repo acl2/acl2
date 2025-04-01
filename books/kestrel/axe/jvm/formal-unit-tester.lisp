@@ -806,8 +806,8 @@
                                                 (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
                                                 (extra-rules 'nil)
                                                 (remove-rules 'nil)
-                                                (prune-precise '10000) ; todo: can explode
-                                                (prune-approx 't)
+                                                (prune-precise '10000) ; todo: can explode, was called was called prune-branches-precisely
+                                                (prune-approx 't) ; was called prune-branches-approximately
                                                 (monitor 'nil)
                                                 (print ':brief) ;(print 'nil)
                                                 )
