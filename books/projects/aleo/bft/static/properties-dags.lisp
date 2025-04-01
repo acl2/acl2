@@ -83,21 +83,21 @@
                           (set::intersect
                            (certificates-with-round round dag1)
                            (certificates-with-round round dag2)))))
-       :enable (certificate-with-author+round-element
-                certificate-with-author+round-when-author-in-round
-                certificate->author-of-certificate-with-author+round
-                certificate->round-of-certificate-with-author+round
+       :enable (cert-with-author+round-element
+                cert-with-author+round-when-author-in-round
+                certificate->author-of-cert-with-author+round
+                certificate->round-of-cert-with-author+round
                 in-of-certificates-with-round)
        :disable certificate->author-in-cert-set->author-set
        :use ((:instance certificate-sets-unequivocalp-necc
-                        (cert1 (certificate-with-author+round
+                        (cert1 (cert-with-author+round
                                 author round dag1))
-                        (cert2 (certificate-with-author+round
+                        (cert2 (cert-with-author+round
                                 author round dag2))
                         (certs1 dag1)
                         (certs2 dag2))
              (:instance certificate->author-in-cert-set->author-set
-                        (cert (certificate-with-author+round
+                        (cert (cert-with-author+round
                                author round dag1))
                         (certs (set::intersect
                                 (certificates-with-round round dag1)
@@ -461,7 +461,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled path-to-author+round-to-certificate-with-author+round
+(defruled path-to-author+round-to-cert-with-author+round
   :short "If a certificate in an unequivocal DAG
           has a path to a certain author and round,
           the path ends up at the certificate retrieved
@@ -480,17 +480,17 @@
                 (posp round)
                 (path-to-author+round cert author round dag))
            (equal (path-to-author+round cert author round dag)
-                  (certificate-with-author+round author round dag)))
+                  (cert-with-author+round author round dag)))
   :enable (path-to-author+round-in-dag
            certificate->author-of-path-to-author+round
            certificate->round-of-path-to-author+round)
-  :use (:instance certificate-with-author+round-of-element-when-unequivocal
+  :use (:instance cert-with-author+round-of-element-when-unequivocal
                   (certs dag)
                   (cert (path-to-author+round cert author round dag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled certificate-with-author+round-when-path-to-author+round
+(defruled cert-with-author+round-when-path-to-author+round
   :short "If there is a path from a certificate in an unequivocal DAG
           then retrieving a certificate with that author and round
           results in a certificate."
@@ -498,7 +498,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is a simple consequence of, and is closely related to,
-     @(tsee path-to-author+round-to-certificate-with-author+round),
+     @(tsee path-to-author+round-to-cert-with-author+round),
      but it is convenient to have this kind of rewrite rule available
      (which we keep disabled by default, as many others)."))
   (implies (and (certificate-setp dag)
@@ -507,8 +507,8 @@
                 (addressp author)
                 (posp round)
                 (path-to-author+round cert author round dag))
-           (certificate-with-author+round author round dag))
-  :use path-to-author+round-to-certificate-with-author+round)
+           (cert-with-author+round author round dag))
+  :use path-to-author+round-to-cert-with-author+round)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -586,8 +586,8 @@
        (enable*
         path-to-author+round
         path-to-author+round-set
-        path-to-author+round-to-certificate-with-author+round
-        certificate-with-author+round-of-element-when-unequivocal
+        path-to-author+round-to-cert-with-author+round
+        cert-with-author+round-of-element-when-unequivocal
         set::expensive-rules
         nil-not-in-certificate-set
         certificates-with-authors+round-subset
@@ -882,8 +882,8 @@
                path-to-author+round
                path-to-author+round-set
                set::expensive-rules
-               path-to-author+round-to-certificate-with-author+round
-               certificate-with-author+round-of-element-when-unequivocal
+               path-to-author+round-to-cert-with-author+round
+               cert-with-author+round-of-element-when-unequivocal
                round-set-of-certificates-with-authors+round
                pos-fix
                nil-not-in-certificate-set

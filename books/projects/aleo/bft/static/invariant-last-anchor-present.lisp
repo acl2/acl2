@@ -96,7 +96,7 @@
                            val (create-certificate-next cert systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             certificate-with-author+round-of-insert-iff
+             cert-with-author+round-of-insert-iff
              validator-state->dag-of-create-certificate-next
              validator-state->last-of-create-certificate-next))
 
@@ -156,19 +156,21 @@
   (defrule last-anchor-not-nil-of-store-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (store-certificate-possiblep cert val1 systate)
+                  (certificatep cert)
                   (last-anchor (get-validator-state val systate)
                                (all-addresses systate)))
              (last-anchor (get-validator-state
                            val (store-certificate-next cert val1 systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             certificate-with-author+round-of-insert-iff
+             cert-with-author+round-of-insert-iff
              validator-state->dag-of-store-certificate-next
              validator-state->last-of-store-certificate-next))
 
   (defrule system-last-anchor-present-p-of-store-certificate-next
     (implies (and (system-last-anchor-present-p systate)
-                  (store-certificate-possiblep cert val systate))
+                  (store-certificate-possiblep cert val systate)
+                  (certificatep cert))
              (system-last-anchor-present-p
               (store-certificate-next cert val systate)))
     :expand (system-last-anchor-present-p

@@ -118,7 +118,7 @@
     :enable (ordered-even-p
              ordered-even-p-necc
              validator-state->blockchain-of-create-certificate-next
-             certificate->round-of-certificate-with-author+round))
+             certificate->round-of-cert-with-author+round))
 
   (defruled ordered-even-p-of-receive-certificate-next
     (implies (and (ordered-even-p systate)
@@ -160,7 +160,7 @@
              pos-fix
              posp
              evenp
-             certificate->round-of-certificate-with-author+round))
+             certificate->round-of-cert-with-author+round))
 
   (defruled ordered-even-p-of-timer-expires-next
     (implies (and (ordered-even-p systate)

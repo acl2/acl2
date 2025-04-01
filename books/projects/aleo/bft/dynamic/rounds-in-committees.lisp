@@ -118,7 +118,7 @@
      the first one of @(tsee certificates-with-author)
      applied to @(tsee certificates-with-round);
      this would be actually equivalent to
-     @(tsee certificate-with-author+round),
+     @(tsee cert-with-author+round),
      but there is no need for that equivalence in this proof."))
   (implies (and (signer-quorum-p systate)
                 (set::in val (correct-addresses systate)))

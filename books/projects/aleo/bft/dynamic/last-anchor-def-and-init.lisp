@@ -66,7 +66,7 @@
                                           all-vals))
        ((unless commtt) nil)
        (leader (leader-at-round vstate.last commtt)))
-    (certificate-with-author+round leader vstate.last vstate.dag))
+    (cert-with-author+round leader vstate.last vstate.dag))
   :hooks (:fix)
 
   ///
@@ -83,19 +83,19 @@
                                   (validator-state->blockchain vstate)
                                   all-vals)))
                       (leader-at-round (validator-state->last vstate) commtt))))
-    :enable certificate->author-of-certificate-with-author+round)
+    :enable certificate->author-of-cert-with-author+round)
 
   (defruled certificate->round-of-last-anchor
     (implies (last-anchor vstate all-vals)
              (equal (certificate->round (last-anchor vstate all-vals))
                     (validator-state->last vstate)))
-    :enable certificate->round-of-certificate-with-author+round)
+    :enable certificate->round-of-cert-with-author+round)
 
   (defruled last-anchor-in-dag
     (implies (last-anchor vstate all-vals)
              (set::in (last-anchor vstate all-vals)
                       (validator-state->dag vstate)))
-    :enable certificate-with-author+round-element)
+    :enable cert-with-author+round-element)
 
   (defruled active-committee-at-round-when-last-anchor
     (implies (last-anchor vstate all-vals)

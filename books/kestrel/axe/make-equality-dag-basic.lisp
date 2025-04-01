@@ -22,16 +22,22 @@
 
 ;; Returns (mv erp dag).
 (defund make-equality-dag-basic (dag-or-term1 dag-or-term2 different-vars-ok wrld)
-  (declare (xargs :mode :program ; todo
+  (declare (xargs :mode :program ; because dag-or-term-to-dag-basic calls translate
                   ))
-  (b* (((mv erp dag1) (dag-or-term-to-dag-basic dag-or-term1 wrld)) ; todo: try dag-or-term-to-dag-basic?
+  (b* (((mv erp dag1) (dag-or-term-to-dag-basic dag-or-term1 wrld))
        ((when erp) (mv erp nil))
-       ((mv erp dag2) (dag-or-term-to-dag-basic dag-or-term2 wrld)) ; todo: try dag-or-term-to-dag-basic?
+       ((mv erp dag2) (dag-or-term-to-dag-basic dag-or-term2 wrld))
        ((when erp) (mv erp nil))
-       (vars1 (merge-sort-symbol< (dag-vars dag1)))
-       (- (cw "Variables in DAG1: ~x0~%" vars1))
+       (vars1 (merge-sort-symbol< (dag-vars dag1))) ; todo: use a sort that does better with numbered vars
+       (- (cw "Variables in DAG1: ~x0~%." vars1))
        (vars2 (merge-sort-symbol< (dag-vars dag2)))
-       (- (cw "Variables in DAG2: ~x0~%" vars2))
+       (- (cw "Variables in DAG2: ~x0~%." vars2))
+       (dag1-only-vars (set-difference-eq vars1 vars2)) ;todo: optimize since sorted
+       (dag2-only-vars (set-difference-eq vars2 vars1)) ;todo: optimize since sorted
+       (- (and dag1-only-vars
+               (cw "Variables in DAG1 only: ~X01.~%" dag1-only-vars nil)))
+       (- (and dag2-only-vars
+               (cw "Variables in DAG2 only: ~X01.~%" dag2-only-vars nil)))
        (different-varsp (not (perm vars1 vars2)))
        (- (and different-varsp
                different-vars-ok

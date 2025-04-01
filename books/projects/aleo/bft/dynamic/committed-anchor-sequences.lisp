@@ -361,7 +361,7 @@
                                   vstate.blockchain
                                   (all-addresses systate)))
                          (leader (leader-at-round round commtt))
-                         (anchor (certificate-with-author+round leader
+                         (anchor (cert-with-author+round leader
                                                                 round
                                                                 vstate.dag))
                          (anchors (collect-anchors anchor
@@ -382,7 +382,7 @@
              collect-all-anchors-of-extend-blockchain-no-change
              blocks-ordered-even-p-of-extend-blockchain
              certificates-ordered-even-p-of-collect-anchors
-             certificate->round-of-certificate-with-author+round
+             certificate->round-of-cert-with-author+round
              commit-anchors-possiblep
              aleobft::evenp-of-1-less-when-not-evenp
              aleobft::evenp-of-3-less-when-not-evenp
@@ -399,11 +399,11 @@
              certificate->round-of-last-anchor
              certificate->author-of-last-anchor
              omni-paths-p-necc
-             certificate-with-author+round-element)
+             cert-with-author+round-element)
     :use (:instance collect-all-anchors-to-append-of-collect-anchors
                     (anchor (last-anchor (get-validator-state val systate)
                                          (all-addresses systate)))
-                    (anchor1 (certificate-with-author+round
+                    (anchor1 (cert-with-author+round
                               (leader-at-round
                                (1- (validator-state->round
                                     (get-validator-state val systate)))
@@ -447,7 +447,7 @@
                                   vstate.blockchain
                                   (all-addresses systate)))
                          (leader (leader-at-round round commtt))
-                         (anchor (certificate-with-author+round leader
+                         (anchor (cert-with-author+round leader
                                                                 round
                                                                 vstate.dag))
                          (anchors (collect-anchors anchor
@@ -467,7 +467,7 @@
              last-anchor-of-commit-anchors-next
              commit-anchors-possiblep
              collect-all-anchors
-             certificate->round-of-certificate-with-author+round
+             certificate->round-of-cert-with-author+round
              pos-fix
              collect-anchors-of-extend-blockchain-no-change
              ordered-even-p-necc
@@ -525,7 +525,7 @@
                                       vstate.blockchain
                                       (all-addresses systate)))
                              (leader (leader-at-round round commtt))
-                             (anchor (certificate-with-author+round
+                             (anchor (cert-with-author+round
                                       leader
                                       round
                                       vstate.dag))
@@ -568,7 +568,7 @@
                                          vstate.blockchain
                                          (all-addresses systate)))
                                 (leader (leader-at-round round commtt))
-                                (anchor (certificate-with-author+round
+                                (anchor (cert-with-author+round
                                          leader
                                          round
                                          vstate.dag))
@@ -649,7 +649,7 @@
                         (get-validator-state val systate))
                        (round (1- vstate.round)))
                     (collect-all-anchors
-                     (certificate-with-author+round
+                     (cert-with-author+round
                       (leader-at-round
                        round
                        (active-committee-at-round
@@ -678,7 +678,7 @@
                            (get-validator-state val systate))
                           (round (1- vstate.round)))
                        (collect-all-anchors
-                        (certificate-with-author+round
+                        (cert-with-author+round
                          (leader-at-round
                           round
                           (active-committee-at-round
@@ -698,7 +698,7 @@
               ordered-even-p-necc
               blocks-ordered-even-p-of-extend-blockchain
               certificates-ordered-even-p-of-collect-anchors
-              certificate->round-of-certificate-with-author+round
+              certificate->round-of-cert-with-author+round
               aleobft::evenp-of-1-less-when-not-evenp
               aleobft::evenp-of-3-less-when-not-evenp
               posp

@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -14,6 +14,7 @@
 (include-book "arithmetic-theorems")
 (include-book "oset-theorems")
 (include-book "omap-theorems")
+(include-book "oset-nonemptyp")
 (include-book "lists-noforkp")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -35,5 +36,6 @@
   :order-subtopics (arithmetic-theorems
                     oset-theorems
                     omap-theorems
+                    oset-nonemptyp
                     lists-noforkp)
   :default-parent t)

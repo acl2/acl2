@@ -2008,7 +2008,7 @@
              (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((erp new-expr? table) (dimb-expr-option dirdeclor.expr? table)))
          (retok (make-dirdeclor-array :declor new-dirdeclor
-                                      :tyquals dirdeclor.tyquals
+                                      :quals dirdeclor.quals
                                       :expr? new-expr?)
                 ident
                 table))
@@ -2017,7 +2017,7 @@
              (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((erp new-expr table) (dimb-expr dirdeclor.expr table)))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
-                                              :tyquals dirdeclor.tyquals
+                                              :quals dirdeclor.quals
                                               :expr new-expr)
                 ident
                 table))
@@ -2026,7 +2026,7 @@
              (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((erp new-expr table) (dimb-expr dirdeclor.expr table)))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
-                                              :tyquals dirdeclor.tyquals
+                                              :quals dirdeclor.quals
                                               :expr new-expr)
                 ident
                 table))
@@ -2034,7 +2034,7 @@
        (b* (((erp new-dirdeclor ident table)
              (dimb-dirdeclor dirdeclor.declor fundefp table)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
-                                           :tyquals dirdeclor.tyquals)
+                                           :quals dirdeclor.quals)
                 ident
                 table))
        :function-params

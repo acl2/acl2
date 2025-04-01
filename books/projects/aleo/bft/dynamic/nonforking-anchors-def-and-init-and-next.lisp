@@ -204,7 +204,7 @@
      and because the leader at that common round is also the same,
      given that committees agree across @('val') and @('val0').
      The fact that the two certificate are equal
-     is proved via @('certificate-with-author+round-of-unequivocal-sets'),
+     is proved via @('cert-with-author+round-of-unequivocal-sets'),
      and then the key theorem is @('collect-all-anchors-of-unequivocal-dags'),
      which says that the anchors collected from a common certificate
      are the same in the two validators.
@@ -409,7 +409,7 @@
              certificate-set-unequivocalp-when-unequivocal-accepted
              backward-closed-p-necc
              dag-committees-p-when-accepted-certificate-committee-p
-             certificate-with-author+round-element)
+             cert-with-author+round-element)
     :expand (committed-anchors (get-validator-state val0 systate)
                                (all-addresses systate))
     :use ((:instance last-anchor-present-p-necc (val val0))
@@ -421,7 +421,7 @@
                      (round (validator-state->last
                              (get-validator-state val0 systate)))
                      (all-vals (all-addresses systate)))
-          (:instance certificate-with-author+round-of-unequivocal-sets
+          (:instance cert-with-author+round-of-unequivocal-sets
                      (author
                       (leader-at-round
                        (validator-state->last
@@ -484,10 +484,10 @@
              dag-committees-p-when-accepted-certificate-committee-p
              certificate-sets-unequivocalp-when-unequivocal-accepted
              backward-closed-p-necc
-             certificate-with-author+round-element
+             cert-with-author+round-element
              omni-paths-p-necc
              last-anchor-present-p-necc
-             certificate->round-of-certificate-with-author+round
+             certificate->round-of-cert-with-author+round
              aleobft::evenp-of-1-less-when-not-evenp
              last-anchor-in-dag
              same-committees-p-necc
@@ -510,7 +510,7 @@
                     (anchor1 (last-anchor
                               (get-validator-state val0 systate)
                               (all-addresses systate)))
-                    (anchor2 (certificate-with-author+round
+                    (anchor2 (cert-with-author+round
                               (leader-at-round
                                (1- (validator-state->round
                                     (get-validator-state val systate)))
@@ -536,7 +536,7 @@
                   (set::in val0 (correct-addresses systate))
                   (commit-anchors-possiblep val systate)
                   (addressp val))
-             (dag-omni-paths-p (certificate-with-author+round
+             (dag-omni-paths-p (cert-with-author+round
                                 (leader-at-round
                                  (1- (validator-state->round
                                       (get-validator-state val systate)))
@@ -557,10 +557,10 @@
              certificate-sets-unequivocalp-when-unequivocal-accepted
              dag-committees-p-when-accepted-certificate-committee-p
              dag-predecessor-cardinality-p-when-previous-quorum-p
-             certificate-with-author+round-element
+             cert-with-author+round-element
              backward-closed-p-necc
-             certificate->author-of-certificate-with-author+round
-             certificate->round-of-certificate-with-author+round
+             certificate->author-of-cert-with-author+round
+             certificate->round-of-cert-with-author+round
              fix
              cardinality-of-successors-to-tally-leader-votes
              same-committees-p-necc
@@ -575,7 +575,7 @@
                               (get-validator-state val systate)))
                     (blocks2 (validator-state->blockchain
                               (get-validator-state val0 systate)))
-                    (cert (certificate-with-author+round
+                    (cert (cert-with-author+round
                            (leader-at-round
                             (1- (validator-state->round
                                  (get-validator-state val systate)))
@@ -626,7 +626,7 @@
              backward-closed-p-necc
              last-anchor-present-p-necc
              last-anchor-in-dag
-             certificate->round-of-certificate-with-author+round
+             certificate->round-of-cert-with-author+round
              aleobft::evenp-of-1-less-when-not-evenp
              same-committees-p-necc
              dag-omni-paths-p-when-commit-anchors-possiblep
@@ -634,8 +634,8 @@
              last-blockchain-round-p-necc
              evenp-of-blocks-last-round
              ordered-even-p-necc
-             certificate-with-author+round-element
-             certificate->author-of-certificate-with-author+round)
+             cert-with-author+round-element
+             certificate->author-of-cert-with-author+round)
     :expand (committed-anchors (get-validator-state val0 systate)
                                (all-addresses systate))
     :use (:instance collect-all-anchors-to-append-of-collect-anchors-dags
@@ -647,7 +647,7 @@
                                   (get-validator-state val systate)))
                     (blockchain2 (validator-state->blockchain
                                   (get-validator-state val0 systate)))
-                    (anchor1 (certificate-with-author+round
+                    (anchor1 (cert-with-author+round
                               (leader-at-round
                                (1- (validator-state->round
                                     (get-validator-state val systate)))

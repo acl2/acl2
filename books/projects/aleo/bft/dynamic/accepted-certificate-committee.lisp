@@ -217,7 +217,7 @@
              last-blockchain-round-p-necc-fixing
              posp
              evenp
-             certificate->round-of-certificate-with-author+round))
+             certificate->round-of-cert-with-author+round))
 
   (defruled accepted-certificate-committee-p-of-timer-expires-next
     (implies (and (accepted-certificate-committee-p systate)

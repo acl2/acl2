@@ -402,8 +402,8 @@
              new-committed-certs-of-extend-blockchain
              certificate-set-unequivocalp-when-unequivocal-accepted
              certificates-dag-paths-p-of-collect-anchors
-             certificate-with-author+round-element
-             certificate->round-of-certificate-with-author+round
+             cert-with-author+round-element
+             certificate->round-of-cert-with-author+round
              car-of-collect-anchors
              omni-paths-p-necc
              set::expensive-rules

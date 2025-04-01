@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -12,7 +12,6 @@
 (in-package "ALEOBFT-STATIC")
 
 (include-book "system-states")
-(include-book "operations-certificate-retrieval")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -73,8 +72,8 @@
         (b* ((dag (validator-state->dag vstate))
              (buffer (validator-state->buffer vstate))
              (endorsed (validator-state->endorsed vstate)))
-          (and (not (certificate-with-author+round author round dag))
-               (not (certificate-with-author+round author round buffer))
+          (and (not (cert-with-author+round author round dag))
+               (not (cert-with-author+round author round buffer))
                (not (set::in (make-address+pos :address author :pos round)
                              endorsed))))))
 

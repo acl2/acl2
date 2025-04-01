@@ -31,10 +31,11 @@
                                 (c$::ident "foo")
                                 (c$::ident "bar")))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.COPY-FN.c"
+    :file "new/test1.c"
     :content "int foo(int y, int z) {
   int x = 5;
   return x + y - z;
@@ -58,10 +59,11 @@ int bar(int y, int z) {
                                 (c$::ident "fibonacci")
                                 (c$::ident "fib")))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "fib.COPY-FN.c"
+    :file "new/fib.c"
     :content "int fibonacci(int x) {
   if (x <= 1) {
     return x;
@@ -96,10 +98,11 @@ int fib(int x) {
                                 (c$::ident "foo")
                                 (c$::ident "bar")))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "generic-selection.COPY-FN.c"
+    :file "new/generic-selection.c"
     :content "int foo(int x) {
   if (x == 0) {
     return x;

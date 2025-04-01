@@ -104,8 +104,8 @@
     "A @('create-certificate') event modifies the DAG of the author
      but not its blockchain or last committed round.
      However, in general the extension of a set of certificates
-     preserves the fact that @(tsee certificate-with-author+round)
-     is not @('nil') (see @('certificate-with-author+round-of-insert-iff')),
+     preserves the fact that @(tsee cert-with-author+round)
+     is not @('nil') (see @('cert-with-author+round-of-insert-iff')),
      although technically it may not return the same certificate,
      unless one assumes unequivocation (which is not needed here).
      For validators different from the author,
@@ -115,7 +115,7 @@
      but not its blockchain or last committed round.
      However, similarly to the @('create-certificate') case,
      the extension of the DAG preserves the fact that
-     @(tsee certificate-with-author+round) is not @('nil').")
+     @(tsee cert-with-author+round) is not @('nil').")
    (xdoc::p
     "A @('commit-anchors') event modifies
      the blockchain and last committed round of the target validator,
@@ -155,7 +155,7 @@
              validator-state->last-of-create-certificate-next
              validator-state->blockchain-of-create-certificate-next
              validator-state->dag-of-create-certificate-next
-             certificate-with-author+round-of-insert-iff))
+             cert-with-author+round-of-insert-iff))
 
   (defruled last-anchor-present-p-of-create-certificate-next
     (implies (last-anchor-present-p systate)
@@ -205,7 +205,7 @@
              validator-state->last-of-store-certificate-next
              validator-state->blockchain-of-store-certificate-next
              validator-state->dag-of-store-certificate-next
-             certificate-with-author+round-of-insert-iff))
+             cert-with-author+round-of-insert-iff))
 
   (defruled last-anchor-present-p-of-store-certificate-next
     (implies (and (last-anchor-present-p systate)
@@ -290,7 +290,7 @@
                 last-blockchain-round-p-necc-fixing
                 posp
                 evenp
-                certificate->round-of-certificate-with-author+round))))
+                certificate->round-of-cert-with-author+round))))
 
   (defruled last-anchor-present-p-of-commit-anchors-next
     (implies (and (ordered-even-p systate)

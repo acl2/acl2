@@ -111,8 +111,8 @@
     :enable (validator-last-anchor-voters-p
              last-anchor
              cardinality-of-incoming-to-tally-leader-votes
-             certificate->author-of-certificate-with-author+round
-             certificate->round-of-certificate-with-author+round))
+             certificate->author-of-cert-with-author+round
+             certificate->round-of-cert-with-author+round))
 
   ;; Main theorem.
 

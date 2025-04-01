@@ -35,10 +35,11 @@
           (cw "~@0" er)
         ensemble)))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.SPLIT-FN.c"
+    :file "new/test1.c"
     :content "int bar(int x, int y) {
   return x + y;
 }
@@ -66,10 +67,11 @@ int foo(int y) {
           (cw "~@0" er)
         ensemble)))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test2.SPLIT-FN.c"
+    :file "new/test2.c"
     :content "unsigned long sub_all(long arr[], unsigned int len, long total) {
   for (unsigned int i = 0; i < len; i++) {
     total -= arr[i];
@@ -104,10 +106,11 @@ unsigned long add_and_sub_all(long arr[], unsigned int len) {
           (cw "~@0" er)
         ensemble)))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test3.SPLIT-FN.c"
+    :file "new/test3.c"
     :content "int w = 42;
 int baz(int x, long y, long z) {
   y = bar(x);
