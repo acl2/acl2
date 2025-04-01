@@ -26,7 +26,7 @@
 (include-book "equivalent-dags")
 (include-book "prover")
 (include-book "add-bvxor-nest-to-dag-array")
-(include-book "merge-and-remove-dups")
+(include-book "merge-and-remove-pairs-of-dups")
 (include-book "leaves-of-normalized-bvxor-nest")
 (include-book "if-rules")
 (include-book "defconst-computed2") ;not strictly needed
@@ -814,7 +814,7 @@
                                                                   ((mv arg3-constant arg3-leaves-increasing)
                                                                    (leaves-of-normalized-bvxor-nest (third simplified-args) bvxor-width dag-array dag-len))
                                                                   ;; Make the leaves of the new nest:
-                                                                  (nodenum-leaves-decreasing (merge-and-remove-dups arg2-leaves-increasing arg3-leaves-increasing nil))
+                                                                  (nodenum-leaves-decreasing (merge-and-remove-pairs-of-dups arg2-leaves-increasing arg3-leaves-increasing nil))
                                                                   (accumulated-constant (bvxor bvxor-width arg2-constant arg3-constant))
                                                                   ;; Build the new nest:
                                                                   ((mv erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)

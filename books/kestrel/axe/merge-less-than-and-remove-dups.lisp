@@ -1,7 +1,7 @@
-; New tools for substituting equated vars in DAGS
+; Merging sorted lists and removing extra copies of duplicate items
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,9 +12,12 @@
 
 (in-package "ACL2")
 
-;; See also merge-and-remove-dups.lisp.
+;; TODO: Consider specializing for lists of fixnums
 
-(include-book "sortedp-less-than-or-equal")
+;; Note that this keeps one copy of each set of dupes (when each arg has no dupes).
+;; See also merge-and-remove-pairs-of-dups.lisp.
+
+(include-book "kestrel/typed-lists-light/sortedp-less-than-or-equal" :dir :system)
 (include-book "kestrel/typed-lists-light/all-rationalp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
@@ -49,10 +52,10 @@
 ;; L1 and L2 should be sorted in ascending order (and be duplicate free).
 ;; ACC should contain the smallest items (smaller than anything in L1 or L2), sorted in decreasing order.
 (defund merge-<-and-remove-dups-aux (l1 l2 acc)
-  (declare (xargs :measure (+ (len l1) (len l2))
-                  :guard (and (all-rationalp l1)
+  (declare (xargs :guard (and (all-rationalp l1)
                               (all-rationalp l2)
-                              (true-listp acc))))
+                              (true-listp acc))
+                  :measure (+ (len l1) (len l2))))
   (cond ((atom l1) (revappend acc l2))
         ((atom l2) (revappend acc l1))
         ((equal (car l1) (car l2)) ;drop one copy:
@@ -120,10 +123,10 @@
 
 (local
  (defthm all-<-of-merge-<-and-remove-dups-aux
-   (implies (and (all-< l1 bound)
-                 (all-< l2 bound)
-                 (all-< acc bound))
-            (all-< (merge-<-and-remove-dups-aux l1 l2 acc) bound))
+   (equal (all-< (merge-<-and-remove-dups-aux l1 l2 acc) bound)
+          (and (all-< l1 bound)
+               (all-< l2 bound)
+               (all-< acc bound)))
    :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,12 +143,6 @@
 ;; not a good test, as each list has dups?
 ;(merge-<-and-remove-dups '(1 2 2 3 5 5 5 6 6 8) '(1 2 3 4 5 6 7 7))
 
-(defthm nat-listp-of-merge-<-and-remove-dups
-  (implies (and (nat-listp l1)
-                (nat-listp l2))
-           (nat-listp (merge-<-and-remove-dups l1 l2)))
-  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
-
 (defthm true-listp-of-merge-<-and-remove-dups
   (implies (and (true-listp l1)
                 (true-listp l2))
@@ -156,6 +153,13 @@
   (implies (and (rational-listp l1)
                 (rational-listp l2))
            (rational-listp (merge-<-and-remove-dups l1 l2)))
+  :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
+
+;; special case
+(defthm nat-listp-of-merge-<-and-remove-dups
+  (implies (and (nat-listp l1)
+                (nat-listp l2))
+           (nat-listp (merge-<-and-remove-dups l1 l2)))
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
 
 ; strengthen to sortedp-< ?
@@ -176,7 +180,9 @@
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
 
 (defthm all-<-of-merge-<-and-remove-dups
-  (implies (and (all-< l1 bound)
-                (all-< l2 bound))
-           (all-< (merge-<-and-remove-dups l1 l2) bound))
+  (equal (all-< (merge-<-and-remove-dups l1 l2) bound)
+         (and (all-< l1 bound)
+              (all-< l2 bound)))
   :hints (("Goal" :in-theory (enable merge-<-and-remove-dups))))
+
+;(equal (merge-<-and-remove-dups '(1 2 2 3 4 4 5) '(0 1 2 3 3 4 6)) '(0 1 2 3 3 4 5 6)) ; note the two 3s in the result

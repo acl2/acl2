@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax")
 (include-book "implementation-environments")
+(include-book "unambiguity")
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
@@ -31,7 +32,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The validator calculates and uses information, such as types,
+    "The @(see validator) calculates and uses information, such as types,
      and annotates the abstract syntax with some of this information.
      Here we introduce fixtypes for this information,
      and operations on those fixtypes.")
@@ -1146,3 +1147,55 @@
 
 (add-to-ruleset abstract-syntax-annop-rules
                 '(filepath-transunit-map-annop-of-tail))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-type ((expr exprp))
+  :guard (expr-unambp expr)
+  :returns (type typep)
+  :short "Type of an expression, from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type is calculated from
+     the validation information present in the expression,
+     without performing any type calculation
+     of the kind performed by the validator
+     (e.g. this function does not attempt to calculate
+     the type of a binary expression based on
+     the operator and the types of the operands.
+     If there is not enough information,
+     the unknown type is returned."))
+  (expr-case
+   expr
+   :ident (var-info->type (coerce-var-info expr.info))
+   :const (if (const-case expr.const :int)
+              (iconst-info->type
+               (coerce-iconst-info
+                (iconst->info
+                 (const-int->unwrap expr.const))))
+            (type-unknown))
+   :string (type-unknown)
+   :paren (expr-type expr.inner)
+   :gensel (type-unknown)
+   :arrsub (type-unknown)
+   :funcall (type-unknown)
+   :member (type-unknown)
+   :memberp (type-unknown)
+   :complit (type-unknown)
+   :unary (type-unknown)
+   :sizeof (type-unknown)
+   :alignof (type-unknown)
+   :cast (type-unknown)
+   :binary (type-unknown)
+   :cond (type-unknown)
+   :comma (expr-type expr.next)
+   :stmt (type-unknown)
+   :tycompat (type-unknown)
+   :offsetof (type-unknown)
+   :va-arg (type-unknown)
+   :extension (expr-type expr.expr)
+   :otherwise (prog2$ (impossible) (type-unknown)))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :hooks (:fix))
