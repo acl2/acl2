@@ -1910,35 +1910,6 @@
                member-equal)
      :induct t)))
 
-(define deftrans-filepath
-  ((path filepathp)
-   (name stringp))
-  :returns (new-path filepathp)
-  (b* ((string (filepath->unwrap path))
-       ((unless (stringp string))
-        (raise "Misusage error: file path ~x0 is not a string."
-               string)
-        (filepath "irrelevant"))
-       (chars (acl2::explode string))
-       (dot-pos-in-rev (index-of #\. (rev chars)))
-       (name-chars (acl2::explode name))
-       ((when (not dot-pos-in-rev))
-        (filepath
-          (acl2::implode (append chars (cons #\. name-chars)))))
-       (last-dot-pos (- (len chars) dot-pos-in-rev))
-       (new-chars (append (take last-dot-pos chars)
-                          name-chars
-                          (list #\.)
-                          (nthcdr last-dot-pos chars)))
-       (new-string (acl2::implode new-chars)))
-    (filepath new-string))
-  :guard-hints
-  (("Goal"
-     :use (:instance acl2::index-of-<-len (k #\.)
-                     (x (rev (acl2::explode (filepath->unwrap path)))))
-     :in-theory (e/d (nfix) (acl2::index-of-<-len))))
-  :hooks (:fix))
-
 (define deftrans-core
   ((name symbolp)
    (extra-args true-listp) ;; list of symbols or define-style guarded args
@@ -1963,8 +1934,8 @@
          ,(deftrans-defn-spec/qual           names bodies extra-args extra-args-names)
          ,(deftrans-defn-spec/qual-list      names bodies extra-args extra-args-names)
          ,(deftrans-defn-align-spec          names bodies extra-args extra-args-names)
-         ,(deftrans-defn-decl-spec            names bodies extra-args extra-args-names)
-         ,(deftrans-defn-decl-spec-list       names bodies extra-args extra-args-names)
+         ,(deftrans-defn-decl-spec           names bodies extra-args extra-args-names)
+         ,(deftrans-defn-decl-spec-list      names bodies extra-args extra-args-names)
          ,(deftrans-defn-initer              names bodies extra-args extra-args-names)
          ,(deftrans-defn-initer-option       names bodies extra-args extra-args-names)
          ,(deftrans-defn-desiniter           names bodies extra-args extra-args-names)
@@ -2014,10 +1985,9 @@
                            :hyp (filepath-transunit-mapp map))
          (b* (((when (omap::emptyp map)) nil)
               ((mv path tunit) (omap::head map))
-              (new-path (deftrans-filepath path ,(symbol-name name)))
               (new-tunit (,(cdr (assoc-eq 'transunit names)) tunit ,@extra-args-names))
               (new-map (,(cdr (assoc-eq 'filepath-transunit-map names)) (omap::tail map) ,@extra-args-names)))
-           (omap::update new-path new-tunit new-map))
+           (omap::update path new-tunit new-map))
          :verify-guards :after-returns)
        (define ,(cdr (assoc-eq 'transunit-ensemble names))
          ((tunits transunit-ensemblep)

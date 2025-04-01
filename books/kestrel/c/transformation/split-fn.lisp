@@ -426,7 +426,6 @@
        ((when (omap::emptyp map))
         (retok nil))
        ((mv path tunit) (omap::head map))
-       (new-path (deftrans-filepath path "SPLIT-FN"))
        ((erp new-tunit)
         (split-fn-transunit target-fn new-fn-name tunit split-point))
        ((erp new-map)
@@ -434,7 +433,9 @@
                                          new-fn-name
                                          (omap::tail map)
                                          split-point)))
-    (retok (omap::update new-path new-tunit new-map)))
+    (retok (omap::update (c$::filepath-fix path)
+                         new-tunit
+                         new-map)))
   :verify-guards :after-returns)
 
 (define split-fn-transunit-ensemble

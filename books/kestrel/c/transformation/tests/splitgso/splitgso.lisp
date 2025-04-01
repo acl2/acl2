@@ -38,10 +38,11 @@
             :new-type2 "s2"
             :split-members ("baz"))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.SPLITGSO.c"
+    :file "new/test1.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 struct s1 { int foo; _Bool bar; };
 struct s2 { unsigned long int baz; };
@@ -69,10 +70,11 @@ int main(void) {
             :new-type2 "s"
             :split-members ("baz"))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.SPLITGSO.c"
+    :file "new/test1.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 struct s { int foo; _Bool bar; };
 struct s_0 { unsigned long int baz; };
@@ -96,10 +98,11 @@ int main(void) {
             :object-name "my"
             :split-members ("baz"))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.SPLITGSO.c"
+    :file "new/test1.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 struct myStruct_0 { int foo; _Bool bar; };
 struct myStruct_1 { unsigned long int baz; };
@@ -127,10 +130,11 @@ int main(void) {
             :new-type2 "s2"
             :split-members ("baz"))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test2.SPLITGSO.c"
+    :file "new/test2.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 struct s1 { int foo; _Bool bar; };
 struct s2 { unsigned long int baz; };
@@ -165,10 +169,11 @@ int main(void) {
             :new-type2 "S2"
             :split-members ("x"))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "static-struct1.SPLITGSO.c"
+    :file "new/static-struct1.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
 int main(void) {
@@ -178,7 +183,7 @@ int main(void) {
 }
 ")
   (assert-file-contents
-    :file "static-struct2.SPLITGSO.c"
+    :file "new/static-struct2.c"
     :content "struct myStruct { int a; int b; };
 static struct myStruct my = {.a = 0, .b = 0, };
 struct S { int x; };
@@ -196,7 +201,7 @@ int foo(void) {
 }
 ")
   (assert-file-contents
-    :file "extern-struct.SPLITGSO.c"
+    :file "new/extern-struct.c"
     :content "struct S { unsigned int x; unsigned int y; };
 struct S1 { unsigned int y; };
 struct S2 { unsigned int x; };
@@ -226,10 +231,11 @@ struct S2 s2 = {.x = 0};
             :new-type2 "S2"
             :split-members ("x"))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "static-struct1.SPLITGSO.c"
+    :file "new/static-struct1.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
 int main(void) {
@@ -239,7 +245,7 @@ int main(void) {
 }
 ")
   (assert-file-contents
-    :file "static-struct2.SPLITGSO.c"
+    :file "new/static-struct2.c"
     :content "struct myStruct { int a; int b; };
 static struct myStruct my = {.a = 0, .b = 0, };
 struct S { int x; };
@@ -257,7 +263,7 @@ int foo(void) {
 }
 ")
   (assert-file-contents
-    :file "extern-struct.SPLITGSO.c"
+    :file "new/extern-struct.c"
     :content "struct S { unsigned int x; unsigned int y; };
 struct S1 { unsigned int y; };
 struct S2 { unsigned int x; };
@@ -285,10 +291,11 @@ struct S2 s2 = {.x = 0};
             :new-type2 "myStruct2"
             :split-members ("b"))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "static-struct1.SPLITGSO.c"
+    :file "new/static-struct1.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
 int main(void) {
@@ -298,7 +305,7 @@ int main(void) {
 }
 ")
   (assert-file-contents
-    :file "static-struct2.SPLITGSO.c"
+    :file "new/static-struct2.c"
     :content "struct myStruct { int a; int b; };
 struct myStruct1 { int a; };
 struct myStruct2 { int b; };
@@ -316,7 +323,7 @@ int foo(void) {
 }
 ")
   (assert-file-contents
-    :file "extern-struct.SPLITGSO.c"
+    :file "new/extern-struct.c"
     :content "struct S { unsigned int x; unsigned int y; };
 struct S s = {.x = 0};
 ")
@@ -336,10 +343,11 @@ struct S s = {.x = 0};
             :object-name "s"
             :split-members ("x"))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "static-struct1.SPLITGSO.c"
+    :file "new/static-struct1.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
 int main(void) {
@@ -349,7 +357,7 @@ int main(void) {
 }
 ")
   (assert-file-contents
-    :file "static-struct2.SPLITGSO.c"
+    :file "new/static-struct2.c"
     :content "struct myStruct { int a; int b; };
 static struct myStruct my = {.a = 0, .b = 0, };
 struct S { int x; };
@@ -367,7 +375,7 @@ int foo(void) {
 }
 ")
   (assert-file-contents
-    :file "extern-struct.SPLITGSO.c"
+    :file "new/extern-struct.c"
     :content "struct S { unsigned int x; unsigned int y; };
 struct S_0 { unsigned int y; };
 struct S_1 { unsigned int x; };

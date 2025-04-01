@@ -1942,11 +1942,12 @@
                     :hyp (filepath-transunit-mapp map))
   (b* (((when (omap::emptyp map)) nil)
        ((mv path tunit) (omap::head map))
-       (new-path (deftrans-filepath path "CONST-PROP"))
        (new-tunit (const-prop-transunit tunit))
        (new-map
          (const-prop-filepath-transunit-map (omap::tail map))))
-    (omap::update new-path new-tunit new-map))
+    (omap::update (c$::filepath-fix path)
+                  new-tunit
+                  new-map))
   :verify-guards :after-returns)
 
 (define const-prop-transunit-ensemble

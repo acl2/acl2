@@ -243,7 +243,7 @@
   (b* (((when (omap::emptyp map))
         nil)
        ((mv path tunit) (omap::head map)))
-    (omap::update (deftrans-filepath path "SPECIALIZE")
+    (omap::update (c$::filepath-fix path)
                   (specialize-transunit tunit target-fn target-param const)
                   (specialize-filepath-transunit-map (omap::tail map)
                                                      target-fn
