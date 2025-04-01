@@ -12,13 +12,14 @@
 
 (in-package "ACL2")
 
+;; Note that this removes both members of each pair of dupes.
 ;; See also merge-less-than-and-remove-dups.lisp.
 
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 
 ;args are sorted in increasing order
 ;result is sorted in decreasing order
-(defund merge-and-remove-dups (lst1 lst2 acc)
+(defund merge-and-remove-pairs-of-dups (lst1 lst2 acc)
   (declare (xargs :measure (+ 1 (len lst1) (len lst2))
                   :guard (and (all-integerp lst1)
                               (true-listp lst1)
@@ -32,20 +33,20 @@
       (let ((item1 (first lst1))
             (item2 (first lst2)))
         (if (< item1 item2)
-            (merge-and-remove-dups (rest lst1) lst2 (cons item1 acc))
+            (merge-and-remove-pairs-of-dups (rest lst1) lst2 (cons item1 acc))
           (if (< item2 item1)
-              (merge-and-remove-dups lst1 (rest lst2) (cons item2 acc))
+              (merge-and-remove-pairs-of-dups lst1 (rest lst2) (cons item2 acc))
             ;;they are equal, so drop them both
-            (merge-and-remove-dups (rest lst1) (rest lst2) acc)))))))
+            (merge-and-remove-pairs-of-dups (rest lst1) (rest lst2) acc)))))))
 
-(defthm true-listp-of-merge-and-remove-dups
+(defthm true-listp-of-merge-and-remove-pairs-of-dups
   (implies (true-listp acc)
-           (true-listp (merge-and-remove-dups lst1 lst2 acc)))
-  :hints (("Goal" :in-theory (enable merge-and-remove-dups))))
+           (true-listp (merge-and-remove-pairs-of-dups lst1 lst2 acc)))
+  :hints (("Goal" :in-theory (enable merge-and-remove-pairs-of-dups))))
 
-(defthm nat-listp-of-merge-and-remove-dups
+(defthm nat-listp-of-merge-and-remove-pairs-of-dups
   (implies (and (nat-listp acc)
                 (nat-listp lst1)
                 (nat-listp lst2))
-           (nat-listp (merge-and-remove-dups lst1 lst2 acc)))
-  :hints (("Goal" :in-theory (enable merge-and-remove-dups))))
+           (nat-listp (merge-and-remove-pairs-of-dups lst1 lst2 acc)))
+  :hints (("Goal" :in-theory (enable merge-and-remove-pairs-of-dups))))

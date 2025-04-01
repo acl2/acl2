@@ -698,7 +698,7 @@
    dirdeclor
    :ident (ident-formalp dirdeclor.ident)
    :paren nil
-   :array (and (dirdeclor-obj-formalp dirdeclor.decl)
+   :array (and (dirdeclor-obj-formalp dirdeclor.declor)
                (endp dirdeclor.tyquals)
                (or (not dirdeclor.expr?)
                    (and (check-expr-iconst dirdeclor.expr?) t)))
@@ -956,12 +956,12 @@
   (dirdeclor-case
    dirdeclor
    :function-params
-   (and (dirdeclor-case dirdeclor.decl :ident)
-        (ident-formalp (dirdeclor-ident->ident dirdeclor.decl))
+   (and (dirdeclor-case dirdeclor.declor :ident)
+        (ident-formalp (dirdeclor-ident->ident dirdeclor.declor))
         (paramdecl-list-formalp dirdeclor.params))
    :function-names
-   (and (dirdeclor-case dirdeclor.decl :ident)
-        (ident-formalp (dirdeclor-ident->ident dirdeclor.decl))
+   (and (dirdeclor-case dirdeclor.declor :ident)
+        (ident-formalp (dirdeclor-ident->ident dirdeclor.declor))
         (endp dirdeclor.names))
    :otherwise nil)
   :hooks (:fix))

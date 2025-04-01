@@ -50,9 +50,9 @@
      that should accept all valid C code
      but also some invalid C code (due to the approximation).
      Even in its approximate form,
-     this may be useful to perform some validation,
+     this is useful to perform some validation,
      and to calculate information (approximate types)
-     that may be useful for manipulating the abstract syntax
+     useful for manipulating the abstract syntax
      (e.g. for C-to-C transformations).")
    (xdoc::p
     "In a sense, the validator extends the @(see disambiguator),
@@ -64,20 +64,20 @@
     "Similarly to a compiler, the validator makes use of a symbol table,
      which tracks information about the symbols (identifiers) in the code.
      These symbol tables, called `validation tables', are, in some sense,
-     an extension of the disambiguation tables used by the disambiguator.")
+     an extension of the disambiguation tables used by the disambiguator.
+     See @(tsee valid-table).")
    (xdoc::p
     "We use "
     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
     " to handle errors in the validator.")
    (xdoc::p
-    "The ACL2 functions that validate the various parts of the abstract syntax
+    "The ACL2 functions that validate
+     the various constructs of the abstract syntax
      follow the @('valid-<fixtype>') naming scheme,
      where @('<fixtype>') is the name of
-     the fixtype of the abstract syntax part,
+     the fixtype of the abstract syntax construct,
      and where @('valid') is best read as an abbreviation of `validate'
-     rather than as the adjective `valid'.")
-   (xdoc::p
-    "This validator is work in progress."))
+     rather than as the adjective `valid'."))
   :order-subtopics t
   :default-parent t)
 
@@ -139,8 +139,6 @@
   :short "Pop a scope from the validation table."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "The guard requires that there are is at least one scope.")
    (xdoc::p
     "The popped scope is discarded."))
   (b* (((unless (> (valid-table-num-scopes table) 0))
@@ -718,7 +716,7 @@
      with the information of being an enumeration constant.
      Its type is always @('int') [C17:6.7.2.2/3],
      so this function always returns that type if validation succeeds;
-     so we could have this function return nothing if there's no error,
+     we could have this function return nothing if there's no error,
      but we have it return the @('int') type for uniformity and simplicity."))
   (b* (((reterr) (irr-type))
        ((mv info &) (valid-lookup-ord econst table))
@@ -3737,7 +3735,7 @@
        :array
        (b* ((type (type-array))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr? index-type? more-types table)
              (valid-expr-option dirdeclor.expr? table ienv))
             ((when (and index-type?
@@ -3748,7 +3746,7 @@
                            has type ~x1."
                           (dirdeclor-fix dirdeclor)
                           index-type?))))
-         (retok (make-dirdeclor-array :decl new-dirdeclor
+         (retok (make-dirdeclor-array :declor new-dirdeclor
                                       :tyquals dirdeclor.tyquals
                                       :expr? new-expr?)
                 fundef-params-p
@@ -3759,7 +3757,7 @@
        :array-static1
        (b* ((type (type-array))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr index-type more-types table)
              (valid-expr dirdeclor.expr table ienv))
             ((unless (or (type-integerp index-type)
@@ -3769,7 +3767,7 @@
                            has type ~x1."
                           (dirdeclor-fix dirdeclor)
                           index-type))))
-         (retok (make-dirdeclor-array-static1 :decl new-dirdeclor
+         (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
                                               :tyquals dirdeclor.tyquals
                                               :expr new-expr)
                 fundef-params-p
@@ -3780,7 +3778,7 @@
        :array-static2
        (b* ((type (type-array))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr index-type more-types table)
              (valid-expr dirdeclor.expr table ienv))
             ((unless (or (type-integerp index-type)
@@ -3790,7 +3788,7 @@
                            has type ~x1."
                           (dirdeclor-fix dirdeclor)
                           index-type))))
-         (retok (make-dirdeclor-array-static2 :decl new-dirdeclor
+         (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
                                               :tyquals dirdeclor.tyquals
                                               :expr new-expr)
                 fundef-params-p
@@ -3801,8 +3799,9 @@
        :array-star
        (b* ((type (type-array))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv)))
-         (retok (make-dirdeclor-array-star :decl new-dirdeclor
+             (valid-dirdeclor
+              dirdeclor.declor fundef-params-p type table ienv)))
+         (retok (make-dirdeclor-array-star :declor new-dirdeclor
                                            :tyquals dirdeclor.tyquals)
                 fundef-params-p
                 type
@@ -3818,7 +3817,7 @@
                           (type-fix type))))
             (type (type-function))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             (table (valid-push-scope table))
             ((erp new-params more-types table)
              (if (equal dirdeclor.params
@@ -3831,7 +3830,7 @@
             (table (if fundef-params-p
                        table
                      (valid-pop-scope table))))
-         (retok (make-dirdeclor-function-params :decl new-dirdeclor
+         (retok (make-dirdeclor-function-params :declor new-dirdeclor
                                                 :params new-params
                                                 :ellipsis dirdeclor.ellipsis)
                 nil
@@ -3848,7 +3847,7 @@
                           (type-fix type))))
             (type (type-function))
             ((erp new-dirdeclor fundef-params-p type ident types table)
-             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+             (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((when (and (consp dirdeclor.names)
                         (not fundef-params-p)))
              (reterr (msg "A non-empty list of parameter names ~
@@ -3856,7 +3855,7 @@
                            that is not part of a function definition."
                           (dirdeclor-fix dirdeclor))))
             ((when (not fundef-params-p))
-             (retok (make-dirdeclor-function-names :decl new-dirdeclor
+             (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                    :names dirdeclor.names)
                     nil
                     type
@@ -3869,7 +3868,7 @@
                            has duplicates."
                           (dirdeclor-fix dirdeclor))))
             (table (valid-push-scope table)))
-         (retok (make-dirdeclor-function-names :decl new-dirdeclor
+         (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
                 nil
                 type

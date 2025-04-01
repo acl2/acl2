@@ -1,7 +1,7 @@
 ; (Floor of) base-2 logarithm (works on all positive rationals)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -204,22 +204,19 @@
   :hints (("Goal" :in-theory (enable log2))))
 
 (defthm <=-of-expt-2-of-+-of-1-and-log2-linear
-  (implies (and (rationalp x)
-                (< 0 x))
+  (implies (rationalp x)
            (< x (expt 2 (+ 1 (log2 x)))))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable log2 expt-of-+))))
 
 (defthm <=-of-expt-2-of-+-of-1-and-log2-linear-alt
-  (implies (and (rationalp x)
-                (< 0 x))
+  (implies (rationalp x)
            (< x (* 2 (expt 2 (log2 x)))))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable log2 expt-of-+))))
 
 (defthm <-of-*-of-2-and-expt-of-log2-same
-  (implies (and (rationalp x)
-                (< 0 x))
+  (implies (rationalp x)
            (< x (* 2 (expt 2 (log2 x)))))
   :hints (("Goal" :use (:instance <=-of-expt-2-of-+-of-1-and-log2-linear)
            :in-theory (e/d (expt-of-+)

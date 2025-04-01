@@ -1,7 +1,7 @@
 ; Supporting utilities for the Axe Prover(s)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,7 +17,6 @@
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
-(include-book "kestrel/utilities/split-list-fast" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)

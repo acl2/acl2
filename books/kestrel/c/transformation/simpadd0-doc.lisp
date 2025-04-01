@@ -91,20 +91,15 @@
      (xdoc::p
       "The named constant containing the result of the transformation.
        This is a translation unit ensemble that is
-       the same as the one in @('*old*'), except that:")
-     (xdoc::ul
-      (xdoc::li
-       "Every occurrence of an expression of the form @('E + 0'),
-        where @('E') is a variable of type @('int')
-        and @('0') is the octal constant for zero
-        without other leading zeros and without suffixes,
-        into just the variable @('E').")
-      (xdoc::li
-       "Each file path @('<file>.<ext>') in @('*old*')
-        is turned into @('<file>.simpadd0.<ext>'),
-        if the path has a dot, and where @('<ext>') had no dots;
-        if the path is @('<file>') without dots,
-        it is turned into @('<file>.simpadd').")))
+       the same as the one in @('*old*'), except that
+       every occurrence of an expression of the form @('E + 0'),
+       where @('E') is a variable of type @('int')
+       and @('0') is the octal constant for zero
+       without other leading zeros and without suffixes,
+       is turned into just the variable @('E').")
+     (xdoc::p
+      "The file paths that are the keys of translation unit map
+       are unchanged by the transformation."))
 
     (xdoc::desc
      "Equivalence theorems."

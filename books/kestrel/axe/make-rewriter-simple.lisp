@@ -5533,7 +5533,7 @@
                          limits)))))))
 
          (defthm ,(pack$ simplify-dag-core-name '-return-type)
-           (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag-core)))
+           (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag-core))) ; got a dag back
                          (not (mv-nth 0 ,call-of-simplify-dag-core)) ; no error
                          (pseudo-dagp dag)
                          (< (top-nodenum dag) *max-1d-array-length*)
@@ -5553,8 +5553,36 @@
                          (booleanp memoizep))
                     (and (pseudo-dagp (mv-nth 1 ,call-of-simplify-dag-core))
                          (<= (len (mv-nth 1 ,call-of-simplify-dag-core))
-                             *max-1d-array-length*)
-                         (rule-limitsp (mv-nth 2 ,call-of-simplify-dag-core))))
+                             *max-1d-array-length*)))
+           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                    :in-theory (e/d (,simplify-dag-core-name
+                                     natp-of-renumberingi
+                                     integerp-of-renumberingi
+                                     <-of-+-of-1-when-integers
+                                     len-when-pseudo-dagp
+                                     car-of-nth-when-pseudo-dagp
+                                     wf-rewrite-stobj2p)
+                                    (myquotep natp wf-rewrite-stobj2p-conjuncts)))))
+
+         (defthm ,(pack$ simplify-dag-core-name '-return-type2)
+           (implies (and (not (mv-nth 0 ,call-of-simplify-dag-core)) ; no error
+                         (pseudo-dagp dag)
+                         (< (top-nodenum dag) *max-1d-array-length*)
+                         (pseudo-term-listp assumptions)
+                         (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                         (or (null maybe-internal-context-array)
+                             (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag))) dag-len))
+                         (rule-limitsp limits)
+                         (rule-alistp rule-alist)
+                         ;; (count-hits-argp count-hits)
+                         (print-levelp print)
+                         (interpreted-function-alistp interpreted-function-alist)
+                         (symbol-listp known-booleans)
+                         (symbol-listp monitored-symbols)
+                         ;; (symbol-listp fns-to-elide)
+                         (normalize-xors-optionp normalize-xors)
+                         (booleanp memoizep))
+                    (rule-limitsp (mv-nth 2 ,call-of-simplify-dag-core)))
            :hints (("Goal" :do-not '(generalize eliminate-destructors)
                     :in-theory (e/d (,simplify-dag-core-name
                                      natp-of-renumberingi
@@ -5685,7 +5713,7 @@
                  (mv (erp-nil) dag-or-quotep limits)))))
 
          (defthm ,(pack$ simplify-dag-name '-return-type)
-           (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag)))
+           (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag))) ; got a dag
                          (not (mv-nth 0 ,call-of-simplify-dag)) ; no error
                          (pseudo-dagp dag)
                          (pseudo-term-listp assumptions)
@@ -5702,8 +5730,38 @@
                     (and (pseudo-dagp (mv-nth 1 ,call-of-simplify-dag))
                          (<= (len (mv-nth 1 ,call-of-simplify-dag))
                              *max-1d-array-length*) ;; todo
-                         (rule-limitsp (mv-nth 2 ,call-of-simplify-dag))
                          ))
+           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                    :in-theory (e/d (,simplify-dag-name
+                                     len-when-pseudo-dagp
+                                     car-of-nth-when-pseudo-dagp
+                                     natp-of-+-of-1
+                                     natp-of-car-of-car-when-pseudo-dagp
+                                     integerp-when-natp
+                                     acl2-numberp-when-natp
+                                     rationalp-when-natp
+                                     true-listp-when-pseudo-dagp
+                                     alistp-when-pseudo-dagp
+                                     consp-when-pseudo-dagp
+                                     top-nodenum ; expose car of car
+                                     )
+                                    (myquotep natp)))))
+
+         (defthm ,(pack$ simplify-dag-name '-return-type2)
+           (implies (and (not (mv-nth 0 ,call-of-simplify-dag)) ; no error
+                         (pseudo-dagp dag)
+                         (pseudo-term-listp assumptions)
+                         (rule-limitsp limits)
+                         (rule-alistp rule-alist)
+                         ;; (count-hits-argp count-hits)
+                         (print-levelp print)
+                         (interpreted-function-alistp interpreted-function-alist)
+                         (symbol-listp known-booleans)
+                         (symbol-listp monitored-symbols)
+                         ;; (symbol-listp fns-to-elide)
+                         (normalize-xors-optionp normalize-xors)
+                         (booleanp memoizep))
+                    (rule-limitsp (mv-nth 2 ,call-of-simplify-dag)))
            :hints (("Goal" :do-not '(generalize eliminate-destructors)
                     :in-theory (e/d (,simplify-dag-name
                                      len-when-pseudo-dagp

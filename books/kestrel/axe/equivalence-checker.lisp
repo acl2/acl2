@@ -26,6 +26,7 @@
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "rewriter") ;TODO: brings in JVM stuff...
 (include-book "rewriter-alt") ;TODO: brings in JVM stuff...
+(include-book "identical-xor-nests")
 (include-book "kestrel/utilities/check-boolean" :dir :system)
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
@@ -93,6 +94,7 @@
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
 (local (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system))
+(local (include-book "kestrel/utilities/split-list-fast" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "merge-sort-less-than-rules"))
 (local (include-book "kestrel/terms-light/sublis-var-simple-proofs" :dir :system))
@@ -4267,49 +4269,94 @@
 ;this allows the exprs (and the nodes the refer to) to differ on whether constants are inlined (because when we replace a probably-constant node, we don't inline it)
 ;i think this allows for non-unique representation of expressions..
 ;;; TODO: what about deeper structural equivalence - all leaf nodes the same and all operator nodes corresponding? - better to merge up the dag aggressively at merge time?
-(skip-proofs
-  (mutual-recursion
-    (defun identical-darg-lists-up-to-constant-inlining (dargs1 dargs2 dag-array-name dag-array dag-len)
-      (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                                  (bounded-darg-listp dag-len dargs1)
-                                  (bounded-darg-listp dag-len dargs2))))
-      (if (endp dargs1)
-          (if (endp dargs2)
-              t
-            (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length" nil))
-        (if (endp dargs2)
-            (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length" nil)
-          (and
-            (let* ((darg1 (first dargs1))
-                   (darg2 (first dargs2)))
-              (if (quotep darg1)
-                  (if (quotep darg2)
-                      (equal darg1 darg2)
-                    ;; darg2 may be a nodenum of a constant:
-                    (equal darg1 (aref1 dag-array-name dag-array darg2)))
-                (if (quotep darg2)
-                    ;; darg1 may be a nodenum of a constant:
-                    (equal darg2 (aref1 dag-array-name dag-array darg1))
-                  ;;two nodenums:
-                  (or (equal darg1 darg2) ;this optimization should catch a lot of the cases where things actually are the same
-                      (identical-dag-exprs-up-to-constant-inlining (aref1 dag-array-name dag-array darg1)
-                                                                   (aref1 dag-array-name dag-array darg2)
-                                                                   dag-array-name dag-array dag-len)))))
-            (identical-darg-lists-up-to-constant-inlining (rest dargs1) (rest dargs2) dag-array-name dag-array dag-len)))))
+;; (skip-proofs
+;;   (mutual-recursion
+;;     (defun identical-darg-lists-up-to-constant-inlining (dargs1 dargs2 dag-array-name dag-array dag-len)
+;;       (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+;;                                   (bounded-darg-listp dargs1 dag-len)
+;;                                   (bounded-darg-listp dargs2 dag-len))))
+;;       (if (endp dargs1)
+;;           (if (endp dargs2)
+;;               t
+;;             (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length" nil))
+;;         (if (endp dargs2)
+;;             (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length" nil)
+;;           (and
+;;             (let* ((darg1 (first dargs1))
+;;                    (darg2 (first dargs2)))
+;;               (if (quotep darg1)
+;;                   (if (quotep darg2)
+;;                       (equal darg1 darg2)
+;;                     ;; darg2 may be a nodenum of a constant:
+;;                     (equal darg1 (aref1 dag-array-name dag-array darg2)))
+;;                 (if (quotep darg2)
+;;                     ;; darg1 may be a nodenum of a constant:
+;;                     (equal darg2 (aref1 dag-array-name dag-array darg1))
+;;                   ;;two nodenums:
+;;                   (or (equal darg1 darg2) ;this optimization should catch a lot of the cases where things actually are the same
+;;                       (identical-dag-exprs-up-to-constant-inlining (aref1 dag-array-name dag-array darg1)
+;;                                                                    (aref1 dag-array-name dag-array darg2)
+;;                                                                    dag-array-name dag-array dag-len)))))
+;;             (identical-darg-lists-up-to-constant-inlining (rest dargs1) (rest dargs2) dag-array-name dag-array dag-len)))))
 
-    ;;we could relax this even more and not require nodenums to be unique either... what if we have (foo (bar '2)) both with and without the inlined 2?
-    (defun identical-dag-exprs-up-to-constant-inlining (expr1 expr2 dag-array-name dag-array dag-len)
-      (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
-                                  (bounded-dag-exprp dag-len expr1)
-                                  (bounded-dag-exprp dag-len expr2))))
-      (if (or (symbolp expr1)
-              (symbolp expr2)
-              (quotep expr1)
-              (quotep expr2))
-          (equal expr1 expr2)
-        ;;function call:
-        (and (eq (ffn-symb expr1) (ffn-symb expr2))
-             (identical-darg-lists-up-to-constant-inlining (dargs expr1) (dargs expr2) dag-array-name dag-array dag-len))))))
+;;     ;;we could relax this even more and not require nodenums to be unique either... what if we have (foo (bar '2)) both with and without the inlined 2?
+;;     (defun identical-dag-exprs-up-to-constant-inlining (expr1 expr2 dag-array-name dag-array dag-len)
+;;       (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+;;                                   (bounded-dag-exprp dag-len expr1)
+;;                                   (bounded-dag-exprp dag-len expr2))))
+;;       (if (or (symbolp expr1)
+;;               (symbolp expr2)
+;;               (quotep expr1)
+;;               (quotep expr2))
+;;           (equal expr1 expr2)
+;;         ;;function call:
+;;         (and (eq (ffn-symb expr1) (ffn-symb expr2))
+;;              (identical-darg-lists-up-to-constant-inlining (dargs expr1) (dargs expr2) dag-array-name dag-array dag-len))))))
+
+(defun identical-darg-lists-up-to-constant-inlining (dargs1 dargs2 dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (bounded-darg-listp dargs1 dag-len)
+                              (bounded-darg-listp dargs2 dag-len))))
+  (if (endp dargs1)
+      (if (endp dargs2)
+          t
+        (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length"))
+    (if (endp dargs2)
+        (er hard? 'identical-darg-lists-up-to-constant-inlining "args lists not the same length")
+      (and (let* ((darg1 (first dargs1))
+                  (darg2 (first dargs2)))
+             (if (quotep darg1)
+                 (if (quotep darg2)
+                     (equal darg1 darg2)
+                   ;; darg2 may be a nodenum of a constant:
+                   (equal darg1 (aref1 dag-array-name dag-array darg2)))
+               (if (quotep darg2)
+                   ;; darg1 may be a nodenum of a constant:
+                   (equal darg2 (aref1 dag-array-name dag-array darg1))
+                 ;;two nodenums:
+                 (equal darg1 darg2))))
+           (identical-darg-lists-up-to-constant-inlining (rest dargs1) (rest dargs2) dag-array-name dag-array dag-len)))))
+
+(defund identical-dag-exprs-up-to-constant-inlining (expr1 expr2 dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (bounded-dag-exprp dag-len expr1)
+                              (bounded-dag-exprp dag-len expr2))
+                  :guard-hints (("Goal" :in-theory (e/d (bounded-dag-exprp dag-exprp dag-function-call-exprp)
+                                                        (dag-function-call-exprp-redef))))))
+  (if (or (variablep expr1)
+          (variablep expr2))
+      nil ; won't be 2 nodes with the same var
+    (let ((fn1 (ffn-symb expr1))
+          (fn2 (ffn-symb expr2)))
+      (if (or (eq 'quote fn1)
+              (eq 'quote fn2))
+          (equal (unquote expr1) (unquote expr2))
+        ;; both are function calls:
+        (and (eq fn1 fn2)
+             (let ((dargs1 (dargs expr1))
+                   (dargs2 (dargs expr2)))
+               (identical-darg-lists-up-to-constant-inlining dargs1 dargs2 dag-array-name dag-array dag-len)))))))
+
 
 ;; (defun clean-up-hyps (hyps)
 ;;   (declare (xargs :guard (pseudo-term-listp hyps)))
@@ -7868,9 +7915,11 @@
     (+ (len (cdr (car alist)))
        (sum-of-cdr-lens (cdr alist)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; todo: see dag-is-purep
-(defun miter-is-purep-aux (index len miter-array-name miter-array)
-  (declare (xargs :guard (and (pseudo-dag-arrayp miter-array-name miter-array len)
+(defun dag-array-is-purep-aux (index len dag-array-name dag-array)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array len)
                               (natp index)
                               (<= index len))
                   :guard-hints (("Goal" :in-theory (enable expr-is-purep)))
@@ -7879,23 +7928,22 @@
           (not (natp index))
           (not (natp len)))
       t
-    (let ((expr (aref1 miter-array-name miter-array index)))
+    (let ((expr (aref1 dag-array-name dag-array index)))
       (if (expr-is-purep expr)
-          (miter-is-purep-aux (+ 1 index) len miter-array-name miter-array)
-        (prog2$ (cw "(Node ~x0 is not pure (call of ~x1).)~%" index (car expr) ; must be a cons since vars are pure
-                    )
+          (dag-array-is-purep-aux (+ 1 index) len dag-array-name dag-array)
+        (prog2$ (cw "(Node ~x0 is not pure: ~x1.)~%" index expr) ; todo: elide (e.g., if some darg is a big constant)?
                 nil)))))
 
+; todo: pass in a var-type-alist and ensure all var nodes have entries in it
 ; todo: ;use property lists?
-;ffixme check indices, sizes, and shift amounts, etc.!
-(defun miter-is-purep (miter-array-name miter-array miter-len)
-  (declare (xargs :guard (pseudo-dag-arrayp miter-array-name miter-array miter-len)))
-          ;  (let ((supporting-fns (fns-that-support-node (+ -1 miter-len) miter-array-name miter-array))) ;inefficient to cons this up?
-;    (subsetp-eq supporting-fns *bv-and-array-fns-we-can-translate*)
-  (let ((result (miter-is-purep-aux 0 miter-len miter-array-name miter-array)))
+; todo: faster to count down?
+;checks all nodes, not just supporting nodes
+(defun dag-array-is-purep (dag-array-name dag-array dag-len)
+  (declare (xargs :guard (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
+  (let ((result (dag-array-is-purep-aux 0 dag-len dag-array-name dag-array)))
     (prog2$ (if result
-                (cw "(Miter is pure.)~%")
-              (cw "(Miter is not pure.)~%"))
+                (cw "(Dag is pure.)~%")
+              (cw "(Dag is not pure.)~%"))
             result)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -15444,14 +15492,22 @@
    (b* (;; First, we check whether the nodes are calls of the same function on the same arguments (may be quite common):
         (expr1 (aref1 miter-array-name miter-array smaller-nodenum))
         (expr2 (aref1 miter-array-name miter-array larger-nodenum))
-        ;; todo: is identical-exprs-up-to-constant-inlining overkill (shouldn't things below the node already have been merged?)?
         ((when (identical-dag-exprs-up-to-constant-inlining expr1 expr2 miter-array-name miter-array miter-len))
          (and print (cw "  Structural equivalence between ~x0 and ~x1.~%" smaller-nodenum larger-nodenum))
+         (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state))
+        ;; Special case: Check for xor nests with the same leaves (above the shared nodes) -- may be very common:
+        ;; TODO: Also handle bvxor!
+        ((when (and (not (variablep expr1))
+                    (not (variablep expr2))
+                    (eq 'bitxor (ffn-symb expr1))
+                    (eq 'bitxor (ffn-symb expr2))
+                    ;; could optimize a bit since we know the nodes are bitxors?:
+                    (identical-bitxor-nestsp (list smaller-nodenum) (list larger-nodenum) 0 0 miter-array-name miter-array miter-len)))
+         (and print (cw "  Bitxor equivalence between ~x0 and ~x1.~%" smaller-nodenum larger-nodenum))
          (mv (erp-nil) :proved analyzed-function-table nodenums-not-to-unroll rand state)))
      ;; Next, determine whether everything relevant is pure:
-     ;;ffffixme also check here that all supporting vars have bv or array types in the alist? - could cut if they don't?
      ;;ffixme also check that all necessary indices and sizes are constants (miter-is-purep could reflect that? maybe it does now?)
-     (if (and (or miter-is-purep
+     (if (and (or miter-is-purep ; common
                   ;; TODO: Instead of this, consider pre-computing which nodes are pure (updating that info when merging nodes):
                   (both-nodes-are-purep smaller-nodenum larger-nodenum miter-array-name miter-array var-type-alist)
                   )
@@ -16026,7 +16082,7 @@
                  (prog2$ (cw "(DAG: :elided (~x0 nodes))~%" miter-len)
                          state)))
         ;;fixme this should also check that every var has a good type for stp; otherwise there may be errors in translating?  or not, since the type can be inferred?
-        (miter-is-purep (miter-is-purep miter-array-name miter-array miter-len)) ;optimization for the ciphers (it was slow to check whether each pair was pure
+        (miter-is-purep (dag-array-is-purep miter-array-name miter-array miter-len)) ;optimization for the ciphers (it was slow to check whether each pair was pure
         ((mv shuffled-test-cases rand) ;fixme can we do this less often?  we want the test cases in their original order when analyzing traces of rec fns..
          (shuffle-list test-cases rand))
         ((mv all-passedp ; actually a hard error will already have been thrown
@@ -16039,7 +16095,7 @@
          (find-probable-facts miter-array-name miter-array miter-len miter-depth
                               shuffled-test-cases
                               interpreted-function-alist print
-                              (not miter-is-purep) ;keep test cases if the miter is not pure (fixme what if there are no real rec fns but the miter is somehow not pure?)
+                              (not miter-is-purep) ;keep test cases if the miter is not pure (fixme what if there are no real rec-fns but the miter is somehow not pure?)
                               debug-nodes
                               ;;(equal 0 miter-depth) ;abandon-testing-when-boringp (only do it on top-level miters since nested miters test are not in random order (may start with many tests from the same trace)
                               ))
@@ -16058,9 +16114,10 @@
         (num-probably-equal-node-sets (count-merges-in-probably-equal-node-sets probably-equal-node-sets 0)) ;; TODO: Can we really count this ahead of time?
         (num-probable-constants (len probably-constant-node-alist))
         (- (progn$ (cw "(~x0 total probably-equal-node-sets.~%" num-probably-equal-node-sets) ;fixme this total should exclude the probably constant nodes..
-                   (and print (progn$ (cw "Here they are, after excluding probably-constant nodes:~%") ;count the nodes involved (or track that number)
-                                      (print-non-constant-probably-equal-sets probably-equal-node-sets sweep-array) ;sort these?
-                                      ))
+                   (and (print-level-at-least-tp print)
+                        (progn$ (cw "Here they are, after excluding probably-constant nodes:~%") ;count the nodes involved (or track that number)
+                                (print-non-constant-probably-equal-sets probably-equal-node-sets sweep-array) ;sort these?
+                                ))
                    (cw ")~%")
                    (cw "~%(Probably-constant nodes (~x0 total)" num-probable-constants)
                    (and print (progn$ (cw ":~%")
@@ -17652,7 +17709,7 @@
                                 tactic
                                 print
                                 debug-nodes
-                                extra-rules initial-rule-sets ;; these differ from prove-equal-with-axe+
+                                extra-rules remove-rules initial-rule-sets ;; these differ from prove-equal-with-axe+
                                 monitored-symbols use-context-when-miteringp
                                 random-seed
                                 ;;;
@@ -17685,6 +17742,7 @@
                                (null max-conflicts)
                                (natp max-conflicts))
                            (symbol-listp extra-rules)
+                           (symbol-listp remove-rules)
                            (or (eq :auto initial-rule-sets)
                                (axe-rule-setsp initial-rule-sets))
                            (symbol-listp monitored-symbols)
@@ -17729,6 +17787,8 @@
                                      ;; special case: no initial-rule-sets, but extra-rules are given (TODO: Think about this):
                                      (add-rules-to-rule-sets extra-rules (list nil) wrld)))
        ((when erp) (mv erp nil state))
+       ;; Then remove the remove-rules:
+       (initial-rule-sets (if remove-rules (remove-rules-from-rule-sets remove-rules initial-rule-sets) initial-rule-sets))
        ;; Choose a name for the miter:
        (dag-or-term-form1 (farg1 whole-form)) ; todo: why "quoted"?
        (dag-or-term-form2 (farg2 whole-form))
@@ -17809,6 +17869,7 @@
                                     (print ':brief)
                                     (debug-nodes 'nil)
                                     (extra-rules 'nil)
+                                    (remove-rules 'nil)
                                     (initial-rule-sets ':auto)
                                     (monitor 'nil)
                                     (use-context-when-miteringp 'nil) ;todo: try t
@@ -17825,7 +17886,7 @@
      (acl2-unwind-protect ; enable cleanup on interrupt
        "acl2-unwind-protect for prove-equal-with-axe"
        (prove-equal-with-axe-fn ,dag-or-term1 ,dag-or-term2 ,assumptions ,types ,interpreted-function-alist ,test-types ,tests ,tactic
-                                ,print ,debug-nodes ,extra-rules ,initial-rule-sets
+                                ,print ,debug-nodes ,extra-rules ,remove-rules ,initial-rule-sets
                                 ,monitor ,use-context-when-miteringp ,random-seed
                                 ,max-conflicts ,normalize-xors ,prove-constants
                                 ,proof-name ,keep-temp-dir ,check-vars
@@ -17847,7 +17908,8 @@
          (tactic "Proof tactic to use for the proof (either :rewrite or :rewrite-and-sweep)")
          (print "Print verbosity (allows nil, :brief, t, and :verbose)")
          (debug-nodes "Nodenums whose values should be printed for each test-case, and whose subdags should be printing when attempting a merge.  These nodenums refer to the DAG used for sweeping-and-merging (after pre-simplification, etc, if any), specifically the DAG for the first sweep.")
-         (extra-rules "The names of extra rules to use when simplifying (a symbol list)")
+         (extra-rules "A symbol list containing the names of extra rules to use when simplifying")
+         (remove-rules "A symbol list containing the names of rules to be removed from the set of rules used when simplifying")
          (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets)")
          (monitor "Rule names (symbols) to monitor when rewriting")
          (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")

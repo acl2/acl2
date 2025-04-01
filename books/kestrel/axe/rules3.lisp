@@ -5832,17 +5832,8 @@
                             PLUS-32-1-BVUMIUNS
                             +-OF-MINUS-1-AND-BV2
                             bvminus-becomes-bvplus-of-bvuminus
-
-
-
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite)))))
-
-;add to the map theorems?
-(defthm equal-of-nil-and-bvchop-list
-  (equal (equal 'nil (bvchop-list n x))
-         (not (consp x)))
-  :hints (("Goal" :in-theory (enable bvchop-list))))
 
 ;this spilts off the last element - we could instead choose the first element
 (defthm take-of-bvplus-32-1

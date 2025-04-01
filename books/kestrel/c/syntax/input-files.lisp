@@ -23,7 +23,9 @@
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/system/pseudo-event-form-listp" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/lists/top" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -66,6 +68,7 @@
 (defval *input-files-allowed-options*
   :short "Keyword options accepted by @(tsee input-files)."
   (list :files
+        :path
         :preprocess
         :preprocess-args
         :process
@@ -82,12 +85,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-strings-to-paths ((strings string-listp))
-  :returns (paths filepath-setp)
+(define input-files-strings-to-filepaths ((strings string-listp))
+  :returns (filepaths filepath-setp)
   :short "Turn a list of strings into a set of file paths."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Wrap each string into a file path.")
+   (xdoc::p
+    "This is more general than @(tsee input-files),
+     and should be moved to a more central place."))
   (cond ((endp strings) nil)
         (t (set::insert (filepath (car strings))
-                        (input-files-strings-to-paths (cdr strings)))))
+                        (input-files-strings-to-filepaths (cdr strings)))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,7 +119,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-process-files ((options symbol-alistp))
-  :returns (mv erp (paths filepath-setp))
+  :returns (mv erp (files string-listp))
   :short "Process the @(':files') input."
   (b* (((reterr) nil)
        (files-option (assoc-eq :files options))
@@ -125,8 +135,42 @@
         (reterr (msg "The :FILES input must be a list without duplicates, ~
                       but the supplied ~x0 has duplicates."
                      files)))
-       (paths (input-files-strings-to-paths files)))
-    (retok paths)))
+       ((unless (consp files))
+        (reterr (msg "The :FILES input must contain at least one element, ~
+                      but it does not contain any."))))
+    (retok files)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-path ((options symbol-alistp))
+  :returns (mv erp (path stringp))
+  :short "Process the @(':path') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the string is not @('/') but ends with @('/'),
+     we remove the ending @('/').
+     This is for uniformity when concatenating this
+     with the files specified in the @(':files') input."))
+  (b* (((reterr) "")
+       (path-option (assoc-eq :path options))
+       (path (if path-option
+                 (cdr path-option)
+               "."))
+       ((unless (stringp path))
+        (reterr (msg "The :PATH input must be a string, ~
+                      but it is ~x0 instead."
+                     path)))
+       (path-chars (str::explode path))
+       ((unless (consp path-chars))
+        (reterr (msg "The :PATH input must be not empty, ~
+                      but it is the empty string instead.")))
+       (path-chars (if (and (consp (cdr path-chars))
+                            (eql (car (last path-chars)) #\/))
+                       (butlast path-chars 1)
+                     path-chars))
+       (path (str::implode path-chars)))
+    (retok path)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -349,7 +393,8 @@
 
 (define input-files-process-inputs ((args true-listp) (progp booleanp))
   :returns (mv erp
-               (paths filepath-setp)
+               (files string-listp)
+               (path stringp)
                (preprocessor string-optionp)
                (preprocess-args-presentp booleanp)
                (preprocess-extra-args string-listp)
@@ -361,9 +406,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('paths') result of this function
-     is calculated from the @(':files') input.")
-   (xdoc::p
     "The @('preprocessor') result of this function
      is calculated from the @(':preprocess') input.
      The use of `preprocessor' vs. `preprocess' is intentional.")
@@ -371,7 +413,7 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil nil nil nil :parse nil nil (ienv-default))
+  (b* (((reterr) nil "" nil nil nil :parse nil nil (ienv-default))
        ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -387,7 +429,8 @@
                      *input-files-allowed-options*
                      extra)))
        ;; Process the inputs.
-       ((erp paths) (input-files-process-files options))
+       ((erp files) (input-files-process-files options))
+       ((erp path) (input-files-process-path options))
        ((erp preprocessor) (input-files-process-preprocess options))
        ((erp preprocess-args-presentp preprocess-extra-args)
         (input-files-process-preprocess-args options preprocessor))
@@ -395,7 +438,8 @@
        ((erp const) (input-files-process-const options progp))
        ((erp gcc) (input-files-process-gcc options))
        ((erp ienv) (input-files-process-ienv options)))
-    (retok paths
+    (retok files
+           path
            preprocessor
            preprocess-args-presentp
            preprocess-extra-args
@@ -423,36 +467,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-read-files ((paths filepath-setp) state)
+(define input-files-read-files ((files string-listp) (path stringp) state)
   :returns (mv erp (fileset filesetp) state)
   :short "Read a file set from a given set of paths."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We go through each path,
-     and we attempt to read the file at each path,
-     constructing the file set along the way."))
+    "We go through each file, we prepend the path,
+     and we attempt to read the file at each resulting path,
+     constructing the file set along the way.
+     Recall that @('path') nevers ends with @('/') (unless it is just @('/')),
+     because input processing removes the ending slash."))
   (b* (((reterr) (irr-fileset) state)
-       ((when (set::emptyp paths)) (retok (fileset nil) state))
-       (path (set::head paths))
-       (path-string (filepath->unwrap path))
-       ((unless (stringp path-string))
-        (raise "Internal error: file path ~x0 is not a string." path-string)
-        (reterr t))
+       ((when (endp files)) (retok (fileset nil) state))
+       (file (car files))
+       (path-to-read (str::cat path "/" file))
        ((mv erp bytes state)
-        (acl2::read-file-into-byte-list (filepath->unwrap path) state))
+        (acl2::read-file-into-byte-list path-to-read state))
        ((when erp)
-        (reterr (msg "Reading ~x0 failed." (filepath->unwrap path))))
+        (reterr (msg "Reading ~x0 failed." path-to-read)))
        (data (filedata bytes))
        ((erp fileset state)
-        (input-files-read-files (set::tail paths) state)))
-    (retok (fileset (omap::update path data (fileset->unwrap fileset)))
+        (input-files-read-files (cdr files) path state)))
+    (retok (fileset (omap::update (filepath file)
+                                  data
+                                  (fileset->unwrap fileset)))
            state))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-gen-events ((paths filepath-setp)
+(define input-files-gen-events ((files string-listp)
+                                (path stringp)
                                 (preprocessor string-optionp)
                                 (preprocess-args-presentp booleanp)
                                 (preprocess-extra-args string-listp)
@@ -482,13 +528,15 @@
        ((erp files state) (if preprocessor
                               (if preprocess-args-presentp
                                   (preprocess-files
-                                   paths
+                                   (input-files-strings-to-filepaths files)
+                                   :path path
                                    :preprocessor preprocessor
                                    :extra-args preprocess-extra-args)
                                 (preprocess-files
-                                 paths
+                                 (input-files-strings-to-filepaths files)
+                                 :path path
                                  :preprocessor preprocessor))
-                            (input-files-read-files paths state)))
+                            (input-files-read-files files path state)))
        ;; Parsing is always required.
        ((erp tunits) (parse-fileset files gcc))
        ;; If only parsing is required, we are done;
@@ -541,7 +589,8 @@
      We also return the translation unit ensemble
      resulting from processing the (possibly preprocessed) files."))
   (b* (((reterr) '(_) (irr-transunit-ensemble) state)
-       ((erp paths
+       ((erp files
+             path
              preprocessor
              preprocess-args-presentp
              preprocess-extra-args
@@ -551,7 +600,8 @@
              ienv)
         (input-files-process-inputs args progp))
        ((erp events tunits state)
-        (input-files-gen-events paths
+        (input-files-gen-events files
+                                path
                                 preprocessor
                                 preprocess-args-presentp
                                 preprocess-extra-args
@@ -616,7 +666,8 @@
      a programmatic interface to the functionality of @(tsee input-files).
      It has the form:")
    (xdoc::codeblock
-    "(input-files-prog :files             ...  ; no default"
+    "(input-files-prog :files             ...  ; required"
+    "                  :path              ...  ; default \".\""
     "                  :preprocess        ...  ; default nil"
     "                  :preprocess-args   ...  ; no default"
     "                  :process           ...  ; default :validate"

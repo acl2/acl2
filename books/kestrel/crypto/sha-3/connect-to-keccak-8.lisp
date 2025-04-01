@@ -19,42 +19,21 @@
 
 ;; TODO: Add proofs for longer messages, or even a general proof for arbitrary messages
 
+;; Test:
 ;; (let ((msg '(0 1 1 0 0 1 0 1))) (equal (keccak::keccak-256 msg) (sha3::keccak-256 msg)))
 
 ;; Assumes an 8-bit message
 (acl2::unroll-spec-basic *sha-3-keccak-256-8bit*
-                   `(sha3::keccak-256 ,(acl2::symbolic-list 'in 8))
-                   :rules :auto
-                   :memoizep nil ; for speed
-                   :extra-rules '(acl2::update-nth-of-cons
-                                  acl2::car-becomes-nth-of-0
-                                  ))
+                         `(sha3::keccak-256 ,(acl2::symbolic-list 'in 8))
+                         :rules :auto)
 
 ;; Assumes an 8-bit message
 (acl2::unroll-spec-basic *keccak-256-8bit*
                          `(keccak::keccak-256 ,(acl2::symbolic-list 'in 8))
-                         :rules :auto
-                         :extra-rules '(acl2::update-nth-of-cons
-                                        acl2::car-becomes-nth-of-0
-                                        acl2::leftrotate))
+                         :rules :auto)
 
+;; Proof is by bit-blasting (second rule-set)
 (acl2::prove-equal-with-axe *sha-3-keccak-256-8bit*
                             *keccak-256-8bit*
-                            ;; :initial-rule-sets (list (make-axe-rules! (amazing-rules-bv) (w state))) ;don't bit-blast
                             :normalize-xors nil ; todo: heap exhaustion (many xor nests, each with thousands of nodes) !
-                            :tactic :rewrite-and-sweep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Alternative proof, using rewriting alone:
-
-(acl2::prove-equal-with-axe *sha-3-keccak-256-8bit*
-                            *keccak-256-8bit*
-                            :extra-rules (append '(bitand-commutative-axe
-                                                   bitand-commutative-2-axe
-                                                   bitand-associative
-                                                   equal-same)
-                                                 (acl2::bit-blast-rules-basic)
-                                                 (acl2::core-rules-bv))
-                            :normalize-xors nil ; prevents heap exhaustion (many xor nests, each with thousands of nodes) !
                             :tactic :rewrite)

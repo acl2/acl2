@@ -1717,8 +1717,7 @@
           (acl2::type-rules)
           ;; (acl2::logext-rules) ;;caused problems ;;todo: there are also logext rules below
           ;; trying these, though they are not yet as clean as they could be:
-          (acl2::trim-rules)
-          (acl2::trim-helper-rules)
+          ;; (acl2::trim-rules) ;; without these, float-macho-64 is not as nice (but better safe trim rules may help with that (e.g., when both branches of a bvif are safe to trim))
           (acl2::unsigned-byte-p-rules)
           (constant-opener-rules)
           (simple-opener-rules)
@@ -5007,7 +5006,9 @@
           (acl2::core-rules-bv) ; trying
           (acl2::bv-of-logext-rules)
           (acl2::unsigned-byte-p-rules)
-          (acl2::array-reduction-rules)))
+          (acl2::array-reduction-rules)
+          (acl2::trim-rules) ; these seem needed for a few examples, like getting tea-wiki-elf64 by rewriting
+          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

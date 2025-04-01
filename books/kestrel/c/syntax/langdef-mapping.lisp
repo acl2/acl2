@@ -431,7 +431,7 @@
           (retok (c::obj-declor-ident ident1))))
        ((when (dirdeclor-case dirdeclor :array))
         (b* (((dirdeclor-array dirdeclor) dirdeclor)
-             ((erp declor1) (ldm-dirdeclor-obj dirdeclor.decl))
+             ((erp declor1) (ldm-dirdeclor-obj dirdeclor.declor))
              ((when dirdeclor.tyquals)
               (reterr (msg "Unsupported type qualifiers ~
                             or attribute specifiers ~
@@ -1175,9 +1175,9 @@
                      (dirdeclor-fix dirdeclor))))
        ((mv inner-dirdeclor params)
         (if (dirdeclor-case dirdeclor :function-params)
-            (mv (dirdeclor-function-params->decl dirdeclor)
+            (mv (dirdeclor-function-params->declor dirdeclor)
                 (dirdeclor-function-params->params dirdeclor))
-          (mv (dirdeclor-function-names->decl dirdeclor)
+          (mv (dirdeclor-function-names->declor dirdeclor)
               nil)))
        ((unless (dirdeclor-case inner-dirdeclor :ident))
         (reterr (msg "Unsupported direct declarator ~x0 for function."

@@ -164,7 +164,7 @@
   :true-listp t
   ///
 
-  (defrule natp-listp-when-dab-digit-listp
+  (defrule nat-listp-when-dab-digit-listp
     (implies (dab-digit-listp base x)
              (nat-listp x))
     :induct t)
@@ -429,7 +429,7 @@
   ///
 
   (more-returns
-   (digits nat-listp :name natp-listp-of-nat=>lendian*)
+   (digits nat-listp :name nat-listp-of-nat=>lendian*)
    (digits consp
            :hyp (not (zp nat))
            :name consp-of-nat=>lendian*
@@ -763,7 +763,7 @@
   ///
 
   (more-returns
-   (digits nat-listp :name natp-listp-of-nat=>bendian*)
+   (digits nat-listp :name nat-listp-of-nat=>bendian*)
    (digits consp
            :hyp (not (zp nat))
            :name consp-of-nat=>bendian*

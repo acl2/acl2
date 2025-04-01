@@ -1,6 +1,6 @@
 ; Top file for Axe
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -154,16 +154,20 @@
 (include-book "match-hyp-with-nodenum-to-assume-false")
 (include-book "math-rules")
 (include-book "memoization")
-(include-book "merge-and-remove-dups")
+
+(include-book "merge-and-remove-pairs-of-dups")
 (include-book "merge-less-than-and-remove-dups")
-(include-book "merge-dag-into-dag-quick")
-(include-book "merge-nodes-into-dag-array")
-(include-book "merge-sort-by-cdr-greater")
 (include-book "merge-sort-less-than")
 (include-book "merge-sort-less-than-rules")
+(include-book "merge-greater-than-and-remove-dups")
+(include-book "merge-sort-by-cdr-greater")
+
+(include-book "merge-dag-into-dag-quick")
+(include-book "merge-nodes-into-dag-array")
 (include-book "merge-term-into-dag-array-simple")
 (include-book "merge-term-into-dag-array-basic")
 (include-book "merge-tree-into-dag-array-basic")
+
 (include-book "sublis-var-and-eval-basic")
 (include-book "node-replacement-alist")
 (include-book "node-info")
@@ -171,6 +175,8 @@
 (include-book "node-replacement-array2")
 (include-book "node-replacement-array3")
 (include-book "nodenum-type-alists")
+(include-book "normalize-xors")
+(include-book "identical-xor-nests")
 (include-book "numeric-lists")
 (include-book "packbv-axe")
 (include-book "possibly-negated-nodenums")
@@ -209,7 +215,6 @@
 (include-book "safe-unquote")
 (include-book "set-rules")
 (include-book "shorter-list")
-(include-book "sortedp-less-than-or-equal")
 (include-book "splitting")
 (include-book "step-increments")
 (include-book "stored-rules")
