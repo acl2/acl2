@@ -2155,7 +2155,7 @@
        :unary (b* (((erp new-arg type-arg types-arg table)
                     (valid-expr expr.arg table ienv))
                    ((erp type) (valid-unary expr expr.op type-arg ienv)))
-                (retok (make-expr-unary :op expr.op :arg new-arg)
+                (retok (make-expr-unary :op expr.op :arg new-arg :info nil)
                        type
                        types-arg
                        table))

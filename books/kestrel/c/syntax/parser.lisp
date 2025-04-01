@@ -6750,7 +6750,7 @@
        (op (car ops))
        (preop (inc/dec-op-case op :inc (unop-preinc) :dec (unop-predec)))
        (expr1 (make-expr-unary-with-preinc/predec-ops (cdr ops) expr)))
-    (make-expr-unary :op preop :arg expr1))
+    (make-expr-unary :op preop :arg expr1 :info nil))
   :verify-guards :after-returns
   :hooks (:fix))
 
@@ -8433,7 +8433,7 @@
         (b* (((erp expr last-span parstate) ; preop expr
               (parse-unary-expression parstate))
              (unop (token-to-preinc/predec-operator token)))
-          (retok (make-expr-unary :op unop :arg expr)
+          (retok (make-expr-unary :op unop :arg expr :info nil)
                  (span-join span last-span)
                  parstate)))
        ;; If token is a unay operator as defined in the grammar
@@ -8443,7 +8443,7 @@
         (b* (((erp expr last-span parstate) ; unop expr
               (parse-cast-expression parstate))
              (unop (token-to-unary-operator token)))
-          (retok (make-expr-unary :op unop :arg expr)
+          (retok (make-expr-unary :op unop :arg expr :info nil)
                  (span-join span last-span)
                  parstate)))
        ;; If token is 'sizeof', we need to read another token.
@@ -8500,7 +8500,8 @@
                   (amb?-expr/tyname-case
                    expr/tyname
                    :expr (make-expr-unary :op (unop-sizeof)
-                                          :arg expr/tyname.unwrap)
+                                          :arg expr/tyname.unwrap
+                                          :info nil)
                    :tyname (expr-sizeof expr/tyname.unwrap)
                    :ambig (expr-sizeof-ambig expr/tyname.unwrap))))
               (retok expr (span-join span last-span) parstate)))
@@ -8512,7 +8513,8 @@
                  ((erp expr last-span parstate) ; sizeof expr
                   (parse-unary-expression parstate)))
               (retok (make-expr-unary :op (unop-sizeof)
-                                      :arg expr)
+                                      :arg expr
+                                      :info nil)
                      (span-join span last-span)
                      parstate))))))
        ;; If token is '_Alignof',
@@ -8867,12 +8869,14 @@
           (parse-postfix-expression-rest curr-expr curr-span parstate)))
        ((token-punctuatorp token "++") ; prev-expr ++
         (b* ((curr-expr (make-expr-unary :op (unop-postinc)
-                                         :arg prev-expr))
+                                         :arg prev-expr
+                                         :info nil))
              (curr-span (span-join prev-span span)))
           (parse-postfix-expression-rest curr-expr curr-span parstate)))
        ((token-punctuatorp token "--") ; prev-expr --
         (b* ((curr-expr (make-expr-unary :op (unop-postdec)
-                                         :arg prev-expr))
+                                         :arg prev-expr
+                                         :info nil))
              (curr-span (span-join prev-span span)))
           (parse-postfix-expression-rest curr-expr curr-span parstate)))
        (t ; prev-expr other

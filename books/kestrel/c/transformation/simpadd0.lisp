@@ -1047,6 +1047,7 @@
 
 (define simpadd0-expr-unary ((op c$::unopp)
                              (arg exprp)
+                             (info acl2::any-p)
                              (arg-new exprp)
                              (arg-events pseudo-event-form-listp)
                              (arg-thm-name symbolp)
@@ -1069,8 +1070,8 @@
      and the unary operator is among @('+'), @('-'), @('~') and @('!').
      The theorem is proved via two general ones that we prove below."))
   (b* (((simpadd0-gin gin) gin)
-       (expr (make-expr-unary :op op :arg arg))
-       (expr-new (make-expr-unary :op op :arg arg-new))
+       (expr (make-expr-unary :op op :arg arg :info info))
+       (expr-new (make-expr-unary :op op :arg arg-new :info info))
        ((unless (and arg-thm-name
                      (member-eq (c$::unop-kind op)
                                 '(:plus :minus :bitnot :lognot))))
@@ -2150,6 +2151,7 @@
             (gin (simpadd0-gin-update gin gout-arg)))
          (simpadd0-expr-unary expr.op
                               expr.arg
+                              expr.info
                               new-arg
                               gout-arg.events
                               gout-arg.thm-name

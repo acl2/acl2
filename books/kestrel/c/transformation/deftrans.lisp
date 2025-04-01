@@ -124,6 +124,7 @@
        "            :unary (make-expr-unary"
        "                     :op expr.op"
        "                     :arg (my-simpadd0-expr expr.arg))"
+       "                     :info expr.info)"
        "            :sizeof (expr-sizeof (my-simpadd0-tyname expr.type))"
        "            :sizeof-ambig (prog2$"
        "                            (raise \"Misusage error: ~x0.\" (expr-fix expr))"
@@ -685,7 +686,8 @@
                  :final-comma expr.final-comma)
       :unary (make-expr-unary
                :op expr.op
-               :arg (,(cdr (assoc-eq 'expr names)) expr.arg ,@extra-args-names))
+               :arg (,(cdr (assoc-eq 'expr names)) expr.arg ,@extra-args-names)
+               :info expr.info)
       :sizeof (expr-sizeof (,(cdr (assoc-eq 'tyname names)) expr.type ,@extra-args-names))
       :sizeof-ambig (prog2$
                       (raise "Misusage error: ~x0." (expr-fix expr))

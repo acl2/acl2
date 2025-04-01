@@ -1105,7 +1105,8 @@
                           linkage
                           new1
                           new2
-                          split-members)))
+                          split-members)
+                   :info nil))
         :sizeof (expr-sizeof (replace-field-access-tyname
                                expr.type
                                original

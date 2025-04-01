@@ -435,7 +435,8 @@
                 :arg (expr-const
                        (c$::const-int
                          (c$::make-iconst
-                           :core (c$::dec/oct/hex-const-dec (- value.get))))))
+                           :core (c$::dec/oct/hex-const-dec (- value.get)))))
+                :info nil)
             (expr-const
               (c$::const-int
                 (c$::make-iconst :core (if (zp value.get)
@@ -453,7 +454,8 @@
                  :arg (expr-const
                         (c$::const-int
                           (c$::make-iconst
-                            :core (c$::dec/oct/hex-const-dec (- value.get))))))
+                            :core (c$::dec/oct/hex-const-dec (- value.get)))))
+                 :info nil)
              (expr-const
                (c$::const-int
                  (c$::make-iconst :core (if (zp value.get)
@@ -471,7 +473,8 @@
                :arg (expr-const
                       (c$::const-int
                         (c$::make-iconst
-                          :core (c$::dec/oct/hex-const-dec (- value.get))))))
+                          :core (c$::dec/oct/hex-const-dec (- value.get)))))
+               :info nil)
            (expr-const
              (c$::const-int
                (c$::make-iconst :core (if (zp value.get)
@@ -492,7 +495,8 @@
                        (c$::const-int
                          (c$::make-iconst
                            :core (c$::dec/oct/hex-const-dec (- value.get))
-                           :suffix? (c$::isuffix-l (c$::lsuffix-locase-l))))))
+                           :suffix? (c$::isuffix-l (c$::lsuffix-locase-l)))))
+                :info nil)
             (expr-const
               (c$::const-int
                 (c$::make-iconst :core (if (zp value.get)
@@ -514,7 +518,8 @@
                         (c$::const-int
                           (c$::make-iconst
                             :core (c$::dec/oct/hex-const-dec (- value.get))
-                            :suffix? (c$::isuffix-l (c$::lsuffix-locase-ll))))))
+                            :suffix? (c$::isuffix-l (c$::lsuffix-locase-ll)))))
+                 :info nil)
              (expr-const
                (c$::const-int
                  (c$::make-iconst :core (if (zp value.get)
@@ -651,11 +656,11 @@
         :unary (b* (((mv arg arg-value? env)
                      (const-prop-expr expr.arg env))
                     ((unless arg-value?)
-                     (mv (make-expr-unary :op expr.op :arg arg) nil env))
+                     (mv (make-expr-unary :op expr.op :arg arg :info nil) nil env))
                     (value? (const-prop-eval-unop-expr expr.op arg-value?)))
                  (mv (if value?
                          (value-to-expr value?)
-                       (make-expr-unary :op expr.op :arg arg))
+                       (make-expr-unary :op expr.op :arg arg :info nil))
                      value?
                      env))
         :sizeof (b* (((mv type env)

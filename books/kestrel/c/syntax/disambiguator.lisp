@@ -648,13 +648,13 @@
                        (expr-priority-cast)))
        (arg-actual (expr->priority arg))
        ((when (expr-priority->= arg-actual arg-expected))
-        (make-expr-unary :op op :arg arg))
+        (make-expr-unary :op op :arg arg :info nil))
        ((unless (expr-case arg :binary))
         (raise "Internal error: ~
                 non-binary expression ~x0 ~
                 used as argument of unary operator ~x1."
                (expr-fix arg) (unop-fix op))
-        (expr-unary op arg)))
+        (expr-unary op arg nil)))
     (make-expr-binary :op (expr-binary->op arg)
                       :arg1 (dimb-make/adjust-expr-unary
                              op (expr-binary->arg1 arg))

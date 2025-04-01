@@ -291,9 +291,9 @@
     :expand (expr-unambp (expr-complit type elems final-comma)))
 
   (defrule expr-unambp-of-expr-unary
-    (equal (expr-unambp (expr-unary op arg))
+    (equal (expr-unambp (expr-unary op arg info))
            (expr-unambp arg))
-    :expand (expr-unambp (expr-unary op arg)))
+    :expand (expr-unambp (expr-unary op arg info)))
 
   (defrule expr-unambp-of-expr-sizeof
     (equal (expr-unambp (expr-sizeof type))

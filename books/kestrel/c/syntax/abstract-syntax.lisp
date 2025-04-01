@@ -1354,7 +1354,8 @@
        This means that our fixtypes are a bit more general,
        but we can use separate predicates to enforce restrictions.")
      (xdoc::p
-      "Identifiers may be accompanied by some additional information,
+      "Some kinds of expressions may include some additional information
+       (e.g. identifiers),
        such as types calculated during validation.
        This is an instance of the additional information
        discussed in @(tsee abstract-syntax).")
@@ -1608,7 +1609,8 @@
                (elems desiniter-list)
                (final-comma bool)))
     (:unary ((op unop)
-             (arg expr)))
+             (arg expr)
+             (info any)))
     (:sizeof ((type tyname)))
     (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
     (:alignof ((type tyname)
