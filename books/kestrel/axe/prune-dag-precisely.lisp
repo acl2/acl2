@@ -137,12 +137,12 @@
 ;;Returns (mv erp result-dag-or-quotep state).  Pruning turns the DAG into a term and
 ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
 ;; TODO: This can make the rule-alist each time it is called.
-(defund maybe-prune-dag-precisely (prune-branches ; t, nil, or a limit on the size
+(defund maybe-prune-dag-precisely (prune-precise ; t, nil, or a limit on the size
                                    dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp
                                    print
                                    state)
-  (declare (xargs :guard (and (or (booleanp prune-branches)
-                                  (natp prune-branches))
+  (declare (xargs :guard (and (or (booleanp prune-precise)
+                                  (natp prune-precise))
                               (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
                               (or (symbol-listp rules)
@@ -160,7 +160,7 @@
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
-  (b* (((when (not prune-branches))
+  (b* (((when (not prune-precise))
         ;; don't even print anything in this case, as we've been told not to prune
         (mv nil dag state))
        ((when (not (<= (len dag) *max-1d-array-length*)))
@@ -168,13 +168,13 @@
        ((when (not (dag-fns-include-anyp dag '(if myif boolif bvif))))
         (and (print-level-at-least-tp print) (cw "(No precise pruning to do.)~%"))
         (mv nil dag state))
-       ((when (and (natp prune-branches) ; it's a limit on the size
+       ((when (and (natp prune-precise) ; it's a limit on the size
                    ;; todo: allow this to fail fast:
-                   (not (dag-or-quotep-size-less-thanp dag prune-branches))))
+                   (not (dag-or-quotep-size-less-thanp dag prune-precise))))
         ;; todo: don't recompute the size here:
-        (cw "(Note: Not pruning with precise contexts since DAG size (~x0) exceeds ~x1.)~%" (dag-or-quotep-size-fast dag) prune-branches)
+        (cw "(Note: Not pruning with precise contexts since DAG size (~x0) exceeds ~x1.)~%" (dag-or-quotep-size-fast dag) prune-precise)
         (mv nil dag state))
-       ;; prune-branches is either t or is a size limit and the dag is small enough, so we prune
+       ;; prune-precise is either t or is a size limit and the dag is small enough, so we prune
        ;;todo: size also computed above
        (- (cw "(Pruning DAG precisely (~x0 nodes, ~x1 unique):~%" (dag-or-quotep-size-fast dag) (len dag)))
        (old-dag dag)
@@ -209,8 +209,8 @@
     (mv nil result-dag-or-quotep state)))
 
 (defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely
-  (implies (and (not (mv-nth 0 (maybe-prune-dag-precisely prune-branches dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state))) ;; no error
-                (not (myquotep (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state))))
+  (implies (and (not (mv-nth 0 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state))) ;; no error
+                (not (myquotep (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state))))
                 (pseudo-dagp dag)
                 (pseudo-term-listp assumptions)
                 (or (symbol-listp rules)
@@ -222,10 +222,10 @@
                 (or (booleanp call-stp)
                     (natp call-stp))
                 (ilks-plist-worldp (w state)))
-           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state))))
+           (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state))))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))
 
 (defthm w-of-mv-nth-2-of-maybe-prune-dag-precisely
-  (equal (w (mv-nth 2 (maybe-prune-dag-precisely prune-branches dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state)))
+  (equal (w (mv-nth 2 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state)))
          (w state))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))
