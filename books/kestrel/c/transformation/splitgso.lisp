@@ -1052,7 +1052,8 @@
                     :arg (c$::make-expr-ident
                            :ident (if (member-equal expr.name split-members)
                                       new2
-                                    new1))
+                                    new1)
+                           :info nil)
                     :name expr.name))
         :memberp (make-expr-memberp
                    :arg (replace-field-access-expr
