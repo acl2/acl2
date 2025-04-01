@@ -578,7 +578,7 @@
                                             extra-rules)
                                   remove-rules)
                                  :none ; todo: pass a rule-alist here?
-                                 nil ; interpreted-fns
+                                 nil ; interpreted-function-alist
                                  monitor
                                  call-stp
                                  t ; check-fnsp
