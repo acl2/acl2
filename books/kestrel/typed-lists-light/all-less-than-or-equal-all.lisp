@@ -1,7 +1,7 @@
 ; Recognize when all elems of one list are <= all elems of another
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,11 +13,6 @@
 
 (include-book "all-less-than-or-equal")
 
-;;;
-;;; all-<=-all
-;;;
-
-;move
 (defund all-<=-all (x y)
   (if (endp y)
       t
@@ -50,4 +45,11 @@
   (implies (not (consp x))
            (all-<=-all x y))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable all-<=-all))))
+
+(defthmd <=-of-car-and-car-when-all-<=-all
+  (implies (and (all-<=-all x y)
+                (consp x)
+                (consp y))
+           (<= (car x) (car y)))
   :hints (("Goal" :in-theory (enable all-<=-all))))
