@@ -1158,7 +1158,12 @@
   (xdoc::topstring
    (xdoc::p
     "The type is calculated from
-     the validation information present in the expression.
+     the validation information present in the expression,
+     without performing any type calculation
+     of the kind performed by the validator
+     (e.g. this function does not attempt to calculate
+     the type of a binary expression based on
+     the operator and the types of the operands.
      If there is not enough information,
      the unknown type is returned."))
   (expr-case
