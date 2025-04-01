@@ -7918,29 +7918,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: see dag-is-purep
-(defun dag-array-is-purep-aux (index len dag-array-name dag-array)
+(defun dag-array-is-purep-aux (index len dag-array-name dag-array var-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array len)
                               (natp index)
-                              (<= index len))
+                              (<= index len)
+                              (var-type-alistp var-type-alist))
                   :guard-hints (("Goal" :in-theory (enable expr-is-purep)))
                   :measure (nfix (- len index))))
   (if (or (>= index len)
-          (not (natp index))
-          (not (natp len)))
+          (not (mbt (and (natp index)
+                         (natp len)))))
       t
     (let ((expr (aref1 dag-array-name dag-array index)))
-      (if (expr-is-purep expr)
-          (dag-array-is-purep-aux (+ 1 index) len dag-array-name dag-array)
+      (if (and (expr-is-purep expr)
+               (if (symbolp expr)
+                   (if (assoc-eq expr var-type-alist) ; could move this into expr-is-purep
+                       t
+                     (prog2$ (cw "(Node ~x0 is not pure: ~x1.  No type in var-type-alist)~%" index expr)
+                             nil))
+                 t))
+          (dag-array-is-purep-aux (+ 1 index) len dag-array-name dag-array var-type-alist)
         (prog2$ (cw "(Node ~x0 is not pure: ~x1.)~%" index expr) ; todo: elide (e.g., if some darg is a big constant)?
                 nil)))))
 
-; todo: pass in a var-type-alist and ensure all var nodes have entries in it
 ; todo: ;use property lists?
 ; todo: faster to count down?
 ;checks all nodes, not just supporting nodes
-(defun dag-array-is-purep (dag-array-name dag-array dag-len)
-  (declare (xargs :guard (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
-  (let ((result (dag-array-is-purep-aux 0 dag-len dag-array-name dag-array)))
+(defun dag-array-is-purep (dag-array-name dag-array dag-len var-type-alist)
+  (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (var-type-alistp var-type-alist))))
+  (let ((result (dag-array-is-purep-aux 0 dag-len dag-array-name dag-array var-type-alist)))
     (prog2$ (if result
                 (cw "(Dag is pure.)~%")
               (cw "(Dag is not pure.)~%"))
@@ -16081,8 +16088,8 @@
                                      state)))
                  (prog2$ (cw "(DAG: :elided (~x0 nodes))~%" miter-len)
                          state)))
-        ;;fixme this should also check that every var has a good type for stp; otherwise there may be errors in translating?  or not, since the type can be inferred?
-        (miter-is-purep (dag-array-is-purep miter-array-name miter-array miter-len)) ;optimization for the ciphers (it was slow to check whether each pair was pure
+        ;; this also checks that every var has a good type for stp (todo: generalize pure proof machinery to infer types):
+        (miter-is-purep (dag-array-is-purep miter-array-name miter-array miter-len var-type-alist)) ;optimization for the ciphers (it was slow to check whether each pair was pure
         ((mv shuffled-test-cases rand) ;fixme can we do this less often?  we want the test cases in their original order when analyzing traces of rec fns..
          (shuffle-list test-cases rand))
         ((mv all-passedp ; actually a hard error will already have been thrown
