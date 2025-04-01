@@ -171,8 +171,8 @@
                        print
                        print-interval
                        memoizep
-                       prune-approx ; currently pruning is too slow for proofs like DES
                        prune-precise
+                       prune-approx ; currently pruning is too slow for proofs like DES
                        total-steps
                        state)
   (declare (xargs :guard (and (natp steps-left)
@@ -184,10 +184,10 @@
 ;                              (booleanp use-internal-contextsp)
                               ;; print
                               (booleanp memoizep)
-                              (or (booleanp prune-approx)
-                                  (natp prune-approx))
                               (or (booleanp prune-precise)
                                   (natp prune-precise))
+                              (or (booleanp prune-approx)
+                                  (natp prune-approx))
                               (natp total-steps)
                               (booleanp normalize-xors))
                   :mode :program ;; because we call simp-dag-fn and untranslate
@@ -275,8 +275,8 @@
                               print
                               print-interval
                               memoizep
-                              prune-approx
                               prune-precise
+                              prune-approx
                               total-steps
                               state))))))))
 
@@ -302,8 +302,8 @@
                                 print-interval
                                 memoizep
                                 vars-for-array-elements
-                                prune-approx ; todo: separate options for pruning during a run (can be slow) vs at the end?
                                 prune-precise
+                                prune-approx ; todo: separate options for pruning during a run (can be slow) vs at the end?
                                 call-stp ;t, nil, or a max-conflicts
                                 steps
                                 branches
@@ -321,10 +321,10 @@
                               (symbol-listp monitored-rules)
                               (array-length-alistp array-length-alist)
                               (member-eq vars-for-array-elements '(t nil :bits))
-                              (or (booleanp prune-approx)
-                                  (natp prune-approx))
                               (or (booleanp prune-precise)
                                   (natp prune-precise))
+                              (or (booleanp prune-approx)
+                                  (natp prune-approx))
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp))
                               (or (eq :auto steps)
@@ -487,8 +487,8 @@
                         print
                         print-interval
                         memoizep
-                        prune-approx
                         prune-precise
+                        prune-approx
                         0
                         state))
        ((when erp)
@@ -498,6 +498,7 @@
         (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
        ;;; Prune irrelevant branches, if instructed:
        ;; TODO: Consider calling prune-dag-approximately here:
+       ;; TODO: Consider making this final pruning a separate option
        ((mv erp dag state)
         (if (if (booleanp prune-precise) ;todo: consider calling something like maybe-prune-dag-precisely, but we have a rule-alist here
                 prune-precise
@@ -543,8 +544,8 @@
                              print-interval
                              memoizep
                              vars-for-array-elements
-                             prune-approx
                              prune-precise
+                             prune-approx
                              call-stp ;t, nil, or a max-conflicts
                              produce-theorem
                              steps
@@ -566,10 +567,10 @@
                               (array-length-alistp array-length-alist)
                               (booleanp memoizep)
                               (member-eq vars-for-array-elements '(t nil :bits))
-                              (or (booleanp prune-approx)
-                                  (natp prune-approx))
                               (or (booleanp prune-precise)
                                   (natp prune-precise))
+                              (or (booleanp prune-approx)
+                                  (natp prune-approx))
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp))
                               (booleanp produce-theorem)
@@ -617,8 +618,8 @@
                                  print-interval
                                  memoizep
                                  vars-for-array-elements
-                                 prune-approx
                                  prune-precise
+                                 prune-approx
                                  call-stp ;t, nil, or a max-conflicts
                                  steps
                                  branches
@@ -707,8 +708,8 @@
                                       (extra-rules 'nil) ; to add to the usual set of rules
                                       (remove-rules 'nil)
                                       (normalize-xors 'nil) ; defaults to nil, since it's better to normalize the xors of the spec and code dags together
-                                      (prune-approx 'nil) ;todo: make t the default (but that slows down DES a lot)
                                       (prune-precise 'nil) ; can blow up!
+                                      (prune-approx 'nil) ;todo: make t the default (but that slows down DES a lot)
                                       (call-stp 'nil)
                                       ;; Options affecting performance:
                                       (memoizep 't)
@@ -739,8 +740,8 @@
                                      ,print-interval
                                      ,memoizep
                                      ,vars-for-array-elements
-                                     ',prune-approx
                                      ',prune-precise
+                                     ',prune-approx
                                      ',call-stp
                                      ',produce-theorem
                                      ',steps
@@ -781,8 +782,8 @@
          (output                  "An indication of which state component to extract")
          (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")
          (normalize-xors           "Whether to normalize xor nests (t or nil)")
-         (prune-approx "Whether to prune unreachable branches, using approximate contexts, during and after lifting (@('t'), @('nil'), or a dag size threshold).  Can be slow but should not cause an exponential blowup.")
          (prune-precise "Whether to prune unreachable branches, using precise contexts, during and after lifting (@('t'), @('nil'), or a dag size threshold).  Warning: Can take an exponential amount of time and space for DAGs with extensive sharing!")
+         (prune-approx "Whether to prune unreachable branches, using approximate contexts, during and after lifting (@('t'), @('nil'), or a dag size threshold).  Can be slow but should not cause an exponential blowup.")
          (call-stp                "whether to call STP when pruning (@('t'), @('nil'), or a number of conflicts before giving up)")
          (memoizep "Whether to memoize rewrites during unrolling (a boolean).")
          (branches "How to handle branches in the execution. Either @(':smart') (try to merge at join points) or @(':split') (split the execution and don't re-merge).")
