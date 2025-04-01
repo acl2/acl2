@@ -29,7 +29,6 @@
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear-range" :dir :system)
 ;(include-book "kestrel/typed-lists-light/integer-lists" :dir :system) ;for ALL-INTEGERP-WHEN-ALL-NATP
-(include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system) ;todo
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/lists-light/update-subrange" :dir :system)
 (include-book "kestrel/lists-light/update-subrange2" :dir :system)
@@ -719,31 +718,11 @@
 ;;                   t))
 ;;   :hints (("Goal" :in-theory (enable logext-list all-signed-byte-p))))
 
-(defthm all-signed-byte-p-of-myif
-  (implies (and (all-signed-byte-p n a)
-                (all-signed-byte-p n b))
-           (all-signed-byte-p n (myif test a b)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-(defthm all-signed-byte-p-of-myif-strong
-  (equal (all-signed-byte-p n (myif test a b))
-         (myif test (all-signed-byte-p n a)
-               (all-signed-byte-p n b)))
-  :hints (("Goal" :in-theory (enable myif))))
-
 (defthm all-unsigned-byte-p-of-myif-strong
   (equal (all-unsigned-byte-p n (myif test a b))
          (myif test (all-unsigned-byte-p n a)
                (all-unsigned-byte-p n b)))
   :hints (("Goal" :in-theory (enable myif))))
-
-(defthm all-signed-byte-p-when-all-unsigned-byte-p
-  (implies (and (all-unsigned-byte-p n x)
-                (natp n)
-                (< 0 n))
-           (equal (all-signed-byte-p n x)
-                  (all-unsigned-byte-p (+ -1 n) x)))
-  :hints (("Goal" :in-theory (enable all-signed-byte-p all-unsigned-byte-p))))
 
 ;yuck?
 ;; (defthm all-signed-byte-p-of-bv-array-write

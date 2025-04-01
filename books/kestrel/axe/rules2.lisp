@@ -19,7 +19,6 @@
 
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
-(include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system)
 ;(include-book "lenconsmeta") ;todo: did this speed things up?  try with and without...
 (include-book "kestrel/utilities/myif" :dir :system)
 ;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -32,8 +31,8 @@
 ;(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 ;(local (include-book "kestrel/lists-light/cdr" :dir :system))
 ;(local (include-book "kestrel/lists-light/update-nth" :dir :system))
-(local (include-book "kestrel/lists-light/memberp" :dir :system))
-(local (include-book "kestrel/lists-light/subrange" :dir :system))
+(include-book "kestrel/lists-light/memberp" :dir :system) ; todo
+(include-book "kestrel/lists-light/subrange" :dir :system)
 ;(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (local (in-theory (disable ;unsigned-byte-p-of-+-when-<-of-logtail-and-expt
@@ -2685,19 +2684,22 @@
                   nil))
   :hints (("Goal" :in-theory (enable maxelem))))
 
-(defthm memberp-of-maxelem-same
+;drop?
+(defthmd memberp-of-maxelem-same
  (implies (consp x)
           (memberp (maxelem x) x))
  :hints (("Goal" :in-theory (enable maxelem))))
 
-(defthm memberp-maxelem-when-subsetp-equal
+;drop?
+(defthmd memberp-maxelem-when-subsetp-equal
   (implies (and (subsetp-equal bag1 bag2)
                 (consp bag1))
            (memberp (maxelem bag1) bag2))
   :hints (("Goal" :use (:instance memberp-of-maxelem-same (x bag1))
            :in-theory (disable memberp-of-maxelem-same))))
 
-(defthm maxelem-subrange-shorten-hackb
+;drop?
+(defthmd maxelem-subrange-shorten-hackb
   (implies (and (<= (NTH i x) y)
                 (< i (len x))
                 (natp i)
@@ -2720,16 +2722,17 @@
 ;;                                   heap))))
 ;;   :hints (("Goal" :expand ((ARRAY-REFP ref (LIST dim) type heap)))))
 
-(defthmd maxelem-split-hack
-  (implies (and (natp i)
-                (<= 1 i)
-                (< i (len x))
-                )
-           (equal (subrange 1 i x)
-                  (cons (nth 1 x)
-                        (subrange 2 i x))))
-  :hints (("Goal" :in-theory (enable ;EQUAL-CONS-CASES2
-                              ))))
+(local
+ (defthmd maxelem-split-hack
+   (implies (and (natp i)
+                 (<= 1 i)
+                 (< i (len x))
+                 )
+            (equal (subrange 1 i x)
+                   (cons (nth 1 x)
+                         (subrange 2 i x))))
+   :hints (("Goal" :in-theory (enable ;EQUAL-CONS-CASES2
+                               )))))
 
 ;bozo
 (defthm maxelem-of-subrange-lengthen-2-1
@@ -3029,12 +3032,6 @@
                   (<= y x))))
 
 ;;== new stuff
-
-;move
-(defthmd all-integerp-when-all-signed-byte-p
-  (implies (all-signed-byte-p free x)
-           (all-integerp x))
-  :hints (("Goal" :in-theory (enable all-signed-byte-p all-integerp))))
 
 ;(in-theory (disable bvxor-1-becomes-bitxor)) ;trying without
 
