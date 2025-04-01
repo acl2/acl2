@@ -169,10 +169,18 @@
 
 (local
  (defthm all-<-of-merge->-and-remove-dups-aux
-   (implies (and (all-< l1 bound)
-                 (all-< l2 bound)
-                 (all-< acc bound))
-            (all-< (merge->-and-remove-dups-aux l1 l2 acc) bound))
+   (equal (all-< (merge->-and-remove-dups-aux l1 l2 acc) bound)
+          (and (all-< l1 bound)
+               (all-< l2 bound)
+               (all-< acc bound)))
+   :hints (("Goal" :in-theory (enable merge->-and-remove-dups-aux)))))
+
+(local
+ (defthm consp-of-merge->-and-remove-dups-aux
+   (equal (consp (merge->-and-remove-dups-aux l1 l2 acc))
+          (or (consp l1)
+              (consp l2)
+              (consp acc)))
    :hints (("Goal" :in-theory (enable merge->-and-remove-dups-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -223,9 +231,27 @@
   :hints (("Goal" :in-theory (enable merge->-and-remove-dups))))
 
 (defthm all-<-of-merge->-and-remove-dups
-  (implies (and (all-< l1 bound)
-                (all-< l2 bound))
-           (all-< (merge->-and-remove-dups l1 l2) bound))
+  (equal (all-< (merge->-and-remove-dups l1 l2) bound)
+         (and (all-< l1 bound)
+              (all-< l2 bound)))
   :hints (("Goal" :in-theory (enable merge->-and-remove-dups))))
+
+(defthm consp-<-of-merge->-and-remove-dups
+  (equal (consp (merge->-and-remove-dups l1 l2))
+         (or (consp l1)
+             (consp l2)))
+  :hints (("Goal" :in-theory (enable merge->-and-remove-dups))))
+
+(local
+ (defthm <-of-0-and-len-becomes-consp
+   (equal (< 0 (len x))
+          (consp x))
+   :hints (("Goal" :in-theory (enable len)))))
+
+(defthm <-of-0-and-len-of-merge->-and-remove-dups
+  (equal (< 0 (len (merge->-and-remove-dups l1 l2)))
+         (or (< 0 (len l1))
+             (< 0 (len l2))))
+  :hints (("Goal" :in-theory (enable <-of-0-and-len-becomes-consp))))
 
 ;(equal (merge->-and-remove-dups '(5 4 4 3 2 2 1) '(6 4 3 3 2 1 0)) '(6 5 4 3 3 2 1 0)) ; note the two 3s in the result

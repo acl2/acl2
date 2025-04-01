@@ -156,10 +156,15 @@
 (include-book "memoization")
 
 (include-book "merge-and-remove-pairs-of-dups")
+
 (include-book "merge-less-than-and-remove-dups")
 (include-book "merge-sort-less-than")
 (include-book "merge-sort-less-than-rules")
+(include-book "merge-sort-less-than-and-remove-dups")
+
 (include-book "merge-greater-than-and-remove-dups")
+(include-book "merge-sort-greater-than-and-remove-dups")
+
 (include-book "merge-sort-by-cdr-greater")
 
 (include-book "merge-dag-into-dag-quick")

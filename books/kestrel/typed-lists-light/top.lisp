@@ -61,6 +61,7 @@
 (include-book "all-greater-than-or-equal")
 (include-book "all-greater-than-or-equal-all")
 
+(include-book "decreasingp")
 (include-book "sortedp-less-than-or-equal")
 (include-book "sortedp-greater-than-or-equal")
 

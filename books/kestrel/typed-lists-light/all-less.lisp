@@ -120,3 +120,8 @@
                 (< n (len l)))
            (< (nth n l) bound))
   :hints (("Goal" :in-theory (enable all-< nth))))
+
+(defthmd all-<-when-all-<-of-take-and-all-<-of-nthcdr
+  (implies (and (all-< (take n x) bound)
+                (all-< (nthcdr n x) bound))
+           (all-< x bound)))
