@@ -1302,6 +1302,9 @@ constructed with @(see hons).</li>
 used to generate accessors.</li>
 <li>@(':require') adds a dependent type requirement; see the section on this
 feature in @(see defprod).</li>
+<li>@(':count-incr') adds the given natural number to the count function for
+this product, if producing a count function. For backward compatibility this
+can also be T which is equivalent to 1.</li>
 </ul>
 
 <h4>Tagsum Options</h4>
@@ -1553,6 +1556,10 @@ or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
 
 <li>@(':require') adds a dependent type requirement; see the section on this
 feature in @(see defprod).</li>
+
+<li>@(':count-incr') adds the given natural number to the count function for
+this product, if producing a count function. For backward compatibility this
+can also be T which is equivalent to 1.</li>
 
 </ul>
 

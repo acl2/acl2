@@ -82,7 +82,7 @@
    long               ;; xdoc long string for the whole product
    inline             ;; inline keywords
    extra-binder-names ;; extra x.foo b* binders for not-yet-implemented accessors
-   count-incr         ;; boolean -- add an extra 1 to count?
+   count-incr         ;; natural (or t meaning 1 for backward compat) -- add to count function for this product
    no-ctor-macros     ;; boolean -- omit maker and changer macros?
    )
   :tag :prod)
@@ -106,6 +106,7 @@
    inline             ;; inline kind, fix functions
    recp               ;; has a recusive field in some product
    typemacro          ;; defflexsum, deftagsum, defprod, etc
+   disable-type-prescription ;; disable the type prescription rules for the fixer and product constructors
    )
   :tag :sum)
 
