@@ -591,8 +591,8 @@
                          (monitor 'nil)
                          (step-limit '1000000)
                          (step-increment '100)
-                         (prune-precise '10000)             ; t, nil, or a max size
-                         (prune-approx '10000)              ; t, nil, or a max size
+                         (prune-precise '10000) ; t, nil, or a max size
+                         (prune-approx 't)      ; t, nil, or a max size
                          (tactics '(:rewrite :stp)) ; todo: try something with :prune
                          (expected-result ':pass)
                          (inputs-disjoint-from ':code)
@@ -839,8 +839,8 @@
                           (monitor 'nil)
                           (step-limit '1000000)
                           (step-increment '100)
-                          (prune-precise '10000)             ; t, nil, or a max size
-                          (prune-approx '10000)              ; t, nil, or a max size
+                          (prune-precise '10000) ; t, nil, or a max size
+                          (prune-approx 't)      ; t, nil, or a max size
                           (tactics '(:rewrite :stp)) ; todo: try something with :prune
                           (max-conflicts '1000000)
                           (inputs-disjoint-from ':code)
@@ -889,8 +889,8 @@
                      (monitor 'nil)
                      (step-limit '1000000)
                      (step-increment '100)
-                     (prune-precise '10000)             ; t, nil, or a max size
-                     (prune-approx '10000)              ; t, nil, or a max size
+                     (prune-precise '10000) ; t, nil, or a max size
+                     (prune-approx 't)      ; t, nil, or a max size
                      (tactics '(:rewrite :stp)) ; todo: try something with :prune
                      (max-conflicts '1000000)
                      (inputs-disjoint-from ':code)
