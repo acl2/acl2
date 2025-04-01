@@ -406,7 +406,7 @@
     (member-equal method-name methods-expected-to-fail)))
 
 ;; Returns (mv erp failedp state)
-(defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor state)
+(defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor state)
   (declare (xargs :stobjs state
                   :guard (and (jvm::method-idp method-id)
                               (or (eq :any methods-expected-to-fail)
@@ -419,10 +419,10 @@
                               (stringp root-of-class-hierarchy) ;a directory name
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              (or (booleanp prune-branches-approximately)
-                                  (natp prune-branches-approximately))
-                              (or (booleanp prune-branches-precisely)
-                                  (natp prune-branches-precisely))
+                              (or (booleanp prune-precise)
+                                  (natp prune-precise))
+                              (or (booleanp prune-approx)
+                                  (natp prune-approx))
                               (symbol-listp monitor))
                   :mode :program ;; for several reasons
                   ))
@@ -485,8 +485,8 @@
                                  nil    ;print-interval
                                  t ;memoizep
                                  t      ;vars-for-array-elements
-                                 prune-branches-approximately
-                                 prune-branches-precisely
+                                 prune-precise
+                                 prune-approx
                                  nil    ;call-stp ;t, nil, or a max-conflicts
                                  :auto  ;steps
                                  :smart ;; (if (eq variant :assert) :split :smart)
@@ -612,28 +612,28 @@
          (fut-result-listp (rest results)))))
 
 ;; Returns (mv erp results state).
-(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor results-acc state)
+(defun run-formal-tests-on-methods (method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
   (declare (xargs :guard ;; todo: flesh out:
                   (and
                    (or (eq :any methods-expected-to-fail)
                        (eq :auto methods-expected-to-fail)
                        (string-listp methods-expected-to-fail))
                    (booleanp  error-on-unexpectedp)
-                   (or (booleanp prune-branches-approximately)
-                       (natp prune-branches-approximately))
-                   (or (booleanp prune-branches-precisely)
-                       (natp prune-branches-precisely)))
+                   (or (booleanp prune-precise)
+                       (natp prune-precise))
+                   (or (booleanp prune-approx)
+                       (natp prune-approx)))
                   :stobjs state
                   :mode :program))
   (if (endp method-ids)
       (mv (erp-nil) (reverse results-acc) state)
     (let ((method-id (first method-ids)))
       (mv-let (erp failedp state)
-        (run-formal-test-on-method method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name nil root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor state)
+        (run-formal-test-on-method method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name nil root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor state)
         (if erp
             (mv erp nil state)
           (run-formal-tests-on-methods (rest method-ids)
-                                       methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor
+                                       methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
 
@@ -674,8 +674,8 @@
                      print
                      extra-rules
                      remove-rules
-                     prune-branches-approximately
-                     prune-branches-precisely
+                     prune-precise
+                     prune-approx
                      monitor
                      state
                      constant-pool)
@@ -689,10 +689,10 @@
                                   (string-listp methods-expected-to-fail) ;these are just bare names, for now
                                   )
                               (booleanp error-on-unexpectedp)
-                              (or (booleanp prune-branches-approximately)
-                                  (natp prune-branches-approximately))
-                              (or (booleanp prune-branches-precisely)
-                                  (natp prune-branches-precisely)))))
+                              (or (booleanp prune-precise)
+                                  (natp prune-precise))
+                              (or (booleanp prune-approx)
+                                  (natp prune-approx)))))
   (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
        ((when (not java-bootstrap-classes-root))
         (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")
@@ -754,7 +754,7 @@
        ;; (- (cw ")~%"))
        ;; Run the tests:
        ((mv erp results state)
-        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-user-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor
+        (run-formal-tests-on-methods test-method-ids methods-expected-to-fail error-on-unexpectedp method-info-alist class-name root-of-user-class-hierarchy print extra-rules remove-rules prune-precise prune-approx monitor
                       nil ;empty accumulator
                       state))
        ((when erp) (mv erp nil state constant-pool))
@@ -778,8 +778,8 @@
                                        (error-on-unexpectedp 't) ; for interactive use, cause hard error on unexpected result
                                        (extra-rules 'nil)
                                        (remove-rules 'nil)
-                                       (prune-branches-approximately 't)
-                                       (prune-branches-precisely '10000) ; todo: can explode
+                                       (prune-precise '10000) ; todo: can explode
+                                       (prune-approx 't)
                                        (monitor 'nil)
                                        (print 'nil))
   `(make-event-quiet (test-file-fn ,path-to-java-file
@@ -790,8 +790,8 @@
                                    ,print
                                    ,extra-rules
                                    ,remove-rules
-                                   ,prune-branches-approximately
-                                   ,prune-branches-precisely
+                                   ,prune-precise
+                                   ,prune-approx
                                    ,monitor
                                    state
                                    constant-pool)))
@@ -806,8 +806,8 @@
                                                 (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
                                                 (extra-rules 'nil)
                                                 (remove-rules 'nil)
-                                                (prune-branches-approximately 't)
-                                                (prune-branches-precisely '10000) ; todo: can explode
+                                                (prune-precise '10000) ; todo: can explode
+                                                (prune-approx 't)
                                                 (monitor 'nil)
                                                 (print ':brief) ;(print 'nil)
                                                 )
@@ -820,8 +820,8 @@
                    ,print
                    ,extra-rules
                    ,remove-rules
-                   ,prune-branches-approximately
-                   ,prune-branches-precisely
+                   ,prune-precise
+                   ,prune-approx
                    ,monitor
                    state
                    constant-pool)
