@@ -13,6 +13,8 @@
 
 (include-book "proposals")
 
+(include-book "../library-extensions/oset-nonemptyp")
+
 (include-book "kestrel/fty/pos-set" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -241,9 +243,9 @@
 
   (defruled certificate->proposal-in-cert-set->prop-set
     (implies (and (certificate-setp certs)
-                  (set::in cert certs))
-             (set::in (certificate->proposal cert)
-                      (cert-set->prop-set certs)))
+                  (set::in cert certs)
+                  (equal (certificate->proposal cert) prop))
+             (set::in prop (cert-set->prop-set certs)))
     :induct t)
 
   (defruled cert-set->prop-set-monotone
@@ -351,6 +353,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection cert-set->prop-set-ext
+  :extension cert-set->prop-set
+
+  (defruled in-of-cert-set->prop-set
+    (implies (certificate-setp certs)
+             (equal (set::in prop (cert-set->prop-set certs))
+                    (b* ((cert (set::nonempty-witness
+                                (certs-with-prop prop certs))))
+                      (and (set::in cert certs)
+                           (equal (certificate->proposal cert)
+                                  prop)))))
+    :use (only-if-part if-part)
+
+    :prep-lemmas
+
+    ((defruled only-if-part
+       (implies (certificate-setp certs)
+                (implies (set::in prop (cert-set->prop-set certs))
+                         (b* ((cert (set::nonempty-witness
+                                     (certs-with-prop prop certs))))
+                           (and (set::in cert certs)
+                                (equal (certificate->proposal cert)
+                                       prop)))))
+       :use (:instance set::nonemptyp-when-not-emptyp
+                       (set (certs-with-prop prop certs)))
+       :enable (set::nonemptyp
+                in-of-certs-with-prop
+                emptyp-of-certs-with-prop))
+
+     (defruled if-part
+       (implies (certificate-setp certs)
+                (b* ((cert (set::nonempty-witness
+                            (certs-with-prop prop certs))))
+                  (implies (and (set::in cert certs)
+                                (equal (certificate->proposal cert)
+                                       prop))
+                           (set::in prop (cert-set->prop-set certs)))))
+       :use (:instance certificate->proposal-in-cert-set->prop-set
+                       (cert (set::nonempty-witness
+                              (certs-with-prop prop certs))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define certs-with-author+round ((author addressp)
                                  (round posp)
                                  (certs certificate-setp))
@@ -414,6 +459,22 @@
                           (certs-with-author+round author round certs2)))
     :enable (in-of-certs-with-author+round
              set::expensive-rules)
+    :disable certs-with-author+round)
+
+  (defruled certificate->author-when-in-certs-with-author+round
+    (implies (set::in cert (certs-with-author+round author round certs))
+             (equal (certificate->author cert)
+                    (address-fix author)))
+    :rule-classes :forward-chaining
+    :enable in-of-certs-with-author+round
+    :disable certs-with-author+round)
+
+  (defruled certificate->round-when-in-certs-with-author+round
+    (implies (set::in cert (certs-with-author+round author round certs))
+             (equal (certificate->round cert)
+                    (pos-fix round)))
+    :rule-classes :forward-chaining
+    :enable in-of-certs-with-author+round
     :disable certs-with-author+round)
 
   (defrule certs-with-author+round-of-nil
@@ -633,6 +694,76 @@
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
     :disable certs-with-authors+round))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection certs-with-author+round-and-props-with-author+round
+  :short "Theorems relating
+          @(tsee certs-with-author+round),
+          @(tsee props-with-author+round), and
+          @(tsee cert-set->prop-set)."
+
+  (defruled cert-set->prop-set-of-certs-with-author+round
+    (implies (certificate-setp certs)
+             (equal (cert-set->prop-set
+                     (certs-with-author+round author round certs))
+                    (props-with-author+round
+                     author round (cert-set->prop-set certs))))
+    :enable (set::double-containment-no-backchain-limit
+             set::expensive-rules)
+
+    :prep-lemmas
+
+    ((defrule one
+       (implies (certificate-setp certs)
+                (implies (set::in prop
+                                  (cert-set->prop-set
+                                   (certs-with-author+round
+                                    author round certs)))
+                         (set::in prop
+                                  (props-with-author+round
+                                   author round (cert-set->prop-set certs)))))
+       :use (:instance certificate->proposal-in-cert-set->prop-set
+                       (cert (SET::NONEMPTY-WITNESS
+                              (certs-with-prop
+                               prop (certs-with-author+round
+                                     author round certs)))))
+       :enable (in-of-cert-set->prop-set
+                in-of-certs-with-author+round
+                in-of-props-with-author+round
+                certificate->author
+                certificate->round))
+
+     (defrule two
+       (implies (certificate-setp certs)
+                (implies (set::in prop
+                                  (props-with-author+round
+                                   author round (cert-set->prop-set certs)))
+                         (set::in prop
+                                  (cert-set->prop-set
+                                   (certs-with-author+round
+                                    author round certs)))))
+       :use (:instance certificate->proposal-in-cert-set->prop-set
+                       (cert (set::nonempty-witness
+                              (certs-with-prop prop certs)))
+                       (certs (certs-with-author+round author round certs)))
+       :enable (in-of-props-with-author+round
+                in-of-cert-set->prop-set
+                in-of-certs-with-author+round
+                certificate->author
+                certificate->round))))
+
+  (defruled props-with-author+round-of-cert-set->prop-set
+    (implies (certificate-setp certs)
+             (equal (props-with-author+round
+                     author round (cert-set->prop-set certs))
+                    (cert-set->prop-set
+                     (certs-with-author+round author round certs))))
+    :enable cert-set->prop-set-of-certs-with-author+round)
+
+  (theory-invariant
+   (incompatible (:rewrite cert-set->prop-set-of-certs-with-author+round)
+                 (:rewrite props-with-author+round-of-cert-set->prop-set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
