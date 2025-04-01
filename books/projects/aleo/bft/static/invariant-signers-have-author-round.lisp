@@ -285,6 +285,8 @@
     :prep-lemmas
     ((defrule lemma
        (implies (and (cert-with-author+round author round certs)
+                     (addressp author)
+                     (posp round)
                      (not (cert-with-author+round
                            author round (set::delete cert certs))))
                 (and (equal (certificate->author cert) author)
@@ -292,7 +294,8 @@
        :induct t
        :enable (cert-with-author+round
                 cert-with-author+round-of-insert-iff
-                set::delete))))
+                set::delete
+                emptyp-of-certificate-set-fix))))
 
   (defruled system-signers-have-author+round-p-of-store-certificate-next
     (implies (and (system-signers-have-author+round-p systate)
