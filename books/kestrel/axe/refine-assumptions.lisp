@@ -1,7 +1,7 @@
 ; Refining assumptions for better matching
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -23,6 +23,8 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;(local (in-theory (disable symbol-listp))) ; prevent inductions
@@ -118,12 +120,23 @@
                 (refine-assumption-for-matching assumption known-boolean-fns)))
   :hints (("Goal" :in-theory (enable refine-assumption-for-matching call-of-a-pred-except-not))))
 
-;returns a list of terms, each of which should be a function call term
+;;dup!
+(local
+ (defthm pseudo-term-listp-of-reverse-list
+   (equal (pseudo-term-listp (reverse-list acc))
+          (pseudo-term-listp (true-list-fix acc)))
+   :hints (("Goal" :in-theory (enable pseudo-term-listp reverse-list)))))
+
+;; Returns a list of terms, each of which should be a function call term.
+;; Currently reverses the order of the assumptions (but see comment below).
 (defund refine-assumptions-for-matching (assumptions known-boolean-fns acc)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
-                              (symbol-listp known-boolean-fns))))
+                              (symbol-listp known-boolean-fns)
+                              (true-listp acc))))
   (if (endp assumptions)
       acc
+    ;; TODO: Put this in (but existing proofs broke):
+    ;; (reverse-list acc) ; we reverse so that vars will be more likely to be added to the dag in the natural order (e.g., in0 should be added to the dag before in1).
     (let* ((assumption (first assumptions))
            (refined-assumption (refine-assumption-for-matching assumption known-boolean-fns)))
       (refine-assumptions-for-matching (rest assumptions)
@@ -144,6 +157,12 @@
                 (symbol-listp known-boolean-fns))
            (symbol-listp (map-ffn-symb (refine-assumptions-for-matching assumptions known-boolean-fns acc))))
   :hints (("Goal" :in-theory (enable refine-assumptions-for-matching))))
+
+(local
+  (defthm all-consp-ofreverse-list
+    (equal (all-consp (reverse-list acc))
+           (all-consp acc))
+    :hints (("Goal" :in-theory (enable all-consp reverse-list)))))
 
 (defthm all-consp-of-refine-assumptions-for-matching
   (implies (and (pseudo-term-listp assumptions)

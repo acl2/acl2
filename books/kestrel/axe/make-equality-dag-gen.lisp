@@ -15,20 +15,31 @@
 ;; See also make-equality-dag-basic
 
 (include-book "make-equality-dag")
-(include-book "dagify") ; reduce? ; for dag-or-term-to-dag ; todo: skip-proofs
+(include-book "dagify0") ; reduce?, for dag-or-term-to-dag
 
 ;; Returns (mv erp dag).
-(defun make-equality-dag-gen (dag-or-term1 dag-or-term2 different-vars-ok wrld)
-  (declare (xargs :mode :program ; todo
+;; todo: make and use a make-equality-dag-basic that doesn't depend on skip-proofs
+(defun make-equality-dag-gen (dag-or-term1 ; may be an untranslated term
+                              dag-or-term2 ; may be an untranslated term
+                              different-vars-ok
+                              wrld)
+  (declare (xargs :guard (booleanp different-vars-ok)
+                  :mode :program ; because dag-or-term-to-dag translates
                   ))
-  (b* (((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld)) ; todo: try dag-or-term-to-dag-basic?
+  (b* (((mv erp dag1) (dag-or-term-to-dag dag-or-term1 wrld))
        ((when erp) (mv erp nil))
-       ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld)) ; todo: try dag-or-term-to-dag-basic?
+       ((mv erp dag2) (dag-or-term-to-dag dag-or-term2 wrld))
        ((when erp) (mv erp nil))
        (vars1 (merge-sort-symbol< (dag-vars dag1)))
        (- (cw "Variables in DAG1: ~x0~%" vars1))
        (vars2 (merge-sort-symbol< (dag-vars dag2)))
        (- (cw "Variables in DAG2: ~x0~%" vars2))
+       (dag1-only-vars (set-difference-eq vars1 vars2)) ;todo: optimize since sorted
+       (dag2-only-vars (set-difference-eq vars2 vars1)) ;todo: optimize since sorted
+       (- (and dag1-only-vars
+               (cw "Variables in DAG1 only: ~X01.~%" dag1-only-vars nil)))
+       (- (and dag2-only-vars
+               (cw "Variables in DAG2 only: ~X01.~%" dag2-only-vars nil)))
        (different-varsp (not (perm vars1 vars2)))
        (- (and different-varsp
                different-vars-ok
@@ -40,7 +51,7 @@
     (make-equality-dag dag1 dag2)))
 
 (defun make-equality-dag-gen! (dag-or-term1 dag-or-term2 different-vars-ok wrld)
-  (declare (xargs :mode :program ; todo
+  (declare (xargs :mode :program ; because ultimately calls translate
                   ))
   (mv-let (erp dag)
     (make-equality-dag-gen dag-or-term1 dag-or-term2 different-vars-ok wrld)

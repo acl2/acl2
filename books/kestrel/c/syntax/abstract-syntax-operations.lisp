@@ -402,14 +402,14 @@
     :returns (ident identp)
     (dirdeclor-case
      dirdeclor
-     :ident dirdeclor.unwrap
-     :paren (declor->ident dirdeclor.unwrap)
-     :array (dirdeclor->ident dirdeclor.decl)
-     :array-static1 (dirdeclor->ident dirdeclor.decl)
-     :array-static2 (dirdeclor->ident dirdeclor.decl)
-     :array-star (dirdeclor->ident dirdeclor.decl)
-     :function-params (dirdeclor->ident dirdeclor.decl)
-     :function-names (dirdeclor->ident dirdeclor.decl))
+     :ident dirdeclor.ident
+     :paren (declor->ident dirdeclor.inner)
+     :array (dirdeclor->ident dirdeclor.declor)
+     :array-static1 (dirdeclor->ident dirdeclor.declor)
+     :array-static2 (dirdeclor->ident dirdeclor.declor)
+     :array-star (dirdeclor->ident dirdeclor.declor)
+     :function-params (dirdeclor->ident dirdeclor.declor)
+     :function-names (dirdeclor->ident dirdeclor.declor))
     :measure (dirdeclor-count dirdeclor))
 
   :hints (("Goal" :in-theory (enable o< o-finp))))

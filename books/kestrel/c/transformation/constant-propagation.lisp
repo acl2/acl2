@@ -1222,55 +1222,55 @@
         dirdeclor
         :ident (mv (dirdeclor-fix dirdeclor) env)
         :paren (b* (((mv unwrap env)
-                     (const-prop-declor dirdeclor.unwrap env)))
+                     (const-prop-declor dirdeclor.inner env)))
                  (mv (dirdeclor-paren unwrap) env))
         :array (b* (((mv decl env)
-                     (const-prop-dirdeclor dirdeclor.decl env))
+                     (const-prop-dirdeclor dirdeclor.declor env))
                     ((mv expr? - env)
                      (const-prop-expr-option dirdeclor.expr? env)))
                  (mv (make-dirdeclor-array
-                       :decl decl
-                       :tyquals dirdeclor.tyquals
+                       :declor decl
+                       :quals dirdeclor.quals
                        :expr? expr?)
                      env))
         :array-static1 (b* (((mv decl env)
-                             (const-prop-dirdeclor dirdeclor.decl env))
+                             (const-prop-dirdeclor dirdeclor.declor env))
                             ((mv expr - env)
                              (const-prop-expr dirdeclor.expr env)))
                          (mv (make-dirdeclor-array-static1
-                               :decl decl
-                               :tyquals dirdeclor.tyquals
+                               :declor decl
+                               :quals dirdeclor.quals
                                :expr expr)
                              env))
         :array-static2 (b* (((mv decl env)
-                             (const-prop-dirdeclor dirdeclor.decl env))
+                             (const-prop-dirdeclor dirdeclor.declor env))
                             ((mv expr - env)
                              (const-prop-expr dirdeclor.expr env)))
                          (mv (make-dirdeclor-array-static2
-                               :decl decl
-                               :tyquals dirdeclor.tyquals
+                               :declor decl
+                               :quals dirdeclor.quals
                                :expr expr)
                              env))
         :array-star (b* (((mv decl env)
-                          (const-prop-dirdeclor dirdeclor.decl env)))
+                          (const-prop-dirdeclor dirdeclor.declor env)))
                       (mv (make-dirdeclor-array-star
-                            :decl decl
-                            :tyquals dirdeclor.tyquals)
+                            :declor decl
+                            :quals dirdeclor.quals)
                           env))
         :function-params
         (b* (((mv decl env)
-              (const-prop-dirdeclor dirdeclor.decl env))
+              (const-prop-dirdeclor dirdeclor.declor env))
              ((mv params env)
               (const-prop-paramdecl-list dirdeclor.params env)))
           (mv (make-dirdeclor-function-params
-                :decl decl
+                :declor decl
                 :params params
                 :ellipsis dirdeclor.ellipsis)
               env))
         :function-names (b* (((mv decl env)
-                              (const-prop-dirdeclor dirdeclor.decl env)))
+                              (const-prop-dirdeclor dirdeclor.declor env)))
                           (mv (make-dirdeclor-function-names
-                                :decl decl
+                                :declor decl
                                 ;; TODO: deftrans added unneeded fixing function
                                 :names dirdeclor.names)
                               env))))

@@ -44,6 +44,7 @@
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/bv-lists/map-slice" :dir :system)
 (include-book "kestrel/bv-lists/bvxor-list" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 ;(include-book "kestrel/bv-lists/nth2" :dir :system) ; todo: drop?
 ;(include-book "kestrel/bv-lists/list-patterns" :dir :system) ; for getbit-is-always-0 and getbit-is-always-1
 (include-book "kestrel/lists-light/every-nth" :dir :system)
@@ -336,8 +337,14 @@
 
 ;; This justifies evaluating calls to EQL below by calling EQUAL.
 (local
- (defthm eql-becomes-eql
+ (defthm eql-becomes-equal
    (equal (eql x y)
+          (equal x y))))
+
+;; This justifies evaluating calls to = below by calling EQUAL.
+(local
+ (defthm =-becomes-equal
+   (equal (= x y)
           (equal x y))))
 
 ;; (defund getbit-is-always-0-unguarded (n items)
@@ -447,8 +454,9 @@
                   (add-to-end add-to-end arg1 arg2)
                   (coerce coerce-unguarded arg1 arg2) ;see coerce-unguarded-correct
                   (< <-unguarded arg1 arg2) ;see <-unguarded-correct
-                  (equal equal arg1 arg2)   ;primitive
-                  (eql equal arg1 arg2)   ;to evaluate eql, just call equal (primitive)
+                  (equal equal arg1 arg2)   ;primitive, unguarded
+                  (eql equal arg1 arg2)   ;to evaluate eql, just call equal (primitive, unguarded)
+                  (= equal arg1 arg2)   ;to evaluate =, just call equal (primitive, unguarded)
                   (list-equiv list-equiv arg1 arg2) ;unguarded
                   (prefixp prefixp arg1 arg2) ;unguarded
                   (lookup-equal lookup-equal-unguarded arg1 arg2) ;or open to assoc-equal?
@@ -566,6 +574,7 @@
                          (myif myif arg1 arg2 arg3)     ;unguarded
                          (boolif boolif arg1 arg2 arg3) ;unguarded
                          (array-elem-2d array-elem-2d arg1 arg2 arg3) ;drop?
+                         (bv-arrayp bv-arrayp arg1 arg2 arg3)
                          (update-nth update-nth-unguarded arg1 arg2 arg3)
                          (if if arg1 arg2 arg3) ;unguarded
                          (slice slice-unguarded arg1 arg2 arg3)

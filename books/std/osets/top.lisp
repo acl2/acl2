@@ -225,9 +225,9 @@ from the accompanying talk.</p>")
 (defun subset (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
   (mbe :logic (if (emptyp X)
-		  t
-		(and (in (head X) Y)
-		     (subset (tail X) Y)))
+                  t
+                (and (in (head X) Y)
+                     (subset (tail X) Y)))
        :exec (fast-subset X Y)))
 
 (defthm subset-type
@@ -371,9 +371,9 @@ from the accompanying talk.</p>")
 (defun mergesort (x)
   (declare (xargs :guard t))
   (mbe :logic (if (endp x)
-		  nil
-		(insert (car x)
-			(mergesort (cdr x))))
+                  nil
+                (insert (car x)
+                        (mergesort (cdr x))))
        :exec (mergesort-exec x)))
 
 
@@ -392,7 +392,7 @@ from the accompanying talk.</p>")
   (if (emptyp set-for-all-reduction)
       t
     (and (predicate (head set-for-all-reduction))
-	 (all (tail set-for-all-reduction)))))
+         (all (tail set-for-all-reduction)))))
 
 (encapsulate
  (((all-hyps) => *)
@@ -403,12 +403,12 @@ from the accompanying talk.</p>")
 
  (defthmd membership-constraint
    (implies (all-hyps)
-	    (implies (in arbitrary-element (all-set))
-		     (predicate arbitrary-element)))))
+            (implies (in arbitrary-element (all-set))
+                     (predicate arbitrary-element)))))
 
 (defthmd all-by-membership
   (implies (all-hyps)
-	   (all (all-set))))
+           (all (all-set))))
 
 (defund subset-trigger (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
@@ -416,9 +416,9 @@ from the accompanying talk.</p>")
 
 (defthm pick-a-point-subset-strategy
   (implies (and (syntaxp (rewriting-goal-lit mfc state))
-		(syntaxp (rewriting-conc-lit `(subset ,X ,Y) mfc state)))
-	   (equal (subset X Y)
-		  (subset-trigger X Y))))
+                (syntaxp (rewriting-conc-lit `(subset ,X ,Y) mfc state)))
+           (equal (subset X Y)
+                  (subset-trigger X Y))))
 
 (COMPUTED-HINTS::automate-instantiation
   :new-hint-name pick-a-point-subset-hint
@@ -471,7 +471,7 @@ from the accompanying talk.</p>")
 
 (defthmd sets-are-true-lists
   (implies (setp X)
-	   (true-listp X)))
+           (true-listp X)))
 
 (defthm sets-are-true-lists-compound-recognizer
        (implies (setp X)
@@ -691,7 +691,7 @@ from the accompanying talk.</p>")
 
 (defthm emptyp-subset-2
   (implies (emptyp Y)
-	   (equal (subset X Y)
+           (equal (subset X Y)
                   (emptyp X))))
 
 (defthm subset-reflexive
@@ -703,7 +703,7 @@ from the accompanying talk.</p>")
 (defthm subset-tail
   (subset (tail X) X)
   :rule-classes ((:rewrite)
-		 (:forward-chaining :trigger-terms ((tail x)))))
+                 (:forward-chaining :trigger-terms ((tail x)))))
 
 
 
@@ -1014,8 +1014,8 @@ from the accompanying talk.</p>")
 
 (defthm difference-preserves-subset
   (implies (subset X Y)
-	   (subset (difference X Z)
-		   (difference Y Z))))
+           (subset (difference X Z)
+                   (difference Y Z))))
 
 
 (defthm cardinality-type
@@ -1025,7 +1025,7 @@ from the accompanying talk.</p>")
 
 (defthm cardinality-zero-emptyp
   (equal (equal (cardinality x) 0)
-	 (emptyp x)))
+         (emptyp x)))
 
 (defthm cardinality-sfix-cancel
   (equal (cardinality (sfix X))
@@ -1094,11 +1094,11 @@ from the accompanying talk.</p>")
 
 (defthm intersect-cardinality-subset-2
   (equal (equal (cardinality (intersect X Y)) (cardinality X))
-	 (subset X Y)))
+         (subset X Y)))
 
 (defthm intersect-cardinality-non-subset-2
   (equal (< (cardinality (intersect x y)) (cardinality x))
-	 (not (subset x y))))
+         (not (subset x y))))
 
 
 
@@ -1120,7 +1120,7 @@ from the accompanying talk.</p>")
 
 (defthm mergesort-set-identity
   (implies (setp X)
-	   (equal (mergesort X) X)))
+           (equal (mergesort X) X)))
 
 
 
@@ -1136,14 +1136,14 @@ from the accompanying talk.</p>")
 
 (defthmd head-insert
   (equal (head (insert a X))
-	 (cond ((emptyp X) a)
-	       ((<< a (head X)) a)
-	       (t (head X)))))
+         (cond ((emptyp X) a)
+               ((<< a (head X)) a)
+               (t (head X)))))
 
 (defthmd tail-insert
   (equal (tail (insert a X))
-	 (cond ((emptyp X) nil)
-	       ((<< a (head X)) X)
+         (cond ((emptyp X) nil)
+               ((<< a (head X)) X)
                ((equal a (head X)) (tail X))
                (t (insert a (tail X))))))
 

@@ -72,7 +72,7 @@
        (consp (cdr spec))
        (symbolp (cadr spec)) ;; kind name
        (kind-casemacro-casespecs-p (cddr spec))))
-       
+
 
 
 (defun kind-casemacro-cases (var cases kwd-alist)
@@ -151,7 +151,7 @@
                ;; becomes (member-eq (foo-kind expr) '(:kind1 :kind2))
                `(member-eq (,kind-fn ,var-or-expr) ,(car rest-args)))
               (t (cond ((equal case-kinds prod-kinds)
-                        (er hard? macro-name "Bad argument: ~x0~% Must be one of ~x1 or a quoted subset.~%" 
+                        (er hard? macro-name "Bad argument: ~x0~% Must be one of ~x1 or a quoted subset.~%"
                             (car rest-args) case-kinds))
                        (t (er hard? macro-name "Bad argument: ~x0~% Must be one of ~x1 or a quoted subset of ~x2.~%"
                               (car rest-args)
@@ -163,7 +163,7 @@
 
        (allowed-keywordlist-keys (append case-kinds '(:otherwise :otherwise*)))
        (allowed-parenthesized-keys (append case-kinds '(acl2::otherwise :otherwise :otherwise* acl2::&)))
-                     
+
        ((mv kwd-alist rest)
         (extract-keywords macro-name
                           allowed-keywordlist-keys
@@ -184,7 +184,7 @@
                          ;; weaken this?
                          (subsetp (strip-cars rest) allowed-parenthesized-keys))))
         (er hard? macro-name "Malformed cases: ~x0~%" rest))
-       
+
        (kwd-alist (reverse kwd-alist))
 
        (keys (if kwd-alist
@@ -206,7 +206,7 @@
        (kind-kwd-alist (if redundant-otherwise*
                            (remove-assoc-eq :otherwise* kind-kwd-alist)
                          kind-kwd-alist))
-                   
+
        (body
         (if (eq (caar kind-kwd-alist) :otherwise*)
             (cdar kind-kwd-alist)
@@ -216,6 +216,7 @@
                                'acl2::acl2
                              var))))
             `(let* ((,var.kind (,kind-fn ,var)))
+               (declare (ignorable ,var.kind)) ; for one-summand sum types
                (case ,var.kind
                  . ,(kind-casemacro-cases var case-specs kind-kwd-alist)))))))
     body))
@@ -262,7 +263,7 @@
     (cons `(,test (b* (((,ctor ,var :quietp t))) ,entry))
           (cond-casemacro-cases var cond-var (cdr cases) kwd-alist))))
   ;;       `((otherwise (b* (((,entry))))
-  ;;   (cons `(,cond-expr 
+  ;;   (cons `(,cond-expr
   ;; (b* (((when (atom kwd-alist)) nil)
   ;;      ((when (eq (caar kwd-alist) :otherwise))
   ;;       `((otherwise ,(cdar kwd-alist))))
@@ -307,7 +308,7 @@
                            (list (car rest-args))
                          (cadr (car rest-args))))
              ((unless (subsetp-eq caselist case-kinds))
-              (er hard? macro-name "Bad argument: ~x0~% Must be one of ~x1 or a quoted subset.~%" 
+              (er hard? macro-name "Bad argument: ~x0~% Must be one of ~x1 or a quoted subset.~%"
                   (car rest-args) case-kinds))
              (new-args (cond-casemacro-list-conditions caselist
                                                        case-kinds))
@@ -327,7 +328,7 @@
         ;;        ;; becomes (member-eq (foo-kind expr) '(:kind1 :kind2))
         ;;        `(let ((,cond-var ,var-or-expr))
         ;;           (or . ,(cond-casemacro-list-conditions (cadr rest-args) case-kinds))))
-        ;;       (t (er hard? macro-name "Bad argument: ~x0~% Must be one of ~x1 or a quoted subset.~%" 
+        ;;       (t (er hard? macro-name "Bad argument: ~x0~% Must be one of ~x1 or a quoted subset.~%"
         ;;              (car rest-args) case-kinds))))
        ((when (consp var-or-expr))
         (er hard? macro-name "Expected a variable, rather than: ~x0" var-or-expr))
@@ -335,7 +336,7 @@
 
        (allowed-keywordlist-keys (append case-kinds '(:otherwise)))
        (allowed-parenthesized-keys (append case-kinds '(acl2::otherwise :otherwise acl2::&)))
-                     
+
        ((mv kwd-alist rest)
         (extract-keywords macro-name
                           allowed-keywordlist-keys
@@ -356,7 +357,7 @@
                          ;; weaken this?
                          (subsetp (strip-cars rest) allowed-parenthesized-keys))))
         (er hard? macro-name "Malformed cases: ~x0~%" rest))
-       
+
        (kwd-alist (reverse kwd-alist))
 
        (keys (if kwd-alist
@@ -373,6 +374,6 @@
         (er hard? macro-name "Otherwise case must be last"))
 
        (kind-kwd-alist (or kwd-alist (pairlis$ keys vals)))
-                   
+
        (body `(cond . ,(cond-casemacro-cases var cond-var case-specs kind-kwd-alist))))
     body))

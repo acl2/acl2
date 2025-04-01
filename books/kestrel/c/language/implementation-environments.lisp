@@ -12,12 +12,14 @@
 (in-package "C")
 
 (include-book "../insertion-sort")
+(include-book "../insertion-sort-of-integers-from-to")
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "std/lists/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -129,6 +131,23 @@
   (defret uchar-format->max-lower-bound
     (>= max 255)
     :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uchar-format-8 ()
+  :returns (format uchar-formatp)
+  :short "The @('unsigned char') format defined by 8 bits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and most common format for @('unsigned char')."))
+  (make-uchar-format :size 8)
+
+  ///
+
+  (defruled uchar-format->max-of-uchar-format-8
+    (equal (uchar-format->max (uchar-format-8))
+           255)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,6 +305,29 @@
     ((:linear
       :trigger-terms ((schar-format->min schar-format uchar-format))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-format-8tcnt ()
+  :returns (format schar-formatp)
+  :short "The @('signed char') format defined by
+          8 bits, two's complement, and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and most common format for @('signed char')."))
+  (make-schar-format :signed (signed-format-twos-complement)
+                     :trap nil)
+
+  ///
+
+  (defruled schar-format->max-of-schar-format-8tcnt
+    (equal (schar-format->max (schar-format-8tcnt) (uchar-format-8))
+           127))
+
+  (defruled schar-format->min-of-schar-format-8tcnt
+    (equal (schar-format->min (schar-format-8tcnt) (uchar-format-8))
+           -128)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod char-format
@@ -363,6 +405,32 @@
     ((:linear
       :trigger-terms
       ((char-format->min char-format uchar-format schar-format))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-format-8u ()
+  :returns (format char-formatp)
+  :short "The @('char') format defined by 8 bits and unsignedness."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest format of @('char').
+     It is not clear whether it is the most common or not."))
+  (make-char-format :signedp nil)
+
+  ///
+
+  (defruled char-format->max-of-char-format-8u
+    (equal (char-format->max (char-format-8u)
+                             (uchar-format-8)
+                             (schar-format-8tcnt))
+           255))
+
+  (defruled char-format->min-of-char-format-8u
+    (equal (char-format->min (char-format-8u)
+                             (uchar-format-8)
+                             (schar-format-8tcnt))
+           0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -442,7 +510,15 @@
         (uinteger-bit-roles-exponents (cdr roles))))
     (cons (uinteger-bit-role-value->exp role)
           (uinteger-bit-roles-exponents (cdr roles))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled uinteger-bit-roles-exponents-of-append
+    (equal (uinteger-bit-roles-exponents (append roles1 roles2))
+           (append (uinteger-bit-roles-exponents roles1)
+                   (uinteger-bit-roles-exponents roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -461,7 +537,15 @@
         (sinteger-bit-roles-exponents (cdr roles))))
     (cons (sinteger-bit-role-value->exp role)
           (sinteger-bit-roles-exponents (cdr roles))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-exponents-of-append
+    (equal (sinteger-bit-roles-exponents (append roles1 roles2))
+           (append (sinteger-bit-roles-exponents roles1)
+                   (sinteger-bit-roles-exponents roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -477,7 +561,15 @@
         ((sinteger-bit-role-case (car roles) :sign)
          (1+ (sinteger-bit-roles-sign-count (cdr roles))))
         (t (sinteger-bit-roles-sign-count (cdr roles))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-sign-count-of-append
+    (equal (sinteger-bit-roles-sign-count (append roles1 roles2))
+           (+ (sinteger-bit-roles-sign-count roles1)
+              (sinteger-bit-roles-sign-count roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -502,7 +594,7 @@
        ((when (= n 0)) nil)
        (sorted-exponents (insertion-sort exponents))
        ((unless (equal sorted-exponents
-                       (acl2::integers-from-to 0 (1- n))))
+                       (integers-from-to 0 (1- n))))
         nil))
     t)
   :hooks (:fix))
@@ -533,7 +625,7 @@
        ((when (= m 0)) nil)
        (sorted-exponents (insertion-sort exponents))
        ((unless (equal sorted-exponents
-                       (acl2::integers-from-to 0 (1- m))))
+                       (integers-from-to 0 (1- m))))
         nil)
        ((unless (= (sinteger-bit-roles-sign-count roles) 1)) nil))
     t)
@@ -573,7 +665,13 @@
       :hints (("Goal"
                :in-theory (e/d (uinteger-bit-roles-wfp
                                 uinteger-bit-roles-value-count-alt-def)
-                               (uinteger-bit-roles-value-count)))))))
+                               (uinteger-bit-roles-value-count))))))
+
+  (defruled uinteger-bit-roles-value-count-of-append
+    (equal (uinteger-bit-roles-value-count (append roles1 roles2))
+           (+ (uinteger-bit-roles-value-count roles1)
+              (uinteger-bit-roles-value-count roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -609,7 +707,13 @@
       :hints (("Goal"
                :in-theory (e/d (sinteger-bit-roles-wfp
                                 sinteger-bit-roles-value-count-alt-def)
-                               (sinteger-bit-roles-value-count)))))))
+                               (sinteger-bit-roles-value-count))))))
+
+  (defruled sinteger-bit-roles-value-count-of-append
+    (equal (sinteger-bit-roles-value-count (append roles1 roles2))
+           (+ (sinteger-bit-roles-value-count roles1)
+              (sinteger-bit-roles-value-count roles2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -666,7 +770,15 @@
                  (uinteger-bit-roles-value-count uroles)))
     :induct t
     :enable (sinteger-bit-roles-value-count
-             uinteger-bit-roles-value-count)))
+             uinteger-bit-roles-value-count))
+
+  (defruled uinteger-sinteger-bit-roles-wfp-of-append
+    (implies (equal (len uroles1) (len sroles1))
+             (equal (uinteger-sinteger-bit-roles-wfp (append uroles1 uroles2)
+                                                     (append sroles1 sroles2))
+                    (and (uinteger-sinteger-bit-roles-wfp uroles1 sroles1)
+                         (uinteger-sinteger-bit-roles-wfp uroles2 sroles2))))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -765,6 +877,174 @@
            (sinteger-bit-roles-for-uinteger-bit-roles-loop (cdr uroles) n)))
        (cons srole sroles))
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uinteger-bit-roles-inc-n ((n natp))
+  :returns (roles uinteger-bit-role-listp)
+  :short "List of @('n') unsigned integer value bit roles,
+          starting with exponent 0, in increasing exponent order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The list of bit roles is well-formed, if @('n') is not 0."))
+  (b* (((when (zp n)) nil)
+       (role (uinteger-bit-role-value (1- n)))
+       (roles (uinteger-bit-roles-inc-n (1- n))))
+    (append roles (list role)))
+  :prepwork ((local (in-theory (enable nfix))))
+  :hooks (:fix)
+
+  ///
+
+  (defret len-of-uinteger-bit-roles-inc-n
+    (equal (len roles)
+           (nfix n))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defruled uinteger-bit-roles-exponents-of-uinteger-bit-roles-inc-n
+    (equal (uinteger-bit-roles-exponents
+            (uinteger-bit-roles-inc-n n))
+           (integers-from-to 0 (1- (nfix n))))
+    :induct t
+    :enable (uinteger-bit-roles-exponents
+             uinteger-bit-roles-exponents-of-append
+             acl2::integers-from-to-separate-max
+             ifix
+             nfix))
+
+  (defruled uinteger-bit-roles-value-count-of-uinteger-bit-roles-inc-n
+    (equal (uinteger-bit-roles-value-count
+            (uinteger-bit-roles-inc-n n))
+           (nfix n))
+    :enable (uinteger-bit-roles-value-count-alt-def
+             uinteger-bit-roles-exponents-of-uinteger-bit-roles-inc-n
+             acl2::len-of-integers-from-to
+             ifix)
+    :disable uinteger-bit-roles-inc-n)
+
+  (defruled uinteger-bit-roles-wfp-of-uinteger-bit-roles-inc-n
+    (implies (not (zp n))
+             (uinteger-bit-roles-wfp
+              (uinteger-bit-roles-inc-n n)))
+    :disable uinteger-bit-roles-inc-n
+    :enable (uinteger-bit-roles-wfp
+             uinteger-bit-roles-exponents-of-uinteger-bit-roles-inc-n
+             atom
+             acl2::len-of-integers-from-to
+             ifix
+             insertion-sort-of-integers-from-to)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sinteger-bit-roles-inc-n ((n natp))
+  :returns (roles sinteger-bit-role-listp)
+  :short "List of @('n') signed integer value bit roles,
+          starting with exponent 0, in increasing exponent order."
+  (b* (((when (zp n)) nil)
+       (role (sinteger-bit-role-value (1- n)))
+       (roles (sinteger-bit-roles-inc-n (1- n))))
+    (append roles (list role)))
+  :prepwork ((local (in-theory (enable nfix))))
+  :hooks (:fix)
+
+  ///
+
+  (defret len-of-sinteger-bit-roles-inc-n
+    (equal (len roles)
+           (nfix n))
+    :hints (("Goal" :induct t :in-theory (enable len))))
+
+  (defruled sinteger-bit-roles-exponents-of-sinteger-bit-roles-inc-n
+    (equal (sinteger-bit-roles-exponents
+            (sinteger-bit-roles-inc-n n))
+           (integers-from-to 0 (1- (nfix n))))
+    :induct t
+    :enable (sinteger-bit-roles-exponents
+             sinteger-bit-roles-exponents-of-append
+             acl2::integers-from-to-separate-max
+             ifix
+             nfix))
+
+  (defruled sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n
+    (equal (sinteger-bit-roles-value-count
+            (sinteger-bit-roles-inc-n n))
+           (nfix n))
+    :disable sinteger-bit-roles-inc-n
+    :enable (sinteger-bit-roles-value-count-alt-def
+             sinteger-bit-roles-exponents-of-sinteger-bit-roles-inc-n
+             acl2::len-of-integers-from-to
+             ifix))
+
+  (defruled sinteger-bit-roles-sign-count-of-sinteger-bit-roles-inc-n
+    (equal (sinteger-bit-roles-sign-count (sinteger-bit-roles-inc-n n))
+           0)
+    :induct t
+    :enable (sinteger-bit-roles-sign-count-of-append
+             sinteger-bit-roles-sign-count)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sinteger-bit-roles-inc-n-and-sign ((n natp))
+  :returns (roles sinteger-bit-role-listp)
+  :short "List of @('n') signed integer value bit roles,
+          starting with exponent 0, in increasing exponent order,
+          and with a sign bit added at the end."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The list of bit roles is well-formed, if @('n') is not 0."))
+  (append (sinteger-bit-roles-inc-n n)
+          (list (sinteger-bit-role-sign)))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
+    (implies (not (zp n))
+             (sinteger-bit-roles-wfp
+              (sinteger-bit-roles-inc-n-and-sign n)))
+    :enable (sinteger-bit-roles-wfp
+             sinteger-bit-roles-exponents-of-append
+             sinteger-bit-roles-exponents-of-sinteger-bit-roles-inc-n
+             atom
+             ifix
+             sinteger-bit-roles-sign-count-of-append
+             sinteger-bit-roles-sign-count-of-sinteger-bit-roles-inc-n
+             insertion-sort-of-integers-from-to
+             acl2::len-of-integers-from-to))
+
+  (defruled sinteger-bit-roles-exponents-of-sinteger-bit-roles-inc-n-and-sign
+    (equal (sinteger-bit-roles-exponents
+            (sinteger-bit-roles-inc-n-and-sign n))
+           (integers-from-to 0 (1- (nfix n))))
+    :enable (sinteger-bit-roles-exponents-of-append
+             sinteger-bit-roles-exponents-of-sinteger-bit-roles-inc-n))
+
+  (defruled sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign
+    (equal (sinteger-bit-roles-value-count
+            (sinteger-bit-roles-inc-n-and-sign n))
+           (nfix n))
+    :enable (sinteger-bit-roles-value-count-of-append
+             sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
+  :short "Mutual well-formedness of the lists of bit roles
+          from @(tsee uinteger-bit-roles-inc-n)
+          and @(tsee sinteger-bit-roles-inc-n-and-sign)."
+  (implies (and (natp n)
+                (>= n 2))
+           (uinteger-sinteger-bit-roles-wfp
+            (uinteger-bit-roles-inc-n n)
+            (sinteger-bit-roles-inc-n-and-sign (1- n))))
+  :induct t
+  :enable (uinteger-sinteger-bit-roles-wfp
+           uinteger-bit-roles-inc-n
+           sinteger-bit-roles-inc-n-and-sign
+           sinteger-bit-roles-inc-n
+           uinteger-sinteger-bit-roles-wfp-of-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -907,6 +1187,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define uinteger-format-inc-npnt ((n posp))
+  :returns (format uinteger-formatp)
+  :short "The unsigned integer format defined by
+          @('n') increasing value bits,
+          no padding bits,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is parameterized over @('n'), which must be positiive."))
+  (make-uinteger-format
+   :bits (uinteger-bit-roles-inc-n (pos-fix n))
+   :traps nil)
+  :hooks (:fix)
+
+  ///
+
+  (defruled uinteger-format->max-of-uinteger-format-inc-npnt
+    (equal (uinteger-format->max (uinteger-format-inc-npnt n))
+           (1- (expt 2 (pos-fix n))))
+    :enable (uinteger-format->max
+             pos-fix
+             uinteger-bit-roles-value-count-of-uinteger-bit-roles-inc-n)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sinteger-format-inc-sign-tcnpnt ((n posp))
+  :returns (format sinteger-formatp)
+  :short "The signed integer format defined by
+          @('n') increasing value bits,
+          a sign bit at the end,
+          two's complement signed format,
+          no padding bits,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is parameterized over @('n'), which must be positiive."))
+  (make-sinteger-format
+   :bits (sinteger-bit-roles-inc-n-and-sign (pos-fix n))
+   :signed (signed-format-twos-complement)
+   :traps nil)
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
+    (equal (sinteger-format->max (sinteger-format-inc-sign-tcnpnt n))
+           (1- (expt 2 (pos-fix n))))
+    :enable
+    (sinteger-format->max
+     sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign))
+
+  (defruled sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
+    (equal (sinteger-format->min (sinteger-format-inc-sign-tcnpnt n))
+           (- (expt 2 (pos-fix n))))
+    :enable
+    (sinteger-format->min
+     sinteger-bit-roles-value-count-of-sinteger-bit-roles-inc-n-and-sign)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod uinteger+sinteger-format
   :short "Fixtype of pairs consisting of
           a format of unsigned integer objects
@@ -1011,6 +1353,46 @@
                     (uroles (uinteger-format->bits
                              (uinteger+sinteger-format->unsigned
                               (integer-format->pair format)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format-inc-sign-tcnpnt ((size posp))
+  :guard (not (equal size 1))
+  :returns (format integer-formatp)
+  :short "The unsigned and signed integer format defined by
+          a size greater than 1,
+          increasing value bits,
+          a sign bit at the end (for the signed format),
+          two's complement signed format,
+          no padding bits,
+          and no trap representations."
+  (make-integer-format
+   :pair (make-uinteger+sinteger-format
+          :unsigned (uinteger-format-inc-npnt size)
+          :signed (sinteger-format-inc-sign-tcnpnt (1- (pos-fix size)))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable posp
+            uinteger-format-inc-npnt
+            sinteger-format-inc-sign-tcnpnt
+            uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
+            sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign)))
+  :hooks (:fix)
+
+  ///
+
+  (defruled integer-format->size-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (equal (integer-format->size (integer-format-inc-sign-tcnpnt size))
+                    (pos-fix size)))
+    :enable (integer-format->size
+             uinteger-format-inc-npnt
+             sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
+             sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
+             posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

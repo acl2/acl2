@@ -14,7 +14,8 @@
 
 (include-book "axe-rules")
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
-(include-book "kestrel/utilities/split-list-fast" :dir :system)
+(include-book "kestrel/utilities/split-list-fast-defs" :dir :system)
+(local (include-book "kestrel/utilities/split-list-fast" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;; Stored-rules are what is stored in rule-alists / rule-dbs.

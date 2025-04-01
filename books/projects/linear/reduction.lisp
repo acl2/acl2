@@ -5,10 +5,10 @@
 (local (include-book "support/cramer"))
 
 ;;----------------------------------------------------------------------------------------
-;; Row Reduction
+;; Reduced Row-Echelon Form
 ;;----------------------------------------------------------------------------------------
 
-;; We begin by defining the notion of a row-echelon matrix a of m rows.
+;; We begin by defining the notion of a reduced row-echelon matrix a of m rows.
 
 ;; Find the index of the first nonzero entry of a nonzero row r:
 
@@ -75,7 +75,7 @@
 	   (equal (nth j (nth i a))
 	          (if (= i k) (f1) (f0)))))
 
-;; Check that a is in row-echelon form.
+;; Check that a is in reduced row-echelon form.
 ;; The auxiliary function checks that the requirements are satisfied for
 ;; the first k rows of a:
 
@@ -91,7 +91,7 @@
 (defund row-echelon-p (a)
   (row-echelon-p-aux a (len a) (len a)))
 
-;; Properties of row echelon matrices:
+;; Properties of reduced row echelon matrices:
 
 (defthmd flist0p-row
   (implies (and (fmatp a m n) (natp m) (natp n) (row-echelon-p a)
@@ -121,8 +121,12 @@
 		  (fdelta i k))))
 
 
-;; Next, we define a process that converts a matrix to row-echelon form by applying
-;; a sequence of "elementary row operations".
+;;----------------------------------------------------------------------------------------
+;; Conversion to Reduced Row-Echelon Form
+;;----------------------------------------------------------------------------------------
+
+;; Next, we define a process that converts a matrix to reduced row-echelon form by 
+;; applying a sequence of "elementary row operations".
 
 ;; 3 types of elementary row operations:
 
@@ -207,8 +211,8 @@
 		      i k)
 		k j m))
 
-;; The following auxiliary function completes the conversion of a to row-echelon form under the
-;; assumption (row-echelon-p-aux a m k), where 0 <= k <= m:
+;; The following auxiliary function completes the conversion of a to reduced row-echelon form under 
+;; the assumption (row-echelon-p-aux a m k), where 0 <= k <= m:
 
 (defun row-reduce-aux (a m k)
   (declare (xargs :measure (nfix (- m k))))
@@ -218,7 +222,7 @@
 			m (1+ k))
       a)))
 
-;; Convert a to row-echelon form:
+;; Convert a to reduced row-echelon form:
 
 (defund row-reduce (a)
   (row-reduce-aux a (len a) 0))
@@ -231,7 +235,7 @@
   (implies (and (natp m) (natp n) (fmatp a m n))
 	   (fmatp (row-reduce a) m n)))
 
-;; If a is already in row-echelon form, then (row-reduce a) = a:
+;; If a is already in reduced row-echelon form, then (row-reduce a) = a:
 
 (defthmd row-reduce-row-echelon-p
   (implies (and (posp m) (posp n) (fmatp a m n) (row-echelon-p a))
@@ -274,7 +278,7 @@
 
 ;; We shall also show that the row rank of an mxn matrix cannot exceed n.
 ;; To this end, we examine the list of indices of the leading 1s of the 
-;; nonzero rows of a row-echelon matrix a:
+;; nonzero rows of a reduced row-echelon matrix a:
 
 (defun lead-inds (a)
   (if (and (consp a) (not (flist0p (car a))))
@@ -878,7 +882,7 @@
       ()
     (cons (car a) (first-rows (1- q) (cdr a)))))
 
-;; Note that aq is a row-echelon qxn matrix of row-rank q:
+;; Note that aq is a reduced row-echelon qxn matrix of row-rank q:
 
 (defthmd fmatp-first-rows
   (implies (and (fmatp a m n) (natp m) (natp n)

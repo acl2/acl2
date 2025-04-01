@@ -350,9 +350,7 @@ book that depends on Glucose being installed.</p>")
 ; then including the book.
 (include-book "acl2s/doc" :dir :system) ; no_port
 
-(include-book "projects/smtlink/top" :dir :system :ttags :all)
-
-(include-book "projects/doc" :dir :system)
+(include-book "projects/top" :dir :system)
 
 ;(include-book "kestrel/top" :dir :system)
 (include-book "kestrel/alists-light/top" :dir :system)

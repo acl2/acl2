@@ -15,14 +15,11 @@
 (local (include-book "expt"))
 (local (include-book "expt2"))
 (local (include-book "times"))
+(local (include-book "times-and-divide"))
 (local (include-book "floor"))
+(local (include-book "integer-length"))
 
-;dup
-;define in terms of lg?
-(defund power-of-2p (x)
-  (declare (xargs :guard t))
-  (and (natp x) ;otherwise, this would count 1/2 but not 1/4
-       (= x (expt 2 (+ -1 (integer-length x))))))
+(include-book "power-of-2p-def")
 
 ;; (defthm integerp-when-power-of-2p
 ;;   (implies (power-of-2p x)
@@ -71,7 +68,7 @@
   (implies (and (syntaxp (quotep k))
                 (power-of-2p k)
                 (<= n (+ -1 (integer-length k)))
-                (Integerp y)
+                (integerp y)
                 (integerp n))
            (integerp (* k (/ (expt 2 n)) y)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
@@ -112,4 +109,43 @@
   (implies (power-of-2p x)
            (equal (expt 2 (integer-length x))
                   (* 2 x)))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(defthmd evenp-when-power-of-2p
+  (implies (power-of-2p x)
+           (equal (evenp x)
+                  (not (equal 1 x))))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(local (include-book "floor-and-expt"))
+
+(defthm power-of-2p-of-floor-of-2
+  (implies (power-of-2p x)
+           (equal (power-of-2p (floor x 2))
+                  (not (equal 1 x))))
+  :hints (("Goal" :in-theory (enable power-of-2p))))
+
+(local
+ (defthmd *-of-2-and-expt
+   (implies (integerp i)
+            (equal (* 2 (expt 2 i))
+                   (expt 2 (+ 1 i))))
+   :hints (("Goal" :in-theory (enable expt-of-+)))))
+
+(defthm power-of-2p-of-*-of-1/2-when-power-of-2p
+  (implies (power-of-2p x)
+           (equal (power-of-2p (* 1/2 x))
+                  (not (equal 1 x))))
+  :hints (("Goal" :in-theory (enable power-of-2p *-of-2-and-expt))))
+
+(defthmd power-of-2p-when-power-of-2p-of-*-of-1/2
+  (implies (power-of-2p (* 1/2 x))
+           (power-of-2p x))
+  :hints (("Goal" :in-theory (enable power-of-2p *-of-2-and-expt))))
+
+;; a power of 2 is usually even
+(defthm integerp-of-*-1/2-when-power-of-2p
+  (implies (power-of-2p x)
+           (equal (integerp (* 1/2 x))
+                  (not (equal 1 x))))
   :hints (("Goal" :in-theory (enable power-of-2p))))

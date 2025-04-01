@@ -20,7 +20,6 @@
 ;(include-book "memberp" )
 (include-book "memberp2" )
 (include-book "update-subrange2" )
-(local (include-book "take2" ))
 ;(include-book "repeat-tail" )
 ;(include-book "perm" )
 (include-book "subrange" )
@@ -28,6 +27,7 @@
 (include-book "firstn" )
 (include-book "all-equal-dollar2" )
 ;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "take2" ))
 (local (include-book "len" ))
 (local (include-book "cons" ))
 (local (include-book "nth" ))
@@ -50,12 +50,7 @@
 
 ;; todo: consider putting back the stuff with finalcdr
 
-;(in-theory (disable LIST::FIX-OF-NTHCDR)) ;we have one already
-
-
 ;bozo had to enable take a lot to prove subrange rules - prove take rules first instead??
-
-;(in-theory (disable LIST::CDR-OF-FIRSTN)) ;bozo
 
 ;; (in-theory (disable take))
 
@@ -89,13 +84,10 @@
            (equal (SUBRANGE 0 n (UPDATE-NTH n val lst))
                   (append (SUBRANGE 0 (+ -1 n) lst) (list val))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (take subrange update-nth append ;LIST::EQUAL-APPEND-REDUCTION!
-                                 equal-of-append
-                                 )
+           :in-theory (e/d (take subrange update-nth append equal-of-append)
                            (take-update-nth)))))
 
-;(in-theory (enable LIST::EQUAL-APPEND-REDUCTION!)) ;trying... yuck
-(local (in-theory (enable equal-of-append)))
+;(local (in-theory (enable equal-of-append)))
 
 ;bozo do this stuff better...
 (defthm subrange-of-update-nth-hack-expensive
@@ -106,12 +98,10 @@
                 )
            (equal (SUBRANGE 0 n (UPDATE-NTH m val lst))
                   (append (SUBRANGE 0 (+ -1 n) lst) (list val))))
+  :hints (("Goal" :in-theory (enable equal-of-append)))
   ;; :hints (("Goal" :do-not '(generalize eliminate-destructors)
   ;;          :in-theory (e/d (subrange update-nth append) (take-update-nth))))
   )
-
-;move to axe?
-;; (defthmd cons-iff (iff (cons x y) t))
 
 (local
  (defun double-cdr-induct (x y)
@@ -140,7 +130,6 @@
                          (take (+ -1 (len lst1)) lst2))))
   :hints (("Goal" :in-theory (e/d (take ;len
                                    nth-of-0
-                                   ;;LIST::LEN-OF-CDR-BETTER
                                    equal-when-equal-of-car-and-car
                                    )
                                   (len
@@ -219,16 +208,15 @@
                           (nthcdr (+ 1 (nfix n)) lst))))
   :hints (("Goal" :in-theory (enable update-nth take nthcdr))))
 
-
 (defthm update-nth-rewrite-perm
   (implies (and (< n (len lst))
                 (<= 0 n)
                 (integerp n)
                 )
            (perm (update-nth n val lst)
-                      (append (take n lst)
-                              (list val)
-                              (nthcdr (+ 1 n) lst))))
+                 (append (take n lst)
+                         (list val)
+                         (nthcdr (+ 1 n) lst))))
   :hints (("Goal" :in-theory (enable  update-nth-rewrite))))
 
 ;; (thm
@@ -239,9 +227,6 @@
 ;;                      (BAG::REMOVE-1 (nth n lst) lst)))
 ;;  :hints (("Goal" :in-theory (e/d (update-nth bag::remove-1 perm nth-equal-car) (nth-of-cdr))
 ;;           :do-not '(generalize eliminate-destructors))))
-
-
-
 
 ;; (defthm fw-2
 ;;   (implies (and (perm bag1 (update-nth n val bag2))
@@ -266,8 +251,6 @@
 ;;  (equal (PERM lst
 ;;                    (cons (NTH n lst) lst2))
 
-;cdr of subrange, car of subrange?
-
 (defthm cons-of-nth-and-nth-plus-1
   (implies (and (integerp n)
                 (<= 0 n))
@@ -288,7 +271,7 @@
            (equal (append (subrange start end lst) (nthcdr n lst))
                   (nthcdr (+ n -1 (- start end)) lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable take subrange nthcdr-of-cdr-combine-strong))))
+           :in-theory (enable take subrange nthcdr-of-cdr-combine-strong equal-of-append))))
 
 (defthm append-nthcdr-subrange
   (implies (and (equal n (+ 1 end))
@@ -303,9 +286,7 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :use (:instance append-subrange-nthcdr)
            :in-theory (disable append-subrange-nthcdr
-;                               LIST::EQUAL-APPEND-REDUCTION!  ;bozo
-                               equal-of-append
-                               ))))
+                               equal-of-append))))
 
 
 ;; (thm
@@ -338,8 +319,6 @@
                 (integerp n))
            (memberp (nth n lst1) lst2)))
 
-;(local (in-theory (disable LIST::UPDATE-NTH-EQUAL-REWRITE)))
-
 ;bozo naming of LIST::APPEND-OF-NON-CONSP-2 vs. LIST::APPEND-OF-NON-CONSP-one
 
 ;(in-theory (disable NTH-WHEN-N-IS-ZP)) ;trying...
@@ -356,10 +335,6 @@
            (equal (cons (nth n lst) (nthcdr n+1 lst))
                   (nthcdr n lst)))
   :hints (("Goal" :in-theory (enable nthcdr))))
-
-;; (thm
-;;  (implies (<
-;;  (equal (subrange start end (append x y))
 
 ;(in-theory (disable nthcdr-update-nth))
 
@@ -651,7 +626,8 @@
                 (natp n))
            (equal (update-nth n val lst)
                   (append (take n lst) (list val))))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 1 nil nil))))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil 1 nil nil)))
+  :hints (("Goal" :in-theory (enable equal-of-append))))
 
 (defthmd update-nth-of-0
   (implies (true-listp lst)
@@ -671,11 +647,7 @@
   (implies (syntaxp (not (and (quotep x)
                               (quotep a))))
            (EQUAL (APPEND (CONS A X) Y)
-                  (CONS A (APPEND X Y))))
-  :hints (("Goal" :in-theory (disable ;LIST::EQUAL-APPEND-REDUCTION! ;bozo
-                              ))))
-
-;(in-theory (disable list::append-of-cons))
+                  (CONS A (APPEND X Y)))))
 
 (defthm subrange-when-too-far
   (implies (and (<= (len l) start)
@@ -699,11 +671,7 @@
             (not (nth n x)))
    :rule-classes ((:rewrite :backchain-limit-lst (0 nil))))
 
-;(in-theory (disable LIST::LEN-POS-REWRITE))
-
 ;(theory-invariant (incompatible (:rewrite LIST::LEN-POS-REWRITE) (:rewrite consp-cdr)))
-
-;(in-theory (disable LIST::LEN-WHEN-AT-MOST-1)) ;bozo?
 
 ;(local (in-theory (disable CANCEL_PLUS-LESSP-CORRECT))) ;why did this loop?
 
@@ -822,8 +790,7 @@
                 (natp n))
            (equal (append (take n x) (cons y z))
                   (append (take (+ 1 n) x) z)))
-  :hints (("Goal" :in-theory (enable ;list::car-append list::cdr-append
-                              ))))
+  :hints (("Goal" :in-theory (enable equal-of-append))))
 
 ;gross?
 (defthmd append-of-firstn-and-cons-when-nth
@@ -832,16 +799,14 @@
                 (natp n))
            (equal (append (firstn n x) (cons y z))
                   (append (firstn (+ 1 n) x) z)))
-  :hints (("Goal" :in-theory (enable ;list::car-append list::cdr-append
-                              ))))
+  :hints (("Goal" :in-theory (enable equal-of-append))))
 
 (defthm append-of-firstn-of-cons-of-nth
   (implies (and (natp n)
                 (<= (+ 1 n) (len x)))
            (equal (append (firstn n x) (cons (nth n x) y))
                   (append (firstn (+ 1 n) x) y)))
-  :hints (("Goal" :in-theory (enable ;list::cdr-append
-                              ))))
+  :hints (("Goal" :in-theory (enable equal-of-append))))
 
 (defthm append-of-firstn-and-subrange
   (implies (and (< n (len x))
@@ -850,7 +815,7 @@
                 (natp m))
            (equal (append (firstn m x) (subrange m n x))
                   (firstn (+ 1 n) x)))
-  :hints (("Goal" :in-theory (enable subrange))))
+  :hints (("Goal" :in-theory (enable subrange equal-of-append))))
 
 ;; (defthm append-of-final-cdr-arg1
 ;;   (equal (append (LIST::FINALCDR x) y)
@@ -904,12 +869,6 @@
 ;; ;           :induct (ind2 start end lst)
 ;;            :in-theory (e/d (subrange ITEMS-HAVE-LEN) ()))))
 
-;move
-;restrict to non-constants?
-(defthm equal-of-cons-and-cons-same-arg2
-  (equal (equal (cons x y) (cons z y))
-         (equal x z)))
-
 (defthm equal-of-nil-and-nthcdr
   (implies (true-listp x)
            (equal (equal nil (nthcdr n x))
@@ -946,13 +905,9 @@
            (equal (equal (take n x) (take n y))
                   nil))
   :hints (("Goal"
-           :in-theory (e/d (subrange TAKE-OF-NTHCDR)
-                           (;LIST::EQUAL-APPEND-REDUCTION!
-
-
-                            TAKE-OF-CDR-BECOMES-SUBRANGE
-                            NTHCDR-OF-TAKE
-                            ))
+           :in-theory (e/d (subrange take-of-nthcdr)
+                           (take-of-cdr-becomes-subrange
+                            nthcdr-of-take))
     ;:use ((:instance LIST-SPLIT (x x) (n low))
     ;     (:instance LIST-SPLIT (x y) (n low)))
            )))
@@ -1008,11 +963,8 @@
                               update-subrange
                               take
                               cdr-of-nthcdr
-;                              LIST::LEN-UPDATE-NTH-BETTER
-                              EQUAL-CONS-CASES2))))
-
-
-
+                              equal-cons-cases2
+                              equal-of-append))))
 
 ;for Axe proofs - shouldn't we open endp?
 ;drop?
@@ -1065,13 +1017,8 @@
                                              (+ -1 (len lst) (- low))
                                              lst))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (subrange reverse-list ;list::nth-append
-                                     NTHCDR-OF-TRUE-LIST-FIX ;LIST::CAR-APPEND
-                                     )
-                           (;LIST::FIX-OF-NTHCDR
-
-
-                            TAKE-OF-CDR-BECOMES-SUBRANGE)))))
+           :in-theory (e/d (subrange reverse-list nthcdr-of-true-list-fix)
+                           (take-of-cdr-becomes-subrange)))))
 
 (defthm subrange-too-far
   (implies (equal low (len x))
@@ -1091,7 +1038,7 @@
                           (repeat (- n (len l)) nil))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :do-not-induct t
-           :in-theory (enable))))
+           :in-theory (enable equal-of-append))))
 
 (theory-invariant (incompatible (:rewrite CAR-BECOMES-NTH-OF-0) (:rewrite NTH-WHEN-N-IS-ZP)))
 
@@ -1109,11 +1056,8 @@
   :hints (("Goal" :use ((:instance APPEND-take-NTHCDR (l x))
                         (:instance APPEND-take-NTHCDR (l y))
                         )
-           :in-theory (disable APPEND-take-NTHCDR
-                               equal-of-append
-                               ;LIST::EQUAL-APPEND-REDUCTION!
-;LIST::EQUAL-APPEND-REDUCTION!-alt
-                       ))))
+           :in-theory (disable append-take-nthcdr
+                               equal-of-append))))
 
 (defthm equal-of-firstn-and-firstn-when-equal-of-nthcdr-and-nthcdr
   (implies (and (equal (nthcdr n x) (nthcdr n y))
@@ -1126,7 +1070,6 @@
   :hints (("Goal" :use ((:instance APPEND-take-NTHCDR (l x))
                         (:instance APPEND-take-NTHCDR (l y)))
            :in-theory (disable APPEND-take-NTHCDR
-;LIST::EQUAL-APPEND-REDUCTION!
                                equal-of-append
                                ))))
 
@@ -1143,7 +1086,6 @@
   :hints (("Goal" :use ((:instance append-take-nthcdr (l x))
                         (:instance APPEND-TAKE-NTHCDR (l y)))
            :in-theory (disable APPEND-TAKE-NTHCDR
-;                               LIST::EQUAL-APPEND-REDUCTION!
                                equal-of-append
                                ))))
 
@@ -1202,7 +1144,8 @@
                 (< n (len x))
                 )
            (equal (take n x)
-                  (append (take (+ -1 n) x) (list (nth (+ -1 n) x))))))
+                  (append (take (+ -1 n) x) (list (nth (+ -1 n) x)))))
+  :hints (("Goal" :in-theory (enable equal-of-append))))
 
 (defthm update-nth-add-onto-end
   (implies (true-listp lst)
@@ -1330,7 +1273,6 @@
                            (anti-subrange
                             update-nth-of-update-subrange     ;bozo
                             update-nth-of-update-subrange-diff ;bozo
-
                             )))))
 
 ;; (defthm update-subrange-equiv
@@ -1351,7 +1293,6 @@
 ;;                                   (anti-subrange
 ;;                                    update-nth-of-update-subrange     ;bozo
 ;;                                    update-nth-of-update-subrange-diff ;bozo
-;;
 ;;                                    )))))
 
 ;do we need priorities here?
@@ -1415,8 +1356,7 @@
                 (natp end2))
            (equal (subrange start1 end1 (subrange start2 end2 lst))
                   (subrange (+ start1 start2) (+ start2 end1) lst)))
-  :hints (("Goal" :in-theory (e/d (subrange ;list::nth-of-cons
-                                   )
+  :hints (("Goal" :in-theory (e/d (subrange)
                                   (anti-subrange)))))
 
 ;trying... since this caused case splits when we couldn't always resolve the length of the args (since they came from table lookups)
@@ -1425,16 +1365,12 @@
 (defthm nth-append-1
   (implies (< (nfix n) (len a))
            (equal (nth n (append a b))
-                  (nth n a)))
-  :hints (("Goal" :in-theory (enable ;list::nth-append
-                              ))))
+                  (nth n a))))
 
 (defthm nth-append-2
   (implies (not (< (nfix n) (len a)))
            (equal (nth n (append a b))
-                  (nth (- (nfix n) (len a)) b)))
-  :hints (("Goal" :in-theory (enable ;list::nth-append
-                              ))))
+                  (nth (- (nfix n) (len a)) b))))
 
 ;follows from UNIQUE-OF-CONS-NO-SPLIT but this is a "simple" rule (i.e., an abbreviation rule)
 (defthm no-duplicatesp-equal-of-singleton
@@ -1611,8 +1547,7 @@
            (equal (equal (update-nth n val1 lst1)
                          (update-subrange n end (cons val2 rst) lst2))
                   t))
-  :hints (("Goal" :in-theory (e/d (;list::update-nth-equal-rewrite
-                                   update-subrange) (update-nth-of-update-subrange-diff)))))
+  :hints (("Goal" :in-theory (e/d (update-subrange) (update-nth-of-update-subrange-diff)))))
 
 (defthm subrange-of-update-subrange-contained
   (implies (and (<= start2 start1)
@@ -1718,9 +1653,7 @@
   :HINTS
   (("Goal" :DO-NOT '(GENERALIZE ELIMINATE-DESTRUCTORS)
     :IN-THEORY
-    (E/D (;LIST::EQUAL-CONS-CASES
-          ;LIST::LEN-UPDATE-NTH-BETTER
-          ;CONS-CAR-SELF-EQUAL-SELF
+    (E/D (;CONS-CAR-SELF-EQUAL-SELF
           TAKE UPDATE-SUBRANGE
           UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF-BACK)
          (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
@@ -1731,8 +1664,7 @@
   (implies (and (< end (len lst))
                 (natp start)
                 (natp end)
-                (<= start end)
-                )
+                (<= start end))
            (equal (update-subrange start end vals lst)
                   (append (take start lst)
                           (take (+ 1 end (- start)) vals)
@@ -1741,11 +1673,8 @@
                                   (lst (true-list-fix lst))
                                   (vals (take (+ 1 end (- start)) vals)))
            :in-theory (e/d (nthcdr-of-true-list-fix equal-of-append)
-                           (
-                             ;list::fix-of-nthcdr
-                             update-subrange-rewrite ;update-subrange-equiv
-                             )))))
-
+                           (update-subrange-rewrite ;update-subrange-equiv
+                            )))))
 
 ;; (DEFTHM UPDATE-SUBRANGE-when-extends
 ;;   (IMPLIES (AND (not (< END (LEN LST)))
@@ -1777,9 +1706,6 @@
 ;;      (UPDATE-SUBRANGE UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF-BACK)
 ;;      (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
-
-
-
 ;BOZO why so many cases?
 ;BOZO gen!
 (defthm update-subrange-of-update-subrange-when-outer-is-one-smaller
@@ -1794,8 +1720,7 @@
                 )
            (equal (update-subrange m n vals (update-subrange start n vals2 lst))
                   (update-subrange m n vals (update-nth start (nth 0 vals2) lst))))
-  :hints (("Goal" :in-theory (enable update-subrange-rewrite-better))))
-
+  :hints (("Goal" :in-theory (enable update-subrange-rewrite-better equal-of-append))))
 
 ;; ;BOZO challenges:
 ;; (UPDATE-NTH
@@ -1816,7 +1741,7 @@
                 (< n (len lst)))
            (equal (UPDATE-NTH n val (UPDATE-SUBRANGE m n vals lst))
                   (UPDATE-NTH n val (UPDATE-SUBRANGE m (- n 1) (take (- n m) vals) lst))))
-  :hints (("Goal" :in-theory (enable UPDATE-SUBRANGE-REWRITE CDR-OF-NTHCDR))))
+  :hints (("Goal" :in-theory (enable UPDATE-SUBRANGE-REWRITE CDR-OF-NTHCDR equal-of-append))))
 
 (defthm UPDATE-NTH-of-UPDATE-subrange-contained
   (implies (and (<= start n)

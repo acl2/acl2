@@ -1,6 +1,6 @@
-; Extracting variable from an R1CS
+; Extracting variables from an R1CS
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;

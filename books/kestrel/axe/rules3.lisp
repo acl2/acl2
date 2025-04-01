@@ -1497,7 +1497,7 @@
                 (syntaxp (quotep free))
                 (< free size)
                 (not (equal 0 x))
-                (Natp size))
+                (natp size))
            (equal (bvuminus size x)
                   (bvplus size (- (expt 2 size) (expt 2 free)) (bvuminus free x))))
   :hints (("Goal" :use (:instance bvuminus-when-smaller)
@@ -2034,7 +2034,7 @@
 
 ;; (thm
 ;;  (implies (and (natp i)
-;;                (Natp j))
+;;                (natp j))
 ;;           (equal (< j (logtail 2 i))
 ;;                  (or (< (* 4 j) i)
 ;;                      (and (equal (* 4 j) i)
@@ -3107,7 +3107,7 @@
                 (<= (expt 2 xsize) (bvchop size k))
                 (<= xsize size)
                 (natp xsize)
-                (Integerp size)
+                (integerp size)
                 (force (unsigned-byte-p-forced xsize x))
                 )
            (not (BVLT size k x)))
@@ -5832,17 +5832,8 @@
                             PLUS-32-1-BVUMIUNS
                             +-OF-MINUS-1-AND-BV2
                             bvminus-becomes-bvplus-of-bvuminus
-
-
-
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite)))))
-
-;add to the map theorems?
-(defthm equal-of-nil-and-bvchop-list
-  (equal (equal 'nil (bvchop-list n x))
-         (not (consp x)))
-  :hints (("Goal" :in-theory (enable bvchop-list))))
 
 ;this spilts off the last element - we could instead choose the first element
 (defthm take-of-bvplus-32-1
@@ -6079,7 +6070,7 @@
 
 (defthm equal-of-bvplus-and-bvplus-diff-sizes
   (implies (and (< size size2)
-                (Natp size)
+                (natp size)
                 (integerp size2))
            (equal (equal (bvplus size w z) (bvplus size2 x y))
                   (and (unsigned-byte-p size (bvplus size2 x y))
@@ -6090,7 +6081,7 @@
 
 (defthm equal-of-bvplus-and-bvplus-diff-sizes-alt
   (implies (and (< size size2)
-                (Natp size)
+                (natp size)
                 (integerp size2))
            (equal (equal (bvplus size2 x y) (bvplus size w z))
                   (and (unsigned-byte-p size (bvplus size2 x y))
@@ -8716,8 +8707,8 @@
 
 ;gen
 (defthm bvchop-of-+-of-*-lemma
-  (implies (and (Integerp x)
-                (Integerp k))
+  (implies (and (integerp x)
+                (integerp k))
            (equal (BVCHOP 2 (+ K (* 4 x)))
                   (BVCHOP 2 K))))
 
@@ -9724,7 +9715,7 @@
 
 ;tighten first?!
 (defthm bvmult-of-bvplus-hack
-;;   (implies (and ;(Natp highsize)
+;;   (implies (and ;(natp highsize)
 ;;                 ;(<= 64 highsize)
 ;;                 )
            (equal (bvmult 66 64 (bvplus 58 1 x))
@@ -9734,7 +9725,7 @@
 
 ;tighten first?!
 (defthm bvmult-of-bvplus-hack2
-;;   (implies (and ;(Natp highsize)
+;;   (implies (and ;(natp highsize)
 ;;                 ;(<= 64 highsize)
 ;;                 )
            (equal (bvmult 67 64 (bvplus 59 1 x))
@@ -10219,7 +10210,7 @@
 (defthm bvmult-of-bvcat-hack100
   (implies (and (natp k)
                 (equal size 4) ;gen
-                (Natp size))
+                (natp size))
            (equal (bvmult (+ 25 size 2) 4 (bvcat 25 x size k))
                   (bvcat 25 x (+ 2 size) (* k 4)))))
 
@@ -10715,7 +10706,7 @@
 (defthm slice-of-nth-becomes-bv-array-read
   (implies (and ;(all-unsigned-byte-p free data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists
                 (natp high)
-                (Natp n)
+                (natp n)
                 (<= low high)
                 (natp low))
            (equal (slice high low (nth n data))
@@ -11106,7 +11097,7 @@
 ;constant version?
 (defthm equal-of-logtail-and-floor-of-expt-same
   (implies (and (integerp x)
-                (Natp n))
+                (natp n))
            (equal (equal (logtail n x) (floor x (expt 2 n)))
                   t))
   :hints (("Goal" :in-theory (enable slice logtail))))

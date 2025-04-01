@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function integer-length
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,8 @@
 (local (include-book "plus"))
 (local (include-book "times"))
 (local (include-book "numerator")) ; since floor calls numerator
+(local (include-book "denominator"))
+(local (include-book "nonnegative-integer-quotient"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (in-theory (disable integer-length))
@@ -86,10 +88,13 @@
   :hints (("Goal" :in-theory (enable integer-length))))
 
 (defthm integer-length-of-floor-by-2
-  (implies (posp i)
+  (implies (integerp i)
            (equal (integer-length (floor i 2))
-                  (+ -1 (integer-length i))))
-  :hints (("Goal" :in-theory (enable integer-length))))
+                  (if (or (equal 0 i)
+                          (equal -1 i))
+                      0
+                    (+ -1 (integer-length i)))))
+  :hints (("Goal" :in-theory (enable integer-length zp zip))))
 
 (defthm equal-of-0-and-integer-length
   (implies (natp i)
@@ -110,6 +115,11 @@
                 (integerp k))
            (< 1 (integer-length k)))
   :hints (("Goal" :in-theory (enable integer-length))))
+
+(defthm <-of-1-and-integer-length-linear
+  (implies (and (< 1 x) (integerp x))
+           (< 1 (integer-length x)))
+  :rule-classes :linear)
 
 (defthm <-of-integer-length-and-1
   (equal (< (integer-length i) 1)
@@ -308,3 +318,14 @@
                       (+ 1 (integer-length i))
                     (integer-length i))))
   :rule-classes nil)
+
+(defthm integer-length-of-nonnegative-integer-quotient-of-2
+  (equal (integer-length (nonnegative-integer-quotient i 2))
+         (if (zp i)
+             0
+           (+ -1 (integer-length i))))
+  :hints (("Goal" :use (:instance integer-length-of-floor-by-2)
+           :cases ((equal 0 i))
+           :in-theory (e/d (nonnegative-integer-quotient-becomes-floor)
+                           (integer-length-of-floor-by-2
+                            nonnegative-integer-quotient)))))

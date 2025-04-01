@@ -464,7 +464,8 @@
          ((mv erp value) (eval-axe-evaluator-basic test-case assumption
                                                    nil ;interpreted-function-alist
                                                    1000000000))
-         ((when erp) (mv erp value)))
+         ((when erp) (prog2$ (er hard? 'test-case-satisfies-assumptionsp "Error: ~x0." erp)
+                             (mv erp value))))
       (if (equal t value)
           (test-case-satisfies-assumptionsp test-case (rest assumptions))
         (mv (erp-nil) nil)))))
@@ -515,56 +516,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp test-cases rand), where each test case is an alist from vars to values.
+;; Returns (mv erp test-cases), where each test case is an alist from vars to values.
 ;; We drop any test cases that fail to satisfy the assumptions.
 ;; TODO: Consider passing in interpreted-functions?
 ;; TODO: Add print arg and pass to make-test-cases-aux.
-(defund make-test-cases (test-case-count test-case-type-alist assumptions rand)
+(defund make-test-cases (test-case-count test-case-type-alist assumptions maybe-random-seed)
   (declare (xargs :guard (and (natp test-case-count)
                               (test-case-type-alistp test-case-type-alist)
-                              (pseudo-term-listp assumptions))
-                  :stobjs rand))
+                              (pseudo-term-listp assumptions)
+                              (or (null maybe-random-seed)
+                                  (natp maybe-random-seed)))))
   (prog2$ (cw "(Making ~x0 test cases:~%" test-case-count)
-          (mv-let (erp test-cases rand)
-                  (make-test-cases-aux test-case-count 0 test-case-type-alist assumptions nil nil rand)
-                  (prog2$ (cw ")~%")
-                          (mv erp test-cases rand)))))
+          (with-local-stobj
+            rand
+            (mv-let (erp test-cases rand)
+              (let ((rand (if maybe-random-seed (update-seed maybe-random-seed rand) rand)))
+                (make-test-cases-aux test-case-count 0 test-case-type-alist assumptions nil nil rand))
+              (prog2$ (cw ")~%")
+                      (mv erp test-cases))))))
 
 (defthm test-casesp-of-mv-nth-1-of-make-test-cases
   (implies (test-case-type-alistp test-case-type-alist)
-           (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions rand))))
+           (test-casesp (mv-nth 1 (make-test-cases test-case-count test-case-type-alist assumptions maybe-random-seed))))
   :hints (("Goal" :in-theory (enable make-test-cases))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: At least handle :range (round up to a power of 2)
-(defund var-type-alist-from-test-case-type-alist (a)
-  (declare (xargs :guard (test-case-type-alistp a)
-                  :guard-hints (("Goal" :in-theory (enable test-case-type-alistp)))
-                  :verify-guards nil ; done below
-                  ))
-  (if (endp a)
-      nil
-    (let* ((entry (first a))
-           (var (car entry))
-           (type (cdr entry)))
-      (if (axe-typep type)
-          (acons var
-                 type
-                 (var-type-alist-from-test-case-type-alist (rest a)))
-        (prog2$ (cw "WARNING: Not converting test-type ~x0 to a var-type.~%" type)
-                (var-type-alist-from-test-case-type-alist (rest a)))))))
-
-(defthm var-type-alistp-of-var-type-alist-from-test-case-type-alist
-  (implies (test-case-type-alistp a)
-           (var-type-alistp (var-type-alist-from-test-case-type-alist a)))
-  :hints (("Goal" :in-theory (enable var-type-alist-from-test-case-type-alist
-                                     test-case-type-alistp
-                                     var-type-alistp))))
-
-(defthmd alistp-whenvar-type-alistp
+(defthmd alistp-when-var-type-alistp
   (implies (var-type-alistp a)
            (alistp a))
   :hints (("Goal" :in-theory (enable var-type-alistp alistp))))
 
-(verify-guards var-type-alist-from-test-case-type-alist)
+;; ;; TODO: At least handle :range (round up to a power of 2)
+;; (defund var-type-alist-from-test-case-type-alist (a)
+;;   (declare (xargs :guard (test-case-type-alistp a)
+;;                   :guard-hints (("Goal" :in-theory (enable test-case-type-alistp)))
+;;                   :verify-guards nil ; done below
+;;                   ))
+;;   (if (endp a)
+;;       nil
+;;     (let* ((entry (first a))
+;;            (var (car entry))
+;;            (type (cdr entry)))
+;;       (if (axe-typep type)
+;;           (acons var
+;;                  type
+;;                  (var-type-alist-from-test-case-type-alist (rest a)))
+;;         (prog2$ (cw "WARNING: Not converting test-type ~x0 to a var-type.~%" type)
+;;                 (var-type-alist-from-test-case-type-alist (rest a)))))))
+
+;; (defthm var-type-alistp-of-var-type-alist-from-test-case-type-alist
+;;   (implies (test-case-type-alistp a)
+;;            (var-type-alistp (var-type-alist-from-test-case-type-alist a)))
+;;   :hints (("Goal" :in-theory (enable var-type-alist-from-test-case-type-alist
+;;                                      test-case-type-alistp
+;;                                      var-type-alistp))))
+
+
+;; (verify-guards var-type-alist-from-test-case-type-alist)

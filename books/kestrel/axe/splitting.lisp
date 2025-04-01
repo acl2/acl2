@@ -255,7 +255,7 @@
          (true-listp acc))
   :hints (("Goal" :in-theory (enable maybe-add-split-candidates))))
 
-(defthm natp-listp-of-maybe-add-split-candidates
+(defthm nat-listp-of-maybe-add-split-candidates
   (implies (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (bounded-dag-exprp dag-len ;upper bound
                            expr)

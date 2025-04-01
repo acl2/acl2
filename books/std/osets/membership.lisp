@@ -183,36 +183,36 @@ in the future to obtain something along these lines.</p>"
   :extension head
 
   (local (defthm lemma
-	   (implies (and (not (emptyp X))
-			 (not (equal a (head X)))
-			 (not (<< a (head (tail X))))
-			 (<< a (head X)))
-		    (not (in a X)))
-	   :hints(("Goal"
-		   :in-theory (enable (:ruleset order-rules))
-		   :cases ((emptyp (tail X)))))))
+           (implies (and (not (emptyp X))
+                         (not (equal a (head X)))
+                         (not (<< a (head (tail X))))
+                         (<< a (head X)))
+                    (not (in a X)))
+           :hints(("Goal"
+                   :in-theory (enable (:ruleset order-rules))
+                   :cases ((emptyp (tail X)))))))
 
   (defthm head-minimal
     (implies (<< a (head X))
-	     (not (in a X)))
+             (not (in a X)))
     :hints(("Goal"
-	    :in-theory (enable (:ruleset order-rules)))))
+            :in-theory (enable (:ruleset order-rules)))))
 
   (defthm head-minimal-2
     (implies (in a X)
-	     (not (<< a (head X)))))
+             (not (<< a (head X)))))
 
   (add-to-ruleset order-rules '(head-minimal head-minimal-2))
 
 
   (local (defthm lemma2
-	   (implies (emptyp (tail X))
-		    (not (in (head X) (tail X))))))
+           (implies (emptyp (tail X))
+                    (not (in (head X) (tail X))))))
 
   (local (defthm lemma3
-	   (implies (not (emptyp (tail X)))
-		    (not (in (head X) (tail X))))
-	   :hints(("Goal" :in-theory (enable (:ruleset order-rules))))))
+           (implies (not (emptyp (tail X)))
+                    (not (in (head X) (tail X))))
+           :hints(("Goal" :in-theory (enable (:ruleset order-rules))))))
 
   ;; This is an interesting theorem, which gives us a concept of uniqueness
   ;; without using the set order to state it!
@@ -220,8 +220,8 @@ in the future to obtain something along these lines.</p>"
   (defthm head-unique
     (not (in (head X) (tail X)))
     :hints(("Goal"
-	    :use ((:instance lemma2)
-		  (:instance lemma3))))))
+            :use ((:instance lemma2)
+                  (:instance lemma3))))))
 
 
 
@@ -772,35 +772,35 @@ as needed.</p>"
 ; Here are the details.  First we show that the heads are the same:
 
   (local (defthmd double-containment-lemma-head
-	   (implies (and (subset X Y)
-			 (subset Y X))
-		    (equal (head X) (head Y)))
-	   :hints(("Goal" :in-theory (enable (:ruleset order-rules))))))
+           (implies (and (subset X Y)
+                         (subset Y X))
+                    (equal (head X) (head Y)))
+           :hints(("Goal" :in-theory (enable (:ruleset order-rules))))))
 
 
 ; Next we show that (tail X) is a subset of (tail Y), using a subset by
 ; membership argument:
 
   (local (defthmd in-tail-expand
-	   (equal (in a (tail X))
-		  (and (in a X)
-		       (not (equal a (head X)))))))
+           (equal (in a (tail X))
+                  (and (in a X)
+                       (not (equal a (head X)))))))
 
   (local (defthmd double-containment-lemma-in-tail
-	   (implies (and (subset X Y)
-			 (subset Y X))
-		    (implies (in a (tail X))   ; could be "equal" instead,
-			     (in a (tail Y)))) ; but that makes loops.
-	   :hints(("Goal"
-		   :in-theory (enable (:ruleset order-rules))
-		   :use ((:instance in-tail-expand (a a) (X X))
-			 (:instance in-tail-expand (a a) (X Y)))))))
+           (implies (and (subset X Y)
+                         (subset Y X))
+                    (implies (in a (tail X))   ; could be "equal" instead,
+                             (in a (tail Y)))) ; but that makes loops.
+           :hints(("Goal"
+                   :in-theory (enable (:ruleset order-rules))
+                   :use ((:instance in-tail-expand (a a) (X X))
+                         (:instance in-tail-expand (a a) (X Y)))))))
 
   (local (defthmd double-containment-lemma-tail
-	   (implies (and (subset X Y)
-			 (subset Y X))
-		    (subset (tail X) (tail Y)))
-	   :hints(("Goal" :in-theory (enable double-containment-lemma-in-tail)))))
+           (implies (and (subset X Y)
+                         (subset Y X))
+                    (subset (tail X) (tail Y)))
+           :hints(("Goal" :in-theory (enable double-containment-lemma-in-tail)))))
 
 ; Finally, we are ready to show that double containment is equality.  To do
 ; this, we need to induct in such a way that we consider the tails of X and Y.
@@ -808,37 +808,37 @@ as needed.</p>"
 ; in the inductive case.
 
   (local (defun double-tail-induction (X Y)
-	   (declare (xargs :guard (and (setp X) (setp Y))))
-	   (if (or (emptyp X) (emptyp Y))
-	       (list X Y)
-	     (double-tail-induction (tail X) (tail Y)))))
+           (declare (xargs :guard (and (setp X) (setp Y))))
+           (if (or (emptyp X) (emptyp Y))
+               (list X Y)
+             (double-tail-induction (tail X) (tail Y)))))
 
   (local (defthm double-containment-is-equality-lemma
-	   (implies (and (not (or (emptyp x) (emptyp y)))
-			 (implies (and (subset (tail x) (tail y))
-				       (subset (tail y) (tail x)))
-				  (equal (equal (tail x) (tail y)) t))
-			 (setp x)
-			 (setp y)
-			 (subset x y)
-			 (subset y x))
-		    (equal (equal x y) t))
-	   :hints(("Goal"
+           (implies (and (not (or (emptyp x) (emptyp y)))
+                         (implies (and (subset (tail x) (tail y))
+                                       (subset (tail y) (tail x)))
+                                  (equal (equal (tail x) (tail y)) t))
+                         (setp x)
+                         (setp y)
+                         (subset x y)
+                         (subset y x))
+                    (equal (equal x y) t))
+           :hints(("Goal"
                    :in-theory (enable head-tail-same)
-		   :use ((:instance double-containment-lemma-tail
-				    (x x) (y y))
-			 (:instance double-containment-lemma-tail
-				    (x y) (y x))
-			 (:instance double-containment-lemma-head
-				    (x x) (y y)))))))
+                   :use ((:instance double-containment-lemma-tail
+                                    (x x) (y y))
+                         (:instance double-containment-lemma-tail
+                                    (x y) (y x))
+                         (:instance double-containment-lemma-head
+                                    (x x) (y y)))))))
 
   (local (defthmd double-containment-is-equality
-	   (implies (and (setp X)
-			 (setp Y)
-			 (subset X Y)
-			 (subset Y X))
-		    (equal (equal X Y) t))
-	   :hints(("Goal"
+           (implies (and (setp X)
+                         (setp Y)
+                         (subset X Y)
+                         (subset Y X))
+                    (equal (equal X Y) t))
+           :hints(("Goal"
                    :in-theory (enable head-tail-same)
                    :induct (double-tail-induction X Y)))))
 
@@ -846,10 +846,10 @@ as needed.</p>"
     ;; I added backchain limits to this because targetting equal is so expensive.
     ;; Even so it is possibly very expensive.
     (implies (and (setp X)
-		  (setp Y))
-	     (equal (equal X Y)
-		    (and (subset X Y)
-			 (subset Y X))))
+                  (setp Y))
+             (equal (equal X Y)
+                    (and (subset X Y)
+                         (subset Y X))))
     :rule-classes ((:rewrite :backchain-limit-lst 1))
     :hints(("Goal" :use (:instance double-containment-is-equality))))
 

@@ -11504,8 +11504,8 @@
                    ;; If token4 is a closed square bracket,
                    ;; we have a variable length array declarator.
                    ((token-punctuatorp token4 "]") ; [ tyquals * ]
-                    (retok (make-dirdeclor-array-star :decl prev-dirdeclor
-                                                      :tyquals tyquals)
+                    (retok (make-dirdeclor-array-star :declor prev-dirdeclor
+                                                      :quals tyquals)
                            (span-join prev-span span4)
                            parstate))
                    ;; If token4 is not a square bracket,
@@ -11521,8 +11521,8 @@
                           (parse-assignment-expression parstate))
                          ((erp last-span parstate) ; [ tyquals expr ]
                           (read-punctuator "]" parstate)))
-                      (retok (make-dirdeclor-array :decl prev-dirdeclor
-                                                   :tyquals tyquals
+                      (retok (make-dirdeclor-array :declor prev-dirdeclor
+                                                   :quals tyquals
                                                    :expr? expr)
                              (span-join prev-span last-span)
                              parstate))))))
@@ -11536,16 +11536,16 @@
                       (parse-assignment-expression parstate))
                      ((erp last-span parstate) ; [ tyquals expr ]
                       (read-punctuator "]" parstate)))
-                  (retok (make-dirdeclor-array :decl prev-dirdeclor
-                                               :tyquals tyquals
+                  (retok (make-dirdeclor-array :declor prev-dirdeclor
+                                               :quals tyquals
                                                :expr? expr)
                          (span-join prev-span last-span)
                          parstate)))
                ;; If token3 is a closed square bracket,
                ;; we have determined the variant, and we have no expression.
                ((token-punctuatorp token3 "]") ; [ tyquals ]
-                (retok (make-dirdeclor-array :decl prev-dirdeclor
-                                             :tyquals tyquals
+                (retok (make-dirdeclor-array :declor prev-dirdeclor
+                                             :quals tyquals
                                              :expr? nil)
                        (span-join prev-span span3)
                        parstate))
@@ -11557,8 +11557,8 @@
                       (parse-assignment-expression parstate))
                      ((erp last-span parstate) ; [ tyquals static expr ]
                       (read-punctuator "]" parstate)))
-                  (retok (make-dirdeclor-array-static2 :decl prev-dirdeclor
-                                                       :tyquals tyquals
+                  (retok (make-dirdeclor-array-static2 :declor prev-dirdeclor
+                                                       :quals tyquals
                                                        :expr expr)
                          (span-join prev-span last-span)
                          parstate)))
@@ -11578,8 +11578,8 @@
                ;; If token3 is a closed square bracket,
                ;; we have a variable length array declarator.
                ((token-punctuatorp token3 "]") ; [ * ]
-                (retok (make-dirdeclor-array-star :decl prev-dirdeclor
-                                                  :tyquals nil)
+                (retok (make-dirdeclor-array-star :declor prev-dirdeclor
+                                                  :quals nil)
                        (span-join prev-span span3)
                        parstate))
                ;; If token3 is not a star,
@@ -11593,8 +11593,8 @@
                       (parse-assignment-expression parstate))
                      ((erp last-span parstate) ; [ expr ]
                       (read-punctuator "]" parstate)))
-                  (retok (make-dirdeclor-array :decl prev-dirdeclor
-                                               :tyquals nil
+                  (retok (make-dirdeclor-array :declor prev-dirdeclor
+                                               :quals nil
                                                :expr? expr)
                          (span-join prev-span last-span)
                          parstate))))))
@@ -11607,8 +11607,8 @@
                   (parse-assignment-expression parstate))
                  ((erp last-span parstate) ; [ expr ]
                   (read-punctuator "]" parstate)))
-              (retok (make-dirdeclor-array :decl prev-dirdeclor
-                                           :tyquals nil
+              (retok (make-dirdeclor-array :declor prev-dirdeclor
+                                           :quals nil
                                            :expr? expr)
                      (span-join prev-span last-span)
                      parstate)))
@@ -11634,8 +11634,8 @@
                       (parse-assignment-expression parstate))
                      ((erp last-span parstate) ; [ static tyqualattribs expr ]
                       (read-punctuator "]" parstate)))
-                  (retok (make-dirdeclor-array-static1 :decl prev-dirdeclor
-                                                       :tyquals tyquals
+                  (retok (make-dirdeclor-array-static1 :declor prev-dirdeclor
+                                                       :quals tyquals
                                                        :expr expr)
                          (span-join prev-span last-span)
                          parstate)))
@@ -11647,16 +11647,16 @@
                       (parse-assignment-expression parstate))
                      ((erp last-span parstate) ; [ static expr ]
                       (read-punctuator "]" parstate)))
-                  (retok (make-dirdeclor-array-static1 :decl prev-dirdeclor
-                                                       :tyquals nil
+                  (retok (make-dirdeclor-array-static1 :declor prev-dirdeclor
+                                                       :quals nil
                                                        :expr expr)
                          (span-join prev-span last-span)
                          parstate))))))
            ;; If token2 is a closed square bracket,
            ;; we have an empty array construct.
            ((token-punctuatorp token2 "]") ; [ ]
-            (retok (make-dirdeclor-array :decl prev-dirdeclor
-                                         :tyquals nil
+            (retok (make-dirdeclor-array :declor prev-dirdeclor
+                                         :quals nil
                                          :expr? nil)
                    (span-join prev-span span2)
                    parstate))
@@ -11679,7 +11679,7 @@
            ;; If token2 is a closed parenthesis,
            ;; we have no parameter declarations.
            ((token-punctuatorp token2 ")") ; ( )
-            (retok (make-dirdeclor-function-params :decl prev-dirdeclor
+            (retok (make-dirdeclor-function-params :declor prev-dirdeclor
                                                    :params nil
                                                    :ellipsis nil)
                    (span-join prev-span span2)
@@ -11692,7 +11692,7 @@
                   (parse-parameter-declaration-list parstate))
                  ((erp last-span parstate) ; ( params [, ...] )
                   (read-punctuator ")" parstate)))
-              (retok (make-dirdeclor-function-params :decl prev-dirdeclor
+              (retok (make-dirdeclor-function-params :declor prev-dirdeclor
                                                      :params paramdecls
                                                      :ellipsis ellipsis)
                      (span-join prev-span last-span)

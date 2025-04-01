@@ -228,7 +228,6 @@
                                8
                                (mv-nth 1 (rb 1 addr r-w-x x86))
                                )))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (rb rb-1 ash ;rvm08
                                       acl2::bvcat-becomes-bvor-of-bvshl acl2::bvor bvshl-becomes-*-of-expt ;acl2::bvshl ; ACL2::BVCAT
                                       acl2::logapp
@@ -761,7 +760,7 @@
 ;; Add aliases in the X86ISA package of some common utilities:
 
 ;; (defmacro defconst-computed2 (&rest args) `(acl2::defconst-computed2 ,@args))
-;; (defmacro prove-equivalence (&rest args) `(acl2::prove-equivalence ,@args))
+;; (defmacro prove-equal-with-axe (&rest args) `(acl2::prove-equal-with-axe ,@args))
 ;; (defmacro dag-info (&rest args) `(acl2::dag-info ,@args))
 ;; (defmacro simp-dag (&rest args) `(acl2::simp-dag ,@args))
 ;; (defmacro make-axe-rules (&rest args) `(acl2::make-axe-rules ,@args))

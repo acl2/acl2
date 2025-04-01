@@ -26,6 +26,7 @@
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrayp" :dir :system) ; todo: split out def
 
 ;; TODO: Add more functions!  Add more bv functions.
 (defconst *axe-evaluator-basic-fns-and-aliases*
@@ -78,7 +79,6 @@
     (member-equal member-equal-unguarded)
     (unary-- unary---unguarded) ; primitive
     (expt expt-unguarded)
-    (= =-unguarded)
     (unary-/ unary-/-unguarded) ; primitive
     (binary-+ binary-+-unguarded) ; primitive
     (binary-* binary-*-unguarded) ; primitive
@@ -87,6 +87,7 @@
     (ceiling ceiling-unguarded)
     (lg lg-unguarded)
     power-of-2p ; unguarded
+    (= =-unguarded) ; not strictly needed if we turn = into EQUAL
     (eql eql-unguarded) ; not strictly needed if we turn EQL into EQUAL
     (eq eq-unguarded) ; not strictly needed if we turn EQ into EQUAL
     (< <-unguarded) ; primitive
@@ -158,6 +159,7 @@
     ;; bv-array functions:
     (bv-array-read bv-array-read-unguarded)
     (bv-array-write bv-array-write-unguarded)
+    bv-arrayp ; unguarded
 
     ;; bv-list functions:
     (packbv packbv-unguarded)

@@ -72,6 +72,12 @@
   :hints (("Goal" :in-theory (enable bvchop-list
                                      unsigned-byte-listp-rewrite))))
 
+;add to the map theorems?
+(defthm equal-of-nil-and-bvchop-list
+  (equal (equal nil (bvchop-list n x))
+         (not (consp x)))
+  :hints (("Goal" :in-theory (enable bvchop-list))))
+
 (defthm bvchop-list-of-cons
   (equal (bvchop-list size (cons a b))
          (cons (bvchop size a) (bvchop-list size b)))

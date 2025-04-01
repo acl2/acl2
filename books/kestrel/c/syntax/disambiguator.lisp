@@ -1998,52 +1998,52 @@
       (dirdeclor-case
        dirdeclor
        :ident
-       (retok (dirdeclor-fix dirdeclor) dirdeclor.unwrap (dimb-table-fix table))
+       (retok (dirdeclor-fix dirdeclor) dirdeclor.ident (dimb-table-fix table))
        :paren
        (b* (((erp new-declor ident table)
-             (dimb-declor dirdeclor.unwrap fundefp table)))
+             (dimb-declor dirdeclor.inner fundefp table)))
          (retok (dirdeclor-paren new-declor) ident table))
        :array
        (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.decl fundefp table))
+             (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((erp new-expr? table) (dimb-expr-option dirdeclor.expr? table)))
-         (retok (make-dirdeclor-array :decl new-dirdeclor
-                                      :tyquals dirdeclor.tyquals
+         (retok (make-dirdeclor-array :declor new-dirdeclor
+                                      :quals dirdeclor.quals
                                       :expr? new-expr?)
                 ident
                 table))
        :array-static1
        (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.decl fundefp table))
+             (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((erp new-expr table) (dimb-expr dirdeclor.expr table)))
-         (retok (make-dirdeclor-array-static1 :decl new-dirdeclor
-                                              :tyquals dirdeclor.tyquals
+         (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
+                                              :quals dirdeclor.quals
                                               :expr new-expr)
                 ident
                 table))
        :array-static2
        (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.decl fundefp table))
+             (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((erp new-expr table) (dimb-expr dirdeclor.expr table)))
-         (retok (make-dirdeclor-array-static2 :decl new-dirdeclor
-                                              :tyquals dirdeclor.tyquals
+         (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
+                                              :quals dirdeclor.quals
                                               :expr new-expr)
                 ident
                 table))
        :array-star
        (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.decl fundefp table)))
-         (retok (make-dirdeclor-array-star :decl new-dirdeclor
-                                           :tyquals dirdeclor.tyquals)
+             (dimb-dirdeclor dirdeclor.declor fundefp table)))
+         (retok (make-dirdeclor-array-star :declor new-dirdeclor
+                                           :quals dirdeclor.quals)
                 ident
                 table))
        :function-params
        (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.decl fundefp table))
+             (dimb-dirdeclor dirdeclor.declor fundefp table))
             ((mv yes/no names)
              (dimb-params-to-names dirdeclor.params fundefp table))
             ((when yes/no)
-             (retok (make-dirdeclor-function-names :decl new-dirdeclor
+             (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                    :names names)
                     ident
                     (if fundefp
@@ -2055,15 +2055,15 @@
             (table (if fundefp
                        table
                      (dimb-pop-scope table))))
-         (retok (make-dirdeclor-function-params :decl new-dirdeclor
+         (retok (make-dirdeclor-function-params :declor new-dirdeclor
                                                 :params new-params
                                                 :ellipsis dirdeclor.ellipsis)
                 ident
                 table))
        :function-names
        (b* (((erp new-dirdeclor ident table)
-             (dimb-dirdeclor dirdeclor.decl fundefp table)))
-         (retok (make-dirdeclor-function-names :decl new-dirdeclor
+             (dimb-dirdeclor dirdeclor.declor fundefp table)))
+         (retok (make-dirdeclor-function-names :declor new-dirdeclor
                                                :names dirdeclor.names)
                 ident
                 (if fundefp

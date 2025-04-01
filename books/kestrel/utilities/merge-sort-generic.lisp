@@ -1,6 +1,6 @@
 ; A generic mergesort function and some proofs about it
 ;
-; Copyright (C) 2018-2022 Kestrel Institute
+; Copyright (C) 2018-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,8 +12,9 @@
 
 ;; STATUS: IN-PROGRESS
 
-(include-book "split-list-fast")
+(include-book "split-list-fast-defs")
 (include-book "kestrel/lists-light/perm-def" :dir :system)
+(local (include-book "split-list-fast"))
 (local (include-book "kestrel/lists-light/perm2" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

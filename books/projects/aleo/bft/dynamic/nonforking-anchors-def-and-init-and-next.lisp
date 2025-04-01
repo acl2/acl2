@@ -1,0 +1,774 @@
+; AleoBFT Library
+;
+; Copyright (C) 2024 Provable Inc.
+;
+; License: See the LICENSE file distributed with this library.
+;
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "ALEOBFT-DYNAMIC")
+
+(include-book "committed-anchor-sequences")
+
+(local (include-book "../library-extensions/arithmetic-theorems"))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ nonforking-anchors-def-and-init-and-next
+  :parents (correctness)
+  :short "Invariant that committed anchors do not fork:
+          definition, establishment, and preservation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is most of what is needed to show the non-forking of blockchains,
+     given that, as proved elsewhere, the blockchain in each validator
+     is determined by the anchors committed so far.")
+   (xdoc::p
+    "The non-forking of anchors could be proved from existing invariants,
+     but if we did that, the final proof by induction would not work.
+     Recall that we need to prove non-equivocation and blockchain non-forking
+     simultaneously by induction, as discussed in
+     @(see unequivocal-accepted-certificates-def-and-init) and
+     @(see nonforking-blockchains-def-and-init).
+     If we just proved the non-forking of anchors
+     from existing invariants, which include non-equivocation,
+     which depends on blockchain non-forking,
+     and then proved non-forking of blockchains from non-forking of anchors,
+     things would be circular, not in the way that works with induction.
+     Thus, here we prove the non-forking of anchors by showing that
+     it is established in the initial states and
+     it is preserved by all transitions.")
+   (xdoc::p
+    "Initially no anchors are committed, so clearly there is no forking.
+     The only kind of events that changes the committed anchors
+     is @('commit-anchors'), which extends them.
+     There are a few cases to consider,
+     but in all cases the extension cannot cause forking;
+     this is explained in detail below,
+     in the proofs of preservation.")
+   (xdoc::p
+    "Here we define the invariant,
+     we prove that it holds in all initial states,
+     and we prove that it is preserved by all transitions.
+     In @(see nonforking-anchors) we prove that
+     the invariant holds in every reachable state."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk nonforking-anchors-p ((systate system-statep))
+  :guard (and (ordered-even-p systate)
+              (last-blockchain-round-p systate)
+              (last-anchor-present-p systate))
+  :returns (yes/no booleanp)
+  :short "Definition of the invariant:
+          given two correct validators in the system,
+          their sequences of committed anchor do not fork."
+  (forall (val1 val2)
+          (implies (and (set::in val1 (correct-addresses systate))
+                        (set::in val2 (correct-addresses systate)))
+                   (lists-noforkp
+                    (committed-anchors
+                     (get-validator-state val1 systate)
+                     (all-addresses systate))
+                    (committed-anchors
+                     (get-validator-state val2 systate)
+                     (all-addresses systate)))))
+  :guard-hints (("Goal" :in-theory (enable evenp-of-last-when-ordered-even-p
+                                           last-anchor-present-p-necc)))
+  ///
+  (fty::deffixequiv-sk nonforking-anchors-p
+    :args ((systate system-statep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled nonforking-anchors-p-when-init
+  :short "Establishment of the invariant:
+          the invariant holds in any initial state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Initially the committed anchors are the same (both empty),
+     so they clearly do not fork.
+     The proof does not even depend on their emptiness,
+     just their equality, since both validators' states
+     is @(tsee validator-init)."))
+  (implies (system-initp systate)
+           (nonforking-anchors-p systate))
+  :enable (nonforking-anchors-p
+           system-initp
+           system-validators-initp-necc))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection nonforking-anchors-p-of-next
+  :short "Preservation of the invariant:
+          if the invariant holds in a system state,
+          it also holds in the next system state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The only kind of event that may modify the committed anchors
+     is @('commit-anchors'), whose preservation proof is explained below.
+     For the other five kinds of events, the proof of preservation is easy,
+     because @(tsee committed-anchors) does not change
+     as proved in @(see committed-anchors-of-next),
+     and so if there was no fork before there is no fork after either.")
+   (xdoc::p
+    "To prove the preservation of anchor non-forking under @('commit-anchors'),
+     we need to show that, in the new state,
+     the committed anchor sequences of any two validators do not fork.
+     There are a few cases to consider.")
+   (xdoc::p
+    "If neither of those two validator is the one that commits anchors,
+     their committed anchor sequences do not change,
+     and thus if they were not forking before, they are still not forking.
+     This case is covered by the local lemma @('case-others'),
+     whose proof is easy by using @('committed-anchors-of-commit-anchors-next')
+     to rewrite @(tsee committed-anchors) to the previous values.
+     Otherwise, at least one of the validators must be @('val'),
+     i.e. the one that commits anchors.
+     If both validators are @('val'), then the non-forking is trivial:
+     this case does not even need a lemma;
+     it gets taken care of in the proof of
+     @('nonforking-anchors-p-of-commit-anchors-next-lemma'),
+     which is the main lemma that proves the final theorem.
+     So below we consider the possible cases of
+     one validator being @('val')
+     and the other being a different one @('val0').")
+   (xdoc::p
+    "There are three cases to consider,
+     based on whether the last committed round of @('val0')
+     is equal to, or less than, or greater than
+     the newly committed round of @('val'),
+     which is one less than the current round of @('val').
+     That is, the three cases are whether last committed round of @('val0') is
+     aligned with, behind, or ahead of the newly committed round of @('val'):
+     these three cases are covered by the three local lemmas
+     @('case-other-aligned'), @('case-other-behind'), and @('case-other-ahead'),
+     which we now explain.")
+   (xdoc::p
+    "Common to the three cases and lemmas
+     is the handling of the @(tsee committed-anchors) calls.
+     The one on @('val0') is reduced to the old value,
+     via the @('committed-anchors-of-commit-anchors-next') rule,
+     and then the @(':expand') hint turns that into
+     a call of @(tsee collect-all-anchors).
+     But the one on @('val') is rewritten
+     not via @('committed-anchors-of-commit-anchors-next'),
+     which would result in an @(tsee append),
+     but via
+     @('committed-anchors-of-commit-anchors-next-to-collect-all-anchors'),
+     which produces directly a call of @(tsee collect-all-anchors).
+     For this to work, it is critical that
+     @('committed-anchors-of-commit-anchors-next-to-collect-all-anchors')
+     is introduced after @('committed-anchors-of-commit-anchors-next'),
+     and thus it is reliably tried first by ACL2,
+     according to its ordered history of events.
+     The reason why we use an @(':expand') hint,
+     instead of just enabling @(tsee committed-anchors),
+     is that it would interfere with the two rewrite rules.
+     Any case, this strategy results in @(tsee lists-noforkp)
+     applied to two calls of @(tsee collect-all-anchors),
+     in all three lemmas.")
+   (xdoc::p
+    "Another commonality among the three lemmas is that
+     they do not need the hypothesis that
+     @(tsee nonforking-anchors-p) holds on the old state.
+     That hypothesis is not needed, because we prove the non-forking
+     directly on the two calls of @(tsee collect-all-anchors)
+     that result from the proof strategy described above.
+     Note that, when the committed anchors of @('val') are extended,
+     they may become aligned with, or behind, or ahead of,
+     the committed anchors of @('val0'),
+     regardless of whether, in the old state,
+     they were aligned, or behind, or ahead;
+     it is indeed simpler to just consider the two new anchor sequences,
+     without regard to the two old anchor sequences.")
+   (xdoc::p
+    "In the lemma @('case-other-aligned'),
+     the last anchor committed by @('val0') (which does not change),
+     and the new anchor committed by @('val'),
+     are the same certificate,
+     because they are at the same round (by hypothesis of the case),
+     and because the leader at that common round is also the same,
+     given that committees agree across @('val') and @('val0').
+     The fact that the two certificate are equal
+     is proved via @('cert-with-author+round-of-unequivocal-sets'),
+     and then the key theorem is @('collect-all-anchors-of-unequivocal-dags'),
+     which says that the anchors collected from a common certificate
+     are the same in the two validators.
+     The rest of the hints in the proof serve to
+     relieve hypotheses of these two key theorems we use.")
+   (xdoc::p
+    "In the lemma @('case-other-behind'),
+     the last anchor committed by @('val0') (which does not change)
+     is behind the new anchor committed by @('val').
+     We already proved in @(tsee omni-paths-p-implied)
+     that, since the last anchor of @('val0') has at least @($f+1$) votes,
+     there are paths to it in every DAG (including the one of @('val')),
+     from certificates at least two rounds ahead.
+     By hypothesis of the case, the new anchor committed by @('val')
+     is ahead of the last anchor of @('val0'),
+     and they are all at even rounds,
+     so it is at least two rounds ahead.
+     So the key theorem we apply here is
+     @('collect-all-anchors-to-append-of-collect-anchors-dags'),
+     which lets us rewrite the new anchors committed by @('val'),
+     expressed as a call of @(tsee collect-all-anchors) as explained above,
+     as an append of something (irrelevant here) to
+     the anchors committed by @('val0'),
+     from which @(tsee lists-noforkp) follows
+     (via enabled rules about that function).
+     The rest of the hints in @('case-other-behind')
+     serve to relieve the hypotheses of the key theorem we use in the proof.")
+   (xdoc::p
+    "In the lemma @('case-other-ahead'),
+     the last anchor committed by @('val0') (which does not change)
+     is ahead of the new anchor committed by @('val').
+     The key theorem in this proof is again
+     @('collect-all-anchors-to-append-of-collect-anchors-dags'),
+     with the roles of the validators swapped.
+     But here we can no longer obtain
+     the omni-paths property directly from an invariant as in the previous case.
+     But the property still holds,
+     given that the new committed anchor of @('val')
+     has at least @($f+1$) votes (i.e. successors).
+     So we prove, just before the lemma for the case,
+     the theorem @('dag-omni-paths-p-when-commit-anchors-possiblep'),
+     which says that the omni-paths property holds
+     when @(tsee commit-anchors-possiblep) holds.
+     The key theorem in that proof is @('dag-omni-paths-p-holds'),
+     whose hypotheses are all fairly direct to relieve,
+     but note that we need to use
+     @('cardinality-of-successors-to-tally-leader-votes')
+     as a bridge between the @($f+1$) hypothesis
+     of @('dag-omni-paths-p-holds'),
+     which is in terms of @(tsee successors),
+     and the @($f+1$) check performed by @(tsee commit-anchors-possiblep),
+     which is in terms of @(tsee tally-leader-votes).
+     The hypotheses about @(tsee dag-rounds-in-committees-p)
+     can be discharged directly from @(tsee rounds-in-committees-p),
+     but that is a consequence of other invariants,
+     so we use the latter in the theorem.
+     Back to the lemma @('case-other-ahead'),
+     we use the just proved @('dag-omni-paths-p-when-commit-anchors-possiblep')
+     to relieve the hypothesis about omni-paths of
+     @('collect-all-anchors-to-append-of-collect-anchors-dags').
+     So the proof of this @('case-other-ahead')
+     is fairly similar to @('case-other-behind'),
+     except for how we discharge the omni-paths hypothesis.")
+   (xdoc::p
+    "The local lemma @('nonforking-anchors-p-of-commit-anchors-next-lemma')
+     uses the four @('case-...') lemmas described above.
+     Since the lemma is over generic @('val1') and @('val2'),
+     we need to instantiate each the three latter lemmas twice,
+     with @('val0') playing the role of @('val1') or @('val2').
+     The lemma @('case-others') is only used once,
+     because it is already formulated on @('val1') and @('val2').
+     Attempting to use these four lemmas just as rewrite rules
+     does not make the proof succeed:
+     they would probably necessitate a @(':cases') hint
+     corresponding to the cases of the lemmas,
+     but the @(':use') hint looks simpler and shorter.")
+   (xdoc::p
+    "From @('nonforking-anchors-p-of-commit-anchors-next-lemma'),
+     the main theorem @('nonforking-anchors-p-of-commit-anchors-next')
+     easily follows."))
+
+  ;; create-certificate:
+
+  (defruled nonforking-anchors-p-of-create-certificate-next
+    (implies (and (nonforking-anchors-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (signer-records-p systate)
+                  (committees-in-system-p systate)
+                  (system-fault-tolerant-p systate)
+                  (signer-quorum-p systate)
+                  (same-committees-p systate)
+                  (no-self-buffer-p systate)
+                  (no-self-endorsed-p systate)
+                  (same-owned-certificates-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (last-anchor-present-p systate)
+                  (backward-closed-p systate)
+                  (create-certificate-possiblep cert systate))
+             (nonforking-anchors-p (create-certificate-next cert systate)))
+    :enable (nonforking-anchors-p
+             nonforking-anchors-p-necc
+             committed-anchors-of-create-certificate-next))
+
+  ;; receive-certificate:
+
+  (defruled nonforking-anchors-p-of-receive-certificate-next
+    (implies (and (nonforking-anchors-p systate)
+                  (receive-certificate-possiblep msg systate))
+             (nonforking-anchors-p (receive-certificate-next msg systate)))
+    :enable (nonforking-anchors-p
+             nonforking-anchors-p-necc
+             committed-anchors-of-receive-certificate-next))
+
+  ;; store-certificate:
+
+  (defruled nonforking-anchors-p-of-store-certificate-next
+    (implies (and (nonforking-anchors-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (signer-records-p systate)
+                  (committees-in-system-p systate)
+                  (system-fault-tolerant-p systate)
+                  (signer-quorum-p systate)
+                  (same-committees-p systate)
+                  (no-self-buffer-p systate)
+                  (no-self-endorsed-p systate)
+                  (same-owned-certificates-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (last-anchor-present-p systate)
+                  (backward-closed-p systate)
+                  (store-certificate-possiblep val cert systate))
+             (nonforking-anchors-p (store-certificate-next val cert systate)))
+    :enable (nonforking-anchors-p
+             nonforking-anchors-p-necc
+             committed-anchors-of-store-certificate-next))
+
+  ;; advance-round:
+
+  (defruled nonforking-anchors-p-of-advance-round-next
+    (implies (and (nonforking-anchors-p systate)
+                  (advance-round-possiblep val systate))
+             (nonforking-anchors-p (advance-round-next val systate)))
+    :enable (nonforking-anchors-p
+             nonforking-anchors-p-necc
+             committed-anchors-of-advance-round-next))
+
+  ;; commit-anchors:
+
+  (defruledl case-others
+    (implies (and (nonforking-anchors-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (omni-paths-p systate)
+                  (last-anchor-present-p systate)
+                  (commit-anchors-possiblep val systate)
+                  (set::in val1 (correct-addresses systate))
+                  (set::in val2 (correct-addresses systate))
+                  (not (equal val1 (address-fix val)))
+                  (not (equal val2 (address-fix val))))
+             (lists-noforkp
+              (committed-anchors (get-validator-state
+                                  val1 (commit-anchors-next val systate))
+                                 (all-addresses systate))
+              (committed-anchors (get-validator-state
+                                  val2 (commit-anchors-next val systate))
+                                 (all-addresses systate))))
+    :enable (nonforking-anchors-p-necc
+             committed-anchors-of-commit-anchors-next))
+
+  (defruledl case-other-aligned
+    (implies (and (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (omni-paths-p systate)
+                  (last-anchor-present-p systate)
+                  (backward-closed-p systate)
+                  (same-committees-p systate)
+                  (commit-anchors-possiblep val systate)
+                  (set::in val0 (correct-addresses systate))
+                  (not (equal val0 val))
+                  (addressp val)
+                  (equal (validator-state->last
+                          (get-validator-state val0 systate))
+                         (1- (validator-state->round
+                              (get-validator-state val systate)))))
+             (lists-noforkp
+              (committed-anchors (get-validator-state
+                                  val0 (commit-anchors-next val systate))
+                                 (all-addresses systate))
+              (committed-anchors (get-validator-state
+                                  val (commit-anchors-next val systate))
+                                 (all-addresses systate))))
+    :enable (committed-anchors-of-commit-anchors-next-to-collect-all-anchors
+             committed-anchors-of-commit-anchors-next
+             commit-anchors-possiblep
+             last-anchor
+             same-committees-p-necc
+             active-committee-at-previous-round-when-at-round
+             certificate-sets-unequivocalp-when-unequivocal-accepted
+             certificate-set-unequivocalp-when-unequivocal-accepted
+             backward-closed-p-necc
+             dag-committees-p-when-accepted-certificate-committee-p
+             cert-with-author+round-element)
+    :expand (committed-anchors (get-validator-state val0 systate)
+                               (all-addresses systate))
+    :use ((:instance last-anchor-present-p-necc (val val0))
+          (:instance same-active-committees-p-necc
+                     (blocks1 (validator-state->blockchain
+                               (get-validator-state val systate)))
+                     (blocks2 (validator-state->blockchain
+                               (get-validator-state val0 systate)))
+                     (round (validator-state->last
+                             (get-validator-state val0 systate)))
+                     (all-vals (all-addresses systate)))
+          (:instance cert-with-author+round-of-unequivocal-sets
+                     (author
+                      (leader-at-round
+                       (validator-state->last
+                        (get-validator-state val0 systate))
+                       (active-committee-at-round
+                        (validator-state->last
+                         (get-validator-state val0 systate))
+                        (validator-state->blockchain
+                         (get-validator-state val systate))
+                        (all-addresses systate))))
+                     (round
+                      (validator-state->last
+                       (get-validator-state val0 systate)))
+                     (certs1 (validator-state->dag
+                              (get-validator-state val systate)))
+                     (certs2 (validator-state->dag
+                              (get-validator-state val0 systate))))
+          (:instance collect-all-anchors-of-unequivocal-dags
+                     (dag1 (validator-state->dag
+                            (get-validator-state val systate)))
+                     (dag2 (validator-state->dag
+                            (get-validator-state val0 systate)))
+                     (blockchain1 (validator-state->blockchain
+                                   (get-validator-state val systate)))
+                     (blockchain2 (validator-state->blockchain
+                                   (get-validator-state val0 systate)))
+                     (all-vals (all-addresses systate))
+                     (last-anchor (last-anchor
+                                   (get-validator-state val0 systate)
+                                   (all-addresses systate))))))
+
+  (defruledl case-other-behind
+    (implies (and (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (omni-paths-p systate)
+                  (last-anchor-present-p systate)
+                  (backward-closed-p systate)
+                  (same-committees-p systate)
+                  (commit-anchors-possiblep val systate)
+                  (set::in val0 (correct-addresses systate))
+                  (not (equal val0 val))
+                  (addressp val)
+                  (< (validator-state->last
+                      (get-validator-state val0 systate))
+                     (1- (validator-state->round
+                          (get-validator-state val systate)))))
+             (lists-noforkp
+              (committed-anchors (get-validator-state
+                                  val0 (commit-anchors-next val systate))
+                                 (all-addresses systate))
+              (committed-anchors (get-validator-state
+                                  val (commit-anchors-next val systate))
+                                 (all-addresses systate))))
+    :enable (committed-anchors-of-commit-anchors-next-to-collect-all-anchors
+             committed-anchors-of-commit-anchors-next
+             commit-anchors-possiblep
+             certificate-set-unequivocalp-when-unequivocal-accepted
+             dag-committees-p-when-accepted-certificate-committee-p
+             certificate-sets-unequivocalp-when-unequivocal-accepted
+             backward-closed-p-necc
+             cert-with-author+round-element
+             omni-paths-p-necc
+             last-anchor-present-p-necc
+             certificate->round-of-cert-with-author+round
+             aleobft::evenp-of-1-less-when-not-evenp
+             last-anchor-in-dag
+             same-committees-p-necc
+             certificate->round-of-last-anchor
+             last-blockchain-round-p-necc
+             evenp-of-blocks-last-round
+             ordered-even-p-necc
+             certificate->author-of-last-anchor)
+    :expand (committed-anchors (get-validator-state val0 systate)
+                               (all-addresses systate))
+    :use (:instance collect-all-anchors-to-append-of-collect-anchors-dags
+                    (dag1 (validator-state->dag
+                           (get-validator-state val0 systate)))
+                    (dag2 (validator-state->dag
+                           (get-validator-state val systate)))
+                    (blockchain1 (validator-state->blockchain
+                                  (get-validator-state val0 systate)))
+                    (blockchain2 (validator-state->blockchain
+                                  (get-validator-state val systate)))
+                    (anchor1 (last-anchor
+                              (get-validator-state val0 systate)
+                              (all-addresses systate)))
+                    (anchor2 (cert-with-author+round
+                              (leader-at-round
+                               (1- (validator-state->round
+                                    (get-validator-state val systate)))
+                               (active-committee-at-round
+                                (1- (validator-state->round
+                                     (get-validator-state val systate)))
+                                (validator-state->blockchain
+                                 (get-validator-state val systate))
+                                (all-addresses systate)))
+                              (1- (validator-state->round
+                                   (get-validator-state val systate)))
+                              (validator-state->dag
+                               (get-validator-state val systate))))
+                    (all-vals (all-addresses systate))))
+
+  (defruled dag-omni-paths-p-when-commit-anchors-possiblep
+    (implies (and (unequivocal-accepted-certificates-p systate)
+                  (backward-closed-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (same-committees-p systate)
+                  (signer-quorum-p systate)
+                  (previous-quorum-p systate)
+                  (set::in val0 (correct-addresses systate))
+                  (commit-anchors-possiblep val systate)
+                  (addressp val))
+             (dag-omni-paths-p (cert-with-author+round
+                                (leader-at-round
+                                 (1- (validator-state->round
+                                      (get-validator-state val systate)))
+                                 (active-committee-at-round
+                                  (1- (validator-state->round
+                                       (get-validator-state val systate)))
+                                  (validator-state->blockchain
+                                   (get-validator-state val systate))
+                                  (all-addresses systate)))
+                                (1- (validator-state->round
+                                     (get-validator-state val systate)))
+                                (validator-state->dag
+                                 (get-validator-state val systate)))
+                               (validator-state->dag
+                                (get-validator-state val0 systate))))
+    :enable (commit-anchors-possiblep
+             certificate-set-unequivocalp-when-unequivocal-accepted
+             certificate-sets-unequivocalp-when-unequivocal-accepted
+             dag-committees-p-when-accepted-certificate-committee-p
+             dag-predecessor-cardinality-p-when-previous-quorum-p
+             cert-with-author+round-element
+             backward-closed-p-necc
+             certificate->author-of-cert-with-author+round
+             certificate->round-of-cert-with-author+round
+             fix
+             cardinality-of-successors-to-tally-leader-votes
+             same-committees-p-necc
+             rounds-in-committees-p-necc
+             rounds-in-committees-p-invariant)
+    :use (:instance dag-omni-paths-p-holds
+                    (dag1 (validator-state->dag
+                           (get-validator-state val systate)))
+                    (dag2 (validator-state->dag
+                           (get-validator-state val0 systate)))
+                    (blocks1 (validator-state->blockchain
+                              (get-validator-state val systate)))
+                    (blocks2 (validator-state->blockchain
+                              (get-validator-state val0 systate)))
+                    (cert (cert-with-author+round
+                           (leader-at-round
+                            (1- (validator-state->round
+                                 (get-validator-state val systate)))
+                            (active-committee-at-round
+                             (1- (validator-state->round
+                                  (get-validator-state val systate)))
+                             (validator-state->blockchain
+                              (get-validator-state val systate))
+                             (all-addresses systate)))
+                           (1- (validator-state->round
+                                (get-validator-state val systate)))
+                           (validator-state->dag
+                            (get-validator-state val systate))))
+                    (all-vals (all-addresses systate))))
+
+  (defruledl case-other-ahead
+    (implies (and (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (omni-paths-p systate)
+                  (last-anchor-present-p systate)
+                  (backward-closed-p systate)
+                  (same-committees-p systate)
+                  (signer-quorum-p systate)
+                  (previous-quorum-p systate)
+                  (commit-anchors-possiblep val systate)
+                  (set::in val0 (correct-addresses systate))
+                  (not (equal val0 val))
+                  (addressp val)
+                  (> (validator-state->last
+                      (get-validator-state val0 systate))
+                     (1- (validator-state->round
+                          (get-validator-state val systate)))))
+             (lists-noforkp
+              (committed-anchors (get-validator-state
+                                  val0 (commit-anchors-next val systate))
+                                 (all-addresses systate))
+              (committed-anchors (get-validator-state
+                                  val (commit-anchors-next val systate))
+                                 (all-addresses systate))))
+    :enable (committed-anchors-of-commit-anchors-next-to-collect-all-anchors
+             committed-anchors-of-commit-anchors-next
+             commit-anchors-possiblep
+             certificate-set-unequivocalp-when-unequivocal-accepted
+             certificate-sets-unequivocalp-when-unequivocal-accepted
+             dag-committees-p-when-accepted-certificate-committee-p
+             backward-closed-p-necc
+             last-anchor-present-p-necc
+             last-anchor-in-dag
+             certificate->round-of-cert-with-author+round
+             aleobft::evenp-of-1-less-when-not-evenp
+             same-committees-p-necc
+             dag-omni-paths-p-when-commit-anchors-possiblep
+             certificate->round-of-last-anchor
+             last-blockchain-round-p-necc
+             evenp-of-blocks-last-round
+             ordered-even-p-necc
+             cert-with-author+round-element
+             certificate->author-of-cert-with-author+round)
+    :expand (committed-anchors (get-validator-state val0 systate)
+                               (all-addresses systate))
+    :use (:instance collect-all-anchors-to-append-of-collect-anchors-dags
+                    (dag1 (validator-state->dag
+                           (get-validator-state val systate)))
+                    (dag2 (validator-state->dag
+                           (get-validator-state val0 systate)))
+                    (blockchain1 (validator-state->blockchain
+                                  (get-validator-state val systate)))
+                    (blockchain2 (validator-state->blockchain
+                                  (get-validator-state val0 systate)))
+                    (anchor1 (cert-with-author+round
+                              (leader-at-round
+                               (1- (validator-state->round
+                                    (get-validator-state val systate)))
+                               (active-committee-at-round
+                                (1- (validator-state->round
+                                     (get-validator-state val systate)))
+                                (validator-state->blockchain
+                                 (get-validator-state val systate))
+                                (all-addresses systate)))
+                              (1- (validator-state->round
+                                   (get-validator-state val systate)))
+                              (validator-state->dag
+                               (get-validator-state val systate))))
+                    (anchor2 (last-anchor
+                              (get-validator-state val0 systate)
+                              (all-addresses systate)))
+                    (all-vals (all-addresses systate))))
+
+  (defruled nonforking-anchors-p-of-commit-anchors-next-lemma
+    (implies (and (nonforking-anchors-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (omni-paths-p systate)
+                  (last-anchor-present-p systate)
+                  (backward-closed-p systate)
+                  (same-committees-p systate)
+                  (signer-quorum-p systate)
+                  (previous-quorum-p systate)
+                  (commit-anchors-possiblep val systate)
+                  (set::in val1 (correct-addresses systate))
+                  (set::in val2 (correct-addresses systate)))
+             (lists-noforkp
+              (committed-anchors (get-validator-state
+                                  val1 (commit-anchors-next val systate))
+                                 (all-addresses systate))
+              (committed-anchors (get-validator-state
+                                  val2 (commit-anchors-next val systate))
+                                 (all-addresses systate))))
+    :use (:instance lemma (val (address-fix val)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (nonforking-anchors-p systate)
+                     (ordered-even-p systate)
+                     (last-blockchain-round-p systate)
+                     (accepted-certificate-committee-p systate)
+                     (unequivocal-accepted-certificates-p systate)
+                     (omni-paths-p systate)
+                     (last-anchor-present-p systate)
+                     (backward-closed-p systate)
+                     (same-committees-p systate)
+                     (signer-quorum-p systate)
+                     (previous-quorum-p systate)
+                     (commit-anchors-possiblep val systate)
+                     (set::in val1 (correct-addresses systate))
+                     (set::in val2 (correct-addresses systate))
+                     (addressp val))
+                (lists-noforkp
+                 (committed-anchors (get-validator-state
+                                     val1 (commit-anchors-next val systate))
+                                    (all-addresses systate))
+                 (committed-anchors (get-validator-state
+                                     val2 (commit-anchors-next val systate))
+                                    (all-addresses systate))))
+       :use (case-others
+             (:instance case-other-aligned (val0 val1))
+             (:instance case-other-aligned (val0 val2))
+             (:instance case-other-behind (val0 val1))
+             (:instance case-other-behind (val0 val2))
+             (:instance case-other-ahead (val0 val1))
+             (:instance case-other-ahead (val0 val2))))))
+
+  (defruled nonforking-anchors-p-of-commit-anchors-next
+    (implies (and (nonforking-anchors-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (omni-paths-p systate)
+                  (last-anchor-present-p systate)
+                  (backward-closed-p systate)
+                  (same-committees-p systate)
+                  (signer-quorum-p systate)
+                  (previous-quorum-p systate)
+                  (commit-anchors-possiblep val systate))
+             (nonforking-anchors-p (commit-anchors-next val systate)))
+    :expand (nonforking-anchors-p (commit-anchors-next val systate))
+    :enable nonforking-anchors-p-of-commit-anchors-next-lemma)
+
+  ;; timer-expires:
+
+  (defruled nonforking-anchors-p-of-timer-expired-next
+    (implies (and (nonforking-anchors-p systate)
+                  (timer-expires-possiblep val systate))
+             (nonforking-anchors-p (timer-expires-next val systate)))
+    :enable (nonforking-anchors-p
+             nonforking-anchors-p-necc
+             committed-anchors-of-timer-expires-next))
+
+  ;; all events:
+
+  (defruled nonforking-anchors-p-of-event-next
+    (implies (and (nonforking-anchors-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (omni-paths-p systate)
+                  (last-anchor-present-p systate)
+                  (backward-closed-p systate)
+                  (same-committees-p systate)
+                  (signer-quorum-p systate)
+                  (previous-quorum-p systate)
+                  (signer-records-p systate)
+                  (committees-in-system-p systate)
+                  (no-self-buffer-p systate)
+                  (no-self-endorsed-p systate)
+                  (same-owned-certificates-p systate)
+                  (system-fault-tolerant-p systate)
+                  (event-possiblep event systate))
+             (nonforking-anchors-p (event-next event systate)))
+    :enable (event-possiblep
+             event-next)))

@@ -16,6 +16,10 @@
 ;; See also split-list-fast-rules.lisp.
 
 (include-book "split-list-fast-defs")
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/lists-light/revappend" :dir :system))
+(local (include-book "kestrel/lists-light/cons" :dir :system))
+(local (include-book "kestrel/lists-light/cdr" :dir :system))
 
 (in-theory (disable mv-nth)) ;; We always keep mv-nth disabled.  (we could go to nth, but then do we go to car if n=0?)
 
@@ -81,6 +85,7 @@
 ;; This is helpful when all we care about is splitting the list into two pieces of roughly the same size, not the order and not which elements go in which half), e.g., for mergesort.
 ;; Returns (mv first-half-rev second-half) where FIRST-HALF-REV is the first half of the elements in reverse.
 ;fixme would it be faster to compute the length of the list first and then walk down that many elements (would require arithmetic)?
+;dup
 (defund split-list-fast (lst)
   (declare (xargs :guard (true-listp lst)))
   (split-list-fast-aux lst lst nil))
@@ -145,3 +150,51 @@
   (equal (consp (mv-nth 1 (split-list-fast lst)))
          (consp lst))
   :hints (("Goal" :in-theory (enable split-list-fast))))
+
+(local (in-theory (disable floor)))
+
+;; We can probably use these to improve some proofs about split-list-fast:
+
+(defthmd mv-nth-0-of-split-list-fast-aux
+  (equal (mv-nth 0 (split-list-fast-aux lst tail acc))
+         (append (reverse (take (floor (len tail) 2) lst))
+                 acc)))
+
+(defthmd mv-nth-1-of-split-list-fast-aux
+ (equal (mv-nth 1 (split-list-fast-aux lst tail acc))
+        (nthcdr (floor (len tail) 2)
+                lst)))
+
+(defthmd mv-nth-0-of-split-list-fast
+  (equal (mv-nth 0 (split-list-fast lst))
+         (reverse (take (floor (len lst) 2) lst)))
+  :hints (("Goal" :in-theory (enable split-list-fast
+                                     mv-nth-0-of-split-list-fast-aux))))
+
+(defthmd mv-nth-1-of-split-list-fast
+  (equal (mv-nth 1 (split-list-fast lst))
+         (nthcdr (floor (len lst) 2) lst))
+  :hints (("Goal" :in-theory (enable split-list-fast
+                                     mv-nth-1-of-split-list-fast-aux))))
+
+(local
+ (defthm len-of-split-list-fast-aux
+   (equal (len (split-list-fast-aux lst tail acc))
+          2)
+   :hints (("Goal" :in-theory (enable split-list-fast)))))
+
+(local
+ (defthm len-of-split-list-fast
+   (equal (len (split-list-fast lst))
+          2)
+   :hints (("Goal" :in-theory (enable split-list-fast)))))
+
+(defthmd split-list-fast-redef
+  (equal (split-list-fast lst)
+         (mv (reverse (take (floor (len lst) 2) lst))
+             (nthcdr (floor (len lst) 2) lst)))
+  :hints (("Goal" :use (mv-nth-0-of-split-list-fast
+                        mv-nth-1-of-split-list-fast
+                        len-of-split-list-fast)
+           :expand (mv-nth 1 (split-list-fast lst))
+           :in-theory (e/d (mv-nth) (len-of-split-list-fast)))))

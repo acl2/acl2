@@ -1,7 +1,7 @@
 ; BV Library: bvxor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -461,8 +461,8 @@
                 (natp size2)
                 (integerp y)
                 (integerp x))
-           (equal (Bvxor size1 (BVCHOP size2 y) x)
-                  (Bvxor size1 (BVCHOP size1 y) x)))
+           (equal (bvxor size1 (bvchop size2 y) x)
+                  (bvxor size1 (bvchop size1 y) x)))
   :hints (("Goal" :in-theory (enable bvxor ;bvchop-bvchop
                                      ))))
 
