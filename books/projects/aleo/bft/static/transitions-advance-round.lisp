@@ -76,7 +76,7 @@
        (vals (all-addresses systate)))
     (if (evenp round)
         (b* ((leader (leader-at-round round vals))
-             (anchor? (certificate-with-author+round leader round dag)))
+             (anchor? (cert-with-author+round leader round dag)))
           (or (and anchor? t)
               (and timeout
                    (>= (set::cardinality
@@ -85,7 +85,7 @@
       (or (equal round 1)
           (b* ((leader (leader-at-round (1- round) vals))
                (anchor?
-                (certificate-with-author+round leader (1- round) dag))
+                (cert-with-author+round leader (1- round) dag))
                (voters (certificates-with-round round dag))
                ((mv yes-votes no-votes) (tally-leader-votes leader voters)))
             (or (not anchor?)

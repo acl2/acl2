@@ -70,7 +70,7 @@
     "If the validator is faulty, the check passes:
      the requirement of the invariant only applies to correct validators.
      For a correct validator, we check that
-     @(tsee certificate-with-author+round) is not @('nil')
+     @(tsee cert-with-author+round) is not @('nil')
      on the DAG or buffer
      (i.e. that a certificate with that author and round is there),
      or the pair is in the set of endorsed pairs."))
@@ -78,8 +78,8 @@
        ((when (not vstate)) t)
        ((validator-state vstate) vstate))
     (or
-     (and (certificate-with-author+round author round vstate.dag) t)
-     (and (certificate-with-author+round author round vstate.buffer) t)
+     (and (cert-with-author+round author round vstate.dag) t)
+     (and (cert-with-author+round author round vstate.buffer) t)
      (set::in (make-address+pos :address author :pos round)
               vstate.endorsed)))
 
@@ -190,7 +190,7 @@
              signer-has-author+round-p
              get-validator-state-iff-in-correct-addresses
              get-validator-state-of-update-validator-state
-             certificate-with-author+round-of-insert-iff
+             cert-with-author+round-of-insert-iff
              validator-state->dag-of-add-endorsed
              validator-state->buffer-of-add-endorsed
              validator-state->endorsed-of-add-endorsed))
@@ -235,7 +235,7 @@
              receive-certificate-next-val
              signer-has-author+round-p
              get-validator-state-of-update-validator-state
-             certificate-with-author+round-of-insert-iff))
+             cert-with-author+round-of-insert-iff))
 
   (defruled system-signers-have-author+round-p-of-receive-certificate-next
     (implies (and (system-signers-have-author+round-p systate)
@@ -281,18 +281,21 @@
              store-certificate-next-val
              signer-has-author+round-p
              get-validator-state-of-update-validator-state
-             certificate-with-author+round-of-insert-iff)
+             cert-with-author+round-of-insert-iff)
     :prep-lemmas
     ((defrule lemma
-       (implies (and (certificate-with-author+round author round certs)
-                     (not (certificate-with-author+round
+       (implies (and (cert-with-author+round author round certs)
+                     (addressp author)
+                     (posp round)
+                     (not (cert-with-author+round
                            author round (set::delete cert certs))))
                 (and (equal (certificate->author cert) author)
                      (equal (certificate->round cert) round)))
        :induct t
-       :enable (certificate-with-author+round
-                certificate-with-author+round-of-insert-iff
-                set::delete))))
+       :enable (cert-with-author+round
+                cert-with-author+round-of-insert-iff
+                set::delete
+                emptyp-of-certificate-set-fix))))
 
   (defruled system-signers-have-author+round-p-of-store-certificate-next
     (implies (and (system-signers-have-author+round-p systate)

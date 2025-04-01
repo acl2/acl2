@@ -547,7 +547,7 @@
              pos-fix
              evenp
              accepted-certificate-committee-p-necc-fixing-binding
-             certificate->round-of-certificate-with-author+round))
+             certificate->round-of-cert-with-author+round))
 
   (defruled previous-quorum-p-of-commit-anchors-next
     (implies (and (ordered-even-p systate)

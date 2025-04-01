@@ -520,27 +520,27 @@
     :expand (dirdeclor-unambp (dirdeclor-paren declor)))
 
   (defrule dirdeclor-unambp-of-dirdeclor-array
-    (equal (dirdeclor-unambp (dirdeclor-array decl tyquals expr?))
+    (equal (dirdeclor-unambp (dirdeclor-array decl quals expr?))
            (and (dirdeclor-unambp decl)
                 (expr-option-unambp expr?)))
-    :expand (dirdeclor-unambp (dirdeclor-array decl tyquals expr?)))
+    :expand (dirdeclor-unambp (dirdeclor-array decl quals expr?)))
 
   (defrule dirdeclor-unambp-of-dirdeclor-array-static1
-    (equal (dirdeclor-unambp (dirdeclor-array-static1 decl tyquals expr))
+    (equal (dirdeclor-unambp (dirdeclor-array-static1 decl quals expr))
            (and (dirdeclor-unambp decl)
                 (expr-unambp expr)))
-    :expand (dirdeclor-unambp (dirdeclor-array-static1 decl tyquals expr)))
+    :expand (dirdeclor-unambp (dirdeclor-array-static1 decl quals expr)))
 
   (defrule dirdeclor-unambp-of-dirdeclor-array-static2
-    (equal (dirdeclor-unambp (dirdeclor-array-static2 decl tyquals expr))
+    (equal (dirdeclor-unambp (dirdeclor-array-static2 decl quals expr))
            (and (dirdeclor-unambp decl)
                 (expr-unambp expr)))
-    :expand (dirdeclor-unambp (dirdeclor-array-static2 decl tyquals expr)))
+    :expand (dirdeclor-unambp (dirdeclor-array-static2 decl quals expr)))
 
   (defrule dirdeclor-unambp-of-dirdeclor-array-star
-    (equal (dirdeclor-unambp (dirdeclor-array-star decl tyquals))
+    (equal (dirdeclor-unambp (dirdeclor-array-star decl quals))
            (dirdeclor-unambp decl))
-    :expand (dirdeclor-unambp (dirdeclor-array-star decl tyquals)))
+    :expand (dirdeclor-unambp (dirdeclor-array-star decl quals)))
 
   (defrule dirdeclor-unambp-of-dirdeclor-function-params
     (equal (dirdeclor-unambp (dirdeclor-function-params decl params ellipses))

@@ -121,13 +121,13 @@
      the buffer has some certificate with the given author and round,
      or the given author and round are in the set of endorsed pairs.
      We express the first two conditions by saying that
-     @(tsee certificate-with-author+round) does not return @('nil')."))
+     @(tsee cert-with-author+round) does not return @('nil')."))
   (b* (((validator-state vstate) vstate)
        (author (address-fix author))
        (round (pos-fix round)))
-    (or (and (certificate-with-author+round author round vstate.dag)
+    (or (and (cert-with-author+round author round vstate.dag)
              t)
-        (and (certificate-with-author+round author round vstate.buffer)
+        (and (cert-with-author+round author round vstate.buffer)
              t)
         (set::in (make-address+pos :address author :pos round)
                  vstate.endorsed)))
@@ -226,7 +226,7 @@
              validator-state->buffer-of-create-certificate-next
              validator-state->endorsed-of-create-certificate-next
              certificate->signers
-             certificate-with-author+round-of-insert-iff))
+             cert-with-author+round-of-insert-iff))
 
   (defruled signer-record-p-of-create-certificate-next-old
     (implies (and (set::in signer (correct-addresses systate))
@@ -241,7 +241,7 @@
              validator-state->dag-of-create-certificate-next
              validator-state->buffer-of-create-certificate-next
              validator-state->endorsed-of-create-certificate-next
-             certificate-with-author+round-of-insert-iff))
+             cert-with-author+round-of-insert-iff))
 
   (defruled signer-records-p-of-create-certificate-next
     (implies (signer-records-p systate)
@@ -268,7 +268,7 @@
              validator-state->dag-of-receive-certificate-next
              validator-state->buffer-of-receive-certificate-next
              validator-state->endorsed-of-receive-certificate-next
-             certificate-with-author+round-of-insert-iff))
+             cert-with-author+round-of-insert-iff))
 
   (defruled signer-records-p-of-receive-certificate-next
     (implies (and (signer-records-p systate)
@@ -297,8 +297,8 @@
              validator-state->dag-of-store-certificate-next
              validator-state->buffer-of-store-certificate-next
              validator-state->endorsed-of-store-certificate-next
-             certificate-with-author+round-of-insert-iff
-             certificate-with-author+round-of-delete))
+             cert-with-author+round-of-insert-iff
+             cert-with-author+round-of-delete))
 
   (defruled signer-records-p-of-store-certificate-next
     (implies (and (signer-records-p systate)

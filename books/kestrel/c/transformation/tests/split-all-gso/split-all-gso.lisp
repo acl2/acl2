@@ -31,10 +31,11 @@
 
   (split-all-gso *old* *new*)
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.SPLITGSO.SPLITGSO.c"
+    :file "new/test1.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 struct myStruct_0 { _Bool bar; unsigned long int baz; };
 struct myStruct_0_0 { unsigned long int baz; };
@@ -58,10 +59,11 @@ int main(void) {
 
   (split-all-gso *old* *new*)
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test2.SPLITGSO.SPLITGSO.c"
+    :file "new/test2.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 struct myStruct_0 { _Bool bar; unsigned long int baz; };
 struct myStruct_0_0 { unsigned long int baz; };
@@ -91,10 +93,11 @@ int main(void) {
 
   (split-all-gso *old* *new*)
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "static-struct1.SPLITGSO.SPLITGSO.SPLITGSO.SPLITGSO.c"
+    :file "new/static-struct1.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 struct myStruct_0 { _Bool bar; unsigned long int baz; };
 struct myStruct_0_0 { unsigned long int baz; };
@@ -110,7 +113,7 @@ int main(void) {
 }
 ")
   (assert-file-contents
-    :file "static-struct2.SPLITGSO.SPLITGSO.SPLITGSO.SPLITGSO.c"
+    :file "new/static-struct2.c"
     :content "struct myStruct { int a; int b; };
 struct myStruct_2 { int b; };
 struct myStruct_3 { int a; };
@@ -131,7 +134,7 @@ int foo(void) {
 }
 ")
   (assert-file-contents
-    :file "extern-struct.SPLITGSO.SPLITGSO.SPLITGSO.SPLITGSO.c"
+    :file "new/extern-struct.c"
     :content "struct S { unsigned int x; unsigned int y; };
 struct S_0 { unsigned int y; };
 struct S_1 { unsigned int x; };

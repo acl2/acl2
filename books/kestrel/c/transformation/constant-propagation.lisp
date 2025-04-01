@@ -1230,7 +1230,7 @@
                      (const-prop-expr-option dirdeclor.expr? env)))
                  (mv (make-dirdeclor-array
                        :declor decl
-                       :tyquals dirdeclor.tyquals
+                       :quals dirdeclor.quals
                        :expr? expr?)
                      env))
         :array-static1 (b* (((mv decl env)
@@ -1239,7 +1239,7 @@
                              (const-prop-expr dirdeclor.expr env)))
                          (mv (make-dirdeclor-array-static1
                                :declor decl
-                               :tyquals dirdeclor.tyquals
+                               :quals dirdeclor.quals
                                :expr expr)
                              env))
         :array-static2 (b* (((mv decl env)
@@ -1248,14 +1248,14 @@
                              (const-prop-expr dirdeclor.expr env)))
                          (mv (make-dirdeclor-array-static2
                                :declor decl
-                               :tyquals dirdeclor.tyquals
+                               :quals dirdeclor.quals
                                :expr expr)
                              env))
         :array-star (b* (((mv decl env)
                           (const-prop-dirdeclor dirdeclor.declor env)))
                       (mv (make-dirdeclor-array-star
                             :declor decl
-                            :tyquals dirdeclor.tyquals)
+                            :quals dirdeclor.quals)
                           env))
         :function-params
         (b* (((mv decl env)
@@ -1942,11 +1942,12 @@
                     :hyp (filepath-transunit-mapp map))
   (b* (((when (omap::emptyp map)) nil)
        ((mv path tunit) (omap::head map))
-       (new-path (deftrans-filepath path "CONST-PROP"))
        (new-tunit (const-prop-transunit tunit))
        (new-map
          (const-prop-filepath-transunit-map (omap::tail map))))
-    (omap::update new-path new-tunit new-map))
+    (omap::update (c$::filepath-fix path)
+                  new-tunit
+                  new-map))
   :verify-guards :after-returns)
 
 (define const-prop-transunit-ensemble

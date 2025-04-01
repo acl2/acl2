@@ -2314,10 +2314,10 @@
      :array
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "[" pstate))
-          (pstate (if dirdeclor.tyquals
-                      (print-typequal/attribspec-list dirdeclor.tyquals pstate)
+          (pstate (if dirdeclor.quals
+                      (print-typequal/attribspec-list dirdeclor.quals pstate)
                     pstate))
-          (pstate (if (and dirdeclor.tyquals
+          (pstate (if (and dirdeclor.quals
                            dirdeclor.expr?)
                       (print-astring " " pstate)
                     pstate))
@@ -2331,9 +2331,9 @@
      :array-static1
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "static " pstate))
-          (pstate (if dirdeclor.tyquals
+          (pstate (if dirdeclor.quals
                       (b* ((pstate (print-typequal/attribspec-list
-                                    dirdeclor.tyquals
+                                    dirdeclor.quals
                                     pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
@@ -2343,11 +2343,11 @@
        pstate)
      :array-static2
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
-          ((unless dirdeclor.tyquals)
+          ((unless dirdeclor.quals)
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            pstate)
-          (pstate (print-typequal/attribspec-list dirdeclor.tyquals pstate))
+          (pstate (print-typequal/attribspec-list dirdeclor.quals pstate))
           (pstate (print-astring " static " pstate))
           (pstate (print-expr dirdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
@@ -2355,9 +2355,9 @@
      :array-star
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "[" pstate))
-          (pstate (if dirdeclor.tyquals
+          (pstate (if dirdeclor.quals
                       (b* ((pstate (print-typequal/attribspec-list
-                                    dirdeclor.tyquals
+                                    dirdeclor.quals
                                     pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)

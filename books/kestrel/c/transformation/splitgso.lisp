@@ -1301,9 +1301,8 @@
   ((map filepath-transunit-mapp))
   :returns (map$ filepath-transunit-mapp)
   (b* (((when (omap::emptyp map)) nil)
-       ((mv path tunit) (omap::head map))
-       (path$ (deftrans-filepath path "SPLITGSO")))
-    (omap::update path$
+       ((mv path tunit) (omap::head map)))
+    (omap::update (c$::filepath-fix path)
                   (c$::transunit-fix tunit)
                   (splitgso-rename-filepaths (omap::tail map))))
   :verify-guards :after-returns)

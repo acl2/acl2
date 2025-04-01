@@ -43,11 +43,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection invariant-certificate-with-author+round
-  :short "Invariant that @(tsee certificate-with-author+round)
+(defsection invariant-cert-with-author+round
+  :short "Invariant that @(tsee cert-with-author+round)
           is stable under state changes."
 
-  (defrule certificate-with-author+round-of-create-certificate-next
+  (defrule cert-with-author+round-of-create-certificate-next
     (implies (and (system-signers-are-validators-p systate)
                   (system-signers-are-quorum-p systate)
                   (system-signers-have-author+round-p systate)
@@ -56,24 +56,24 @@
                   (set::in val (correct-addresses systate))
                   (certificatep cert)
                   (create-certificate-possiblep cert systate)
-                  (certificate-with-author+round
+                  (cert-with-author+round
                    author
                    round
                    (validator-state->dag
                     (get-validator-state val systate))))
-             (equal (certificate-with-author+round
+             (equal (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state
                        val (create-certificate-next cert systate))))
-                    (certificate-with-author+round
+                    (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state val systate)))))
     :enable validator-state->dag-of-create-certificate-next
-    :use ((:instance certificate-with-author+round-of-unequivocal-superset
+    :use ((:instance cert-with-author+round-of-unequivocal-superset
                      (certs1 (validator-state->dag
                               (get-validator-state
                                (certificate->author cert)
@@ -86,47 +86,47 @@
                      (val (certificate->author cert))
                      (systate (create-certificate-next cert systate)))))
 
-  (defrule certificate-with-author+round-of-receive-certificate-next
+  (defrule cert-with-author+round-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (receive-certificate-possiblep msg systate))
-             (equal (certificate-with-author+round
+             (equal (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state
                        val (receive-certificate-next msg systate))))
-                    (certificate-with-author+round
+                    (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state val systate)))))
     :enable validator-state->dag-of-receive-certificate-next)
 
-  (defrule certificate-with-author+round-of-store-certificate-next
+  (defrule cert-with-author+round-of-store-certificate-next
     (implies (and (system-signers-are-validators-p systate)
                   (system-signers-are-quorum-p systate)
                   (system-signers-have-author+round-p systate)
                   (system-unequivocal-certificates-p systate)
                   (set::in val (correct-addresses systate))
                   (store-certificate-possiblep cert val1 systate)
-                  (certificate-with-author+round
+                  (cert-with-author+round
                    author
                    round
                    (validator-state->dag
                     (get-validator-state val systate))))
-             (equal (certificate-with-author+round
+             (equal (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state
                        val (store-certificate-next cert val1 systate))))
-                    (certificate-with-author+round
+                    (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state val systate)))))
     :enable validator-state->dag-of-store-certificate-next
-    :use ((:instance certificate-with-author+round-of-unequivocal-superset
+    :use ((:instance cert-with-author+round-of-unequivocal-superset
                      (certs1 (validator-state->dag
                               (get-validator-state
                                val1
@@ -139,55 +139,55 @@
                      (val val1)
                      (systate (store-certificate-next cert val1 systate)))))
 
-  (defrule certificate-with-author+round-of-advance-round-next
+  (defrule cert-with-author+round-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-round-possiblep val1 systate))
-             (equal (certificate-with-author+round
+             (equal (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state
                        val (advance-round-next val1 systate))))
-                    (certificate-with-author+round
+                    (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state val systate)))))
     :enable validator-state->dag-of-advance-round-next)
 
-  (defrule certificate-with-author+round-of-commit-anchors-next
+  (defrule cert-with-author+round-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
                   (commit-anchors-possiblep val1 systate))
-             (equal (certificate-with-author+round
+             (equal (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state
                        val (commit-anchors-next val1 systate))))
-                    (certificate-with-author+round
+                    (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state val systate)))))
     :enable validator-state->dag-of-commit-anchors-next)
 
-  (defrule certificate-with-author+round-of-timer-expires-next
+  (defrule cert-with-author+round-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
                   (timer-expires-possiblep val1 systate))
-             (equal (certificate-with-author+round
+             (equal (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state
                        val (timer-expires-next val1 systate))))
-                    (certificate-with-author+round
+                    (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state val systate)))))
     :enable validator-state->dag-of-timer-expires-next)
 
-  (defrule certificate-with-author+round-of-event-next
+  (defrule cert-with-author+round-of-event-next
     (implies (and (system-signers-are-validators-p systate)
                   (system-signers-are-quorum-p systate)
                   (system-signers-have-author+round-p systate)
@@ -195,18 +195,18 @@
                   (fault-tolerant-p systate)
                   (set::in val (correct-addresses systate))
                   (event-possiblep event systate)
-                  (certificate-with-author+round
+                  (cert-with-author+round
                    author
                    round
                    (validator-state->dag
                     (get-validator-state val systate))))
-             (equal (certificate-with-author+round
+             (equal (cert-with-author+round
                      author
                      round
                      (validator-state->dag
                       (get-validator-state
                        val (event-next event systate))))
-                    (certificate-with-author+round
+                    (cert-with-author+round
                      author
                      round
                      (validator-state->dag

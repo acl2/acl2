@@ -170,7 +170,7 @@
         (active-committee-at-round cert.round vstate.blockchain all-vals))
        ((unless commtt) nil)
        ((unless (set::in cert.author (committee-members commtt))) nil)
-       ((when (certificate-with-author+round
+       ((when (cert-with-author+round
                cert.author cert.round vstate.dag))
         nil)
        ((unless (or (= cert.round 1)
@@ -330,7 +330,7 @@
        ((validator-state vstate) vstate)
        ((unless (create-certificate-signer-possiblep cert vstate all-vals))
         nil)
-       ((when (certificate-with-author+round
+       ((when (cert-with-author+round
                cert.author cert.round vstate.buffer))
         nil)
        ((when (set::in (make-address+pos :address cert.author :pos cert.round)

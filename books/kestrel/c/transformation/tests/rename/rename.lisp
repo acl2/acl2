@@ -31,10 +31,11 @@
                                (acons (c$::ident "main") (c$::ident "entry")
                                       (acons (c$::ident "x") (c$::ident "y")
                                              nil))))
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.RENAME.c"
+    :file "new/test1.c"
     :content "int entry() {
   int y = 5;
   return y + 0;

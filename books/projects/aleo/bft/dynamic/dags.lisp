@@ -1282,7 +1282,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled path-to-author+round-to-certificate-with-author+round
+(defruled path-to-author+round-to-cert-with-author+round
   :short "If a certificate in an unequivocal DAG
           has a path to a certain author and round,
           the path ends up at the certificate retrieved
@@ -1301,11 +1301,11 @@
                 (posp round)
                 (path-to-author+round cert author round dag))
            (equal (path-to-author+round cert author round dag)
-                  (certificate-with-author+round author round dag)))
+                  (cert-with-author+round author round dag)))
   :enable (certificate->author-of-path-to-author+round
            certificate->round-of-path-to-author+round
            path-to-author+round-in-dag)
-  :use (:instance certificate-with-author+round-of-element-when-unequivocal
+  :use (:instance cert-with-author+round-of-element-when-unequivocal
                   (certs dag)
                   (cert (path-to-author+round cert author round dag))))
 
@@ -1400,8 +1400,8 @@
        (enable*
         path-to-author+round
         path-to-author+round-set
-        path-to-author+round-to-certificate-with-author+round
-        certificate-with-author+round-of-element-when-unequivocal
+        path-to-author+round-to-cert-with-author+round
+        cert-with-author+round-of-element-when-unequivocal
         set::expensive-rules
         nil-not-in-certificate-set
         certificates-with-authors+round-subset
@@ -1585,8 +1585,8 @@
                path-to-author+round
                path-to-author+round-set
                set::expensive-rules
-               path-to-author+round-to-certificate-with-author+round
-               certificate-with-author+round-of-element-when-unequivocal
+               path-to-author+round-to-cert-with-author+round
+               cert-with-author+round-of-element-when-unequivocal
                cert-set->round-set-of-certificates-with-authors+round
                pos-fix
                posp

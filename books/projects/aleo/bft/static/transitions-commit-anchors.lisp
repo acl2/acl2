@@ -70,7 +70,7 @@
        (vals (all-addresses systate))
        (leader (leader-at-round commit-round vals))
        (dag (validator-state->dag vstate))
-       (anchor? (certificate-with-author+round leader commit-round dag))
+       (anchor? (cert-with-author+round leader commit-round dag))
        ((unless anchor?) nil)
        (voters (certificates-with-round current-round dag))
        ((mv yes-votes &) (tally-leader-votes leader voters))
@@ -127,7 +127,7 @@
                  (b* ((round (validator-state->round vstate)))
                    (and (oddp round)
                         (not (equal round 1))
-                        (certificate-with-author+round
+                        (cert-with-author+round
                          (leader-at-round (1- round) vals)
                          (1- round)
                          (validator-state->dag vstate)))))
@@ -137,7 +137,7 @@
           (commit-round (1- current-round))
           (leader (leader-at-round commit-round vals))
           (dag (validator-state->dag vstate))
-          (anchor (certificate-with-author+round leader commit-round dag))
+          (anchor (cert-with-author+round leader commit-round dag))
           (last-committed-round (validator-state->last vstate))
           (anchors (collect-anchors anchor
                                     (- commit-round 2)
@@ -155,7 +155,7 @@
         :committed new-committed-certs))
      :guard-hints
      (("Goal"
-       :in-theory (enable certificate->round-of-certificate-with-author+round
+       :in-theory (enable certificate->round-of-cert-with-author+round
                           posp
                           natp
                           evenp
@@ -221,7 +221,7 @@
                      (commit-round (1- vstate.round))
                      (leader (leader-at-round commit-round
                                               (all-addresses systate)))
-                     (anchor (certificate-with-author+round leader
+                     (anchor (cert-with-author+round leader
                                                                 commit-round
                                                                 vstate.dag))
                      (anchors (collect-anchors anchor
