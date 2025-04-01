@@ -50,9 +50,9 @@
      that should accept all valid C code
      but also some invalid C code (due to the approximation).
      Even in its approximate form,
-     this may be useful to perform some validation,
+     this is useful to perform some validation,
      and to calculate information (approximate types)
-     that may be useful for manipulating the abstract syntax
+     useful for manipulating the abstract syntax
      (e.g. for C-to-C transformations).")
    (xdoc::p
     "In a sense, the validator extends the @(see disambiguator),
@@ -64,20 +64,20 @@
     "Similarly to a compiler, the validator makes use of a symbol table,
      which tracks information about the symbols (identifiers) in the code.
      These symbol tables, called `validation tables', are, in some sense,
-     an extension of the disambiguation tables used by the disambiguator.")
+     an extension of the disambiguation tables used by the disambiguator.
+     See @(tsee valid-table).")
    (xdoc::p
     "We use "
     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
     " to handle errors in the validator.")
    (xdoc::p
-    "The ACL2 functions that validate the various parts of the abstract syntax
+    "The ACL2 functions that validate
+     the various constructs of the abstract syntax
      follow the @('valid-<fixtype>') naming scheme,
      where @('<fixtype>') is the name of
-     the fixtype of the abstract syntax part,
+     the fixtype of the abstract syntax construct,
      and where @('valid') is best read as an abbreviation of `validate'
-     rather than as the adjective `valid'.")
-   (xdoc::p
-    "This validator is work in progress."))
+     rather than as the adjective `valid'."))
   :order-subtopics t
   :default-parent t)
 
@@ -139,8 +139,6 @@
   :short "Pop a scope from the validation table."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "The guard requires that there are is at least one scope.")
    (xdoc::p
     "The popped scope is discarded."))
   (b* (((unless (> (valid-table-num-scopes table) 0))
@@ -718,7 +716,7 @@
      with the information of being an enumeration constant.
      Its type is always @('int') [C17:6.7.2.2/3],
      so this function always returns that type if validation succeeds;
-     so we could have this function return nothing if there's no error,
+     we could have this function return nothing if there's no error,
      but we have it return the @('int') type for uniformity and simplicity."))
   (b* (((reterr) (irr-type))
        ((mv info &) (valid-lookup-ord econst table))
