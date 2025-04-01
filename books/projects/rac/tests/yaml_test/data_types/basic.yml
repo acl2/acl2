@@ -77,14 +77,8 @@
 - name: initializer-list
 
 - name: initializer-list-ac-types
-  bug: true
-  description: "genenate code is invalid: (DEFUND BAR NIL '((0 . 1) (1 BITS 4 1 0)))"
 
 - name: initializer-list-arrays-var
-  bug: true
-  description: >
-              Using quoted lists is a problem because the unevaluated values
-              inside become Lisp constants
 
 - name: std-array-initializer-diff-size
 

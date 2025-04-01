@@ -289,12 +289,18 @@ Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t,
 
   if (output_optmized_const) {
 
+    res->add(&s_list);
     for (auto c : vals) {
       res->add(t->baseType->cast(c));
     }
+
+    return res;
+
   } else {
     // TODO do not support template
     assert(t->dim->isStaticallyEvaluable());
+
+    res->add(&s_list);
 
     unsigned size = t->dim->evalConst();
     for (unsigned i = 0; i < size; ++i) {
@@ -308,9 +314,9 @@ Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t,
                           t->baseType->default_initializer_value()));
       }
     }
-  }
 
-  return new Plist({&s_quote, res});
+    return new Plist({&s_ainit, res});
+  }
 }
 
 Sexpression *Initializer::ACL2TupleExpr(const MvType *t) {
