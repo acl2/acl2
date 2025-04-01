@@ -992,6 +992,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod unary-info
+  :short "Fixtype of validation information for unary expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to unary expressions,
+     i.e. the @(':unary') case of @(tsee expr).
+     The information for a unary expression consists of its type."))
+  ((type type))
+  :pred unary-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-unary-info
+  :short "An irrelevant validation information for unary expressions."
+  :type unary-infop
+  :body (make-unary-info :type (irr-type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-unary-info (x)
+  :returns (info unary-infop)
+  :short "Coerce a value to @(tsee unary-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (unary-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy UNARY-INFOP." x)
+            (irr-unary-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod transunit-info
   :short "Fixtype of validation information for translation units."
   :long
