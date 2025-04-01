@@ -1181,19 +1181,19 @@
       :paren (dirdeclor-paren (,(cdr (assoc-eq 'declor names)) dirdeclor.inner ,@extra-args-names))
       :array (make-dirdeclor-array
                :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
-               :quals dirdeclor.quals
+               :qualspecs dirdeclor.qualspecs
                :expr? (,(cdr (assoc-eq 'expr-option names)) dirdeclor.expr? ,@extra-args-names))
       :array-static1 (make-dirdeclor-array-static1
                        :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
-                       :quals dirdeclor.quals
+                       :qualspecs dirdeclor.qualspecs
                        :expr (,(cdr (assoc-eq 'expr names)) dirdeclor.expr ,@extra-args-names))
       :array-static2 (make-dirdeclor-array-static2
                        :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
-                       :quals dirdeclor.quals
+                       :qualspecs dirdeclor.qualspecs
                        :expr (,(cdr (assoc-eq 'expr names)) dirdeclor.expr ,@extra-args-names))
       :array-star (make-dirdeclor-array-star
                     :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
-                    :quals dirdeclor.quals)
+                    :qualspecs dirdeclor.qualspecs)
       :function-params (make-dirdeclor-function-params
                          :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
                          :params (,(cdr (assoc-eq 'paramdecl-list names)) dirdeclor.params ,@extra-args-names)

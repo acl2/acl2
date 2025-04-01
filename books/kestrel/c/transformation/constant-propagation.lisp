@@ -1230,7 +1230,7 @@
                      (const-prop-expr-option dirdeclor.expr? env)))
                  (mv (make-dirdeclor-array
                        :declor decl
-                       :quals dirdeclor.quals
+                       :qualspecs dirdeclor.qualspecs
                        :expr? expr?)
                      env))
         :array-static1 (b* (((mv decl env)
@@ -1239,7 +1239,7 @@
                              (const-prop-expr dirdeclor.expr env)))
                          (mv (make-dirdeclor-array-static1
                                :declor decl
-                               :quals dirdeclor.quals
+                               :qualspecs dirdeclor.qualspecs
                                :expr expr)
                              env))
         :array-static2 (b* (((mv decl env)
@@ -1248,14 +1248,14 @@
                              (const-prop-expr dirdeclor.expr env)))
                          (mv (make-dirdeclor-array-static2
                                :declor decl
-                               :quals dirdeclor.quals
+                               :qualspecs dirdeclor.qualspecs
                                :expr expr)
                              env))
         :array-star (b* (((mv decl env)
                           (const-prop-dirdeclor dirdeclor.declor env)))
                       (mv (make-dirdeclor-array-star
                             :declor decl
-                            :quals dirdeclor.quals)
+                            :qualspecs dirdeclor.qualspecs)
                           env))
         :function-params
         (b* (((mv decl env)

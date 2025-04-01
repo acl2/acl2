@@ -11505,7 +11505,7 @@
                    ;; we have a variable length array declarator.
                    ((token-punctuatorp token4 "]") ; [ tyquals * ]
                     (retok (make-dirdeclor-array-star :declor prev-dirdeclor
-                                                      :quals tyquals)
+                                                      :qualspecs tyquals)
                            (span-join prev-span span4)
                            parstate))
                    ;; If token4 is not a square bracket,
@@ -11522,7 +11522,7 @@
                          ((erp last-span parstate) ; [ tyquals expr ]
                           (read-punctuator "]" parstate)))
                       (retok (make-dirdeclor-array :declor prev-dirdeclor
-                                                   :quals tyquals
+                                                   :qualspecs tyquals
                                                    :expr? expr)
                              (span-join prev-span last-span)
                              parstate))))))
@@ -11537,7 +11537,7 @@
                      ((erp last-span parstate) ; [ tyquals expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array :declor prev-dirdeclor
-                                               :quals tyquals
+                                               :qualspecs tyquals
                                                :expr? expr)
                          (span-join prev-span last-span)
                          parstate)))
@@ -11545,7 +11545,7 @@
                ;; we have determined the variant, and we have no expression.
                ((token-punctuatorp token3 "]") ; [ tyquals ]
                 (retok (make-dirdeclor-array :declor prev-dirdeclor
-                                             :quals tyquals
+                                             :qualspecs tyquals
                                              :expr? nil)
                        (span-join prev-span span3)
                        parstate))
@@ -11558,7 +11558,7 @@
                      ((erp last-span parstate) ; [ tyquals static expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array-static2 :declor prev-dirdeclor
-                                                       :quals tyquals
+                                                       :qualspecs tyquals
                                                        :expr expr)
                          (span-join prev-span last-span)
                          parstate)))
@@ -11579,7 +11579,7 @@
                ;; we have a variable length array declarator.
                ((token-punctuatorp token3 "]") ; [ * ]
                 (retok (make-dirdeclor-array-star :declor prev-dirdeclor
-                                                  :quals nil)
+                                                  :qualspecs nil)
                        (span-join prev-span span3)
                        parstate))
                ;; If token3 is not a star,
@@ -11594,7 +11594,7 @@
                      ((erp last-span parstate) ; [ expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array :declor prev-dirdeclor
-                                               :quals nil
+                                               :qualspecs nil
                                                :expr? expr)
                          (span-join prev-span last-span)
                          parstate))))))
@@ -11608,7 +11608,7 @@
                  ((erp last-span parstate) ; [ expr ]
                   (read-punctuator "]" parstate)))
               (retok (make-dirdeclor-array :declor prev-dirdeclor
-                                           :quals nil
+                                           :qualspecs nil
                                            :expr? expr)
                      (span-join prev-span last-span)
                      parstate)))
@@ -11635,7 +11635,7 @@
                      ((erp last-span parstate) ; [ static tyqualattribs expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array-static1 :declor prev-dirdeclor
-                                                       :quals tyquals
+                                                       :qualspecs tyquals
                                                        :expr expr)
                          (span-join prev-span last-span)
                          parstate)))
@@ -11648,7 +11648,7 @@
                      ((erp last-span parstate) ; [ static expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array-static1 :declor prev-dirdeclor
-                                                       :quals nil
+                                                       :qualspecs nil
                                                        :expr expr)
                          (span-join prev-span last-span)
                          parstate))))))
@@ -11656,7 +11656,7 @@
            ;; we have an empty array construct.
            ((token-punctuatorp token2 "]") ; [ ]
             (retok (make-dirdeclor-array :declor prev-dirdeclor
-                                         :quals nil
+                                         :qualspecs nil
                                          :expr? nil)
                    (span-join prev-span span2)
                    parstate))

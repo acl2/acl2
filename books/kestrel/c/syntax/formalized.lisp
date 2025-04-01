@@ -699,7 +699,7 @@
    :ident (ident-formalp dirdeclor.ident)
    :paren nil
    :array (and (dirdeclor-obj-formalp dirdeclor.declor)
-               (endp dirdeclor.quals)
+               (endp dirdeclor.qualspecs)
                (or (not dirdeclor.expr?)
                    (and (check-expr-iconst dirdeclor.expr?) t)))
    :array-static1 nil
