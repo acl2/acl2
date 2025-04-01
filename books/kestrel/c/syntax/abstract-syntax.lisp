@@ -2192,13 +2192,13 @@
     (:paren ((inner declor)))
     (:array ((declor dirdeclor)
              (qualspecs typequal/attribspec-list)
-             (expr? expr-option)))
+             (size? expr-option)))
     (:array-static1 ((declor dirdeclor)
                      (qualspecs typequal/attribspec-list)
-                     (expr expr)))
+                     (size expr)))
     (:array-static2 ((declor dirdeclor)
                      (qualspecs typequal/attribspec-list)
-                     (expr expr)))
+                     (size expr)))
     (:array-star ((declor dirdeclor)
                   (qualspecs typequal/attribspec-list)))
     (:function-params ((declor dirdeclor)
@@ -2228,7 +2228,7 @@
        and an absent direct abstract declarator.
        This constraint is currently not enforced in this fixtype."))
     ((pointers typequal/attribspec-list-list)
-     (decl? dirabsdeclor-option))
+     (direct? dirabsdeclor-option))
     :pred absdeclorp
     :measure (two-nats-measure (acl2-count x) 2))
 

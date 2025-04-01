@@ -1488,13 +1488,13 @@
  parse-abstract-declarator
  "[a[3]]"
  :cond (and (equal (absdeclor->pointers ast) nil)
-            (dirabsdeclor-case (absdeclor->decl? ast) :array)))
+            (dirabsdeclor-case (absdeclor->direct? ast) :array)))
 
 (test-parse
  parse-abstract-declarator
  "(a)"
  :cond (and (equal (absdeclor->pointers ast) nil)
-            (dirabsdeclor-case (absdeclor->decl? ast) :function)))
+            (dirabsdeclor-case (absdeclor->direct? ast) :function)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

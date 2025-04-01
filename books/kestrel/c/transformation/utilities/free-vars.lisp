@@ -413,7 +413,7 @@
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.qualspecs bound-vars))
           (free-vars1
-            (free-vars-expr-option dirdeclor.expr? bound-vars))
+            (free-vars-expr-option dirdeclor.size? bound-vars))
           ((mv free-vars2 bound-vars)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 (union free-vars1 free-vars2))
@@ -422,7 +422,7 @@
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.qualspecs bound-vars))
           (free-vars1
-            (free-vars-expr dirdeclor.expr bound-vars))
+            (free-vars-expr dirdeclor.size bound-vars))
           ((mv free-vars2 bound-vars)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 (union free-vars1 free-vars2))
@@ -431,7 +431,7 @@
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.qualspecs bound-vars))
           (free-vars1
-            (free-vars-expr dirdeclor.expr bound-vars))
+            (free-vars-expr dirdeclor.size bound-vars))
           ((mv free-vars2 bound-vars)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 (union free-vars1 free-vars2))
@@ -460,7 +460,7 @@
     :returns (free-vars ident-setp)
     (b* (((absdeclor absdeclor) absdeclor))
       (union (free-vars-typequal/attribspec-list-list absdeclor.pointers bound-vars)
-             (free-vars-dirabsdeclor-option absdeclor.decl? bound-vars)))
+             (free-vars-dirabsdeclor-option absdeclor.direct? bound-vars)))
     :measure (absdeclor-count absdeclor))
 
   (define free-vars-absdeclor-option

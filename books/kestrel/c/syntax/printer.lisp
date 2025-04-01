@@ -2319,11 +2319,11 @@
                                                       pstate)
                     pstate))
           (pstate (if (and dirdeclor.qualspecs
-                           dirdeclor.expr?)
+                           dirdeclor.size?)
                       (print-astring " " pstate)
                     pstate))
-          (pstate (if (expr-option-case dirdeclor.expr? :some)
-                      (print-expr (expr-option-some->val dirdeclor.expr?)
+          (pstate (if (expr-option-case dirdeclor.size? :some)
+                      (print-expr (expr-option-some->val dirdeclor.size?)
                                   (expr-priority-asg)
                                   pstate)
                     pstate))
@@ -2339,7 +2339,7 @@
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
-          (pstate (print-expr dirdeclor.expr (expr-priority-asg) pstate))
+          (pstate (print-expr dirdeclor.size (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static2
@@ -2350,7 +2350,7 @@
            pstate)
           (pstate (print-typequal/attribspec-list dirdeclor.qualspecs pstate))
           (pstate (print-astring " static " pstate))
-          (pstate (print-expr dirdeclor.expr (expr-priority-asg) pstate))
+          (pstate (print-expr dirdeclor.size (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-star
@@ -2408,7 +2408,7 @@
        or the direct abstract declarator part."))
     (b* (((absdeclor absdeclor) absdeclor)
          ((unless (or absdeclor.pointers
-                      absdeclor.decl?))
+                      absdeclor.direct?))
           (raise "Misusage error: ~
                   empty abstract declarator.")
           (pristate-fix pstate))
@@ -2416,9 +2416,9 @@
                      (print-typequal/attribspec-list-list absdeclor.pointers
                                                           pstate)
                    pstate))
-         (pstate (if (dirabsdeclor-option-case absdeclor.decl? :some)
+         (pstate (if (dirabsdeclor-option-case absdeclor.direct? :some)
                      (print-dirabsdeclor (dirabsdeclor-option-some->val
-                                          absdeclor.decl?)
+                                          absdeclor.direct?)
                                          pstate)
                    pstate)))
       pstate)

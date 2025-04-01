@@ -11409,7 +11409,7 @@
                   ;; pointer dirabsdeclor
                   (parse-direct-abstract-declarator parstate)))
               (retok (make-absdeclor :pointers tyqualss
-                                     :decl? dirabsdeclor)
+                                     :direct? dirabsdeclor)
                      (span-join tyqualss-span dirabsdeclor-span)
                      parstate)))
            ;; If token2 may not start a direct abstract declarator,
@@ -11418,7 +11418,7 @@
             (b* ((parstate
                   (if token2 (unread-token parstate) parstate))) ; pointer
               (retok (make-absdeclor :pointers tyqualss
-                                     :decl? nil)
+                                     :direct? nil)
                      tyqualss-span
                      parstate))))))
        ;; If token may start a direct abstract declarator,
@@ -11428,7 +11428,7 @@
              ((erp dirabsdeclor span parstate) ; dirabsdeclor
               (parse-direct-abstract-declarator parstate)))
           (retok (make-absdeclor :pointers nil
-                                 :decl? dirabsdeclor)
+                                 :direct? dirabsdeclor)
                  span
                  parstate)))
        ;; If token is anything else, it is an error,
@@ -11523,7 +11523,7 @@
                           (read-punctuator "]" parstate)))
                       (retok (make-dirdeclor-array :declor prev-dirdeclor
                                                    :qualspecs tyquals
-                                                   :expr? expr)
+                                                   :size? expr)
                              (span-join prev-span last-span)
                              parstate))))))
                ;; If token3 may start an (assignment) expression,
@@ -11538,7 +11538,7 @@
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array :declor prev-dirdeclor
                                                :qualspecs tyquals
-                                               :expr? expr)
+                                               :size? expr)
                          (span-join prev-span last-span)
                          parstate)))
                ;; If token3 is a closed square bracket,
@@ -11546,7 +11546,7 @@
                ((token-punctuatorp token3 "]") ; [ tyquals ]
                 (retok (make-dirdeclor-array :declor prev-dirdeclor
                                              :qualspecs tyquals
-                                             :expr? nil)
+                                             :size? nil)
                        (span-join prev-span span3)
                        parstate))
                ;; If token3 is the 'static' keyword,
@@ -11559,7 +11559,7 @@
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array-static2 :declor prev-dirdeclor
                                                        :qualspecs tyquals
-                                                       :expr expr)
+                                                       :size expr)
                          (span-join prev-span last-span)
                          parstate)))
                ;; If token3 is anything else, it is an error.
@@ -11595,7 +11595,7 @@
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array :declor prev-dirdeclor
                                                :qualspecs nil
-                                               :expr? expr)
+                                               :size? expr)
                          (span-join prev-span last-span)
                          parstate))))))
            ;; If token2 may start an assignment expression,
@@ -11609,7 +11609,7 @@
                   (read-punctuator "]" parstate)))
               (retok (make-dirdeclor-array :declor prev-dirdeclor
                                            :qualspecs nil
-                                           :expr? expr)
+                                           :size? expr)
                      (span-join prev-span last-span)
                      parstate)))
            ;; If token2 is the 'static' keyword,
@@ -11636,7 +11636,7 @@
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array-static1 :declor prev-dirdeclor
                                                        :qualspecs tyquals
-                                                       :expr expr)
+                                                       :size expr)
                          (span-join prev-span last-span)
                          parstate)))
                ;; If token3 is not a type qualifier,
@@ -11649,7 +11649,7 @@
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array-static1 :declor prev-dirdeclor
                                                        :qualspecs nil
-                                                       :expr expr)
+                                                       :size expr)
                          (span-join prev-span last-span)
                          parstate))))))
            ;; If token2 is a closed square bracket,
@@ -11657,7 +11657,7 @@
            ((token-punctuatorp token2 "]") ; [ ]
             (retok (make-dirdeclor-array :declor prev-dirdeclor
                                          :qualspecs nil
-                                         :expr? nil)
+                                         :size? nil)
                    (span-join prev-span span2)
                    parstate))
            ;; If token2 is anything else, it is an error.

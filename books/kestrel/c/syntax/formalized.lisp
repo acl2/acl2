@@ -700,8 +700,8 @@
    :paren nil
    :array (and (dirdeclor-obj-formalp dirdeclor.declor)
                (endp dirdeclor.qualspecs)
-               (or (not dirdeclor.expr?)
-                   (and (check-expr-iconst dirdeclor.expr?) t)))
+               (or (not dirdeclor.size?)
+                   (and (check-expr-iconst dirdeclor.size?) t)))
    :array-static1 nil
    :array-static2 nil
    :array-star nil
