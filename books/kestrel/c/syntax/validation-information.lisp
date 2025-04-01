@@ -1079,12 +1079,8 @@
     "The @(':combine') operator is @(tsee and),
      because we need to check all the constructs, recursively.")
    (xdoc::p
-    "We only need to override the predicate for
-     identifier expressions and
-     translation unit ensembles.
-     These are the only constructs with validation information for now;
-     as we extend the validator to generate more annotations,
-     we will extend these predicates accordingly.")
+    "We override the predicate for
+     the constructs for which the validator adds information.")
    (xdoc::p
     "Since for now the validator accepts GCC attribute and other extensions
      without actually checking them and their constituents,
@@ -1121,6 +1117,7 @@
   :override
   ((iconst (iconst-infop (iconst->info iconst)))
    (expr :ident (var-infop expr.info))
+   (expr :unary (unary-infop expr.info))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
