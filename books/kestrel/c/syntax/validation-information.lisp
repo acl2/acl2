@@ -1156,6 +1156,7 @@
    (expr :unary (unary-infop expr.info))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
+   (expr :binary (binary-infop expr.info))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
    (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
