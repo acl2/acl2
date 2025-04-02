@@ -1047,6 +1047,7 @@
 
 (define simpadd0-expr-unary ((op c$::unopp)
                              (arg exprp)
+                             (info acl2::any-p)
                              (arg-new exprp)
                              (arg-events pseudo-event-form-listp)
                              (arg-thm-name symbolp)
@@ -1069,8 +1070,8 @@
      and the unary operator is among @('+'), @('-'), @('~') and @('!').
      The theorem is proved via two general ones that we prove below."))
   (b* (((simpadd0-gin gin) gin)
-       (expr (make-expr-unary :op op :arg arg))
-       (expr-new (make-expr-unary :op op :arg arg-new))
+       (expr (make-expr-unary :op op :arg arg :info info))
+       (expr-new (make-expr-unary :op op :arg arg-new :info info))
        ((unless (and arg-thm-name
                      (member-eq (c$::unop-kind op)
                                 '(:plus :minus :bitnot :lognot))))
@@ -2150,6 +2151,7 @@
             (gin (simpadd0-gin-update gin gout-arg)))
          (simpadd0-expr-unary expr.op
                               expr.arg
+                              expr.info
                               new-arg
                               gout-arg.events
                               gout-arg.thm-name
@@ -3156,10 +3158,10 @@
                     (simpadd0-dirdeclor dirdeclor.declor gin state))
                    (gin (simpadd0-gin-update gin gout-decl))
                    ((mv new-expr? (simpadd0-gout gout-expr?))
-                    (simpadd0-expr-option dirdeclor.expr? gin state)))
+                    (simpadd0-expr-option dirdeclor.size? gin state)))
                 (mv (make-dirdeclor-array :declor new-decl
-                                          :quals dirdeclor.quals
-                                          :expr? new-expr?)
+                                          :qualspecs dirdeclor.qualspecs
+                                          :size? new-expr?)
                     (make-simpadd0-gout
                      :events (append gout-decl.events gout-expr?.events)
                      :thm-name nil
@@ -3171,11 +3173,11 @@
                             (simpadd0-dirdeclor dirdeclor.declor gin state))
                            (gin (simpadd0-gin-update gin gout-decl))
                            ((mv new-expr (simpadd0-gout gout-expr))
-                            (simpadd0-expr dirdeclor.expr gin state)))
+                            (simpadd0-expr dirdeclor.size gin state)))
                         (mv (make-dirdeclor-array-static1
                              :declor new-decl
-                             :quals dirdeclor.quals
-                             :expr new-expr)
+                             :qualspecs dirdeclor.qualspecs
+                             :size new-expr)
                             (make-simpadd0-gout
                              :events (append gout-decl.events gout-expr.events)
                              :thm-name nil
@@ -3187,11 +3189,11 @@
                             (simpadd0-dirdeclor dirdeclor.declor gin state))
                            (gin (simpadd0-gin-update gin gout-decl))
                            ((mv new-expr (simpadd0-gout gout-expr))
-                            (simpadd0-expr dirdeclor.expr gin state)))
+                            (simpadd0-expr dirdeclor.size gin state)))
                         (mv (make-dirdeclor-array-static2
                              :declor new-decl
-                             :quals dirdeclor.quals
-                             :expr new-expr)
+                             :qualspecs dirdeclor.qualspecs
+                             :size new-expr)
                             (make-simpadd0-gout
                              :events (append gout-decl.events gout-expr.events)
                              :thm-name nil
@@ -3202,7 +3204,7 @@
        :array-star (b* (((mv new-decl (simpadd0-gout gout-decl))
                          (simpadd0-dirdeclor dirdeclor.declor gin state)))
                      (mv (make-dirdeclor-array-star :declor new-decl
-                                                    :quals dirdeclor.quals)
+                                                    :qualspecs dirdeclor.qualspecs)
                          (make-simpadd0-gout
                           :events gout-decl.events
                           :thm-name nil
@@ -3255,9 +3257,9 @@
     (b* (((simpadd0-gin gin) gin)
          ((absdeclor absdeclor) absdeclor)
          ((mv new-decl? (simpadd0-gout gout-decl?))
-          (simpadd0-dirabsdeclor-option absdeclor.decl? gin state)))
+          (simpadd0-dirabsdeclor-option absdeclor.direct? gin state)))
       (mv (make-absdeclor :pointers absdeclor.pointers
-                          :decl? new-decl?)
+                          :direct? new-decl?)
           (make-simpadd0-gout
            :events gout-decl?.events
            :thm-name nil

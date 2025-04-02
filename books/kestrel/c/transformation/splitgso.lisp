@@ -1052,7 +1052,8 @@
                     :arg (c$::make-expr-ident
                            :ident (if (member-equal expr.name split-members)
                                       new2
-                                    new1))
+                                    new1)
+                           :info nil)
                     :name expr.name))
         :memberp (make-expr-memberp
                    :arg (replace-field-access-expr
@@ -1105,7 +1106,8 @@
                           linkage
                           new1
                           new2
-                          split-members)))
+                          split-members)
+                   :info nil))
         :sizeof (expr-sizeof (replace-field-access-tyname
                                expr.type
                                original
