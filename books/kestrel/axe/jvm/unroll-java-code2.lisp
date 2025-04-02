@@ -569,22 +569,20 @@
        ;; TODO: Handle a result-dag that is a quotep.
        ;; todo: make optional and avoid this on huge terms by default
        ((mv erp result-dag state)
-        (if prune-branches
-            (prune-dag-precisely result-dag
-                                 assumptions
-                                 (set-difference-eq
-                                  ;; no actual symbolic execution is done here:
-                                  (union-eq (unroll-java-code2-rules)
-                                            extra-rules)
-                                  remove-rules)
-                                 :none ; todo: pass a rule-alist here?
-                                 nil ; interpreted-function-alist
-                                 monitor
-                                 call-stp
-                                 t ; check-fnsp
-                                 print
-                                 state)
-          (mv nil result-dag state)))
+        (maybe-prune-dag-precisely prune-branches
+                                   result-dag
+                                   assumptions
+                                   (set-difference-eq
+                                     ;; no actual symbolic execution is done here:
+                                     (union-eq (unroll-java-code2-rules)
+                                               extra-rules)
+                                     remove-rules)
+                                   :none ; todo: pass a rule-alist instead of the rules just above?
+                                   nil ; interpreted-function-alist
+                                   monitor
+                                   call-stp
+                                   print
+                                   state))
        ((when erp) (mv erp nil state))
        ;; Now simplify the pruned dag (TODO, repeatedly simplifying and pruning might help?)
        ;; TODO: Consider the rules to use here, especially if a limit was reached above

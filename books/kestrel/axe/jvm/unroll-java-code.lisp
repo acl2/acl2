@@ -500,21 +500,16 @@
        ;; TODO: Consider calling prune-dag-approximately here:
        ;; TODO: Consider making this final pruning a separate option
        ((mv erp dag state)
-        (if (if (booleanp prune-precise) ;todo: consider calling something like maybe-prune-dag-precisely, but we have a rule-alist here
-                prune-precise
-              ;; prune-branches is a natp (a limit on the size):
-              (dag-or-quotep-size-less-thanp dag prune-precise))
-            ;; todo: make a maybe version of this?:
-            (prune-dag-precisely-with-rule-alist dag
-                                                 all-assumptions ;are they all needed?
-                                                 (first rule-alists) ;what should we use here?
-                                                 nil ; interpreted-function-alist
-                                                 monitored-rules
-                                                 call-stp
-                                                 t ; check-fnsp
-                                                 print
-                                                 state)
-          (mv nil dag state)))
+        (maybe-prune-dag-precisely prune-precise
+                                   dag
+                                   all-assumptions ;are they all needed?
+                                   :none ; we give a rule-alist instead
+                                   (first rule-alists) ;what should we use here?
+                                   nil ; interpreted-function-alist
+                                   monitored-rules
+                                   call-stp
+                                   print
+                                   state))
        ((when erp) (mv erp nil nil nil nil nil state))
        ((when (quotep dag)) ; todo: test this case
         (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
