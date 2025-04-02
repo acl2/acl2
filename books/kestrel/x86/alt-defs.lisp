@@ -28,7 +28,7 @@
 ;(include-book "kestrel/bv/getbit" :dir :system)
 (include-book "kestrel/bv/bitxor" :dir :system)
 (include-book "kestrel/bv/bvlt-def" :dir :system)
-(include-book "kestrel/bv/sbvlt" :dir :system) ; reduce?
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bvdiv" :dir :system) ; reduce?
 (include-book "kestrel/bv/sbvdiv" :dir :system)
 (include-book "kestrel/bv/bvmod" :dir :system) ; reduce?
