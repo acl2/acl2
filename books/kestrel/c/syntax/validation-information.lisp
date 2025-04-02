@@ -1216,7 +1216,7 @@
    :member (type-unknown)
    :memberp (type-unknown)
    :complit (type-unknown)
-   :unary (type-unknown)
+   :unary (unary-info->type (coerce-unary-info expr.info))
    :sizeof (type-unknown)
    :alignof (type-unknown)
    :cast (type-unknown)
