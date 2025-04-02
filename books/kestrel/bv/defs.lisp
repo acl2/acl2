@@ -100,35 +100,6 @@
            )
   (bvchop n (mod (logext n x) (logext n y))))
 
-;;signed less-than
-(defund sbvlt (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (< (logext n x)
-     (logext n y)))
-
-;;signed greater-than
-(defun sbvgt (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (sbvlt n y x))
-
-;;signed less-than-or-equal
-(defun sbvle (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (not (sbvlt n y x)))
-
-;;signed greater-than-or-equal
-(defun sbvge (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (not (sbvlt n x y)))
-
 ;x and y should be single bits
 ;guards?
 ;todo: make a book on this
