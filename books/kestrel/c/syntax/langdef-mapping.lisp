@@ -432,15 +432,15 @@
        ((when (dirdeclor-case dirdeclor :array))
         (b* (((dirdeclor-array dirdeclor) dirdeclor)
              ((erp declor1) (ldm-dirdeclor-obj dirdeclor.declor))
-             ((when dirdeclor.quals)
+             ((when dirdeclor.qualspecs)
               (reterr (msg "Unsupported type qualifiers ~
                             or attribute specifiers ~
                             in direct declarator ~x0 for object."
                            (dirdeclor-fix dirdeclor))))
-             ((when (not dirdeclor.expr?))
+             ((when (not dirdeclor.size?))
               (retok (c::make-obj-declor-array :decl declor1
                                                :size nil)))
-             (iconst (check-expr-iconst dirdeclor.expr?))
+             (iconst (check-expr-iconst dirdeclor.size?))
              ((unless iconst)
               (reterr (msg "Unsupported non-integer-constant size ~
                             in direct declarator ~x0 for object."
@@ -594,8 +594,8 @@
   (b* (((reterr) (c::obj-adeclor-none))
        ((absdeclor absdeclor) absdeclor)
        ((erp adeclor1)
-        (if absdeclor.decl?
-            (ldm-dirabsdeclor-obj absdeclor.decl?)
+        (if absdeclor.direct?
+            (ldm-dirabsdeclor-obj absdeclor.direct?)
           (retok (c::obj-adeclor-none)))))
     (ldm-absdeclor-obj-loop adeclor1 absdeclor.pointers))
   :hooks (:fix)

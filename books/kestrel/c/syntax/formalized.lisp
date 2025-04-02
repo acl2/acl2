@@ -699,9 +699,9 @@
    :ident (ident-formalp dirdeclor.ident)
    :paren nil
    :array (and (dirdeclor-obj-formalp dirdeclor.declor)
-               (endp dirdeclor.quals)
-               (or (not dirdeclor.expr?)
-                   (and (check-expr-iconst dirdeclor.expr?) t)))
+               (endp dirdeclor.qualspecs)
+               (or (not dirdeclor.size?)
+                   (and (check-expr-iconst dirdeclor.size?) t)))
    :array-static1 nil
    :array-static2 nil
    :array-star nil

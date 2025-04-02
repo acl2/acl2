@@ -809,7 +809,9 @@
             ;;         ,body)
             ,body
             :exec ,sum.xvar)
-       ///)))
+       ///
+       ,@(and sum.disable-type-prescription
+              `((in-theory (disable (:t ,sum.fix))))))))
 
 ;; ------------------ Fixing function post-events -----------------------
 (defun flexsum-fix-postevents (x)
@@ -1171,6 +1173,8 @@
         :progn t
         ,typefix-body
         ///
+        ,@(and sum.disable-type-prescription
+               `((in-theory (disable (:t ,prod.ctor-name)))))
         ;; [Jared] delaying the fixequiv until after the equal-of proof seems to
         ;; be better for large products.
         ;; (deffixequiv ,prod.ctor-name)
@@ -1409,7 +1413,7 @@
        ((flexprod x) (car prods))
        (fieldcounts (flexprod-field-counts x.fields xvar types))
        (count (if fieldcounts `(+ ,(+ 1 (len x.fields)) . ,fieldcounts) 1))
-       (count (if x.count-incr `(+ 1 ,count) count)))
+       (count (if x.count-incr `(+ ,(if (natp x.count-incr) x.count-incr 1) ,count) count)))
     (cons `(,x.kind ,count)
           (flexsum-prod-counts (cdr prods) xvar types))))
 
@@ -1420,7 +1424,7 @@
        (prodcount (if fieldcounts
                       `(+ ,(+ 1 (len x.fields)) . ,fieldcounts)
                     1))
-       (prodcount (if x.count-incr `(+ 1 ,prodcount) prodcount)))
+       (prodcount (if x.count-incr `(+ ,(if (natp x.count-incr) x.count-incr 1) ,prodcount) prodcount)))
     (cons `(,x.cond ,prodcount)
           (flexsum-prod-counts-nokind (cdr prods) xvar types))))
 
