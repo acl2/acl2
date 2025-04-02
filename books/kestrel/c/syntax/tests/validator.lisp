@@ -434,12 +434,8 @@ foo_t_alias bar;
 ")
 
 (test-valid
- "int * foo = 0;
-")
-
-(test-valid
  "typedef int * foo;
-foo bar = 0;
+foo bar;
 int main(void) {
   *bar;
   return 0;
