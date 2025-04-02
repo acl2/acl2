@@ -926,12 +926,6 @@
   (retok (type-unknown))
   :hooks (:fix))
 
-;; (defruled valid-gensel-when-type-compatiblep
-;;   (implies (type-compatiblep x y)
-;;            (equal (valid-gensel expr x type-alist)
-;;                   (valid-gensel expr y type-alist)))
-;;   :enable valid-gensel)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-arrsub ((expr exprp) (type-arg1 typep) (type-arg2 typep))
