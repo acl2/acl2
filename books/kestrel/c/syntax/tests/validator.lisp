@@ -427,6 +427,33 @@ void f() {
   extern int f();
 ")
 
+(test-valid
+ "typedef struct foo_s { int x; } foo_t;
+typedef foo_t foo_t_alias;
+foo_t_alias bar;
+")
+
+(test-valid
+ "int * foo = 0;
+")
+
+(test-valid
+ "typedef int * foo;
+foo bar = 0;
+int main(void) {
+  *bar;
+  return 0;
+}
+")
+
+(test-valid
+ "typedef unsigned int size_t;
+void foo() {
+  for (size_t i; ; ) {}
+    typedef signed int size_t;
+  }
+")
+
 (test-valid-fail
  "extern int f();
   static int f();
@@ -435,6 +462,21 @@ void f() {
 (test-valid-fail
  "int f();
   static int f();
+")
+
+(test-valid-fail
+ "int x;
+typedef int x;
+")
+
+(test-valid-fail
+ "typedef int x;
+int x;
+")
+
+(test-valid-fail
+ "typedef int x;
+typedef short x;
 ")
 
 (test-valid

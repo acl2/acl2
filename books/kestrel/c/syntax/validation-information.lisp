@@ -700,6 +700,205 @@
                                  ((:e tau-system)))))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-compatiblep ((x typep) (y typep))
+  :returns (yes/no booleanp)
+  :short "Check that two @(see type)s are compatible [C17:6.2.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Informally, two types are compatible if they represent \"the same\"
+     type.")
+   (xdoc::p
+    "Because we currently only model an approximation of C types, our notion of
+     compatibility is also approximate.
+     Specifically, this relation overapproximates true type compatibility.
+     Compatible types should always be recognized as such,
+     but incompatible types may also be recognized.")
+   (xdoc::p
+    "In particular:"
+    (xdoc::ul
+     (xdoc::li "all composite types of a particular kind are currently
+                considered compatible.")
+     (xdoc::li "type qualifiers are ignored.")
+     (xdoc::li "all types are compatible with the abstract @(':unknown')
+                type.")
+     (xdoc::li "@('enum') types are compatible with "
+               (xdoc::i "all")
+               " integer types (not just one particular type).")))
+   (xdoc::p
+     "Eventually, we shall refine the notion of compatibility alongside our
+      representation of type in order to reflect true type compatibility.
+      This may require an additional argument representing the implementation
+      environment so that we may establish "
+     (xdoc::i "which")
+     " integer type with which the @('enum') types are to be considered
+      compatible.")
+   (xdoc::p
+    "True type compatibility is an equivalence relation, but our approximate
+     notion of compatibility is not.
+     That is because @('type-compatiblep') is not transitive.
+     For instance, @(':void') is compatible with @(':unknown'), as is
+     @(':bool'), but @(':void') is "
+    (xdoc::i "not")
+    " compatible with @(':bool')."))
+  (type-case
+   x
+   :void (type-case
+           y
+           :void t
+           :unknown t
+           :otherwise nil)
+   :char (type-case
+           y
+           :char t
+           :enum t
+           :unknown t
+           :otherwise nil)
+   :schar (type-case
+            y
+            :schar t
+            :enum t
+            :unknown t
+            :otherwise nil)
+   :uchar (type-case
+            y
+            :uchar t
+            :enum t
+            :unknown t
+            :otherwise nil)
+   :sshort (type-case
+             y
+             :sshort t
+             :enum t
+             :unknown t
+             :otherwise nil)
+   :ushort (type-case
+             y
+             :ushort t
+             :enum t
+             :unknown t
+             :otherwise nil)
+   :sint (type-case
+           y
+           :sint t
+           :enum t
+           :unknown t
+           :otherwise nil)
+   :uint (type-case
+           y
+           :uint t
+           :enum t
+           :unknown t
+           :otherwise nil)
+   :slong (type-case
+            y
+            :slong t
+            :enum t
+            :unknown t
+            :otherwise nil)
+   :ulong (type-case
+            y
+            :ulong t
+            :enum t
+            :unknown t
+            :otherwise nil)
+   :sllong (type-case
+             y
+             :sllong t
+             :enum t
+             :unknown t
+             :otherwise nil)
+   :ullong (type-case
+             y
+             :ullong t
+             :enum t
+             :unknown t
+             :otherwise nil)
+   :float (type-case
+            y
+            :float t
+            :unknown t
+            :otherwise nil)
+   :double (type-case
+             y
+             :double t
+             :unknown t
+             :otherwise nil)
+   :ldouble (type-case
+              y
+              :ldouble t
+              :unknown t
+              :otherwise nil)
+   :floatc (type-case
+             y
+             :floatc t
+             :unknown t
+             :otherwise nil)
+   :doublec (type-case
+              y
+              :doublec t
+              :unknown t
+              :otherwise nil)
+   :ldoublec (type-case
+               y
+               :ldoublec t
+               :unknown t
+               :otherwise nil)
+   :bool (type-case
+           y
+           :bool t
+           :enum t
+           :unknown t
+           :otherwise nil)
+   :struct (type-case
+             y
+             :struct t
+             :unknown t
+             :otherwise nil)
+   :union (type-case
+            y
+            :union t
+            :unknown t
+            :otherwise nil)
+   :enum (or (type-integerp y)
+             (type-case y :unknown))
+   :array (type-case
+            y
+            :array t
+            :unknown t
+            :otherwise nil)
+   :pointer (type-case
+              y
+              :pointer t
+              :unknown t
+              :otherwise nil)
+   :function (type-case
+               y
+               :function t
+               :unknown t
+               :otherwise nil)
+   :unknown t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule type-compatiblep-reflexive
+  (type-compatiblep x x)
+  :enable (type-compatiblep
+           type-integerp))
+
+(defrule type-compatiblep-symmetric
+  (equal (type-compatiblep y x)
+         (type-compatiblep x y))
+  :enable (type-compatiblep
+           type-integerp
+           type-signed-integerp
+           type-standard-signed-integerp
+           type-unsigned-integerp
+           type-standard-unsigned-integerp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum linkage
@@ -808,16 +1007,17 @@
      the information for both objects and functions includes (different) types;
      that information also includes the linkage [C17:6.2.2],
      as well as definition status (see @(tsee valid-defstatus)).
-     For enumeration constants and for @('typedef') names,
-     for now we only track that they are
-     enumeration constants and @('typedef') names.")
+     For enumeration constants names,
+     for now we only track that they are enumeration constants.
+     For @('typedef') names, we track the type corresponding to its definition.
+     ")
    (xdoc::p
     "We will refine this fixtype as we refine our validator."))
   (:objfun ((type type)
             (linkage linkage)
             (defstatus valid-defstatus)))
   (:enumconst ())
-  (:typedef ())
+  (:typedef ((def type)))
   :pred valid-ord-infop)
 
 ;;;;;;;;;;;;;;;;;;;;

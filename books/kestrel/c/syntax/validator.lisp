@@ -926,6 +926,12 @@
   (retok (type-unknown))
   :hooks (:fix))
 
+;; (defruled valid-gensel-when-type-compatiblep
+;;   (implies (type-compatiblep x y)
+;;            (equal (valid-gensel expr x type-alist)
+;;                   (valid-gensel expr y type-alist)))
+;;   :enable valid-gensel)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-arrsub ((expr exprp) (type-arg1 typep) (type-arg2 typep))
@@ -950,15 +956,16 @@
      as it has to be a pointer to a complete object type [C17:6.5.2.1/1].
      So by leaving function types as such, we automatically disallow them."))
   (b* (((reterr) (irr-type))
-       ((when (or (type-case type-arg1 :unknown)
-                  (type-case type-arg2 :unknown)))
-        (retok (type-unknown)))
        (type1 (type-apconvert type-arg1))
        (type2 (type-apconvert type-arg2))
-       ((unless (or (and (type-case type1 :pointer)
-                         (type-integerp type2))
-                    (and (type-integerp type1)
-                         (type-case type2 :pointer))))
+       ((unless (type-case
+                  type1
+                  :pointer (or (type-case type2 :unknown)
+                               (type-integerp type2))
+                  :unknown (or (type-case type2 '(:pointer :unknown))
+                               (type-integerp type2))
+                  :otherwise (and (type-integerp type1)
+                                  (type-case type2 '(:pointer :unknown)))))
         (reterr (msg "In the array subscripting expression ~x0, ~
                       the first sub-expression has type ~x1, ~
                       and the second sub-expression has type ~x2."
@@ -971,6 +978,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-funcall ((expr exprp) (type-fun typep) (types-arg type-listp))
+  (declare (ignore types-arg))
   :guard (expr-case expr :funcall)
   :returns (mv erp (type typep))
   :short "Validate a function call expression,
@@ -993,11 +1001,8 @@
      but only (complete) object element types [C17:6.2.5/20].
      Thus, the conversion could never result into a pointer to a function."))
   (b* (((reterr) (irr-type))
-       ((when (or (type-case type-fun :unknown)
-                  (member-equal (type-unknown) (type-list-fix types-arg))))
-        (retok (type-unknown)))
        (type (type-fpconvert type-fun))
-       ((unless (type-case type :pointer))
+       ((unless (type-case type '(:pointer :unknown)))
         (reterr (msg "In the function call expression ~x0, ~
                       the first sub-expression has type ~x1."
                      (expr-fix expr)
@@ -1058,10 +1063,8 @@
     "Since we cannot yet look up members in structure and union types,
      we return the unknown type."))
   (b* (((reterr) (irr-type))
-       ((when (type-case type-arg :unknown))
-        (retok (type-unknown)))
        (type (type-apconvert type-arg))
-       ((unless (type-case type :pointer))
+       ((unless (type-case type '(:pointer :unknown)))
         (reterr (msg "In the member pointer expression ~x0, ~
                       the sub-expression has type ~x1."
                      (expr-fix expr) (type-fix type-arg)))))
@@ -2597,9 +2600,8 @@
        we recursively validate their sub-structures,
        and the type is determined in all cases.")
      (xdoc::p
-      "Since our currently approximate type system
-       does not handle @('typedef') types,
-       we just regard it as denoting an unknown type.")
+      "For @('typedef') names, we lookup the type definition in the validation
+       table. If no such entry exists in the table, validation fails.")
      (xdoc::p
       "For now, for simplicity, we regard
        all the type specifiers that are GCC extensions
@@ -2675,13 +2677,23 @@
                   ((erp new-spec types table)
                    (valid-enumspec tyspec.spec table ienv)))
                (retok (type-spec-enum new-spec) (type-enum) nil types table))
-       :typedef (if (endp tyspecs)
-                    (retok (type-spec-typedef tyspec.name)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
+       :typedef (b* (((unless (endp tyspecs))
+                      (reterr msg-bad-preceding))
+                     ((mv info? -)
+                      (valid-lookup-ord tyspec.name table))
+                     ((unless info?)
+                      (reterr (msg "The identifier ~x0 is not an in-scope ~
+                                    ordinary identifer."
+                                   (ident->unwrap tyspec.name)))))
+                  (valid-ord-info-case
+                    info?
+                    :typedef (retok (type-spec-typedef tyspec.name)
+                                    (valid-ord-info-typedef->def info?)
+                                    nil
+                                    nil
+                                    same-table)
+                    :otherwise (reterr (msg "The identifier ~x0 does not ~
+                                             represent a typedef."))))
        :int128 (retok (type-spec-int128) nil ext-tyspecs nil same-table)
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
@@ -4629,7 +4641,7 @@
        it is currently not captured in our abstract syntax,
        so we double-check it here.")
      (xdoc::p
-      "For now our validation tabled include
+      "For now our validation tables include
        no information about enumeration tags,
        so we do not extend the validation table,
        if the enumeration specifier has a name.
@@ -4787,14 +4799,11 @@
        there must be no initializer,
        because we are not declaring an object.
        In this case, we add the @('typedef') to the validation table.
-       The same @('typedef') is allowed in the same scope [C17:6.7/3],
-       under certain conditions that are inexpressible
-       in our current approximate type system,
-       but since our validation tables currently carry limited information
-       about @('typedef') names (i.e. just that they are @('typedef')s),
-       we allow the identifier to be present, as a @('typedef'),
-       in the same (i.e. current) scope,
-       to avoid rejecting valid code.")
+       A @('typedef') may be redefined in the same scope
+       assuming the two types are compatible and not variably modified
+       [C17:6.7/3] (the latter of which is inexpressible in our current
+       approximate type system
+       so we conservatively permit redefinition of any compatible types).")
      (xdoc::p
       "If the @('typedef') flag is @('nil'),
        the identifier may denote a function or an object.
@@ -4869,12 +4878,15 @@
                ((mv info? currentp) (valid-lookup-ord ident table))
                ((when (and info?
                            currentp
-                           (not (valid-ord-info-case info? :typedef))))
+                           (or (not (valid-ord-info-case info? :typedef))
+                               (not (type-compatiblep
+                                      (valid-ord-info-typedef->def info?)
+                                      type)))))
                 (reterr (msg "The typedef name ~x0 ~
                               is already declared in the current scope ~
                               with associated information ~x1."
                              ident info?)))
-               (table (valid-add-ord ident (valid-ord-info-typedef) table)))
+               (table (valid-add-ord ident (valid-ord-info-typedef type) table)))
             (retok (make-initdeclor :declor new-declor
                                     :asm? initdeclor.asm?
                                     :attribs initdeclor.attribs
