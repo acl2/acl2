@@ -3740,7 +3740,7 @@
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr? index-type? more-types table)
-             (valid-expr-option dirdeclor.expr? table ienv))
+             (valid-expr-option dirdeclor.size? table ienv))
             ((when (and index-type?
                         (not (type-integerp index-type?))
                         (not (type-case index-type? :unknown))))
@@ -3750,8 +3750,8 @@
                           (dirdeclor-fix dirdeclor)
                           index-type?))))
          (retok (make-dirdeclor-array :declor new-dirdeclor
-                                      :quals dirdeclor.quals
-                                      :expr? new-expr?)
+                                      :qualspecs dirdeclor.qualspecs
+                                      :size? new-expr?)
                 fundef-params-p
                 type
                 ident
@@ -3762,7 +3762,7 @@
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr index-type more-types table)
-             (valid-expr dirdeclor.expr table ienv))
+             (valid-expr dirdeclor.size table ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
@@ -3771,8 +3771,8 @@
                           (dirdeclor-fix dirdeclor)
                           index-type))))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
-                                              :quals dirdeclor.quals
-                                              :expr new-expr)
+                                              :qualspecs dirdeclor.qualspecs
+                                              :size new-expr)
                 fundef-params-p
                 type
                 ident
@@ -3783,7 +3783,7 @@
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr index-type more-types table)
-             (valid-expr dirdeclor.expr table ienv))
+             (valid-expr dirdeclor.size table ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
@@ -3792,8 +3792,8 @@
                           (dirdeclor-fix dirdeclor)
                           index-type))))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
-                                              :quals dirdeclor.quals
-                                              :expr new-expr)
+                                              :qualspecs dirdeclor.qualspecs
+                                              :size new-expr)
                 fundef-params-p
                 type
                 ident
@@ -3805,7 +3805,7 @@
              (valid-dirdeclor
               dirdeclor.declor fundef-params-p type table ienv)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
-                                           :quals dirdeclor.quals)
+                                           :qualspecs dirdeclor.qualspecs)
                 fundef-params-p
                 type
                 ident
@@ -3910,8 +3910,8 @@
                    (type-pointer)
                  type))
          ((erp new-decl? type types table)
-          (valid-dirabsdeclor-option absdeclor.decl? type table ienv)))
-      (retok (make-absdeclor :pointers absdeclor.pointers :decl? new-decl?)
+          (valid-dirabsdeclor-option absdeclor.direct? type table ienv)))
+      (retok (make-absdeclor :pointers absdeclor.pointers :direct? new-decl?)
              type
              types
              table))
