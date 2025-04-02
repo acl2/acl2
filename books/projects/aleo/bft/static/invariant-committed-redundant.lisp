@@ -346,8 +346,6 @@
              set::expensive-rules
              evenp
              get-validator-state-of-update-validator-state
-             certificate->author-of-cert-with-author+round
-             certificate->round-of-cert-with-author+round
              car-of-collect-anchors)
     :use ((:instance
            dag-all-path-to-p-necc
