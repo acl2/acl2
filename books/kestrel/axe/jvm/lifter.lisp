@@ -6018,7 +6018,7 @@
                                              (g :extra-rules options))
                                      (g :remove-rules options))
                                     :none ; todo: pass a rule-alist here?
-                                    nil ; interpreted-fns
+                                    nil ; interpreted-function-alist
                                     (g :monitor options)
                                     (g :call-stp options)
                                     print
@@ -6547,7 +6547,7 @@
                                             (g :extra-rules options))
                                     (g :remove-rules options))
                                    :none ; todo: pass a rule-alist here?
-                                   nil ; interpreted-fns
+                                   nil ; interpreted-function-alist
                                    (g :monitor options)
                                    (g :call-stp options)
                                    print

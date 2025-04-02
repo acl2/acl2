@@ -28,7 +28,7 @@
 (include-book "kestrel/utilities/check-boolean" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "../make-term-into-dag-basic")
-(include-book "../rewriter") ; for simp-dag (todo: use something better?)
+(include-book "../rewriter") ; for simp-dag ; todo: use rewriter-jvm
 (include-book "../prune-dag-approximately") ;brings in rewriter-basic
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
@@ -171,8 +171,8 @@
                        print
                        print-interval
                        memoizep
-                       prune-branches-approximately ; currently pruning is too slow for proofs like DES
-                       prune-branches-precisely
+                       prune-precise
+                       prune-approx ; currently pruning is too slow for proofs like DES
                        total-steps
                        state)
   (declare (xargs :guard (and (natp steps-left)
@@ -184,10 +184,10 @@
 ;                              (booleanp use-internal-contextsp)
                               ;; print
                               (booleanp memoizep)
-                              (or (booleanp prune-branches-approximately)
-                                  (natp prune-branches-approximately))
-                              (or (booleanp prune-branches-precisely)
-                                  (natp prune-branches-precisely))
+                              (or (booleanp prune-precise)
+                                  (natp prune-precise))
+                              (or (booleanp prune-approx)
+                                  (natp prune-approx))
                               (natp total-steps)
                               (booleanp normalize-xors))
                   :mode :program ;; because we call simp-dag-fn and untranslate
@@ -219,7 +219,7 @@
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
          ;; todo: which kind(s) of pruning should we use?  this is our chance to apply STP to prune away impossible branches.
          ((mv erp dag-or-quotep state)
-          (maybe-prune-dag-approximately prune-branches-approximately dag assumptions print
+          (maybe-prune-dag-approximately prune-approx dag assumptions print
                                          60000 ; todo: pass in
                                          state))
          ((when erp) (mv erp nil state))
@@ -227,7 +227,7 @@
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
           (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; renames it, since we know it's not a quotep
-         ((mv erp dag-or-quotep state) (maybe-prune-dag-precisely prune-branches-precisely
+         ((mv erp dag-or-quotep state) (maybe-prune-dag-precisely prune-precise
                                                                   dag
                                                                   assumptions
                                                                   nil ; todo: use some rules?
@@ -275,8 +275,8 @@
                               print
                               print-interval
                               memoizep
-                              prune-branches-approximately
-                              prune-branches-precisely
+                              prune-precise
+                              prune-approx
                               total-steps
                               state))))))))
 
@@ -302,8 +302,8 @@
                                 print-interval
                                 memoizep
                                 vars-for-array-elements
-                                prune-branches-approximately ; todo: separate options for pruning during a run (can be slow) vs at the end?
-                                prune-branches-precisely
+                                prune-precise
+                                prune-approx ; todo: separate options for pruning during a run (can be slow) vs at the end?
                                 call-stp ;t, nil, or a max-conflicts
                                 steps
                                 branches
@@ -321,10 +321,10 @@
                               (symbol-listp monitored-rules)
                               (array-length-alistp array-length-alist)
                               (member-eq vars-for-array-elements '(t nil :bits))
-                              (or (booleanp prune-branches-approximately)
-                                  (natp prune-branches-approximately))
-                              (or (booleanp prune-branches-precisely)
-                                  (natp prune-branches-precisely))
+                              (or (booleanp prune-precise)
+                                  (natp prune-precise))
+                              (or (booleanp prune-approx)
+                                  (natp prune-approx))
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp))
                               (or (eq :auto steps)
@@ -487,8 +487,8 @@
                         print
                         print-interval
                         memoizep
-                        prune-branches-approximately
-                        prune-branches-precisely
+                        prune-precise
+                        prune-approx
                         0
                         state))
        ((when erp)
@@ -498,22 +498,18 @@
         (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
        ;;; Prune irrelevant branches, if instructed:
        ;; TODO: Consider calling prune-dag-approximately here:
+       ;; TODO: Consider making this final pruning a separate option
        ((mv erp dag state)
-        (if (if (booleanp prune-branches-precisely) ;todo: consider calling something like maybe-prune-dag-precisely, but we have a rule-alist here
-                prune-branches-precisely
-              ;; prune-branches is a natp (a limit on the size):
-              (dag-or-quotep-size-less-thanp dag prune-branches-precisely))
-            ;; todo: make a maybe version of this?:
-            (prune-dag-precisely-with-rule-alist dag
-                                                 all-assumptions ;are they all needed?
-                                                 (first rule-alists) ;what should we use here?
-                                                 nil ; interpreted-function-alist
-                                                 monitored-rules
-                                                 call-stp
-                                                 t ; check-fnsp
-                                                 print
-                                                 state)
-          (mv nil dag state)))
+        (maybe-prune-dag-precisely prune-precise
+                                   dag
+                                   all-assumptions ;are they all needed?
+                                   :none ; we give a rule-alist instead
+                                   (first rule-alists) ;what should we use here?
+                                   nil ; interpreted-function-alist
+                                   monitored-rules
+                                   call-stp
+                                   print
+                                   state))
        ((when erp) (mv erp nil nil nil nil nil state))
        ((when (quotep dag)) ; todo: test this case
         (mv (erp-nil) dag all-assumptions term-to-run-with-output-extractor nil parameter-names state))
@@ -543,8 +539,8 @@
                              print-interval
                              memoizep
                              vars-for-array-elements
-                             prune-branches-approximately
-                             prune-branches-precisely
+                             prune-precise
+                             prune-approx
                              call-stp ;t, nil, or a max-conflicts
                              produce-theorem
                              steps
@@ -566,10 +562,10 @@
                               (array-length-alistp array-length-alist)
                               (booleanp memoizep)
                               (member-eq vars-for-array-elements '(t nil :bits))
-                              (or (booleanp prune-branches-approximately)
-                                  (natp prune-branches-approximately))
-                              (or (booleanp prune-branches-precisely)
-                                  (natp prune-branches-precisely))
+                              (or (booleanp prune-precise)
+                                  (natp prune-precise))
+                              (or (booleanp prune-approx)
+                                  (natp prune-approx))
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp))
                               (booleanp produce-theorem)
@@ -617,8 +613,8 @@
                                  print-interval
                                  memoizep
                                  vars-for-array-elements
-                                 prune-branches-approximately
-                                 prune-branches-precisely
+                                 prune-precise
+                                 prune-approx
                                  call-stp ;t, nil, or a max-conflicts
                                  steps
                                  branches
@@ -707,8 +703,8 @@
                                       (extra-rules 'nil) ; to add to the usual set of rules
                                       (remove-rules 'nil)
                                       (normalize-xors 'nil) ; defaults to nil, since it's better to normalize the xors of the spec and code dags together
-                                      (prune-branches-approximately 'nil) ;todo: make t the default (but that slows down DES a lot)
-                                      (prune-branches-precisely 'nil) ; can blow up!
+                                      (prune-precise 'nil) ; can blow up! was called prune-branches-precisely
+                                      (prune-approx 'nil) ;todo: make t the default (but that slows down DES a lot), was called prune-branches-approximately
                                       (call-stp 'nil)
                                       ;; Options affecting performance:
                                       (memoizep 't)
@@ -739,8 +735,8 @@
                                      ,print-interval
                                      ,memoizep
                                      ,vars-for-array-elements
-                                     ',prune-branches-approximately
-                                     ',prune-branches-precisely
+                                     ',prune-precise
+                                     ',prune-approx
                                      ',call-stp
                                      ',produce-theorem
                                      ',steps
@@ -781,8 +777,8 @@
          (output                  "An indication of which state component to extract")
          (steps "A number of steps to run, or :auto, meaning run until the method returns. (Consider using :output :all when using :steps, especially if the computation may not complete after that many steps.)")
          (normalize-xors           "Whether to normalize xor nests (t or nil)")
-         (prune-branches-approximately "Whether to prune unreachable branches, using approximate contexts, during and after lifting (@('t'), @('nil'), or a dag size threshold).  Can be slow but should not cause an exponential blowup.")
-         (prune-branches-precisely "Whether to prune unreachable branches, using precise contexts, during and after lifting (@('t'), @('nil'), or a dag size threshold).  Warning: Can take an exponential amount of time and space for DAGs with extensive sharing!")
+         (prune-precise "Whether to prune unreachable branches, using precise contexts, during and after lifting (@('t'), @('nil'), or a dag size threshold).  Warning: Can take an exponential amount of time and space for DAGs with extensive sharing!")
+         (prune-approx "Whether to prune unreachable branches, using approximate contexts, during and after lifting (@('t'), @('nil'), or a dag size threshold).  Can be slow but should not cause an exponential blowup.")
          (call-stp                "whether to call STP when pruning (@('t'), @('nil'), or a number of conflicts before giving up)")
          (memoizep "Whether to memoize rewrites during unrolling (a boolean).")
          (branches "How to handle branches in the execution. Either @(':smart') (try to merge at join points) or @(':split') (split the execution and don't re-merge).")
