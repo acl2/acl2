@@ -155,8 +155,7 @@
         :committed new-committed-certs))
      :guard-hints
      (("Goal"
-       :in-theory (enable certificate->round-of-cert-with-author+round
-                          posp
+       :in-theory (enable posp
                           natp
                           evenp
                           oddp)))

@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1231,13 +1232,18 @@
      we perform array-to-pointer conversion.
      We not perform function-to-pointer conversion,
      because that would result in a pointer to function,
-     while a pointer to object type is required.")
+     while a pointer to object type is required.
+     The standard does not allow null pointer constant arguments to be coerced
+     into pointer types, but this is allowed as a GCC extension.
+     Therefore, we allow for now an intermixing of integer and pointer types.")
    (xdoc::p
     "The @('==') and @('!=') operators require
      arithmetic types or pointer types [C17:6.5.9/2];
-     since we currently have just one type for pointers,
-     the distinctions between the three cases involving pointers
-     reduce to just the simple case of two pointers for us for now.
+     Distinctions betwen qualified and unqualified pointer types,
+     as well as @('void') or non-@('void') pointers types are ignored
+     since we currently appromimate all of these as a single pointer type.
+     Since we do not yet implement evaluation of constant expressions,
+     all integer types are considered potential null pointer constants.
      The result is always @('signed int') [C17:6.5.9/3].
      Since pointers may be involved,
      we perform array-to-pointer and function-to-pointer conversions.")
@@ -1262,7 +1268,8 @@
      both arithmetic types,
      or both the structure type,
      or both the union type,
-     or both pointer types.
+     or both pointer types,
+     or one pointer type and one integer type.
      We do not perform array-to-pointer or function-to-pointer conversion
      on the left operand, because the result would not be an lvalue.
      The type of the result is the type of the left operand [C17:6.5.16/3].")
@@ -1323,11 +1330,11 @@
                      (type-arithmeticp type2))
                 (retok (type-uaconvert type1 type2 ienv)))
                ((and (type-case type1 :pointer)
-                     (type-case type2 :pointer))
-                (retok (type-unknown)))
-               ((and (type-case type1 :pointer)
                      (type-integerp type2))
                 (retok (type-pointer)))
+               ((and (type-case type1 :pointer)
+                     (type-case type2 :pointer))
+                (retok (type-unknown)))
                (t (reterr msg)))))
       ((:shl :shr) (b* (((unless (and (type-integerp type-arg1)
                                       (type-integerp type-arg2)))
@@ -1338,16 +1345,22 @@
             (type2 (type-apconvert type-arg2))
             ((unless (or (and (type-realp type1)
                               (type-realp type2))
-                         (and (type-case type1 :pointer)
-                              (type-case type2 :pointer))))
+                         (if (type-case type1 :pointer)
+                             (or (type-case type2 :pointer)
+                                 (type-integerp type2))
+                           (and (type-integerp type1)
+                                (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
       ((:eq :ne) (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
                       (type2 (type-fpconvert (type-apconvert type-arg2)))
                       ((unless (or (and (type-arithmeticp type1)
                                         (type-arithmeticp type2))
-                                   (and (type-case type1 :pointer)
-                                        (type-case type2 :pointer))))
+                                   (if (type-case type1 :pointer)
+                                       (or (type-case type2 :pointer)
+                                           (type-integerp type2))
+                                     (and (type-integerp type1)
+                                          (type-case type2 :pointer)))))
                        (reterr msg)))
                    (retok (type-sint))))
       ((:bitand :bitxor :bitior)
@@ -1370,9 +1383,13 @@
                                    (type-case type2 :struct))
                               (and (type-case type1 :union)
                                    (type-case type2 :union))
-                              (and (or (type-case type1 :pointer)
-                                       (type-case type1 :bool))
-                                   (type-case type2 :pointer))))
+                              (and (type-case type1 :bool)
+                                   (type-case type2 :pointer))
+                              (and (if (type-case type1 :pointer)
+                                       (or (type-case type2 :pointer)
+                                           (type-integerp type2))
+                                     (and (type-integerp type1)
+                                          (type-case type2 :pointer))))))
                   (reterr msg)))
               (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
@@ -1491,7 +1508,8 @@
      or both the structure type,
      or both the union type,
      or both the void type,
-     or both the pointer type
+     or both the pointer type,
+     or one pointer type and one integer type
      [C17:6.5.15/3].
      The type of the result is
      the one from the usual arithmetic converions
@@ -1521,8 +1539,11 @@
        ((when (and (type-case type2 :union)
                    (type-case type3 :union)))
         (retok (type-union)))
-       ((when (and (type-case type2 :pointer)
-                   (type-case type3 :pointer)))
+       ((when (if (type-case type2 :pointer)
+                  (or (type-case type3 :pointer)
+                      (type-integerp type3))
+                (and (type-integerp type2)
+                     (type-case type3 :pointer))))
         (retok (type-pointer))))
     (reterr (msg "In the conditional expression ~x0, ~
                   the second operand has type ~x1 ~
@@ -3124,7 +3145,9 @@
        The same constraints as in assignments apply here
        [C17:6.7.9/11] [C17:6.5.16.1/1].
        We perform array-to-pointer and function-to-pointer conversions
-       on the expression, as pointers may be required.")
+       on the expression, as pointers may be required.
+       We accept expressions of integer type when expecting a pointer type
+       to approximate conversion of null pointer constants.")
      (xdoc::p
       "If the target type is the structure or union type,
        the initializer is a single expression,
@@ -3199,11 +3222,12 @@
                                    (type-case target-type :unknown))
                                (or (type-arithmeticp type)
                                    (type-case type :unknown)))
-                          (and (or (type-case target-type :pointer)
-                                   (type-case target-type :bool)
-                                   (type-case target-type :unknown))
+                          (and (type-case target-type :bool)
+                               (type-case type :pointer))
+                          (and (type-case target-type :pointer)
                                (or (type-case type :pointer)
-                                   (type-case type :unknown)))))
+                                   (type-case type :unknown)
+                                   (type-integerp type)))))
               (reterr (msg "The initializer ~x0 ~
                             for the target type ~x1 ~
                             has type ~x2."
