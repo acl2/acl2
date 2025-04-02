@@ -2241,7 +2241,8 @@
                      (valid-binary expr expr.op type-arg1 type-arg2 ienv)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
-                                          :arg2 new-arg2)
+                                          :arg2 new-arg2
+                                          :info nil)
                         type
                         (set::union types-arg1 types-arg2)
                         table))

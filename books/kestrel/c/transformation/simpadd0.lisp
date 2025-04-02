@@ -1271,7 +1271,7 @@
      the third one is only needed if there is an actual simplification,
      but we use it always in the proof for simplicity."))
   (b* (((simpadd0-gin gin) gin)
-       (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2))
+       (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info nil))
        (simpp (and (c$::binop-case op :add)
                    (c$::expr-case arg1-new :ident)
                    (c$::type-case (c$::var-info->type
@@ -1281,7 +1281,8 @@
                    (c$::expr-zerop arg2-new)))
        (expr-new (if simpp
                      (expr-fix arg1-new)
-                   (make-expr-binary :op op :arg1 arg1-new :arg2 arg2-new)))
+                   (make-expr-binary
+                    :op op :arg1 arg1-new :arg2 arg2-new :info nil)))
        (vars (set::union arg1-vars arg2-vars))
        (diffp (or arg1-diffp arg2-diffp simpp))
        ((unless (and arg1-thm-name

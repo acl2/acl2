@@ -94,7 +94,8 @@
                           (make-expr-binary
                             :op expr.op
                             :arg1 arg1
-                            :arg2 arg2)))
+                            :arg2 arg2
+                            :info expr.info)))
               :cond (make-expr-cond
                       :test (my-simpadd0-expr expr.test)
                       :then (my-simpadd0-expr-option expr.then)

@@ -696,7 +696,8 @@
                       (b* (((unless arg2-value?)
                             (mv (make-expr-binary :op expr.op
                                                   :arg1 expr.arg1
-                                                  :arg2 arg2)
+                                                  :arg2 arg2
+                                                  :info expr.info)
                                 nil
                                 env))
                            ((mv value? env)
@@ -713,7 +714,8 @@
                             (mv (value-to-expr value?) value? env)
                           (mv (make-expr-binary :op expr.op
                                                 :arg1 expr.arg1
-                                                :arg2 arg2)
+                                                :arg2 arg2
+                                                :info expr.info)
                               nil
                               env))))
                      ((mv arg1 arg1-value? env)
@@ -721,7 +723,8 @@
                      ((unless (and arg1-value? arg2-value?))
                       (mv (make-expr-binary :op expr.op
                                             :arg1 arg1
-                                            :arg2 arg2)
+                                            :arg2 arg2
+                                            :info expr.info)
                           nil
                           env))
                      (value?
@@ -732,7 +735,8 @@
                           (value-to-expr value?)
                         (make-expr-binary :op expr.op
                                           :arg1 arg1
-                                          :arg2 arg2))
+                                          :arg2 arg2
+                                          :info expr.info))
                       value?
                       env))
         :cond (b* (((mv test - env)
