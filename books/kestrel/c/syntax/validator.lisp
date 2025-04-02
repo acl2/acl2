@@ -1198,7 +1198,7 @@
      In the second case, the result is the pointer type [C17:6.5.6/8].
      Because of that second case, which involves pointers,
      we perform array-to-pointer conversion.
-     We not perform function-to-pointer conversion,
+     We do not perform function-to-pointer conversion,
      because that would result in a pointer to function,
      while a pointer to complete object type is required.")
    (xdoc::p
@@ -1215,7 +1215,7 @@
      In the third case, the result has the pointer type [C17:6.5.6/8].
      Because of the second and third cases, which involve pointers,
      we perform array-to-pointer conversion.
-     We not perform function-to-pointer conversion,
+     We do not perform function-to-pointer conversion,
      because that would result in a pointer to function,
      while a pointer to complete object type is required.")
    (xdoc::p
@@ -1230,20 +1230,32 @@
      The result is always @('signed int') [C17:6.5.8/6].
      Since pointers may be involved,
      we perform array-to-pointer conversion.
-     We not perform function-to-pointer conversion,
+     We do not perform function-to-pointer conversion,
      because that would result in a pointer to function,
      while a pointer to object type is required.
-     The standard does not allow null pointer constant arguments to be coerced
-     into pointer types, but this is allowed as a GCC extension.
-     Therefore, we allow for now an intermixing of integer and pointer types.")
+     The standard does not allow
+     a null pointer constants [C17:6.3.2.3/3] without the @('void *') cast
+     to be used as an operand while the other operand has pointer type.
+     But we found it accepted by practical compilers,
+     so it is probably a GCC extensions,
+     and for this reason we accept it for now;
+     we should extend our implementation environments with
+     information about whether GCC extensions are allowed,
+     and condition acceptance under that flag.
+     Since we do not have code yet to recognize null pointer constants,
+     we accept any integer expression;
+     that is, we allow one pointer operand and one integer operand.")
    (xdoc::p
     "The @('==') and @('!=') operators require
      arithmetic types or pointer types [C17:6.5.9/2];
      Distinctions betwen qualified and unqualified pointer types,
      as well as @('void') or non-@('void') pointers types are ignored
-     since we currently appromimate all of these as a single pointer type.
+     since we currently approximate all of these as a single pointer type.
      Since we do not yet implement evaluation of constant expressions,
-     all integer types are considered potential null pointer constants.
+     all integer expressions are considered potential null pointer constants:
+     so we allow an operand to be a pointer and the other to be an integer,
+     to accommodate a null pointer constant [C17:6.3.2.3/3]
+     without the @('void *') cast.
      The result is always @('signed int') [C17:6.5.9/3].
      Since pointers may be involved,
      we perform array-to-pointer and function-to-pointer conversions.")
@@ -1272,6 +1284,20 @@
      or one pointer type and one integer type.
      We do not perform array-to-pointer or function-to-pointer conversion
      on the left operand, because the result would not be an lvalue.
+     In order to allow a pointer type on the left
+     and a null pointer constant [C17:6.3.2.3/3] without @('void *') cast
+     on the right,
+     since we do not have code to recognize such null pointer constants yet,
+     we allow any integer expressions on the right
+     when the expression on the left has pointer type.
+     We also allow the left operand to be boolean
+     and the right operand to be a pointer;
+     although [C17:6.5.9/2] does not mention that,
+     we found it accepted by practical compiler with a strict C17 option,
+     and [C17:6.3.1.2/1] mentions a conversion
+     from scalars (which includes pointer) to booleans,
+     although it does not say that it happens
+     (it says ``When any scalar valu is converted to @('_Bool'), ...'').
      The type of the result is the type of the left operand [C17:6.5.16/3].")
    (xdoc::p
     "The @('*=') and @('/=') operators require arithmetic operands
@@ -1385,11 +1411,9 @@
                                    (type-case type2 :union))
                               (and (type-case type1 :bool)
                                    (type-case type2 :pointer))
-                              (and (if (type-case type1 :pointer)
-                                       (or (type-case type2 :pointer)
-                                           (type-integerp type2))
-                                     (and (type-integerp type1)
-                                          (type-case type2 :pointer))))))
+                              (and (type-case type1 :pointer)
+                                   (or (type-case type2 :pointer)
+                                       (type-integerp type2)))))
                   (reterr msg)))
               (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
@@ -1511,6 +1535,11 @@
      or both the pointer type,
      or one pointer type and one integer type
      [C17:6.5.15/3].
+     The latter is more than [C17:6.5.15/3] allows,
+     but serves to accommodate the case of a pointer and
+     a null pointer constants [C17:6.3.2.3/3] without the @('void *') cast;
+     since we do not have code to recognize such null pointer constants yet,
+     for now we accept all integer expressions there.
      The type of the result is
      the one from the usual arithmetic converions
      in the first case,
@@ -3143,7 +3172,8 @@
        The latter is an expression enclosed in braces;
        experiments show that the final comma is allowed.
        The same constraints as in assignments apply here
-       [C17:6.7.9/11] [C17:6.5.16.1/1].
+       [C17:6.7.9/11] [C17:6.5.16.1/1]:
+       see @(tsee valid-binary) for how we currently approximate the checks.
        We perform array-to-pointer and function-to-pointer conversions
        on the expression, as pointers may be required.
        We accept expressions of integer type when expecting a pointer type
@@ -3218,16 +3248,16 @@
                          (mv nil (initer-single->expr desiniter.initer))))))
              ((erp new-expr init-type types table) (valid-expr expr table ienv))
              (type (type-fpconvert (type-apconvert init-type)))
-             ((unless (or (and (or (type-arithmeticp target-type)
-                                   (type-case target-type :unknown))
+             ((unless (or (and (type-arithmeticp target-type)
                                (or (type-arithmeticp type)
                                    (type-case type :unknown)))
                           (and (type-case target-type :bool)
-                               (type-case type :pointer))
+                               (or (type-case type :pointer)
+                                   (type-case type :unknown)))
                           (and (type-case target-type :pointer)
                                (or (type-case type :pointer)
-                                   (type-case type :unknown)
-                                   (type-integerp type)))))
+                                   (type-integerp type)
+                                   (type-case type :unknown)))))
               (reterr (msg "The initializer ~x0 ~
                             for the target type ~x1 ~
                             has type ~x2."
