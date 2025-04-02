@@ -1198,7 +1198,7 @@
      In the second case, the result is the pointer type [C17:6.5.6/8].
      Because of that second case, which involves pointers,
      we perform array-to-pointer conversion.
-     We not perform function-to-pointer conversion,
+     We do not perform function-to-pointer conversion,
      because that would result in a pointer to function,
      while a pointer to complete object type is required.")
    (xdoc::p
@@ -1215,7 +1215,7 @@
      In the third case, the result has the pointer type [C17:6.5.6/8].
      Because of the second and third cases, which involve pointers,
      we perform array-to-pointer conversion.
-     We not perform function-to-pointer conversion,
+     We do not perform function-to-pointer conversion,
      because that would result in a pointer to function,
      while a pointer to complete object type is required.")
    (xdoc::p
@@ -1230,7 +1230,7 @@
      The result is always @('signed int') [C17:6.5.8/6].
      Since pointers may be involved,
      we perform array-to-pointer conversion.
-     We not perform function-to-pointer conversion,
+     We do not perform function-to-pointer conversion,
      because that would result in a pointer to function,
      while a pointer to object type is required.
      The standard does not allow null pointer constant arguments to be coerced
@@ -1241,7 +1241,7 @@
      arithmetic types or pointer types [C17:6.5.9/2];
      Distinctions betwen qualified and unqualified pointer types,
      as well as @('void') or non-@('void') pointers types are ignored
-     since we currently appromimate all of these as a single pointer type.
+     since we currently approximate all of these as a single pointer type.
      Since we do not yet implement evaluation of constant expressions,
      all integer types are considered potential null pointer constants.
      The result is always @('signed int') [C17:6.5.9/3].
