@@ -3226,6 +3226,7 @@
                                (type-case type :pointer))
                           (and (type-case target-type :pointer)
                                (or (type-case type :pointer)
+                                   (type-case type :unknown)
                                    (type-integerp type)))))
               (reterr (msg "The initializer ~x0 ~
                             for the target type ~x1 ~
