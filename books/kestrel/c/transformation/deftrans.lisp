@@ -213,7 +213,7 @@
 
 (defthy deftrans-theory-linear
   '((:linear c$::absdeclor-count-of-absdeclor-option-some->val)
-    (:linear c$::absdeclor-count-of-dirabsdeclor-paren->unwrap)
+    (:linear c$::absdeclor-count-of-dirabsdeclor-paren->inner)
     (:linear c$::absdeclor-count-of-paramdeclor-absdeclor->unwrap)
     (:linear c$::absdeclor-option-count-of-tyname->decl?)
     (:linear c$::align-spec-count-of-decl-spec-align->spec)
@@ -1258,7 +1258,7 @@
       :dummy-base (prog2$
                     (raise "Misusage error: ~x0." (dirabsdeclor-fix dirabsdeclor))
                     (dirabsdeclor-fix dirabsdeclor))
-      :paren (dirabsdeclor-paren (,(cdr (assoc-eq 'absdeclor names)) dirabsdeclor.unwrap ,@extra-args-names))
+      :paren (dirabsdeclor-paren (,(cdr (assoc-eq 'absdeclor names)) dirabsdeclor.inner ,@extra-args-names))
       :array (make-dirabsdeclor-array
                :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names)
                :tyquals dirabsdeclor.tyquals

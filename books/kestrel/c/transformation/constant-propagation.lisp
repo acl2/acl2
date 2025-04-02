@@ -1324,7 +1324,7 @@
                             (mv (dirabsdeclor-fix dirabsdeclor)
                                 env))
         :paren (b* (((mv unwrap env)
-                     (const-prop-absdeclor dirabsdeclor.unwrap env)))
+                     (const-prop-absdeclor dirabsdeclor.inner env)))
                  (mv (dirabsdeclor-paren unwrap) env))
         :array
         (b* (((mv decl? env)

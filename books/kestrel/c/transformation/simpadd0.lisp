@@ -3311,7 +3311,7 @@
                            (dirabsdeclor-fix dirabsdeclor))
                     (mv (irr-dirabsdeclor) (irr-simpadd0-gout)))
        :paren (b* (((mv new-inner (simpadd0-gout gout-inner))
-                    (simpadd0-absdeclor dirabsdeclor.unwrap gin state)))
+                    (simpadd0-absdeclor dirabsdeclor.inner gin state)))
                 (mv (dirabsdeclor-paren new-inner)
                     (make-simpadd0-gout
                      :events gout-inner.events

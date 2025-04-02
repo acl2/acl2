@@ -3998,7 +3998,7 @@
        dirabsdeclor
        :paren
        (b* (((erp new-absdeclor type types table)
-             (valid-absdeclor dirabsdeclor.unwrap type table ienv)))
+             (valid-absdeclor dirabsdeclor.inner type table ienv)))
          (retok (dirabsdeclor-paren new-absdeclor)
                 type
                 types

@@ -2439,7 +2439,7 @@
              (pristate-fix pstate))
      :paren
      (b* ((pstate (print-astring "(" pstate))
-          (pstate (print-absdeclor dirabsdeclor.unwrap pstate))
+          (pstate (print-absdeclor dirabsdeclor.inner pstate))
           (pstate (print-astring ")" pstate)))
        pstate)
      :array

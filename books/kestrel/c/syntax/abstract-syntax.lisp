@@ -2265,7 +2265,7 @@
        Furthermore, as explained in @(see exprs/decls/stmts),
        there is a dummy base case."))
     (:dummy-base ())
-    (:paren ((unwrap absdeclor)))
+    (:paren ((inner absdeclor)))
     (:array ((decl? dirabsdeclor-option)
              (tyquals typequal/attribspec-list)
              (expr? expr-option)))

@@ -2128,7 +2128,7 @@
         (reterr t))
        :paren
        (b* (((erp new-absdeclor table)
-             (dimb-absdeclor dirabsdeclor.unwrap table)))
+             (dimb-absdeclor dirabsdeclor.inner table)))
          (retok (dirabsdeclor-paren new-absdeclor)
                 table))
        :array

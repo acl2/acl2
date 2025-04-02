@@ -1253,10 +1253,10 @@
              (dirabsdeclor-option-unambp (absdeclor->direct? absdeclor)))
     :expand (absdeclor-unambp absdeclor))
 
-  (defrule absdeclor-unambp-of-dirabsdeclor-paren->unwrap
+  (defrule absdeclor-unambp-of-dirabsdeclor-paren->inner
     (implies (and (dirabsdeclor-unambp dirabsdeclor)
                   (dirabsdeclor-case dirabsdeclor :paren))
-             (absdeclor-unambp (dirabsdeclor-paren->unwrap dirabsdeclor)))
+             (absdeclor-unambp (dirabsdeclor-paren->inner dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
   (defrule dirabsdeclor-option-unambp-of-dirabsdeclor-array->decl?
