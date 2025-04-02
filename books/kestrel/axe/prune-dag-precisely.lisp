@@ -78,8 +78,7 @@
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
 ;; term size. Returns (mv erp dag-or-quotep state).
-;; TODO: This makes the rule-alist each time it is called.
-;; TODO: Consider first pruning with approximate contexts.
+;; Consider calling prune-dag-approximately before calling this.
 (defund prune-dag-precisely (dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
