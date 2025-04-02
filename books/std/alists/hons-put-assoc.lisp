@@ -30,23 +30,22 @@
 
 (in-package "ACL2")
 
-
 (include-book "alist-defuns")
 
-(defthm put-assoc-equal-identity
-  (implies (and (assoc-equal k x)
-                (alistp x)
-                (equal v (cdr (assoc-equal k x))))
-           (equal (put-assoc-equal k v x) x))
-  :hints(("Goal" :in-theory (enable assoc-equal put-assoc-equal))))
+(defthm hons-put-assoc-identity
+  (implies (and (hons-assoc-equal k x)
+                (equal v (cdr (hons-assoc-equal k x))))
+           (equal (hons-put-assoc k v x)
+                  x))
+  :hints(("Goal" :in-theory (enable assoc-equal hons-put-assoc))))
 
 
-(defthm hons-assoc-equal-of-put-assoc-equal
-  (equal (hons-assoc-equal k (put-assoc-equal k1 v x))
+(defthm hons-assoc-equal-of-hons-put-assoc
+  (equal (hons-assoc-equal k (hons-put-assoc k1 v x))
          (if (equal k k1)
              (cons k v)
            (hons-assoc-equal k x)))
-  :hints(("Goal" :in-theory (enable hons-assoc-equal put-assoc-equal))))
+  :hints(("Goal" :in-theory (enable hons-assoc-equal hons-put-assoc))))
 
 (local (defthm fal-extract-of-acons-non-mem
          (implies (not (member-equal k keys))
@@ -58,54 +57,55 @@
          (equal (car (hons-assoc-equal k x))
                 (and (hons-assoc-equal k x) k))))
 
-(defthm fal-extract-of-put-assoc-equal
+(defthm fal-extract-of-hons-put-assoc
     (implies (and (no-duplicatesp-equal keys)
                   (hons-assoc-equal k x))
-             (equal (acl2::fal-extract keys (put-assoc-equal k v x))
+             (equal (acl2::fal-extract keys (hons-put-assoc k v x))
                     (if (member-equal k keys)
-                        (put-assoc-equal k v (acl2::fal-extract keys x))
+                        (hons-put-assoc k v (acl2::fal-extract keys x))
                       (acl2::fal-extract keys x))))
-    :hints(("Goal" :in-theory (enable acl2::fal-extract put-assoc-equal))))
+    :hints(("Goal" :in-theory (enable acl2::fal-extract hons-put-assoc))))
 
 (local (defthm member-alist-keys
            (iff (member-equal k (acl2::alist-keys x))
                 (hons-assoc-equal k x))
            :hints(("Goal" :in-theory (enable acl2::alist-keys)))))
 
-(defthm no-duplicate-keys-of-put-assoc-equal
-  (implies (and (no-duplicatesp-equal (acl2::alist-keys x))
-                (alistp x))
-           (no-duplicatesp-equal (acl2::alist-keys (put-assoc-equal k v x))))
-  :hints(("Goal" :in-theory (enable acl2::alist-keys no-duplicatesp-equal put-assoc-equal))))
+(defthm no-duplicate-keys-of-hons-put-assoc
+  (implies (no-duplicatesp-equal (acl2::alist-keys x))
+           (no-duplicatesp-equal (acl2::alist-keys (hons-put-assoc k v x))))
+  :hints(("Goal" :in-theory (enable acl2::alist-keys no-duplicatesp-equal hons-put-assoc))))
 
 
-(defthm put-assoc-equal-alternate
+(defthm hons-put-assoc-alternate
   (implies (hons-assoc-equal k1 x)
-           (equal (put-assoc-equal k1 v1 (put-assoc-equal k2 v2 (put-assoc-equal k1 v3 x)))
-                  (put-assoc-equal k1 v1 (put-assoc-equal k2 v2 x))))
-  :hints(("Goal" :in-theory (enable put-assoc-equal))))
+           (equal (hons-put-assoc k1 v1 (hons-put-assoc k2 v2 (hons-put-assoc k1 v3 x)))
+                  (hons-put-assoc k1 v1 (hons-put-assoc k2 v2 x))))
+  :hints(("Goal" :in-theory (enable hons-put-assoc))))
 
-(defthm put-assoc-equal-redundant
-  (equal (put-assoc-equal k1 v1 (put-assoc-equal k1 v2 x))
-         (put-assoc-equal k1 v1 x))
-  :hints(("Goal" :in-theory (enable put-assoc-equal))))
+(defthm hons-put-assoc-redundant
+  (equal (hons-put-assoc k1 v1 (hons-put-assoc k1 v2 x))
+         (hons-put-assoc k1 v1 x))
+  :hints(("Goal" :in-theory (enable hons-put-assoc))))
 
 
-(defthm alist-keys-of-put-assoc-equal
+(defthm alist-keys-of-hons-put-assoc
   (implies (or (alistp x) k)
-           (equal (acl2::alist-keys (put-assoc-equal k v x))
+           (equal (acl2::alist-keys (hons-put-assoc k v x))
                   (if (hons-assoc-equal k x)
                       (acl2::alist-keys x)
                     (append (acl2::alist-keys x) (list k)))))
-  :hints(("Goal" :in-theory (enable acl2::alist-keys put-assoc-equal))))
+  :hints(("Goal" :in-theory (enable acl2::alist-keys hons-put-assoc))))
 
 
-(defthm remove-assoc-equal-of-put-assoc-equal
-  (equal (remove-assoc-equal name (put-assoc-equal name val x))
+(defthm remove-assoc-equal-of-hons-put-assoc
+  (equal (remove-assoc-equal name (hons-put-assoc name val x))
          (remove-assoc-equal name x))
-  :hints(("Goal" :in-theory (enable remove-assoc-equal put-assoc-equal))))
+  :hints(("Goal" :in-theory (enable remove-assoc-equal hons-put-assoc))))
 
-(defthm alistp-of-put-assoc-equal
+(defthm alistp-of-hons-put-assoc
   (implies (alistp x)
-           (alistp (put-assoc-equal k v x))))
+           (alistp (hons-put-assoc k v x)))
+  :hints(("Goal" :in-theory (enable hons-put-assoc))))
+
 
