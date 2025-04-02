@@ -758,8 +758,8 @@
        (expr (apply-pre-inc/dec-ops (cdr ops) expr)))
     (inc/dec-op-case
      op
-     :inc (make-expr-unary :op (unop-preinc) :arg expr)
-     :dec (make-expr-unary :op (unop-predec) :arg expr)))
+     :inc (make-expr-unary :op (unop-preinc) :arg expr :info nil)
+     :dec (make-expr-unary :op (unop-predec) :arg expr :info nil)))
   :verify-guards :after-returns
   :hooks (:fix))
 
@@ -778,8 +778,8 @@
        (op (car ops))
        (expr (inc/dec-op-case
               op
-              :inc (make-expr-unary :op (unop-postinc) :arg expr)
-              :dec (make-expr-unary :op (unop-postdec) :arg expr))))
+              :inc (make-expr-unary :op (unop-postinc) :arg expr :info nil)
+              :dec (make-expr-unary :op (unop-postdec) :arg expr :info nil))))
     (apply-post-inc/dec-ops expr (cdr ops)))
   :hooks (:fix))
 

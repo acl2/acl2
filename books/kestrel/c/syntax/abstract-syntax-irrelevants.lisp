@@ -290,7 +290,7 @@
 (defirrelevant irr-absdeclor
   :short "An irrelevant abstract declarator."
   :type absdeclorp
-  :body (make-absdeclor :pointers nil :decl? nil))
+  :body (make-absdeclor :pointers nil :direct? nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

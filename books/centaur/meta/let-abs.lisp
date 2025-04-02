@@ -36,6 +36,7 @@
 (include-book "bindinglist")
 (include-book "clause-processors/generalize" :dir :system)
 (include-book "std/alists/alist-defuns" :dir :system)
+(include-book "substitute")
 (local (include-book "std/alists/alist-keys" :dir :system))
 (local (include-book "clause-processors/join-thms" :dir :system))
 (local (include-book "std/lists/sets" :dir :system))
@@ -215,6 +216,11 @@
 ;;                   (intersectp x (append a b)))
 ;;          :hints(("Goal" :in-theory (enable acl2::intersectp-witness-rw)))))
 
+(defthm base-ev-alist-of-pair-vars
+  (equal (base-ev-alist (pair-vars vars vals) env)
+         (pair-vars vars (base-ev-list vals env)))
+  :hints(("Goal" :in-theory (enable base-ev-alist pair-vars))))
+
 
 (defines term-let-abstract
   (define term-let-abstract ((x pseudo-termp)
@@ -227,9 +233,16 @@
          ((unless (pseudo-term-case x :call)) x)
          (varmap-look (hons-get x varmap))
          ((when varmap-look) (pseudo-term-var (cdr varmap-look)))
-         ((pseudo-term-call x)))
-      (pseudo-term-call x.fn
-                        (termlist-let-abstract x.args varmap))))
+         ((pseudo-term-call x))
+         (args (termlist-let-abstract x.args varmap))
+         ;; Special case: when a lambda of all variables,
+         ;; substitute them in and get rid of the lambda
+         ((unless (and (consp x.fn)
+                       (symbol-listp args)))
+          (pseudo-term-call x.fn args)))
+      (term-subst-strict (acl2::pseudo-lambda->body x.fn)
+                         (pair-vars (acl2::pseudo-lambda->formals x.fn)
+                                    args))))
   (define termlist-let-abstract ((x pseudo-term-listp)
                                  (varmap letabs-varmap-p))
     :returns (new-x pseudo-term-listp)
@@ -1048,18 +1061,35 @@
          :hints(("Goal" :in-theory (enable alist-vals)))))
        
 
-(define let-abstract-term ((x pseudo-termp)
-                           (base-var pseudo-var-p))
-  :returns (new-x pseudo-termp)
+(define make-some-vars ((n natp)
+                        (base symbolp)
+                        (m natp)
+                        (avoid symbol-listp))
+  ;; Same as make-n-vars, but also returns the next index.
+  :returns (mv (syms (equal syms (acl2::make-n-vars n base m avoid))
+                     :hints(("Goal" :in-theory (enable acl2::make-n-vars))))
+               (new-m natp :rule-classes :type-prescription))
+  (b* (((when (zp n))
+        (mv nil (lnfix m)))
+       ((mv nextm newvar) (acl2::new-symbol1 m base avoid))
+       ((mv rest nextm) (make-some-vars (1- n) base (+ 1 nextm) (cons newvar avoid))))
+    (mv (cons newvar rest) nextm)))
+
+(define let-abstract-term-aux ((x pseudo-termp)
+                               (base-var pseudo-var-p)
+                               (var-index natp))
+  :returns (mv (new-x pseudo-termp)
+               (new-var-index natp :rule-classes :type-prescription))
   (b* ((refcounts (fast-alist-clean (term-count-references x nil)))
        (multiref-terms (collect-multiref-terms refcounts))
        (- (fast-alist-free refcounts))
        ;; (- (cw "multiref-terms: ~x0~%" multiref-terms))
        (term-vars (term-vars x))
-       (new-vars (acl2::make-n-vars (len multiref-terms)
-                                    (pseudo-var-fix base-var)
-                                    0
-                                    term-vars))
+       ((mv new-vars var-index)
+        (make-some-vars (len multiref-terms)
+                        (pseudo-var-fix base-var)
+                        var-index
+                        term-vars))
        (varmap (make-fast-alist (pairlis$ multiref-terms new-vars)))
        ;; (- (cw "varmap: ~x0~%x: ~x1~%" varmap x))
        ((mv top-level levels) (term-label-letabs-levels x varmap nil))
@@ -1073,7 +1103,7 @@
        ;; (- (cw "bindinglist: ~x0~%partial-varmap: ~x1~%" bindinglist partial-varmap))
        (abs-x  (term-let-abstract x partial-varmap))
        ((acl2::hintcontext :here)))
-    (bindinglist-to-lambda-nest-exec bindinglist abs-x))
+    (mv (bindinglist-to-lambda-nest-exec bindinglist abs-x) var-index))
   ///
   (set-ignore-ok t)
 
@@ -1102,11 +1132,11 @@
            :hints(("Goal" :in-theory (enable acl2::subsetp-witness-rw)))))
 
 
-  (defret let-abstract-term-correct
+  (defret let-abstract-term-aux-correct
     (equal (base-ev new-x a)
            (base-ev x a))
     :hints ((acl2::function-termhint
-             let-abstract-term
+             let-abstract-term-aux
              (:here (b* ((env (base-ev-bindinglist bindinglist a)))
                       `(:use ((:instance base-ev-of-term-let-abstract
                                (env ,(acl2::hq env))
@@ -1125,6 +1155,16 @@
                         :in-theory (e/d (intersectp-commutes-neg)
                                         (base-ev-of-term-let-abstract
                                          letabs-abstract-levels-partial-varmap-is-subsetp)))))))))
+
+(define let-abstract-term ((x pseudo-termp)
+                           (base-var pseudo-var-p))
+  :returns (new-x pseudo-termp)
+  (b* (((mv new-x &) (let-abstract-term-aux x base-var 0)))
+    new-x)
+  ///
+  (defret let-abstract-term-correct
+    (equal (base-ev new-x a)
+           (base-ev x a))))
        
 
 
@@ -1194,5 +1234,159 @@
       
 
 
-      
+
+(local (acl2::def-ev-pseudo-term-fty-support letabs-ev letabs-ev-list))
+
+
+(define let-abstract-term-repeatedly ((x pseudo-termp)
+                                      (var pseudo-var-p)
+                                      (var-index natp)
+                                      (limit natp))
+  :returns (mv (new-x pseudo-termp)
+               (new-index natp :rule-classes :type-prescription))
+  :measure (nfix limit)
+  :verify-guards nil
+  (b* (((mv bindinglist body) (lambda-nest-to-bindinglist x))
+       ((mv letabs-body var-index) (let-abstract-term-aux body var var-index))
+       ((when (or (zp limit)
+                  (equal letabs-body body)))
+        (mv (bindinglist-to-lambda-nest-exec bindinglist letabs-body) var-index))
+       ((mv new-body var-index)
+        (let-abstract-term-repeatedly letabs-body var var-index (1- limit))))
+    (mv (bindinglist-to-lambda-nest-exec bindinglist new-body) var-index))
+  ///
+  (verify-guards let-abstract-term-repeatedly)
+  (local
+   (defun-sk let-abstract-term-repeatedly-correct-cond (x var var-index limit)
+     (forall a
+             (equal (base-ev (mv-nth 0 (let-abstract-term-repeatedly x var var-index limit)) a)
+                    (base-ev x a)))
+     :rewrite :direct))
+  (local (in-theory (disable let-abstract-term-repeatedly-correct-cond)))
+  
+  (local (defthm correct-lemma
+           (let-abstract-term-repeatedly-correct-cond x var var-index limit)
+           :hints (("goal" :induct (let-abstract-term-repeatedly x var var-index limit)
+                    :expand ((let-abstract-term-repeatedly-correct-cond x var var-index limit))))))
+  
+  (std::defret <fn>-correct
+    (equal (base-ev new-x a)
+           (base-ev x a))))
+
+
+
+(defthm letabs-ev-of-let-abstract-term-repeatedly
+  (equal (letabs-ev (mv-nth 0 (let-abstract-term-repeatedly x var var-index limit)) a)
+         (letabs-ev x a))
+  :hints (("goal" :use ((:functional-instance let-abstract-term-repeatedly-correct
+                         (base-ev letabs-ev)
+                         (base-ev-list letabs-ev-list)))
+           :in-theory (enable letabs-ev-of-fncall-args
+                              letabs-ev-of-bad-fncall
+                              letabs-ev-of-nonsymbol-atom))))
+
+
+(defines let-abstract-term-preserving-ifs-rec
+  (define let-abstract-term-preserving-ifs-rec ((x pseudo-termp)
+                                            (var pseudo-var-p)
+                                            (var-index natp))
+    :returns (mv (new-x pseudo-termp)
+                 (new-index natp :rule-classes :type-prescription))
+    :measure (pseudo-term-count x)
+    :verify-guards nil
+    (pseudo-term-case x
+      :const (mv (pseudo-term-fix x) (lnfix var-index))
+      :var (mv (pseudo-term-fix x) (lnfix var-index))
+      :call (b* (((mv args var-index)
+                  (let-abstract-termlist-preserving-ifs-rec x.args var var-index))
+                 ((unless (and (eq x.fn 'if)
+                               (eql (len x.args) 3)))
+                  (mv (pseudo-term-call x.fn args) var-index))
+                 ((list test then else) args)
+                 ;; bozo don't really need to use separate sets of vars for both of these
+                 ;; but maybe it's less confusing
+                 ((mv new-then var-index)
+                  (let-abstract-term-repeatedly then var var-index 1000))
+                 ((mv new-else var-index)
+                  (let-abstract-term-repeatedly else var var-index 1000)))
+              (mv (pseudo-term-fncall 'if (list test new-then new-else)) var-index))))
+
+  (define let-abstract-termlist-preserving-ifs-rec ((x pseudo-term-listp)
+                                                    (var pseudo-var-p)
+                                                    (var-index natp))
+    :measure (pseudo-term-list-count x)
+    :returns (mv (new-x pseudo-term-listp)
+                 (new-index natp :rule-classes :type-prescription))
+    (b* (((when (atom x)) (mv nil (lnfix var-index)))
+         ((mv first var-index) (let-abstract-term-preserving-ifs-rec (car x) var var-index))
+         ((mv rest var-index) (let-abstract-termlist-preserving-ifs-rec (cdr x) var var-index)))
+      (mv (cons first rest) var-index)))
+  ///
+
+  (std::defret-mutual len-of-<fn>
+    (defret len-of-<fn>
+      (equal (len new-x)
+             (len x))
+      :hints ('(:expand (<call>)))
+      :fn let-abstract-termlist-preserving-ifs-rec)
+    :skip-others t)
+
+
+  (local (defthm consp-by-len
+           (implies (< 0 (len x))
+                    (consp x))))
+
+  (local (defthm len-cdr
+           (implies (consp x)
+                    (equal (len (cdr x))
+                           (+ -1 (len x))))))
+  
+  (local (in-theory (disable ;;acl2::member-of-cons
+                             member-equal
+                             not)))
+  (local (defthmd equal-len
+           (implies (syntaxp (quotep n))
+                    (equal (equal (len x) n)
+                           (if (zp n)
+                               (and (not (consp x))
+                                    (equal n 0))
+                             (and (consp x)
+                                  (equal (len (cdr x)) (1- n))))))))
+  
+  (verify-guards let-abstract-term-preserving-ifs-rec
+    :hints(("Goal" :in-theory (enable pseudo-var-p))
+           (and stable-under-simplificationp
+                '(:in-theory (enable equal-len)))))
+
+  (std::defret-mutual let-abstract-term-preserving-ifs-correct
+    (std::defret <fn>-correct
+      (equal (letabs-ev new-x a)
+             (letabs-ev x a))
+      :hints ('(:expand (<call>)
+                :in-theory (enable letabs-ev-of-pseudo-term-call
+                                   letabs-ev-when-pseudo-term-call)
+                :restrict ((letabs-ev-when-pseudo-term-call ((x x))))))
+      :fn let-abstract-term-preserving-ifs-rec)
+    (std::defret <fn>-correct
+      (equal (letabs-ev-list new-x a)
+             (letabs-ev-list x a))
+      :hints ('(:expand (<call>)))
+      :fn let-abstract-termlist-preserving-ifs-rec)))
+                  
+
+
+
+
+(define let-abstract-term-preserving-ifs ((x pseudo-termp)
+                                          (var pseudo-var-p))
+  :returns (new-x pseudo-termp)
+  (b* (((mv x1 var-index) (let-abstract-term-preserving-ifs-rec x var 0))
+       ((mv x2 ?var-index) (let-abstract-term-repeatedly x1 var var-index 1000)))
+    x2)
+  ///
+  (std::defret <fn>-correct
+      (equal (letabs-ev new-x a)
+             (letabs-ev x a))))
+
+
 

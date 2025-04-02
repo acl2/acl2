@@ -404,7 +404,8 @@
     :post-fix-events
     :post-events
     :enable-rules
-    :verbosep))
+    :verbosep
+    :disable-type-prescription))
 
 
 (define tagsum-tag-events-post-fix (pred fix xvar name kind)
@@ -473,6 +474,7 @@
        (equiv  (getarg! :equiv (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV") name) kwd-alist))
        (kind   (getarg! :kind  (intern-in-package-of-symbol (cat (symbol-name name) "-KIND") name) kwd-alist))
        (case   (getarg! :case  (intern-in-package-of-symbol (cat (symbol-name name) "-CASE") name) kwd-alist))
+       (disable-type (getarg :disable-type-prescription nil kwd-alist))
        (inline (get-deftypes-inline-opt *inline-defaults* kwd-alist))
        (count  (flextype-get-count-fn name kwd-alist))
        (xvar   (or (getarg :xvar xvar kwd-alist)
@@ -516,7 +518,8 @@
                                      kwd-alist))
                   :orig-prods orig-prods
                   :recp recp
-                  :typemacro 'deftagsum)))
+                  :typemacro 'deftagsum
+                  :disable-type-prescription disable-type)))
 
 ;; --- Defprod parsing ---
 (defconst *defprod-keywords*
@@ -544,6 +547,7 @@
     :extra-binder-names
     :no-ctor-macros
     :verbosep
+    :disable-type-prescription
     ))
 
 (define defprod-fields-to-flexsum-prod (fields xvar name kwd-alist)
@@ -652,6 +656,7 @@
        (pred  (getarg! :pred  (intern-in-package-of-symbol (cat (symbol-name name) "-P") name) kwd-alist))
        (fix   (getarg! :fix   (intern-in-package-of-symbol (cat (symbol-name name) "-FIX") name) kwd-alist))
        (equiv (getarg! :equiv (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV") name) kwd-alist))
+       (disable-type (getarg :disable-type-prescription nil kwd-alist))
        (inline (get-deftypes-inline-opt *inline-defaults* kwd-alist))
        (count (flextype-get-count-fn name kwd-alist))
        (xvar (or (getarg :xvar xvar kwd-alist)
@@ -699,7 +704,8 @@
                   :orig-prods orig-prods
                   :inline inline
                   :recp (some-flexprod-recursivep prods)
-                  :typemacro 'defprod)))
+                  :typemacro 'defprod
+                  :disable-type-prescription disable-type)))
 
 ;; --- Defoption parsing ---
 
