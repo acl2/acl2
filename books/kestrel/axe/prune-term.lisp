@@ -49,13 +49,27 @@
                            ;; not sure if these help:
                            ;;pseudo-term-listp
                            ;;quotep
+                           union-equal-when-not-consp-arg1-cheap
+                           union-equal-when-not-consp-arg2-cheap
+                           ;; todo: many of these should either not be imported or be at least disabled:
+                           equal-of-constant-when-sbvlt
+                           equal-constant-when-not-sbvlt
+                           car-of-car-when-pseudo-dagp-aux consp-of-car-when-pseudo-dagp consp-of-car-when-pseudo-dagp-aux consp-of-car-when-pseudo-dagp-aux-2 ; todo: disable globally?
+                           integerp-of-nth-when-all-natp
+                           equal-of-non-natp-and-caar-when-when-bounded-natp-alistp
+                           quote-lemma-for-bounded-darg-listp-gen-alt
+                           true-listp-of-car-when-when-bounded-natp-alistp
+                           len-when-dargp-cheap
                            )))
 
 (local
   (defthm quotep-forward-to-consp
     (implies (quotep x)
              (consp x))
+    :rule-classes :forward-chaining
     :hints (("Goal" :in-theory (enable quotep)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund lookup-with-default (key alist default)
   (declare (xargs :guard (and (eqlablep key)
@@ -65,12 +79,15 @@
         default
       (cdr res))))
 
-(defthm natp-of-lookup-with-default-type
-  (implies (and (nat-listp (strip-cdrs alist))
-                (natp default))
-           (natp (lookup-with-default key alist default)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable lookup-with-default assoc-equal strip-cdrs))))
+(local
+  (defthm natp-of-lookup-with-default-type
+    (implies (and (nat-listp (strip-cdrs alist))
+                  (natp default))
+             (natp (lookup-with-default key alist default)))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable lookup-with-default assoc-equal strip-cdrs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund count-top-level-if-branches-in-rev-dag (rev-dag
                                                 alist ; maps nodenums to the number of if-leaves they each represent
@@ -111,6 +128,8 @@
   (declare (xargs :guard (pseudo-dagp dag)))
   (count-top-level-if-branches-in-rev-dag (reverse-list dag) nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Do not remove: justifies treatment of bool-fix below
 (thm (equal (boolif test x x) (bool-fix x)))
 
@@ -146,6 +165,8 @@
              (pseudo-term-listp (fixup-assumption assumption print)))
     :hints (("Goal" :in-theory (enable fixup-assumption)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Reorder equalities that obviously loop (because a term is equated to a
 ;; superterm).  TODO: Perform a more thorough analysis of possible looping.
 (defund fixup-assumptions (assumptions print)
@@ -173,10 +194,11 @@
           (cons assumption (get-equalities (rest assumptions)))
         (get-equalities (rest assumptions))))))
 
-(defthm pseudo-term-listp-of-get-equalities
-  (implies (pseudo-term-listp assumptions)
-           (pseudo-term-listp (get-equalities assumptions)))
-  :hints (("Goal" :in-theory (enable get-equalities))))
+(local
+  (defthm pseudo-term-listp-of-get-equalities
+    (implies (pseudo-term-listp assumptions)
+             (pseudo-term-listp (get-equalities assumptions)))
+    :hints (("Goal" :in-theory (enable get-equalities)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -186,10 +208,11 @@
       (enquote (bool-fix (unquote arg)))
     `(bool-fix$inline ,arg)))
 
-(defthm pseudo-termp-of-make-bool-fix
-  (implies (pseudo-termp arg)
-           (pseudo-termp (make-bool-fix arg)))
-  :hints (("Goal" :in-theory (enable make-bool-fix))))
+(local
+  (defthm pseudo-termp-of-make-bool-fix
+    (implies (pseudo-termp arg)
+             (pseudo-termp (make-bool-fix arg)))
+    :hints (("Goal" :in-theory (enable make-bool-fix)))))
 
 (defund make-bvchop (size x)
   (declare (xargs :guard (and (pseudo-termp size)
@@ -201,11 +224,12 @@
       (enquote (bvchop (unquote size) (unquote x)))
     `(bvchop ,size ,x)))
 
-(defthm pseudo-termp-of-make-bvchop
-  (implies (and (pseudo-termp x)
-                (pseudo-termp size))
-           (pseudo-termp (make-bvchop size x)))
-  :hints (("Goal" :in-theory (enable make-bvchop))))
+(local
+  (defthm pseudo-termp-of-make-bvchop
+    (implies (and (pseudo-termp x)
+                  (pseudo-termp size))
+             (pseudo-termp (make-bvchop size x)))
+    :hints (("Goal" :in-theory (enable make-bvchop)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -320,10 +344,11 @@
                  (cw "STP did not resolve the test.))~%"))
             (mv nil :unknown state))))
 
-(defthm w-of-mv-nth-2-of-try-to-resolve-test
-  (equal (w (mv-nth 2 (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
-         (w state))
-  :hints (("Goal" :in-theory (enable try-to-resolve-test))))
+(local
+  (defthm w-of-mv-nth-2-of-try-to-resolve-test
+    (equal (w (mv-nth 2 (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+           (w state))
+    :hints (("Goal" :in-theory (enable try-to-resolve-test)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -580,54 +605,61 @@
           ((when erp) (mv erp nil state)))
        (mv (erp-nil) (cons pruned-first pruned-rest) state)))))
 
-(make-flag prune-term-aux)
+(local
+  (make-flag prune-term-aux))
 
-(defthm-flag-prune-term-aux
-  (defthm len-of-mv-nth-1-of-prune-terms-aux
-    (implies (not (mv-nth 0 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
-             (equal (len (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
-                    (len terms)))
-    :flag prune-terms-aux)
-  :skip-others t
-  :hints (("Goal" :in-theory (enable prune-terms-aux))))
+(local
+  (defthm-flag-prune-term-aux
+    (defthm len-of-mv-nth-1-of-prune-terms-aux
+      (implies (not (mv-nth 0 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+               (equal (len (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+                      (len terms)))
+      :flag prune-terms-aux)
+    :skip-others t
+    :hints (("Goal" :in-theory (enable prune-terms-aux)))))
 
-(defthm-flag-prune-term-aux
-  (defthm prune-term-aux-return-type
-    (implies (and (pseudo-termp term)
-                  (pseudo-term-listp assumptions)
-                  (pseudo-term-listp equality-assumptions) ;used only for looking up conditions
-                  (symbol-listp monitored-rules)
-                  (rule-alistp rule-alist)
-                  (interpreted-function-alistp interpreted-function-alist))
-             (pseudo-termp (mv-nth 1 (prune-term-aux term assumptions equality-assumptions
-                                                 rule-alist interpreted-function-alist
-                                                 monitored-rules call-stp print state))))
-    :flag prune-term-aux)
-  (defthm prune-terms-aux-return-type
-    (implies (and (pseudo-term-listp terms)
-                  (pseudo-term-listp assumptions)
-                  (pseudo-term-listp equality-assumptions)
-                  (rule-alistp rule-alist)
-                  (interpreted-function-alistp interpreted-function-alist)
-                  (symbol-listp monitored-rules))
-             (pseudo-term-listp (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions
-                                                        rule-alist interpreted-function-alist
-                                                        monitored-rules call-stp print state))))
-    :flag prune-terms-aux)
-  :hints (("Goal" :in-theory (enable prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp))))
+;; todo: slow
+(local
+  (defthm-flag-prune-term-aux
+    (defthm prune-term-aux-return-type
+      (implies (and (pseudo-termp term)
+                    (pseudo-term-listp assumptions)
+                    (pseudo-term-listp equality-assumptions) ;used only for looking up conditions
+                    (symbol-listp monitored-rules)
+                    (rule-alistp rule-alist)
+                    (interpreted-function-alistp interpreted-function-alist))
+               (pseudo-termp (mv-nth 1 (prune-term-aux term assumptions equality-assumptions
+                                                       rule-alist interpreted-function-alist
+                                                       monitored-rules call-stp print state))))
+      :flag prune-term-aux)
+    (defthm prune-terms-aux-return-type
+      (implies (and (pseudo-term-listp terms)
+                    (pseudo-term-listp assumptions)
+                    (pseudo-term-listp equality-assumptions)
+                    (rule-alistp rule-alist)
+                    (interpreted-function-alistp interpreted-function-alist)
+                    (symbol-listp monitored-rules))
+               (pseudo-term-listp (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions
+                                                              rule-alist interpreted-function-alist
+                                                              monitored-rules call-stp print state))))
+      :flag prune-terms-aux)
+    :hints (("Goal" :in-theory (e/d (prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp)
+                                    (;pseudo-term-listp quotep
+                                     ))))))
 
 (verify-guards prune-term-aux :hints (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-2))))
 
-(defthm-flag-prune-term-aux
-  (defthm w-of-mv-nth-2-of-prune-term-aux
-    (equal (w (mv-nth 2 (prune-term-aux term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
-           (w state))
-    :flag prune-term-aux)
-  (defthm w-of-mv-nth-2-of-prune-terms-aux
-    (equal (w (mv-nth 2 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
-           (w state))
-    :flag prune-terms-aux)
-  :hints (("Goal" :in-theory (enable prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp))))
+(local
+  (defthm-flag-prune-term-aux
+    (defthm w-of-mv-nth-2-of-prune-term-aux
+      (equal (w (mv-nth 2 (prune-term-aux term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+             (w state))
+      :flag prune-term-aux)
+    (defthm w-of-mv-nth-2-of-prune-terms-aux
+      (equal (w (mv-nth 2 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+             (w state))
+      :flag prune-terms-aux)
+    :hints (("Goal" :in-theory (enable prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

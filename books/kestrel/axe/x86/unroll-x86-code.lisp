@@ -416,7 +416,7 @@
                                            nil ; assumptions
                                            :none
                                            pruning-rule-alist
-                                           nil ; interpreted-fns
+                                           nil ; interpreted-function-alist
                                            rules-to-monitor
                                            t ;call-stp
                                            print
