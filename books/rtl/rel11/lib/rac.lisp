@@ -209,6 +209,13 @@
   (declare (xargs :guard t))
   (arcd->acl2 (as-aux a v (acl2->arcd x))))
 
+(defun ainit (l)
+  (declare (xargs :guard t))
+  (if (consp l)
+     (if (consp (car l))
+         (as (caar l) (cdar l) (ainit (cdr l)))
+       (ainit (cdr l)))
+     nil))
 
 ;;Basic properties of arrays:
 
