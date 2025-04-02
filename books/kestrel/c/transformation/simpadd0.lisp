@@ -1245,6 +1245,7 @@
                               (arg2-thm-name symbolp)
                               (arg2-vars ident-setp)
                               (arg2-diffp booleanp)
+                              (info acl2::any-p)
                               (gin simpadd0-ginp))
   :guard (and (expr-unambp arg1)
               (expr-unambp arg1-new)
@@ -1271,7 +1272,7 @@
      the third one is only needed if there is an actual simplification,
      but we use it always in the proof for simplicity."))
   (b* (((simpadd0-gin gin) gin)
-       (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2))
+       (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (c$::binop-case op :add)
                    (c$::expr-case arg1-new :ident)
                    (c$::type-case (c$::var-info->type
@@ -1281,7 +1282,8 @@
                    (c$::expr-zerop arg2-new)))
        (expr-new (if simpp
                      (expr-fix arg1-new)
-                   (make-expr-binary :op op :arg1 arg1-new :arg2 arg2-new)))
+                   (make-expr-binary
+                    :op op :arg1 arg1-new :arg2 arg2-new :info info)))
        (vars (set::union arg1-vars arg2-vars))
        (diffp (or arg1-diffp arg2-diffp simpp))
        ((unless (and arg1-thm-name
@@ -2216,6 +2218,7 @@
                                gout-arg2.thm-name
                                gout-arg2.vars
                                gout-arg2.diffp
+                               expr.info
                                gin))
        :cond
        (b* (((mv new-test (simpadd0-gout gout-test))

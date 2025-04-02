@@ -7246,7 +7246,8 @@
           (parse-assignment-expression parstate)))
       (retok (make-expr-binary :op asgop
                                :arg1 expr
-                               :arg2 expr2)
+                               :arg2 expr2
+                               :info nil)
              (span-join span span2)
              parstate))
     :measure (two-nats-measure (parsize parstate) 15))
@@ -7369,7 +7370,8 @@
           (reterr :impossible))
          (curr-expr (make-expr-binary :op (binop-logor)
                                       :arg1 prev-expr
-                                      :arg2 expr))
+                                      :arg2 expr
+                                      :info nil))
          (curr-span (span-join prev-span expr-span)))
       (parse-logical-or-expression-rest curr-expr curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))
@@ -7428,7 +7430,8 @@
           (reterr :impossible))
          (curr-expr (make-expr-binary :op (binop-logand)
                                       :arg1 prev-expr
-                                      :arg2 expr))
+                                      :arg2 expr
+                                      :info nil))
          (curr-span (span-join prev-span expr-span)))
       (parse-logical-and-expression-rest curr-expr curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))
@@ -7487,7 +7490,8 @@
           (reterr :impossible))
          (curr-expr (make-expr-binary :op (binop-bitior)
                                       :arg1 prev-expr
-                                      :arg2 expr))
+                                      :arg2 expr
+                                      :info nil))
          (curr-span (span-join prev-span expr-span)))
       (parse-inclusive-or-expression-rest curr-expr curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))
@@ -7545,7 +7549,8 @@
           (reterr :impossible))
          (curr-expr (make-expr-binary :op (binop-bitxor)
                                       :arg1 prev-expr
-                                      :arg2 expr))
+                                      :arg2 expr
+                                      :info nil))
          (curr-span (span-join prev-span expr-span)))
       (parse-exclusive-or-expression-rest curr-expr curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))
@@ -7604,7 +7609,8 @@
           (reterr :impossible))
          (curr-expr (make-expr-binary :op (binop-bitand)
                                       :arg1 prev-expr
-                                      :arg2 expr))
+                                      :arg2 expr
+                                      :info nil))
          (curr-span (span-join prev-span expr-span)))
       (parse-and-expression-rest curr-expr curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))
@@ -7664,7 +7670,8 @@
          (op (token-to-equality-operator token))
          (curr-expr (make-expr-binary :op op
                                       :arg1 prev-expr
-                                      :arg2 expr))
+                                      :arg2 expr
+                                      :info nil))
          (curr-span (span-join prev-span expr-span)))
       (parse-equality-expression-rest curr-expr curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))
@@ -7723,7 +7730,8 @@
          (op (token-to-relational-operator token))
          (curr-expr (make-expr-binary :op op
                                       :arg1 prev-expr
-                                      :arg2 expr))
+                                      :arg2 expr
+                                      :info nil))
          (curr-span (span-join prev-span expr-span)))
       (parse-relational-expression-rest curr-expr curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))
@@ -7782,7 +7790,8 @@
          (op (token-to-shift-operator token))
          (curr-expr (make-expr-binary :op op
                                       :arg1 prev-expr
-                                      :arg2 expr))
+                                      :arg2 expr
+                                      :info nil))
          (curr-span (span-join prev-span expr-span)))
       (parse-shift-expression-rest curr-expr curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))
@@ -7841,7 +7850,8 @@
          (op (token-to-additive-operator token))
          (curr-expr (make-expr-binary :op op
                                       :arg1 prev-expr
-                                      :arg2 expr))
+                                      :arg2 expr
+                                      :info nil))
          (curr-span (span-join prev-span expr-span)))
       (parse-additive-expression-rest curr-expr curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))
@@ -7902,7 +7912,8 @@
          (op (token-to-multiplicative-operator token))
          (curr-expr (make-expr-binary :op op
                                       :arg1 prev-expr
-                                      :arg2 expr))
+                                      :arg2 expr
+                                      :info nil))
          (curr-span (span-join prev-span expr-span)))
       (parse-multiplicative-expression-rest curr-expr curr-span parstate))
     :measure (two-nats-measure (parsize parstate) 0))

@@ -142,7 +142,8 @@
        "                        (make-expr-binary"
        "                          :op expr.op"
        "                          :arg1 arg1"
-       "                          :arg2 arg2)))"
+       "                          :arg2 arg2"
+       "                          :info expr.info)))"
        "            :cond (make-expr-cond"
        "                    :test (my-simpadd0-expr expr.test)"
        "                    :then (my-simpadd0-expr-option expr.then)"
@@ -701,7 +702,8 @@
       :binary (make-expr-binary
                 :op expr.op
                 :arg1 (,(cdr (assoc-eq 'expr names)) expr.arg1 ,@extra-args-names)
-                :arg2 (,(cdr (assoc-eq 'expr names)) expr.arg2 ,@extra-args-names))
+                :arg2 (,(cdr (assoc-eq 'expr names)) expr.arg2 ,@extra-args-names)
+                :info expr.info)
       :cond (make-expr-cond
               :test (,(cdr (assoc-eq 'expr names)) expr.test ,@extra-args-names)
               :then (,(cdr (assoc-eq 'expr-option names)) expr.then ,@extra-args-names)
