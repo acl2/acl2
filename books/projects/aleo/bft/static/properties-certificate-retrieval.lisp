@@ -100,7 +100,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled certificate-set-unequivocalp-of-certificates-with-round
+(defruled certificate-set-unequivocalp-of-certs-with-round
   :short "The certificates with a given round of an unequivocal DAG
           is also an unequivocal set of certificates."
   :long
@@ -112,9 +112,9 @@
   (implies (and (certificate-setp certs)
                 (certificate-set-unequivocalp certs))
            (certificate-set-unequivocalp
-            (certificates-with-round round certs)))
+            (certs-with-round round certs)))
   :enable (certificate-set-unequivocalp-when-subset
-           certificates-with-round-subset))
+           certs-with-round-subset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,7 +219,7 @@
                 (certificate-set-unequivocalp certs2)
                 (set::subset authors
                              (cert-set->author-set
-                              (certificates-with-round round certs1))))
+                              (certs-with-round round certs1))))
            (equal (certs-with-authors+round authors round certs2)
                   (certs-with-authors+round authors round certs1)))
   :enable (set::expensive-rules
@@ -272,10 +272,10 @@
                 (certificate-sets-unequivocalp certs1 certs2)
                 (set::subset authors
                              (cert-set->author-set
-                              (certificates-with-round round certs1)))
+                              (certs-with-round round certs1)))
                 (set::subset authors
                              (cert-set->author-set
-                              (certificates-with-round round certs2))))
+                              (certs-with-round round certs2))))
            (equal (certs-with-authors+round authors round certs1)
                   (certs-with-authors+round authors round certs2)))
   :enable (set::expensive-rules
@@ -296,7 +296,7 @@
      (implies (and
                (set::subset authors ; bind authors
                             (cert-set->author-set
-                             (certificates-with-round
+                             (certs-with-round
                               (certificate->round cert) certs1))) ; bind certs1
                (certificate-setp certs1)
                (certificate-setp certs2)
@@ -305,7 +305,7 @@
                (set::in (certificate->author cert) authors)
                (set::subset authors
                             (cert-set->author-set
-                             (certificates-with-round
+                             (certs-with-round
                               (certificate->round cert) certs2))))
               (set::in cert certs2))
      :use ((:instance cert-with-author+round-element
@@ -325,7 +325,7 @@
      (implies (and
                (set::subset authors ; bind authors
                             (cert-set->author-set
-                             (certificates-with-round
+                             (certs-with-round
                               (certificate->round cert) certs2))) ; bind certs2
                (certificate-setp certs1)
                (certificate-setp certs2)
@@ -334,7 +334,7 @@
                (set::in (certificate->author cert) authors)
                (set::subset authors
                             (cert-set->author-set
-                             (certificates-with-round
+                             (certs-with-round
                               (certificate->round cert) certs1))))
               (set::in cert certs1))
      :use ((:instance cert-with-author+round-element
@@ -362,7 +362,7 @@
                 (address-setp authors)
                 (set::subset authors
                              (cert-set->author-set
-                              (certificates-with-round round certs))))
+                              (certs-with-round round certs))))
            (equal (set::cardinality
                    (certs-with-authors+round authors round certs))
                   (set::cardinality authors)))
@@ -372,7 +372,7 @@
         (:instance cardinality-of-subset-of-round-set-of-round
                    (certs0 (certs-with-authors
                             authors
-                            (certificates-with-round round certs)))))
+                            (certs-with-round round certs)))))
   :disable (cardinality-of-authors-when-same-round-and-unequiv)
   :enable (certs-with-authors+round-to-authors-of-round
            author-set-of-certs-with-authors

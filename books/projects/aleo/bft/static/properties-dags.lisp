@@ -65,7 +65,7 @@
     :enable (certificate-previous-in-dag-p
              set::expensive-rules
              posp
-             certificates-with-round-of-intersect)
+             certs-with-round-of-intersect)
     :prep-lemmas
     ((defrule lemma
        (implies (and (certificate-setp dag1)
@@ -73,19 +73,19 @@
                      (certificate-sets-unequivocalp dag1 dag2)
                      (set::in author
                               (cert-set->author-set
-                               (certificates-with-round round dag1)))
+                               (certs-with-round round dag1)))
                      (set::in author
                               (cert-set->author-set
-                               (certificates-with-round round dag2)))
+                               (certs-with-round round dag2)))
                      (posp round))
                 (set::in author
                          (cert-set->author-set
                           (set::intersect
-                           (certificates-with-round round dag1)
-                           (certificates-with-round round dag2)))))
+                           (certs-with-round round dag1)
+                           (certs-with-round round dag2)))))
        :enable (cert-with-author+round-element
                 cert-with-author+round-when-author-in-round
-                in-of-certificates-with-round)
+                in-of-certs-with-round)
        :disable certificate->author-in-cert-set->author-set
        :use ((:instance certificate-sets-unequivocalp-necc
                         (cert1 (cert-with-author+round
@@ -98,8 +98,8 @@
                         (cert (cert-with-author+round
                                author round dag1))
                         (certs (set::intersect
-                                (certificates-with-round round dag1)
-                                (certificates-with-round round dag2))))))))
+                                (certs-with-round round dag1)
+                                (certs-with-round round dag2))))))))
 
   (defruled dag-previous-in-dag-p-of-intersect
     (implies (and (certificate-setp dag1)
@@ -734,10 +734,10 @@
                   cert))
   :enable (incoming
            path-to-previous
-           in-of-certificates-with-round)
+           in-of-certs-with-round)
   :use (:instance incoming-loop-previous-and-member
                   (cert cert1)
-                  (certs (certificates-with-round
+                  (certs (certs-with-round
                           (+ 1 (certificate->round cert))
                           dag))
                   (prev (certificate->author cert))))
@@ -811,7 +811,7 @@
   (equal (set::cardinality (incoming anchor dag))
          (mv-nth 0 (tally-leader-votes
                     (certificate->author anchor)
-                    (certificates-with-round
+                    (certs-with-round
                      (1+ (certificate->round anchor))
                      dag))))
   :enable incoming

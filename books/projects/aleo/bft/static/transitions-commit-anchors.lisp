@@ -72,7 +72,7 @@
        (dag (validator-state->dag vstate))
        (anchor? (cert-with-author+round leader commit-round dag))
        ((unless anchor?) nil)
-       (voters (certificates-with-round current-round dag))
+       (voters (certs-with-round current-round dag))
        ((mv yes-votes &) (tally-leader-votes leader voters))
        ((unless (>= yes-votes (1+ (max-faulty systate)))) nil))
     t)

@@ -70,7 +70,7 @@
      We loop through all the certificates in that round,
      and collect the certificates that have the author of @('cert')
      in their set of previous authors."))
-  (incoming-loop (certificates-with-round
+  (incoming-loop (certs-with-round
                   (1+ (certificate->round cert)) dag)
                  (certificate->author cert))
 
@@ -129,10 +129,10 @@
     :hyp (certificate-setp dag)
     :hints (("Goal"
              :in-theory (acl2::e/d* (set::expensive-rules
-                                     in-of-certificates-with-round)
+                                     in-of-certs-with-round)
                                     (incoming-loop-subset))
              :use (:instance incoming-loop-subset
-                             (certs (certificates-with-round
+                             (certs (certs-with-round
                                      (+ 1 (certificate->round cert))
                                      dag))
                              (prev (certificate->author cert))))))
@@ -140,7 +140,7 @@
 
   (defret incoming-subset-of-next-round
     (set::subset certs
-                 (certificates-with-round
+                 (certs-with-round
                   (1+ (certificate->round cert))
                   dag))
     :hints (("Goal" :in-theory (enable incoming-loop-subset))))
@@ -163,10 +163,10 @@
                   (set::in cert1 (incoming cert dag)))
              (set::in cert1 dag))
     :enable (incoming
-             in-of-certificates-with-round)
+             in-of-certs-with-round)
     :use (:instance incoming-loop-previous-and-member
                     (cert cert1)
-                    (certs (certificates-with-round
+                    (certs (certs-with-round
                             (1+ (certificate->round cert)) dag))
                     (prev (certificate->author cert))))
 
@@ -175,10 +175,10 @@
            (if (set::emptyp (incoming cert dag))
                nil
              (set::insert (1+ (certificate->round cert)) nil)))
-    :enable round-set-of-certificates-with-round
+    :enable round-set-of-certs-with-round
     :use (:instance round-set-of-incoming-loop
                     (prev (certificate->author cert))
-                    (certs (certificates-with-round
+                    (certs (certs-with-round
                             (+ 1 (certificate->round cert)) dag))
                     (round (+ 1 (certificate->round cert))))))
 
@@ -223,7 +223,7 @@
 
   (defret outgoing-subset-of-previous-round
     (set::subset certs
-                 (certificates-with-round
+                 (certs-with-round
                   (1- (certificate->round cert))
                   dag))
     :hyp (certificate-setp dag)
@@ -277,7 +277,7 @@
     (or (equal cert.round 1)
         (set::subset cert.previous
                      (cert-set->author-set
-                      (certificates-with-round (1- cert.round) dag)))))
+                      (certs-with-round (1- cert.round) dag)))))
   :guard-hints (("Goal" :in-theory (enable posp)))
   ///
 
@@ -291,7 +291,7 @@
                   (certificate-setp dag)
                   (certificate-setp dag1))
              (certificate-previous-in-dag-p cert dag1))
-    :enable (certificates-with-round-monotone
+    :enable (certs-with-round-monotone
              cert-set->author-set-monotone
              set::subset-transitive)))
 
