@@ -419,7 +419,8 @@
       (make-expr-binary :op (expr-binary->op arg)
                         :arg1 (dimb-make/adjust-expr-cast
                                type (expr-binary->arg1 arg))
-                        :arg2 (expr-binary->arg2 arg))
+                        :arg2 (expr-binary->arg2 arg)
+                        :info nil)
     (make-expr-cast :type type :arg arg))
   :measure (expr-count arg)
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -556,14 +557,14 @@
                 non-binary expression ~x0 ~
                 used as left argument of binary operator ~x1."
                (expr-fix arg1) (binop-fix op))
-        (expr-binary op arg1 arg2))
+        (expr-binary op arg1 arg2 nil))
        ((when (and arg2-mismatch
                    (not (expr-case arg2 :binary))))
         (raise "Internal error: ~
                 non-binary expression ~x0 ~
                 used as right argument of binary operator ~x1."
                (expr-fix arg2) (binop-fix op))
-        (expr-binary op arg1 arg2)))
+        (expr-binary op arg1 arg2 nil)))
     (cond
      ((and arg1-mismatch
            (or (not arg2-mismatch)
@@ -573,7 +574,7 @@
            (new-arg2 (dimb-make/adjust-expr-binary op
                                                    (expr-binary->arg2 arg1)
                                                    arg2)))
-        (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2)))
+        (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2 :info nil)))
      ((and arg2-mismatch
            (or (not arg1-mismatch)
                (expr-priority-<= arg1-actual arg2-actual)))
@@ -582,8 +583,8 @@
                                                    arg1
                                                    (expr-binary->arg1 arg2)))
            (new-arg2 (expr-binary->arg2 arg2)))
-        (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2)))
-     (t (make-expr-binary :op op :arg1 arg1 :arg2 arg2))))
+        (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2 :info nil)))
+     (t (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info nil))))
   :measure (+ (expr-count arg1) (expr-count arg2))
   :hints (("Goal" :in-theory (enable o-p o< o-finp)))
   :verify-guards :after-returns
@@ -658,7 +659,8 @@
     (make-expr-binary :op (expr-binary->op arg)
                       :arg1 (dimb-make/adjust-expr-unary
                              op (expr-binary->arg1 arg))
-                      :arg2 (expr-binary->arg2 arg)))
+                      :arg2 (expr-binary->arg2 arg)
+                      :info nil))
   :measure (expr-count arg)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
@@ -2128,7 +2130,7 @@
         (reterr t))
        :paren
        (b* (((erp new-absdeclor table)
-             (dimb-absdeclor dirabsdeclor.unwrap table)))
+             (dimb-absdeclor dirabsdeclor.inner table)))
          (retok (dirabsdeclor-paren new-absdeclor)
                 table))
        :array

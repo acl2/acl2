@@ -882,6 +882,7 @@
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
 (local (include-book "kestrel/bv/sbvrem" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/sbvlt" :dir :system))
 
 ;; These theorems justify the induced types:
 

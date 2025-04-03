@@ -336,10 +336,8 @@
   (defruled cert-with-author+round-when-element
     (implies (and (set::in cert certs)
                   (certificate-setp certs)
-                  (equal (certificate->author cert)
-                         author)
-                  (equal (certificate->round cert)
-                         round))
+                  (equal (certificate->author cert) author)
+                  (equal (certificate->round cert) round))
              (cert-with-author+round author round certs))
     :induct t
     :enable head-when-certificate-setp)

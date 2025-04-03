@@ -1047,12 +1047,12 @@
 
 (define simpadd0-expr-unary ((op c$::unopp)
                              (arg exprp)
-                             (info acl2::any-p)
                              (arg-new exprp)
                              (arg-events pseudo-event-form-listp)
                              (arg-thm-name symbolp)
                              (arg-vars ident-setp)
                              (arg-diffp booleanp)
+                             (info c$::unary-infop)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp arg)
               (expr-unambp arg-new))
@@ -1245,6 +1245,7 @@
                               (arg2-thm-name symbolp)
                               (arg2-vars ident-setp)
                               (arg2-diffp booleanp)
+                              (info c$::binary-infop)
                               (gin simpadd0-ginp))
   :guard (and (expr-unambp arg1)
               (expr-unambp arg1-new)
@@ -1271,7 +1272,7 @@
      the third one is only needed if there is an actual simplification,
      but we use it always in the proof for simplicity."))
   (b* (((simpadd0-gin gin) gin)
-       (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2))
+       (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (c$::binop-case op :add)
                    (c$::expr-case arg1-new :ident)
                    (c$::type-case (c$::var-info->type
@@ -1281,7 +1282,8 @@
                    (c$::expr-zerop arg2-new)))
        (expr-new (if simpp
                      (expr-fix arg1-new)
-                   (make-expr-binary :op op :arg1 arg1-new :arg2 arg2-new)))
+                   (make-expr-binary
+                    :op op :arg1 arg1-new :arg2 arg2-new :info info)))
        (vars (set::union arg1-vars arg2-vars))
        (diffp (or arg1-diffp arg2-diffp simpp))
        ((unless (and arg1-thm-name
@@ -2151,12 +2153,12 @@
             (gin (simpadd0-gin-update gin gout-arg)))
          (simpadd0-expr-unary expr.op
                               expr.arg
-                              expr.info
                               new-arg
                               gout-arg.events
                               gout-arg.thm-name
                               gout-arg.vars
                               gout-arg.diffp
+                              (c$::coerce-unary-info expr.info)
                               gin))
        :sizeof
        (b* (((mv new-type (simpadd0-gout gout-type))
@@ -2216,6 +2218,7 @@
                                gout-arg2.thm-name
                                gout-arg2.vars
                                gout-arg2.diffp
+                               (c$::coerce-binary-info expr.info)
                                gin))
        :cond
        (b* (((mv new-test (simpadd0-gout gout-test))
@@ -3311,7 +3314,7 @@
                            (dirabsdeclor-fix dirabsdeclor))
                     (mv (irr-dirabsdeclor) (irr-simpadd0-gout)))
        :paren (b* (((mv new-inner (simpadd0-gout gout-inner))
-                    (simpadd0-absdeclor dirabsdeclor.unwrap gin state)))
+                    (simpadd0-absdeclor dirabsdeclor.inner gin state)))
                 (mv (dirabsdeclor-paren new-inner)
                     (make-simpadd0-gout
                      :events gout-inner.events

@@ -142,7 +142,8 @@
        "                        (make-expr-binary"
        "                          :op expr.op"
        "                          :arg1 arg1"
-       "                          :arg2 arg2)))"
+       "                          :arg2 arg2"
+       "                          :info expr.info)))"
        "            :cond (make-expr-cond"
        "                    :test (my-simpadd0-expr expr.test)"
        "                    :then (my-simpadd0-expr-option expr.then)"
@@ -213,7 +214,7 @@
 
 (defthy deftrans-theory-linear
   '((:linear c$::absdeclor-count-of-absdeclor-option-some->val)
-    (:linear c$::absdeclor-count-of-dirabsdeclor-paren->unwrap)
+    (:linear c$::absdeclor-count-of-dirabsdeclor-paren->inner)
     (:linear c$::absdeclor-count-of-paramdeclor-absdeclor->unwrap)
     (:linear c$::absdeclor-option-count-of-tyname->decl?)
     (:linear c$::align-spec-count-of-decl-spec-align->spec)
@@ -701,7 +702,8 @@
       :binary (make-expr-binary
                 :op expr.op
                 :arg1 (,(cdr (assoc-eq 'expr names)) expr.arg1 ,@extra-args-names)
-                :arg2 (,(cdr (assoc-eq 'expr names)) expr.arg2 ,@extra-args-names))
+                :arg2 (,(cdr (assoc-eq 'expr names)) expr.arg2 ,@extra-args-names)
+                :info expr.info)
       :cond (make-expr-cond
               :test (,(cdr (assoc-eq 'expr names)) expr.test ,@extra-args-names)
               :then (,(cdr (assoc-eq 'expr-option names)) expr.then ,@extra-args-names)
@@ -1258,7 +1260,7 @@
       :dummy-base (prog2$
                     (raise "Misusage error: ~x0." (dirabsdeclor-fix dirabsdeclor))
                     (dirabsdeclor-fix dirabsdeclor))
-      :paren (dirabsdeclor-paren (,(cdr (assoc-eq 'absdeclor names)) dirabsdeclor.unwrap ,@extra-args-names))
+      :paren (dirabsdeclor-paren (,(cdr (assoc-eq 'absdeclor names)) dirabsdeclor.inner ,@extra-args-names))
       :array (make-dirabsdeclor-array
                :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names)
                :tyquals dirabsdeclor.tyquals

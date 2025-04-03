@@ -1156,7 +1156,8 @@
                           linkage
                           new1
                           new2
-                          split-members))
+                          split-members)
+                  :info expr.info)
         :cond (make-expr-cond
                 :test (replace-field-access-expr
                         expr.test

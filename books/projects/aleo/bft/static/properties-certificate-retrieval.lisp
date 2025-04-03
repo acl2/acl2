@@ -72,9 +72,7 @@
                                                  certs)
                   cert))
   :enable (cert-with-author+round-element
-           cert-with-author+round-when-element
-           certificate->author-of-cert-with-author+round
-           certificate->round-of-cert-with-author+round)
+           cert-with-author+round-when-element)
   :use (:instance certificate-set-unequivocalp-necc
                   (cert1 cert)
                   (cert2 (cert-with-author+round
@@ -147,8 +145,6 @@
                    (cert-with-author+round author round certs2)))
   :enable (cert-with-author+round-when-subset
            cert-with-author+round-element
-           certificate->author-of-cert-with-author+round
-           certificate->round-of-cert-with-author+round
            set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -174,9 +170,7 @@
                 (cert-with-author+round author round certs2))
            (equal (cert-with-author+round author round certs1)
                   (cert-with-author+round author round certs2)))
-  :enable (cert-with-author+round-element
-           certificate->author-of-cert-with-author+round
-           certificate->round-of-cert-with-author+round)
+  :enable (cert-with-author+round-element)
   :use (:instance
         certificate-sets-unequivocalp-necc
         (cert1 (cert-with-author+round author round certs1))
@@ -253,9 +247,7 @@
                              certs1)))
      :enable (set::expensive-rules
               cert-with-author+round-element
-              cert-with-author+round-of-unequivocal-superset
-              certificate->author-of-cert-with-author+round
-              certificate->round-of-cert-with-author+round))))
+              cert-with-author+round-of-unequivocal-superset))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,9 +319,7 @@
                               (certificate->round cert)
                               certs2))))
      :enable (set::expensive-rules
-              cert-with-author+round-when-author-in-round
-              certificate->author-of-cert-with-author+round
-              certificate->round-of-cert-with-author+round))
+              cert-with-author+round-when-author-in-round))
 
    (defrule lemma2
      (implies (and
@@ -358,9 +348,7 @@
                               certs1))
                       (cert2 cert)))
      :enable (set::expensive-rules
-              cert-with-author+round-when-author-in-round
-              certificate->author-of-cert-with-author+round
-              certificate->round-of-cert-with-author+round))))
+              cert-with-author+round-when-author-in-round))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

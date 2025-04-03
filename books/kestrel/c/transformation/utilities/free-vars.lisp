@@ -482,7 +482,7 @@
     (dirabsdeclor-case
      dirabsdeclor
      :dummy-base nil
-     :paren (free-vars-absdeclor dirabsdeclor.unwrap bound-vars)
+     :paren (free-vars-absdeclor dirabsdeclor.inner bound-vars)
      :array
      (union (free-vars-dirabsdeclor-option dirabsdeclor.decl? bound-vars)
             (union (free-vars-typequal/attribspec-list dirabsdeclor.tyquals bound-vars)

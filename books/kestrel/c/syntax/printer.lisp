@@ -1433,7 +1433,8 @@
       "             (expr-binary (binop-add)"
       "                          (expr-ident (ident \"x\") ...)"
       "                          (expr-ident (ident \"y\") ...))"
-      "             (expr-ident (ident \"z\") ...))")
+      "             (expr-ident (ident \"z\") ...)"
+      "             ...)")
      (xdoc::p
       "(where @('...') is the additional information, irrelevant here)
        represents the expression @('(x + y) * z').
@@ -1482,8 +1483,8 @@
        corresponds to the nonterminal <i>additive-expression</i>.
        The function @(tsee expr->priority) defines a mapping
        from the expressions of our abstract syntax to their priorities,
-       e.g. @('(expr-binary (binop-add) ... ...)')
-       and @('(expr-binary (binop-sub) ... ...)')
+       e.g. @('(expr-binary (binop-add) ... ... ...)')
+       and @('(expr-binary (binop-sub) ... ... ...)')
        are mapped to @('expr-priority-add'),
        the priority of additive expressions.
        The function @(tsee expr-priority-<=) defines
@@ -1503,7 +1504,7 @@
        the second argument of this function is changed according to
        the grammar rule corresponding to the super-expression.
        For instance, when printing the left and right subexpressions
-       of a super-expression @('(expr-binary (binop-add) left right)'),
+       of a super-expression @('(expr-binary (binop-add) left right ...)'),
        we recursively call the printer twice,
        once on @('left') and once on @('right').
        Because of the grammar rule
@@ -2439,7 +2440,7 @@
              (pristate-fix pstate))
      :paren
      (b* ((pstate (print-astring "(" pstate))
-          (pstate (print-absdeclor dirabsdeclor.unwrap pstate))
+          (pstate (print-absdeclor dirabsdeclor.inner pstate))
           (pstate (print-astring ")" pstate)))
        pstate)
      :array
