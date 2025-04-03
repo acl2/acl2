@@ -131,7 +131,7 @@
           (and (equal author (certificate->author cert))
                (certificate-fix cert)))
          (prev-certs
-          (certificates-with-authors+round (certificate->previous cert)
+          (certs-with-authors+round (certificate->previous cert)
                                                (1- (certificate->round cert))
                                                dag)))
       (path-to-author+round-set prev-certs author round dag))
@@ -167,7 +167,7 @@
                      (set1 (cert-set->round-set (set::tail certs)))
                      (set2 (cert-set->round-set certs)))
           (:instance
-           cert-set->round-set-of-certificates-with-authors+round
+           cert-set->round-set-of-certs-with-authors+round
            (authors (certificate->previous cert))
            (round (1- (certificate->round cert)))
            (certs dag)))))
@@ -181,7 +181,7 @@
                        certificate->round-in-cert-set->round-set
                        cert-set->round-set-monotone)
     :use (:instance
-          cert-set->round-set-of-certificates-with-authors+round
+          cert-set->round-set-of-certs-with-authors+round
           (authors (certificate->previous cert))
           (round (1- (certificate->round cert)))
           (certs dag))))
@@ -233,7 +233,7 @@
       :fn path-to-author+round-set)
     :hints
     (("Goal" :in-theory (enable* set::expensive-rules
-                                 certificates-with-authors+round-subset))))
+                                 certs-with-authors+round-subset))))
   (in-theory (disable path-to-author+round-in-dag
                       path-to-author+round-set-in-dag))
 
@@ -330,7 +330,7 @@
     :returns (hist certificate-setp)
     (b* (((certificate cert) cert)
          ((when (= cert.round 1)) (set::insert (certificate-fix cert) nil))
-         (prev-certs (certificates-with-authors+round cert.previous
+         (prev-certs (certs-with-authors+round cert.previous
                                                           (1- cert.round)
                                                           dag))
          (prev-hist (certificate-set-causal-history prev-certs dag)))
@@ -366,7 +366,7 @@
                      (set1 (cert-set->round-set (set::tail certs)))
                      (set2 (cert-set->round-set certs)))
           (:instance
-           cert-set->round-set-of-certificates-with-authors+round
+           cert-set->round-set-of-certs-with-authors+round
            (authors (certificate->previous cert))
            (round (1- (certificate->round cert)))
            (certs dag)))))
@@ -393,6 +393,6 @@
       :fn certificate-set-causal-history)
     :hints
     (("Goal" :in-theory (enable* set::expensive-rules
-                                 certificates-with-authors+round-subset))))
+                                 certs-with-authors+round-subset))))
   (in-theory (disable certificate-causal-history-subset
                       certificate-set-causal-history-subset)))

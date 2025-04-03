@@ -207,7 +207,7 @@
      All the returned certificates are in the round just before @('cert')."))
   (if (equal (certificate->round cert) 1)
       nil
-    (certificates-with-authors+round (certificate->previous cert)
+    (certs-with-authors+round (certificate->previous cert)
                                          (1- (certificate->round cert))
                                          dag))
   :guard-hints (("Goal" :in-theory (enable posp)))
@@ -218,7 +218,7 @@
     (set::subset certs dag)
     :hyp (certificate-setp dag)
     :hints
-    (("Goal" :in-theory (enable certificates-with-authors+round-subset))))
+    (("Goal" :in-theory (enable certs-with-authors+round-subset))))
   (in-theory (disable outgoing-subset))
 
   (defret outgoing-subset-of-previous-round
@@ -229,28 +229,28 @@
     :hyp (certificate-setp dag)
     :hints
     (("Goal"
-      :in-theory (enable certificates-with-authors+round-subset-with-round))))
+      :in-theory (enable certs-with-authors+round-subset-with-round))))
   (in-theory (disable outgoing-subset-of-previous-round))
 
   (defruled outgoing-in-dag
     (implies (and (certificate-setp dag)
                   (set::in cert1 (outgoing cert dag)))
              (set::in cert1 dag))
-    :enable in-of-certificates-with-authors+round)
+    :enable in-of-certs-with-authors+round)
 
   (defruled round-in-outgoing-is-one-less
     (implies (and (certificate-setp dag)
                   (set::in cert1 (outgoing cert dag)))
              (equal (certificate->round cert1)
                     (1- (certificate->round cert))))
-    :enable in-of-certificates-with-authors+round)
+    :enable in-of-certs-with-authors+round)
 
   (defruled round-set-of-outgoing
     (equal (cert-set->round-set (outgoing cert dag))
            (if (set::emptyp (outgoing cert dag))
                nil
              (set::insert (1- (certificate->round cert)) nil)))
-    :enable round-set-of-certificates-with-authors+round))
+    :enable round-set-of-certs-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

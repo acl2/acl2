@@ -122,7 +122,7 @@
   (xdoc::topstring
    (xdoc::p
     "This was alluded to in
-     @(tsee certificates-with-authors+round-of-unequivocal-superset),
+     @(tsee certs-with-authors+round-of-unequivocal-superset),
      which is in fact used in the proof.
      The theorem here has @(tsee dag-previous-in-dag-p) as hypothesis,
      which is why it is under @(see properties-dags)
@@ -134,7 +134,7 @@
      does not imply the backward closure of the superset.
      The latter is not needed, in fact.
      The backward closure of the subset establishes the hypothesis of
-     @(tsee certificates-with-authors+round-of-unequivocal-superset)
+     @(tsee certs-with-authors+round-of-unequivocal-superset)
      that the previous authors of the certificate
      are all in the round just before the certificate.")
    (xdoc::p
@@ -151,11 +151,11 @@
                 (set::in cert dag1)
                 (or (not (equal (certificate->round cert) 1))
                     (set::emptyp (certificate->previous cert))))
-           (equal (certificates-with-authors+round
+           (equal (certs-with-authors+round
                    (certificate->previous cert)
                    (1- (certificate->round cert))
                    dag2)
-                  (certificates-with-authors+round
+                  (certs-with-authors+round
                    (certificate->previous cert)
                    (1- (certificate->round cert))
                    dag1)))
@@ -163,7 +163,7 @@
   :use ((:instance dag-previous-in-dag-p-necc
                    (dag dag1)
                    (cert cert))
-        (:instance certificates-with-authors+round-of-unequivocal-superset
+        (:instance certs-with-authors+round-of-unequivocal-superset
                    (certs1 dag1)
                    (certs2 dag2)
                    (authors (certificate->previous cert))
@@ -184,7 +184,7 @@
      instead of a growing DAG of a single validator.")
    (xdoc::p
     "This was alluded to in
-     @(tsee certificates-with-authors+round-of-unequivocal-sets)
+     @(tsee certs-with-authors+round-of-unequivocal-sets)
      as the main application of that theorem.
      However, we actually prove this without using that theorem:
      we use @(tsee previous-certificates-of-unequivocal-dag-superset) twice,
@@ -194,7 +194,7 @@
      is closed under intersection, proved earlier.")
    (xdoc::p
     "We could probably prove this theorem by directly using
-     @(tsee certificates-with-authors+round-of-unequivocal-sets)
+     @(tsee certs-with-authors+round-of-unequivocal-sets)
      and avoiding the @(tsee certificate-set-unequivocalp) hypothesis.
      But those hypothesis will be satisfied,
      so there is no loss of generality in having them."))
@@ -210,11 +210,11 @@
                 (set::in cert dag2)
                 (or (not (equal (certificate->round cert) 1))
                     (set::emptyp (certificate->previous cert))))
-           (equal (certificates-with-authors+round
+           (equal (certs-with-authors+round
                    (certificate->previous cert)
                    (1- (certificate->round cert))
                    dag1)
-                  (certificates-with-authors+round
+                  (certs-with-authors+round
                    (certificate->previous cert)
                    (1- (certificate->round cert))
                    dag2)))
@@ -284,7 +284,7 @@
               :in-theory (enable* path-to-author+round
                                   path-to-author+round-set
                                   set::expensive-rules
-                                  certificates-with-authors+round-subset))
+                                  certs-with-authors+round-subset))
              (cond
               ((acl2::occur-lst '(acl2::flag-is 'path-to-author+round) clause)
                '(:use (:instance
@@ -398,7 +398,7 @@
      (("Goal" :in-theory (enable* certificate-causal-history
                                   certificate-set-causal-history
                                   set::expensive-rules
-                                  certificates-with-authors+round-subset
+                                  certs-with-authors+round-subset
                                   emptyp-of-certificate-set-fix))
       (cond
        ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
@@ -588,7 +588,7 @@
         cert-with-author+round-of-element-when-unequivocal
         set::expensive-rules
         nil-not-in-certificate-set
-        certificates-with-authors+round-subset
+        certs-with-authors+round-subset
         path-to-author+round-round-lte
         element-of-certificate-set-not-nil))
       '(:expand (path-to-author+round-set certs
@@ -697,7 +697,7 @@
                                         dag)
                   cert))
   :use (:instance path-to-author+round-set-to-path-to-author+round
-                  (certs (certificates-with-authors+round
+                  (certs (certs-with-authors+round
                           (certificate->previous cert1)
                           (+ -1 (certificate->round cert1))
                           dag))
@@ -706,8 +706,8 @@
   :enable (path-to-author+round
            path-to-author+round-of-self
            nil-not-in-certificate-set
-           certificates-with-authors+round-subset
-           in-of-certificates-with-authors+round))
+           certs-with-authors+round-subset
+           in-of-certs-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -767,7 +767,7 @@
                   cert))
   :enable (outgoing
            path-to-previous
-           in-of-certificates-with-authors+round))
+           in-of-certs-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -793,7 +793,7 @@
                       0
                     quorum)))
   :enable (outgoing
-           cardinality-of-certificates-with-authors+round-when-subset
+           cardinality-of-certs-with-authors+round-when-subset
            certificate-previous-in-dag-p
            dag-previous-are-quorum-p-necc)
   :use dag-previous-in-dag-p-necc)
@@ -882,17 +882,17 @@
                set::expensive-rules
                path-to-author+round-to-cert-with-author+round
                cert-with-author+round-of-element-when-unequivocal
-               round-set-of-certificates-with-authors+round
+               round-set-of-certs-with-authors+round
                pos-fix
                nil-not-in-certificate-set
-               certificates-with-authors+round-subset
+               certs-with-authors+round-subset
                certificate-causal-history-subset
                certificate-set-causal-history-subset
                emptyp-of-certificate-set-fix))
      (cond
       ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
        '(:use (:instance round-leq-when-path-to-author+round-set
-                         (certs (certificates-with-authors+round
+                         (certs (certs-with-authors+round
                                  (certificate->previous cert)
                                  (+ -1 (certificate->round cert))
                                  dag))

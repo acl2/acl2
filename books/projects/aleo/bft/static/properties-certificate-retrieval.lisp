@@ -82,7 +82,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled certificate-set-unequivocalp-of-certificates-with-authors
+(defruled certificate-set-unequivocalp-of-certs-with-authors
   :short "The certificates with given authors of an unequivocal DAG
           is also an unequivocal set of certificates."
   :long
@@ -94,9 +94,9 @@
   (implies (and (certificate-setp certs)
                 (certificate-set-unequivocalp certs))
            (certificate-set-unequivocalp
-            (certificates-with-authors authors certs)))
+            (certs-with-authors authors certs)))
   :enable (certificate-set-unequivocalp-when-subset
-           certificates-with-authors-subset))
+           certs-with-authors-subset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -178,7 +178,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled certificates-with-authors+round-of-unequivocal-superset
+(defruled certs-with-authors+round-of-unequivocal-superset
   :short "If certificates with certain authors and a certain round
           are retrieved from a subset of an unequivocal set of certificates,
           the same certificates are retrieved from the superset."
@@ -211,7 +211,7 @@
      but this theorem does not talk about newly added certificates:
      the hypothesis is that those predecessor certificates are in the subset.")
    (xdoc::p
-    "See @(tsee certificates-with-authors+round-of-unequivocal-sets)
+    "See @(tsee certs-with-authors+round-of-unequivocal-sets)
      for an analogous theorem involving two mutually unequivocal sets."))
   (implies (and (certificate-setp certs1)
                 (certificate-setp certs2)
@@ -220,12 +220,12 @@
                 (set::subset authors
                              (cert-set->author-set
                               (certificates-with-round round certs1))))
-           (equal (certificates-with-authors+round authors round certs2)
-                  (certificates-with-authors+round authors round certs1)))
+           (equal (certs-with-authors+round authors round certs2)
+                  (certs-with-authors+round authors round certs1)))
   :enable (set::expensive-rules
            set::double-containment-no-backchain-limit
            cert-with-author+round-when-author-in-round
-           in-of-certificates-with-authors+round)
+           in-of-certs-with-authors+round)
 
   :prep-lemmas
   ((defrule lemma
@@ -251,7 +251,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled certificates-with-authors+round-of-unequivocal-sets
+(defruled certs-with-authors+round-of-unequivocal-sets
   :short "If certificates with certain authors and a certain round
           are retrieved from both of two mutually unequivocal certificate sets,
           the same certificates are retrieved from both sets."
@@ -259,7 +259,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to
-     @(tsee certificates-with-authors+round-of-unequivocal-superset),
+     @(tsee certs-with-authors+round-of-unequivocal-superset),
      but for two mutually unequivocal certificate sets.
      As for that theorem, the purpose of this theorem is for
      the predecessor certificates of a given certificate.")
@@ -276,11 +276,11 @@
                 (set::subset authors
                              (cert-set->author-set
                               (certificates-with-round round certs2))))
-           (equal (certificates-with-authors+round authors round certs1)
-                  (certificates-with-authors+round authors round certs2)))
+           (equal (certs-with-authors+round authors round certs1)
+                  (certs-with-authors+round authors round certs2)))
   :enable (set::expensive-rules
            set::double-containment-no-backchain-limit
-           in-of-certificates-with-authors+round)
+           in-of-certs-with-authors+round)
 
   :prep-lemmas
 
@@ -352,7 +352,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled cardinality-of-certificates-with-authors+round-when-subset
+(defruled cardinality-of-certs-with-authors+round-when-subset
   :short "The number of certificates in a round with given authors,
           in an unequivocal DAG,
           is equal to the number of authors,
@@ -364,16 +364,16 @@
                              (cert-set->author-set
                               (certificates-with-round round certs))))
            (equal (set::cardinality
-                   (certificates-with-authors+round authors round certs))
+                   (certs-with-authors+round authors round certs))
                   (set::cardinality authors)))
   :use ((:instance cardinality-of-authors-when-same-round-and-unequiv
                    (certs
-                    (certificates-with-authors+round authors round certs)))
+                    (certs-with-authors+round authors round certs)))
         (:instance cardinality-of-subset-of-round-set-of-round
-                   (certs0 (certificates-with-authors
+                   (certs0 (certs-with-authors
                             authors
                             (certificates-with-round round certs)))))
   :disable (cardinality-of-authors-when-same-round-and-unequiv)
-  :enable (certificates-with-authors+round-to-authors-of-round
-           author-set-of-certificates-with-authors
-           certificates-with-authors-subset))
+  :enable (certs-with-authors+round-to-authors-of-round
+           author-set-of-certs-with-authors
+           certs-with-authors-subset))
