@@ -296,7 +296,7 @@
                      ;;term is a call of dag-val-with-axe-evaluator, and we can inline its embedded dag:
                      (b* ((quoted-dag (first arg-nodenums-or-quoteps))
                           (dag (unquote quoted-dag))
-                          (vars (dag-vars dag))
+                          (vars (dag-vars-unsorted dag))
                           (alist-nodenum (second arg-nodenums-or-quoteps)) ;todo: handle a constant alist
                           ((mv erp variable-node-alist-for-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                            (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array
@@ -785,7 +785,7 @@
             ;; we embed a DAG in a call to dag-val-with-axe-evaluator, to avoid
             ;; explosion in the term size:
             `(dag-val-with-axe-evaluator ',item
-                                         ,(make-acons-nest (dag-vars item))
+                                         ,(make-acons-nest (dag-vars-unsorted item))
                                          ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
                                          '0 ;array depth (not very important)
                                          )))

@@ -959,7 +959,7 @@
                                              ((embedded-dag (unquote (first args))) ;tttodo: consider the case where this is a quoted constant!
                                               (alist-nodenum (second args)) ;will usually be a nest of aconses - can be quotep?
                                               ;; (embedded-interpreted-function-alist (third args)) ;fixme check that this is consistent with the one passed in?
-                                              (dag-vars (dag-vars embedded-dag))
+                                              (dag-vars (dag-vars-unsorted embedded-dag))
                                               (var-lookup-terms (make-var-lookup-terms dag-vars alist-nodenum))
                                               (renaming-array-for-merge-embedded-dag-name
                                                (pack$ 'renaming-array-for-merge-embedded-dag embedded-dag-depth))

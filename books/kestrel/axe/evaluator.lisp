@@ -507,7 +507,7 @@
 
                   (bvchop-list bvchop-list-unguarded arg1 arg2) ;see bvchop-list-unguarded-correct
                   (all-unsigned-byte-p all-unsigned-byte-p arg1 arg2) ;unguarded
-                  (all-signed-byte-p all-signed-byte-p arg1 arg2) ;unguarded
+                  (all-signed-byte-p all-signed-byte-p arg1 arg2) ;unguarded ; drop?
                   (bitor bitor-unguarded arg1 arg2) ;see bitor-unguarded-correct
                   (bitand bitand-unguarded arg1 arg2) ;see bitand-unguarded-correct
                   (bitxor bitxor-unguarded arg1 arg2) ;see bitxor-unguarded-correct
@@ -736,7 +736,7 @@
 (defund wrap-dag-in-dag-val (dag interpreted-function-alist)
   (if (quotep dag)
       dag
-    (let* ((dag-vars (dag-vars dag))
+    (let* ((dag-vars (dag-vars-unsorted dag))
            (dag-fns (dag-fns dag)))
       `(dag-val-with-axe-evaluator ',dag
                                    ,(make-acons-nest dag-vars)
@@ -754,7 +754,7 @@
                               (plist-worldp wrld))))
   (if (quotep dag)
       dag
-    (let ((dag-vars (dag-vars dag))
+    (let ((dag-vars (dag-vars-unsorted dag))
           (dag-fns (dag-fns dag)))
       (if (not (function-symbolsp dag-fns wrld))
           (er hard? 'embed-dag-in-term "Some functions are not in the world: ~X01." dag-fns nil)

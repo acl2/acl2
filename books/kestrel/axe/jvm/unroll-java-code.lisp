@@ -633,7 +633,7 @@
        (dag-vars (if (quotep dag-or-quotep)
                      nil
                    ;;todo: check these (what should be allowed)?
-                   (sort-vars-with-guidance (dag-vars dag-or-quotep) parameter-names)))
+                   (sort-vars-with-guidance (dag-vars-unsorted dag-or-quotep) parameter-names)))
        (function-body (if (dag-or-quotep-size-less-thanp dag-or-quotep 1000)
                           (dag-to-term dag-or-quotep)
                         `(dag-val-with-axe-evaluator ,defconst-name

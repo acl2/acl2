@@ -3025,8 +3025,17 @@
                 (integerp free))
            (not (unsigned-byte-p n x))))
 
-;todo
-(include-book "rules2") ;drop (but that breaks SBVDIV-OF-SUBTRACT-4-BY-MINUS-4 below)? need BVCHOP-OF-SBP-EQUAL-CONSTANT
+;(include-book "rules2") ;drop but need ineq-hack below ;; old?: (but that breaks SBVDIV-OF-SUBTRACT-4-BY-MINUS-4 below)? need BVCHOP-OF-SBP-EQUAL-CONSTANT
+
+;; (defthm unsigned-byte-p-of-*-of-expt-and-/-of-expt
+;;   (implies (and (= (+ 1 (- high low)) size) ; gen
+;;                 (<= low high)
+;;                 (natp high)
+;;                 (natp low)
+;;                 (natp size))
+;;            (unsigned-byte-p size
+;;                             (* (expt 2 high) (/ (expt 2 low)))))
+;;   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm bvuminus-of-slice-when-top-bit-known
   (implies (and (equal 1 (getbit high x))
@@ -3039,8 +3048,15 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil nil nil)))
   :hints (("Goal"
            :use (:instance split-with-bvcat (x (slice high low x)) (hs 1) (ls (+ -1 size)))
-           :in-theory (e/d (bvminus bvuminus bvcat logapp bvplus slice-becomes-getbit ineq-hack)
-                           (bvminus-becomes-bvplus-of-bvuminus)))))
+           :in-theory (e/d (;bvminus
+                            ;bvuminus ;; bvcat logapp
+                            bvplus slice-becomes-getbit
+                            ;BVCHOP-OF-SUM-CASES
+                            bvcat logapp)
+                           (bvminus-becomes-bvplus-of-bvuminus
+                            BVCAT-EQUAL-REWRITE-ALT
+                            BVCAT-EQUAL-REWRITE
+                            EXPONENTS-ADD)))))
 
 (in-theory (disable BVCHOP-EQUAL-CONSTANT-REDUCE-WHEN-TOP-BIT-3-2-4)) ;if it's a hyp we don't want to reduce it..
 
@@ -6744,7 +6760,7 @@
                             +-OF-MINUS-1-AND-BV2
                             ;; for speed:
                             *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE
-                            INEQ-HACK
+                            ;INEQ-HACK
                             BOUND-WHEN-USB)))))
 
 ;gen!
@@ -9885,7 +9901,6 @@
   :rule-classes ((:rewrite :backchain-limit-lst (nil 0 nil nil)))
   :hints (("Goal" :in-theory (enable bvchop mod))))
 
-
 ;gen
 (defthm bvlt-of-bvplus-when-bvlt-of-slices
   (implies (and (syntaxp (quotep k))
@@ -9904,8 +9919,12 @@
                             (n 31)
                             (m 6)))
            :in-theory (e/d (bvlt slice bvchop-of-logtail bvplus bvcat logapp logtail FLOOR-OF-SUM bvchop-of-sum-cases
+                                 (:e expt)
                                  )
-                           (logtail-lessp anti-slice )))))
+                           (logtail-lessp
+                            anti-slice
+                            *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE ; big difference
+                            )))))
 
 (defthm bvplus-tighten-free-1
   (implies (and (unsigned-byte-p free y)
