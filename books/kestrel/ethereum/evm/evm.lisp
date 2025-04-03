@@ -32,7 +32,7 @@
 (include-book "kestrel/bv/bvnot" :dir :system)
 (include-book "kestrel/bv/bvsx" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ; for sbvlt
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
 ;(include-book "../bv/conversions-es")
 (include-book "kestrel/sequences/defforall" :dir :system)
 (include-book "kestrel/lists-light/subrange" :dir :system)

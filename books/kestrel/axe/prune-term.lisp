@@ -52,8 +52,6 @@
                            union-equal-when-not-consp-arg1-cheap
                            union-equal-when-not-consp-arg2-cheap
                            ;; todo: many of these should either not be imported or be at least disabled:
-                           equal-of-constant-when-sbvlt
-                           equal-constant-when-not-sbvlt
                            car-of-car-when-pseudo-dagp-aux consp-of-car-when-pseudo-dagp consp-of-car-when-pseudo-dagp-aux consp-of-car-when-pseudo-dagp-aux-2 ; todo: disable globally?
                            integerp-of-nth-when-all-natp
                            equal-of-non-natp-and-caar-when-when-bounded-natp-alistp

@@ -49,6 +49,7 @@
 (include-book "kestrel/bv/defs-arith" :dir :system)
 (include-book "kestrel/bv/bvsx-def" :dir :system)
 (include-book "kestrel/bv/defs" :dir :system) ;overkill
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv-lists/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
