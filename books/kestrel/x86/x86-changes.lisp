@@ -28,7 +28,7 @@
 (include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/bvmod" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
-(include-book "kestrel/bv/sbvlt" :dir :system)
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

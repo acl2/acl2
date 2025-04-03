@@ -106,6 +106,7 @@
 ;; Comparison operations:
 (include-book "bvequal")
 (include-book "bvlt")
+(include-book "sbvlt-def")
 (include-book "sbvlt")
 
 ;; If-then-else:
