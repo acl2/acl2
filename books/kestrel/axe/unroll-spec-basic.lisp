@@ -242,7 +242,7 @@
        ;; because Axe does not yet produce an ACL2 proof. TODO: We could
        ;; support adding the theorem even if the DAG is large if we use
        ;; dag-val-with-axe-evaluator to express the theorem.
-       (dag-vars (dag-vars dag)) ;todo: check these (what should be allowed)?
+       (dag-vars (dag-vars-unsorted dag)) ;todo: check these (what should be allowed)?
        (dag-fns (dag-fns dag))
        ;; build the function:
        (function-name (intern-in-package-of-symbol

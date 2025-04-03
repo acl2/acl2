@@ -1068,7 +1068,7 @@
                         (implies ,(make-conjunction-from-list assumptions)
                                  (equal ,term ;fixme error if this is a variable and we're making a rewrite rule
                                         (dag-val-with-axe-evaluator ',dag
-                                                                    ,(make-acons-nest (dag-vars dag))
+                                                                    ,(make-acons-nest (dag-vars-unsorted dag))
                                                                     ;;fixme think about this:
                                                                     ;;check that all the fns are already in interpreted-function-alist?
                                                                     ;;',interpreted-function-alist

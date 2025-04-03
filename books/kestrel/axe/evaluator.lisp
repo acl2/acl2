@@ -736,7 +736,7 @@
 (defund wrap-dag-in-dag-val (dag interpreted-function-alist)
   (if (quotep dag)
       dag
-    (let* ((dag-vars (dag-vars dag))
+    (let* ((dag-vars (dag-vars-unsorted dag))
            (dag-fns (dag-fns dag)))
       `(dag-val-with-axe-evaluator ',dag
                                    ,(make-acons-nest dag-vars)
@@ -754,7 +754,7 @@
                               (plist-worldp wrld))))
   (if (quotep dag)
       dag
-    (let ((dag-vars (dag-vars dag))
+    (let ((dag-vars (dag-vars-unsorted dag))
           (dag-fns (dag-fns dag)))
       (if (not (function-symbolsp dag-fns wrld))
           (er hard? 'embed-dag-in-term "Some functions are not in the world: ~X01." dag-fns nil)

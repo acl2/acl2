@@ -613,9 +613,9 @@
         (hard-error 'unroll-java-code2 "ERROR: Symbolic simulation did not seem to finish (see DAG above)." nil)
         (mv (erp-t) nil state))
        ;; Ensure that the single var in the DAG is state-var (s0):
-       ((when (not (equal (dag-vars result-dag) (list state-var))))
+       ((when (not (equal (dag-vars-unsorted result-dag) (list state-var))))
         (mv t
-            (er hard 'unroll-java-code2-fn "Unexpected vars in result DAG.  Vars are ~x0 but should be just ~x1." (dag-vars result-dag) state-var)
+            (er hard 'unroll-java-code2-fn "Unexpected vars in result DAG.  Vars are ~x0 but should be just ~x1." (dag-vars-unsorted result-dag) state-var)
             state))
        ((mv erp fn-body supporting-events state-component-defun-names)
         (make-unroll-java-code2-fn-result result-dag fn abstract-state-components (w state)))

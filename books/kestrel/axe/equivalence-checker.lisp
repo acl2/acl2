@@ -174,8 +174,8 @@
                               )))
   (if (not check-vars)
       nil ; no check
-    (let* ((vars1 (if (quotep dag-or-quotep1) nil (merge-sort-symbol< (dag-vars dag-or-quotep1))))
-           (vars2 (if (quotep dag-or-quotep2) nil (merge-sort-symbol< (dag-vars dag-or-quotep2))))
+    (let* ((vars1 (if (quotep dag-or-quotep1) nil (merge-sort-symbol< (dag-vars-unsorted dag-or-quotep1))))
+           (vars2 (if (quotep dag-or-quotep2) nil (merge-sort-symbol< (dag-vars-unsorted dag-or-quotep2))))
            ;; (- (cw "Variables in DAG1: ~x0~%" vars1))
            ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
            ;; can use equal here since the lists are sorted and duplicate-free:
@@ -9372,7 +9372,7 @@
                                         (equal ,expr
                                                ;;pull out this pattern?
                                                (dag-val-with-axe-evaluator ',dag
-                                                                           ,(make-acons-nest (dag-vars dag))
+                                                                           ,(make-acons-nest (dag-vars-unsorted dag))
                                                                            ;;fixme think about this:
                                                                            ;;check that all the fns are already in interpreted-function-alist?
                                                                            ;;',interpreted-function-alist
@@ -9607,7 +9607,7 @@
 ;fixme is the dag is small, we can just make it into a term?
 (defun embed-dag-as-term (dag interpreted-function-alist)
   `(dag-val-with-axe-evaluator ',dag
-                                ,(make-acons-nest (dag-vars dag))
+                                ,(make-acons-nest (dag-vars-unsorted dag))
                                 ',(supporting-interpreted-function-alist (dag-fns dag) interpreted-function-alist t)
                                 '0))
 
@@ -10032,7 +10032,7 @@
                             nodenunm-or-quotep-for-value-added-on
                           ;;fixme destroys 'dag-array! <-- old comment?
                           (drop-non-supporters (drop-nodes-past nodenunm-or-quotep-for-value-added-on update-dag-for-returned-formal)))))
-                  (if (member-eq base-case-term (dag-vars dag-for-value-added-on))
+                  (if (member-eq base-case-term (dag-vars-unsorted dag-for-value-added-on))
                       ;;if the element produced depends on previous elements, it's not a producer in this sense (we can't get rid of the list argument when combining it with a consumer)
                       (mv (erp-nil) nil state)
                     (mv (erp-nil)
@@ -10372,7 +10372,7 @@
                         (implies ,(make-conjunction-from-list assumptions)
                                  (equal ,term
                                         (dag-val-with-axe-evaluator ',dag
-                                                                    ,(make-acons-nest (dag-vars dag))
+                                                                    ,(make-acons-nest (dag-vars-unsorted dag))
                                                                     ;;fixme think about this:
                                                                     ;;check that all the fns are already in interpreted-function-alist?
                                                                     ;;',interpreted-function-alist
@@ -10456,7 +10456,7 @@
                              (symbolp (cdr (car dag))))
                             (dag-to-term dag)
                           `(dag-val-with-axe-evaluator ',dag
-                                                       ,(make-acons-nest (dag-vars dag))
+                                                       ,(make-acons-nest (dag-vars-unsorted dag))
                                                        ',(supporting-interpreted-function-alist
                                                           (dag-fns dag) ;fixme think about this
                                                           interpreted-function-alist
@@ -11180,7 +11180,7 @@
                  (newer-exit-test-dag-fns (dag-fns newer-exit-test-dag))
                  (newer-exit-test
                   `(dag-val-with-axe-evaluator ',newer-exit-test-dag
-                                               ,(make-acons-nest exit-test-vars ;(dag-vars newer-exit-test-dag)
+                                               ,(make-acons-nest exit-test-vars ;(dag-vars-unsorted newer-exit-test-dag)
                                                                  )
                                                ',(supporting-interpreted-function-alist newer-exit-test-dag-fns interpreted-function-alist t)
                                                0))
@@ -12688,7 +12688,7 @@
  ;;                                              :interpreted-function-alist interpreted-function-alist)
  ;;                               (mv
  ;;                                `(dag-val-with-axe-evaluator ',dag
- ;;                                                              ,(make-acons-nest (dag-vars dag))
+ ;;                                                              ,(make-acons-nest (dag-vars-unsorted dag))
  ;;                                                              ',(supporting-interpreted-function-alist (dag-fns dag)
  ;;                                                                                                       interpreted-function-alist) 0)
  ;;                                state)))
@@ -17071,7 +17071,7 @@
                   :stobjs state))
   (b* ((- (cw "~%(Proving top-level miter ~x0:~%" proof-name))
        ;; Desugar the special values :bits and :bytes for the types:
-       (dag-vars (if (quotep dag-or-quotep) nil (dag-vars dag-or-quotep))) ; todo: make a dag-or-quotep-vars
+       (dag-vars (if (quotep dag-or-quotep) nil (dag-vars-unsorted dag-or-quotep))) ; todo: make a dag-or-quotep-vars
        (var-type-alist (if (eq :bits types) ;todo: optimize this stuff:
                            (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len dag-vars))
                                    (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 1))))

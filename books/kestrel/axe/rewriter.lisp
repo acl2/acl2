@@ -674,7 +674,7 @@
                         (b* ((embedded-dag-len (len embedded-dag))
                              (alist-nodenum (second args))
                              ;; (interpreted-function-alist (third args)) ;fffixme pay attention to this!
-                             (embedded-dag-vars (dag-vars embedded-dag))
+                             (embedded-dag-vars (dag-vars-unsorted embedded-dag))
                              (var-lookup-terms (make-var-lookup-terms embedded-dag-vars alist-nodenum))
                              ;;add the lookup of each var to the dag:
                              ((mv erp var-nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries & limits state)

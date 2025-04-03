@@ -1003,7 +1003,7 @@
        ;; Sometimes the presence of text-offset may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
-       (result-dag-vars (acl2::dag-vars result-dag))
+       (result-dag-vars (acl2::dag-vars-unsorted result-dag))
        (defconst-name (pack-in-package-of-symbol lifted-name '* lifted-name '*))
        (defconst-form `(defconst ,defconst-name ',result-dag))
        ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant

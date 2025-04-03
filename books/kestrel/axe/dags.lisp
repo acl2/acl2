@@ -663,17 +663,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The result is not necessarily sorted
-(defund dag-vars (dag)
+(defund dag-vars-unsorted (dag)
   (declare (xargs :guard (or (quotep dag)
                              (weak-dagp dag))))
   (if (quotep dag)
       nil
     (dag-vars-aux dag nil)))
 
-(defthm symbol-listp-of-dag-vars
+(defthm symbol-listp-of-dag-vars-unsorted
   (implies (weak-dagp dag)
-           (symbol-listp (dag-vars dag)))
-  :hints (("Goal" :in-theory (enable dag-vars))))
+           (symbol-listp (dag-vars-unsorted dag)))
+  :hints (("Goal" :in-theory (enable dag-vars-unsorted))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: add a sorted version
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -682,7 +686,7 @@
   (if (endp dags)
       acc
     (let* ((dag (first dags))
-           (vars (dag-vars dag)))
+           (vars (dag-vars-unsorted dag)))
       (get-vars-from-dags-aux (rest dags) (union-eq vars acc)))))
 
 (defun get-vars-from-dags (dags)
@@ -762,7 +766,7 @@
 
 ; allows a subset
 (defun check-dag-vars (allowed-vars dag)
-  (let ((actual-vars (dag-vars dag)))
+  (let ((actual-vars (dag-vars-unsorted dag)))
     (if (subsetp-eq actual-vars allowed-vars)
         dag
       (er hard? 'check-dag-vars "unexpected vars (got: ~x0, expected ~x1) in dag: ~X23" actual-vars allowed-vars dag nil))))
