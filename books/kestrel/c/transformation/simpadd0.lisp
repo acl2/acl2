@@ -1245,7 +1245,7 @@
                               (arg2-thm-name symbolp)
                               (arg2-vars ident-setp)
                               (arg2-diffp booleanp)
-                              (info acl2::any-p)
+                              (info c$::binary-infop)
                               (gin simpadd0-ginp))
   :guard (and (expr-unambp arg1)
               (expr-unambp arg1-new)
@@ -2218,7 +2218,7 @@
                                gout-arg2.thm-name
                                gout-arg2.vars
                                gout-arg2.diffp
-                               expr.info
+                               (c$::coerce-binary-info expr.info)
                                gin))
        :cond
        (b* (((mv new-test (simpadd0-gout gout-test))
