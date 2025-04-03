@@ -160,7 +160,7 @@
       (if (dag-or-quotep-size-less-thanp dag max-term-size)
           (dag-to-term dag) ;todo: respect use-lets-in-terms here as well?
         ;; term would be too big, so use an embedded dag:
-        (let ((dag-vars (dag-vars dag)))
+        (let ((dag-vars (dag-vars-unsorted dag)))
           `(dag-val-with-axe-evaluator ',dag
                                        ,(make-acons-nest dag-vars)
                                        ',interpreted-function-alist ;todo: trim this down to only what is needed
@@ -3233,7 +3233,7 @@
 ;fixme what if the heap changes but not in a way that depends on s?
   ;; todo: use this get-subdag below (or don't compute it here)?
   ;; todo: drop this check (can it ever happen?)?
-  (if (subsetp-eq (dag-vars (get-subdag (top-nodenum heap-dag) heap-dag)) previous-state-vars) ;todo: what about inputs?
+  (if (subsetp-eq (dag-vars-unsorted (get-subdag (top-nodenum heap-dag) heap-dag)) previous-state-vars) ;todo: what about inputs?
       (prog2$ (er hard 'get-heap-update-triples "Heap check failed: ~x0." heap-dag)
               nil)
     (get-heap-update-triples-aux (top-nodenum heap-dag) heap-dag `(jvm::heap ,state-var) previous-state-vars)))
@@ -3300,7 +3300,7 @@
    (declare (xargs :mode :program))
    ;;check whether the static field map doesn't depend on s: ;;fixme is this check appropriate?
   ;;fixme, can the static field map be a quotep?
-  (if (subsetp-eq (dag-vars (get-subdag (top-nodenum dag) dag)) previous-state-vars)
+  (if (subsetp-eq (dag-vars-unsorted (get-subdag (top-nodenum dag) dag)) previous-state-vars)
       nil
     (get-static-field-update-pairs-aux (top-nodenum dag) dag state-var)))
 
@@ -6556,7 +6556,7 @@
        (- (and print (progn$ (cw "(Output DAG:~%")
                              (print-list output-dag)
                              (cw ")~%"))))
-       (dag-vars (dag-vars output-dag)) ; these get sorted below
+       (dag-vars (dag-vars-unsorted output-dag)) ; these get sorted below
        ;; TODO: Shouldn't we just add inputs automatically for this new stuff?
        (- (and (not (subsetp-eq dag-vars input-vars))
                (cw "WARNING: Unexpected variables, ~x0, appear in the DAG.  At this point only input vars should remain.  If state vars such as S0 remain, consider identifying additional state components that should be considered inputs (using input-vars plus assumptions that equate the state components with the new input vars).~%"  (set-difference-eq dag-vars input-vars))))

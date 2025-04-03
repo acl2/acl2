@@ -641,10 +641,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;
-;; dag-vars
-;;
-
+;; The result is not necessarily sorted
 (defun dag-vars-aux (dag acc)
   (declare (xargs :guard (and (weak-dagp-aux dag)
                               (symbol-listp acc))))
@@ -663,24 +660,45 @@
            (symbol-listp (dag-vars-aux dag acc)))
   :hints (("Goal" :in-theory (enable weak-dagp dag-exprp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The result is not necessarily sorted
-(defund dag-vars (dag)
+(defund dag-vars-unsorted (dag)
   (declare (xargs :guard (or (quotep dag)
                              (weak-dagp dag))))
   (if (quotep dag)
       nil
     (dag-vars-aux dag nil)))
 
+(defthm symbol-listp-of-dag-vars-unsorted
+  (implies (weak-dagp dag)
+           (symbol-listp (dag-vars-unsorted dag)))
+  :hints (("Goal" :in-theory (enable dag-vars-unsorted))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a sorted list of symbols.
+;; todo: use a better ordering that sorted numbered symbols numerically (x10 should not follow x1; x2-x9 should come first)
+(defund dag-vars (dag)
+  (declare (xargs :guard (or (quotep dag)
+                             (weak-dagp dag))))
+  (if (quotep dag)
+      nil
+    (merge-sort-symbol< (dag-vars-unsorted dag))))
+
 (defthm symbol-listp-of-dag-vars
   (implies (weak-dagp dag)
            (symbol-listp (dag-vars dag)))
   :hints (("Goal" :in-theory (enable dag-vars))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The result is not necessarily sorted
 (defun get-vars-from-dags-aux (dags acc)
   (if (endp dags)
       acc
     (let* ((dag (first dags))
-           (vars (dag-vars dag)))
+           (vars (dag-vars-unsorted dag)))
       (get-vars-from-dags-aux (rest dags) (union-eq vars acc)))))
 
 (defun get-vars-from-dags (dags)
@@ -760,14 +778,10 @@
 
 ; allows a subset
 (defun check-dag-vars (allowed-vars dag)
-  (let ((actual-vars (dag-vars dag)))
+  (let ((actual-vars (dag-vars-unsorted dag)))
     (if (subsetp-eq actual-vars allowed-vars)
         dag
-      (hard-error 'check-dag-vars "unexpected vars (got: ~x0, expected ~x1) in dag: ~X23"
-                  (acons #\0 actual-vars
-                         (acons #\1 allowed-vars
-                                (acons #\2 dag
-                                       (acons #\3 nil nil))))))))
+      (er hard? 'check-dag-vars "unexpected vars (got: ~x0, expected ~x1) in dag: ~X23" actual-vars allowed-vars dag nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

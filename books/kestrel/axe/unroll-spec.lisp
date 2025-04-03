@@ -110,7 +110,7 @@
                        ;;todo: why is the re-interning needed here?
                        (symbol-name (fresh-name-in-world-with-$s (strip-stars-from-name defconst-name) nil (w state)))
                        defconst-name))
-       (dag-vars (dag-vars dag)) ;todo: check these (what should be allowed)?
+       (dag-vars (dag-vars-unsorted dag)) ;todo: check these (what should be allowed)?
        (dag-fns (dag-fns dag))
        (function-params (if (eq :auto function-params)
                             dag-vars
