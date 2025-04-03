@@ -658,11 +658,11 @@
               (cw "Created ~x0.~%~%" (first items-created))
             (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
        (- (print-dag-info dag-or-quotep defconst-name nil)) ; maybe suppress with print arg?
-       (- (if (quotep dag-or-quotep)
-              nil
-            (if (dag-is-purep-aux dag-or-quotep :all t) ; prints any non-pure nodes
-                (cw "~x0 is a pure dag.~%" defconst-name)
-              (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
+       ;; (- (if (quotep dag-or-quotep)
+       ;;        nil
+       ;;      (if (dag-is-purep-aux dag-or-quotep :all t) ; prints any non-pure nodes
+       ;;          (cw "~x0 is a pure dag.~%" defconst-name)
+       ;;        (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
        (- (progn$ (cw "~%BYTECODE UNROLLING FINISHED (")
                   (acl2::print-to-hundredths (- end-time start-time))
                   (cw "s).") ; s = seconds
