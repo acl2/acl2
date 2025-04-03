@@ -1002,7 +1002,7 @@
              state)
           (mv nil assumptions state)))
        ((when erp) (mv *error* nil nil nil state))
-       (vars (merge-sort-symbol< (dag-vars dag)))
+       (vars (dag-vars dag))
        (- (and print (cw "(Variables in DAG: ~x0)~%" vars)))
        ((mv result info-acc state)
         (apply-proof-tactics-to-problem (make-problem dag assumptions)
