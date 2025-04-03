@@ -1837,7 +1837,7 @@
 ;    all-signed-byte-p-of-bv-array-write ;yuck?
      myif-of-bv-array-write-arg1-safe
      myif-of-bv-array-write-arg2-safe
-     bv-array-write-trim-value-all ;not a bv rule?
+     bv-array-write-trim-value-all ;not a bv rule? ; todo: move to trim rules?
 
 ;only do this when we can tell syntactically that the write does nothing?
 ;    bv-array-write-does-nothing ;caused problems for des-encrypt-sun - why? actually it seemed to help for that! ;bbozo think about how to make this cheap enough...
