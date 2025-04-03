@@ -1052,7 +1052,7 @@
                              (arg-thm-name symbolp)
                              (arg-vars ident-setp)
                              (arg-diffp booleanp)
-                             (info acl2::any-p)
+                             (info c$::unary-infop)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp arg)
               (expr-unambp arg-new))
@@ -2158,7 +2158,7 @@
                               gout-arg.thm-name
                               gout-arg.vars
                               gout-arg.diffp
-                              expr.info
+                              (c$::coerce-unary-info expr.info)
                               gin))
        :sizeof
        (b* (((mv new-type (simpadd0-gout gout-type))
