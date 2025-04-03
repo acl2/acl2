@@ -312,10 +312,10 @@
     :expand (expr-unambp (expr-cast type arg)))
 
   (defrule expr-unambp-of-expr-binary
-    (equal (expr-unambp (expr-binary op arg1 arg2))
+    (equal (expr-unambp (expr-binary op arg1 arg2 info))
            (and (expr-unambp arg1)
                 (expr-unambp arg2)))
-    :expand (expr-unambp (expr-binary op arg1 arg2)))
+    :expand (expr-unambp (expr-binary op arg1 arg2 info)))
 
   (defrule expr-unambp-of-expr-cond
     (equal (expr-unambp (expr-cond test then else))
@@ -1253,10 +1253,10 @@
              (dirabsdeclor-option-unambp (absdeclor->direct? absdeclor)))
     :expand (absdeclor-unambp absdeclor))
 
-  (defrule absdeclor-unambp-of-dirabsdeclor-paren->unwrap
+  (defrule absdeclor-unambp-of-dirabsdeclor-paren->inner
     (implies (and (dirabsdeclor-unambp dirabsdeclor)
                   (dirabsdeclor-case dirabsdeclor :paren))
-             (absdeclor-unambp (dirabsdeclor-paren->unwrap dirabsdeclor)))
+             (absdeclor-unambp (dirabsdeclor-paren->inner dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
   (defrule dirabsdeclor-option-unambp-of-dirabsdeclor-array->decl?

@@ -1028,6 +1028,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod binary-info
+  :short "Fixtype of validation information for binary expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to binary expressions,
+     i.e. the @(':binary') case of @(tsee expr).
+     The information for a binary expression consists of its type."))
+  ((type type))
+  :pred binary-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-binary-info
+  :short "An irrelevant validation information for binary expressions."
+  :type binary-infop
+  :body (make-binary-info :type (irr-type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-binary-info (x)
+  :returns (info binary-infop)
+  :short "Coerce a value to @(tsee binary-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (binary-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy BINARY-INFOP." x)
+            (irr-binary-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod transunit-info
   :short "Fixtype of validation information for translation units."
   :long
@@ -1120,6 +1156,7 @@
    (expr :unary (unary-infop expr.info))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
+   (expr :binary (binary-infop expr.info))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
    (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
@@ -1220,7 +1257,7 @@
    :sizeof (type-unknown)
    :alignof (type-unknown)
    :cast (type-unknown)
-   :binary (type-unknown)
+   :binary (binary-info->type (coerce-binary-info expr.info))
    :cond (type-unknown)
    :comma (expr-type expr.next)
    :stmt (type-unknown)

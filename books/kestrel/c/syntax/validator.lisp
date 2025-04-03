@@ -2238,10 +2238,12 @@
                     ((erp new-arg2 type-arg2 types-arg2 table)
                      (valid-expr expr.arg2 table ienv))
                     ((erp type)
-                     (valid-binary expr expr.op type-arg1 type-arg2 ienv)))
+                     (valid-binary expr expr.op type-arg1 type-arg2 ienv))
+                    (info (make-unary-info :type type)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
-                                          :arg2 new-arg2)
+                                          :arg2 new-arg2
+                                          :info info)
                         type
                         (set::union types-arg1 types-arg2)
                         table))
@@ -4028,7 +4030,7 @@
        dirabsdeclor
        :paren
        (b* (((erp new-absdeclor type types table)
-             (valid-absdeclor dirabsdeclor.unwrap type table ienv)))
+             (valid-absdeclor dirabsdeclor.inner type table ienv)))
          (retok (dirabsdeclor-paren new-absdeclor)
                 type
                 types
