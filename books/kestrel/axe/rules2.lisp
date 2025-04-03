@@ -2735,7 +2735,7 @@
                                )))))
 
 ;bozo
-(defthm maxelem-of-subrange-lengthen-2-1
+(defthmd maxelem-of-subrange-lengthen-2-1
   (implies (and (<= (nth 1 x)
                     (maxelem (subrange 2 i x)))
                 (< i (len x))
@@ -2772,7 +2772,7 @@
 ;;  :hints (("Goal" :use (:instance take-split (n (+ 1 i)))
 ;;           :in-theory (disable take-split LIST::EQUAL-APPEND-REDUCTION!))))
 
-;move to seq?
+;move to lists-light?
 (defthm maxelem-of-first-n+1-when-nth-is-greatest
   (implies (and (<= (maxelem (take n x)) (nth n x))
                 (natp n)
