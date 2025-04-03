@@ -174,15 +174,15 @@
                               )))
   (if (not check-vars)
       nil ; no check
-    (let* ((vars1 (if (quotep dag-or-quotep1) nil (merge-sort-symbol< (dag-vars-unsorted dag-or-quotep1))))
-           (vars2 (if (quotep dag-or-quotep2) nil (merge-sort-symbol< (dag-vars-unsorted dag-or-quotep2))))
+    (let* ((vars1 (if (quotep dag-or-quotep1) nil (dag-vars dag-or-quotep1)))
+           (vars2 (if (quotep dag-or-quotep2) nil (dag-vars dag-or-quotep2)))
            ;; (- (cw "Variables in DAG1: ~x0~%" vars1))
            ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
            ;; can use equal here since the lists are sorted and duplicate-free:
            (vars-differp (not (equal vars1 vars2))))
       (if (not vars-differp)
           nil
-        (progn$ (and (not (subsetp-eq vars1 vars2))
+        (progn$ (and (not (subsetp-eq vars1 vars2)) ; todo: optimize these set operations, given that the lists are sorted
                      (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
                              (cw "The first DAG has vars, ~x0, not in the second DAG.~%" (set-difference-eq vars1 vars2))))
                 (and (not (subsetp-eq vars2 vars1))
@@ -9603,8 +9603,8 @@
   (declare (xargs :mode :program :stobjs state))
   (replace-in-dags-aux dags alist nil state))
 
-;fixme use this more?
-;fixme is the dag is small, we can just make it into a term?
+;todo: use this more?
+;todo: if the dag is small, we can just make it into a term?
 (defun embed-dag-as-term (dag interpreted-function-alist)
   `(dag-val-with-axe-evaluator ',dag
                                 ,(make-acons-nest (dag-vars-unsorted dag))
@@ -17071,7 +17071,7 @@
                   :stobjs state))
   (b* ((- (cw "~%(Proving top-level goal ~x0:~%" proof-name))
        ;; Desugar the special values :bits and :bytes for the types:
-       (dag-vars (if (quotep dag-or-quotep) nil (dag-vars-unsorted dag-or-quotep))) ; todo: make a dag-or-quotep-vars
+       (dag-vars (if (quotep dag-or-quotep) nil (dag-vars dag-or-quotep))) ; todo: make a dag-or-quotep-vars
        (var-type-alist (if (eq :bits types) ;todo: optimize this stuff:
                            (progn$ (cw "  (NOTE: Assuming all ~x0 vars in the DAG are bits.)~%" (len dag-vars))
                                    (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 1))))
@@ -17082,34 +17082,33 @@
        ;; we have to reverse the alist here, because types can refer to later types
        (test-case-type-alist (reverse-list (uniquify-alist-eq (append test-types var-type-alist)))) ; the test-types, if any, override the types
        ;; Compare the vars in the DAG to the vars given types:
-       (sorted-dag-vars (merge-sort-symbol< dag-vars))
        (vars-given-types (strip-cars var-type-alist))
        (vars-given-test-types (strip-cars test-case-type-alist))
        (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
        (sorted-vars-given-test-types (merge-sort-symbol< vars-given-test-types))
        ;; todo: optimize the subset tests here and below, since the lists are sorted:
-       (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types))
+       (- (and (not (subsetp-eq dag-vars sorted-vars-given-types))
                ;; (hard-error 'prove-with-axe-core
                ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
-               ;;               (acons #\0 sorted-dag-vars
+               ;;               (acons #\0 dag-vars
                ;;                      (acons #\1 sorted-vars-given-types
-               ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
+               ;;                             (acons #\2 (set-difference-eq dag-vars sorted-vars-given-types)
                ;;                                    nil))))
                ;; todo: mention the tactics that won't work:
-               (let ((vars-not-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))) ; todo: optimize
+               (let ((vars-not-given-types (set-difference-eq dag-vars sorted-vars-given-types))) ; todo: optimize
                  (if (eq tactic :rewrite-and-sweep)
                      (cw "WARNING: The ~x0 DAG variables, ~x1, are not given types in the alist, ~x2.  This will prevent sweeping-and-merging from working if rewriting can't prove the goal.~%" (len vars-not-given-types) vars-not-given-types test-case-type-alist)
                    (cw "WARNING: The ~x0 DAG variables, ~x1, are not given types in the alist, ~x2.~%" (len vars-not-given-types) vars-not-given-types test-case-type-alist)
                    ))))
-       ((when (not (subsetp-eq sorted-vars-given-types sorted-dag-vars)))
+       ((when (not (subsetp-eq sorted-vars-given-types dag-vars)))
         (if (quotep dag-or-quotep)
-            (er hard? 'prove-with-axe-core "The following variables are given types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
-          (er hard? 'prove-with-axe-core "The following variables are given types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil))
+            (er hard? 'prove-with-axe-core "The following variables are given types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-types dag-vars) nil)
+          (er hard? 'prove-with-axe-core "The following variables are given types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types dag-vars) nil))
         (mv :input-error nil nil state))
-       ((when (not (subsetp-eq sorted-vars-given-test-types sorted-dag-vars)))
+       ((when (not (subsetp-eq sorted-vars-given-test-types dag-vars)))
         (if (quotep dag-or-quotep)
-            (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil)
-          (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil))
+            (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-test-types dag-vars) nil)
+          (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-test-types dag-vars) nil))
         (mv :input-error nil nil state))
        ;; Handle the case when dag-or-quotep is already a constant: ; todo: move this up?
        ((when (quotep dag-or-quotep))

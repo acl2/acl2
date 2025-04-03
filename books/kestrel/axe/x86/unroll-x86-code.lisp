@@ -1003,7 +1003,7 @@
        ;; Sometimes the presence of text-offset may indicate that something
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
-       (result-dag-vars (acl2::dag-vars-unsorted result-dag))
+       (result-dag-vars (acl2::dag-vars result-dag))
        (defconst-name (pack-in-package-of-symbol lifted-name '* lifted-name '*))
        (defconst-form `(defconst ,defconst-name ',result-dag))
        ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
@@ -1018,7 +1018,7 @@
        (common-formals (append param-names '(x86))) ; todo: handle 32-bit calling convention
        ;; these will be ordered like common-formals:
        (expected-formals (intersection-eq common-formals result-dag-vars))
-       (unexpected-formals (acl2::merge-sort-symbol< (set-difference-eq result-dag-vars common-formals))) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
+       (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
        (fn-formals (append expected-formals unexpected-formals))
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))

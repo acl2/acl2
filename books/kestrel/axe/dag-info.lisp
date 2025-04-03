@@ -186,7 +186,7 @@
          ;; These usually get inlined (we could count those):
          ;; (constants (dag-constants dag))
          ;; (- (cw "~x0 constants~%" (len constants)))
-         (vars (merge-sort-symbol< (dag-vars-unsorted dag)))
+         (vars (dag-vars dag))
          (- (cw " ~x0 Variables:~%" (len vars)))
          (- (print-symbols-4-per-line vars))
          ;; Don't need to print these, as we print their counts below:

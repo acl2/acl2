@@ -677,7 +677,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: add a sorted version
+;; Returns a sorted list of symbols.
+;; todo: use a better ordering that sorted numbered symbols numerically (x10 should not follow x1; x2-x9 should come first)
+(defund dag-vars (dag)
+  (declare (xargs :guard (or (quotep dag)
+                             (weak-dagp dag))))
+  (if (quotep dag)
+      nil
+    (merge-sort-symbol< (dag-vars-unsorted dag))))
+
+(defthm symbol-listp-of-dag-vars
+  (implies (weak-dagp dag)
+           (symbol-listp (dag-vars dag)))
+  :hints (("Goal" :in-theory (enable dag-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
