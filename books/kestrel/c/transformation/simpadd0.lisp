@@ -710,20 +710,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-gen-param-thms ((args symbol-listp)
-                                 (arg-types true-listp)
                                  (arg-types-compst true-listp)
+                                 (all-arg-types true-listp)
                                  (all-params c::param-declon-listp)
                                  (all-args symbol-listp))
-  :guard (and (equal (len arg-types) (len args))
-              (equal (len arg-types-compst) (len args)))
+  :guard (equal (len arg-types-compst) (len args))
   :returns (mv (thm-events pseudo-event-form-listp)
                (thm-names symbol-listp))
   :short "Generate theorems about the parameters of a function."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('args'), @('arg-types') and @('arg-types-compst') inputs
-     are the corresponding outputs of @(tsee simpadd0-gen-from-params).")
+    "The @('args') and @('arg-types-compst') inputs are
+     the corresponding outputs of @(tsee simpadd0-gen-from-params);
+     these are @(tsee cdr)ed in the recursion.
+     The @('all-arg-types') input is
+     the @('arg-types') output of @(tsee simpadd0-gen-from-params);
+     it stays the same during the recursion.")
    (xdoc::p
     "We return the theorem events, along with the theorem names.")
    (xdoc::p
@@ -747,7 +750,7 @@
                           (list
                            (c::init-scope ',all-params (list ,@all-args))))
                 compst0)))
-           (implies ,(car arg-types)
+           (implies (and ,@all-arg-types)
                     ,(car arg-types-compst))))
        (hints
         '(("Goal" :in-theory '(init-scope-thm
@@ -771,6 +774,7 @@
                                c::objdesign-auto->scope-of-objdesign-auto
                                c::return-type-of-objdesign-auto
                                c::scope-fix-when-scopep
+                               c::scope-fix
                                c::scope-list-fix-of-cons
                                (:e c::ident)
                                (:e c::ident-fix$inline)
@@ -781,6 +785,7 @@
                                omap::tail
                                omap::mfix-when-mapp
                                omap::mapp-non-nil-implies-not-emptyp
+                               (:e omap::emptyp)
                                simpadd0-param-thm-list-lemma
                                nfix
                                fix
@@ -792,6 +797,7 @@
                                acl2::len-of-append
                                acl2::len-of-rev
                                acl2::rev-of-cons
+                               (:e acl2::fast-<<)
                                unicity-of-0
                                (:e rev)
                                (:t len)))))
@@ -801,8 +807,8 @@
                      :hints ,hints))
        ((mv more-thm-events more-thm-names)
         (simpadd0-gen-param-thms (cdr args)
-                                 (cdr arg-types)
                                  (cdr arg-types-compst)
+                                 all-arg-types
                                  all-params
                                  all-args)))
     (mv (cons thm-event more-thm-events)
@@ -1260,9 +1266,10 @@
      combining the binary operator with
      the possibly transformed argument expressions,
      unless the binary operator is @('+')
-     and the possibly transformed left argument is an @('int') variable
-     and the possibly transformed right argument is an @('int') octal 0,
-     in which case the resulting expression is just that variable.
+     and the possibly transformed left argument is an @('int') expression
+     and the possibly transformed right argument is
+     an @('int') octal 0 without leading zeros,
+     in which case the resulting expression is just that expression.
      This is the core of this simple transformation.")
    (xdoc::p
     "We generate a theorem iff
@@ -1270,15 +1277,11 @@
      and the binary operator is pure and non-strict.
      The theorem is proved via three general ones that we prove below;
      the third one is only needed if there is an actual simplification,
-     but we use it always in the proof for simplicity."))
+     but we always use it in the proof for simplicity."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (c$::binop-case op :add)
-                   (c$::expr-case arg1-new :ident)
-                   (c$::type-case (c$::var-info->type
-                                   (c$::coerce-var-info
-                                    (c$::expr-ident->info arg1-new)))
-                                  :sint)
+                   (c$::type-case (c$::expr-type arg1-new) :sint)
                    (c$::expr-zerop arg2-new)))
        (expr-new (if simpp
                      (expr-fix arg1-new)
@@ -4649,7 +4652,7 @@
         (simpadd0-gen-init-scope-thm ldm-params args parargs arg-types))
        ((mv param-thm-events param-thm-names)
         (simpadd0-gen-param-thms
-         args arg-types arg-types-compst ldm-params args))
+         args arg-types-compst arg-types ldm-params args))
        (thm-name (packn-pos (list gin.const-new '-thm- gin.thm-index)
                             gin.const-new))
        (thm-index (1+ gin.thm-index))
