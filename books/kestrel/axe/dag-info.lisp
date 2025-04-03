@@ -14,6 +14,7 @@
 
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
 (include-book "dag-size")
+(include-book "pure-dags")
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
@@ -162,15 +163,15 @@
   (declare (xargs :guard (weak-dagp dag)))
   (tabulate-dag-fns-aux dag nil))
 
-;; TODO: Instead of the print-size option, consider trying to print the size
+;; TODO: Instead of the print-sizep option, consider trying to print the size
 ;; but giving up if it is too big (and thus would take too long to compute)
-(defun print-dag-info (dag name print-size)
+(defun print-dag-info (dag name print-sizep)
   (declare (xargs :guard (and (or (myquotep dag)
                                   (and (pseudo-dagp dag)
                                        (<= (len dag) *max-1d-array-length*)))
                               (or (symbolp name)
                                   (null name))
-                              (booleanp print-size))))
+                              (booleanp print-sizep))))
   (if (quotep dag) ; factor out, or rename this function
       (b* ((- (if name
                   (cw "The entire DAG ~x0 is: ~x1.~%" name dag)
@@ -181,7 +182,7 @@
               (cw "(DAG info:~%")))
          (- (cw " Unique nodes: ~x0~%" (len dag)))
          ;; Can be slow:
-         (- (and print-size
+         (- (and print-sizep
                  (cw " Total nodes: ~x0~%" (dag-size dag))))
          ;; These usually get inlined (we could count those):
          ;; (constants (dag-constants dag))
@@ -196,26 +197,35 @@
          (- (cw " Functions and counts:~%"))
          (fn-counts (merge-sort-cdr-< (tabulate-dag-fns dag)))
          (- (print-function-counts fn-counts))
-         (- (cw ")~%")))
+         (- (cw "~%"))
+         (non-pure-patterns (non-pure-expression-patterns-in-dag dag))
+         (- (if non-pure-patterns
+                (cw " (Non-pure patterns:~%~X01)" non-pure-patterns nil)
+              (cw "DAG is pure.")))
+         ;; trying this (maybe uncomment once we abstract out uninteresting constants, and var names):
+         ;; (all-patterns (expression-patterns-in-dag dag))
+         ;; (- (cw " (Expression patterns:~%~X01)" all-patterns nil))
+         (- (cw ")~%")) ; balances "(DAG info ..."
+         )
       nil)))
 
 ;; Print some statistics about a DAG:
 ;; TODO: print something about constant nodes, or constants that appear in nodes?
 ;; This calls dag-size, which uses arrays.
 ;; Returns the error triple (mv nil :invisible state).
-(defun dag-info-fn (dag dag-form print-size state)
+(defun dag-info-fn (dag dag-form print-sizep state)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) *max-1d-array-length*)
-                              (booleanp print-size))
+                              (booleanp print-sizep))
                   :stobjs state))
   (prog2$ (print-dag-info dag
                           (if (symbolp dag-form)
                               dag-form
                             nil ; don't try to print the name of the dag
                             )
-                          print-size)
+                          print-sizep)
           (value :invisible)))
 
 ;; Prine info about the given DAG.  The DAG argument is evaluated.
-(defmacro dag-info (dag &key (print-size 'nil))
-  `(dag-info-fn ,dag ',dag ,print-size state))
+(defmacro dag-info (dag &key (print-sizep 'nil))
+  `(dag-info-fn ,dag ',dag ,print-sizep state))
