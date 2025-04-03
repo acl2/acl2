@@ -641,10 +641,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;
-;; dag-vars
-;;
-
+;; The result is not necessarily sorted
 (defun dag-vars-aux (dag acc)
   (declare (xargs :guard (and (weak-dagp-aux dag)
                               (symbol-listp acc))))
@@ -663,6 +660,8 @@
            (symbol-listp (dag-vars-aux dag acc)))
   :hints (("Goal" :in-theory (enable weak-dagp dag-exprp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The result is not necessarily sorted
 (defund dag-vars (dag)
   (declare (xargs :guard (or (quotep dag)
@@ -676,6 +675,9 @@
            (symbol-listp (dag-vars dag)))
   :hints (("Goal" :in-theory (enable dag-vars))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The result is not necessarily sorted
 (defun get-vars-from-dags-aux (dags acc)
   (if (endp dags)
       acc
@@ -763,11 +765,7 @@
   (let ((actual-vars (dag-vars dag)))
     (if (subsetp-eq actual-vars allowed-vars)
         dag
-      (hard-error 'check-dag-vars "unexpected vars (got: ~x0, expected ~x1) in dag: ~X23"
-                  (acons #\0 actual-vars
-                         (acons #\1 allowed-vars
-                                (acons #\2 dag
-                                       (acons #\3 nil nil))))))))
+      (er hard? 'check-dag-vars "unexpected vars (got: ~x0, expected ~x1) in dag: ~X23" actual-vars allowed-vars dag nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
