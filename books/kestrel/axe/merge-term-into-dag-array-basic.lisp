@@ -43,12 +43,8 @@
 
 (local (in-theory (e/d (integerp-when-natp)
                        (consp-from-len-cheap
-                        use-all-consp-for-car
-                        use-all-consp
-                        use-all-consp-2
                         nth-when-not-consp-cheap
                         nth-when-zp-cheap
-                        all-consp-when-not-consp
                         nat-listp
                         bounded-darg-listp-when-all-< ;limit?
                         all-<-of-alen1-when-pseudo-dag-arrayp-list
