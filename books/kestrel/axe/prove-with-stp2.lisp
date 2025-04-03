@@ -350,7 +350,7 @@
                   (if needed-for-node2p
                       ;; needed for both nodes; we'll cut here (refrain adding it to the list of nodenums to translate and add its type info to cut-nodenum-type-alist)
                       ;; note: before april 2010, this code always translated any bvnth (not sure why, and what about bv-array-read?)
-                      (b* ((- (and print (cw "~%  (Cutting at shared node ~x0" n)))
+                      (b* ((- (and print (cw "~%  (Cutting at shared node ~x0.)" n)))
                            (type (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
                            ((when (not (axe-typep type)))
                             (er hard? 'gather-nodes-for-translation "ERROR: Bad type for ~x0.~%" expr)
@@ -364,8 +364,7 @@
                            ;;query to recapture it.  In particular, if the
                            ;;args have width m and n, then the maximum
                            ;;values for the product is: (2^m-1)*(2^n-1).
-                           (extra-asserts (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist print extra-asserts))
-                           (- (and print (cw ".)"))))
+                           (extra-asserts (add-assert-if-a-mult n expr dag-array-name dag-array var-type-alist print extra-asserts)))
                         (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len var-type-alist needed-for-node1-tag-array needed-for-node2-tag-array
                                                                               nodenums-to-translate ;don't translate
                                                                               ;;fixme will expr always have a known type? ;;FIXME think about arrays here?
@@ -655,14 +654,14 @@
         (if (eq :skip action)
             ;; shared node:
             (b* ((node (the (unsigned-byte 60) (first worklist1))) ; could use either nodenum here since they are equal
-                 (- (and print (cw "~%  (Cutting at shared node ~x0" node)))
+                 (- (and print (cw "~%  (Cutting at shared node ~x0.)" node)))
                  (expr (aref1 dag-array-name dag-array node)))
               (if (variablep expr)
                   (b* ((type (lookup-eq expr var-type-alist))
                        ((when (not type)) ; todo: should not happen (var-type-alist should assign types to all vars in the dag)
                         (cw "ERROR: No type for ~x0 in alist ~x1.~%" expr var-type-alist)
                         (mv :type-error nil nil extra-asserts)))
-                      ;; Remove node from both lists and continue:
+                    ;; Remove node from both lists and continue:
                     (gather-nodes-to-translate-for-aggressively-cut-proof2 (rest worklist1) (rest worklist2)
                                                                            dag-array-name dag-array dag-len var-type-alist print
                                                                            nodenums-to-translate ; not adding node
@@ -690,7 +689,7 @@
                        ;;args have width m and n, then the maximum
                        ;;values for the product is: (2^m-1)*(2^n-1).
                        (extra-asserts (add-assert-if-a-mult node expr dag-array-name dag-array var-type-alist print extra-asserts))
-                       (- (and print (cw ".)"))))
+                       )
                     ;; Remove both nodes and continue:
                     (gather-nodes-to-translate-for-aggressively-cut-proof2 (rest worklist1) (rest worklist2)
                                                                            dag-array-name dag-array dag-len var-type-alist print
@@ -974,7 +973,7 @@
             nil ; not proved
             nodenums-to-translate
             state))
-       (- (and print (cw ")~%")))
+       (- (and print (cw ")~%"))) ; balances "(Cutting at shared nodes
        ;; Call STP:
        (- (and print ;(cw "Proving with STP...~%" nil)
                (cw "  ~x0 nodes to translate.~%" (len nodenums-to-translate))
