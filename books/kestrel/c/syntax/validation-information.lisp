@@ -1257,7 +1257,7 @@
    :sizeof (type-unknown)
    :alignof (type-unknown)
    :cast (type-unknown)
-   :binary (type-unknown)
+   :binary (binary-info->type (coerce-binary-info expr.info))
    :cond (type-unknown)
    :comma (expr-type expr.next)
    :stmt (type-unknown)
