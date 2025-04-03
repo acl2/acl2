@@ -507,7 +507,7 @@
 
                   (bvchop-list bvchop-list-unguarded arg1 arg2) ;see bvchop-list-unguarded-correct
                   (all-unsigned-byte-p all-unsigned-byte-p arg1 arg2) ;unguarded
-                  (all-signed-byte-p all-signed-byte-p arg1 arg2) ;unguarded
+                  (all-signed-byte-p all-signed-byte-p arg1 arg2) ;unguarded ; drop?
                   (bitor bitor-unguarded arg1 arg2) ;see bitor-unguarded-correct
                   (bitand bitand-unguarded arg1 arg2) ;see bitand-unguarded-correct
                   (bitxor bitxor-unguarded arg1 arg2) ;see bitxor-unguarded-correct

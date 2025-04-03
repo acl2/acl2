@@ -1,7 +1,7 @@
 ; Apply logext to every element of a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "all-signed-byte-p")
+(include-book "all-signed-byte-p") ; switch to signed-byte-listp?
 (include-book "bvchop-list")
 (include-book "kestrel/bv/logext" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
