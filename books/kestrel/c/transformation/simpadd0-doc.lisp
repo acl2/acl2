@@ -18,7 +18,7 @@
 
   :parents (transformation-tools)
 
-  :short "A simple transformation to simplify @('E + 0') to @('E')."
+  :short "A transformation to simplify @('E + 0') to @('E')."
 
   :long
 
@@ -29,9 +29,12 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
-     "This is a very simple proof-of-concept transformation,
+     "This is a simple proof-of-concept transformation,
       which replaces expressions of the form @('E + 0') with @('E'),
-      when @('E') is a variable of type @('int').")
+      when @('E') is an expression that our current @(see validator)
+      annotates as having type @('int'),
+      and @('0') is the octal constant for zero
+      without other leading zeros and without suffixes.")
     (xdoc::p
      "The transformation also generates proofs of equivalence
       between old (original) and new (transformed) constructs,
@@ -93,10 +96,11 @@
        This is a translation unit ensemble that is
        the same as the one in @('*old*'), except that
        every occurrence of an expression of the form @('E + 0'),
-       where @('E') is a variable of type @('int')
+       when @('E') is an expression that our current @(see validator)
+       annotates as having type @('int'),
        and @('0') is the octal constant for zero
        without other leading zeros and without suffixes,
-       is turned into just the variable @('E').")
+       is turned into just the expression @('E').")
      (xdoc::p
       "The file paths that are the keys of translation unit map
        are unchanged by the transformation."))
