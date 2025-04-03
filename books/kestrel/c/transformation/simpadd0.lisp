@@ -1047,12 +1047,12 @@
 
 (define simpadd0-expr-unary ((op c$::unopp)
                              (arg exprp)
-                             (info acl2::any-p)
                              (arg-new exprp)
                              (arg-events pseudo-event-form-listp)
                              (arg-thm-name symbolp)
                              (arg-vars ident-setp)
                              (arg-diffp booleanp)
+                             (info acl2::any-p)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp arg)
               (expr-unambp arg-new))
@@ -2153,12 +2153,12 @@
             (gin (simpadd0-gin-update gin gout-arg)))
          (simpadd0-expr-unary expr.op
                               expr.arg
-                              expr.info
                               new-arg
                               gout-arg.events
                               gout-arg.thm-name
                               gout-arg.vars
                               gout-arg.diffp
+                              expr.info
                               gin))
        :sizeof
        (b* (((mv new-type (simpadd0-gout gout-type))
