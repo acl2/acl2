@@ -561,10 +561,10 @@
                               in direct abstract declarator ~x0 for object."
                              (dirabsdeclor-fix dirabsdeclor)))))
           (retok nil)))
-       ((when (dirabsdeclor-option-case dirabsdeclor.decl? :none))
+       ((when (dirabsdeclor-option-case dirabsdeclor.declor? :none))
         (retok (c::make-obj-adeclor-array :decl (c::obj-adeclor-none)
                                           :size iconst?)))
-       (dirabsdeclor.decl (dirabsdeclor-option-some->val dirabsdeclor.decl?))
+       (dirabsdeclor.decl (dirabsdeclor-option-some->val dirabsdeclor.declor?))
        ((erp adeclor1) (ldm-dirabsdeclor-obj dirabsdeclor.decl)))
     (retok (c::make-obj-adeclor-array :decl adeclor1
                                       :size iconst?)))

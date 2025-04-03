@@ -484,22 +484,22 @@
      :dummy-base nil
      :paren (free-vars-absdeclor dirabsdeclor.inner bound-vars)
      :array
-     (union (free-vars-dirabsdeclor-option dirabsdeclor.decl? bound-vars)
+     (union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
             (union (free-vars-typequal/attribspec-list dirabsdeclor.tyquals bound-vars)
                    (free-vars-expr-option dirabsdeclor.expr? bound-vars)))
      :array-static1
-     (union (free-vars-dirabsdeclor-option dirabsdeclor.decl? bound-vars)
+     (union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
             (union (free-vars-typequal/attribspec-list dirabsdeclor.tyquals bound-vars)
                    (free-vars-expr dirabsdeclor.expr bound-vars)))
      :array-static2
-     (union (free-vars-dirabsdeclor-option dirabsdeclor.decl? bound-vars)
+     (union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
             (union (free-vars-typequal/attribspec-list dirabsdeclor.tyquals bound-vars)
                    (free-vars-expr dirabsdeclor.expr bound-vars)))
-     :array-star (free-vars-dirabsdeclor-option dirabsdeclor.decl? bound-vars)
+     :array-star (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
      :function
      (b* (((mv free-vars -)
            (free-vars-paramdecl-list dirabsdeclor.params bound-vars)))
-       (union (free-vars-dirabsdeclor-option dirabsdeclor.decl? bound-vars)
+       (union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
               free-vars)))
     :measure (dirabsdeclor-count dirabsdeclor))
 

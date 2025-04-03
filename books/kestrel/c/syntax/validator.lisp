@@ -3965,9 +3965,9 @@
          (type (if (consp absdeclor.pointers)
                    (type-pointer)
                  type))
-         ((erp new-decl? type types table)
+         ((erp new-direct? type types table)
           (valid-dirabsdeclor-option absdeclor.direct? type table ienv)))
-      (retok (make-absdeclor :pointers absdeclor.pointers :direct? new-decl?)
+      (retok (make-absdeclor :pointers absdeclor.pointers :direct? new-direct?)
              type
              types
              table))
@@ -4037,8 +4037,8 @@
                 table))
        :array
        (b* ((type (type-array))
-            ((erp new-decl? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp new-declor? type types table)
+             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
             ((erp new-expr? index-type? more-types table)
              (valid-expr-option dirabsdeclor.expr? table ienv))
             ((when (and index-type?
@@ -4049,7 +4049,7 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type?))))
-         (retok (make-dirabsdeclor-array :decl? new-decl?
+         (retok (make-dirabsdeclor-array :declor? new-declor?
                                          :tyquals dirabsdeclor.tyquals
                                          :expr? new-expr?)
                 type
@@ -4057,8 +4057,8 @@
                 table))
        :array-static1
        (b* ((type (type-array))
-            ((erp new-decl? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp new-declor? type types table)
+             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
             ((erp new-expr index-type more-types table)
              (valid-expr dirabsdeclor.expr table ienv))
             ((unless (or (type-integerp index-type)
@@ -4068,7 +4068,7 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type))))
-         (retok (make-dirabsdeclor-array-static1 :decl? new-decl?
+         (retok (make-dirabsdeclor-array-static1 :declor? new-declor?
                                                  :tyquals dirabsdeclor.tyquals
                                                  :expr new-expr)
                 type
@@ -4076,8 +4076,8 @@
                 table))
        :array-static2
        (b* ((type (type-array))
-            ((erp new-decl? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp new-declor? type types table)
+             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
             ((erp new-expr index-type more-types table)
              (valid-expr dirabsdeclor.expr table ienv))
             ((unless (or (type-integerp index-type)
@@ -4087,7 +4087,7 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type))))
-         (retok (make-dirabsdeclor-array-static2 :decl? new-decl?
+         (retok (make-dirabsdeclor-array-static2 :declor? new-declor?
                                                  :tyquals dirabsdeclor.tyquals
                                                  :expr new-expr)
                 type
@@ -4095,9 +4095,9 @@
                 table))
        :array-star
        (b* ((type (type-array))
-            ((erp new-decl? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv)))
-         (retok (dirabsdeclor-array-star new-decl?)
+            ((erp new-declor? type types table)
+             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv)))
+         (retok (dirabsdeclor-array-star new-declor?)
                 type
                 types
                 table))
@@ -4109,8 +4109,8 @@
                           (dirabsdeclor-fix dirabsdeclor)
                           (type-fix type))))
             (type (type-function))
-            ((erp new-decl? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp new-declor? type types table)
+             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
             (table (valid-push-scope table))
             ((erp new-params more-types table)
              (if (equal dirabsdeclor.params
@@ -4120,7 +4120,7 @@
                  (retok dirabsdeclor.params nil table)
                (valid-paramdecl-list dirabsdeclor.params nil table ienv)))
             (table (valid-pop-scope table)))
-         (retok (make-dirabsdeclor-function :decl? new-decl?
+         (retok (make-dirabsdeclor-function :declor? new-declor?
                                             :params new-params
                                             :ellipsis dirabsdeclor.ellipsis)
                 type

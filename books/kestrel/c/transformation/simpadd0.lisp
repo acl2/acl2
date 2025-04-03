@@ -3262,17 +3262,17 @@
     :short "Transform an abstract declarator."
     (b* (((simpadd0-gin gin) gin)
          ((absdeclor absdeclor) absdeclor)
-         ((mv new-decl? (simpadd0-gout gout-decl?))
+         ((mv new-direct? (simpadd0-gout gout-direct?))
           (simpadd0-dirabsdeclor-option absdeclor.direct? gin state)))
       (mv (make-absdeclor :pointers absdeclor.pointers
-                          :direct? new-decl?)
+                          :direct? new-direct?)
           (make-simpadd0-gout
-           :events gout-decl?.events
+           :events gout-direct?.events
            :thm-name nil
-           :thm-index gout-decl?.thm-index
-           :names-to-avoid gout-decl?.names-to-avoid
-           :vars gout-decl?.vars
-           :diffp gout-decl?.diffp)))
+           :thm-index gout-direct?.thm-index
+           :names-to-avoid gout-direct?.names-to-avoid
+           :vars gout-direct?.vars
+           :diffp gout-direct?.diffp)))
     :measure (absdeclor-count absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3326,91 +3326,91 @@
                      :names-to-avoid gout-inner.names-to-avoid
                      :vars gout-inner.vars
                      :diffp gout-inner.diffp)))
-       :array (b* (((mv new-decl? (simpadd0-gout gout-decl?))
-                    (simpadd0-dirabsdeclor-option dirabsdeclor.decl? gin state))
-                   (gin (simpadd0-gin-update gin gout-decl?))
+       :array (b* (((mv new-declor? (simpadd0-gout gout-declor?))
+                    (simpadd0-dirabsdeclor-option dirabsdeclor.declor? gin state))
+                   (gin (simpadd0-gin-update gin gout-declor?))
                    ((mv new-expr? (simpadd0-gout gout-expr?))
                     (simpadd0-expr-option dirabsdeclor.expr? gin state)))
-                (mv (make-dirabsdeclor-array :decl? new-decl?
+                (mv (make-dirabsdeclor-array :declor? new-declor?
                                              :tyquals dirabsdeclor.tyquals
                                              :expr? new-expr?)
                     (make-simpadd0-gout
-                     :events (append gout-decl?.events gout-expr?.events)
+                     :events (append gout-declor?.events gout-expr?.events)
                      :thm-name nil
                      :thm-index gout-expr?.thm-index
                      :names-to-avoid gout-expr?.names-to-avoid
-                     :vars (set::union gout-decl?.vars gout-expr?.vars)
-                     :diffp (or gout-decl?.diffp gout-expr?.diffp))))
-       :array-static1 (b* (((mv new-decl? (simpadd0-gout gout-decl?))
-                            (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
+                     :vars (set::union gout-declor?.vars gout-expr?.vars)
+                     :diffp (or gout-declor?.diffp gout-expr?.diffp))))
+       :array-static1 (b* (((mv new-declor? (simpadd0-gout gout-declor?))
+                            (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                           gin
                                                           state))
-                           (gin (simpadd0-gin-update gin gout-decl?))
+                           (gin (simpadd0-gin-update gin gout-declor?))
                            ((mv new-expr (simpadd0-gout gout-expr))
                             (simpadd0-expr dirabsdeclor.expr gin state)))
                         (mv (make-dirabsdeclor-array-static1
-                             :decl? new-decl?
+                             :declor? new-declor?
                              :tyquals dirabsdeclor.tyquals
                              :expr new-expr)
                             (make-simpadd0-gout
-                             :events (append gout-decl?.events
+                             :events (append gout-declor?.events
                                              gout-expr.events)
                              :thm-name nil
                              :thm-index gout-expr.thm-index
                              :names-to-avoid gout-expr.names-to-avoid
-                             :vars (set::union gout-decl?.vars
+                             :vars (set::union gout-declor?.vars
                                                gout-expr.vars)
-                             :diffp (or gout-decl?.diffp gout-expr.diffp))))
-       :array-static2 (b* (((mv new-decl? (simpadd0-gout gout-decl?))
-                            (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
+                             :diffp (or gout-declor?.diffp gout-expr.diffp))))
+       :array-static2 (b* (((mv new-declor? (simpadd0-gout gout-declor?))
+                            (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                           gin state))
-                           (gin (simpadd0-gin-update gin gout-decl?))
+                           (gin (simpadd0-gin-update gin gout-declor?))
                            ((mv new-expr (simpadd0-gout gout-expr))
                             (simpadd0-expr dirabsdeclor.expr gin state)))
                         (mv (make-dirabsdeclor-array-static2
-                             :decl? new-decl?
+                             :declor? new-declor?
                              :tyquals dirabsdeclor.tyquals
                              :expr new-expr)
                             (make-simpadd0-gout
-                             :events (append gout-decl?.events
+                             :events (append gout-declor?.events
                                              gout-expr.events)
                              :thm-name nil
                              :thm-index gout-expr.thm-index
                              :names-to-avoid gout-expr.names-to-avoid
-                             :vars (set::union gout-decl?.vars
+                             :vars (set::union gout-declor?.vars
                                                gout-expr.vars)
-                             :diffp (or gout-decl?.diffp gout-expr.diffp))))
-       :array-star (b* (((mv new-decl? (simpadd0-gout gout-decl?))
-                         (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
+                             :diffp (or gout-declor?.diffp gout-expr.diffp))))
+       :array-star (b* (((mv new-declor? (simpadd0-gout gout-declor?))
+                         (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                        gin
                                                        state)))
-                     (mv (dirabsdeclor-array-star new-decl?)
+                     (mv (dirabsdeclor-array-star new-declor?)
                          (make-simpadd0-gout
-                          :events gout-decl?.events
+                          :events gout-declor?.events
                           :thm-name nil
-                          :thm-index gout-decl?.thm-index
-                          :names-to-avoid gout-decl?.names-to-avoid
-                          :vars gout-decl?.vars
-                          :diffp gout-decl?.diffp)))
-       :function (b* (((mv new-decl? (simpadd0-gout gout-decl?))
-                       (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
+                          :thm-index gout-declor?.thm-index
+                          :names-to-avoid gout-declor?.names-to-avoid
+                          :vars gout-declor?.vars
+                          :diffp gout-declor?.diffp)))
+       :function (b* (((mv new-declor? (simpadd0-gout gout-declor?))
+                       (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                      gin
                                                      state))
-                      (gin (simpadd0-gin-update gin gout-decl?))
+                      (gin (simpadd0-gin-update gin gout-declor?))
                       ((mv new-params (simpadd0-gout gout-params))
                        (simpadd0-paramdecl-list dirabsdeclor.params gin state)))
                    (mv (make-dirabsdeclor-function
-                        :decl? new-decl?
+                        :declor? new-declor?
                         :params new-params
                         :ellipsis dirabsdeclor.ellipsis)
                        (make-simpadd0-gout
-                        :events (append gout-decl?.events gout-params.events)
+                        :events (append gout-declor?.events gout-params.events)
                         :thm-name nil
                         :thm-index gout-params.thm-index
                         :names-to-avoid gout-params.names-to-avoid
-                        :vars (set::union gout-decl?.vars
+                        :vars (set::union gout-declor?.vars
                                           gout-params.vars)
-                        :diffp (or gout-decl?.diffp gout-params.diffp))))))
+                        :diffp (or gout-declor?.diffp gout-params.diffp))))))
     :measure (dirabsdeclor-count dirabsdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

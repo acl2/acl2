@@ -11036,7 +11036,7 @@
           (cond
            ;; If token2 is a closed square bracket, we have a declarator [].
            ((token-punctuatorp token2 "]") ; [ ]
-            (retok (make-dirabsdeclor-array :decl? nil
+            (retok (make-dirabsdeclor-array :declor? nil
                                             :tyquals nil
                                             :expr? nil)
                    (span-join span span2)
@@ -11050,7 +11050,7 @@
                ;; If token3 is a closed square bracket,
                ;; we have a variable length array declarator.
                ((token-punctuatorp token3 "]") ; [ * ]
-                (retok (make-dirabsdeclor-array-star :decl? nil)
+                (retok (make-dirabsdeclor-array-star :declor? nil)
                        (span-join span span3)
                        parstate))
                ;; If token3 is not a closed square bracket,
@@ -11063,7 +11063,7 @@
                       (parse-assignment-expression parstate))
                      ((erp last-span parstate) ; [ expr ]
                       (read-punctuator "]" parstate)))
-                  (retok (make-dirabsdeclor-array :decl? nil
+                  (retok (make-dirabsdeclor-array :declor? nil
                                                   :tyquals nil
                                                   :expr? expr)
                          (span-join span last-span)
@@ -11091,7 +11091,7 @@
                      ((erp last-span parstate) ; [ static tyqualattribs expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array-static1
-                          :decl? nil
+                          :declor? nil
                           :tyquals tyquals
                           :expr expr)
                          (span-join span last-span)
@@ -11106,7 +11106,7 @@
                      ((erp last-span parstate) ; [ static expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array-static1
-                          :decl? nil
+                          :declor? nil
                           :tyquals nil
                           :expr expr)
                          (span-join span last-span)
@@ -11132,7 +11132,7 @@
                      ((erp last-span parstate) ; [ tyquals static expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array-static2
-                          :decl? nil
+                          :declor? nil
                           :tyquals tyquals
                           :expr expr)
                          (span-join span last-span)
@@ -11141,7 +11141,7 @@
                ;; there is no expression, and we have determined the variant.
                ((token-punctuatorp token3 "]") ; [ tyquals ]
                 (retok (make-dirabsdeclor-array
-                        :decl? nil
+                        :declor? nil
                         :tyquals tyquals
                         :expr? nil)
                        (span-join span span3)
@@ -11157,7 +11157,7 @@
                      ((erp last-span parstate) ; [ tyquals expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array
-                          :decl? nil
+                          :declor? nil
                           :tyquals tyquals
                           :expr? expr)
                          (span-join span last-span)
@@ -11170,7 +11170,7 @@
                   (parse-assignment-expression parstate))
                  ((erp last-span parstate) ; [ expr ]
                   (read-punctuator "]" parstate)))
-              (retok (make-dirabsdeclor-array :decl? nil
+              (retok (make-dirabsdeclor-array :declor? nil
                                               :tyquals nil
                                               :expr? expr)
                      (span-join span last-span)
@@ -11183,7 +11183,7 @@
            ;; If token2 is a closed parenthesis,
            ;; we have no parameters.
            ((token-punctuatorp token2 ")") ; ( )
-            (retok (make-dirabsdeclor-function :decl? nil
+            (retok (make-dirabsdeclor-function :declor? nil
                                                :params nil
                                                :ellipsis nil)
                    (span-join span span2)
@@ -11197,7 +11197,7 @@
                   (parse-parameter-declaration-list parstate))
                  ((erp last-span parstate) ; ( params [, ...] )
                   (read-punctuator ")" parstate)))
-              (retok (make-dirabsdeclor-function :decl? nil
+              (retok (make-dirabsdeclor-function :declor? nil
                                                  :params paramdecls
                                                  :ellipsis ellipsis)
                      (span-join span last-span)
@@ -11351,7 +11351,7 @@
        ;; We combine the previous one into the next:
        ;; note that PARSE-ARRAY/FUNCTION-ABSTRACT-DECLARATOR
        ;; always returns a direct abstract declarator
-       ;; whose DECL? component is NIL (as we prove)
+       ;; whose DECLOR? component is NIL (as we prove)
        ;; so when we store the previous declarator there,
        ;; we are not overwriting anything.
        ;; We also join the spans, and we recursively call this function.
@@ -11363,7 +11363,7 @@
               (parse-array/function-abstract-declarator parstate))
              ((unless (mbt (<= (parsize parstate) (1- psize))))
               (reterr :impossible))
-             ((unless (mbt (dirabsdeclor-decl?-nil-p next-dirabsdeclor)))
+             ((unless (mbt (dirabsdeclor-declor?-nil-p next-dirabsdeclor)))
               (reterr :impossible))
              (curr-dirabsdeclor
               (combine-dirabsdeclor-into-dirabsdeclor prev-dirabsdeclor
@@ -16213,11 +16213,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret dirabsdeclor-decl?-nil-p-of-parse-array/function-abstract-declarator
+  (defret dirabsdeclor-declor?-nil-p-of-parse-array/function-abstract-declarator
     (implies (not erp)
-             (dirabsdeclor-decl?-nil-p dirabsdeclor))
+             (dirabsdeclor-declor?-nil-p dirabsdeclor))
     :hints (("Goal"
-             :in-theory (enable dirabsdeclor-decl?-nil-p)
+             :in-theory (enable dirabsdeclor-declor?-nil-p)
              :expand (parse-array/function-abstract-declarator parstate)))
     :fn parse-array/function-abstract-declarator)
 

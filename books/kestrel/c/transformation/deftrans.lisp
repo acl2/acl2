@@ -253,11 +253,11 @@
     (:linear c$::desiniter-list-count-of-initer-list->elems)
     (:linear c$::dirabsdeclor-count-of-dirabsdeclor-option-some->val)
     (:linear c$::dirabsdeclor-option-count-of-absdeclor->direct?)
-    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array->decl?)
-    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-star->decl?)
-    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static1->decl?)
-    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static2->decl?)
-    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-function->decl?)
+    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array->declor?)
+    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-star->declor?)
+    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static1->declor?)
+    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static2->declor?)
+    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-function->declor?)
     (:linear c$::dirdeclor-count-of-declor->direct)
     (:linear c$::dirdeclor-count-of-dirdeclor-array->declor)
     (:linear c$::dirdeclor-count-of-dirdeclor-array-star->declor)
@@ -1262,21 +1262,21 @@
                     (dirabsdeclor-fix dirabsdeclor))
       :paren (dirabsdeclor-paren (,(cdr (assoc-eq 'absdeclor names)) dirabsdeclor.inner ,@extra-args-names))
       :array (make-dirabsdeclor-array
-               :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names)
+               :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
                :tyquals dirabsdeclor.tyquals
                :expr? (,(cdr (assoc-eq 'expr-option names)) dirabsdeclor.expr? ,@extra-args-names))
       :array-static1 (make-dirabsdeclor-array-static1
-                       :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names)
+                       :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
                        :tyquals dirabsdeclor.tyquals
                        :expr (,(cdr (assoc-eq 'expr names)) dirabsdeclor.expr ,@extra-args-names))
       :array-static2 (make-dirabsdeclor-array-static2
-                       :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names)
+                       :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
                        :tyquals dirabsdeclor.tyquals
                        :expr (,(cdr (assoc-eq 'expr names)) dirabsdeclor.expr ,@extra-args-names))
       :array-star (dirabsdeclor-array-star
-                    (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names))
+                    (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names))
       :function (make-dirabsdeclor-function
-                  :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names)
+                  :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
                   :params (,(cdr (assoc-eq 'paramdecl-list names)) dirabsdeclor.params ,@extra-args-names)
                   :ellipsis dirabsdeclor.ellipsis))
    '(:returns (new-dirabsdeclor dirabsdeclorp)
