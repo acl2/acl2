@@ -1,6 +1,6 @@
 ; Tests for get-disjuncts
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "make-term-into-dag-array-basic")
 (include-book "dag-to-term")
 (include-book "dag-array-printing")
+(include-book "kestrel/utilities/translate" :dir :system)
 
 (defund get-disjuncts-tester (term state)
   (declare (xargs :stobjs state
