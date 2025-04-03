@@ -202,3 +202,62 @@
 ;;   (if (quotep dag)
 ;;       t ;todo: check more?
 ;;     (dag-is-purep-aux dag :first t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; replaces nodenums with <node>
+(defund darg-patterns (dargs)
+  (declare (xargs :guard (darg-listp dargs)))
+  (if (endp dargs)
+      nil
+    (let ((darg (first dargs)))
+      (if (consp darg) ; checks for quotep
+          (cons darg (darg-patterns (rest dargs)))
+        (cons '<node> (darg-patterns (rest dargs)))))))
+
+(defund dag-expr-pattern (expr)
+  (declare (xargs :guard (dag-exprp expr)))
+  (if (or (variablep expr)
+          (fquotep expr))
+      expr ; rare
+    ;; function call:
+    (cons (ffn-symb expr)
+          (darg-patterns (dargs expr)))))
+
+;; Abstracts out the patterns, so we don't print lots of similar nodes (with
+;; different nodenums).
+(defund expression-patterns-in-dag-aux (dag acc)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (true-listp acc))))
+  (if (endp dag)
+      (reverse acc) ; or we could skip this
+    (let* ((entry (first dag))
+           (expr (cdr entry)))
+      (expression-patterns-in-dag-aux (rest dag)
+                           (add-to-set-equal (dag-expr-pattern expr) acc)))))
+
+;; todo: abstract out constants that are not sizes/bv indices (even abstract constant array indices)
+;; todo: abstract vars and constants
+(defund expression-patterns-in-dag (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (expression-patterns-in-dag-aux dag nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Abstracts out the patterns, so we don't print lots of similar non-pure nodes
+;; (with different nodenums).
+(defund non-pure-expression-patterns-in-dag-aux (dag acc)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (true-listp acc))))
+  (if (endp dag)
+      (reverse acc) ; or we could skip this
+    (let* ((entry (first dag))
+           (expr (cdr entry)))
+      (if (expr-is-purep expr)
+          (non-pure-expression-patterns-in-dag-aux (rest dag) acc)
+        (non-pure-expression-patterns-in-dag-aux (rest dag)
+                                      (add-to-set-equal (dag-expr-pattern expr) acc))))))
+
+(defund non-pure-expression-patterns-in-dag (dag)
+  (declare (xargs :guard (weak-dagp-aux dag)))
+  (non-pure-expression-patterns-in-dag-aux dag nil))

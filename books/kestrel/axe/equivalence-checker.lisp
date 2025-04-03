@@ -7944,6 +7944,7 @@
 ; todo: ;use property lists?
 ; todo: faster to count down?
 ;checks all nodes, not just supporting nodes
+;; todo: consider printing the impure patterns, rather than every node (see non-pure-expression-patterns-in-dag).
 (defun dag-array-is-purep (dag-array-name dag-array dag-len var-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (var-type-alistp var-type-alist))))
