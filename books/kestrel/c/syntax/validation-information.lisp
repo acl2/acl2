@@ -905,8 +905,8 @@
      as well as definition status (see @(tsee valid-defstatus)).
      For enumeration constants names,
      for now we only track that they are enumeration constants.
-     For @('typedef') names, we track the type corresponding to its definition.
-     ")
+     For @('typedef') names, we track the type corresponding to its
+     definition.")
    (xdoc::p
     "We will refine this fixtype as we refine our validator."))
   (:objfun ((type type)
