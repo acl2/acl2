@@ -393,12 +393,14 @@
 (in-theory (disable subset-necc subset in-in))
 
 (defun-sk relation-p (r)
+  (declare (xargs :guard t))
   (forall p
     (implies (in p r)
              (consp p)))
   :rewrite :direct)
 
 (defun-sk funp (f)
+  (declare (xargs :guard t))
   (forall (p1 p2)
     (non-exec ; for guard verification
      (and (relation-p f)
@@ -449,7 +451,7 @@
 (defthm funp-0
   (funp 0))
 
-(defthm funp-implies-z-relation-p
+(defthm funp-implies-relation-p
   (implies (funp f)
            (relation-p f))
   :rule-classes (:rewrite :forward-chaining))
@@ -946,8 +948,7 @@
   :props (zfc domain$prop)
   :hints (("Goal" :in-theory (enable cons-as-pair))))
 
-; The following is subsumed by in-domain-rewrite, so we disable it.
-(in-theory (disable domain$comprehension))
+(in-theory (disable domain$comprehension)) ; subsumed by in-domain-rewrite
 
 (defthmz domain-0
   (equal (domain 0)
@@ -1086,6 +1087,14 @@
   :props (zfc domain$prop)
   :hints (("Goal" :in-theory (enable in-domain-rewrite))))
 
+; With inverse defined, we can make the following succinct definition of
+; injective.
+
+(defun injective-funp (f)
+  (declare (xargs :guard t))
+  (and (funp f)
+       (funp (inverse f))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Omega is an ordinal.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1161,6 +1170,7 @@
   )
 
 (defun-sk linear-in-p (s)
+  (declare (xargs :guard t))
   (forall (x y) (implies (and (in x s)
                               (in y s)
                               (not (equal x y)))
@@ -1173,6 +1183,7 @@
   (linear-in-p (omega)))
 
 (defun-sk transitive (x)
+  (declare (xargs :guard t))
   (forall a (implies (in a x)
                      (subset a x)))
   :rewrite :direct)
@@ -1215,6 +1226,7 @@
 
 (defun-sk in-rcompose (p r s)
 ; p = <r1,s2> where for some z <r1,z) \ in r and <z,s2> \in s.
+  (declare (xargs :guard t))
   (exists (p1 p2)
     (and (in p1 r)
          (consp p1)
@@ -1239,8 +1251,6 @@
   (equal (in p (rcompose r s))
          (in-rcompose p r s))
   :props (zfc prod2$prop rcompose$prop inverse$prop domain$prop))
-
-(in-theory (disable rcompose$comprehension)) ; subsumed by the above
 
 (defthmz relation-p-rcompose
   (relation-p (rcompose r s))
@@ -1292,6 +1302,9 @@
            (funp (rcompose g f)))
   :props (zfc prod2$prop rcompose$prop domain$prop inverse$prop)
   :hints (("Goal" :expand ((funp (rcompose g f))))))
+
+(in-theory (disable rcompose$comprehension ; subsumed by in-rcompose-rewrite
+                    in-rcompose))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Function composition
@@ -1440,11 +1453,72 @@
   :props (zfc prod2$prop compose$prop domain$prop)
   :hints (("Goal" :in-theory (enable extensionality))))
 
+(defthmdz extensionality-rewrite
+  (equal (equal x y)
+         (and (subset x y)
+              (subset y x))))
+
+(encapsulate ()
+
+(local (defthmz rcompose-is-compose-1
+         (implies (and (funp f)
+                       (funp g))
+                  (subset (rcompose f g)
+                          (compose g f)))
+         :hints (("Goal"
+                  :in-theory (enable in-rcompose)
+                  :expand ((subset (rcompose f g)
+                                   (compose g f)))))
+         :props (zfc prod2$prop compose$prop domain$prop inverse$prop rcompose$prop)))
+
+(local (defthmz rcompose-is-compose-2
+         (implies (and (funp f)
+                       (funp g)
+                       (subset (codomain f) (domain g)))
+                  (subset (compose g f)
+                          (rcompose f g)))
+         :hints (("Goal"
+                  :in-theory (enable apply-intro)
+                  :expand ((subset (compose g f)
+                                   (rcompose f g)))
+; A restrict hint didn't work because the rewriter alone wasn't sufficient to
+; relieve the hyps of in-rcompose-suff -- two of the four subgoals in the
+; proof-builder, when applying in-rcompose-suff, got to Goal' during their
+; proofs.
+                  :use
+                  ((:instance
+                    in-rcompose-suff
+                    (r f)
+                    (s g)
+                    (p (subset-witness (compose g f) (rcompose f g)))
+                    (p1 (cons (car (subset-witness (compose g f)
+                                                   (rcompose f g)))
+                              (apply f (car (subset-witness (compose g f)
+                                                            (rcompose f g))))))
+                    (p2 (cons (apply f (car (subset-witness (compose g f)
+                                                            (rcompose f g))))
+                              (apply g (apply f (car (subset-witness
+                                                      (compose g f)
+                                                      (rcompose f g)))))))))))
+         :props (zfc prod2$prop compose$prop domain$prop inverse$prop
+                     rcompose$prop)))
+
+(defthmz rcompose-is-compose
+  (implies (and (funp f)
+                (funp g)
+                (subset (codomain f) (domain g)))
+           (equal (rcompose f g)
+                  (compose g f)))
+  :hints (("Goal" :in-theory (enable extensionality-rewrite)))
+  :props (zfc prod2$prop compose$prop domain$prop inverse$prop rcompose$prop))
+)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; fn-equal
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun-sk fn-equal (f g)
+  (declare (xargs :guard t))
   (forall x (and (equal (domain f) (domain g))
                  (implies (in x (domain f))
                           (equal (apply f x) (apply g x))))))
@@ -1521,11 +1595,6 @@
          (or (equal a 0)
              (equal a y)
              (equal a z))))
-
-(defthmdz extensionality-rewrite
-  (equal (equal x y)
-         (and (subset x y)
-              (subset y x))))
 
 (defthmz subset-x-union2-x-y
   (subset x (union2 x y))

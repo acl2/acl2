@@ -137,7 +137,15 @@
                   (set::in cert certs))
              (not (equal cert nil)))
     :rule-classes ((:forward-chaining :trigger-terms ((set::in cert certs))))
-    :enable nil-not-in-certificate-set))
+    :enable nil-not-in-certificate-set)
+
+  (defruled head-when-certificate-setp
+    (implies (and (certificate-setp certs)
+                  (not (set::emptyp certs)))
+             (set::head certs))
+    :use (nil-not-in-certificate-set
+          (:instance set::in-head (x certs)))
+    :disable set::in-head))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -296,17 +304,17 @@
     "If there is a certificate with the given author and round,
      the first one found is returned,
      according to the total ordering of the set."))
-  (b* (((when (set::emptyp certs)) nil)
+  (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
        ((certificate cert) (set::head certs))
-       ((when (and (equal (address-fix author) cert.author)
-                   (equal (pos-fix round) cert.round)))
-        (certificate-fix cert)))
+       ((when (and (equal cert.author (address-fix author))
+                   (equal cert.round (pos-fix round))))
+        cert))
     (cert-with-author+round author round (set::tail certs)))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
 
   ///
 
-  (fty::deffixequiv cert-with-author+round
-    :args ((author addressp) (round posp)))
+  (fty::deffixequiv cert-with-author+round)
 
   (defret certificate->author-of-cert-with-author+round
     (implies cert?
@@ -321,60 +329,109 @@
     :hints (("Goal" :induct t)))
 
   (defruled cert-with-author+round-element
-    (implies (and (certificate-setp certs)
-                  (cert-with-author+round author round certs))
+    (implies (cert-with-author+round author round certs)
              (set::in (cert-with-author+round author round certs)
                       certs))
     :induct t)
 
   (defruled cert-with-author+round-when-element
     (implies (and (set::in cert certs)
-                  (equal (certificate->author cert)
-                         (address-fix author))
-                  (equal (certificate->round cert)
-                         (pos-fix round)))
+                  (certificate-setp certs)
+                  (equal (certificate->author cert) author)
+                  (equal (certificate->round cert) round))
              (cert-with-author+round author round certs))
-    :induct t)
+    :induct t
+    :enable head-when-certificate-setp)
 
   (defruled cert-with-author+round-when-subset
     (implies (and (cert-with-author+round author round certs0)
-                  (set::subset certs0 certs))
+                  (set::subset certs0 certs)
+                  (certificate-setp certs))
              (cert-with-author+round author round certs))
-    :induct t
-    :enable (cert-with-author+round-when-element
-             set::subset))
+    :use (:instance cert-with-author+round-when-element
+                    (author (address-fix author))
+                    (round (pos-fix round))
+                    (cert (cert-with-author+round author round certs0)))
+    :enable (cert-with-author+round-element
+             set::expensive-rules)
+    :disable cert-with-author+round)
 
   (defruled cert-with-author+round-of-insert-iff
-    (iff (cert-with-author+round
-          author round (set::insert cert certs))
-         (or (and (equal (certificate->author cert)
-                         (address-fix author))
-                  (equal (certificate->round cert)
-                         (pos-fix round)))
-             (cert-with-author+round author round certs)))
-    :induct (set::weak-insert-induction cert certs)
-    :enable (cert-with-author+round-when-element))
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (iff (cert-with-author+round
+                   author round (set::insert cert certs))
+                  (or (and (equal (certificate->author cert)
+                                  (address-fix author))
+                           (equal (certificate->round cert)
+                                  (pos-fix round)))
+                      (cert-with-author+round author round certs))))
+    :use (only-if-part if-part)
+
+    :prep-lemmas
+
+    ((local (in-theory (disable cert-with-author+round)))
+
+     (defruled only-if-part
+       (implies (and (certificatep cert)
+                     (certificate-setp certs)
+                     (or (not (equal (certificate->author cert)
+                                     (address-fix author)))
+                         (not (equal (certificate->round cert)
+                                     (pos-fix round))))
+                     (cert-with-author+round author
+                                             round
+                                             (set::insert cert certs)))
+                (cert-with-author+round author round certs))
+       :use ((:instance cert-with-author+round-element
+                        (certs (set::insert cert certs)))
+             (:instance cert-with-author+round-when-element
+                        (author (address-fix author))
+                        (round (pos-fix round))
+                        (cert (cert-with-author+round
+                               author round (set::insert cert certs))))))
+
+     (defruled if-part
+       (implies (and (certificatep cert)
+                     (certificate-setp certs)
+                     (or (and (equal (certificate->author cert)
+                                     (address-fix author))
+                              (equal (certificate->round cert)
+                                     (pos-fix round)))
+                         (cert-with-author+round author round certs)))
+                (cert-with-author+round author
+                                        round
+                                        (set::insert cert certs)))
+       :enable cert-with-author+round-when-subset
+       :use (:instance cert-with-author+round-when-element
+                       (author (address-fix author))
+                       (round (pos-fix round))
+                       (certs (set::insert cert certs))))))
 
   (defruled cert-with-author+round-of-union-iff
-    (implies (certificate-setp certs2)
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2))
              (iff (cert-with-author+round
                    author round (set::union certs1 certs2))
                   (or (cert-with-author+round author round certs1)
                       (cert-with-author+round author round certs2))))
     :induct t
-    :enable (cert-with-author+round-of-insert-iff
-             set::union))
+    :enable (set::union
+             cert-with-author+round-of-insert-iff
+             head-when-certificate-setp))
 
   (defruled cert-with-author+round-when-delete
-    (implies (cert-with-author+round author
-                                     round
-                                     (set::delete cert certs))
+    (implies (and (cert-with-author+round author
+                                          round
+                                          (set::delete cert certs))
+                  (certificate-setp certs))
              (cert-with-author+round author round certs))
     :enable (cert-with-author+round-when-subset
              certificate->author-of-cert-with-author+round))
 
   (defruled cert-with-author+round-of-delete
-    (implies (and (cert-with-author+round author round certs)
+    (implies (and (certificate-setp certs)
+                  (cert-with-author+round author round certs)
                   (or (not (equal (certificate->author cert)
                                   (address-fix author)))
                       (not (equal (certificate->round cert)
@@ -958,7 +1015,8 @@
     :enable certificate-set-unequivocalp-when-subset
     :prep-lemmas
     ((defruled if-part
-       (implies (and (certificate-set-unequivocalp certs)
+       (implies (and (certificate-setp certs)
+                     (certificate-set-unequivocalp certs)
                      (or (set::in cert certs)
                          (not (cert-with-author+round
                                (certificate->author cert)
@@ -1251,7 +1309,8 @@
                  (:rewrite certificate-sets-unequivocalp-of-same-set-converse)))
 
   (defruled certificate-sets-unequivocalp-of-insert
-    (implies (and (certificate-setp certs2)
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2)
                   (certificate-set-unequivocalp certs2))
              (equal (certificate-sets-unequivocalp (set::insert cert certs1)
                                                    certs2)
@@ -1266,7 +1325,9 @@
     :enable certificate-sets-unequivocalp-when-subsets
     :prep-lemmas
     ((defruled if-part
-       (implies (and (certificate-sets-unequivocalp certs1 certs2)
+       (implies (and (certificate-setp certs1)
+                     (certificate-setp certs2)
+                     (certificate-sets-unequivocalp certs1 certs2)
                      (certificate-set-unequivocalp certs2)
                      (or (set::in cert certs1)
                          (set::in cert certs2)

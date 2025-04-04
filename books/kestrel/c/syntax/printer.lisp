@@ -2444,9 +2444,9 @@
           (pstate (print-astring ")" pstate)))
        pstate)
      :array
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "[" pstate))
@@ -2466,9 +2466,9 @@
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static1
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "static " pstate))
@@ -2483,9 +2483,9 @@
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static2
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           ((unless dirabsdeclor.tyquals)
@@ -2498,17 +2498,17 @@
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-star
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "[*]" pstate)))
        pstate)
      :function
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "(" pstate))
