@@ -1571,8 +1571,9 @@
        ((when (if (type-case type2 :pointer)
                   (or (type-case type3 :pointer)
                       (null-pointer-exprp (expr-cond->else expr) type3))
-                (and (expr-cond->then expr)
-                     (null-pointer-exprp (expr-cond->then expr) type2)
+                (and (if (expr-cond->then expr)
+                         (null-pointer-exprp (expr-cond->then expr) type2)
+                       (null-pointer-exprp (expr-cond->test expr) type2))
                      (type-case type3 :pointer))))
         (retok (type-pointer))))
     (reterr (msg "In the conditional expression ~x0, ~
