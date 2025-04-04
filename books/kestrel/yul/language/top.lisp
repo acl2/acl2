@@ -12,11 +12,11 @@
 
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
+(include-book "abstract-syntax-induction-schemas")
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
 (include-book "static-soundness")
 (include-book "errors")
-(include-book "abstract-syntax-induction-schemas")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
