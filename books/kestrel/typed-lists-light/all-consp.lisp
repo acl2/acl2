@@ -45,3 +45,11 @@
          (and (consp x)
               (all-consp y)))
   :hints (("Goal" :in-theory (enable all-consp ))))
+
+(defthm all-consp-of-intersection-equal
+  (implies (or (all-consp x)
+               (all-consp y))
+           (all-consp (intersection-equal x y)))
+  :hints (("Goal" :in-theory (enable all-consp
+                                     intersection-equal
+                                     consp-of-car-when-all-consp))))
