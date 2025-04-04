@@ -899,6 +899,39 @@
            type-unsigned-integerp
            type-standard-unsigned-integerp))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define null-pointer-exprp ((expr exprp) (type typep))
+  (declare (ignore expr))
+  :returns (yes/no booleanp)
+  :short "Check whether an expression of a given type is potentially a null
+          pointer constant [C17:6.3.2.3/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Due to the approximate representation of types and our lack of constant
+     expression evaluation,
+     this recognizer is highly overappoximating.
+     It will recognize any pointer, integer, or unknown type."))
+  (or (type-case type :pointer)
+      (type-case type :unknown)
+      (type-integerp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define null-pointer-const-exprp ((const-expr const-exprp) (type typep))
+  :returns (yes/no booleanp)
+  :short "Check whether a constant expression of a given type is potentially a
+          null pointer constant [C17:6.3.2.3/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee null-pointer-exprp)."))
+  (b* (((const-expr const-expr) const-expr))
+    (null-pointer-exprp const-expr.expr type))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum linkage
