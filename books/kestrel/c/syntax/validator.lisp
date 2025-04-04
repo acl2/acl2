@@ -3293,14 +3293,15 @@
              (lifetime-case lifetime :auto))
         (b* (((erp new-expr type types table)
               (valid-expr (initer-single->expr initer) table ienv))
-             ((unless (type-equiv type target-type))
+             ((unless (or (type-equiv type target-type)
+                          (type-case type :unknown)))
               (reterr (msg "The initializer ~x0 ~
                             for the target type ~x1 ~
                             of an object in automatic storage ~
-                            has type ~x2."
+                            has type ~x2.~%"
                            (initer-fix initer)
                            (type-fix target-type)
-                           type))))
+                           table))))
           (retok (initer-single new-expr) types table)))
        ((and (type-case target-type :array)
              (initer-case initer :single)

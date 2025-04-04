@@ -428,6 +428,22 @@ void f() {
 ")
 
 (test-valid
+  "struct my_struct { int x; };
+struct my_struct foo(void);
+void bar(void) {
+  struct my_struct baz = foo();
+}
+")
+
+(test-valid
+  "void foo(void) {
+struct my_struct { int x; };
+struct my_struct bar(void);
+  struct my_struct baz = bar();
+}
+")
+
+(test-valid
  "typedef struct foo_s { int x; } foo_t;
 typedef foo_t foo_t_alias;
 foo_t_alias bar;
