@@ -31,7 +31,7 @@
     (xdoc::p
      "This is a simple proof-of-concept transformation,
       which replaces expressions of the form @('E + 0') with @('E'),
-      when @('E') is an expression that our current @(see validator)
+      when @('E') is an expression that our current @(see c$::validator)
       annotates as having type @('int'),
       and @('0') is the octal constant for zero
       without other leading zeros and without suffixes.")
@@ -96,7 +96,7 @@
        This is a translation unit ensemble that is
        the same as the one in @('*old*'), except that
        every occurrence of an expression of the form @('E + 0'),
-       when @('E') is an expression that our current @(see validator)
+       when @('E') is an expression that our current @(see c$::validator)
        annotates as having type @('int'),
        and @('0') is the octal constant for zero
        without other leading zeros and without suffixes,
