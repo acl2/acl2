@@ -1,7 +1,7 @@
 ; DAG builders that depend on the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -500,7 +500,6 @@
 (set-case-split-limitations '(10 10))
 
 (local (in-theory (disable consp-from-len-cheap
-                           ;use-all-consp-for-car
                            default-+-2 default-cdr
                            quote-lemma-for-bounded-darg-listp-gen-alt)))
 

@@ -31,11 +31,8 @@
 ;(in-theory (disable table-alist)) ;why?
 
 (local (in-theory (disable symbol-listp
-                           use-all-consp-for-car
                            ;; subsetp-car-member ; bad?
                            member-equal
-                           use-all-consp ; bad?
-                           use-all-consp-2 ; bad?
                            ;; GET-GLOBAL
                            ACL2-COUNT
                            default-car

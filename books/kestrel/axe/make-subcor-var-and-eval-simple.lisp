@@ -1,7 +1,7 @@
 ; A tool to generate substitution code (like subcor-var) that calls a given evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -20,6 +20,7 @@
 ;; See also make-sublis-var-and-eval-simple.lisp.
 
 (include-book "kestrel/alists-light/maybe-replace-var" :dir :system)
+(include-book "kestrel/utilities/pack" :dir :system)
 (include-book "bounded-darg-listp")
 (include-book "axe-trees")
 
@@ -41,8 +42,6 @@
                                   default-car
                                   ;; quote-lemma-for-bounded-darg-listp-gen-alt ; not always defined
                                   ;car-of-car-when-pseudo-termp
-                                  use-all-consp-for-car
-                                  all-consp-when-not-consp
                                   consp-from-len-cheap
                                   ;; len-of-cdr
                                   pseudo-term-listp
