@@ -733,8 +733,7 @@
       This may require an additional argument representing the implementation
       environment so that we may establish "
      (xdoc::i "which")
-     " integer type with which the @('enum') types are to be considered
-      compatible.")
+     " integer type is to be considered compatible with @('enum') types.")
    (xdoc::p
     "True type compatibility is an equivalence relation, but our approximate
      notion of compatibility is not.
@@ -743,161 +742,25 @@
      @(':bool'), but @(':void') is "
     (xdoc::i "not")
     " compatible with @(':bool')."))
-  (type-case
-   x
-   :void (type-case
-           y
-           :void t
-           :unknown t
-           :otherwise nil)
-   :char (type-case
-           y
-           :char t
-           :enum t
-           :unknown t
-           :otherwise nil)
-   :schar (type-case
-            y
-            :schar t
-            :enum t
-            :unknown t
-            :otherwise nil)
-   :uchar (type-case
-            y
-            :uchar t
-            :enum t
-            :unknown t
-            :otherwise nil)
-   :sshort (type-case
-             y
-             :sshort t
-             :enum t
-             :unknown t
-             :otherwise nil)
-   :ushort (type-case
-             y
-             :ushort t
-             :enum t
-             :unknown t
-             :otherwise nil)
-   :sint (type-case
-           y
-           :sint t
-           :enum t
-           :unknown t
-           :otherwise nil)
-   :uint (type-case
-           y
-           :uint t
-           :enum t
-           :unknown t
-           :otherwise nil)
-   :slong (type-case
-            y
-            :slong t
-            :enum t
-            :unknown t
-            :otherwise nil)
-   :ulong (type-case
-            y
-            :ulong t
-            :enum t
-            :unknown t
-            :otherwise nil)
-   :sllong (type-case
-             y
-             :sllong t
-             :enum t
-             :unknown t
-             :otherwise nil)
-   :ullong (type-case
-             y
-             :ullong t
-             :enum t
-             :unknown t
-             :otherwise nil)
-   :float (type-case
-            y
-            :float t
-            :unknown t
-            :otherwise nil)
-   :double (type-case
-             y
-             :double t
-             :unknown t
-             :otherwise nil)
-   :ldouble (type-case
-              y
-              :ldouble t
-              :unknown t
-              :otherwise nil)
-   :floatc (type-case
-             y
-             :floatc t
-             :unknown t
-             :otherwise nil)
-   :doublec (type-case
-              y
-              :doublec t
-              :unknown t
-              :otherwise nil)
-   :ldoublec (type-case
-               y
-               :ldoublec t
-               :unknown t
-               :otherwise nil)
-   :bool (type-case
-           y
-           :bool t
-           :enum t
-           :unknown t
-           :otherwise nil)
-   :struct (type-case
-             y
-             :struct t
-             :unknown t
-             :otherwise nil)
-   :union (type-case
-            y
-            :union t
-            :unknown t
-            :otherwise nil)
-   :enum (or (type-integerp y)
-             (type-case y :unknown))
-   :array (type-case
-            y
-            :array t
-            :unknown t
-            :otherwise nil)
-   :pointer (type-case
-              y
-              :pointer t
-              :unknown t
-              :otherwise nil)
-   :function (type-case
-               y
-               :function t
-               :unknown t
-               :otherwise nil)
-   :unknown t)
+  (b* ((x (type-fix x))
+       (y (type-fix y)))
+    (or (equal x y)
+        (type-case x :unknown)
+        (type-case y :unknown)
+        (and (type-integerp x) (type-case y :enum))
+        (and (type-case x :enum) (type-integerp y))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule type-compatiblep-reflexive
   (type-compatiblep x x)
-  :enable (type-compatiblep
-           type-integerp))
+  :enable type-compatiblep)
 
 (defrule type-compatiblep-symmetric
   (equal (type-compatiblep y x)
          (type-compatiblep x y))
-  :enable (type-compatiblep
-           type-integerp
-           type-signed-integerp
-           type-standard-signed-integerp
-           type-unsigned-integerp
-           type-standard-unsigned-integerp))
+  :enable type-compatiblep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
