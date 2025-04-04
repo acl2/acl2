@@ -1597,6 +1597,122 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define short-format-16tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('short') format defined by
+          16 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('short') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 16)
+
+  ///
+
+  (defrule integer-format-short-wfp-of-short-format-16tcnt
+    (integer-format-short-wfp (short-format-16tcnt)
+                              (uchar-format-8)
+                              (schar-format-8tcnt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define int-format-16tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('int') format defined by
+          16 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('int') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 16)
+
+  ///
+
+  (defrule integer-format-int-wfp-of-int-format-16tcnt
+    (integer-format-int-wfp (int-format-16tcnt)
+                            (uchar-format-8)
+                            (short-format-16tcnt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define long-format-32tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('long') format defined by
+          32 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('long') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 32)
+
+  ///
+
+  (defrule integer-format-long-wfp-of-long-format-32tcnt
+    (integer-format-long-wfp (long-format-32tcnt)
+                             (uchar-format-8)
+                             (int-format-16tcnt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define llong-format-64tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('long long') format defined by
+          64 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('long long') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 64)
+
+  ///
+
+  (defrule integer-format-llong-wfp-of-long-format-64tcnt
+    (integer-format-llong-wfp (llong-format-64tcnt)
+                              (uchar-format-8)
+                              (long-format-32tcnt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
