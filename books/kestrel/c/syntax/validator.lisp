@@ -950,16 +950,15 @@
      as it has to be a pointer to a complete object type [C17:6.5.2.1/1].
      So by leaving function types as such, we automatically disallow them."))
   (b* (((reterr) (irr-type))
+       ((when (or (type-case type-arg1 :unknown)
+                  (type-case type-arg2 :unknown)))
+        (retok (type-unknown)))
        (type1 (type-apconvert type-arg1))
        (type2 (type-apconvert type-arg2))
-       ((unless (type-case
-                  type1
-                  :pointer (or (type-case type2 :unknown)
-                               (type-integerp type2))
-                  :unknown (or (type-case type2 '(:pointer :unknown))
-                               (type-integerp type2))
-                  :otherwise (and (type-integerp type1)
-                                  (type-case type2 '(:pointer :unknown)))))
+       ((unless (or (and (type-case type1 :pointer)
+                         (type-integerp type2))
+                    (and (type-integerp type1)
+                         (type-case type2 :pointer))))
         (reterr (msg "In the array subscripting expression ~x0, ~
                       the first sub-expression has type ~x1, ~
                       and the second sub-expression has type ~x2."
@@ -972,7 +971,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-funcall ((expr exprp) (type-fun typep) (types-arg type-listp))
-  (declare (ignore types-arg))
   :guard (expr-case expr :funcall)
   :returns (mv erp (type typep))
   :short "Validate a function call expression,
@@ -995,8 +993,11 @@
      but only (complete) object element types [C17:6.2.5/20].
      Thus, the conversion could never result into a pointer to a function."))
   (b* (((reterr) (irr-type))
+       ((when (or (type-case type-fun :unknown)
+                  (member-equal (type-unknown) (type-list-fix types-arg))))
+        (retok (type-unknown)))
        (type (type-fpconvert type-fun))
-       ((unless (type-case type '(:pointer :unknown)))
+       ((unless (type-case type :pointer))
         (reterr (msg "In the function call expression ~x0, ~
                       the first sub-expression has type ~x1."
                      (expr-fix expr)
@@ -1057,8 +1058,10 @@
     "Since we cannot yet look up members in structure and union types,
      we return the unknown type."))
   (b* (((reterr) (irr-type))
+       ((when (type-case type-arg :unknown))
+        (retok (type-unknown)))
        (type (type-apconvert type-arg))
-       ((unless (type-case type '(:pointer :unknown)))
+       ((unless (type-case type :pointer))
         (reterr (msg "In the member pointer expression ~x0, ~
                       the sub-expression has type ~x1."
                      (expr-fix expr) (type-fix type-arg)))))
