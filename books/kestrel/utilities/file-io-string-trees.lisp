@@ -12,8 +12,8 @@
 
 ;; This file requires a trust tag because of the use of open-output-channel!.
 
-(include-book "kestrel/file-io-light/princ-dollar" :dir :system) ; make local?
-(include-book "kestrel/file-io-light/open-output-channel-bang" :dir :system) ; make local?
+(local (include-book "kestrel/file-io-light/princ-dollar" :dir :system))
+(local (include-book "kestrel/file-io-light/open-output-channel-bang" :dir :system))
 (include-book "string-trees")
 (local (include-book "w"))
 
