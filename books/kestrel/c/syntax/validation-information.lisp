@@ -719,12 +719,14 @@
    (xdoc::p
     "In particular:"
     (xdoc::ul
-     (xdoc::li "all composite types of a particular kind are currently
-                considered compatible.")
-     (xdoc::li "type qualifiers are ignored.")
-     (xdoc::li "all types are compatible with the abstract @(':unknown')
+      (xdoc::li "All structure types are currently considered compatible,
+                 due to their approximate representations.
+                 The same applies to uions, enumerations, arrays, pointers, and
+                 functions.")
+     (xdoc::li "Type qualifiers are ignored.")
+     (xdoc::li "All types are compatible with the abstract @(':unknown')
                 type.")
-     (xdoc::li "@('enum') types are compatible with "
+     (xdoc::li "Enumeration types are compatible with "
                (xdoc::i "all")
                " integer types (not just one particular type).")))
    (xdoc::p
@@ -749,22 +751,22 @@
         (type-case y :unknown)
         (and (type-integerp x) (type-case y :enum))
         (and (type-case x :enum) (type-integerp y))))
-  :hooks (:fix))
+  :hooks (:fix)
 
-;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defrule type-compatiblep-reflexive
-  (type-compatiblep x x)
-  :enable type-compatiblep)
+  (defrule type-compatiblep-reflexive
+    (type-compatiblep x x)
+    :enable type-compatiblep)
 
-(defrule type-compatiblep-symmetric
-  (equal (type-compatiblep y x)
-         (type-compatiblep x y))
-  :enable type-compatiblep)
+  (defrule type-compatiblep-symmetric
+    (equal (type-compatiblep y x)
+           (type-compatiblep x y))
+    :enable type-compatiblep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define null-pointer-exprp ((expr exprp) (type typep))
+(define expr-null-pointer-constp ((expr exprp) (type typep))
   (declare (ignore expr))
   :returns (yes/no booleanp)
   :short "Check whether an expression of a given type is potentially a null
@@ -775,24 +777,23 @@
     "Due to the approximate representation of types and our lack of constant
      expression evaluation,
      this recognizer is highly overappoximating.
-     It will recognize any pointer, integer, or unknown type."))
+     It will recognize any pointer or integer type."))
   (or (type-case type :pointer)
-      (type-case type :unknown)
       (type-integerp type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define null-pointer-const-exprp ((const-expr const-exprp) (type typep))
+(define const-expr-null-pointer-constp ((const-expr const-exprp) (type typep))
   :returns (yes/no booleanp)
   :short "Check whether a constant expression of a given type is potentially a
           null pointer constant [C17:6.3.2.3/3]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "See @(tsee null-pointer-exprp)."))
+    "See @(tsee expr-null-pointer-constp)."))
   (b* (((const-expr const-expr) const-expr))
-    (null-pointer-exprp const-expr.expr type))
+    (expr-null-pointer-constp const-expr.expr type))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

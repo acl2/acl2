@@ -1373,8 +1373,8 @@
                               (type-realp type2))
                          (if (type-case type1 :pointer)
                              (or (type-case type2 :pointer)
-                                 (null-pointer-exprp (expr-binary->arg2 expr) type2))
-                           (and (null-pointer-exprp (expr-binary->arg1 expr) type1)
+                                 (expr-null-pointer-constp (expr-binary->arg2 expr) type2))
+                           (and (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
@@ -1384,8 +1384,8 @@
                                         (type-arithmeticp type2))
                                    (if (type-case type1 :pointer)
                                        (or (type-case type2 :pointer)
-                                           (null-pointer-exprp (expr-binary->arg2 expr) type2))
-                                     (and (null-pointer-exprp (expr-binary->arg1 expr) type1)
+                                           (expr-null-pointer-constp (expr-binary->arg2 expr) type2))
+                                     (and (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
                                           (type-case type2 :pointer)))))
                        (reterr msg)))
                    (retok (type-sint))))
@@ -1413,7 +1413,7 @@
                                    (type-case type2 :pointer))
                               (and (type-case type1 :pointer)
                                    (or (type-case type2 :pointer)
-                                       (null-pointer-exprp (expr-binary->arg2 expr) type2)))))
+                                       (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))))
                   (reterr msg)))
               (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
@@ -1570,10 +1570,10 @@
         (retok (type-union)))
        ((when (if (type-case type2 :pointer)
                   (or (type-case type3 :pointer)
-                      (null-pointer-exprp (expr-cond->else expr) type3))
+                      (expr-null-pointer-constp (expr-cond->else expr) type3))
                 (and (if (expr-cond->then expr)
-                         (null-pointer-exprp (expr-cond->then expr) type2)
-                       (null-pointer-exprp (expr-cond->test expr) type2))
+                         (expr-null-pointer-constp (expr-cond->then expr) type2)
+                       (expr-null-pointer-constp (expr-cond->test expr) type2))
                      (type-case type3 :pointer))))
         (retok (type-pointer))))
     (reterr (msg "In the conditional expression ~x0, ~
@@ -2687,7 +2687,7 @@
                   (valid-ord-info-case
                     info?
                     :typedef (retok (type-spec-typedef tyspec.name)
-                                    (valid-ord-info-typedef->def info?)
+                                    info?.def
                                     nil
                                     nil
                                     same-table)
@@ -3269,8 +3269,8 @@
                                    (type-case type :unknown)))
                           (and (type-case target-type :pointer)
                                (or (type-case type :pointer)
-                                   (type-integerp type)
-                                   (type-case type :unknown)))))
+                                   (type-case type :unknown)
+                                   (expr-null-pointer-constp expr type)))))
               (reterr (msg "The initializer ~x0 ~
                             for the target type ~x1 ~
                             has type ~x2."
