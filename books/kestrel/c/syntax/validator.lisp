@@ -1373,8 +1373,8 @@
                               (type-realp type2))
                          (if (type-case type1 :pointer)
                              (or (type-case type2 :pointer)
-                                 (type-integerp type2))
-                           (and (type-integerp type1)
+                                 (expr-null-pointer-constp (expr-binary->arg2 expr) type2))
+                           (and (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
                                 (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
@@ -1384,8 +1384,8 @@
                                         (type-arithmeticp type2))
                                    (if (type-case type1 :pointer)
                                        (or (type-case type2 :pointer)
-                                           (type-integerp type2))
-                                     (and (type-integerp type1)
+                                           (expr-null-pointer-constp (expr-binary->arg2 expr) type2))
+                                     (and (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
                                           (type-case type2 :pointer)))))
                        (reterr msg)))
                    (retok (type-sint))))
@@ -1413,7 +1413,7 @@
                                    (type-case type2 :pointer))
                               (and (type-case type1 :pointer)
                                    (or (type-case type2 :pointer)
-                                       (type-integerp type2)))))
+                                       (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))))
                   (reterr msg)))
               (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
@@ -1570,8 +1570,10 @@
         (retok (type-union)))
        ((when (if (type-case type2 :pointer)
                   (or (type-case type3 :pointer)
-                      (type-integerp type3))
-                (and (type-integerp type2)
+                      (expr-null-pointer-constp (expr-cond->else expr) type3))
+                (and (if (expr-cond->then expr)
+                         (expr-null-pointer-constp (expr-cond->then expr) type2)
+                       (expr-null-pointer-constp (expr-cond->test expr) type2))
                      (type-case type3 :pointer))))
         (retok (type-pointer))))
     (reterr (msg "In the conditional expression ~x0, ~
@@ -2597,9 +2599,8 @@
        we recursively validate their sub-structures,
        and the type is determined in all cases.")
      (xdoc::p
-      "Since our currently approximate type system
-       does not handle @('typedef') types,
-       we just regard it as denoting an unknown type.")
+      "For @('typedef') names, we lookup the type definition in the validation
+       table. If no such entry exists in the table, validation fails.")
      (xdoc::p
       "For now, for simplicity, we regard
        all the type specifiers that are GCC extensions
@@ -2675,13 +2676,23 @@
                   ((erp new-spec types table)
                    (valid-enumspec tyspec.spec table ienv)))
                (retok (type-spec-enum new-spec) (type-enum) nil types table))
-       :typedef (if (endp tyspecs)
-                    (retok (type-spec-typedef tyspec.name)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
+       :typedef (b* (((unless (endp tyspecs))
+                      (reterr msg-bad-preceding))
+                     ((mv info? -)
+                      (valid-lookup-ord tyspec.name table))
+                     ((unless info?)
+                      (reterr (msg "The identifier ~x0 is not an in-scope ~
+                                    ordinary identifer."
+                                   (ident->unwrap tyspec.name)))))
+                  (valid-ord-info-case
+                    info?
+                    :typedef (retok (type-spec-typedef tyspec.name)
+                                    info?.def
+                                    nil
+                                    nil
+                                    same-table)
+                    :otherwise (reterr (msg "The identifier ~x0 does not ~
+                                             represent a typedef."))))
        :int128 (retok (type-spec-int128) nil ext-tyspecs nil same-table)
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
@@ -3258,8 +3269,8 @@
                                    (type-case type :unknown)))
                           (and (type-case target-type :pointer)
                                (or (type-case type :pointer)
-                                   (type-integerp type)
-                                   (type-case type :unknown)))))
+                                   (type-case type :unknown)
+                                   (expr-null-pointer-constp expr type)))))
               (reterr (msg "The initializer ~x0 ~
                             for the target type ~x1 ~
                             has type ~x2."
@@ -3282,14 +3293,15 @@
              (lifetime-case lifetime :auto))
         (b* (((erp new-expr type types table)
               (valid-expr (initer-single->expr initer) table ienv))
-             ((unless (type-equiv type target-type))
+             ((unless (or (type-equiv type target-type)
+                          (type-case type :unknown)))
               (reterr (msg "The initializer ~x0 ~
                             for the target type ~x1 ~
                             of an object in automatic storage ~
-                            has type ~x2."
+                            has type ~x2.~%"
                            (initer-fix initer)
                            (type-fix target-type)
-                           type))))
+                           table))))
           (retok (initer-single new-expr) types table)))
        ((and (type-case target-type :array)
              (initer-case initer :single)
@@ -4632,7 +4644,7 @@
        it is currently not captured in our abstract syntax,
        so we double-check it here.")
      (xdoc::p
-      "For now our validation tabled include
+      "For now our validation tables include
        no information about enumeration tags,
        so we do not extend the validation table,
        if the enumeration specifier has a name.
@@ -4790,14 +4802,11 @@
        there must be no initializer,
        because we are not declaring an object.
        In this case, we add the @('typedef') to the validation table.
-       The same @('typedef') is allowed in the same scope [C17:6.7/3],
-       under certain conditions that are inexpressible
-       in our current approximate type system,
-       but since our validation tables currently carry limited information
-       about @('typedef') names (i.e. just that they are @('typedef')s),
-       we allow the identifier to be present, as a @('typedef'),
-       in the same (i.e. current) scope,
-       to avoid rejecting valid code.")
+       A @('typedef') may be redefined in the same scope
+       assuming the two types are compatible and not variably modified
+       [C17:6.7/3] (the latter of which is inexpressible in our current
+       approximate type system
+       so we conservatively permit redefinition of any compatible types).")
      (xdoc::p
       "If the @('typedef') flag is @('nil'),
        the identifier may denote a function or an object.
@@ -4872,12 +4881,15 @@
                ((mv info? currentp) (valid-lookup-ord ident table))
                ((when (and info?
                            currentp
-                           (not (valid-ord-info-case info? :typedef))))
+                           (or (not (valid-ord-info-case info? :typedef))
+                               (not (type-compatiblep
+                                      (valid-ord-info-typedef->def info?)
+                                      type)))))
                 (reterr (msg "The typedef name ~x0 ~
                               is already declared in the current scope ~
                               with associated information ~x1."
                              ident info?)))
-               (table (valid-add-ord ident (valid-ord-info-typedef) table)))
+               (table (valid-add-ord ident (valid-ord-info-typedef type) table)))
             (retok (make-initdeclor :declor new-declor
                                     :asm? initdeclor.asm?
                                     :attribs initdeclor.attribs
