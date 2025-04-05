@@ -1386,7 +1386,7 @@
     (implies (and (posp size)
                   (not (equal size 1)))
              (equal (integer-format->size (integer-format-inc-sign-tcnpnt size))
-                    (pos-fix size)))
+                    size))
     :enable (integer-format->size
              uinteger-format-inc-npnt
              sinteger-format-inc-sign-tcnpnt
