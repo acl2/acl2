@@ -16,6 +16,7 @@
 
 (include-book "prove-with-stp")
 (include-book "rewriter-basic") ; just for the post-rewrite
+(include-book "./cars-increasing-by-1")
 (include-book "dag-size-fast")
 (include-book "basic-rules")
 (include-book "rule-lists") ; for unsigned-byte-p-forced-rules

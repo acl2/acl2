@@ -54,6 +54,7 @@
 (include-book "../step-increments")
 (include-book "../dag-size")
 (include-book "../dag-info")
+(include-book "../rule-limits")
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "../arithmetic-rules-axe")

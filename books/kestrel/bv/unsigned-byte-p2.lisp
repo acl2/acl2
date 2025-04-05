@@ -1,7 +1,7 @@
 ; More rules about unsigned-byte-p
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,9 @@
 
 (include-book "unsigned-byte-p")
 (include-book "kestrel/utilities/polarity" :dir :system)
-(include-book "kestrel/arithmetic-light/lg" :dir :system)
+(include-book "kestrel/arithmetic-light/lg-def" :dir :system)
+(include-book "kestrel/arithmetic-light/power-of-2p" :dir :system)
+(local (include-book "kestrel/arithmetic-light/lg" :dir :system))
 
 (defthm unsigned-byte-p-from-bound-constant-version
   (implies (and (syntaxp (want-to-weaken (unsigned-byte-p n x)))

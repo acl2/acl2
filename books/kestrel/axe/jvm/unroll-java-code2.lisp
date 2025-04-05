@@ -43,6 +43,7 @@
 (include-book "unroll-java-code") ;for unroll-java-code-rules
 (include-book "../dag-to-term-with-lets")
 (include-book "../prune-dag-precisely")
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; Used by Axe
 (defthm natp-of-+

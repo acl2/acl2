@@ -1,4 +1,4 @@
-; Use with-supporters to just get the code of the Basic Axe Rewriter
+; Use with-supporters to just get the code of the x86 Axe Rewriter
 ;
 ; Copyright (C) 2022-2025 Kestrel Institute
 ;
@@ -17,8 +17,8 @@
 ;; :known-booleans-table.
 
 (with-supporters
- (local (include-book "rewriter-basic"))
- :names (simplify-dag-basic
-         simplify-term-to-term-basic
-         simplify-conjunction-basic
-         make-rule-alist!))
+ (local (include-book "rewriter-x86"))
+ :names (simplify-terms-to-terms-x86
+          simplify-dag-x86
+          ;; make-rule-alist!
+          ))
