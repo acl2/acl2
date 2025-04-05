@@ -569,26 +569,26 @@
     :expand (dirabsdeclor-unambp (dirabsdeclor-paren absdeclor)))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array
-    (equal (dirabsdeclor-unambp (dirabsdeclor-array declor? tyquals expr?))
+    (equal (dirabsdeclor-unambp (dirabsdeclor-array declor? qualspecs expr?))
            (and (dirabsdeclor-option-unambp declor?)
                 (expr-option-unambp expr?)))
-    :expand (dirabsdeclor-unambp (dirabsdeclor-array declor? tyquals expr?)))
+    :expand (dirabsdeclor-unambp (dirabsdeclor-array declor? qualspecs expr?)))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-static1
     (equal (dirabsdeclor-unambp
-            (dirabsdeclor-array-static1 declor? tyquals expr))
+            (dirabsdeclor-array-static1 declor? qualspecs expr))
            (and (dirabsdeclor-option-unambp declor?)
                 (expr-unambp expr)))
     :expand (dirabsdeclor-unambp
-             (dirabsdeclor-array-static1 declor? tyquals expr)))
+             (dirabsdeclor-array-static1 declor? qualspecs expr)))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-static2
     (equal (dirabsdeclor-unambp
-            (dirabsdeclor-array-static2 declor? tyquals expr))
+            (dirabsdeclor-array-static2 declor? qualspecs expr))
            (and (dirabsdeclor-option-unambp declor?)
                 (expr-unambp expr)))
     :expand (dirabsdeclor-unambp
-             (dirabsdeclor-array-static2 declor? tyquals expr)))
+             (dirabsdeclor-array-static2 declor? qualspecs expr)))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-star
     (equal (dirabsdeclor-unambp (dirabsdeclor-array-star declor?))

@@ -2138,25 +2138,28 @@
              (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
             ((erp new-expr? table)
              (dimb-expr-option dirabsdeclor.expr? table)))
-         (retok (make-dirabsdeclor-array :declor? new-declor?
-                                         :tyquals dirabsdeclor.tyquals
-                                         :expr? new-expr?)
+         (retok (make-dirabsdeclor-array
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :expr? new-expr?)
                 table))
        :array-static1
        (b* (((erp new-declor? table)
              (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
             ((erp new-expr table) (dimb-expr dirabsdeclor.expr table)))
-         (retok (make-dirabsdeclor-array-static1 :declor? new-declor?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+         (retok (make-dirabsdeclor-array-static1
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :expr new-expr)
                 table))
        :array-static2
        (b* (((erp new-declor? table)
              (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
             ((erp new-expr table) (dimb-expr dirabsdeclor.expr table)))
-         (retok (make-dirabsdeclor-array-static2 :declor? new-declor?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+         (retok (make-dirabsdeclor-array-static2
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :expr new-expr)
                 table))
        :array-star
        (b* (((erp new-declor? table)

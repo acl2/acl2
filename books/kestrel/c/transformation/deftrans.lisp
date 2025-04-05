@@ -1263,15 +1263,15 @@
       :paren (dirabsdeclor-paren (,(cdr (assoc-eq 'absdeclor names)) dirabsdeclor.inner ,@extra-args-names))
       :array (make-dirabsdeclor-array
                :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
-               :tyquals dirabsdeclor.tyquals
+               :qualspecs dirabsdeclor.qualspecs
                :expr? (,(cdr (assoc-eq 'expr-option names)) dirabsdeclor.expr? ,@extra-args-names))
       :array-static1 (make-dirabsdeclor-array-static1
                        :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
-                       :tyquals dirabsdeclor.tyquals
+                       :qualspecs dirabsdeclor.qualspecs
                        :expr (,(cdr (assoc-eq 'expr names)) dirabsdeclor.expr ,@extra-args-names))
       :array-static2 (make-dirabsdeclor-array-static2
                        :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
-                       :tyquals dirabsdeclor.tyquals
+                       :qualspecs dirabsdeclor.qualspecs
                        :expr (,(cdr (assoc-eq 'expr names)) dirabsdeclor.expr ,@extra-args-names))
       :array-star (dirabsdeclor-array-star
                     (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names))

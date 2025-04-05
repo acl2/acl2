@@ -4049,9 +4049,10 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type?))))
-         (retok (make-dirabsdeclor-array :declor? new-declor?
-                                         :tyquals dirabsdeclor.tyquals
-                                         :expr? new-expr?)
+         (retok (make-dirabsdeclor-array
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :expr? new-expr?)
                 type
                 (set::union types more-types)
                 table))
@@ -4068,9 +4069,10 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type))))
-         (retok (make-dirabsdeclor-array-static1 :declor? new-declor?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+         (retok (make-dirabsdeclor-array-static1
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :expr new-expr)
                 type
                 (set::union types more-types)
                 table))
@@ -4087,9 +4089,10 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type))))
-         (retok (make-dirabsdeclor-array-static2 :declor? new-declor?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+         (retok (make-dirabsdeclor-array-static2
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :expr new-expr)
                 type
                 (set::union types more-types)
                 table))

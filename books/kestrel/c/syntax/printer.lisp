@@ -2450,11 +2450,11 @@
                        pstate)
                     pstate))
           (pstate (print-astring "[" pstate))
-          (pstate (if dirabsdeclor.tyquals
-                      (print-typequal/attribspec-list dirabsdeclor.tyquals
+          (pstate (if dirabsdeclor.qualspecs
+                      (print-typequal/attribspec-list dirabsdeclor.qualspecs
                                                       pstate)
                     pstate))
-          (pstate (if (and dirabsdeclor.tyquals
+          (pstate (if (and dirabsdeclor.qualspecs
                            dirabsdeclor.expr?)
                       (print-astring " " pstate)
                     pstate))
@@ -2472,9 +2472,9 @@
                        pstate)
                     pstate))
           (pstate (print-astring "static " pstate))
-          (pstate (if dirabsdeclor.tyquals
+          (pstate (if dirabsdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
-                                    dirabsdeclor.tyquals
+                                    dirabsdeclor.qualspecs
                                     pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
@@ -2488,11 +2488,11 @@
                        (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
-          ((unless dirabsdeclor.tyquals)
+          ((unless dirabsdeclor.qualspecs)
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            (pristate-fix pstate))
-          (pstate (print-typequal/attribspec-list dirabsdeclor.tyquals pstate))
+          (pstate (print-typequal/attribspec-list dirabsdeclor.qualspecs pstate))
           (pstate (print-astring " static " pstate))
           (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))

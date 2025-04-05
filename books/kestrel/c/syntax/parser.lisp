@@ -11037,7 +11037,7 @@
            ;; If token2 is a closed square bracket, we have a declarator [].
            ((token-punctuatorp token2 "]") ; [ ]
             (retok (make-dirabsdeclor-array :declor? nil
-                                            :tyquals nil
+                                            :qualspecs nil
                                             :expr? nil)
                    (span-join span span2)
                    parstate))
@@ -11064,7 +11064,7 @@
                      ((erp last-span parstate) ; [ expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array :declor? nil
-                                                  :tyquals nil
+                                                  :qualspecs nil
                                                   :expr? expr)
                          (span-join span last-span)
                          parstate))))))
@@ -11081,7 +11081,7 @@
                ((token-type-qualifier-p token3) ; [ static tyqual
                 (b* ((parstate (unread-token parstate)) ; [ static
                      (psize (parsize parstate))
-                     ((erp tyquals & parstate) ; [ static tyqualattribs
+                     ((erp qualspecs & parstate) ; [ static tyqualattribs
                       (parse-type-qualifier-and-attribute-specifier-list
                        parstate))
                      ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -11092,7 +11092,7 @@
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array-static1
                           :declor? nil
-                          :tyquals tyquals
+                          :qualspecs qualspecs
                           :expr expr)
                          (span-join span last-span)
                          parstate)))
@@ -11107,7 +11107,7 @@
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array-static1
                           :declor? nil
-                          :tyquals nil
+                          :qualspecs nil
                           :expr expr)
                          (span-join span last-span)
                          parstate))))))
@@ -11118,7 +11118,7 @@
            ((token-type-qualifier-p token2) ; [ tyqualattrib...
             (b* ((parstate (unread-token parstate)) ; [
                  (psize (parsize parstate))
-                 ((erp tyquals & parstate) ; [ tyqualattribs
+                 ((erp qualspecs & parstate) ; [ tyqualattribs
                   (parse-type-qualifier-and-attribute-specifier-list parstate))
                  ((unless (mbt (<= (parsize parstate) (1- psize))))
                   (reterr :impossible))
@@ -11126,39 +11126,39 @@
               (cond
                ;; If token3 is the keyword 'static',
                ;; we must have an assignment expression after that.
-               ((token-keywordp token3 "static") ; [ tyquals static
-                (b* (((erp expr & parstate) ; [ tyquals static expr
+               ((token-keywordp token3 "static") ; [ qualspecs static
+                (b* (((erp expr & parstate) ; [ qualspecs static expr
                       (parse-assignment-expression parstate))
-                     ((erp last-span parstate) ; [ tyquals static expr ]
+                     ((erp last-span parstate) ; [ qualspecs static expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array-static2
                           :declor? nil
-                          :tyquals tyquals
+                          :qualspecs qualspecs
                           :expr expr)
                          (span-join span last-span)
                          parstate)))
                ;; If token3 is a closed square bracket,
                ;; there is no expression, and we have determined the variant.
-               ((token-punctuatorp token3 "]") ; [ tyquals ]
+               ((token-punctuatorp token3 "]") ; [ qualspecs ]
                 (retok (make-dirabsdeclor-array
                         :declor? nil
-                        :tyquals tyquals
+                        :qualspecs qualspecs
                         :expr? nil)
                        (span-join span span3)
                        parstate))
                ;; If token3 is not the keyword 'static'
                ;; and is not a closed square bracket,
                ;; we must have an assignment expression here.
-               (t ; [ tyquals other
+               (t ; [ qualspecs other
                 (b* ((parstate
-                      (if token3 (unread-token parstate) parstate)) ; [ tyquals
-                     ((erp expr & parstate) ; [ tyquals expr
+                      (if token3 (unread-token parstate) parstate)) ; [ qualspecs
+                     ((erp expr & parstate) ; [ qualspecs expr
                       (parse-assignment-expression parstate))
-                     ((erp last-span parstate) ; [ tyquals expr ]
+                     ((erp last-span parstate) ; [ qualspecs expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array
                           :declor? nil
-                          :tyquals tyquals
+                          :qualspecs qualspecs
                           :expr? expr)
                          (span-join span last-span)
                          parstate))))))
@@ -11171,7 +11171,7 @@
                  ((erp last-span parstate) ; [ expr ]
                   (read-punctuator "]" parstate)))
               (retok (make-dirabsdeclor-array :declor? nil
-                                              :tyquals nil
+                                              :qualspecs nil
                                               :expr? expr)
                      (span-join span last-span)
                      parstate))))))
@@ -11408,7 +11408,7 @@
        ((token-punctuatorp token "*") ; *
         (b* ((parstate (unread-token parstate))
              (psize (parsize parstate))
-             ((erp tyqualss tyqualss-span parstate) ; pointer
+             ((erp qualspecss qualspecss-span parstate) ; pointer
               (parse-pointer parstate))
              ((unless (mbt (<= (parsize parstate) (1- psize))))
               (reterr :impossible))
@@ -11423,18 +11423,18 @@
                  ((erp dirabsdeclor dirabsdeclor-span parstate)
                   ;; pointer dirabsdeclor
                   (parse-direct-abstract-declarator parstate)))
-              (retok (make-absdeclor :pointers tyqualss
+              (retok (make-absdeclor :pointers qualspecss
                                      :direct? dirabsdeclor)
-                     (span-join tyqualss-span dirabsdeclor-span)
+                     (span-join qualspecss-span dirabsdeclor-span)
                      parstate)))
            ;; If token2 may not start a direct abstract declarator,
            ;; our abstract declarator just consists of the pointer part.
            (t ; pointer other
             (b* ((parstate
                   (if token2 (unread-token parstate) parstate))) ; pointer
-              (retok (make-absdeclor :pointers tyqualss
+              (retok (make-absdeclor :pointers qualspecss
                                      :direct? nil)
-                     tyqualss-span
+                     qualspecss-span
                      parstate))))))
        ;; If token may start a direct abstract declarator,
        ;; our abstract declarator is just that, without the pointer part.
@@ -11504,7 +11504,7 @@
            ((token-type-qualifier-p token2) ; [ tyqualattrib...
             (b* ((parstate (unread-token parstate)) ; [
                  (psize (parsize parstate))
-                 ((erp tyquals & parstate) ; [ tyqualattribs
+                 ((erp qualspecs & parstate) ; [ tyqualattribs
                   (parse-type-qualifier-and-attribute-specifier-list parstate))
                  ((unless (mbt (<= (parsize parstate) (1- psize))))
                   (reterr :impossible))
@@ -11513,14 +11513,14 @@
                ;; If token3 is a star, it may start an expression,
                ;; or it may be just a star for a variable length array.
                ;; So we need to read another token to disambiguate.
-               ((token-punctuatorp token3 "*") ; [ tyquals *
+               ((token-punctuatorp token3 "*") ; [ qualspecs *
                 (b* (((erp token4 span4 parstate) (read-token parstate)))
                   (cond
                    ;; If token4 is a closed square bracket,
                    ;; we have a variable length array declarator.
-                   ((token-punctuatorp token4 "]") ; [ tyquals * ]
+                   ((token-punctuatorp token4 "]") ; [ qualspecs * ]
                     (retok (make-dirdeclor-array-star :declor prev-dirdeclor
-                                                      :qualspecs tyquals)
+                                                      :qualspecs qualspecs)
                            (span-join prev-span span4)
                            parstate))
                    ;; If token4 is not a square bracket,
@@ -11528,16 +11528,16 @@
                    ;; so we put the tokens back
                    ;; and we proceed to parse an assignment expression.
                    ;; We have determined the array variant.
-                   (t ; [ tyquals * other
-                    (b* ((parstate ; [ tyquals *
+                   (t ; [ qualspecs * other
+                    (b* ((parstate ; [ qualspecs *
                           (if token4 (unread-token parstate) parstate))
-                         (parstate (unread-token parstate)) ; [ tyquals
-                         ((erp expr & parstate) ; [ tyquals expr
+                         (parstate (unread-token parstate)) ; [ qualspecs
+                         ((erp expr & parstate) ; [ qualspecs expr
                           (parse-assignment-expression parstate))
-                         ((erp last-span parstate) ; [ tyquals expr ]
+                         ((erp last-span parstate) ; [ qualspecs expr ]
                           (read-punctuator "]" parstate)))
                       (retok (make-dirdeclor-array :declor prev-dirdeclor
-                                                   :qualspecs tyquals
+                                                   :qualspecs qualspecs
                                                    :size? expr)
                              (span-join prev-span last-span)
                              parstate))))))
@@ -11545,40 +11545,40 @@
                ;; we parse it, and we have determined the array variant.
                ;; We have already considered the case of a star above,
                ;; so this can only be an expression at this point.
-               ((token-expression-start-p token3) ; [ tyquals expr...
-                (b* ((parstate (unread-token parstate)) ; [ tyquals
-                     ((erp expr & parstate) ; [ tyquals expr
+               ((token-expression-start-p token3) ; [ qualspecs expr...
+                (b* ((parstate (unread-token parstate)) ; [ qualspecs
+                     ((erp expr & parstate) ; [ qualspecs expr
                       (parse-assignment-expression parstate))
-                     ((erp last-span parstate) ; [ tyquals expr ]
+                     ((erp last-span parstate) ; [ qualspecs expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array :declor prev-dirdeclor
-                                               :qualspecs tyquals
+                                               :qualspecs qualspecs
                                                :size? expr)
                          (span-join prev-span last-span)
                          parstate)))
                ;; If token3 is a closed square bracket,
                ;; we have determined the variant, and we have no expression.
-               ((token-punctuatorp token3 "]") ; [ tyquals ]
+               ((token-punctuatorp token3 "]") ; [ qualspecs ]
                 (retok (make-dirdeclor-array :declor prev-dirdeclor
-                                             :qualspecs tyquals
+                                             :qualspecs qualspecs
                                              :size? nil)
                        (span-join prev-span span3)
                        parstate))
                ;; If token3 is the 'static' keyword,
                ;; we have determined the variant,
                ;; and we must have an expression.
-               ((token-keywordp token3 "static") ; [ tyquals static
-                (b* (((erp expr & parstate) ; [ tyquals static expr
+               ((token-keywordp token3 "static") ; [ qualspecs static
+                (b* (((erp expr & parstate) ; [ qualspecs static expr
                       (parse-assignment-expression parstate))
-                     ((erp last-span parstate) ; [ tyquals static expr ]
+                     ((erp last-span parstate) ; [ qualspecs static expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array-static2 :declor prev-dirdeclor
-                                                       :qualspecs tyquals
+                                                       :qualspecs qualspecs
                                                        :size expr)
                          (span-join prev-span last-span)
                          parstate)))
                ;; If token3 is anything else, it is an error.
-               (t ; [ tyquals other
+               (t ; [ qualspecs other
                 (reterr-msg :where (position-to-msg (span->start span3))
                             :expected "an expression ~
                                        or the 'static' keyword ~
@@ -11640,7 +11640,7 @@
                ((token-type-qualifier-p token3) ; [ static tyqualattrib...
                 (b* ((parstate (unread-token parstate)) ; [ static
                      (psize (parsize parstate))
-                     ((erp tyquals & parstate) ; [ static tyqualattribs
+                     ((erp qualspecs & parstate) ; [ static tyqualattribs
                       (parse-type-qualifier-and-attribute-specifier-list
                        parstate))
                      ((unless (mbt (<= (parsize parstate) (1- psize))))
@@ -11650,7 +11650,7 @@
                      ((erp last-span parstate) ; [ static tyqualattribs expr ]
                       (read-punctuator "]" parstate)))
                   (retok (make-dirdeclor-array-static1 :declor prev-dirdeclor
-                                                       :qualspecs tyquals
+                                                       :qualspecs qualspecs
                                                        :size expr)
                          (span-join prev-span last-span)
                          parstate)))
@@ -11850,12 +11850,12 @@
        ((token-punctuatorp token "*") ; *
         (b* ((parstate (unread-token parstate)) ;
              (psize (parsize parstate))
-             ((erp tyqualss & parstate) (parse-pointer parstate)) ; pointer
+             ((erp qualspecss & parstate) (parse-pointer parstate)) ; pointer
              ((unless (mbt (<= (parsize parstate) (1- psize))))
               (reterr :impossible))
              ((erp dirdeclor last-span parstate) ; pointer dirdeclor
               (parse-direct-declarator parstate)))
-          (retok (make-declor :pointers tyqualss
+          (retok (make-declor :pointers qualspecss
                               :direct dirdeclor)
                  (span-join span last-span)
                  parstate)))

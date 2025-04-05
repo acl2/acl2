@@ -1337,7 +1337,7 @@
               (const-prop-expr-option dirabsdeclor.expr? env)))
           (mv (make-dirabsdeclor-array
                 :declor? declor?
-                :tyquals dirabsdeclor.tyquals
+                :qualspecs dirabsdeclor.qualspecs
                 :expr? expr?)
               env))
         :array-static1
@@ -1347,7 +1347,7 @@
               (const-prop-expr dirabsdeclor.expr env)))
           (mv (make-dirabsdeclor-array-static1
                 :declor? declor?
-                :tyquals dirabsdeclor.tyquals
+                :qualspecs dirabsdeclor.qualspecs
                 :expr expr)
               env))
         :array-static2
@@ -1357,7 +1357,7 @@
               (const-prop-expr dirabsdeclor.expr env)))
           (mv (make-dirabsdeclor-array-static2
                 :declor? declor?
-                :tyquals dirabsdeclor.tyquals
+                :qualspecs dirabsdeclor.qualspecs
                 :expr expr)
               env))
         :array-star
