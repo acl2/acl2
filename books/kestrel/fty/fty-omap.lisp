@@ -358,6 +358,7 @@
              (implies (,omap.pred ,omap.xvar)
                       (omap::mapp ,omap.xvar))
              :rule-classes (:rewrite :forward-chaining)
+             :induct t
              :enable omap::mapp)
            (defrule ,pred-of-tail
              (implies (,omap.pred ,omap.xvar)
@@ -380,6 +381,7 @@
                            (,omap.key-type ,k)
                            (,omap.val-type ,v))
                       (,omap.pred (omap::update ,k ,v ,omap.xvar)))
+             :induct t
              :enable (omap::update omap::head omap::tail)
              ,@(and (not omap.recp) '(:disable ((:induction omap::update))))
              :expand (,omap.pred ,omap.xvar)) ; sjw: not sure if there is a better way to do this
@@ -387,29 +389,35 @@
              (implies (and (,omap.pred ,omap.xvar)
                            (,omap.pred ,y))
                       (,omap.pred (omap::update* ,omap.xvar ,y)))
+             :induct t
              :enable omap::update*)
            (defrule ,pred-of-delete
              (implies (,omap.pred ,omap.xvar)
                       (,omap.pred (omap::delete ,k ,omap.xvar)))
+             :induct t
              :enable omap::delete)
            (defrule ,pred-of-delete*
              (implies (,omap.pred ,omap.xvar)
                       (,omap.pred (omap::delete* ,k ,omap.xvar)))
+             :induct t
              :enable omap::delete*)
            (defrule ,key-pred-when-assoc-pred
              (implies (and (omap::assoc ,k ,omap.xvar) ; binds free X
                            (,omap.pred ,omap.xvar))
                       (,omap.key-type ,k))
+             :induct t
              :enable omap::assoc)
            (defrule ,key-pred-of-car-of-assoc-pred
              (implies (and (,omap.pred ,omap.xvar)
                            (omap::assoc ,k ,omap.xvar))
                       (,omap.key-type (car (omap::assoc ,k ,omap.xvar))))
+             :induct t
              :enable omap::assoc)
            (defrule ,val-pred-of-cdr-of-assoc-pred
              (implies (and (,omap.pred ,omap.xvar)
                            (omap::assoc ,k ,omap.xvar))
                       (,omap.val-type (cdr (omap::assoc ,k ,omap.xvar))))
+             :induct t
              :enable omap::assoc)
            (defrule ,val-pred-of-lookup-when-pred
              (implies (and (,omap.pred ,omap.xvar)
@@ -465,15 +473,12 @@
        (foo-fix-when-foo-p (intern-in-package-of-symbol
                             (cat (symbol-name x.fix) "-WHEN-" (symbol-name x.pred))
                             x.fix)))
-    `(defthm ,foo-fix-when-foo-p
-       (implies (,x.pred ,x.xvar)
-                (equal (,x.fix ,x.xvar) ,x.xvar))
-       :hints (,@(and (not flagp)
-                      `(("goal" :induct (,x.fix ,x.xvar))))
-                 '(:expand ((,x.pred ,x.xvar)
-                          (,x.fix ,x.xvar))
-                 :in-theory (disable ,x.fix ,x.pred)))
-       . ,(and flagp `(:flag ,x.name)))))
+    (if flagp
+        `(defthm ,foo-fix-when-foo-p
+           t
+           :skip t
+           :flag ,x.name)
+      '(progn))))
 
 (defun flexomap-count (omap types)
   (b* (((flexomap omap))

@@ -128,6 +128,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
+ (set-induction-depth-limit 0)
+
  (fty::deftypes int-term-m
                 (fty::deftagsum int-term-m
                                 (:num ((val integerp)))

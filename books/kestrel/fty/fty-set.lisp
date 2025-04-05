@@ -453,16 +453,12 @@
        (foo-fix-when-foo-p (intern-in-package-of-symbol
                             (cat (symbol-name x.fix) "-WHEN-" (symbol-name x.pred))
                             x.fix)))
-    `(defthm ,foo-fix-when-foo-p
-       (implies (,x.pred ,x.xvar)
-                (equal (,x.fix ,x.xvar) ,x.xvar))
-       :hints (,@(and (not flagp)
-                      `(("goal" :induct (,x.fix ,x.xvar))))
-                 '(:expand ((,x.pred ,x.xvar)
-                          (,x.fix ,x.xvar))
-                 :in-theory (disable ,x.fix ,x.pred)))
-       . ,(and flagp `(:flag ,x.name)))))
-
+    (if flagp
+        `(defthm ,foo-fix-when-foo-p
+           t
+           :flag ,x.name
+           :skip t)
+      '(progn))))
 
 (defun flexset-count (x types)
   (b* (((flexset x))
@@ -535,5 +531,6 @@
                              (+ 1 (,eltcount a) (,x.count b)))
                     `(> (,x.count (set::insert a b))
                         (,x.count b))))
-        :hints (("Goal" :expand ((:free (a b) (,x.count (set::insert a b))))))
+        :hints (("Goal" :in-theory (enable (:i set::weak-insert-induction))
+                        :induct (set::weak-insert-induction a b)))
         :rule-classes :linear))))
