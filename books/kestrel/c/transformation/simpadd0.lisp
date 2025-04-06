@@ -710,20 +710,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-gen-param-thms ((args symbol-listp)
-                                 (arg-types true-listp)
                                  (arg-types-compst true-listp)
+                                 (all-arg-types true-listp)
                                  (all-params c::param-declon-listp)
                                  (all-args symbol-listp))
-  :guard (and (equal (len arg-types) (len args))
-              (equal (len arg-types-compst) (len args)))
+  :guard (equal (len arg-types-compst) (len args))
   :returns (mv (thm-events pseudo-event-form-listp)
                (thm-names symbol-listp))
   :short "Generate theorems about the parameters of a function."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('args'), @('arg-types') and @('arg-types-compst') inputs
-     are the corresponding outputs of @(tsee simpadd0-gen-from-params).")
+    "The @('args') and @('arg-types-compst') inputs are
+     the corresponding outputs of @(tsee simpadd0-gen-from-params);
+     these are @(tsee cdr)ed in the recursion.
+     The @('all-arg-types') input is
+     the @('arg-types') output of @(tsee simpadd0-gen-from-params);
+     it stays the same during the recursion.")
    (xdoc::p
     "We return the theorem events, along with the theorem names.")
    (xdoc::p
@@ -747,7 +750,7 @@
                           (list
                            (c::init-scope ',all-params (list ,@all-args))))
                 compst0)))
-           (implies ,(car arg-types)
+           (implies (and ,@all-arg-types)
                     ,(car arg-types-compst))))
        (hints
         '(("Goal" :in-theory '(init-scope-thm
@@ -771,6 +774,7 @@
                                c::objdesign-auto->scope-of-objdesign-auto
                                c::return-type-of-objdesign-auto
                                c::scope-fix-when-scopep
+                               c::scope-fix
                                c::scope-list-fix-of-cons
                                (:e c::ident)
                                (:e c::ident-fix$inline)
@@ -781,6 +785,7 @@
                                omap::tail
                                omap::mfix-when-mapp
                                omap::mapp-non-nil-implies-not-emptyp
+                               (:e omap::emptyp)
                                simpadd0-param-thm-list-lemma
                                nfix
                                fix
@@ -792,6 +797,7 @@
                                acl2::len-of-append
                                acl2::len-of-rev
                                acl2::rev-of-cons
+                               (:e acl2::fast-<<)
                                unicity-of-0
                                (:e rev)
                                (:t len)))))
@@ -801,8 +807,8 @@
                      :hints ,hints))
        ((mv more-thm-events more-thm-names)
         (simpadd0-gen-param-thms (cdr args)
-                                 (cdr arg-types)
                                  (cdr arg-types-compst)
+                                 all-arg-types
                                  all-params
                                  all-args)))
     (mv (cons thm-event more-thm-events)
@@ -1260,9 +1266,10 @@
      combining the binary operator with
      the possibly transformed argument expressions,
      unless the binary operator is @('+')
-     and the possibly transformed left argument is an @('int') variable
-     and the possibly transformed right argument is an @('int') octal 0,
-     in which case the resulting expression is just that variable.
+     and the possibly transformed left argument is an @('int') expression
+     and the possibly transformed right argument is
+     an @('int') octal 0 without leading zeros,
+     in which case the resulting expression is just that expression.
      This is the core of this simple transformation.")
    (xdoc::p
     "We generate a theorem iff
@@ -1270,15 +1277,11 @@
      and the binary operator is pure and non-strict.
      The theorem is proved via three general ones that we prove below;
      the third one is only needed if there is an actual simplification,
-     but we use it always in the proof for simplicity."))
+     but we always use it in the proof for simplicity."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (c$::binop-case op :add)
-                   (c$::expr-case arg1-new :ident)
-                   (c$::type-case (c$::var-info->type
-                                   (c$::coerce-var-info
-                                    (c$::expr-ident->info arg1-new)))
-                                  :sint)
+                   (c$::type-case (c$::expr-type arg1-new) :sint)
                    (c$::expr-zerop arg2-new)))
        (expr-new (if simpp
                      (expr-fix arg1-new)
@@ -3259,17 +3262,17 @@
     :short "Transform an abstract declarator."
     (b* (((simpadd0-gin gin) gin)
          ((absdeclor absdeclor) absdeclor)
-         ((mv new-decl? (simpadd0-gout gout-decl?))
+         ((mv new-direct? (simpadd0-gout gout-direct?))
           (simpadd0-dirabsdeclor-option absdeclor.direct? gin state)))
       (mv (make-absdeclor :pointers absdeclor.pointers
-                          :direct? new-decl?)
+                          :direct? new-direct?)
           (make-simpadd0-gout
-           :events gout-decl?.events
+           :events gout-direct?.events
            :thm-name nil
-           :thm-index gout-decl?.thm-index
-           :names-to-avoid gout-decl?.names-to-avoid
-           :vars gout-decl?.vars
-           :diffp gout-decl?.diffp)))
+           :thm-index gout-direct?.thm-index
+           :names-to-avoid gout-direct?.names-to-avoid
+           :vars gout-direct?.vars
+           :diffp gout-direct?.diffp)))
     :measure (absdeclor-count absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3323,91 +3326,91 @@
                      :names-to-avoid gout-inner.names-to-avoid
                      :vars gout-inner.vars
                      :diffp gout-inner.diffp)))
-       :array (b* (((mv new-decl? (simpadd0-gout gout-decl?))
-                    (simpadd0-dirabsdeclor-option dirabsdeclor.decl? gin state))
-                   (gin (simpadd0-gin-update gin gout-decl?))
+       :array (b* (((mv new-declor? (simpadd0-gout gout-declor?))
+                    (simpadd0-dirabsdeclor-option dirabsdeclor.declor? gin state))
+                   (gin (simpadd0-gin-update gin gout-declor?))
                    ((mv new-expr? (simpadd0-gout gout-expr?))
                     (simpadd0-expr-option dirabsdeclor.expr? gin state)))
-                (mv (make-dirabsdeclor-array :decl? new-decl?
-                                             :tyquals dirabsdeclor.tyquals
+                (mv (make-dirabsdeclor-array :declor? new-declor?
+                                             :qualspecs dirabsdeclor.qualspecs
                                              :expr? new-expr?)
                     (make-simpadd0-gout
-                     :events (append gout-decl?.events gout-expr?.events)
+                     :events (append gout-declor?.events gout-expr?.events)
                      :thm-name nil
                      :thm-index gout-expr?.thm-index
                      :names-to-avoid gout-expr?.names-to-avoid
-                     :vars (set::union gout-decl?.vars gout-expr?.vars)
-                     :diffp (or gout-decl?.diffp gout-expr?.diffp))))
-       :array-static1 (b* (((mv new-decl? (simpadd0-gout gout-decl?))
-                            (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
+                     :vars (set::union gout-declor?.vars gout-expr?.vars)
+                     :diffp (or gout-declor?.diffp gout-expr?.diffp))))
+       :array-static1 (b* (((mv new-declor? (simpadd0-gout gout-declor?))
+                            (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                           gin
                                                           state))
-                           (gin (simpadd0-gin-update gin gout-decl?))
+                           (gin (simpadd0-gin-update gin gout-declor?))
                            ((mv new-expr (simpadd0-gout gout-expr))
                             (simpadd0-expr dirabsdeclor.expr gin state)))
                         (mv (make-dirabsdeclor-array-static1
-                             :decl? new-decl?
-                             :tyquals dirabsdeclor.tyquals
+                             :declor? new-declor?
+                             :qualspecs dirabsdeclor.qualspecs
                              :expr new-expr)
                             (make-simpadd0-gout
-                             :events (append gout-decl?.events
+                             :events (append gout-declor?.events
                                              gout-expr.events)
                              :thm-name nil
                              :thm-index gout-expr.thm-index
                              :names-to-avoid gout-expr.names-to-avoid
-                             :vars (set::union gout-decl?.vars
+                             :vars (set::union gout-declor?.vars
                                                gout-expr.vars)
-                             :diffp (or gout-decl?.diffp gout-expr.diffp))))
-       :array-static2 (b* (((mv new-decl? (simpadd0-gout gout-decl?))
-                            (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
+                             :diffp (or gout-declor?.diffp gout-expr.diffp))))
+       :array-static2 (b* (((mv new-declor? (simpadd0-gout gout-declor?))
+                            (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                           gin state))
-                           (gin (simpadd0-gin-update gin gout-decl?))
+                           (gin (simpadd0-gin-update gin gout-declor?))
                            ((mv new-expr (simpadd0-gout gout-expr))
                             (simpadd0-expr dirabsdeclor.expr gin state)))
                         (mv (make-dirabsdeclor-array-static2
-                             :decl? new-decl?
-                             :tyquals dirabsdeclor.tyquals
+                             :declor? new-declor?
+                             :qualspecs dirabsdeclor.qualspecs
                              :expr new-expr)
                             (make-simpadd0-gout
-                             :events (append gout-decl?.events
+                             :events (append gout-declor?.events
                                              gout-expr.events)
                              :thm-name nil
                              :thm-index gout-expr.thm-index
                              :names-to-avoid gout-expr.names-to-avoid
-                             :vars (set::union gout-decl?.vars
+                             :vars (set::union gout-declor?.vars
                                                gout-expr.vars)
-                             :diffp (or gout-decl?.diffp gout-expr.diffp))))
-       :array-star (b* (((mv new-decl? (simpadd0-gout gout-decl?))
-                         (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
+                             :diffp (or gout-declor?.diffp gout-expr.diffp))))
+       :array-star (b* (((mv new-declor? (simpadd0-gout gout-declor?))
+                         (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                        gin
                                                        state)))
-                     (mv (dirabsdeclor-array-star new-decl?)
+                     (mv (dirabsdeclor-array-star new-declor?)
                          (make-simpadd0-gout
-                          :events gout-decl?.events
+                          :events gout-declor?.events
                           :thm-name nil
-                          :thm-index gout-decl?.thm-index
-                          :names-to-avoid gout-decl?.names-to-avoid
-                          :vars gout-decl?.vars
-                          :diffp gout-decl?.diffp)))
-       :function (b* (((mv new-decl? (simpadd0-gout gout-decl?))
-                       (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
+                          :thm-index gout-declor?.thm-index
+                          :names-to-avoid gout-declor?.names-to-avoid
+                          :vars gout-declor?.vars
+                          :diffp gout-declor?.diffp)))
+       :function (b* (((mv new-declor? (simpadd0-gout gout-declor?))
+                       (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                      gin
                                                      state))
-                      (gin (simpadd0-gin-update gin gout-decl?))
+                      (gin (simpadd0-gin-update gin gout-declor?))
                       ((mv new-params (simpadd0-gout gout-params))
                        (simpadd0-paramdecl-list dirabsdeclor.params gin state)))
                    (mv (make-dirabsdeclor-function
-                        :decl? new-decl?
+                        :declor? new-declor?
                         :params new-params
                         :ellipsis dirabsdeclor.ellipsis)
                        (make-simpadd0-gout
-                        :events (append gout-decl?.events gout-params.events)
+                        :events (append gout-declor?.events gout-params.events)
                         :thm-name nil
                         :thm-index gout-params.thm-index
                         :names-to-avoid gout-params.names-to-avoid
-                        :vars (set::union gout-decl?.vars
+                        :vars (set::union gout-declor?.vars
                                           gout-params.vars)
-                        :diffp (or gout-decl?.diffp gout-params.diffp))))))
+                        :diffp (or gout-declor?.diffp gout-params.diffp))))))
     :measure (dirabsdeclor-count dirabsdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4649,7 +4652,7 @@
         (simpadd0-gen-init-scope-thm ldm-params args parargs arg-types))
        ((mv param-thm-events param-thm-names)
         (simpadd0-gen-param-thms
-         args arg-types arg-types-compst ldm-params args))
+         args arg-types-compst arg-types ldm-params args))
        (thm-name (packn-pos (list gin.const-new '-thm- gin.thm-index)
                             gin.const-new))
        (thm-index (1+ gin.thm-index))

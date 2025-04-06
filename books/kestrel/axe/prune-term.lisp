@@ -16,10 +16,12 @@
 
 ;; TODO: Use counterexamples returned by STP to avoid later calls that will fail.
 
-(include-book "rewriter-basic") ;because we call simplify-term-basic
 (include-book "prove-with-stp")
 (include-book "interpreted-function-alists")
 (include-book "kestrel/utilities/subtermp" :dir :system)
+(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system)
+(include-book "rule-alists")
+(include-book "rewriter-basic") ;because we call simplify-term-basic
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -31,11 +33,8 @@
 ;(in-theory (disable table-alist)) ;why?
 
 (local (in-theory (disable symbol-listp
-                           use-all-consp-for-car
                            ;; subsetp-car-member ; bad?
                            member-equal
-                           use-all-consp ; bad?
-                           use-all-consp-2 ; bad?
                            ;; GET-GLOBAL
                            ACL2-COUNT
                            default-car

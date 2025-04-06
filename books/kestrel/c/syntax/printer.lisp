@@ -2444,17 +2444,17 @@
           (pstate (print-astring ")" pstate)))
        pstate)
      :array
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "[" pstate))
-          (pstate (if dirabsdeclor.tyquals
-                      (print-typequal/attribspec-list dirabsdeclor.tyquals
+          (pstate (if dirabsdeclor.qualspecs
+                      (print-typequal/attribspec-list dirabsdeclor.qualspecs
                                                       pstate)
                     pstate))
-          (pstate (if (and dirabsdeclor.tyquals
+          (pstate (if (and dirabsdeclor.qualspecs
                            dirabsdeclor.expr?)
                       (print-astring " " pstate)
                     pstate))
@@ -2466,15 +2466,15 @@
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static1
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "static " pstate))
-          (pstate (if dirabsdeclor.tyquals
+          (pstate (if dirabsdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
-                                    dirabsdeclor.tyquals
+                                    dirabsdeclor.qualspecs
                                     pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
@@ -2483,32 +2483,32 @@
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static2
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
-          ((unless dirabsdeclor.tyquals)
+          ((unless dirabsdeclor.qualspecs)
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            (pristate-fix pstate))
-          (pstate (print-typequal/attribspec-list dirabsdeclor.tyquals pstate))
+          (pstate (print-typequal/attribspec-list dirabsdeclor.qualspecs pstate))
           (pstate (print-astring " static " pstate))
           (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-star
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "[*]" pstate)))
        pstate)
      :function
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "(" pstate))

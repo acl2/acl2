@@ -73,12 +73,21 @@
 (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for right-cancellation-for-+
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; for speed:
 (local (in-theory (disable acl2-count
                            consp-from-len-cheap
                            all-natp-when-nat-listp
                            nat-listp)))
+
+;dup
+(local
+  (defthmd <-of-+-of-1-when-natps
+    (implies (and (syntaxp (not (quotep y)))
+                  (natp x)
+                  (natp y))
+             (equal (< x (+ 1 y)) (<= x y)))))
 
 (in-theory (disable dag-to-term
                     top-nodenum

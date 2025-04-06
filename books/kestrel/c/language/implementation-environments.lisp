@@ -1370,29 +1370,85 @@
    :pair (make-uinteger+sinteger-format
           :unsigned (uinteger-format-inc-npnt size)
           :signed (sinteger-format-inc-sign-tcnpnt (1- (pos-fix size)))))
-  :guard-hints
-  (("Goal"
-    :in-theory
-    (enable posp
-            uinteger-format-inc-npnt
-            sinteger-format-inc-sign-tcnpnt
-            uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
-            sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign)))
+  :verify-guards nil ; done below
   :hooks (:fix)
 
   ///
+
+  (defruled uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (uinteger-sinteger-bit-roles-wfp
+              (uinteger-format->bits
+               (uinteger-format-inc-npnt size))
+              (sinteger-format->bits
+               (sinteger-format-inc-sign-tcnpnt (+ -1 size)))))
+    :enable (posp
+             uinteger-format-inc-npnt
+             sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
+             sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign))
+
+  (verify-guards integer-format-inc-sign-tcnpnt
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+       posp))))
 
   (defruled integer-format->size-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
              (equal (integer-format->size (integer-format-inc-sign-tcnpnt size))
-                    (pos-fix size)))
+                    size))
     :enable (integer-format->size
              uinteger-format-inc-npnt
              sinteger-format-inc-sign-tcnpnt
              uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
              sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
-             posp)))
+             posp))
+
+  (defruled integer-format-unsigned->max-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (equal (uinteger-format->max
+                     (uinteger+sinteger-format->unsigned
+                      (integer-format->pair
+                       (integer-format-inc-sign-tcnpnt size))))
+                    (1- (expt 2 size))))
+    :enable
+    (integer-format-inc-sign-tcnpnt
+     uinteger-format->max-of-uinteger-format-inc-npnt
+     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt))
+
+  (defruled integer-format-signed->max-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (equal (sinteger-format->max
+                     (uinteger+sinteger-format->signed
+                      (integer-format->pair
+                       (integer-format-inc-sign-tcnpnt size))))
+                    (1- (expt 2 (1- size)))))
+    :enable
+    (integer-format-inc-sign-tcnpnt
+     sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
+     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+     posp))
+
+  (defruled integer-format-signed->min-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (equal (sinteger-format->min
+                     (uinteger+sinteger-format->signed
+                      (integer-format->pair
+                       (integer-format-inc-sign-tcnpnt size))))
+                    (- (expt 2 (1- size)))))
+    :enable
+    (integer-format-inc-sign-tcnpnt
+     sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
+     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+     posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1594,6 +1650,122 @@
          (<= signed-long-max signed-llong-max)
          (<= unsigned-long-max unsigned-llong-max)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define short-format-16tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('short') format defined by
+          16 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('short') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 16)
+
+  ///
+
+  (defrule integer-format-short-wfp-of-short-format-16tcnt
+    (integer-format-short-wfp (short-format-16tcnt)
+                              (uchar-format-8)
+                              (schar-format-8tcnt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define int-format-16tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('int') format defined by
+          16 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('int') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 16)
+
+  ///
+
+  (defrule integer-format-int-wfp-of-int-format-16tcnt
+    (integer-format-int-wfp (int-format-16tcnt)
+                            (uchar-format-8)
+                            (short-format-16tcnt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define long-format-32tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('long') format defined by
+          32 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('long') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 32)
+
+  ///
+
+  (defrule integer-format-long-wfp-of-long-format-32tcnt
+    (integer-format-long-wfp (long-format-32tcnt)
+                             (uchar-format-8)
+                             (int-format-16tcnt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define llong-format-64tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('long long') format defined by
+          64 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('long long') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 64)
+
+  ///
+
+  (defrule integer-format-llong-wfp-of-long-format-64tcnt
+    (integer-format-llong-wfp (llong-format-64tcnt)
+                              (uchar-format-8)
+                              (long-format-32tcnt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

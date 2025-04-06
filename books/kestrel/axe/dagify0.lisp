@@ -72,8 +72,6 @@
                     ;strip-cars todo
                     ;;revappend-removal ;todo
                     ;; for speed:
-                    use-all-consp-for-car
-                    all-consp-when-not-consp
                     set-difference-equal))
 
 (local (in-theory (enable strip-cars))) ;why?

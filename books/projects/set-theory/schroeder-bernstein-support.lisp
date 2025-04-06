@@ -2,6 +2,8 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; This book supports schroeder-bernstein.lisp.  See comments there.
+
 (in-package "ZF")
 
 (include-book "std/util/defrule" :dir :system)
@@ -1097,7 +1099,7 @@
                (fun-bij f g)))
   :hints (("Goal" :in-theory (enable good-f-g)))
   :props (sbt-prop fun-bij$prop))
-             
+
 
 (defthmz schroeder-bernstein-main-2-2
 
