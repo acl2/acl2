@@ -1326,6 +1326,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-format->size ((format integer-formatp))
+  :returns (size posp :hints (("Goal" :in-theory (enable posp))))
   :short "Number of bits of an integer format."
   :long
   (xdoc::topstring
