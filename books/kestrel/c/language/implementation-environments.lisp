@@ -1869,6 +1869,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod char+short+int+long+llong-format
+  :short "Fixtype of formats of
+          (unsigned, signed, and plain) @('char') objects,
+          (unsigned and signed) @('short') objects,
+          (unsigned and signed) @('int') objects,
+          (unsigned and signed) @('long') objects, and
+          (unsigned and signed) @('long long') objects."
+  ((uchar uchar-format)
+   (schar schar-format)
+   (char char-format)
+   (short integer-format)
+   (int integer-format)
+   (long integer-format)
+   (llong integer-format))
+  :pred char+short+int+long+llong-formatp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char+short+int+long+llong-format-wfp
+  ((format char+short+int+long+llong-formatp))
+  :returns (yes/no booleanp)
+  :short "Check if the formats of
+          @('char'), @('short'), @('int'), @('long'), and @('long long') objects
+          are well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The formats for @('char') objects already include
+     their own well-formedness in their definition.
+     We impose well-formedness on the other formats."))
+  (b* (((char+short+int+long+llong-format format) format))
+    (and (integer-format-short-wfp format.short format.uchar format.schar)
+         (integer-format-int-wfp format.int format.uchar format.short)
+         (integer-format-long-wfp format.long format.uchar format.int)
+         (integer-format-llong-wfp format.llong format.uchar format.long)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char8+short16+int16+long32+llong64-tcnt ()
+  :short "The @('char'), @('short'), @('int'), @('long'), and @('long long')
+          integer formats defined by
+          the minimal number of bits with increasing values,
+          two's complement,
+          no trap representations, and
+          unsigned plain @('char')s."
+  (make-char+short+int+long+llong-format
+   :uchar (uchar-format-8)
+   :schar (schar-format-8tcnt)
+   :char (char-format-8u)
+   :short (short-format-16tcnt)
+   :int (int-format-16tcnt)
+   :long (long-format-32tcnt)
+   :llong (llong-format-64tcnt))
+
+  ///
+
+  (defruled wfp-of-char8+short16+int16+long32+llong64-tcnt
+    (char+short+int+long+llong-format-wfp
+     (char8+short16+int16+long32+llong64-tcnt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
@@ -1878,17 +1941,15 @@
      but we plan to add more components.")
    (xdoc::p
     "Currently we include the format of the three character types,
-     and the standard signed integer types and their unsigned counterparts.
-     We still need to add constraints on the numbers of bits,
-     and on the maximum and minimum values,
-     of the non-character integer formats."))
-  ((uchar-format uchar-format)
-   (schar-format schar-format)
-   (char-format char-format)
-   (short-format integer-format)
-   (int-format integer-format)
-   (long-format integer-format)
-   (llong-format integer-format))
+     and the standard signed integer types and their unsigned counterparts."))
+  ((char+short+int+long+llong-format
+    char+short+int+long+llong-format
+    :reqfix (if (char+short+int+long+llong-format-wfp
+                 char+short+int+long+llong-format)
+                char+short+int+long+llong-format
+              (char8+short16+int16+long32+llong64-tcnt))))
+  :require (char+short+int+long+llong-format-wfp
+            char+short+int+long+llong-format)
   :pred ienvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1901,7 +1962,9 @@
    (xdoc::p
     "This is the size, in bits, of
      (possibly @('unsigned') or @('signed')) @('char') objects."))
-  (uchar-format->size (ienv->uchar-format ienv))
+  (uchar-format->size
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -1923,7 +1986,9 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee uchar-format->max)."))
-  (uchar-format->max (ienv->uchar-format ienv))
+  (uchar-format->max
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -1945,8 +2010,11 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee schar-format->max)."))
-  (schar-format->max (ienv->schar-format ienv)
-                     (ienv->uchar-format ienv))
+  (schar-format->max
+   (char+short+int+long+llong-format->schar
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -1968,8 +2036,11 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee schar-format->min)"))
-  (schar-format->min (ienv->schar-format ienv)
-                     (ienv->uchar-format ienv))
+  (schar-format->min
+   (char+short+int+long+llong-format->schar
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -1980,9 +2051,13 @@
 
   (defret ienv->schar-min-upper-bound
     (<= min (if (and (equal (signed-format-kind
-                             (schar-format->signed (ienv->schar-format ienv)))
+                             (schar-format->signed
+                              (char+short+int+long+llong-format->schar
+                               (ienv->char+short+int+long+llong-format ienv))))
                             :twos-complement)
-                     (not (schar-format->trap (ienv->schar-format ienv))))
+                     (not (schar-format->trap
+                           (char+short+int+long+llong-format->schar
+                            (ienv->char+short+int+long+llong-format ienv)))))
                 -128
               -127))
     :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv))))))
@@ -1996,9 +2071,13 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee char-format->max)."))
-  (char-format->max (ienv->char-format ienv)
-                    (ienv->uchar-format ienv)
-                    (ienv->schar-format ienv))
+  (char-format->max
+   (char+short+int+long+llong-format->char
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->schar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -2020,9 +2099,13 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee char-format->min)."))
-  (char-format->min (ienv->char-format ienv)
-                    (ienv->uchar-format ienv)
-                    (ienv->schar-format ienv))
+  (char-format->min
+   (char+short+int+long+llong-format->char
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->schar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -2032,11 +2115,18 @@
     :rule-classes :type-prescription)
 
   (defret ienv->char-min-upper-bound
-    (<= min (if (char-format->signedp (ienv->char-format ienv))
-                (if (and (equal (signed-format-kind
-                                 (schar-format->signed (ienv->schar-format ienv)))
-                                :twos-complement)
-                         (not (schar-format->trap (ienv->schar-format ienv))))
+    (<= min (if (char-format->signedp
+                 (char+short+int+long+llong-format->char
+                  (ienv->char+short+int+long+llong-format ienv)))
+                (if (and
+                     (equal (signed-format-kind
+                             (schar-format->signed
+                              (char+short+int+long+llong-format->schar
+                               (ienv->char+short+int+long+llong-format ienv))))
+                            :twos-complement)
+                     (not (schar-format->trap
+                           (char+short+int+long+llong-format->schar
+                            (ienv->char+short+int+long+llong-format ienv)))))
                     -128
                   -127)
               0))
