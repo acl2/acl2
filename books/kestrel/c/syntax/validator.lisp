@@ -2599,8 +2599,22 @@
        we recursively validate their sub-structures,
        and the type is determined in all cases.")
      (xdoc::p
-      "For @('typedef') names, we lookup the type definition in the validation
-       table. If no such entry exists in the table, validation fails.")
+      "For @('typedef') names,
+       we look up the type definition in the validation table.
+       If no such entry exists in the table, validation fails.
+       Otherwise, we return the type in the table entry
+       as the one denoted by the @('typedef') name.
+       The latter is an important point, because it means that
+       we always fully expand @('typedef') names
+       to their @('typedef')-name-free types
+       (recall that @(tsee type) has no case for @('typedef') names).
+       In a translation unit, no forward references are allowed,
+       so the first @('typedef') (if any) cannot refer to others;
+       later @('typedef')s may refer to previous ones,
+       but since we expand their definientia through this table lookup,
+       we effectively always recursively expand all @('typedef')s.
+       This may be exactly what is needed for validation,
+       but we will revisit this choice if needed.")
      (xdoc::p
       "For now, for simplicity, we regard
        all the type specifiers that are GCC extensions
