@@ -53,8 +53,7 @@
      In other words, we can use any ACL2 value as a transaction,
      e.g. to construct examples and simulations."))
   ((unwrap any))
-  :pred transactionp
-  :prepwork ((local (in-theory (enable identity)))))
+  :pred transactionp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
