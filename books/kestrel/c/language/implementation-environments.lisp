@@ -1124,7 +1124,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define uinteger-format->max ((format uinteger-formatp))
-  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :returns (max posp
+                :rule-classes (:rewrite :type-prescription)
+                :hints (("Goal" :in-theory (enable posp))))
   :short "The ACL2 integer value of
           the maximum value representable in an unsigned integer format."
   :long
@@ -1139,7 +1141,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sinteger-format->max ((format sinteger-formatp))
-  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :returns (max posp
+                :rule-classes (:rewrite :type-prescription)
+                :hints (("Goal" :in-theory (enable posp))))
   :short "The ACL2 integer value of
           the maximum value representable in a signed integer format."
   :long
@@ -1183,7 +1187,13 @@
                   (sinteger-format->bits format))))
     (- (1- (expt 2 (sinteger-bit-roles-value-count
                     (sinteger-format->bits format))))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret sinteger-format->min-type-prescription
+    (< min 0)
+    :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
