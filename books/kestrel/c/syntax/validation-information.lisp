@@ -708,8 +708,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Informally, two types are compatible if they represent \"the same\"
-     type.")
+    "Informally, two types are compatible if they are ``the same'' type;
+     this is actually a little weaker than type equality,
+     as two types (as captured in @(tsee type))
+     may differ syntactically yet denote the same semantic type.
+     [C17:6.2.7] phrases things in terms of
+     the two types ``having'' the same type,
+     which is a bit odd, since types are (not have) types;
+     but the intention is clear.")
    (xdoc::p
     "Because we currently only model an approximation of C types,
      our notion of compatibility is also approximate.
@@ -724,7 +730,8 @@
       due to their approximate representations.
       The same applies to
       union, enumeration, array, pointer, and function types.")
-    (xdoc::li "Type qualifiers are ignored.")
+    (xdoc::li
+     "Type qualifiers are ignored.")
     (xdoc::li
      "All types are compatible with the abstract @(':unknown') type.")
     (xdoc::li
