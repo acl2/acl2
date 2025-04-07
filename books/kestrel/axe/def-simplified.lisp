@@ -51,7 +51,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 ;(include-book "kestrel/bv/arith" :dir :system) ; for <-OF-SUMS-CANCEL
 ;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
-(include-book "rules2") ;for LOOKUP-OF-BVIF -- drop?
+;(include-book "rules2") ;for LOOKUP-OF-BVIF -- drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system) ; for LIST-TO-BV-ARRAY
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)

@@ -48,7 +48,6 @@
                            ;iff-of-member-equal ;rename
                            ;list::member-eq-is-memberp-propositionally ;same as iff-of-member-equal?
                            ;memberp-nth-when-perm ;yuck!
-                           all-consp-when-not-consp ;yuck!
                            ;list::nth-when-l-is-not-a-consp
                            ;list::len-when-consp-linear
                            )))
@@ -194,8 +193,7 @@
 (set-case-split-limitations 'nil)
 (set-case-split-limitations '(10 10))
 
-(local (in-theory (disable  use-all-consp-for-car default-+-2 default-cdr
-                           quote-lemma-for-bounded-darg-listp-gen-alt)))
+(local (in-theory (disable default-+-2 default-cdr quote-lemma-for-bounded-darg-listp-gen-alt)))
 
 (local (in-theory (disable symbol-alistp))) ;don't induct on this
 
@@ -1068,7 +1066,7 @@
                         (implies ,(make-conjunction-from-list assumptions)
                                  (equal ,term ;fixme error if this is a variable and we're making a rewrite rule
                                         (dag-val-with-axe-evaluator ',dag
-                                                                    ,(make-acons-nest (dag-vars dag))
+                                                                    ,(make-acons-nest (dag-vars-unsorted dag))
                                                                     ;;fixme think about this:
                                                                     ;;check that all the fns are already in interpreted-function-alist?
                                                                     ;;',interpreted-function-alist

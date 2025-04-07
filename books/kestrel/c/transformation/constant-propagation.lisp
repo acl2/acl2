@@ -1293,11 +1293,11 @@
                  (new-env envp))
     (b* ((env (env-fix env))
          ((absdeclor absdeclor) absdeclor)
-         ((mv decl? env)
+         ((mv direct? env)
           (const-prop-dirabsdeclor-option absdeclor.direct? env)))
       (mv (make-absdeclor
             :pointers absdeclor.pointers
-            :direct? decl?)
+            :direct? direct?)
           env))
     :measure (absdeclor-count absdeclor))
 
@@ -1331,47 +1331,47 @@
                      (const-prop-absdeclor dirabsdeclor.inner env)))
                  (mv (dirabsdeclor-paren unwrap) env))
         :array
-        (b* (((mv decl? env)
-              (const-prop-dirabsdeclor-option dirabsdeclor.decl? env))
+        (b* (((mv declor? env)
+              (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr? - env)
               (const-prop-expr-option dirabsdeclor.expr? env)))
           (mv (make-dirabsdeclor-array
-                :decl? decl?
-                :tyquals dirabsdeclor.tyquals
+                :declor? declor?
+                :qualspecs dirabsdeclor.qualspecs
                 :expr? expr?)
               env))
         :array-static1
-        (b* (((mv decl? env)
-              (const-prop-dirabsdeclor-option dirabsdeclor.decl? env))
+        (b* (((mv declor? env)
+              (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr - env)
               (const-prop-expr dirabsdeclor.expr env)))
           (mv (make-dirabsdeclor-array-static1
-                :decl? decl?
-                :tyquals dirabsdeclor.tyquals
+                :declor? declor?
+                :qualspecs dirabsdeclor.qualspecs
                 :expr expr)
               env))
         :array-static2
-        (b* (((mv decl? env)
-              (const-prop-dirabsdeclor-option dirabsdeclor.decl? env))
+        (b* (((mv declor? env)
+              (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr - env)
               (const-prop-expr dirabsdeclor.expr env)))
           (mv (make-dirabsdeclor-array-static2
-                :decl? decl?
-                :tyquals dirabsdeclor.tyquals
+                :declor? declor?
+                :qualspecs dirabsdeclor.qualspecs
                 :expr expr)
               env))
         :array-star
-        (b* (((mv decl? env)
-              (const-prop-dirabsdeclor-option dirabsdeclor.decl? env)))
-          (mv (dirabsdeclor-array-star decl?)
+        (b* (((mv declor? env)
+              (const-prop-dirabsdeclor-option dirabsdeclor.declor? env)))
+          (mv (dirabsdeclor-array-star declor?)
               env))
         :function
-        (b* (((mv decl? env)
-              (const-prop-dirabsdeclor-option dirabsdeclor.decl? env))
+        (b* (((mv declor? env)
+              (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv params env)
               (const-prop-paramdecl-list dirabsdeclor.params env)))
           (mv (make-dirabsdeclor-function
-                :decl? decl?
+                :declor? declor?
                 :params params
                 :ellipsis dirabsdeclor.ellipsis)
               env))))

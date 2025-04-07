@@ -54,6 +54,7 @@
 (include-book "../step-increments")
 (include-book "../dag-size")
 (include-book "../dag-info")
+(include-book "../rule-limits")
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "../arithmetic-rules-axe")
@@ -1018,7 +1019,7 @@
        (common-formals (append param-names '(x86))) ; todo: handle 32-bit calling convention
        ;; these will be ordered like common-formals:
        (expected-formals (intersection-eq common-formals result-dag-vars))
-       (unexpected-formals (acl2::merge-sort-symbol< (set-difference-eq result-dag-vars common-formals))) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
+       (unexpected-formals (set-difference-eq result-dag-vars common-formals)) ; todo: warn if inputs given?  maybe x86 will sometimes be needed?
        (fn-formals (append expected-formals unexpected-formals))
        ;; Do we want a check like this?
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))

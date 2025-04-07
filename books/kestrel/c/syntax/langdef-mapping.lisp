@@ -547,7 +547,7 @@
         (reterr (msg "Unsupported direct abstract declarator ~x0 for object."
                      (dirabsdeclor-fix dirabsdeclor))))
        ((dirabsdeclor-array dirabsdeclor) dirabsdeclor)
-       ((when dirabsdeclor.tyquals)
+       ((when dirabsdeclor.qualspecs)
         (reterr (msg "Unsupported type qualifiers ~
                       or attribute specifiers ~
                       in direct abstract declarator ~x0 for object."
@@ -561,10 +561,10 @@
                               in direct abstract declarator ~x0 for object."
                              (dirabsdeclor-fix dirabsdeclor)))))
           (retok nil)))
-       ((when (dirabsdeclor-option-case dirabsdeclor.decl? :none))
+       ((when (dirabsdeclor-option-case dirabsdeclor.declor? :none))
         (retok (c::make-obj-adeclor-array :decl (c::obj-adeclor-none)
                                           :size iconst?)))
-       (dirabsdeclor.decl (dirabsdeclor-option-some->val dirabsdeclor.decl?))
+       (dirabsdeclor.decl (dirabsdeclor-option-some->val dirabsdeclor.declor?))
        ((erp adeclor1) (ldm-dirabsdeclor-obj dirabsdeclor.decl)))
     (retok (c::make-obj-adeclor-array :decl adeclor1
                                       :size iconst?)))
@@ -607,12 +607,12 @@
      :parents nil
      (b* (((reterr) (c::obj-adeclor-none))
           ((when (endp pointers)) (retok (c::obj-adeclor-fix adeclor1)))
-          (tyquals (car pointers))
-          ((unless (endp tyquals))
+          (qualspecs (car pointers))
+          ((unless (endp qualspecs))
            (reterr (msg "Unsupported type qualifiers ~
                          or attribute specifiers ~
                          ~x0 in pointer."
-                        (typequal/attribspec-list-fix tyquals))))
+                        (typequal/attribspec-list-fix qualspecs))))
           ((erp adeclor2) (ldm-absdeclor-obj-loop adeclor1 (cdr pointers))))
        (retok (c::obj-adeclor-pointer adeclor2)))
      :hooks (:fix)
@@ -1224,10 +1224,10 @@
      :parents nil
      (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
           ((when (endp pointers)) (retok (c::fun-declor-fix declor1)))
-          (tyquals (car pointers))
-          ((unless (endp tyquals))
+          (qualspecs (car pointers))
+          ((unless (endp qualspecs))
            (reterr (msg "Unsupported type qualifiers ~x0 in pointer."
-                        (typequal/attribspec-list-fix tyquals))))
+                        (typequal/attribspec-list-fix qualspecs))))
           ((erp declor2) (ldm-declor-fun-loop declor1 (cdr pointers))))
        (retok (c::fun-declor-pointer declor2)))
      :hooks (:fix)

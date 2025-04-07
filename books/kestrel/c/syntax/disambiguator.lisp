@@ -2088,10 +2088,10 @@
        and so there is no identifier to return here."))
     (b* (((reterr) (irr-absdeclor) (irr-dimb-table))
          ((absdeclor absdeclor) absdeclor)
-         ((erp new-decl? table)
+         ((erp new-direct? table)
           (dimb-dirabsdeclor-option absdeclor.direct? table)))
       (retok (make-absdeclor :pointers absdeclor.pointers
-                             :direct? new-decl?)
+                             :direct? new-direct?)
              table))
     :measure (absdeclor-count absdeclor))
 
@@ -2134,43 +2134,46 @@
          (retok (dirabsdeclor-paren new-absdeclor)
                 table))
        :array
-       (b* (((erp new-decl? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.decl? table))
+       (b* (((erp new-declor? table)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
             ((erp new-expr? table)
              (dimb-expr-option dirabsdeclor.expr? table)))
-         (retok (make-dirabsdeclor-array :decl? new-decl?
-                                         :tyquals dirabsdeclor.tyquals
-                                         :expr? new-expr?)
+         (retok (make-dirabsdeclor-array
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :expr? new-expr?)
                 table))
        :array-static1
-       (b* (((erp new-decl? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.decl? table))
+       (b* (((erp new-declor? table)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
             ((erp new-expr table) (dimb-expr dirabsdeclor.expr table)))
-         (retok (make-dirabsdeclor-array-static1 :decl? new-decl?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+         (retok (make-dirabsdeclor-array-static1
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :expr new-expr)
                 table))
        :array-static2
-       (b* (((erp new-decl? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.decl? table))
+       (b* (((erp new-declor? table)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
             ((erp new-expr table) (dimb-expr dirabsdeclor.expr table)))
-         (retok (make-dirabsdeclor-array-static2 :decl? new-decl?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+         (retok (make-dirabsdeclor-array-static2
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :expr new-expr)
                 table))
        :array-star
-       (b* (((erp new-decl? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.decl? table)))
-         (retok (dirabsdeclor-array-star new-decl?)
+       (b* (((erp new-declor? table)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? table)))
+         (retok (dirabsdeclor-array-star new-declor?)
                 table))
        :function
-       (b* (((erp new-decl? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.decl? table))
+       (b* (((erp new-declor? table)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
             (table (dimb-push-scope table))
             ((erp new-params table)
              (dimb-paramdecl-list dirabsdeclor.params table))
             (table (dimb-pop-scope table)))
-         (retok (make-dirabsdeclor-function :decl? new-decl?
+         (retok (make-dirabsdeclor-function :declor? new-declor?
                                             :params new-params
                                             :ellipsis dirabsdeclor.ellipsis)
                 table))))

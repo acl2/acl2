@@ -633,7 +633,7 @@
        (dag-vars (if (quotep dag-or-quotep)
                      nil
                    ;;todo: check these (what should be allowed)?
-                   (sort-vars-with-guidance (dag-vars dag-or-quotep) parameter-names)))
+                   (sort-vars-with-guidance (dag-vars-unsorted dag-or-quotep) parameter-names)))
        (function-body (if (dag-or-quotep-size-less-thanp dag-or-quotep 1000)
                           (dag-to-term dag-or-quotep)
                         `(dag-val-with-axe-evaluator ,defconst-name
@@ -658,11 +658,11 @@
               (cw "Created ~x0.~%~%" (first items-created))
             (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
        (- (print-dag-info dag-or-quotep defconst-name nil)) ; maybe suppress with print arg?
-       (- (if (quotep dag-or-quotep)
-              nil
-            (if (dag-is-purep-aux dag-or-quotep :all t) ; prints any non-pure nodes
-                (cw "~x0 is a pure dag.~%" defconst-name)
-              (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
+       ;; (- (if (quotep dag-or-quotep)
+       ;;        nil
+       ;;      (if (dag-is-purep-aux dag-or-quotep :all t) ; prints any non-pure nodes
+       ;;          (cw "~x0 is a pure dag.~%" defconst-name)
+       ;;        (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
        (- (progn$ (cw "~%BYTECODE UNROLLING FINISHED (")
                   (acl2::print-to-hundredths (- end-time start-time))
                   (cw "s).") ; s = seconds

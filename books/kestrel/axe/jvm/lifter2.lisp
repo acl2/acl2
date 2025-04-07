@@ -346,7 +346,7 @@
        ;;                       (print-list output-dag)
        ;;                       (cw ")~%"))))
        ;todo: should just be s0:
-       (dag-vars (dag-vars final-state-dag))
+       (dag-vars (dag-vars-unsorted final-state-dag))
        ((when (not (equal dag-vars '(s0))))
         (mv t (er hard 'lift-java-code2 "ERROR: Bad vars: ~x0!" dag-vars) state))
        ;; ;; TODO: Shouldn't we just add inputs automatically for this new stuff?

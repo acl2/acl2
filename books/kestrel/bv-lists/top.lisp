@@ -26,6 +26,7 @@
 (include-book "all-all-unsigned-byte-p")
 
 (include-book "all-signed-byte-p")
+(include-book "all-signed-byte-p-rules")
 
 (include-book "len-mult-of-8p")
 (include-book "len-mult-of-8p-rules")

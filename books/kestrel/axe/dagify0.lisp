@@ -72,8 +72,6 @@
                     ;strip-cars todo
                     ;;revappend-removal ;todo
                     ;; for speed:
-                    use-all-consp-for-car
-                    all-consp-when-not-consp
                     set-difference-equal))
 
 (local (in-theory (enable strip-cars))) ;why?
@@ -695,7 +693,7 @@
                      ;;tree is a call of dag-val-with-axe-evaluator, and we can inline its embedded dag
                      (b* ((quoted-dag (first arg-nodenums-or-quoteps))
                           (dag (unquote quoted-dag))
-                          (vars (dag-vars dag))
+                          (vars (dag-vars-unsorted dag))
                           (alist (second arg-nodenums-or-quoteps))
                           ((mv erp variable-node-alist-for-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                            (make-nodes-for-vars-with-name vars alist dag-array dag-len dag-parent-array
@@ -1490,7 +1488,7 @@
           (prog2$ (er hard? 'compose-dags "var ~x0 isn't present in DAG ~X12" var-to-replace main-dag nil)
                   (mv (erp-t) nil))
         (mv (erp-nil) main-dag))
-    (let ((main-dag-vars (dag-vars main-dag)))
+    (let ((main-dag-vars (dag-vars-unsorted main-dag)))
       (if (and check-varsp
                (not (member-eq var-to-replace main-dag-vars)))
           (prog2$ (er hard? 'compose-dags "var ~x0 isn't present in DAG ~X12" var-to-replace main-dag nil)
