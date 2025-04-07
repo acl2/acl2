@@ -717,19 +717,19 @@
      Compatible types should always be recognized as such,
      but incompatible types may also be recognized.")
    (xdoc::p
-    "In particular:"
-    (xdoc::ul
-     (xdoc::li
-      "All structure types are currently considered compatible,
-       due to their approximate representations.
-       The same applies to
-       union, enumeration, array, pointer, and function types.")
-     (xdoc::li "Type qualifiers are ignored.")
-     (xdoc::li
-      "All types are compatible with the abstract @(':unknown') type.")
-     (xdoc::li
-      "Enumeration types are compatible with
-       <i>all</i> integer types (not just one particular type).")))
+    "In particular:")
+   (xdoc::ul
+    (xdoc::li
+     "All structure types are currently considered compatible,
+      due to their approximate representations.
+      The same applies to
+      union, enumeration, array, pointer, and function types.")
+    (xdoc::li "Type qualifiers are ignored.")
+    (xdoc::li
+     "All types are compatible with the abstract @(':unknown') type.")
+    (xdoc::li
+     "Enumeration types are compatible with
+      <i>all</i> integer types (not just one particular type)."))
    (xdoc::p
     "Eventually, we shall refine the notion of compatibility,
      alongside our representation of types,
