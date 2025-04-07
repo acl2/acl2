@@ -2455,11 +2455,11 @@
                                                       pstate)
                     pstate))
           (pstate (if (and dirabsdeclor.qualspecs
-                           dirabsdeclor.expr?)
+                           dirabsdeclor.size?)
                       (print-astring " " pstate)
                     pstate))
-          (pstate (if (expr-option-case dirabsdeclor.expr? :some)
-                      (print-expr (expr-option-some->val dirabsdeclor.expr?)
+          (pstate (if (expr-option-case dirabsdeclor.size? :some)
+                      (print-expr (expr-option-some->val dirabsdeclor.size?)
                                   (expr-priority-asg)
                                   pstate)
                     pstate))
@@ -2479,7 +2479,7 @@
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
-          (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
+          (pstate (print-expr dirabsdeclor.size (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static2
@@ -2494,7 +2494,7 @@
            (pristate-fix pstate))
           (pstate (print-typequal/attribspec-list dirabsdeclor.qualspecs pstate))
           (pstate (print-astring " static " pstate))
-          (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
+          (pstate (print-expr dirabsdeclor.size (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-star

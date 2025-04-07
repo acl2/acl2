@@ -4065,8 +4065,8 @@
        (b* ((type (type-array))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
-            ((erp new-expr? index-type? more-types table)
-             (valid-expr-option dirabsdeclor.expr? table ienv))
+            ((erp new-size? index-type? more-types table)
+             (valid-expr-option dirabsdeclor.size? table ienv))
             ((when (and index-type?
                         (not (type-integerp index-type?))
                         (not (type-case index-type? :unknown))))
@@ -4078,7 +4078,7 @@
          (retok (make-dirabsdeclor-array
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
-                 :expr? new-expr?)
+                 :size? new-size?)
                 type
                 (set::union types more-types)
                 table))
@@ -4086,8 +4086,8 @@
        (b* ((type (type-array))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
-            ((erp new-expr index-type more-types table)
-             (valid-expr dirabsdeclor.expr table ienv))
+            ((erp new-size index-type more-types table)
+             (valid-expr dirabsdeclor.size table ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
@@ -4098,7 +4098,7 @@
          (retok (make-dirabsdeclor-array-static1
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
-                 :expr new-expr)
+                 :size new-size)
                 type
                 (set::union types more-types)
                 table))
@@ -4106,8 +4106,8 @@
        (b* ((type (type-array))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
-            ((erp new-expr index-type more-types table)
-             (valid-expr dirabsdeclor.expr table ienv))
+            ((erp new-size index-type more-types table)
+             (valid-expr dirabsdeclor.size table ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
@@ -4118,7 +4118,7 @@
          (retok (make-dirabsdeclor-array-static2
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
-                 :expr new-expr)
+                 :size new-size)
                 type
                 (set::union types more-types)
                 table))
