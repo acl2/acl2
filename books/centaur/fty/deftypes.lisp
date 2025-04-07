@@ -128,7 +128,7 @@
   ;;                      (equal y (cdr z))))))
 
   (local (in-theory (disable acl2::cons-car-cdr)))
-  
+
   (defthmd equal-of-strip-cars-correct
     (implies (and (alistp x) (equal (strip-cars x) (true-list-fix cars)))
              (equal (equal-when-strip-cars x y cars)
@@ -147,7 +147,7 @@
            (equal (true-list-fix (strip-cars x))
                   (strip-cars x))
            :hints(("Goal" :in-theory (enable true-list-fix)))))
-  
+
   (defthmd equal-of-cons-by-equal-of-strip-cars
     (implies (and (equal (strip-cars x) cars)
                   (syntaxp (quotep cars))
@@ -911,6 +911,12 @@
                      `(deftheory deftypes-type-theory
                         ',(collect-uncond-type-prescriptions
                            (w state) (acl2::ens state) nil))))
+             ;; These FTY macros generate local theorems
+             ;; whose proofs need some built-ins to be enabled.
+             ;; These are often enabled, but not necessarily.
+             ;; To make the proofs more robust, we explicitly enable them here.
+             ;; More may need to be added here.
+             (local (in-theory (enable identity)))
              (local (deflabel deftypes-before-temp-thms))
              (progn . ,temp-thms)
              (local (deftheory deftypes-temp-thms
