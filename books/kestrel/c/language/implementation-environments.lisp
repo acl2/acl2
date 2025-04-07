@@ -1941,7 +1941,13 @@
      but we plan to add more components.")
    (xdoc::p
     "Currently we include the format of the three character types,
-     and the standard signed integer types and their unsigned counterparts."))
+     and the standard signed integer types and their unsigned counterparts.")
+   (xdoc::p
+    "The reason for using
+     the ``intermediate'' fixtype @(tsee char+short+int+long+llong-format)
+     is the same as explained in @(tsee integer-format)
+     about the ``intermediate'' fixtype used there.
+     We may eliminate this at some point."))
   ((char+short+int+long+llong-format
     char+short+int+long+llong-format
     :reqfix (if (char+short+int+long+llong-format-wfp
