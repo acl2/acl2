@@ -725,13 +725,6 @@
 ;;                                  (;BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
 ;;                                    plus-1-and-bvchop-becomes-bvplus)))))
 
-;gen
-(defthm bvplus-equal-same
-  (implies (integerp x)
-           (equal (equal 2147483647 (bvplus 31 2147483647 x))
-                  (equal 0 (bvchop 31 x))))
-  :hints (("Goal" :in-theory (enable bvplus))))
-
 (defthm <-of-bvplus-hack2
   (implies (integerp x)
            (equal (< (BVPLUS 32 2147483647 x) 2147483648)
