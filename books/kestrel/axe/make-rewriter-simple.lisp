@@ -6018,7 +6018,7 @@
                                             axe-treep-when-pseudo-termp
                                             natp-of-+-of-1
                                             ;;natp-of-max-key-2
-                                            <-of-if-arg1
+                                            ;<-of-if-arg1
                                             ;;max-key-hack
                                             ;;max-key-hack-2
                                             <-OF-+-OF-1-WHEN-INTEGERS
