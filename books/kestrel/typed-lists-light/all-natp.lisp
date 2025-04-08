@@ -15,8 +15,7 @@
 
 (defforall all-natp (lst) (natp lst) :declares ((type t lst)))
 
-;; Disable?
-(defthm natp-of-nth-from-all-natp
+(defthmd natp-of-nth-when-all-natp
   (implies (and (all-natp lst)
                 (< i (len lst))
                 (natp i))

@@ -1,6 +1,6 @@
 ; Mixed rules about functions/predicates over rational lists
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,8 +9,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
-
-;; Mised rules about lists of rationals
 
 (include-book "all-less")
 (include-book "all-less-than-or-equal")
