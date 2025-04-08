@@ -186,16 +186,28 @@
 ;;; Primitives
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Here we introduce our formalization of ZFG (ZF plus Global Choice), except
+; for the axiom schemes of Comprehension and (our version of) Replacement,
+; which come later (see zsub and zfn).
+
 (encapsulate
-  (((zfc) => *)
-   ((in * *) => *)
-   ((pair * *) => *)
-   ((min-in *) => *)
-   ((union *) => *)
-   ((omega) => *)
-   ((powerset *) => *))
+  (((zfc) => *)        ; See below.
+   ((in * *) => *)     ; (in a x) <=> a \in x
+   ((pair * *) => *)   ; (pair x y) = {x,y}
+   ((min-in *) => *)   ; (min-in x) \in x and (min-in x) does not intersect x
+   ((union *) => *)    ; (union x) = union of {a: a \in x}
+   ((omega) => *)      ; the set of natural numbers
+   ((powerset *) => *) ; (powerset x) is the set of all subsets of x
+   )
 
 (local (defun zfc ()
+
+; This predicate will serve as a hypothesis of many axioms and theorems.  Its
+; local witness is nil so that the axioms exported here are provable
+; (trivially).  A metatheoretic argument, essentially interpreting the ACL2
+; primitives and "good" objects into set theory, shows how we can view zfc as
+; being true.
+
          nil))
 
 ; The local values are what we imagine our functions returning when (zfc) is
@@ -233,6 +245,7 @@
   (forall a (implies (in a x)
                      (in a y))))
 
+; Axiom of Extensionality: Two sets are equal iff they have the same elements.
 (defthmdz extensionality
   (implies (and (subset x y)
                 (subset y x))
@@ -243,10 +256,10 @@
 ; This event is local to the surrounding encapsulate.
 (set-verify-guards-eagerness 0)
 
-(defun singleton (x)
+(defun singleton (x) ; {x}
   (pair x x))
 
-(defun union2 (x y)
+(defun union2 (x y) ; x U y
   (union (pair x y)))
 
 (defthmz min-in-1
@@ -259,7 +272,7 @@
   (implies (in a z)
            (not (in a (min-in z)))))
 
-(defthm min-in-0
+(defthm min-in-0 ; default
   (equal (min-in 0)
          0))
 
@@ -286,21 +299,24 @@
 
 ; Now embed ACL2 data types into the set-theoretic universe.
 
-(defthm 0-is-emptyset
+(defthm 0-is-emptyset ; 0 = {}
   (not (in a 0)))
 
-(defthmdz n+1-as-union2
+(defthmdz n+1-as-union2 ; n+1 = n U {n}
   (implies (natp n)
            (equal (+ 1 n)
                   (union2 n (singleton n)))))
 
-(defthmdz cons-as-pair
-; This is the classic ZF definition of an ordered pair.
-  (equal (cons x y) ; {{x},{x,y}}
+(defthmdz cons-as-ordered-pair
+
+; This is based on the classic ZF definition of an ordered pair, i.e.,
+; <x,y> = {{x},{x,y}}.  Cons is the ordered-pair operation.
+
+  (equal (cons x y)
          (pair (singleton x)
                (pair x y))))
 
-(defun insert (x s)
+(defun insert (x s) ; {x} U s
   (union2 (singleton x) s))
 
 (defun triple (y z) ; {0,y,z}
@@ -605,6 +621,15 @@
 
 (defmacro zfn (name args x y bound u &key verbose)
 
+; Informal summary:
+
+; Suppose u(x,y) is a term specifying a relation between variables x and y.
+; Let D be the set of all x \in bound for which there is some such y.  Then we
+; introduce (name . args) to be a function f with domain D such that u(x,y)
+; holds for all <x,y> \in f.
+
+; More details:
+
 ; This macro is what gives us the Axioms of Collection and Replacement, as it
 ; introduces a set-theoretic function restricted to a set, which is named bound
 ; here, without specifying a codomain or range.  (The codomain can then be
@@ -780,16 +805,21 @@
        (in (car p) a)
        (in (cdr p) b)))
 
+; Regarding the choice of s below:
 ; A X B contains ordered pairs (cons x y) = {{x},{x,y}} where x and y are both
 ; from A U B, hence {x} and {x,y} are both in (powerset (A U B)).  So (cons x
 ; y) is a subset of (powerset (A U B)), hence a member of (powerset
 ; (powerset (A U B))).  So A X B is a subset of (powerset (powerset (A U
 ; B))).
 
+; The following defines
+; (prod2 a b)
+; as:
+; {p \in (powerset (powerset (union2 a b))) : (prod-member p a b)}
 (zsub prod2                              ; name
       (a b)                              ; args
       p                                  ; x
-      (powerset (powerset (union2 a b))) ; s
+      (powerset (powerset (union2 a b))) ; s (see comment above)
       (prod-member p a b)                ; u
       )
 
@@ -803,7 +833,7 @@
   (equal (in x (cons a b))
          (or (equal x (singleton a))
              (equal x (pair a b))))
-  :hints (("Goal" :in-theory (enable cons-as-pair))))
+  :hints (("Goal" :in-theory (enable cons-as-ordered-pair))))
 
 (defthmz in-consp
   (implies (consp p)
@@ -833,7 +863,7 @@
 (defthmz in-prod2-lemma
   (implies (prod-member p a b)
            (in p (powerset (powerset (union2 a b)))))
-  :hints (("Goal" :in-theory (enable cons-as-pair subset)))
+  :hints (("Goal" :in-theory (enable cons-as-ordered-pair subset)))
   :rule-classes nil)
 
 (defthmz in-prod2 ; corollary of prod2$comprehension and in-prod2-lemma
@@ -946,7 +976,7 @@
          (in (cons x (apply r x))
               r))
   :props (zfc domain$prop)
-  :hints (("Goal" :in-theory (enable cons-as-pair))))
+  :hints (("Goal" :in-theory (enable cons-as-ordered-pair))))
 
 (in-theory (disable domain$comprehension)) ; subsumed by in-domain-rewrite
 
@@ -977,7 +1007,7 @@
               (in (cons (cdr x) (car x))
                   r)))
   :props (zfc prod2$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable cons-as-pair))))
+  :hints (("Goal" :in-theory (enable cons-as-ordered-pair))))
 
 (defthmdz in-inverse-alt ; fewer :props but just one direction
   (implies (in x (inverse r))
@@ -1046,6 +1076,11 @@
   :props (zfc domain$prop)
   :hints (("Goal" :use (apply-intro-lemma)
            :in-theory (enable in-domain-rewrite))))
+
+(theory-invariant (not (and (active-runep '(:rewrite in-domain-rewrite))
+                            (active-runep '(:rewrite in-cons-apply))))
+                  :key apply-intro-vs-relation-p-necd
+                  :error t)
 
 (defthmz inverse-inverse
   (implies (relation-p r)
@@ -1219,6 +1254,8 @@
 
 (defthmz ordinal-p-omega
   (ordinal-p (omega)))
+
+(in-theory (disable in-natp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Relational composition
@@ -1478,7 +1515,8 @@
                   (subset (compose g f)
                           (rcompose f g)))
          :hints (("Goal"
-                  :in-theory (enable apply-intro)
+                  :in-theory (e/d (apply-intro)
+                                  (relation-p-necc))
                   :expand ((subset (compose g f)
                                    (rcompose f g)))
 ; A restrict hint didn't work because the rewriter alone wasn't sufficient to
@@ -1728,7 +1766,9 @@
   (implies (and (not (zp n))
                 (in x n))
            (subset x (- n 1)))
-  :hints (("Goal" :expand ((subset x (- n 1))))))
+  :hints (("Goal"
+           :in-theory (enable in-natp)
+           :expand ((subset x (- n 1))))))
 
 (defthmz subset-n-v-n ; towards proving in-n-vn-n+1
   (implies (natp n)
@@ -1736,7 +1776,6 @@
   :props (zfc v$prop domain$prop)
   :hints (("Goal"
            :induct t
-           :in-theory (disable in-natp)
            :restrict ((subset-transitivity ((y (+ -1 n)))))
            :expand ((subset n (powerset (v-n (+ -1 n))))))))
 
@@ -1816,7 +1855,8 @@
   (implies (in (cons n obj) (v))
            (natp n))
   :props (zfc v$prop domain$prop)
-  :hints (("Goal" :in-theory (e/d (apply-intro) (equal-apply))
+  :hints (("Goal" :in-theory (e/d (apply-intro)
+                                  (equal-apply))
            :use v$domain-1))
   :rule-classes :forward-chaining)
 
@@ -1825,7 +1865,8 @@
            (and (consp p)
                 (natp (car p))))
   :props (zfc v$prop domain$prop)
-  :hints (("Goal" :in-theory (e/d (apply-intro) (equal-apply))
+  :hints (("Goal" :in-theory (e/d (apply-intro)
+                                  (equal-apply relation-p-necc))
            :use v$domain-1))
   :rule-classes :forward-chaining)
 
@@ -1941,7 +1982,7 @@
 (defthmz union-0
   (equal (union 0) 0)
   :hints (("Goal" :in-theory (e/d (in-in extensionality)
-                                  (subset-x-0 in-natp)))))
+                                  (subset-x-0)))))
 
 (defthmz v-n-closed-under-union
   (implies (in x (v-n n))
@@ -1980,7 +2021,7 @@
                 (in y (v-omega)))
            (in (cons x y) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable cons-as-pair))))
+  :hints (("Goal" :in-theory (enable cons-as-ordered-pair))))
 
 (defthmz v-omega-contains-integers-lemma
   (implies (and (integerp x)
@@ -2205,7 +2246,7 @@
   (implies (and (transitive s)
                 (in (cons a b) s))
            (in b s))
-  :hints (("Goal" :in-theory (enable cons-as-pair)
+  :hints (("Goal" :in-theory (enable cons-as-ordered-pair)
            :cases ((in (pair a b) s))))
   :rule-classes nil)
 
@@ -2223,7 +2264,7 @@
   (implies (and (transitive s)
                 (in (cons a b) s))
            (in a s))
-  :hints (("Goal" :in-theory (enable cons-as-pair)
+  :hints (("Goal" :in-theory (enable cons-as-ordered-pair)
            :cases ((in (pair a b) s))))
   :rule-classes nil)
 

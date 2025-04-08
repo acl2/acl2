@@ -528,12 +528,12 @@
        ((erp files state) (if preprocessor
                               (if preprocess-args-presentp
                                   (preprocess-files
-                                   (input-files-strings-to-filepaths files)
+                                   files
                                    :path path
                                    :preprocessor preprocessor
                                    :extra-args preprocess-extra-args)
                                 (preprocess-files
-                                 (input-files-strings-to-filepaths files)
+                                 files
                                  :path path
                                  :preprocessor preprocessor))
                             (input-files-read-files files path state)))
