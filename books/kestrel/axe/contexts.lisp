@@ -52,7 +52,6 @@
                            ;;nth-with-large-index-cheap
                            nth-when-zp-cheap
                            nth-when-not-consp-cheap
-                           nth-when-not-cddr
                            not-consp-of-nth-of-dargs-of-aref1
                            ;;consp-when-len-equal
                            )))
