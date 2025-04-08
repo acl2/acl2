@@ -15,6 +15,7 @@
 ;; todo: move these out of axe
 
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-clear-range" :dir :system)
 (include-book "rules1") ; todo
 (include-book "kestrel/lists-light/prefixp-def" :dir :system)
 (local (include-book "kestrel/lists-light/prefixp" :dir :system))

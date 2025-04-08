@@ -1865,45 +1865,6 @@
                                      subrange ;todo
                                      ))))
 
-(defthm cdr-of-bv-array-clear-of-0
-  (implies (posp len)
-           (equal (cdr (bv-array-clear elem-size len 0 lst))
-                  (bvchop-list elem-size (take (+ -1 len) (cdr lst)))))
-  :hints (("Goal" :in-theory (enable bv-array-clear))))
-
-(defthm car-of-BV-ARRAY-CLEAR-RANGE-of-0
-  (implies (and (posp len)
-                (natp highindex))
-           (equal (CAR (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN 0 HIGHINDEX LST))
-                  0))
-  :hints (("Goal" :expand (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN 0 HIGHINDEX LST))))
-
-(defthm cdr-of-bv-array-clear-2
-  (implies (and (<= n len)
-                (< key len)
-                (integerp len)
-                (natp key))
-           (equal (cdr (bv-array-clear element-size len key lst))
-                  (if (< key 1)
-                      (bvchop-list element-size
-                                   (cdr (take len (true-list-fix lst))))
-                    (bv-array-clear element-size (- len 1)
-                                    (- key 1) (cdr lst)))))
-  :hints (("Goal" :in-theory (enable bv-array-clear))))
-
-(defthm cdr-of-bv-array-clear-range-2
-  (implies (and (<= 1 lowindex)
-                (<= 1 len)
-                (< lowindex len)
-                (< highindex len)
-                (integerp len)
-                (natp lowindex)
-                (natp highindex))
-           (equal (cdr (bv-array-clear-range element-size len lowindex highindex lst))
-                  (bv-array-clear-range element-size (- len 1) (- lowindex 1) (- highindex 1) (cdr lst))))
-  :hints (("Goal" :induct t
-           :in-theory (enable bv-array-clear-range))))
-
 ;; (defun sub1-sub1-induct (n1 n2)
 ;;   (if (zp n1)
 ;;       (list n1 n2)
@@ -1911,16 +1872,16 @@
 
 (local
   (defthmd take-when-most-known
-  (implies (and (equal (take (+ -1 n) x) free)
-                (posp n))
-           (equal (take n x)
-                  (append free
-                          (list (nth (+ -1 n) x)))))
-  :hints (("Goal" :in-theory (enable equal-of-append
+    (implies (and (equal (take (+ -1 n) x) free)
+                  (posp n))
+             (equal (take n x)
+                    (append free (list (nth (+ -1 n) x)))))
+    :hints (("Goal" :in-theory (enable equal-of-append
 ;                                     subrange ;todo
-                                     CAR-BECOMES-NTH-OF-0
-                                     )))))
+                                       CAR-BECOMES-NTH-OF-0
+                                       )))))
 
+;move, but need
 (defthm take-of-bv-array-clear-range
   (implies (and ; (natp elem-size)
             (natp n)
@@ -1933,20 +1894,6 @@
   :hints (("Goal" :induct t
            :do-not '(generalize eliminate-destructors)
            :in-theory (enable take bv-array-clear-range take-when-most-known equal-of-append))))
-
-;move or drop
-(defthm take-of-firstn-same
-  (equal (take n (firstn n x))
-         (take n x))
-  :hints (("Goal" :in-theory (enable take firstn))))
-
-;move or drop
-(defthm take-when-not-consp-cheap
-  (implies (not (consp x))
-           (equal (take n x)
-                  (repeat n nil)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable take))))
 
 (defthm bv-array-clear-bottom-range
   (implies (and (posp len)
