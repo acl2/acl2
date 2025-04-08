@@ -421,22 +421,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define certs-with-author ((author addressp)
-                           (certs certificate-setp))
+(define certs-with-author ((author addressp) (certs certificate-setp))
   :returns (certs-with-author certificate-setp)
-  :short "Retrieve the set of certificates with a given author from a set."
-  (b* (((when (set::emptyp certs)) nil)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with a given author."
+  (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
        ((certificate cert) (set::head certs)))
-    (if (equal author cert.author)
-        (set::insert (certificate-fix cert)
+    (if (equal cert.author (address-fix author))
+        (set::insert cert
                      (certs-with-author author (set::tail certs)))
       (certs-with-author author (set::tail certs))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
+  :hooks (:fix)
+
   ///
 
   (defret certs-with-author-subset
-    (implies (certificate-setp certs)
-             (set::subset certs-with-author certs))
+    (set::subset certs-with-author certs)
+    :hyp (certificate-setp certs)
     :hints (("Goal"
              :induct t
              :in-theory (enable* set::subset
@@ -447,7 +450,8 @@
     (implies (certificate-setp certs)
              (equal (set::in cert (certs-with-author author certs))
                     (and (set::in cert certs)
-                         (equal (certificate->author cert) author))))
+                         (equal (certificate->author cert)
+                                (address-fix author)))))
     :induct t
     :enable cert-set->author-set-of-insert)
 
@@ -485,7 +489,8 @@
   (defruled emptyp-of-certs-with-author-if-no-author
     (implies (certificate-setp certs)
              (equal (set::emptyp (certs-with-author author certs))
-                    (not (set::in author (cert-set->author-set certs)))))
+                    (not (set::in (address-fix author)
+                                  (cert-set->author-set certs)))))
     :induct t
     :enable cert-set->author-set)
 
@@ -506,8 +511,9 @@
     (implies (certificate-setp certs)
              (equal (cert-set->author-set
                      (certs-with-author author certs))
-                    (if (set::in author (cert-set->author-set certs))
-                        (set::insert author nil)
+                    (if (set::in (address-fix author)
+                                 (cert-set->author-set certs))
+                        (set::insert (address-fix author) nil)
                       nil)))
     :induct t
     :enable (cert-set->author-set
@@ -668,7 +674,8 @@
   (in-theory (disable certs-with-authors-subset))
 
   (defruled in-of-certs-with-authors
-    (implies (certificate-setp certs)
+    (implies (and (certificate-setp certs)
+                  (address-setp authors))
              (equal (set::in cert
                              (certs-with-authors authors certs))
                     (and (set::in cert certs)
@@ -778,7 +785,8 @@
     :induct t)
 
   (defruled certs-with-authors+round-to-authors-of-round
-    (implies (certificate-setp certs)
+    (implies (and (certificate-setp certs)
+                  (address-setp authors))
              (equal (certs-with-authors+round authors round certs)
                     (certs-with-authors
                      authors (certs-with-round round certs))))
@@ -789,7 +797,8 @@
              in-of-certs-with-authors+round))
 
   (defruled certs-with-authors+round-to-round-of-authors
-    (implies (certificate-setp certs)
+    (implies (and (certificate-setp certs)
+                  (address-setp authors))
              (equal (certs-with-authors+round authors round certs)
                     (certs-with-round
                      round (certs-with-authors authors certs))))
