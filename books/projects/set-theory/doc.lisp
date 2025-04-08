@@ -167,7 +167,8 @@
  (defthmdz extensionality
    (implies (and (subset x y)
                  (subset y x))
-            (equal (equal x y) t)))
+            (equal (equal x y)
+                   t)))
  })
 
  <p>And here is its expansion (as seen using @(':')@(tsee trans1)), where
@@ -829,11 +830,10 @@
  not mentioned there are those exported theorems pertaining to the encoding of
  good ACL2 objects as sets.  A key property, alluded to above, is to interpret
  @('(cons x y)') as the set-theoretic ordered pair.  That is traditionally the
- set @('{{x},{x,y}}'), formalized as follows; for our purposes, @('zf::force?')
- is essentially @(tsee force).</p>
+ set @('{{x},{x,y}}'), formalized as follows.</p>
 
  @({
- (defthmdz cons-as-pair
+ (defthmdz cons-as-ordered-pair
    (equal (cons x y)
           (pair (singleton x)
                 (pair x y))))

@@ -29,6 +29,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (local (in-theory (enable not-<-of-car-when-all-<)))
@@ -175,8 +176,7 @@
                                   )
   (declare (xargs :guard (and (array1p size-array-name size-array) ;; need to say that it contains integers or nil
                               (array1p 'worklist-array worklist-array) ;maps nodes to :examined or nil
-                              (true-listp worklist)
-                              (all-natp worklist)
+                              (nat-listp worklist)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (<= (alen1 size-array-name size-array) dag-len)
                               (= (alen1 'worklist-array worklist-array)
@@ -193,7 +193,7 @@
   (if (or (endp worklist)
           ;; for termination:
           (not (and (mbt (array1p 'worklist-array worklist-array))
-                    (mbt (all-natp worklist))
+                    (mbt (nat-listp worklist))
                     (mbt (all-< worklist (alen1 'worklist-array worklist-array))))))
       size-array
     (let* ((nodenum (first worklist))
@@ -239,8 +239,8 @@
 ;; (defund size-array-for-nodes-aux (steps-left ;forces termination
 ;;                                   worklist dag-array-name dag-array dag-len size-array-name size-array)
 ;;   (declare (xargs :guard (and (array1p size-array-name size-array) ;; need to say that it contains integers or nil
-;;                               (true-listp worklist)
-;;                               (all-natp worklist)
+;;                               (nat-listp worklist)
+;;
 ;;                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;;                               ;;todo: weaken (allow the DAG to be bigger than the highest node we are working with)?:
 ;;                               (eql (alen1 dag-array-name dag-array)
@@ -297,8 +297,7 @@
 ;;                                                                                            num-quotep-args)))))))))))))
 
 (defthm alen1-of-size-array-for-nodes-aux
-  (implies (and (all-natp worklist)
-                (true-listp worklist)
+  (implies (and (nat-listp worklist)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< worklist dag-len)
                 (<= (alen1 size-array-name size-array) dag-len)
@@ -309,8 +308,7 @@
            :in-theory (enable size-array-for-nodes-aux))))
 
 (defthm array1p-of-size-array-for-nodes-aux
-  (implies (and (all-natp worklist)
-                (true-listp worklist)
+  (implies (and (nat-listp worklist)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< worklist (alen1 size-array-name size-array))
                 (<= (alen1 size-array-name size-array)
@@ -324,8 +322,7 @@
 ;; TODO: Specialize to use the array-name 'size-array?
 (defund size-array-for-sorted-nodes (nodenums ;must be sorted
                                      dag-array-name dag-array dag-len size-array-name-to-use)
-  (declare (xargs :guard (and (all-natp nodenums)
-                              (true-listp nodenums)
+  (declare (xargs :guard (and (nat-listp nodenums)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (<= (alen1 dag-array-name dag-array)
                                   *max-1d-array-length*)
@@ -342,8 +339,7 @@
                               dag-array-name dag-array dag-len size-array-name-to-use size-array worklist-array)))
 
 (defthm alen1-of-size-array-for-sorted-nodes
-  (implies (and (all-natp nodenums)
-                (true-listp nodenums)
+  (implies (and (nat-listp nodenums)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< nodenums dag-len)
                 (symbolp size-array-name-to-use)
@@ -353,8 +349,7 @@
   :hints (("Goal" :in-theory (enable size-array-for-sorted-nodes))))
 
 (defthm array1p-of-size-array-for-sorted-nodes
-  (implies (and (all-natp nodenums)
-                (true-listp nodenums)
+  (implies (and (nat-listp nodenums)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< nodenums dag-len)
                 (symbolp size-array-name-to-use)
@@ -369,8 +364,7 @@
 
 ;populates size-array with the size of every node in NODENUMS (and every supporting node), but not necessarily all nodes
 (defund size-array-for-nodes (nodenums dag-array-name dag-array dag-len size-array-name-to-use)
-  (declare (xargs :guard (and (all-natp nodenums)
-                              (true-listp nodenums)
+  (declare (xargs :guard (and (nat-listp nodenums)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (<= (alen1 dag-array-name dag-array)
                                   *max-1d-array-length*)
@@ -381,8 +375,7 @@
                                dag-array-name dag-array dag-len size-array-name-to-use))
 
 ;; (defund size-array-for-nodes (nodenums dag-array-name dag-array dag-len size-array-name-to-use)
-;;   (declare (xargs :guard (and (all-natp nodenums)
-;;                               (true-listp nodenums)
+;;   (declare (xargs :guard (and (nat-listp nodenums)
 ;;                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
 ;;                               (<= (alen1 dag-array-name dag-array)
 ;;                                   *max-1d-array-length*)
@@ -398,8 +391,7 @@
 ;;     (size-array-for-nodes-aux termination-bound nodenums dag-array-name dag-array dag-len size-array-name-to-use size-array)))
 
 (defthm alen1-of-size-array-for-nodes
-  (implies (and (all-natp nodenums)
-                (true-listp nodenums)
+  (implies (and (nat-listp nodenums)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< nodenums dag-len)
                 (symbolp size-array-name-to-use)
@@ -409,8 +401,7 @@
   :hints (("Goal" :in-theory (enable size-array-for-nodes))))
 
 (defthm array1p-of-size-array-for-nodes
-  (implies (and (all-natp nodenums)
-                (true-listp nodenums)
+  (implies (and (nat-listp nodenums)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< nodenums dag-len)
                 (symbolp size-array-name-to-use)

@@ -271,8 +271,8 @@
     (:linear c$::enumspec-count-of-type-spec-enum->spec)
     (:linear c$::expr-count-of-car)
     (:linear c$::expr-count-of-const-expr->expr)
-    (:linear c$::expr-count-of-dirabsdeclor-array-static1->expr)
-    (:linear c$::expr-count-of-dirabsdeclor-array-static2->expr)
+    (:linear c$::expr-count-of-dirabsdeclor-array-static1->size)
+    (:linear c$::expr-count-of-dirabsdeclor-array-static2->size)
     (:linear c$::expr-count-of-dirdeclor-array-static1->size)
     (:linear c$::expr-count-of-dirdeclor-array-static2->size)
     (:linear c$::expr-count-of-expr-arrsub->arg1)
@@ -305,7 +305,7 @@
     (:linear c$::expr-count-of-type-spec-typeof-expr->expr)
     (:linear c$::expr-list-count-of-cdr)
     (:linear c$::expr-list-count-of-expr-funcall->args)
-    (:linear c$::expr-option-count-of-dirabsdeclor-array->expr?)
+    (:linear c$::expr-option-count-of-dirabsdeclor-array->size?)
     (:linear c$::expr-option-count-of-dirdeclor-array->size?)
     (:linear c$::expr-option-count-of-expr-cond->then)
     (:linear c$::expr-option-count-of-stmt-expr->expr?)
@@ -1263,16 +1263,16 @@
       :paren (dirabsdeclor-paren (,(cdr (assoc-eq 'absdeclor names)) dirabsdeclor.inner ,@extra-args-names))
       :array (make-dirabsdeclor-array
                :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
-               :tyquals dirabsdeclor.tyquals
-               :expr? (,(cdr (assoc-eq 'expr-option names)) dirabsdeclor.expr? ,@extra-args-names))
+               :qualspecs dirabsdeclor.qualspecs
+               :size? (,(cdr (assoc-eq 'expr-option names)) dirabsdeclor.size? ,@extra-args-names))
       :array-static1 (make-dirabsdeclor-array-static1
                        :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
-                       :tyquals dirabsdeclor.tyquals
-                       :expr (,(cdr (assoc-eq 'expr names)) dirabsdeclor.expr ,@extra-args-names))
+                       :qualspecs dirabsdeclor.qualspecs
+                       :size (,(cdr (assoc-eq 'expr names)) dirabsdeclor.size ,@extra-args-names))
       :array-static2 (make-dirabsdeclor-array-static2
                        :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
-                       :tyquals dirabsdeclor.tyquals
-                       :expr (,(cdr (assoc-eq 'expr names)) dirabsdeclor.expr ,@extra-args-names))
+                       :qualspecs dirabsdeclor.qualspecs
+                       :size (,(cdr (assoc-eq 'expr names)) dirabsdeclor.size ,@extra-args-names))
       :array-star (dirabsdeclor-array-star
                     (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names))
       :function (make-dirabsdeclor-function

@@ -29,7 +29,7 @@
 
 (in-theory (disable member-equal-becomes-memberp)) ;causes problems
 
-(local (in-theory (disable myquotep natp-of-nth-from-all-natp))) ; for speed
+(local (in-theory (disable myquotep))) ; for speed
 
 (local (in-theory (enable rationalp-when-natp)))
 

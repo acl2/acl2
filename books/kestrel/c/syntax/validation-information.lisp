@@ -708,42 +708,51 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Informally, two types are compatible if they represent \"the same\"
-     type.")
+    "Informally, two types are compatible if they are ``the same'' type;
+     this is actually a little weaker than type equality,
+     as two types (as captured in @(tsee type))
+     may differ syntactically yet denote the same semantic type.
+     [C17:6.2.7] phrases things in terms of
+     the two types ``having'' the same type,
+     which is a bit odd, since types are (not have) types;
+     but the intention is clear.")
    (xdoc::p
-    "Because we currently only model an approximation of C types, our notion of
-     compatibility is also approximate.
+    "Because we currently only model an approximation of C types,
+     our notion of compatibility is also approximate.
      Specifically, this relation overapproximates true type compatibility.
      Compatible types should always be recognized as such,
      but incompatible types may also be recognized.")
    (xdoc::p
-    "In particular:"
-    (xdoc::ul
-      (xdoc::li "All structure types are currently considered compatible,
-                 due to their approximate representations.
-                 The same applies to uions, enumerations, arrays, pointers, and
-                 functions.")
-     (xdoc::li "Type qualifiers are ignored.")
-     (xdoc::li "All types are compatible with the abstract @(':unknown')
-                type.")
-     (xdoc::li "Enumeration types are compatible with "
-               (xdoc::i "all")
-               " integer types (not just one particular type).")))
+    "In particular:")
+   (xdoc::ul
+    (xdoc::li
+     "All structure types are currently considered compatible,
+      due to their approximate representations.
+      The same applies to
+      union, enumeration, array, pointer, and function types.")
+    (xdoc::li
+     "Type qualifiers are ignored.")
+    (xdoc::li
+     "All types are compatible with the abstract @(':unknown') type.")
+    (xdoc::li
+     "Enumeration types are compatible with
+      <i>all</i> integer types (not just one particular type)."))
    (xdoc::p
-     "Eventually, we shall refine the notion of compatibility alongside our
-      representation of type in order to reflect true type compatibility.
-      This may require an additional argument representing the implementation
-      environment so that we may establish "
-     (xdoc::i "which")
-     " integer type is to be considered compatible with @('enum') types.")
+    "Eventually, we shall refine the notion of compatibility,
+     alongside our representation of types,
+     in order to reflect true type compatibility.
+     This may require an additional argument
+     representing the implementation environment
+     so that we may establish <i>which</i> integer type
+     is to be considered compatible with @('enum') types.")
    (xdoc::p
-    "True type compatibility is an equivalence relation, but our approximate
-     notion of compatibility is not.
+    "True type compatibility is an equivalence relation,
+     but our approximate notion of compatibility is not.
      That is because @('type-compatiblep') is not transitive.
-     For instance, @(':void') is compatible with @(':unknown'), as is
-     @(':bool'), but @(':void') is "
-    (xdoc::i "not")
-    " compatible with @(':bool')."))
+     For instance,
+     @(':void') is compatible with @(':unknown'),
+     as is @(':bool'),
+     but @(':void') is <i>not</i> compatible with @(':bool')."))
   (b* ((x (type-fix x))
        (y (type-fix y)))
     (or (equal x y)

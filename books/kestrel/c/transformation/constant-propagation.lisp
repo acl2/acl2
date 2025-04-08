@@ -1334,31 +1334,31 @@
         (b* (((mv declor? env)
               (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr? - env)
-              (const-prop-expr-option dirabsdeclor.expr? env)))
+              (const-prop-expr-option dirabsdeclor.size? env)))
           (mv (make-dirabsdeclor-array
                 :declor? declor?
-                :tyquals dirabsdeclor.tyquals
-                :expr? expr?)
+                :qualspecs dirabsdeclor.qualspecs
+                :size? expr?)
               env))
         :array-static1
         (b* (((mv declor? env)
               (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr - env)
-              (const-prop-expr dirabsdeclor.expr env)))
+              (const-prop-expr dirabsdeclor.size env)))
           (mv (make-dirabsdeclor-array-static1
                 :declor? declor?
-                :tyquals dirabsdeclor.tyquals
-                :expr expr)
+                :qualspecs dirabsdeclor.qualspecs
+                :size expr)
               env))
         :array-static2
         (b* (((mv declor? env)
               (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr - env)
-              (const-prop-expr dirabsdeclor.expr env)))
+              (const-prop-expr dirabsdeclor.size env)))
           (mv (make-dirabsdeclor-array-static2
                 :declor? declor?
-                :tyquals dirabsdeclor.tyquals
-                :expr expr)
+                :qualspecs dirabsdeclor.qualspecs
+                :size expr)
               env))
         :array-star
         (b* (((mv declor? env)
