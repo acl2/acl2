@@ -115,7 +115,7 @@
      The certificate is the one with the author and round of interest
      (i.e. the variables @('author') and @('round') in the theorem.
      That certificate is the expressed as
-     the first one of @(tsee certificates-with-author)
+     the first one of @(tsee certs-with-author)
      applied to @(tsee certificates-with-round);
      this would be actually equivalent to
      @(tsee cert-with-author+round),
@@ -152,12 +152,12 @@
                          (set::in author
                                   (committee-members commtt)))))
      :enable (in-cert-set->author-set-to-nonempty-certs-with-author
-              in-of-certificates-with-author
+              in-of-certs-with-author
               in-of-certificates-with-round
               accepted-certificates
               signer-quorum-p-necc)
      :use ((:instance set::in-head
-                      (x (certificates-with-author
+                      (x (certs-with-author
                           author
                           (certificates-with-round
                            round
@@ -165,7 +165,7 @@
                             (get-validator-state val systate))))))
            (:instance author-in-committee-when-validator-signer-quorum-p
                       (cert (set::head
-                             (certificates-with-author
+                             (certs-with-author
                               author
                               (certificates-with-round
                                round
