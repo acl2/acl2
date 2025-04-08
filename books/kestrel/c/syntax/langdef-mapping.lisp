@@ -553,8 +553,8 @@
                       in direct abstract declarator ~x0 for object."
                      (dirabsdeclor-fix dirabsdeclor))))
        ((erp iconst?)
-        (if dirabsdeclor.expr?
-            (b* ((iconst (check-expr-iconst dirabsdeclor.expr?)))
+        (if dirabsdeclor.size?
+            (b* ((iconst (check-expr-iconst dirabsdeclor.size?)))
               (if iconst
                   (retok (ldm-iconst iconst))
                 (reterr (msg "Unsupported non-integer-constant size ~

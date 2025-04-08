@@ -11038,7 +11038,7 @@
            ((token-punctuatorp token2 "]") ; [ ]
             (retok (make-dirabsdeclor-array :declor? nil
                                             :qualspecs nil
-                                            :expr? nil)
+                                            :size? nil)
                    (span-join span span2)
                    parstate))
            ;; If token2 is a star, it may start an expression,
@@ -11065,7 +11065,7 @@
                       (read-punctuator "]" parstate)))
                   (retok (make-dirabsdeclor-array :declor? nil
                                                   :qualspecs nil
-                                                  :expr? expr)
+                                                  :size? expr)
                          (span-join span last-span)
                          parstate))))))
            ;; If token2 is the keyword 'static',
@@ -11093,7 +11093,7 @@
                   (retok (make-dirabsdeclor-array-static1
                           :declor? nil
                           :qualspecs qualspecs
-                          :expr expr)
+                          :size expr)
                          (span-join span last-span)
                          parstate)))
                ;; If token3 is not a type qualifier,
@@ -11108,7 +11108,7 @@
                   (retok (make-dirabsdeclor-array-static1
                           :declor? nil
                           :qualspecs nil
-                          :expr expr)
+                          :size expr)
                          (span-join span last-span)
                          parstate))))))
            ;; If token2 is a type qualifier,
@@ -11134,7 +11134,7 @@
                   (retok (make-dirabsdeclor-array-static2
                           :declor? nil
                           :qualspecs qualspecs
-                          :expr expr)
+                          :size expr)
                          (span-join span last-span)
                          parstate)))
                ;; If token3 is a closed square bracket,
@@ -11143,7 +11143,7 @@
                 (retok (make-dirabsdeclor-array
                         :declor? nil
                         :qualspecs qualspecs
-                        :expr? nil)
+                        :size? nil)
                        (span-join span span3)
                        parstate))
                ;; If token3 is not the keyword 'static'
@@ -11159,7 +11159,7 @@
                   (retok (make-dirabsdeclor-array
                           :declor? nil
                           :qualspecs qualspecs
-                          :expr? expr)
+                          :size? expr)
                          (span-join span last-span)
                          parstate))))))
            ;; If token2 is anything else,
@@ -11172,7 +11172,7 @@
                   (read-punctuator "]" parstate)))
               (retok (make-dirabsdeclor-array :declor? nil
                                               :qualspecs nil
-                                              :expr? expr)
+                                              :size? expr)
                      (span-join span last-span)
                      parstate))))))
        ;; If token is an open parenthesis,

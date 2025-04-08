@@ -569,26 +569,26 @@
     :expand (dirabsdeclor-unambp (dirabsdeclor-paren absdeclor)))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array
-    (equal (dirabsdeclor-unambp (dirabsdeclor-array declor? qualspecs expr?))
+    (equal (dirabsdeclor-unambp (dirabsdeclor-array declor? qualspecs size?))
            (and (dirabsdeclor-option-unambp declor?)
-                (expr-option-unambp expr?)))
-    :expand (dirabsdeclor-unambp (dirabsdeclor-array declor? qualspecs expr?)))
+                (expr-option-unambp size?)))
+    :expand (dirabsdeclor-unambp (dirabsdeclor-array declor? qualspecs size?)))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-static1
     (equal (dirabsdeclor-unambp
-            (dirabsdeclor-array-static1 declor? qualspecs expr))
+            (dirabsdeclor-array-static1 declor? qualspecs size))
            (and (dirabsdeclor-option-unambp declor?)
-                (expr-unambp expr)))
+                (expr-unambp size)))
     :expand (dirabsdeclor-unambp
-             (dirabsdeclor-array-static1 declor? qualspecs expr)))
+             (dirabsdeclor-array-static1 declor? qualspecs size)))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-static2
     (equal (dirabsdeclor-unambp
-            (dirabsdeclor-array-static2 declor? qualspecs expr))
+            (dirabsdeclor-array-static2 declor? qualspecs size))
            (and (dirabsdeclor-option-unambp declor?)
-                (expr-unambp expr)))
+                (expr-unambp size)))
     :expand (dirabsdeclor-unambp
-             (dirabsdeclor-array-static2 declor? qualspecs expr)))
+             (dirabsdeclor-array-static2 declor? qualspecs size)))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-star
     (equal (dirabsdeclor-unambp (dirabsdeclor-array-star declor?))
@@ -1266,10 +1266,10 @@
               (dirabsdeclor-array->declor? dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
-  (defrule expr-option-unambp-of-dirabsdeclor-array->expr?
+  (defrule expr-option-unambp-of-dirabsdeclor-array->size?
     (implies (and (dirabsdeclor-unambp dirabsdeclor)
                   (dirabsdeclor-case dirabsdeclor :array))
-             (expr-option-unambp (dirabsdeclor-array->expr? dirabsdeclor)))
+             (expr-option-unambp (dirabsdeclor-array->size? dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-static1->declor?
@@ -1279,10 +1279,10 @@
               (dirabsdeclor-array-static1->declor? dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
-  (defrule expr-unambp-of-dirabsdeclor-array-static1->expr
+  (defrule expr-unambp-of-dirabsdeclor-array-static1->size
     (implies (and (dirabsdeclor-unambp dirabsdeclor)
                   (dirabsdeclor-case dirabsdeclor :array-static1))
-             (expr-unambp (dirabsdeclor-array-static1->expr dirabsdeclor)))
+             (expr-unambp (dirabsdeclor-array-static1->size dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-static2->declor?
@@ -1292,10 +1292,10 @@
               (dirabsdeclor-array-static2->declor? dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
-  (defrule expr-unambp-of-dirabsdeclor-array-static2->expr
+  (defrule expr-unambp-of-dirabsdeclor-array-static2->size
     (implies (and (dirabsdeclor-unambp dirabsdeclor)
                   (dirabsdeclor-case dirabsdeclor :array-static2))
-             (expr-unambp (dirabsdeclor-array-static2->expr dirabsdeclor)))
+             (expr-unambp (dirabsdeclor-array-static2->size dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-array-star->declor?
