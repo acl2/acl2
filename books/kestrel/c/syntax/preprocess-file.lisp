@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-(include-book "file-paths")
 (include-book "files")
 
 (include-book "centaur/misc/tshell" :dir :system)
@@ -23,6 +22,7 @@
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
@@ -77,21 +77,6 @@
   :enable (byte-listp-becomes-unsigned-byte-listp-8))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; filepath-setp rules
-
-(defrulel filepath-setp-of-cdr-when-filepath-setp-cheap
-  (implies (filepath-setp setp)
-           (filepath-setp (cdr setp)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable (filepath-setp))
-
-(defrulel filepath-setp-compound-recognizer
-  (implies (filepath-setp files)
-           (true-listp files))
-  :rule-classes :compound-recognizer)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define preprocess-file
   ((file stringp
