@@ -700,6 +700,111 @@
                                  ((:e tau-system)))))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-compatiblep ((x typep) (y typep))
+  :returns (yes/no booleanp)
+  :short "Check that two @(see type)s are compatible [C17:6.2.7]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Informally, two types are compatible if they are ``the same'' type;
+     this is actually a little weaker than type equality,
+     as two types (as captured in @(tsee type))
+     may differ syntactically yet denote the same semantic type.
+     [C17:6.2.7] phrases things in terms of
+     the two types ``having'' the same type,
+     which is a bit odd, since types are (not have) types;
+     but the intention is clear.")
+   (xdoc::p
+    "Because we currently only model an approximation of C types,
+     our notion of compatibility is also approximate.
+     Specifically, this relation overapproximates true type compatibility.
+     Compatible types should always be recognized as such,
+     but incompatible types may also be recognized.")
+   (xdoc::p
+    "In particular:")
+   (xdoc::ul
+    (xdoc::li
+     "All structure types are currently considered compatible,
+      due to their approximate representations.
+      The same applies to
+      union, enumeration, array, pointer, and function types.")
+    (xdoc::li
+     "Type qualifiers are ignored.")
+    (xdoc::li
+     "All types are compatible with the abstract @(':unknown') type.")
+    (xdoc::li
+     "Enumeration types are compatible with
+      <i>all</i> integer types (not just one particular type)."))
+   (xdoc::p
+    "Eventually, we shall refine the notion of compatibility,
+     alongside our representation of types,
+     in order to reflect true type compatibility.
+     This may require an additional argument
+     representing the implementation environment
+     so that we may establish <i>which</i> integer type
+     is to be considered compatible with @('enum') types.")
+   (xdoc::p
+    "True type compatibility is an equivalence relation,
+     but our approximate notion of compatibility is not.
+     That is because @('type-compatiblep') is not transitive.
+     For instance,
+     @(':void') is compatible with @(':unknown'),
+     as is @(':bool'),
+     but @(':void') is <i>not</i> compatible with @(':bool')."))
+  (b* ((x (type-fix x))
+       (y (type-fix y)))
+    (or (equal x y)
+        (type-case x :unknown)
+        (type-case y :unknown)
+        (and (type-integerp x) (type-case y :enum))
+        (and (type-case x :enum) (type-integerp y))))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-compatiblep-reflexive
+    (type-compatiblep x x)
+    :enable type-compatiblep)
+
+  (defrule type-compatiblep-symmetric
+    (equal (type-compatiblep y x)
+           (type-compatiblep x y))
+    :enable type-compatiblep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-null-pointer-constp ((expr exprp) (type typep))
+  (declare (ignore expr))
+  :returns (yes/no booleanp)
+  :short "Check whether an expression of a given type is potentially a null
+          pointer constant [C17:6.3.2.3/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Due to the approximate representation of types and our lack of constant
+     expression evaluation,
+     this recognizer is highly overappoximating.
+     It will recognize any pointer or integer type."))
+  (or (type-case type :pointer)
+      (type-integerp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define const-expr-null-pointer-constp ((const-expr const-exprp) (type typep))
+  :returns (yes/no booleanp)
+  :short "Check whether a constant expression of a given type is potentially a
+          null pointer constant [C17:6.3.2.3/3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee expr-null-pointer-constp)."))
+  (b* (((const-expr const-expr) const-expr))
+    (expr-null-pointer-constp const-expr.expr type))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum linkage
@@ -808,16 +913,17 @@
      the information for both objects and functions includes (different) types;
      that information also includes the linkage [C17:6.2.2],
      as well as definition status (see @(tsee valid-defstatus)).
-     For enumeration constants and for @('typedef') names,
-     for now we only track that they are
-     enumeration constants and @('typedef') names.")
+     For enumeration constants names,
+     for now we only track that they are enumeration constants.
+     For @('typedef') names, we track the type corresponding to its
+     definition.")
    (xdoc::p
     "We will refine this fixtype as we refine our validator."))
   (:objfun ((type type)
             (linkage linkage)
             (defstatus valid-defstatus)))
   (:enumconst ())
-  (:typedef ())
+  (:typedef ((def type)))
   :pred valid-ord-infop)
 
 ;;;;;;;;;;;;;;;;;;;;

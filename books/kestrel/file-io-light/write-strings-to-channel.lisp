@@ -1,6 +1,6 @@
 ; A function to write a sequence of strings to a channel
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "princ-dollar")
+(local (include-book "princ-dollar"))
 
 (local (in-theory (disable open-output-channel-p1 open-output-channel-p)))
 

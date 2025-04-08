@@ -3329,11 +3329,12 @@
        :array (b* (((mv new-declor? (simpadd0-gout gout-declor?))
                     (simpadd0-dirabsdeclor-option dirabsdeclor.declor? gin state))
                    (gin (simpadd0-gin-update gin gout-declor?))
-                   ((mv new-expr? (simpadd0-gout gout-expr?))
-                    (simpadd0-expr-option dirabsdeclor.expr? gin state)))
-                (mv (make-dirabsdeclor-array :declor? new-declor?
-                                             :tyquals dirabsdeclor.tyquals
-                                             :expr? new-expr?)
+                   ((mv new-size? (simpadd0-gout gout-expr?))
+                    (simpadd0-expr-option dirabsdeclor.size? gin state)))
+                (mv (make-dirabsdeclor-array
+                     :declor? new-declor?
+                     :qualspecs dirabsdeclor.qualspecs
+                     :size? new-size?)
                     (make-simpadd0-gout
                      :events (append gout-declor?.events gout-expr?.events)
                      :thm-name nil
@@ -3346,12 +3347,12 @@
                                                           gin
                                                           state))
                            (gin (simpadd0-gin-update gin gout-declor?))
-                           ((mv new-expr (simpadd0-gout gout-expr))
-                            (simpadd0-expr dirabsdeclor.expr gin state)))
+                           ((mv new-size (simpadd0-gout gout-expr))
+                            (simpadd0-expr dirabsdeclor.size gin state)))
                         (mv (make-dirabsdeclor-array-static1
                              :declor? new-declor?
-                             :tyquals dirabsdeclor.tyquals
-                             :expr new-expr)
+                             :qualspecs dirabsdeclor.qualspecs
+                             :size new-size)
                             (make-simpadd0-gout
                              :events (append gout-declor?.events
                                              gout-expr.events)
@@ -3365,12 +3366,12 @@
                             (simpadd0-dirabsdeclor-option dirabsdeclor.declor?
                                                           gin state))
                            (gin (simpadd0-gin-update gin gout-declor?))
-                           ((mv new-expr (simpadd0-gout gout-expr))
-                            (simpadd0-expr dirabsdeclor.expr gin state)))
+                           ((mv new-size (simpadd0-gout gout-expr))
+                            (simpadd0-expr dirabsdeclor.size gin state)))
                         (mv (make-dirabsdeclor-array-static2
                              :declor? new-declor?
-                             :tyquals dirabsdeclor.tyquals
-                             :expr new-expr)
+                             :qualspecs dirabsdeclor.qualspecs
+                             :size new-size)
                             (make-simpadd0-gout
                              :events (append gout-declor?.events
                                              gout-expr.events)

@@ -34,7 +34,7 @@
 (include-book "bvmult")
 (include-book "bvmod")
 (include-book "bvuminus")
-(include-book "kestrel/arithmetic-light/lg" :dir :system)
+(include-book "kestrel/arithmetic-light/lg-def" :dir :system)
 (include-book "bv-syntax")
 ;;(include-book "sbvrem")
 (include-book "bvdiv")
@@ -59,6 +59,7 @@
 (include-book "bitwise")
 (include-book "trim")
 (include-book "unsigned-byte-p-forced-rules") ; since some of the rules in this file introduce unsigned-byte-p-forced
+(local (include-book "kestrel/arithmetic-light/lg" :dir :system))
 (local (include-book "logand-b"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))

@@ -549,11 +549,17 @@
                              ;; dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
                              )))
 
-         ;;todo: dup!
+         ;; ;;todo: dup!
+         ;; (local
+         ;;   (defthm nat-listp-of-reverse-list
+         ;;     (equal (nat-listp (reverse-list x))
+         ;;            (all-natp x))
+         ;;     :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
          (local
            (defthm nat-listp-of-reverse-list
              (equal (nat-listp (reverse-list x))
-                    (all-natp x))
+                    (nat-listp (true-list-fix x)))
              :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
 
          ;; Make versions of sublis-var-and-eval and subcor-var-and-eval:
@@ -4637,7 +4643,8 @@
                                      consp-of-cdr-when-equal-of-car-and-quote-and-axe-treep
                                      len-of-car-when-axe-treep
                                      member-equal-when-member-equal-and-subsetp-equal
-                                     all-natp-when-nat-listp)
+                                     ;all-natp-when-nat-listp
+                                     )
                                     (dargp
                                      dargp-less-than
                                      natp

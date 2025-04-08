@@ -21,41 +21,41 @@
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file (filepath "stdbool.c"))))
+        (preprocess-file "stdbool.c")))
     (value (not erp))))
 
 (acl2::must-succeed
   (acl2::must-eval-to-t
     (b* (((mv erp out - state)
-          (preprocess-file (filepath "stdbool.c") :out "stdbool.i")))
+          (preprocess-file "stdbool.c" :out "stdbool.i")))
       (value (and (not erp)
                   (stringp out))))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file (filepath "stdbool.i"))))
+        (preprocess-file "stdbool.i")))
     (value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file (filepath "stdbool.c") :out "stdbool.i" :save nil)))
+        (preprocess-file "stdbool.c" :out "stdbool.i" :save nil)))
     (value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file (filepath "nonexistent-file.c"))))
+        (preprocess-file "nonexistent-file.c")))
     (value (and erp t))))
 
 (acl2::must-succeed
   (b* (((mv erp - - state)
-        (preprocess-file (filepath "../tests/stdint.c"))))
+        (preprocess-file "../tests/stdint.c")))
     (value (not erp))))
 
 (acl2::must-succeed
   (b* (((mv erp - state)
         (preprocess-files
-          (mergesort (list (filepath "stdbool.c")
-                           (filepath "stdint.c"))))))
+          (list "stdbool.c"
+                "stdint.c"))))
     (value (not erp))))
 
 (acl2::must-succeed
@@ -67,7 +67,7 @@
 (acl2::must-succeed
   (b* (((mv erp - state)
         (preprocess-files
-          (mergesort (list (filepath "stdbool.c")
-                           (filepath "stdint.c")))
+          (list "stdbool.c"
+                "stdint.c")
           :path "../tests")))
     (value (not erp))))
