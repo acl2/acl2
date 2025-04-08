@@ -151,6 +151,13 @@
     :hyp (proposal-setp props)
     :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
 
+  (defruled in-of-props-with-round
+    (equal (set::in prop (props-with-round round props))
+           (and (set::in prop (proposal-set-fix props))
+                (equal (proposal->round prop)
+                       (pos-fix round))))
+    :induct t)
+
   (defruled not-in-prop-set-when-none-with-round
     (implies (and (set::emptyp (props-with-round (proposal->round prop) props))
                   (proposal-setp props))
