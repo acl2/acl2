@@ -328,3 +328,22 @@
            :in-theory (e/d (bv-array-clear bv-array-write-opener update-nth2 subrange)
                            (;GETBIT-OF-BV-ARRAY-READ-HELPER ;yuck
                             update-nth-becomes-update-nth2-extend-gen)))))
+
+(defthm cdr-of-bv-array-clear-of-0
+  (implies (posp len)
+           (equal (cdr (bv-array-clear elem-size len 0 lst))
+                  (bvchop-list elem-size (take (+ -1 len) (cdr lst)))))
+  :hints (("Goal" :in-theory (enable bv-array-clear))))
+
+(defthm cdr-of-bv-array-clear-2
+  (implies (and (<= n len)
+                (< key len)
+                (integerp len)
+                (natp key))
+           (equal (cdr (bv-array-clear element-size len key lst))
+                  (if (< key 1)
+                      (bvchop-list element-size
+                                   (cdr (take len (true-list-fix lst))))
+                    (bv-array-clear element-size (- len 1)
+                                    (- key 1) (cdr lst)))))
+  :hints (("Goal" :in-theory (enable bv-array-clear))))

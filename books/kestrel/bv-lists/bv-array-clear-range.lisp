@@ -548,3 +548,23 @@
            :in-theory (e/d (bv-array-clear-range nthcdr) (
                                                           ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
                                                           )))))
+
+(defthm car-of-BV-ARRAY-CLEAR-RANGE-of-0
+  (implies (and (posp len)
+                (natp highindex))
+           (equal (CAR (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN 0 HIGHINDEX LST))
+                  0))
+  :hints (("Goal" :expand (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN 0 HIGHINDEX LST))))
+
+(defthm cdr-of-bv-array-clear-range-2
+  (implies (and (<= 1 lowindex)
+                (<= 1 len)
+                (< lowindex len)
+                (< highindex len)
+                (integerp len)
+                (natp lowindex)
+                (natp highindex))
+           (equal (cdr (bv-array-clear-range element-size len lowindex highindex lst))
+                  (bv-array-clear-range element-size (- len 1) (- lowindex 1) (- highindex 1) (cdr lst))))
+  :hints (("Goal" :induct t
+           :in-theory (enable bv-array-clear-range))))
