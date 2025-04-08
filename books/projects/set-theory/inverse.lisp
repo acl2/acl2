@@ -122,7 +122,7 @@
 (theory-invariant (not (and (active-runep '(:rewrite in-domain-rewrite))
                             (active-runep '(:rewrite in-cons-apply))))
                   :key in-domain-rewrite-vs-in-cons-apply
-                  :error nil)
+                  :error t)
 
 (defthmz codomain-inverse-2
   (subset (domain r)

@@ -2599,8 +2599,22 @@
        we recursively validate their sub-structures,
        and the type is determined in all cases.")
      (xdoc::p
-      "For @('typedef') names, we lookup the type definition in the validation
-       table. If no such entry exists in the table, validation fails.")
+      "For @('typedef') names,
+       we look up the type definition in the validation table.
+       If no such entry exists in the table, validation fails.
+       Otherwise, we return the type in the table entry
+       as the one denoted by the @('typedef') name.
+       The latter is an important point, because it means that
+       we always fully expand @('typedef') names
+       to their @('typedef')-name-free types
+       (recall that @(tsee type) has no case for @('typedef') names).
+       In a translation unit, no forward references are allowed,
+       so the first @('typedef') (if any) cannot refer to others;
+       later @('typedef')s may refer to previous ones,
+       but since we expand their definientia through this table lookup,
+       we effectively always recursively expand all @('typedef')s.
+       This may be exactly what is needed for validation,
+       but we will revisit this choice if needed.")
      (xdoc::p
       "For now, for simplicity, we regard
        all the type specifiers that are GCC extensions
@@ -4051,8 +4065,8 @@
        (b* ((type (type-array))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
-            ((erp new-expr? index-type? more-types table)
-             (valid-expr-option dirabsdeclor.expr? table ienv))
+            ((erp new-size? index-type? more-types table)
+             (valid-expr-option dirabsdeclor.size? table ienv))
             ((when (and index-type?
                         (not (type-integerp index-type?))
                         (not (type-case index-type? :unknown))))
@@ -4061,9 +4075,10 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type?))))
-         (retok (make-dirabsdeclor-array :declor? new-declor?
-                                         :tyquals dirabsdeclor.tyquals
-                                         :expr? new-expr?)
+         (retok (make-dirabsdeclor-array
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :size? new-size?)
                 type
                 (set::union types more-types)
                 table))
@@ -4071,8 +4086,8 @@
        (b* ((type (type-array))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
-            ((erp new-expr index-type more-types table)
-             (valid-expr dirabsdeclor.expr table ienv))
+            ((erp new-size index-type more-types table)
+             (valid-expr dirabsdeclor.size table ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
@@ -4080,9 +4095,10 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type))))
-         (retok (make-dirabsdeclor-array-static1 :declor? new-declor?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+         (retok (make-dirabsdeclor-array-static1
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :size new-size)
                 type
                 (set::union types more-types)
                 table))
@@ -4090,8 +4106,8 @@
        (b* ((type (type-array))
             ((erp new-declor? type types table)
              (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
-            ((erp new-expr index-type more-types table)
-             (valid-expr dirabsdeclor.expr table ienv))
+            ((erp new-size index-type more-types table)
+             (valid-expr dirabsdeclor.size table ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
@@ -4099,9 +4115,10 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type))))
-         (retok (make-dirabsdeclor-array-static2 :declor? new-declor?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+         (retok (make-dirabsdeclor-array-static2
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :size new-size)
                 type
                 (set::union types more-types)
                 table))
