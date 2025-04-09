@@ -84,8 +84,6 @@
      (sib                    :type (unsigned-byte 8))
      x86)
 
-    :ignore-ok t
-
     :parents (x86-decoder)
     :no-function t
     :short "Dispatch function for EVEX-encoded instructions in the two-byte opcode map"
@@ -124,8 +122,6 @@
      (modr/m                 :type (unsigned-byte 8))
      (sib                    :type (unsigned-byte 8))
      x86)
-
-    :ignore-ok t
 
     :parents (x86-decoder)
     :no-function t
@@ -168,8 +164,6 @@
      (sib                    :type (unsigned-byte 8))
      x86)
 
-    :ignore-ok t
-
     :parents (x86-decoder)
     :no-function t
     :short "Dispatch function for EVEX-encoded instructions in the second
@@ -208,8 +202,6 @@
                            "Only @('byte0') and @('byte1') fields are populated
                             when this function is called.")
    x86)
-
-  :ignore-ok t
 
   :guard (and (evex-prefixes-p evex-prefixes)
               (prefixes-p prefixes))
