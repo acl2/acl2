@@ -14,14 +14,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum mode
+(defxdoc+ modes
   :parents (static-semantics dynamic-semantics)
-  :short "Fixtype of modes."
+  :short "Modes."
   :long
   (xdoc::topstring
    (xdoc::p
     "[Yul: Specification of Yul: Formal Specification] introduces
-     the notion of mode, which indicates how a statement completes execution.")
+     the notion of mode, which indicates how a statement completes execution."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum mode
+  :short "Fixtype of modes."
+  :long
+  (xdoc::topstring
    (xdoc::p
     "We disable the executable counterparts of the constructors of this type,
      because we want to treat them abstractly.

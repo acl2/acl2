@@ -395,6 +395,31 @@
 
 (zify zerase-atoms (erase-atoms tree lst))
 
+; Here is a somewhat silly variant of the zify call just above, which however
+; illustrates the use of arguments in the second argument of zify.
+
+(encapsulate
+  ()
+
+  (local (include-book "set-algebra"))
+
+  (local (defun erase-atoms2 (tree lst d)
+           (declare (xargs :guard (true-listp lst)) (irrelevant d))
+           (cond ((atom tree)
+                  (if (member-equal tree lst)
+                      nil
+                    tree))
+                 (t (cons (erase-atoms2 (car tree) lst d)
+                          (erase-atoms2 (cdr tree) lst d))))))
+
+  (local (defthm acl2p-erase-atoms2
+           (implies (acl2p tree)
+                    (acl2p (erase-atoms2 tree lst d)))))
+
+  (local (zify zerase-atoms2 (erase-atoms2 tree lst d)
+               :dom (int2 d (acl2))
+               :props (acl2$prop v$prop diff$prop))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Prodn, prodn*
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

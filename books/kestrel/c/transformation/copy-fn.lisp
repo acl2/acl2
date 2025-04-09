@@ -142,7 +142,8 @@
                          :elems (rename-fn-desiniter-list expr.elems old-fn new-fn)
                          :final-comma expr.final-comma)
       :unary (make-expr-unary :op expr.op
-                              :arg (rename-fn-expr expr.arg old-fn new-fn))
+                              :arg (rename-fn-expr expr.arg old-fn new-fn)
+                              :info expr.info)
       :sizeof (expr-sizeof (rename-fn-tyname expr.type old-fn new-fn))
       :alignof (make-expr-alignof :type (rename-fn-tyname expr.type old-fn new-fn)
                                   :uscores expr.uscores)
@@ -269,7 +270,7 @@
   (b* (((when (omap::emptyp map))
         nil)
        ((mv path tunit) (omap::head map)))
-    (omap::update (deftrans-filepath path "COPY-FN")
+    (omap::update (c$::filepath-fix path)
                   (copy-fn-transunit tunit target-fn new-fn)
                   (copy-fn-filepath-transunit-map (omap::tail map)
                                                   target-fn

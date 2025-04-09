@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1197,7 +1198,7 @@
      In the second case, the result is the pointer type [C17:6.5.6/8].
      Because of that second case, which involves pointers,
      we perform array-to-pointer conversion.
-     We not perform function-to-pointer conversion,
+     We do not perform function-to-pointer conversion,
      because that would result in a pointer to function,
      while a pointer to complete object type is required.")
    (xdoc::p
@@ -1214,7 +1215,7 @@
      In the third case, the result has the pointer type [C17:6.5.6/8].
      Because of the second and third cases, which involve pointers,
      we perform array-to-pointer conversion.
-     We not perform function-to-pointer conversion,
+     We do not perform function-to-pointer conversion,
      because that would result in a pointer to function,
      while a pointer to complete object type is required.")
    (xdoc::p
@@ -1229,15 +1230,32 @@
      The result is always @('signed int') [C17:6.5.8/6].
      Since pointers may be involved,
      we perform array-to-pointer conversion.
-     We not perform function-to-pointer conversion,
+     We do not perform function-to-pointer conversion,
      because that would result in a pointer to function,
-     while a pointer to object type is required.")
+     while a pointer to object type is required.
+     The standard does not allow
+     a null pointer constants [C17:6.3.2.3/3] without the @('void *') cast
+     to be used as an operand while the other operand has pointer type.
+     But we found it accepted by practical compilers,
+     so it is probably a GCC extensions,
+     and for this reason we accept it for now;
+     we should extend our implementation environments with
+     information about whether GCC extensions are allowed,
+     and condition acceptance under that flag.
+     Since we do not have code yet to recognize null pointer constants,
+     we accept any integer expression;
+     that is, we allow one pointer operand and one integer operand.")
    (xdoc::p
     "The @('==') and @('!=') operators require
      arithmetic types or pointer types [C17:6.5.9/2];
-     since we currently have just one type for pointers,
-     the distinctions between the three cases involving pointers
-     reduce to just the simple case of two pointers for us for now.
+     Distinctions betwen qualified and unqualified pointer types,
+     as well as @('void') or non-@('void') pointers types are ignored
+     since we currently approximate all of these as a single pointer type.
+     Since we do not yet implement evaluation of constant expressions,
+     all integer expressions are considered potential null pointer constants:
+     so we allow an operand to be a pointer and the other to be an integer,
+     to accommodate a null pointer constant [C17:6.3.2.3/3]
+     without the @('void *') cast.
      The result is always @('signed int') [C17:6.5.9/3].
      Since pointers may be involved,
      we perform array-to-pointer and function-to-pointer conversions.")
@@ -1262,9 +1280,24 @@
      both arithmetic types,
      or both the structure type,
      or both the union type,
-     or both pointer types.
+     or both pointer types,
+     or one pointer type and one integer type.
      We do not perform array-to-pointer or function-to-pointer conversion
      on the left operand, because the result would not be an lvalue.
+     In order to allow a pointer type on the left
+     and a null pointer constant [C17:6.3.2.3/3] without @('void *') cast
+     on the right,
+     since we do not have code to recognize such null pointer constants yet,
+     we allow any integer expressions on the right
+     when the expression on the left has pointer type.
+     We also allow the left operand to be boolean
+     and the right operand to be a pointer;
+     although [C17:6.5.9/2] does not mention that,
+     we found it accepted by practical compiler with a strict C17 option,
+     and [C17:6.3.1.2/1] mentions a conversion
+     from scalars (which includes pointer) to booleans,
+     although it does not say that it happens
+     (it says ``When any scalar valu is converted to @('_Bool'), ...'').
      The type of the result is the type of the left operand [C17:6.5.16/3].")
    (xdoc::p
     "The @('*=') and @('/=') operators require arithmetic operands
@@ -1323,11 +1356,11 @@
                      (type-arithmeticp type2))
                 (retok (type-uaconvert type1 type2 ienv)))
                ((and (type-case type1 :pointer)
-                     (type-case type2 :pointer))
-                (retok (type-unknown)))
-               ((and (type-case type1 :pointer)
                      (type-integerp type2))
                 (retok (type-pointer)))
+               ((and (type-case type1 :pointer)
+                     (type-case type2 :pointer))
+                (retok (type-unknown)))
                (t (reterr msg)))))
       ((:shl :shr) (b* (((unless (and (type-integerp type-arg1)
                                       (type-integerp type-arg2)))
@@ -1338,16 +1371,22 @@
             (type2 (type-apconvert type-arg2))
             ((unless (or (and (type-realp type1)
                               (type-realp type2))
-                         (and (type-case type1 :pointer)
-                              (type-case type2 :pointer))))
+                         (if (type-case type1 :pointer)
+                             (or (type-case type2 :pointer)
+                                 (expr-null-pointer-constp (expr-binary->arg2 expr) type2))
+                           (and (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
+                                (type-case type2 :pointer)))))
              (reterr msg)))
          (retok (type-sint))))
       ((:eq :ne) (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
                       (type2 (type-fpconvert (type-apconvert type-arg2)))
                       ((unless (or (and (type-arithmeticp type1)
                                         (type-arithmeticp type2))
-                                   (and (type-case type1 :pointer)
-                                        (type-case type2 :pointer))))
+                                   (if (type-case type1 :pointer)
+                                       (or (type-case type2 :pointer)
+                                           (expr-null-pointer-constp (expr-binary->arg2 expr) type2))
+                                     (and (expr-null-pointer-constp (expr-binary->arg1 expr) type1)
+                                          (type-case type2 :pointer)))))
                        (reterr msg)))
                    (retok (type-sint))))
       ((:bitand :bitxor :bitior)
@@ -1370,9 +1409,11 @@
                                    (type-case type2 :struct))
                               (and (type-case type1 :union)
                                    (type-case type2 :union))
-                              (and (or (type-case type1 :pointer)
-                                       (type-case type1 :bool))
-                                   (type-case type2 :pointer))))
+                              (and (type-case type1 :bool)
+                                   (type-case type2 :pointer))
+                              (and (type-case type1 :pointer)
+                                   (or (type-case type2 :pointer)
+                                       (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))))
                   (reterr msg)))
               (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
@@ -1491,8 +1532,14 @@
      or both the structure type,
      or both the union type,
      or both the void type,
-     or both the pointer type
+     or both the pointer type,
+     or one pointer type and one integer type
      [C17:6.5.15/3].
+     The latter is more than [C17:6.5.15/3] allows,
+     but serves to accommodate the case of a pointer and
+     a null pointer constants [C17:6.3.2.3/3] without the @('void *') cast;
+     since we do not have code to recognize such null pointer constants yet,
+     for now we accept all integer expressions there.
      The type of the result is
      the one from the usual arithmetic converions
      in the first case,
@@ -1521,8 +1568,13 @@
        ((when (and (type-case type2 :union)
                    (type-case type3 :union)))
         (retok (type-union)))
-       ((when (and (type-case type2 :pointer)
-                   (type-case type3 :pointer)))
+       ((when (if (type-case type2 :pointer)
+                  (or (type-case type3 :pointer)
+                      (expr-null-pointer-constp (expr-cond->else expr) type3))
+                (and (if (expr-cond->then expr)
+                         (expr-null-pointer-constp (expr-cond->then expr) type2)
+                       (expr-null-pointer-constp (expr-cond->test expr) type2))
+                     (type-case type3 :pointer))))
         (retok (type-pointer))))
     (reterr (msg "In the conditional expression ~x0, ~
                   the second operand has type ~x1 ~
@@ -2154,8 +2206,11 @@
                          table))
        :unary (b* (((erp new-arg type-arg types-arg table)
                     (valid-expr expr.arg table ienv))
-                   ((erp type) (valid-unary expr expr.op type-arg ienv)))
-                (retok (make-expr-unary :op expr.op :arg new-arg)
+                   ((erp type) (valid-unary expr expr.op type-arg ienv))
+                   (info (make-unary-info :type type)))
+                (retok (make-expr-unary :op expr.op
+                                        :arg new-arg
+                                        :info info)
                        type
                        types-arg
                        table))
@@ -2185,10 +2240,12 @@
                     ((erp new-arg2 type-arg2 types-arg2 table)
                      (valid-expr expr.arg2 table ienv))
                     ((erp type)
-                     (valid-binary expr expr.op type-arg1 type-arg2 ienv)))
+                     (valid-binary expr expr.op type-arg1 type-arg2 ienv))
+                    (info (make-unary-info :type type)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
-                                          :arg2 new-arg2)
+                                          :arg2 new-arg2
+                                          :info info)
                         type
                         (set::union types-arg1 types-arg2)
                         table))
@@ -2542,9 +2599,22 @@
        we recursively validate their sub-structures,
        and the type is determined in all cases.")
      (xdoc::p
-      "Since our currently approximate type system
-       does not handle @('typedef') types,
-       we just regard it as denoting an unknown type.")
+      "For @('typedef') names,
+       we look up the type definition in the validation table.
+       If no such entry exists in the table, validation fails.
+       Otherwise, we return the type in the table entry
+       as the one denoted by the @('typedef') name.
+       The latter is an important point, because it means that
+       we always fully expand @('typedef') names
+       to their @('typedef')-name-free types
+       (recall that @(tsee type) has no case for @('typedef') names).
+       In a translation unit, no forward references are allowed,
+       so the first @('typedef') (if any) cannot refer to others;
+       later @('typedef')s may refer to previous ones,
+       but since we expand their definientia through this table lookup,
+       we effectively always recursively expand all @('typedef')s.
+       This may be exactly what is needed for validation,
+       but we will revisit this choice if needed.")
      (xdoc::p
       "For now, for simplicity, we regard
        all the type specifiers that are GCC extensions
@@ -2620,13 +2690,23 @@
                   ((erp new-spec types table)
                    (valid-enumspec tyspec.spec table ienv)))
                (retok (type-spec-enum new-spec) (type-enum) nil types table))
-       :typedef (if (endp tyspecs)
-                    (retok (type-spec-typedef tyspec.name)
-                           (type-unknown)
-                           nil
-                           nil
-                           same-table)
-                  (reterr msg-bad-preceding))
+       :typedef (b* (((unless (endp tyspecs))
+                      (reterr msg-bad-preceding))
+                     ((mv info? -)
+                      (valid-lookup-ord tyspec.name table))
+                     ((unless info?)
+                      (reterr (msg "The identifier ~x0 is not an in-scope ~
+                                    ordinary identifer."
+                                   (ident->unwrap tyspec.name)))))
+                  (valid-ord-info-case
+                    info?
+                    :typedef (retok (type-spec-typedef tyspec.name)
+                                    info?.def
+                                    nil
+                                    nil
+                                    same-table)
+                    :otherwise (reterr (msg "The identifier ~x0 does not ~
+                                             represent a typedef."))))
        :int128 (retok (type-spec-int128) nil ext-tyspecs nil same-table)
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
@@ -3119,9 +3199,12 @@
        The latter is an expression enclosed in braces;
        experiments show that the final comma is allowed.
        The same constraints as in assignments apply here
-       [C17:6.7.9/11] [C17:6.5.16.1/1].
+       [C17:6.7.9/11] [C17:6.5.16.1/1]:
+       see @(tsee valid-binary) for how we currently approximate the checks.
        We perform array-to-pointer and function-to-pointer conversions
-       on the expression, as pointers may be required.")
+       on the expression, as pointers may be required.
+       We accept expressions of integer type when expecting a pointer type
+       to approximate conversion of null pointer constants.")
      (xdoc::p
       "If the target type is the structure or union type,
        the initializer is a single expression,
@@ -3192,15 +3275,16 @@
                          (mv nil (initer-single->expr desiniter.initer))))))
              ((erp new-expr init-type types table) (valid-expr expr table ienv))
              (type (type-fpconvert (type-apconvert init-type)))
-             ((unless (or (and (or (type-arithmeticp target-type)
-                                   (type-case target-type :unknown))
+             ((unless (or (and (type-arithmeticp target-type)
                                (or (type-arithmeticp type)
                                    (type-case type :unknown)))
-                          (and (or (type-case target-type :pointer)
-                                   (type-case target-type :bool)
-                                   (type-case target-type :unknown))
+                          (and (type-case target-type :bool)
                                (or (type-case type :pointer)
-                                   (type-case type :unknown)))))
+                                   (type-case type :unknown)))
+                          (and (type-case target-type :pointer)
+                               (or (type-case type :pointer)
+                                   (type-case type :unknown)
+                                   (expr-null-pointer-constp expr type)))))
               (reterr (msg "The initializer ~x0 ~
                             for the target type ~x1 ~
                             has type ~x2."
@@ -3223,14 +3307,15 @@
              (lifetime-case lifetime :auto))
         (b* (((erp new-expr type types table)
               (valid-expr (initer-single->expr initer) table ienv))
-             ((unless (type-equiv type target-type))
+             ((unless (or (type-equiv type target-type)
+                          (type-case type :unknown)))
               (reterr (msg "The initializer ~x0 ~
                             for the target type ~x1 ~
                             of an object in automatic storage ~
-                            has type ~x2."
+                            has type ~x2.~%"
                            (initer-fix initer)
                            (type-fix target-type)
-                           type))))
+                           table))))
           (retok (initer-single new-expr) types table)))
        ((and (type-case target-type :array)
              (initer-case initer :single)
@@ -3737,7 +3822,7 @@
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr? index-type? more-types table)
-             (valid-expr-option dirdeclor.expr? table ienv))
+             (valid-expr-option dirdeclor.size? table ienv))
             ((when (and index-type?
                         (not (type-integerp index-type?))
                         (not (type-case index-type? :unknown))))
@@ -3747,8 +3832,8 @@
                           (dirdeclor-fix dirdeclor)
                           index-type?))))
          (retok (make-dirdeclor-array :declor new-dirdeclor
-                                      :quals dirdeclor.quals
-                                      :expr? new-expr?)
+                                      :qualspecs dirdeclor.qualspecs
+                                      :size? new-expr?)
                 fundef-params-p
                 type
                 ident
@@ -3759,7 +3844,7 @@
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr index-type more-types table)
-             (valid-expr dirdeclor.expr table ienv))
+             (valid-expr dirdeclor.size table ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
@@ -3768,8 +3853,8 @@
                           (dirdeclor-fix dirdeclor)
                           index-type))))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
-                                              :quals dirdeclor.quals
-                                              :expr new-expr)
+                                              :qualspecs dirdeclor.qualspecs
+                                              :size new-expr)
                 fundef-params-p
                 type
                 ident
@@ -3780,7 +3865,7 @@
             ((erp new-dirdeclor fundef-params-p type ident types table)
              (valid-dirdeclor dirdeclor.declor fundef-params-p type table ienv))
             ((erp new-expr index-type more-types table)
-             (valid-expr dirdeclor.expr table ienv))
+             (valid-expr dirdeclor.size table ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
@@ -3789,8 +3874,8 @@
                           (dirdeclor-fix dirdeclor)
                           index-type))))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
-                                              :quals dirdeclor.quals
-                                              :expr new-expr)
+                                              :qualspecs dirdeclor.qualspecs
+                                              :size new-expr)
                 fundef-params-p
                 type
                 ident
@@ -3802,7 +3887,7 @@
              (valid-dirdeclor
               dirdeclor.declor fundef-params-p type table ienv)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
-                                           :quals dirdeclor.quals)
+                                           :qualspecs dirdeclor.qualspecs)
                 fundef-params-p
                 type
                 ident
@@ -3906,9 +3991,9 @@
          (type (if (consp absdeclor.pointers)
                    (type-pointer)
                  type))
-         ((erp new-decl? type types table)
-          (valid-dirabsdeclor-option absdeclor.decl? type table ienv)))
-      (retok (make-absdeclor :pointers absdeclor.pointers :decl? new-decl?)
+         ((erp new-direct? type types table)
+          (valid-dirabsdeclor-option absdeclor.direct? type table ienv)))
+      (retok (make-absdeclor :pointers absdeclor.pointers :direct? new-direct?)
              type
              types
              table))
@@ -3971,17 +4056,17 @@
        dirabsdeclor
        :paren
        (b* (((erp new-absdeclor type types table)
-             (valid-absdeclor dirabsdeclor.unwrap type table ienv)))
+             (valid-absdeclor dirabsdeclor.inner type table ienv)))
          (retok (dirabsdeclor-paren new-absdeclor)
                 type
                 types
                 table))
        :array
        (b* ((type (type-array))
-            ((erp new-decl? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
-            ((erp new-expr? index-type? more-types table)
-             (valid-expr-option dirabsdeclor.expr? table ienv))
+            ((erp new-declor? type types table)
+             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
+            ((erp new-size? index-type? more-types table)
+             (valid-expr-option dirabsdeclor.size? table ienv))
             ((when (and index-type?
                         (not (type-integerp index-type?))
                         (not (type-case index-type? :unknown))))
@@ -3990,18 +4075,19 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type?))))
-         (retok (make-dirabsdeclor-array :decl? new-decl?
-                                         :tyquals dirabsdeclor.tyquals
-                                         :expr? new-expr?)
+         (retok (make-dirabsdeclor-array
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :size? new-size?)
                 type
                 (set::union types more-types)
                 table))
        :array-static1
        (b* ((type (type-array))
-            ((erp new-decl? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
-            ((erp new-expr index-type more-types table)
-             (valid-expr dirabsdeclor.expr table ienv))
+            ((erp new-declor? type types table)
+             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
+            ((erp new-size index-type more-types table)
+             (valid-expr dirabsdeclor.size table ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
@@ -4009,18 +4095,19 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type))))
-         (retok (make-dirabsdeclor-array-static1 :decl? new-decl?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+         (retok (make-dirabsdeclor-array-static1
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :size new-size)
                 type
                 (set::union types more-types)
                 table))
        :array-static2
        (b* ((type (type-array))
-            ((erp new-decl? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
-            ((erp new-expr index-type more-types table)
-             (valid-expr dirabsdeclor.expr table ienv))
+            ((erp new-declor? type types table)
+             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
+            ((erp new-size index-type more-types table)
+             (valid-expr dirabsdeclor.size table ienv))
             ((unless (or (type-integerp index-type)
                          (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
@@ -4028,17 +4115,18 @@
                            has type ~x1."
                           (dirabsdeclor-fix dirabsdeclor)
                           index-type))))
-         (retok (make-dirabsdeclor-array-static2 :decl? new-decl?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+         (retok (make-dirabsdeclor-array-static2
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :size new-size)
                 type
                 (set::union types more-types)
                 table))
        :array-star
        (b* ((type (type-array))
-            ((erp new-decl? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv)))
-         (retok (dirabsdeclor-array-star new-decl?)
+            ((erp new-declor? type types table)
+             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv)))
+         (retok (dirabsdeclor-array-star new-declor?)
                 type
                 types
                 table))
@@ -4050,8 +4138,8 @@
                           (dirabsdeclor-fix dirabsdeclor)
                           (type-fix type))))
             (type (type-function))
-            ((erp new-decl? type types table)
-             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp new-declor? type types table)
+             (valid-dirabsdeclor-option dirabsdeclor.declor? type table ienv))
             (table (valid-push-scope table))
             ((erp new-params more-types table)
              (if (equal dirabsdeclor.params
@@ -4061,7 +4149,7 @@
                  (retok dirabsdeclor.params nil table)
                (valid-paramdecl-list dirabsdeclor.params nil table ienv)))
             (table (valid-pop-scope table)))
-         (retok (make-dirabsdeclor-function :decl? new-decl?
+         (retok (make-dirabsdeclor-function :declor? new-declor?
                                             :params new-params
                                             :ellipsis dirabsdeclor.ellipsis)
                 type
@@ -4570,7 +4658,7 @@
        it is currently not captured in our abstract syntax,
        so we double-check it here.")
      (xdoc::p
-      "For now our validation tabled include
+      "For now our validation tables include
        no information about enumeration tags,
        so we do not extend the validation table,
        if the enumeration specifier has a name.
@@ -4728,14 +4816,11 @@
        there must be no initializer,
        because we are not declaring an object.
        In this case, we add the @('typedef') to the validation table.
-       The same @('typedef') is allowed in the same scope [C17:6.7/3],
-       under certain conditions that are inexpressible
-       in our current approximate type system,
-       but since our validation tables currently carry limited information
-       about @('typedef') names (i.e. just that they are @('typedef')s),
-       we allow the identifier to be present, as a @('typedef'),
-       in the same (i.e. current) scope,
-       to avoid rejecting valid code.")
+       A @('typedef') may be redefined in the same scope
+       assuming the two types are compatible and not variably modified
+       [C17:6.7/3] (the latter of which is inexpressible in our current
+       approximate type system
+       so we conservatively permit redefinition of any compatible types).")
      (xdoc::p
       "If the @('typedef') flag is @('nil'),
        the identifier may denote a function or an object.
@@ -4810,12 +4895,15 @@
                ((mv info? currentp) (valid-lookup-ord ident table))
                ((when (and info?
                            currentp
-                           (not (valid-ord-info-case info? :typedef))))
+                           (or (not (valid-ord-info-case info? :typedef))
+                               (not (type-compatiblep
+                                      (valid-ord-info-typedef->def info?)
+                                      type)))))
                 (reterr (msg "The typedef name ~x0 ~
                               is already declared in the current scope ~
                               with associated information ~x1."
                              ident info?)))
-               (table (valid-add-ord ident (valid-ord-info-typedef) table)))
+               (table (valid-add-ord ident (valid-ord-info-typedef type) table)))
             (retok (make-initdeclor :declor new-declor
                                     :asm? initdeclor.asm?
                                     :attribs initdeclor.attribs

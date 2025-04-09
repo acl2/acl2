@@ -932,7 +932,8 @@
                               ;;combine these three things?
                               (true-listp nodenums)
                               (all-natp nodenums)
-                              (all-< nodenums dag-len))))
+                              (all-< nodenums dag-len))
+                  :guard-hints (("Goal" :in-theory (enable natp-of-nth-when-all-natp)))))
   (if (endp nodenums)
       t
     (let ((expr (aref1 'normalize-xors-old-array dag-array (first nodenums))))

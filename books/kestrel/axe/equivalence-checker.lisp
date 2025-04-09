@@ -174,15 +174,15 @@
                               )))
   (if (not check-vars)
       nil ; no check
-    (let* ((vars1 (if (quotep dag-or-quotep1) nil (merge-sort-symbol< (dag-vars dag-or-quotep1))))
-           (vars2 (if (quotep dag-or-quotep2) nil (merge-sort-symbol< (dag-vars dag-or-quotep2))))
+    (let* ((vars1 (if (quotep dag-or-quotep1) nil (dag-vars dag-or-quotep1)))
+           (vars2 (if (quotep dag-or-quotep2) nil (dag-vars dag-or-quotep2)))
            ;; (- (cw "Variables in DAG1: ~x0~%" vars1))
            ;; (- (cw "Variables in DAG2: ~x0~%" vars2))
            ;; can use equal here since the lists are sorted and duplicate-free:
            (vars-differp (not (equal vars1 vars2))))
       (if (not vars-differp)
           nil
-        (progn$ (and (not (subsetp-eq vars1 vars2))
+        (progn$ (and (not (subsetp-eq vars1 vars2)) ; todo: optimize these set operations, given that the lists are sorted
                      (prog2$ (and (eq :warning check-vars) (cw "WARNING: "))
                              (cw "The first DAG has vars, ~x0, not in the second DAG.~%" (set-difference-eq vars1 vars2))))
                 (and (not (subsetp-eq vars2 vars1))
@@ -7944,6 +7944,7 @@
 ; todo: ;use property lists?
 ; todo: faster to count down?
 ;checks all nodes, not just supporting nodes
+;; todo: consider printing the impure patterns, rather than every node (see non-pure-expression-patterns-in-dag).
 (defun dag-array-is-purep (dag-array-name dag-array dag-len var-type-alist)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (var-type-alistp var-type-alist))))
@@ -9372,7 +9373,7 @@
                                         (equal ,expr
                                                ;;pull out this pattern?
                                                (dag-val-with-axe-evaluator ',dag
-                                                                           ,(make-acons-nest (dag-vars dag))
+                                                                           ,(make-acons-nest (dag-vars-unsorted dag))
                                                                            ;;fixme think about this:
                                                                            ;;check that all the fns are already in interpreted-function-alist?
                                                                            ;;',interpreted-function-alist
@@ -9603,11 +9604,11 @@
   (declare (xargs :mode :program :stobjs state))
   (replace-in-dags-aux dags alist nil state))
 
-;fixme use this more?
-;fixme is the dag is small, we can just make it into a term?
+;todo: use this more?
+;todo: if the dag is small, we can just make it into a term?
 (defun embed-dag-as-term (dag interpreted-function-alist)
   `(dag-val-with-axe-evaluator ',dag
-                                ,(make-acons-nest (dag-vars dag))
+                                ,(make-acons-nest (dag-vars-unsorted dag))
                                 ',(supporting-interpreted-function-alist (dag-fns dag) interpreted-function-alist t)
                                 '0))
 
@@ -10032,7 +10033,7 @@
                             nodenunm-or-quotep-for-value-added-on
                           ;;fixme destroys 'dag-array! <-- old comment?
                           (drop-non-supporters (drop-nodes-past nodenunm-or-quotep-for-value-added-on update-dag-for-returned-formal)))))
-                  (if (member-eq base-case-term (dag-vars dag-for-value-added-on))
+                  (if (member-eq base-case-term (dag-vars-unsorted dag-for-value-added-on))
                       ;;if the element produced depends on previous elements, it's not a producer in this sense (we can't get rid of the list argument when combining it with a consumer)
                       (mv (erp-nil) nil state)
                     (mv (erp-nil)
@@ -10372,7 +10373,7 @@
                         (implies ,(make-conjunction-from-list assumptions)
                                  (equal ,term
                                         (dag-val-with-axe-evaluator ',dag
-                                                                    ,(make-acons-nest (dag-vars dag))
+                                                                    ,(make-acons-nest (dag-vars-unsorted dag))
                                                                     ;;fixme think about this:
                                                                     ;;check that all the fns are already in interpreted-function-alist?
                                                                     ;;',interpreted-function-alist
@@ -10456,7 +10457,7 @@
                              (symbolp (cdr (car dag))))
                             (dag-to-term dag)
                           `(dag-val-with-axe-evaluator ',dag
-                                                       ,(make-acons-nest (dag-vars dag))
+                                                       ,(make-acons-nest (dag-vars-unsorted dag))
                                                        ',(supporting-interpreted-function-alist
                                                           (dag-fns dag) ;fixme think about this
                                                           interpreted-function-alist
@@ -11180,7 +11181,7 @@
                  (newer-exit-test-dag-fns (dag-fns newer-exit-test-dag))
                  (newer-exit-test
                   `(dag-val-with-axe-evaluator ',newer-exit-test-dag
-                                               ,(make-acons-nest exit-test-vars ;(dag-vars newer-exit-test-dag)
+                                               ,(make-acons-nest exit-test-vars ;(dag-vars-unsorted newer-exit-test-dag)
                                                                  )
                                                ',(supporting-interpreted-function-alist newer-exit-test-dag-fns interpreted-function-alist t)
                                                0))
@@ -12688,7 +12689,7 @@
  ;;                                              :interpreted-function-alist interpreted-function-alist)
  ;;                               (mv
  ;;                                `(dag-val-with-axe-evaluator ',dag
- ;;                                                              ,(make-acons-nest (dag-vars dag))
+ ;;                                                              ,(make-acons-nest (dag-vars-unsorted dag))
  ;;                                                              ',(supporting-interpreted-function-alist (dag-fns dag)
  ;;                                                                                                       interpreted-function-alist) 0)
  ;;                                state)))
@@ -16759,7 +16760,7 @@
               (miter-array-name (pack$ 'miter-array- miter-depth))
               (miter-array (make-into-array miter-array-name dag)) ;call a -with-len version?
               (miter-len (len dag))
-              (- (progn$ (cw "(Proving miter ~x0 (depth ~x1, len ~x2):~%" miter-name miter-depth miter-len) ;name the miters according to their cases...
+              (- (progn$ (cw "(Proving goal ~x0 (depth ~x1, len ~x2):~%" miter-name miter-depth miter-len) ;name the miters according to their cases...
                          (cw "(Using ~x0 test cases)~%" (len test-cases))
                          (cw "(Number of rewriter-rules: ~x0.)~%" (sum-of-cdr-lens rewriter-rule-alist))))
               ((when (not test-cases)) ;where should this check be done?
@@ -16792,9 +16793,9 @@
                                      rand state))
               ((when erp) (mv erp nil rand state)))
            (if (eq :proved-miter result)
-               (prog2$ (cw "Proved the miter.)~%")
+               (prog2$ (cw "Proved the goal.)~%")
                        (mv (erp-nil) t rand state))
-             (b* ((- (cw "(May need to split the miter dag (depth ~x0, ~x1, ~x2):~%" miter-depth miter-name miter-array-name))
+             (b* ((- (cw "(May need to split the goal dag (depth ~x0, ~x1, ~x2):~%" miter-depth miter-name miter-array-name))
                   (state (if (print-level-at-least-tp print)
                              (print-dag-array-to-temp-file miter-array-name miter-array miter-len
                                                            (concatenate 'string (symbol-name miter-name) "-PRE-SPLIT")
@@ -16813,16 +16814,16 @@
                   ((when (quotep miter-dag-or-quote)) ; unusual?
                    (let ((val (unquote miter-dag-or-quote)))
                      (if (eq t val)
-                         (prog2$ (cw "The miter simplified to the constant t.))~%")
+                         (prog2$ (cw "The goal simplified to the constant t.))~%")
                                  (mv (erp-nil) t rand state))
                        (if (eq nil val)
-                           (prog2$ (cw "The miter simplififed to the constant nil.))~%") ;should this be a hard error? not unless this miter must succeed?
+                           (prog2$ (cw "The goal simplififed to the constant nil.))~%") ;should this be a hard error? not unless this miter must succeed?
                                    (mv (erp-nil) nil rand state))
                          (prog2$ (er hard? 'miter-and-merge "expected t or nil but got the constant ~x0." val)
                                  (mv (erp-t) nil rand state))))))
                   (miter-dag miter-dag-or-quote)
                   (- (and (or (eq :verbose print) (eq :verbose! print))
-                          (progn$ (cw "(Simplified miter dag (~x0):" miter-name)
+                          (progn$ (cw "(Simplified goal dag (~x0):" miter-name)
                                   (print-list miter-dag) ;fixme print this to a file?
                                   (cw ")~%"))))
                   ;;(- (cw "(Assumptions:~%~x0)~%" assumptions))
@@ -16838,7 +16839,7 @@
                     (cw "(Couldn't find any node to split on.)~%")
                     ;; TODO: should we consider bit-blasting here?
                     (if (not must-succeedp)
-                        (prog2$ (cw "(Failing because we don't have to succeed on this miter.))")
+                        (prog2$ (cw "(Failing because we don't have to succeed on this goal.))")
                                 (mv nil nil rand state))
                       (if (not max-conflicts)
                           (prog2$ (cw "(Failing because we would normally increase the max-conflicts but timing out is turned off.))")
@@ -16873,7 +16874,7 @@
                                                        rand state)
                                       (prog2$ (cw "End of proof attempt for ~x0)~%"  miter-name)
                                               (mv erp provedp rand state)))))))))
-                 (b* ((- (cw "(Splitting miter on node ~x0.)~%" nodenum-to-split-on))
+                 (b* ((- (cw "(Splitting goal on node ~x0.)~%" nodenum-to-split-on))
                       (split-assumption (dag-to-term-aux-array miter-array-name miter-array nodenum-to-split-on)) ;fffixme this can blow up if there's nothing small to split on!
                       ;;(split-assumption (orient-equality2 split-assumption)) ;too aggressive? ;handle nots and known preds? ;Fri Feb 26 01:48:01 2010
                       ;;fixme what if the assumption contradicts the known assumptions
@@ -16899,7 +16900,7 @@
                                  :check-inputs nil))
                       ((when erp) (mv erp nil rand state))
                       ;; ffixme what about the equiv? the new assumption may not fire? call something like concretize?
-                      (- (cw "(Unsimplified miter dag for true case:~%"))
+                      (- (cw "(Unsimplified goal dag for true case:~%"))
                       (- (if (or (eq :verbose print) (eq :verbose! print))
                              (print-list miter-dag-for-true-case)
                            (cw ":elided"))) ;fixme what is this?
@@ -17069,47 +17070,46 @@
                               (symbolp proof-name))
                   :mode :program
                   :stobjs state))
-  (b* ((- (cw "~%(Proving top-level miter ~x0:~%" proof-name))
+  (b* ((- (cw "~%(Proving top-level goal ~x0:~%" proof-name))
        ;; Desugar the special values :bits and :bytes for the types:
        (dag-vars (if (quotep dag-or-quotep) nil (dag-vars dag-or-quotep))) ; todo: make a dag-or-quotep-vars
        (var-type-alist (if (eq :bits types) ;todo: optimize this stuff:
-                           (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bits.~%" (len dag-vars))
+                           (progn$ (cw "  (NOTE: Assuming all ~x0 vars in the DAG are bits.)~%" (len dag-vars))
                                    (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 1))))
                          (if (eq :bytes types)
-                             (progn$ (cw "NOTE: Assuming all ~x0 vars in the DAG are bytes.~%" (len dag-vars))
+                             (progn$ (cw "  (NOTE: Assuming all ~x0 vars in the DAG are bytes.)~%" (len dag-vars))
                                      (pairlis$ dag-vars (repeat (len dag-vars) (make-bv-type 8))))
                            types)))
        ;; we have to reverse the alist here, because types can refer to later types
        (test-case-type-alist (reverse-list (uniquify-alist-eq (append test-types var-type-alist)))) ; the test-types, if any, override the types
        ;; Compare the vars in the DAG to the vars given types:
-       (sorted-dag-vars (merge-sort-symbol< dag-vars))
        (vars-given-types (strip-cars var-type-alist))
        (vars-given-test-types (strip-cars test-case-type-alist))
        (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
        (sorted-vars-given-test-types (merge-sort-symbol< vars-given-test-types))
        ;; todo: optimize the subset tests here and below, since the lists are sorted:
-       (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types))
+       (- (and (not (subsetp-eq dag-vars sorted-vars-given-types))
                ;; (hard-error 'prove-with-axe-core
                ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
-               ;;               (acons #\0 sorted-dag-vars
+               ;;               (acons #\0 dag-vars
                ;;                      (acons #\1 sorted-vars-given-types
-               ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
+               ;;                             (acons #\2 (set-difference-eq dag-vars sorted-vars-given-types)
                ;;                                    nil))))
                ;; todo: mention the tactics that won't work:
-               (let ((vars-not-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))) ; todo: optimize
+               (let ((vars-not-given-types (set-difference-eq dag-vars sorted-vars-given-types))) ; todo: optimize
                  (if (eq tactic :rewrite-and-sweep)
                      (cw "WARNING: The ~x0 DAG variables, ~x1, are not given types in the alist, ~x2.  This will prevent sweeping-and-merging from working if rewriting can't prove the goal.~%" (len vars-not-given-types) vars-not-given-types test-case-type-alist)
                    (cw "WARNING: The ~x0 DAG variables, ~x1, are not given types in the alist, ~x2.~%" (len vars-not-given-types) vars-not-given-types test-case-type-alist)
                    ))))
-       ((when (not (subsetp-eq sorted-vars-given-types sorted-dag-vars)))
+       ((when (not (subsetp-eq sorted-vars-given-types dag-vars)))
         (if (quotep dag-or-quotep)
-            (er hard? 'prove-with-axe-core "The following variables are given types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
-          (er hard? 'prove-with-axe-core "The following variables are given types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil))
+            (er hard? 'prove-with-axe-core "The following variables are given types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-types dag-vars) nil)
+          (er hard? 'prove-with-axe-core "The following variables are given types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types dag-vars) nil))
         (mv :input-error nil nil state))
-       ((when (not (subsetp-eq sorted-vars-given-test-types sorted-dag-vars)))
+       ((when (not (subsetp-eq sorted-vars-given-test-types dag-vars)))
         (if (quotep dag-or-quotep)
-            (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil)
-          (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-test-types sorted-dag-vars) nil))
+            (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist, but the input to prove is just a constant: ~X01.~%" (set-difference-eq sorted-vars-given-test-types dag-vars) nil)
+          (er hard? 'prove-with-axe-core "The following variables are given test-types in the alist but do not appear in the input DAG: ~X01.~%" (set-difference-eq sorted-vars-given-test-types dag-vars) nil))
         (mv :input-error nil nil state))
        ;; Handle the case when dag-or-quotep is already a constant: ; todo: move this up?
        ((when (quotep dag-or-quotep))
@@ -17145,7 +17145,7 @@
        ;; Begin by simplifying the DAG using the supplied axe-rules (if any).  We also simplify if the test case count is 0, because then simplifying is the only thing we can do. ffixme even if there are no rules supplied, we might we want to simplify to evaluate constants, etc.??  but it could be slow to do so if the dag is already simplified with some rule set (will almost always be the case) -- todo: make simplifying or not an option (default nil?)
        ((mv erp dag-or-quotep state)
         (if simplifyp
-            (progn$ (cw "(We begin by simplifying the miter:~%") ;(give the reason)?
+            (progn$ (cw "(We begin by simplifying the goal:~%") ;(give the reason)?
                     ;; initial-rule-set(s) take precedence here, if supplied (fixme what if both are supplied?)
                     ;; (and monitored-symbols (cw "Monitored symbols: ~x0." monitored-symbols)) ;printed by simp-dag?
                     (if initial-rule-set
@@ -17184,7 +17184,7 @@
                                   :use-internal-contextsp use-context-when-miteringp ;think about this..
                                   :work-hard-when-instructedp nil
                                   :check-inputs nil))))
-          (prog2$ (cw "(We don't simplify the miter to start, because no rules are given.)~%")
+          (prog2$ (cw "(We don't simplify the goal to start, because no rules are given.)~%")
                   (mv (erp-nil) dag state))))
        ((when erp) (mv erp nil nil state))
        ;;should we print the simplified dag?  we print it at the start of the sweep?
@@ -17282,7 +17282,7 @@
                 (mv erp provedp state))))
            ((when erp) (mv erp nil nil state)))
         (if provedp
-            (prog2$ (cw "Finished proving top-level miter!)~%")
+            (prog2$ (cw "Finished proving top-level goal!)~%")
                     (mv (erp-nil) t  all-untranslated-assumptions state))
           (prog2$ (cw "failed to prove by mitering and merging.)") ;todo: error or not?
                   (mv (erp-nil) nil all-untranslated-assumptions state)))))))
@@ -17369,6 +17369,7 @@
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :invisible) state))
+       (- (cw "(Proving equivalence:~%"))
        ;; Start timing:
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; Make term args (if present) into a DAG:
@@ -17416,16 +17417,16 @@
        ((when (not provedp)) (prog2$ (er hard? 'prove-with-axe-fn "Proof attempt failed.~%")
                                      (mv :proof-failed nil state)))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
-       (- (cw "Proof succeeded in ")
+       (- (cw "~%PROOF SUCCEEDED IN ")
           (acl2::print-to-hundredths elapsed)
-          (cw "s.~%"))
+          (cw "s.)~%"))
        ;; Assemble the event to return:
        (event '(progn)) ; empty progn to be extended
        ;;todo: should return a theorem about the term-or-dag!
        ;; Table event for redundancy checking:
        (event (extend-progn event `(with-output :off :all (table prove-with-axe-table ',whole-form ',event))))
        ;; Arrange to print the miter name when the event is submitted:
-       (event (extend-progn event `(value-triple ',proof-name))))
+       (event (extend-progn event `(value-triple :invisible))))
     (mv (erp-nil) event state)))
 
 ;; Returns (mv erp event state).
@@ -17574,6 +17575,7 @@
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :invisible) state))
+       (- (cw "(Proving equivalence:~%"))
        ;; Start timing:
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
       ;; Make term args (if any) into DAGs:
@@ -17629,16 +17631,16 @@
        ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe+-fn "Proof attempt failed.~%")
                                      (mv :proof-failed nil state)))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
-       (- (cw "Proof of equivalence succeeded in ")
+       (- (cw "~%PROOF OF EQUIVALENCE SUCCEEDED IN ")
           (acl2::print-to-hundredths elapsed)
-          (cw "s.~%"))
+          (cw "s.)~%"))
        ;; Assemble the event to return:
        (event '(progn)) ; empty progn to be extended
        ;;todo: should return a theorem about the term-or-dags!
        ;; Table event for redundancy checking:
        (event (extend-progn event `(with-output :off :all (table prove-equal-with-axe+-table ',whole-form ',event))))
        ;; Arrange to print the miter name when the event is submitted:
-       (event (extend-progn event `(value-triple ',proof-name))))
+       (event (extend-progn event `(value-triple :invisible))))
     (mv (erp-nil) event state)))
 
 ;; Unlike prove-with-axe, this takes 2 terms/dags.  unlike prove-equal-with-axe, this supports all the exotic options to prove-with-axe.
@@ -17768,6 +17770,7 @@
   (b* (;; Handle redundant invocation:
        ((when (command-is-redundantp whole-form state))
         (mv (erp-nil) '(value-triple :redundant) state))
+       (- (cw "(Proving equivalence:~%"))
        ;; Start timing:
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; Make term args (if any) into DAGs:
@@ -17836,9 +17839,9 @@
        ((when (not provedp)) (prog2$ (er hard? 'prove-equal-with-axe-fn "Proof attempt failed.~%")
                                      (mv :proof-failed nil state)))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
-       (- (cw "Proof of equivalence succeeded in ")
+       (- (cw "~%PROOF OF EQUIVALENCE SUCCEEDED IN ")
           (acl2::print-to-hundredths elapsed)
-          (cw "s.~%"))
+          (cw "s.)~%"))
        ;; Assemble the event to return:
        (event '(progn)) ; empty progn to be extended
        ;; Maybe add the theorem to the progn:
@@ -17856,7 +17859,7 @@
        ;; Table event for redundancy checking:
        (event (extend-progn event `(with-output :off :all (table prove-equal-with-axe-table ',whole-form ',event))))
        ;; Arrange to print the miter name when the event is submitted:
-       (event (extend-progn event `(value-triple ',proof-name)))
+       (event (extend-progn event `(value-triple :invisible)))
        ;; Make the whole thing local if instructed:
        (event (if local `(local ,event) event)))
     (mv (erp-nil) event state)))

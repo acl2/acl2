@@ -242,8 +242,6 @@
            system-paths-to-last-anchor-p-necc
            anchorp
            cert-with-author+round-element
-           certificate->author-of-cert-with-author+round
-           certificate->round-of-cert-with-author+round
            validator-state->dag-of-commit-anchors-next
            validator-state->last-of-commit-anchors-next
            certificate->author-of-last-anchor

@@ -435,7 +435,8 @@
                 :arg (expr-const
                        (c$::const-int
                          (c$::make-iconst
-                           :core (c$::dec/oct/hex-const-dec (- value.get))))))
+                           :core (c$::dec/oct/hex-const-dec (- value.get)))))
+                :info nil)
             (expr-const
               (c$::const-int
                 (c$::make-iconst :core (if (zp value.get)
@@ -453,7 +454,8 @@
                  :arg (expr-const
                         (c$::const-int
                           (c$::make-iconst
-                            :core (c$::dec/oct/hex-const-dec (- value.get))))))
+                            :core (c$::dec/oct/hex-const-dec (- value.get)))))
+                 :info nil)
              (expr-const
                (c$::const-int
                  (c$::make-iconst :core (if (zp value.get)
@@ -471,7 +473,8 @@
                :arg (expr-const
                       (c$::const-int
                         (c$::make-iconst
-                          :core (c$::dec/oct/hex-const-dec (- value.get))))))
+                          :core (c$::dec/oct/hex-const-dec (- value.get)))))
+               :info nil)
            (expr-const
              (c$::const-int
                (c$::make-iconst :core (if (zp value.get)
@@ -492,7 +495,8 @@
                        (c$::const-int
                          (c$::make-iconst
                            :core (c$::dec/oct/hex-const-dec (- value.get))
-                           :suffix? (c$::isuffix-l (c$::lsuffix-locase-l))))))
+                           :suffix? (c$::isuffix-l (c$::lsuffix-locase-l)))))
+                :info nil)
             (expr-const
               (c$::const-int
                 (c$::make-iconst :core (if (zp value.get)
@@ -514,7 +518,8 @@
                         (c$::const-int
                           (c$::make-iconst
                             :core (c$::dec/oct/hex-const-dec (- value.get))
-                            :suffix? (c$::isuffix-l (c$::lsuffix-locase-ll))))))
+                            :suffix? (c$::isuffix-l (c$::lsuffix-locase-ll)))))
+                 :info nil)
              (expr-const
                (c$::const-int
                  (c$::make-iconst :core (if (zp value.get)
@@ -651,11 +656,11 @@
         :unary (b* (((mv arg arg-value? env)
                      (const-prop-expr expr.arg env))
                     ((unless arg-value?)
-                     (mv (make-expr-unary :op expr.op :arg arg) nil env))
+                     (mv (make-expr-unary :op expr.op :arg arg :info nil) nil env))
                     (value? (const-prop-eval-unop-expr expr.op arg-value?)))
                  (mv (if value?
                          (value-to-expr value?)
-                       (make-expr-unary :op expr.op :arg arg))
+                       (make-expr-unary :op expr.op :arg arg :info nil))
                      value?
                      env))
         :sizeof (b* (((mv type env)
@@ -691,7 +696,8 @@
                       (b* (((unless arg2-value?)
                             (mv (make-expr-binary :op expr.op
                                                   :arg1 expr.arg1
-                                                  :arg2 arg2)
+                                                  :arg2 arg2
+                                                  :info expr.info)
                                 nil
                                 env))
                            ((mv value? env)
@@ -708,7 +714,8 @@
                             (mv (value-to-expr value?) value? env)
                           (mv (make-expr-binary :op expr.op
                                                 :arg1 expr.arg1
-                                                :arg2 arg2)
+                                                :arg2 arg2
+                                                :info expr.info)
                               nil
                               env))))
                      ((mv arg1 arg1-value? env)
@@ -716,7 +723,8 @@
                      ((unless (and arg1-value? arg2-value?))
                       (mv (make-expr-binary :op expr.op
                                             :arg1 arg1
-                                            :arg2 arg2)
+                                            :arg2 arg2
+                                            :info expr.info)
                           nil
                           env))
                      (value?
@@ -727,7 +735,8 @@
                           (value-to-expr value?)
                         (make-expr-binary :op expr.op
                                           :arg1 arg1
-                                          :arg2 arg2))
+                                          :arg2 arg2
+                                          :info expr.info))
                       value?
                       env))
         :cond (b* (((mv test - env)
@@ -1227,35 +1236,35 @@
         :array (b* (((mv decl env)
                      (const-prop-dirdeclor dirdeclor.declor env))
                     ((mv expr? - env)
-                     (const-prop-expr-option dirdeclor.expr? env)))
+                     (const-prop-expr-option dirdeclor.size? env)))
                  (mv (make-dirdeclor-array
                        :declor decl
-                       :quals dirdeclor.quals
-                       :expr? expr?)
+                       :qualspecs dirdeclor.qualspecs
+                       :size? expr?)
                      env))
         :array-static1 (b* (((mv decl env)
                              (const-prop-dirdeclor dirdeclor.declor env))
                             ((mv expr - env)
-                             (const-prop-expr dirdeclor.expr env)))
+                             (const-prop-expr dirdeclor.size env)))
                          (mv (make-dirdeclor-array-static1
                                :declor decl
-                               :quals dirdeclor.quals
-                               :expr expr)
+                               :qualspecs dirdeclor.qualspecs
+                               :size expr)
                              env))
         :array-static2 (b* (((mv decl env)
                              (const-prop-dirdeclor dirdeclor.declor env))
                             ((mv expr - env)
-                             (const-prop-expr dirdeclor.expr env)))
+                             (const-prop-expr dirdeclor.size env)))
                          (mv (make-dirdeclor-array-static2
                                :declor decl
-                               :quals dirdeclor.quals
-                               :expr expr)
+                               :qualspecs dirdeclor.qualspecs
+                               :size expr)
                              env))
         :array-star (b* (((mv decl env)
                           (const-prop-dirdeclor dirdeclor.declor env)))
                       (mv (make-dirdeclor-array-star
                             :declor decl
-                            :quals dirdeclor.quals)
+                            :qualspecs dirdeclor.qualspecs)
                           env))
         :function-params
         (b* (((mv decl env)
@@ -1284,11 +1293,11 @@
                  (new-env envp))
     (b* ((env (env-fix env))
          ((absdeclor absdeclor) absdeclor)
-         ((mv decl? env)
-          (const-prop-dirabsdeclor-option absdeclor.decl? env)))
+         ((mv direct? env)
+          (const-prop-dirabsdeclor-option absdeclor.direct? env)))
       (mv (make-absdeclor
             :pointers absdeclor.pointers
-            :decl? decl?)
+            :direct? direct?)
           env))
     :measure (absdeclor-count absdeclor))
 
@@ -1319,50 +1328,50 @@
                             (mv (dirabsdeclor-fix dirabsdeclor)
                                 env))
         :paren (b* (((mv unwrap env)
-                     (const-prop-absdeclor dirabsdeclor.unwrap env)))
+                     (const-prop-absdeclor dirabsdeclor.inner env)))
                  (mv (dirabsdeclor-paren unwrap) env))
         :array
-        (b* (((mv decl? env)
-              (const-prop-dirabsdeclor-option dirabsdeclor.decl? env))
+        (b* (((mv declor? env)
+              (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr? - env)
-              (const-prop-expr-option dirabsdeclor.expr? env)))
+              (const-prop-expr-option dirabsdeclor.size? env)))
           (mv (make-dirabsdeclor-array
-                :decl? decl?
-                :tyquals dirabsdeclor.tyquals
-                :expr? expr?)
+                :declor? declor?
+                :qualspecs dirabsdeclor.qualspecs
+                :size? expr?)
               env))
         :array-static1
-        (b* (((mv decl? env)
-              (const-prop-dirabsdeclor-option dirabsdeclor.decl? env))
+        (b* (((mv declor? env)
+              (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr - env)
-              (const-prop-expr dirabsdeclor.expr env)))
+              (const-prop-expr dirabsdeclor.size env)))
           (mv (make-dirabsdeclor-array-static1
-                :decl? decl?
-                :tyquals dirabsdeclor.tyquals
-                :expr expr)
+                :declor? declor?
+                :qualspecs dirabsdeclor.qualspecs
+                :size expr)
               env))
         :array-static2
-        (b* (((mv decl? env)
-              (const-prop-dirabsdeclor-option dirabsdeclor.decl? env))
+        (b* (((mv declor? env)
+              (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr - env)
-              (const-prop-expr dirabsdeclor.expr env)))
+              (const-prop-expr dirabsdeclor.size env)))
           (mv (make-dirabsdeclor-array-static2
-                :decl? decl?
-                :tyquals dirabsdeclor.tyquals
-                :expr expr)
+                :declor? declor?
+                :qualspecs dirabsdeclor.qualspecs
+                :size expr)
               env))
         :array-star
-        (b* (((mv decl? env)
-              (const-prop-dirabsdeclor-option dirabsdeclor.decl? env)))
-          (mv (dirabsdeclor-array-star decl?)
+        (b* (((mv declor? env)
+              (const-prop-dirabsdeclor-option dirabsdeclor.declor? env)))
+          (mv (dirabsdeclor-array-star declor?)
               env))
         :function
-        (b* (((mv decl? env)
-              (const-prop-dirabsdeclor-option dirabsdeclor.decl? env))
+        (b* (((mv declor? env)
+              (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv params env)
               (const-prop-paramdecl-list dirabsdeclor.params env)))
           (mv (make-dirabsdeclor-function
-                :decl? decl?
+                :declor? declor?
                 :params params
                 :ellipsis dirabsdeclor.ellipsis)
               env))))
@@ -1942,11 +1951,12 @@
                     :hyp (filepath-transunit-mapp map))
   (b* (((when (omap::emptyp map)) nil)
        ((mv path tunit) (omap::head map))
-       (new-path (deftrans-filepath path "CONST-PROP"))
        (new-tunit (const-prop-transunit tunit))
        (new-map
          (const-prop-filepath-transunit-map (omap::tail map))))
-    (omap::update new-path new-tunit new-map))
+    (omap::update (c$::filepath-fix path)
+                  new-tunit
+                  new-map))
   :verify-guards :after-returns)
 
 (define const-prop-transunit-ensemble

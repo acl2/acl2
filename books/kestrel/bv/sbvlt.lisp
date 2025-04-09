@@ -1,7 +1,7 @@
 ; Signed bit-vector "less than" comparison
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,8 +11,8 @@
 
 (in-package "ACL2")
 
+(include-book "sbvlt-def")
 (include-book "bvchop")
-(include-book "logext-def")
 (include-book "getbit")
 (local (include-book "logext")) ;todo: include less?
 (include-book "kestrel/utilities/polarity" :dir :system)
@@ -20,35 +20,6 @@
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "signed-byte-p"))
-
-;;signed less-than
-(defund sbvlt (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (< (logext n x)
-     (logext n y)))
-
-;;signed less-than-or-equal
-(defun sbvle (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (not (sbvlt n y x)))
-
-;;signed greater-than
-(defun sbvgt (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (sbvlt n y x))
-
-;;signed greater-than-or-equal
-(defun sbvge (n x y)
-  (declare (type (integer 1 *) n)
-           (type integer x)
-           (type integer y))
-  (not (sbvlt n x y)))
 
 (defthm not-sbvlt-same
   (not (sbvlt size x x))
@@ -185,6 +156,7 @@
 
 ;rename
 ;fffixme more like this (> instead of <, not a negated sbvlt, bvlt instead of sbvlt)
+;; this may be expensive
 (defthm equal-constant-when-not-sbvlt
   (implies (and (syntaxp (quotep k))
                 (not (sbvlt freesize x free))
@@ -193,8 +165,9 @@
                 (sbvlt freesize k free))
            (not (equal k x))))
 
-;renam
+;rename.  be consistent about "equal-constant" vs "equal-of-constant"
 ; when free<x and k<=free, we know x<>k
+;; this may be expensive
 (defthm equal-of-constant-when-sbvlt
   (implies (and (syntaxp (quotep k))
                 (sbvlt freesize free x) ;2 free vars here

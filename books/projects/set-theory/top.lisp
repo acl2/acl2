@@ -6,14 +6,18 @@
 
 ; Some of the following are redundant with others.
 (include-book "base")
+(include-book "cantor")
+; (include-book "change-pkg") ; not used and kind of a hack.
 (include-book "doc")
 (include-book "foldr")
-(include-book "prove-acl2p")
-(include-book "set-algebra")
-(include-book "zify")
+(include-book "identity")
+(include-book "injective-funp")
+(include-book "inverse")
 (include-book "iterate")
+(include-book "prove-acl2p")
+(include-book "schroeder-bernstein")
+(include-book "set-algebra")
 (include-book "zfns")
+(include-book "zify")
+; (include-book "zify-motivation") ; incompatible with "zify"
 (include-book "zseqs")
-#| ; Don't include -- incompatible with "zify" -- but certify.
-(include-book "zify-motivation")
-|#

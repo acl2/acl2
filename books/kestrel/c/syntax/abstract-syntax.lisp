@@ -1354,7 +1354,8 @@
        This means that our fixtypes are a bit more general,
        but we can use separate predicates to enforce restrictions.")
      (xdoc::p
-      "Identifiers may be accompanied by some additional information,
+      "Some kinds of expressions may include some additional information
+       (e.g. identifiers),
        such as types calculated during validation.
        This is an instance of the additional information
        discussed in @(tsee abstract-syntax).")
@@ -1608,7 +1609,8 @@
                (elems desiniter-list)
                (final-comma bool)))
     (:unary ((op unop)
-             (arg expr)))
+             (arg expr)
+             (info any)))
     (:sizeof ((type tyname)))
     (:sizeof-ambig ((expr/tyname amb-expr/tyname)))
     (:alignof ((type tyname)
@@ -1617,7 +1619,8 @@
             (arg expr)))
     (:binary ((op binop)
               (arg1 expr)
-              (arg2 expr)))
+              (arg2 expr)
+              (info any)))
     (:cond ((test expr)
             (then expr-option)
             (else expr)))
@@ -2191,16 +2194,16 @@
     (:ident ((ident ident)))
     (:paren ((inner declor)))
     (:array ((declor dirdeclor)
-             (quals typequal/attribspec-list)
-             (expr? expr-option)))
+             (qualspecs typequal/attribspec-list)
+             (size? expr-option)))
     (:array-static1 ((declor dirdeclor)
-                     (quals typequal/attribspec-list)
-                     (expr expr)))
+                     (qualspecs typequal/attribspec-list)
+                     (size expr)))
     (:array-static2 ((declor dirdeclor)
-                     (quals typequal/attribspec-list)
-                     (expr expr)))
+                     (qualspecs typequal/attribspec-list)
+                     (size expr)))
     (:array-star ((declor dirdeclor)
-                  (quals typequal/attribspec-list)))
+                  (qualspecs typequal/attribspec-list)))
     (:function-params ((declor dirdeclor)
                        (params paramdecl-list)
                        (ellipsis bool)))
@@ -2228,7 +2231,7 @@
        and an absent direct abstract declarator.
        This constraint is currently not enforced in this fixtype."))
     ((pointers typequal/attribspec-list-list)
-     (decl? dirabsdeclor-option))
+     (direct? dirabsdeclor-option))
     :pred absdeclorp
     :measure (two-nats-measure (acl2-count x) 2))
 
@@ -2263,18 +2266,18 @@
        Furthermore, as explained in @(see exprs/decls/stmts),
        there is a dummy base case."))
     (:dummy-base ())
-    (:paren ((unwrap absdeclor)))
-    (:array ((decl? dirabsdeclor-option)
-             (tyquals typequal/attribspec-list)
-             (expr? expr-option)))
-    (:array-static1 ((decl? dirabsdeclor-option)
-                     (tyquals typequal/attribspec-list)
-                     (expr expr)))
-    (:array-static2 ((decl? dirabsdeclor-option)
-                     (tyquals typequal/attribspec-list)
-                     (expr expr)))
-    (:array-star ((decl? dirabsdeclor-option)))
-    (:function ((decl? dirabsdeclor-option)
+    (:paren ((inner absdeclor)))
+    (:array ((declor? dirabsdeclor-option)
+             (qualspecs typequal/attribspec-list)
+             (size? expr-option)))
+    (:array-static1 ((declor? dirabsdeclor-option)
+                     (qualspecs typequal/attribspec-list)
+                     (size expr)))
+    (:array-static2 ((declor? dirabsdeclor-option)
+                     (qualspecs typequal/attribspec-list)
+                     (size expr)))
+    (:array-star ((declor? dirabsdeclor-option)))
+    (:function ((declor? dirabsdeclor-option)
                 (params paramdecl-list)
                 (ellipsis bool)))
     :pred dirabsdeclorp

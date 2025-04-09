@@ -1,7 +1,7 @@
 ; Utilities for dealing with temporary directories
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -181,5 +181,6 @@
            (sys-call* "rm" `("-rf" ,temp-dir-name) state)
            (declare (ignore erp val)) ;todo: check erp?
            (let ((state (makunbound-global 'temp-dir-exists state)))
-             (prog2$ (cw ")~%")
-                     state))))))))
+             (progn$
+               ;; (cw ")~%")
+               state))))))))

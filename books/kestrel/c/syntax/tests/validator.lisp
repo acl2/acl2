@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,6 +109,71 @@
 
 (test-valid
  "void f() {}
+")
+
+(test-valid
+ "_Bool b = 1;
+")
+
+(test-valid
+ "_Bool b = ((void *) 0);
+")
+
+(test-valid
+ "int a;
+_Bool b = &a;
+")
+
+(test-valid
+ "int * x = 0;
+")
+
+(test-valid
+ "int * x;
+void f() {
+  x = 0;
+}
+")
+
+(test-valid
+ "int * x;
+void f() {
+  if (x == 0) {}
+}
+")
+
+(test-valid
+ "void f() {
+  int a;
+  if (0 < &a) {}
+}
+"
+ :gcc t)
+
+(test-valid
+ "int * x;
+void f() {
+  if (x) {}
+}
+")
+
+(test-valid-fail
+ "int * f() {
+  int * x = 0;
+  return 0 - x;
+}
+")
+
+(test-valid
+ "void f(void * x) {
+  f(0);
+}
+")
+
+(test-valid-fail
+ "void f() {
+  *0;
+}
 ")
 
 
@@ -361,6 +427,45 @@
   extern int f();
 ")
 
+(test-valid
+  "struct my_struct { int x; };
+struct my_struct foo(void);
+void bar(void) {
+  struct my_struct baz = foo();
+}
+")
+
+(test-valid
+  "void foo(void) {
+struct my_struct { int x; };
+struct my_struct bar(void);
+  struct my_struct baz = bar();
+}
+")
+
+(test-valid
+ "typedef struct foo_s { int x; } foo_t;
+typedef foo_t foo_t_alias;
+foo_t_alias bar;
+")
+
+(test-valid
+ "typedef int * foo;
+foo bar;
+int main(void) {
+  *bar;
+  return 0;
+}
+")
+
+(test-valid
+ "typedef unsigned int size_t;
+void foo() {
+  for (size_t i; ; ) {}
+    typedef signed int size_t;
+  }
+")
+
 (test-valid-fail
  "extern int f();
   static int f();
@@ -369,6 +474,21 @@
 (test-valid-fail
  "int f();
   static int f();
+")
+
+(test-valid-fail
+ "int x;
+typedef int x;
+")
+
+(test-valid-fail
+ "typedef int x;
+int x;
+")
+
+(test-valid-fail
+ "typedef int x;
+typedef short x;
 ")
 
 (test-valid

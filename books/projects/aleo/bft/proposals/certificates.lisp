@@ -763,7 +763,32 @@
 
   (theory-invariant
    (incompatible (:rewrite cert-set->prop-set-of-certs-with-author+round)
-                 (:rewrite props-with-author+round-of-cert-set->prop-set))))
+                 (:rewrite props-with-author+round-of-cert-set->prop-set)))
+
+  (defruled emptyp-of-certs-with-author+round-to-props
+    (implies (certificate-setp certs)
+             (equal (set::emptyp
+                     (certs-with-author+round author round certs))
+                    (set::emptyp
+                     (props-with-author+round author
+                                              round
+                                              (cert-set->prop-set certs)))))
+    :enable props-with-author+round-of-cert-set->prop-set)
+
+  (defruled emptyp-of-props-with-author+round-of-cert-set->prop-set
+    (implies (certificate-setp certs)
+             (equal (set::emptyp
+                     (certs-with-author+round author round certs))
+                    (set::emptyp
+                     (props-with-author+round author
+                                              round
+                                              (cert-set->prop-set certs)))))
+    :enable emptyp-of-certs-with-author+round-to-props)
+
+  (theory-invariant
+   (incompatible
+    (:rewrite emptyp-of-certs-with-author+round-to-props)
+    (:rewrite emptyp-of-props-with-author+round-of-cert-set->prop-set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

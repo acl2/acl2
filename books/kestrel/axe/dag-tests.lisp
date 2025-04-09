@@ -138,8 +138,6 @@
                     BVCHOP-WITH-N-NEGATIVE
                     BVCHOP-WITH-N-NEGATIVE
                     NOT-<-OF-CAR-WHEN-ALL-<
-                    ;;USE-ALL-CONSP-FOR-CAR
-                    ;;ALL-CONSP-WHEN-NOT-CONSP
                     ))
 
 ;(in-theory (enable CONSP-OF-CDR))

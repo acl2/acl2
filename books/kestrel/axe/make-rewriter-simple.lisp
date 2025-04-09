@@ -549,11 +549,17 @@
                              ;; dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
                              )))
 
-         ;;todo: dup!
+         ;; ;;todo: dup!
+         ;; (local
+         ;;   (defthm nat-listp-of-reverse-list
+         ;;     (equal (nat-listp (reverse-list x))
+         ;;            (all-natp x))
+         ;;     :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+
          (local
            (defthm nat-listp-of-reverse-list
              (equal (nat-listp (reverse-list x))
-                    (all-natp x))
+                    (nat-listp (true-list-fix x)))
              :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
 
          ;; Make versions of sublis-var-and-eval and subcor-var-and-eval:
@@ -4637,7 +4643,8 @@
                                      consp-of-cdr-when-equal-of-car-and-quote-and-axe-treep
                                      len-of-car-when-axe-treep
                                      member-equal-when-member-equal-and-subsetp-equal
-                                     all-natp-when-nat-listp)
+                                     ;all-natp-when-nat-listp
+                                     )
                                     (dargp
                                      dargp-less-than
                                      natp
@@ -6210,7 +6217,7 @@
 
          ;; Core function of def-simplified-fn-xxx.  Unlike its wrapper, this function is in :logic mode.
          ;; Returns (mv erp event state).
-         ;; TODO: Perhaps add an option to take a rule-alist.
+         ;; TODO: Perhaps add an option to take a rule-alist, or a sequence of rule-alists.
          (defund ,def-simplified-fn-core-name (defconst-name ; the name of the constant to create
                                                dag
                                                assumptions
@@ -6253,16 +6260,27 @@
                 ((when erp) (mv erp nil state))
                 ;; Simplify the DAG:
                 ((mv erp dag-or-quotep &) ; todo: use the limits?
-                 ,call-of-simplify-dag)
+                 (,simplify-dag-name dag
+                                     assumptions
+                                     rule-alist
+                                     interpreted-function-alist
+                                     known-booleans
+                                     normalize-xors
+                                     limits
+                                     memoizep
+                                     count-hits
+                                     print
+                                     monitored-symbols
+                                     fns-to-elide))
                 ((when erp) (mv erp nil state))
                 ((mv end-time state) (get-real-time state))
                 ;; Print info about the DAG:
                 (- (print-dag-info dag-or-quotep defconst-name nil))
-                (- (if (myquotep dag-or-quotep)
-                       nil ; skip the purity check if we have constant
-                     (if (dag-is-purep-aux dag-or-quotep :all t) ; prints any non-pure nodes
-                         (cw "~x0 is a pure dag.~%" defconst-name)
-                       (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
+                ;; (- (if (myquotep dag-or-quotep)
+                ;;        nil ; skip the purity check if we have constant
+                ;;      (if (dag-is-purep-aux dag-or-quotep :all t) ; prints any non-pure nodes
+                ;;          (cw "~x0 is a pure dag.~%" defconst-name)
+                ;;        (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name))))
                 (- (progn$ (cw "~%SIMPLIFICATION FINISHED (")
                            (print-to-hundredths (- end-time start-time))
                            (cw "s).)~%") ; s = seconds, second paren matches "(Creating ..." above

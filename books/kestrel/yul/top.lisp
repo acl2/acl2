@@ -59,4 +59,6 @@
      we also reference (the rest of) the Solidity documentation,
      which we do as `[Solidity]' and `[Solidity: ...]',
      similarly to how we reference the Yul documentation proper."))
-  :order-subtopics t)
+  :order-subtopics (language
+                    yul-json
+                    transformations))

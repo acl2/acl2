@@ -48,7 +48,7 @@
       (acl2::conjoin-term-with-dag! (acl2::make-conjunction-from-list
                                      (cons
                                       ;; Assume all vars are field elements:
-                                      (pfield::gen-fe-listp-assumption (acl2::dag-vars ,lifted-r1cs)
+                                      (pfield::gen-fe-listp-assumption (acl2::dag-vars-unsorted ,lifted-r1cs)
                                                                        ;; bake in baby-jubjub-prime:
                                                                        '',prime)
                                       ;; Assume that the inputs are bits:

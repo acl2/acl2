@@ -242,7 +242,7 @@
        ;; because Axe does not yet produce an ACL2 proof. TODO: We could
        ;; support adding the theorem even if the DAG is large if we use
        ;; dag-val-with-axe-evaluator to express the theorem.
-       (dag-vars (dag-vars dag)) ;todo: check these (what should be allowed)?
+       (dag-vars (dag-vars-unsorted dag)) ;todo: check these (what should be allowed)?
        (dag-fns (dag-fns dag))
        ;; build the function:
        (function-name (intern-in-package-of-symbol
@@ -303,9 +303,9 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
             (cw "Created ~x0 items: ~X12.~%~%" (len items-created) items-created nil)))
        ;; (- (cw "Info on unrolled spec DAG:~%"))
        (- (print-dag-info dag defconst-name nil))
-       (- (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
-              (cw "~x0 is a pure dag.~%" defconst-name)
-            (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name)))
+       ;; (- (if (dag-is-purep-aux dag :all t) ; prints any non-pure nodes
+       ;;        (cw "~x0 is a pure dag.~%" defconst-name)
+       ;;      (cw "~%WARNING: ~x0 is not a pure dag (see above)!~%" defconst-name)))
        (- (progn$ (cw "~%SPEC UNROLLING FINISHED (")
                   (print-to-hundredths (- end-time start-time))
                   (cw "s).") ; s = seconds

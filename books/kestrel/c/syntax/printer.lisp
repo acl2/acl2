@@ -1433,7 +1433,8 @@
       "             (expr-binary (binop-add)"
       "                          (expr-ident (ident \"x\") ...)"
       "                          (expr-ident (ident \"y\") ...))"
-      "             (expr-ident (ident \"z\") ...))")
+      "             (expr-ident (ident \"z\") ...)"
+      "             ...)")
      (xdoc::p
       "(where @('...') is the additional information, irrelevant here)
        represents the expression @('(x + y) * z').
@@ -1482,8 +1483,8 @@
        corresponds to the nonterminal <i>additive-expression</i>.
        The function @(tsee expr->priority) defines a mapping
        from the expressions of our abstract syntax to their priorities,
-       e.g. @('(expr-binary (binop-add) ... ...)')
-       and @('(expr-binary (binop-sub) ... ...)')
+       e.g. @('(expr-binary (binop-add) ... ... ...)')
+       and @('(expr-binary (binop-sub) ... ... ...)')
        are mapped to @('expr-priority-add'),
        the priority of additive expressions.
        The function @(tsee expr-priority-<=) defines
@@ -1503,7 +1504,7 @@
        the second argument of this function is changed according to
        the grammar rule corresponding to the super-expression.
        For instance, when printing the left and right subexpressions
-       of a super-expression @('(expr-binary (binop-add) left right)'),
+       of a super-expression @('(expr-binary (binop-add) left right ...)'),
        we recursively call the printer twice,
        once on @('left') and once on @('right').
        Because of the grammar rule
@@ -2314,15 +2315,16 @@
      :array
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "[" pstate))
-          (pstate (if dirdeclor.quals
-                      (print-typequal/attribspec-list dirdeclor.quals pstate)
+          (pstate (if dirdeclor.qualspecs
+                      (print-typequal/attribspec-list dirdeclor.qualspecs
+                                                      pstate)
                     pstate))
-          (pstate (if (and dirdeclor.quals
-                           dirdeclor.expr?)
+          (pstate (if (and dirdeclor.qualspecs
+                           dirdeclor.size?)
                       (print-astring " " pstate)
                     pstate))
-          (pstate (if (expr-option-case dirdeclor.expr? :some)
-                      (print-expr (expr-option-some->val dirdeclor.expr?)
+          (pstate (if (expr-option-case dirdeclor.size? :some)
+                      (print-expr (expr-option-some->val dirdeclor.size?)
                                   (expr-priority-asg)
                                   pstate)
                     pstate))
@@ -2331,33 +2333,33 @@
      :array-static1
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "static " pstate))
-          (pstate (if dirdeclor.quals
+          (pstate (if dirdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
-                                    dirdeclor.quals
+                                    dirdeclor.qualspecs
                                     pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
-          (pstate (print-expr dirdeclor.expr (expr-priority-asg) pstate))
+          (pstate (print-expr dirdeclor.size (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static2
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
-          ((unless dirdeclor.quals)
+          ((unless dirdeclor.qualspecs)
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            pstate)
-          (pstate (print-typequal/attribspec-list dirdeclor.quals pstate))
+          (pstate (print-typequal/attribspec-list dirdeclor.qualspecs pstate))
           (pstate (print-astring " static " pstate))
-          (pstate (print-expr dirdeclor.expr (expr-priority-asg) pstate))
+          (pstate (print-expr dirdeclor.size (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-star
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
           (pstate (print-astring "[" pstate))
-          (pstate (if dirdeclor.quals
+          (pstate (if dirdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
-                                    dirdeclor.quals
+                                    dirdeclor.qualspecs
                                     pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
@@ -2407,7 +2409,7 @@
        or the direct abstract declarator part."))
     (b* (((absdeclor absdeclor) absdeclor)
          ((unless (or absdeclor.pointers
-                      absdeclor.decl?))
+                      absdeclor.direct?))
           (raise "Misusage error: ~
                   empty abstract declarator.")
           (pristate-fix pstate))
@@ -2415,9 +2417,9 @@
                      (print-typequal/attribspec-list-list absdeclor.pointers
                                                           pstate)
                    pstate))
-         (pstate (if (dirabsdeclor-option-case absdeclor.decl? :some)
+         (pstate (if (dirabsdeclor-option-case absdeclor.direct? :some)
                      (print-dirabsdeclor (dirabsdeclor-option-some->val
-                                          absdeclor.decl?)
+                                          absdeclor.direct?)
                                          pstate)
                    pstate)))
       pstate)
@@ -2438,75 +2440,75 @@
              (pristate-fix pstate))
      :paren
      (b* ((pstate (print-astring "(" pstate))
-          (pstate (print-absdeclor dirabsdeclor.unwrap pstate))
+          (pstate (print-absdeclor dirabsdeclor.inner pstate))
           (pstate (print-astring ")" pstate)))
        pstate)
      :array
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "[" pstate))
-          (pstate (if dirabsdeclor.tyquals
-                      (print-typequal/attribspec-list dirabsdeclor.tyquals
+          (pstate (if dirabsdeclor.qualspecs
+                      (print-typequal/attribspec-list dirabsdeclor.qualspecs
                                                       pstate)
                     pstate))
-          (pstate (if (and dirabsdeclor.tyquals
-                           dirabsdeclor.expr?)
+          (pstate (if (and dirabsdeclor.qualspecs
+                           dirabsdeclor.size?)
                       (print-astring " " pstate)
                     pstate))
-          (pstate (if (expr-option-case dirabsdeclor.expr? :some)
-                      (print-expr (expr-option-some->val dirabsdeclor.expr?)
+          (pstate (if (expr-option-case dirabsdeclor.size? :some)
+                      (print-expr (expr-option-some->val dirabsdeclor.size?)
                                   (expr-priority-asg)
                                   pstate)
                     pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static1
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "static " pstate))
-          (pstate (if dirabsdeclor.tyquals
+          (pstate (if dirabsdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
-                                    dirabsdeclor.tyquals
+                                    dirabsdeclor.qualspecs
                                     pstate))
                            (pstate (print-astring " " pstate)))
                         pstate)
                     pstate))
-          (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
+          (pstate (print-expr dirabsdeclor.size (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-static2
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
-          ((unless dirabsdeclor.tyquals)
+          ((unless dirabsdeclor.qualspecs)
            (raise "Misusage error: ~
                    empty list of type qualifiers.")
            (pristate-fix pstate))
-          (pstate (print-typequal/attribspec-list dirabsdeclor.tyquals pstate))
+          (pstate (print-typequal/attribspec-list dirabsdeclor.qualspecs pstate))
           (pstate (print-astring " static " pstate))
-          (pstate (print-expr dirabsdeclor.expr (expr-priority-asg) pstate))
+          (pstate (print-expr dirabsdeclor.size (expr-priority-asg) pstate))
           (pstate (print-astring "]" pstate)))
        pstate)
      :array-star
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "[*]" pstate)))
        pstate)
      :function
-     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.decl? :some)
+     (b* ((pstate (if (dirabsdeclor-option-case dirabsdeclor.declor? :some)
                       (print-dirabsdeclor
-                       (dirabsdeclor-option-some->val dirabsdeclor.decl?)
+                       (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
           (pstate (print-astring "(" pstate))

@@ -1052,7 +1052,8 @@
                     :arg (c$::make-expr-ident
                            :ident (if (member-equal expr.name split-members)
                                       new2
-                                    new1))
+                                    new1)
+                           :info nil)
                     :name expr.name))
         :memberp (make-expr-memberp
                    :arg (replace-field-access-expr
@@ -1105,7 +1106,8 @@
                           linkage
                           new1
                           new2
-                          split-members)))
+                          split-members)
+                   :info nil))
         :sizeof (expr-sizeof (replace-field-access-tyname
                                expr.type
                                original
@@ -1154,7 +1156,8 @@
                           linkage
                           new1
                           new2
-                          split-members))
+                          split-members)
+                  :info expr.info)
         :cond (make-expr-cond
                 :test (replace-field-access-expr
                         expr.test
@@ -1301,9 +1304,8 @@
   ((map filepath-transunit-mapp))
   :returns (map$ filepath-transunit-mapp)
   (b* (((when (omap::emptyp map)) nil)
-       ((mv path tunit) (omap::head map))
-       (path$ (deftrans-filepath path "SPLITGSO")))
-    (omap::update path$
+       ((mv path tunit) (omap::head map)))
+    (omap::update (c$::filepath-fix path)
                   (c$::transunit-fix tunit)
                   (splitgso-rename-filepaths (omap::tail map))))
   :verify-guards :after-returns)

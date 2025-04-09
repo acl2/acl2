@@ -1124,7 +1124,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define uinteger-format->max ((format uinteger-formatp))
-  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :returns (max posp
+                :rule-classes (:rewrite :type-prescription)
+                :hints (("Goal" :in-theory (enable posp))))
   :short "The ACL2 integer value of
           the maximum value representable in an unsigned integer format."
   :long
@@ -1139,7 +1141,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sinteger-format->max ((format sinteger-formatp))
-  :returns (max posp :hints (("Goal" :in-theory (enable posp))))
+  :returns (max posp
+                :rule-classes (:rewrite :type-prescription)
+                :hints (("Goal" :in-theory (enable posp))))
   :short "The ACL2 integer value of
           the maximum value representable in a signed integer format."
   :long
@@ -1183,7 +1187,13 @@
                   (sinteger-format->bits format))))
     (- (1- (expt 2 (sinteger-bit-roles-value-count
                     (sinteger-format->bits format))))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret sinteger-format->min-type-prescription
+    (< min 0)
+    :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1326,6 +1336,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-format->size ((format integer-formatp))
+  :returns (size posp :hints (("Goal" :in-theory (enable posp))))
   :short "Number of bits of an integer format."
   :long
   (xdoc::topstring
@@ -1370,29 +1381,85 @@
    :pair (make-uinteger+sinteger-format
           :unsigned (uinteger-format-inc-npnt size)
           :signed (sinteger-format-inc-sign-tcnpnt (1- (pos-fix size)))))
-  :guard-hints
-  (("Goal"
-    :in-theory
-    (enable posp
-            uinteger-format-inc-npnt
-            sinteger-format-inc-sign-tcnpnt
-            uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
-            sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign)))
+  :verify-guards nil ; done below
   :hooks (:fix)
 
   ///
+
+  (defruled uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (uinteger-sinteger-bit-roles-wfp
+              (uinteger-format->bits
+               (uinteger-format-inc-npnt size))
+              (sinteger-format->bits
+               (sinteger-format-inc-sign-tcnpnt (+ -1 size)))))
+    :enable (posp
+             uinteger-format-inc-npnt
+             sinteger-format-inc-sign-tcnpnt
+             uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
+             sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign))
+
+  (verify-guards integer-format-inc-sign-tcnpnt
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+       posp))))
 
   (defruled integer-format->size-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
              (equal (integer-format->size (integer-format-inc-sign-tcnpnt size))
-                    (pos-fix size)))
+                    size))
     :enable (integer-format->size
              uinteger-format-inc-npnt
              sinteger-format-inc-sign-tcnpnt
              uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
              sinteger-bit-roles-wfp-of-sinteger-bit-roles-inc-n-and-sign
-             posp)))
+             posp))
+
+  (defruled integer-format-unsigned->max-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (equal (uinteger-format->max
+                     (uinteger+sinteger-format->unsigned
+                      (integer-format->pair
+                       (integer-format-inc-sign-tcnpnt size))))
+                    (1- (expt 2 size))))
+    :enable
+    (integer-format-inc-sign-tcnpnt
+     uinteger-format->max-of-uinteger-format-inc-npnt
+     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt))
+
+  (defruled integer-format-signed->max-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (equal (sinteger-format->max
+                     (uinteger+sinteger-format->signed
+                      (integer-format->pair
+                       (integer-format-inc-sign-tcnpnt size))))
+                    (1- (expt 2 (1- size)))))
+    :enable
+    (integer-format-inc-sign-tcnpnt
+     sinteger-format->max-of-sinteger-format-inc-sign-tcnpnt
+     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+     posp))
+
+  (defruled integer-format-signed->min-of-integer-format-inc-sign-tcnpnt
+    (implies (and (posp size)
+                  (not (equal size 1)))
+             (equal (sinteger-format->min
+                     (uinteger+sinteger-format->signed
+                      (integer-format->pair
+                       (integer-format-inc-sign-tcnpnt size))))
+                    (- (expt 2 (1- size)))))
+    :enable
+    (integer-format-inc-sign-tcnpnt
+     sinteger-format->min-of-sinteger-format-inc-sign-tcnpnt
+     uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
+     posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1597,6 +1664,285 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define short-format-16tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('short') format defined by
+          16 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('short') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 16)
+
+  ///
+
+  (defrule integer-format-short-wfp-of-short-format-16tcnt
+    (integer-format-short-wfp (short-format-16tcnt)
+                              (uchar-format-8)
+                              (schar-format-8tcnt)))
+
+  (defruled integer-format->size-of-short-format-16tcnt
+    (equal (integer-format->size (short-format-16tcnt))
+           16))
+
+  (defruled uinteger-format->max-of-short-format-16tcnt
+    (equal (uinteger-format->max
+            (uinteger+sinteger-format->unsigned
+             (integer-format->pair
+              (short-format-16tcnt))))
+           65535))
+
+  (defruled sinteger-format->max-of-short-format-16tcnt
+    (equal (sinteger-format->max
+            (uinteger+sinteger-format->signed
+             (integer-format->pair
+              (short-format-16tcnt))))
+           32767))
+
+  (defruled sinteger-format->min-of-short-format-16tcnt
+    (equal (sinteger-format->min
+            (uinteger+sinteger-format->signed
+             (integer-format->pair
+              (short-format-16tcnt))))
+           -32768)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define int-format-16tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('int') format defined by
+          16 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('int') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 16)
+
+  ///
+
+  (defrule integer-format-int-wfp-of-int-format-16tcnt
+    (integer-format-int-wfp (int-format-16tcnt)
+                            (uchar-format-8)
+                            (short-format-16tcnt)))
+
+  (defruled integer-format->size-of-int-format-16tcnt
+    (equal (integer-format->size (int-format-16tcnt))
+           16))
+
+  (defruled uinteger-format->max-of-int-format-16tcnt
+    (equal (uinteger-format->max
+            (uinteger+sinteger-format->unsigned
+             (integer-format->pair
+              (int-format-16tcnt))))
+           65535))
+
+  (defruled sinteger-format->max-of-int-format-16tcnt
+    (equal (sinteger-format->max
+            (uinteger+sinteger-format->signed
+             (integer-format->pair
+              (int-format-16tcnt))))
+           32767))
+
+  (defruled sinteger-format->min-of-int-format-16tcnt
+    (equal (sinteger-format->min
+            (uinteger+sinteger-format->signed
+             (integer-format->pair
+              (int-format-16tcnt))))
+           -32768)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define long-format-32tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('long') format defined by
+          32 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('long') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 32)
+
+  ///
+
+  (defrule integer-format-long-wfp-of-long-format-32tcnt
+    (integer-format-long-wfp (long-format-32tcnt)
+                             (uchar-format-8)
+                             (int-format-16tcnt)))
+
+  (defruled integer-format->size-of-long-format-32tcnt
+    (equal (integer-format->size (long-format-32tcnt))
+           32))
+
+  (defruled uinteger-format->max-of-long-format-32tcnt
+    (equal (uinteger-format->max
+            (uinteger+sinteger-format->unsigned
+             (integer-format->pair
+              (long-format-32tcnt))))
+           4294967295))
+
+  (defruled sinteger-format->max-of-long-format-32tcnt
+    (equal (sinteger-format->max
+            (uinteger+sinteger-format->signed
+             (integer-format->pair
+              (long-format-32tcnt))))
+           2147483647))
+
+  (defruled sinteger-format->min-of-long-format-32tcnt
+    (equal (sinteger-format->min
+            (uinteger+sinteger-format->signed
+             (integer-format->pair
+              (long-format-32tcnt))))
+           -2147483648)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define llong-format-64tcnt ()
+  :returns (format integer-formatp)
+  :short "The (@('unsigned') and @('signed')) @('long long') format defined by
+          64 bits with increasing values,
+          two's complement,
+          and no trap representations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the simplest and smallest format for @('long long') integers,
+     with two's complement being the most common signed format.
+     There cannot be any padding bits,
+     otherwise the value bits would not suffice to cover
+     the required ranges of values.
+     With no padding bits, there is only one possible trap representation,
+     namely the one with sign bit 1 and all value bits 0,
+     but the simplest and most common choice is that it is a valid value instead
+     (the smallest signed value representable in the type)."))
+  (integer-format-inc-sign-tcnpnt 64)
+
+  ///
+
+  (defrule integer-format-llong-wfp-of-long-format-64tcnt
+    (integer-format-llong-wfp (llong-format-64tcnt)
+                              (uchar-format-8)
+                              (long-format-32tcnt)))
+
+  (defruled integer-format->size-of-llong-format-64tcnt
+    (equal (integer-format->size (llong-format-64tcnt))
+           64))
+
+  (defruled uinteger-format->max-of-llong-format-64tcnt
+    (equal (uinteger-format->max
+            (uinteger+sinteger-format->unsigned
+             (integer-format->pair
+              (llong-format-64tcnt))))
+           18446744073709551615))
+
+  (defruled sinteger-format->max-of-llong-format-64tcnt
+    (equal (sinteger-format->max
+            (uinteger+sinteger-format->signed
+             (integer-format->pair
+              (llong-format-64tcnt))))
+           9223372036854775807))
+
+  (defruled sinteger-format->min-of-llong-format-64tcnt
+    (equal (sinteger-format->min
+            (uinteger+sinteger-format->signed
+             (integer-format->pair
+              (llong-format-64tcnt))))
+           -9223372036854775808)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod char+short+int+long+llong-format
+  :short "Fixtype of formats of
+          (unsigned, signed, and plain) @('char') objects,
+          (unsigned and signed) @('short') objects,
+          (unsigned and signed) @('int') objects,
+          (unsigned and signed) @('long') objects, and
+          (unsigned and signed) @('long long') objects."
+  ((uchar uchar-format)
+   (schar schar-format)
+   (char char-format)
+   (short integer-format)
+   (int integer-format)
+   (long integer-format)
+   (llong integer-format))
+  :pred char+short+int+long+llong-formatp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char+short+int+long+llong-format-wfp
+  ((format char+short+int+long+llong-formatp))
+  :returns (yes/no booleanp)
+  :short "Check if the formats of
+          @('char'), @('short'), @('int'), @('long'), and @('long long') objects
+          are well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The formats for @('char') objects already include
+     their own well-formedness in their definition.
+     We impose well-formedness on the other formats."))
+  (b* (((char+short+int+long+llong-format format) format))
+    (and (integer-format-short-wfp format.short format.uchar format.schar)
+         (integer-format-int-wfp format.int format.uchar format.short)
+         (integer-format-long-wfp format.long format.uchar format.int)
+         (integer-format-llong-wfp format.llong format.uchar format.long)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char8+short16+int16+long32+llong64-tcnt ()
+  :short "The @('char'), @('short'), @('int'), @('long'), and @('long long')
+          integer formats defined by
+          the minimal number of bits with increasing values,
+          two's complement,
+          no trap representations, and
+          unsigned plain @('char')s."
+  (make-char+short+int+long+llong-format
+   :uchar (uchar-format-8)
+   :schar (schar-format-8tcnt)
+   :char (char-format-8u)
+   :short (short-format-16tcnt)
+   :int (int-format-16tcnt)
+   :long (long-format-32tcnt)
+   :llong (llong-format-64tcnt))
+
+  ///
+
+  (defruled wfp-of-char8+short16+int16+long32+llong64-tcnt
+    (char+short+int+long+llong-format-wfp
+     (char8+short16+int16+long32+llong64-tcnt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
@@ -1606,17 +1952,21 @@
      but we plan to add more components.")
    (xdoc::p
     "Currently we include the format of the three character types,
-     and the standard signed integer types and their unsigned counterparts.
-     We still need to add constraints on the numbers of bits,
-     and on the maximum and minimum values,
-     of the non-character integer formats."))
-  ((uchar-format uchar-format)
-   (schar-format schar-format)
-   (char-format char-format)
-   (short-format integer-format)
-   (int-format integer-format)
-   (long-format integer-format)
-   (llong-format integer-format))
+     and the standard signed integer types and their unsigned counterparts.")
+   (xdoc::p
+    "The reason for using
+     the ``intermediate'' fixtype @(tsee char+short+int+long+llong-format)
+     is the same as explained in @(tsee integer-format)
+     about the ``intermediate'' fixtype used there.
+     We may eliminate this at some point."))
+  ((char+short+int+long+llong-format
+    char+short+int+long+llong-format
+    :reqfix (if (char+short+int+long+llong-format-wfp
+                 char+short+int+long+llong-format)
+                char+short+int+long+llong-format
+              (char8+short16+int16+long32+llong64-tcnt))))
+  :require (char+short+int+long+llong-format-wfp
+            char+short+int+long+llong-format)
   :pred ienvp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1629,7 +1979,9 @@
    (xdoc::p
     "This is the size, in bits, of
      (possibly @('unsigned') or @('signed')) @('char') objects."))
-  (uchar-format->size (ienv->uchar-format ienv))
+  (uchar-format->size
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -1651,7 +2003,9 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee uchar-format->max)."))
-  (uchar-format->max (ienv->uchar-format ienv))
+  (uchar-format->max
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -1673,8 +2027,11 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee schar-format->max)."))
-  (schar-format->max (ienv->schar-format ienv)
-                     (ienv->uchar-format ienv))
+  (schar-format->max
+   (char+short+int+long+llong-format->schar
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -1696,8 +2053,11 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee schar-format->min)"))
-  (schar-format->min (ienv->schar-format ienv)
-                     (ienv->uchar-format ienv))
+  (schar-format->min
+   (char+short+int+long+llong-format->schar
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -1708,9 +2068,13 @@
 
   (defret ienv->schar-min-upper-bound
     (<= min (if (and (equal (signed-format-kind
-                             (schar-format->signed (ienv->schar-format ienv)))
+                             (schar-format->signed
+                              (char+short+int+long+llong-format->schar
+                               (ienv->char+short+int+long+llong-format ienv))))
                             :twos-complement)
-                     (not (schar-format->trap (ienv->schar-format ienv))))
+                     (not (schar-format->trap
+                           (char+short+int+long+llong-format->schar
+                            (ienv->char+short+int+long+llong-format ienv)))))
                 -128
               -127))
     :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv))))))
@@ -1724,9 +2088,13 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee char-format->max)."))
-  (char-format->max (ienv->char-format ienv)
-                    (ienv->uchar-format ienv)
-                    (ienv->schar-format ienv))
+  (char-format->max
+   (char+short+int+long+llong-format->char
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->schar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -1748,9 +2116,13 @@
   (xdoc::topstring
    (xdoc::p
     "See @(tsee char-format->min)."))
-  (char-format->min (ienv->char-format ienv)
-                    (ienv->uchar-format ienv)
-                    (ienv->schar-format ienv))
+  (char-format->min
+   (char+short+int+long+llong-format->char
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->uchar
+    (ienv->char+short+int+long+llong-format ienv))
+   (char+short+int+long+llong-format->schar
+    (ienv->char+short+int+long+llong-format ienv)))
   :hooks (:fix)
   ///
 
@@ -1760,11 +2132,18 @@
     :rule-classes :type-prescription)
 
   (defret ienv->char-min-upper-bound
-    (<= min (if (char-format->signedp (ienv->char-format ienv))
-                (if (and (equal (signed-format-kind
-                                 (schar-format->signed (ienv->schar-format ienv)))
-                                :twos-complement)
-                         (not (schar-format->trap (ienv->schar-format ienv))))
+    (<= min (if (char-format->signedp
+                 (char+short+int+long+llong-format->char
+                  (ienv->char+short+int+long+llong-format ienv)))
+                (if (and
+                     (equal (signed-format-kind
+                             (schar-format->signed
+                              (char+short+int+long+llong-format->schar
+                               (ienv->char+short+int+long+llong-format ienv))))
+                            :twos-complement)
+                     (not (schar-format->trap
+                           (char+short+int+long+llong-format->schar
+                            (ienv->char+short+int+long+llong-format ienv)))))
                     -128
                   -127)
               0))

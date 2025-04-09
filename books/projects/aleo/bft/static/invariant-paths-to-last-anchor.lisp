@@ -110,9 +110,7 @@
                         (1+ max-faulty))))
     :enable (validator-last-anchor-voters-p
              last-anchor
-             cardinality-of-incoming-to-tally-leader-votes
-             certificate->author-of-cert-with-author+round
-             certificate->round-of-cert-with-author+round))
+             cardinality-of-incoming-to-tally-leader-votes))
 
   ;; Main theorem.
 

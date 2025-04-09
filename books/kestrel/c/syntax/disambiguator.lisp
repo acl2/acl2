@@ -419,7 +419,8 @@
       (make-expr-binary :op (expr-binary->op arg)
                         :arg1 (dimb-make/adjust-expr-cast
                                type (expr-binary->arg1 arg))
-                        :arg2 (expr-binary->arg2 arg))
+                        :arg2 (expr-binary->arg2 arg)
+                        :info nil)
     (make-expr-cast :type type :arg arg))
   :measure (expr-count arg)
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -556,14 +557,14 @@
                 non-binary expression ~x0 ~
                 used as left argument of binary operator ~x1."
                (expr-fix arg1) (binop-fix op))
-        (expr-binary op arg1 arg2))
+        (expr-binary op arg1 arg2 nil))
        ((when (and arg2-mismatch
                    (not (expr-case arg2 :binary))))
         (raise "Internal error: ~
                 non-binary expression ~x0 ~
                 used as right argument of binary operator ~x1."
                (expr-fix arg2) (binop-fix op))
-        (expr-binary op arg1 arg2)))
+        (expr-binary op arg1 arg2 nil)))
     (cond
      ((and arg1-mismatch
            (or (not arg2-mismatch)
@@ -573,7 +574,7 @@
            (new-arg2 (dimb-make/adjust-expr-binary op
                                                    (expr-binary->arg2 arg1)
                                                    arg2)))
-        (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2)))
+        (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2 :info nil)))
      ((and arg2-mismatch
            (or (not arg1-mismatch)
                (expr-priority-<= arg1-actual arg2-actual)))
@@ -582,8 +583,8 @@
                                                    arg1
                                                    (expr-binary->arg1 arg2)))
            (new-arg2 (expr-binary->arg2 arg2)))
-        (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2)))
-     (t (make-expr-binary :op op :arg1 arg1 :arg2 arg2))))
+        (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2 :info nil)))
+     (t (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info nil))))
   :measure (+ (expr-count arg1) (expr-count arg2))
   :hints (("Goal" :in-theory (enable o-p o< o-finp)))
   :verify-guards :after-returns
@@ -648,17 +649,18 @@
                        (expr-priority-cast)))
        (arg-actual (expr->priority arg))
        ((when (expr-priority->= arg-actual arg-expected))
-        (make-expr-unary :op op :arg arg))
+        (make-expr-unary :op op :arg arg :info nil))
        ((unless (expr-case arg :binary))
         (raise "Internal error: ~
                 non-binary expression ~x0 ~
                 used as argument of unary operator ~x1."
                (expr-fix arg) (unop-fix op))
-        (expr-unary op arg)))
+        (expr-unary op arg nil)))
     (make-expr-binary :op (expr-binary->op arg)
                       :arg1 (dimb-make/adjust-expr-unary
                              op (expr-binary->arg1 arg))
-                      :arg2 (expr-binary->arg2 arg)))
+                      :arg2 (expr-binary->arg2 arg)
+                      :info nil))
   :measure (expr-count arg)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns
@@ -2006,35 +2008,35 @@
        :array
        (b* (((erp new-dirdeclor ident table)
              (dimb-dirdeclor dirdeclor.declor fundefp table))
-            ((erp new-expr? table) (dimb-expr-option dirdeclor.expr? table)))
+            ((erp new-expr? table) (dimb-expr-option dirdeclor.size? table)))
          (retok (make-dirdeclor-array :declor new-dirdeclor
-                                      :quals dirdeclor.quals
-                                      :expr? new-expr?)
+                                      :qualspecs dirdeclor.qualspecs
+                                      :size? new-expr?)
                 ident
                 table))
        :array-static1
        (b* (((erp new-dirdeclor ident table)
              (dimb-dirdeclor dirdeclor.declor fundefp table))
-            ((erp new-expr table) (dimb-expr dirdeclor.expr table)))
+            ((erp new-expr table) (dimb-expr dirdeclor.size table)))
          (retok (make-dirdeclor-array-static1 :declor new-dirdeclor
-                                              :quals dirdeclor.quals
-                                              :expr new-expr)
+                                              :qualspecs dirdeclor.qualspecs
+                                              :size new-expr)
                 ident
                 table))
        :array-static2
        (b* (((erp new-dirdeclor ident table)
              (dimb-dirdeclor dirdeclor.declor fundefp table))
-            ((erp new-expr table) (dimb-expr dirdeclor.expr table)))
+            ((erp new-expr table) (dimb-expr dirdeclor.size table)))
          (retok (make-dirdeclor-array-static2 :declor new-dirdeclor
-                                              :quals dirdeclor.quals
-                                              :expr new-expr)
+                                              :qualspecs dirdeclor.qualspecs
+                                              :size new-expr)
                 ident
                 table))
        :array-star
        (b* (((erp new-dirdeclor ident table)
              (dimb-dirdeclor dirdeclor.declor fundefp table)))
          (retok (make-dirdeclor-array-star :declor new-dirdeclor
-                                           :quals dirdeclor.quals)
+                                           :qualspecs dirdeclor.qualspecs)
                 ident
                 table))
        :function-params
@@ -2086,10 +2088,10 @@
        and so there is no identifier to return here."))
     (b* (((reterr) (irr-absdeclor) (irr-dimb-table))
          ((absdeclor absdeclor) absdeclor)
-         ((erp new-decl? table)
-          (dimb-dirabsdeclor-option absdeclor.decl? table)))
+         ((erp new-direct? table)
+          (dimb-dirabsdeclor-option absdeclor.direct? table)))
       (retok (make-absdeclor :pointers absdeclor.pointers
-                             :decl? new-decl?)
+                             :direct? new-direct?)
              table))
     :measure (absdeclor-count absdeclor))
 
@@ -2128,47 +2130,50 @@
         (reterr t))
        :paren
        (b* (((erp new-absdeclor table)
-             (dimb-absdeclor dirabsdeclor.unwrap table)))
+             (dimb-absdeclor dirabsdeclor.inner table)))
          (retok (dirabsdeclor-paren new-absdeclor)
                 table))
        :array
-       (b* (((erp new-decl? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.decl? table))
-            ((erp new-expr? table)
-             (dimb-expr-option dirabsdeclor.expr? table)))
-         (retok (make-dirabsdeclor-array :decl? new-decl?
-                                         :tyquals dirabsdeclor.tyquals
-                                         :expr? new-expr?)
+       (b* (((erp new-declor? table)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
+            ((erp new-size? table)
+             (dimb-expr-option dirabsdeclor.size? table)))
+         (retok (make-dirabsdeclor-array
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :size? new-size?)
                 table))
        :array-static1
-       (b* (((erp new-decl? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.decl? table))
-            ((erp new-expr table) (dimb-expr dirabsdeclor.expr table)))
-         (retok (make-dirabsdeclor-array-static1 :decl? new-decl?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+       (b* (((erp new-declor? table)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
+            ((erp new-size table) (dimb-expr dirabsdeclor.size table)))
+         (retok (make-dirabsdeclor-array-static1
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :size new-size)
                 table))
        :array-static2
-       (b* (((erp new-decl? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.decl? table))
-            ((erp new-expr table) (dimb-expr dirabsdeclor.expr table)))
-         (retok (make-dirabsdeclor-array-static2 :decl? new-decl?
-                                                 :tyquals dirabsdeclor.tyquals
-                                                 :expr new-expr)
+       (b* (((erp new-declor? table)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
+            ((erp new-size table) (dimb-expr dirabsdeclor.size table)))
+         (retok (make-dirabsdeclor-array-static2
+                 :declor? new-declor?
+                 :qualspecs dirabsdeclor.qualspecs
+                 :size new-size)
                 table))
        :array-star
-       (b* (((erp new-decl? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.decl? table)))
-         (retok (dirabsdeclor-array-star new-decl?)
+       (b* (((erp new-declor? table)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? table)))
+         (retok (dirabsdeclor-array-star new-declor?)
                 table))
        :function
-       (b* (((erp new-decl? table)
-             (dimb-dirabsdeclor-option dirabsdeclor.decl? table))
+       (b* (((erp new-declor? table)
+             (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
             (table (dimb-push-scope table))
             ((erp new-params table)
              (dimb-paramdecl-list dirabsdeclor.params table))
             (table (dimb-pop-scope table)))
-         (retok (make-dirabsdeclor-function :decl? new-decl?
+         (retok (make-dirabsdeclor-function :declor? new-declor?
                                             :params new-params
                                             :ellipsis dirabsdeclor.ellipsis)
                 table))))

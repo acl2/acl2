@@ -43,6 +43,7 @@
 (include-book "unroll-java-code") ;for unroll-java-code-rules
 (include-book "../dag-to-term-with-lets")
 (include-book "../prune-dag-precisely")
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; Used by Axe
 (defthm natp-of-+
@@ -569,22 +570,20 @@
        ;; TODO: Handle a result-dag that is a quotep.
        ;; todo: make optional and avoid this on huge terms by default
        ((mv erp result-dag state)
-        (if prune-branches
-            (prune-dag-precisely result-dag
-                                 assumptions
-                                 (set-difference-eq
-                                  ;; no actual symbolic execution is done here:
-                                  (union-eq (unroll-java-code2-rules)
-                                            extra-rules)
-                                  remove-rules)
-                                 :none ; todo: pass a rule-alist here?
-                                 nil ; interpreted-fns
-                                 monitor
-                                 call-stp
-                                 t ; check-fnsp
-                                 print
-                                 state)
-          (mv nil result-dag state)))
+        (maybe-prune-dag-precisely prune-branches
+                                   result-dag
+                                   assumptions
+                                   (set-difference-eq
+                                     ;; no actual symbolic execution is done here:
+                                     (union-eq (unroll-java-code2-rules)
+                                               extra-rules)
+                                     remove-rules)
+                                   :none ; todo: pass a rule-alist instead of the rules just above?
+                                   nil ; interpreted-function-alist
+                                   monitor
+                                   call-stp
+                                   print
+                                   state))
        ((when erp) (mv erp nil state))
        ;; Now simplify the pruned dag (TODO, repeatedly simplifying and pruning might help?)
        ;; TODO: Consider the rules to use here, especially if a limit was reached above
@@ -615,9 +614,9 @@
         (hard-error 'unroll-java-code2 "ERROR: Symbolic simulation did not seem to finish (see DAG above)." nil)
         (mv (erp-t) nil state))
        ;; Ensure that the single var in the DAG is state-var (s0):
-       ((when (not (equal (dag-vars result-dag) (list state-var))))
+       ((when (not (equal (dag-vars-unsorted result-dag) (list state-var))))
         (mv t
-            (er hard 'unroll-java-code2-fn "Unexpected vars in result DAG.  Vars are ~x0 but should be just ~x1." (dag-vars result-dag) state-var)
+            (er hard 'unroll-java-code2-fn "Unexpected vars in result DAG.  Vars are ~x0 but should be just ~x1." (dag-vars-unsorted result-dag) state-var)
             state))
        ((mv erp fn-body supporting-events state-component-defun-names)
         (make-unroll-java-code2-fn-result result-dag fn abstract-state-components (w state)))

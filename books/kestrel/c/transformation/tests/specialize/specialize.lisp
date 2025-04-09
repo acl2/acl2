@@ -36,10 +36,11 @@
                                      (c$::ident "y")
                                      const)))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.SPECIALIZE.c"
+    :file "new/test1.c"
     :content "int foo(int z) {
   int y = 1;
   int x = 5;
@@ -65,10 +66,11 @@
                                      (c$::ident "z")
                                      const)))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test2.SPECIALIZE.c"
+    :file "new/test2.c"
     :content "int foo(int y) {
   int z = 42;
   int x = 5;

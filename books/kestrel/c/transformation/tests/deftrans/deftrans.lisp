@@ -31,10 +31,11 @@
   (defconst *new*
     (identity-trans-transunit-ensemble *old*))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.IDENTITY-TRANS.c"
+    :file "new/test1.c"
     :content "int main() {
   int x = 5;
   return x + 0;
@@ -93,7 +94,8 @@
                           (make-expr-binary
                             :op expr.op
                             :arg1 arg1
-                            :arg2 arg2)))
+                            :arg2 arg2
+                            :info expr.info)))
               :cond (make-expr-cond
                       :test (my-simpadd0-expr expr.test)
                       :then (my-simpadd0-expr-option expr.then)
@@ -136,10 +138,11 @@
   (defconst *new*
     (my-simpadd0-transunit-ensemble *old*))
 
-  (c$::output-files :const *new*)
+  (c$::output-files :const *new*
+                    :path "new")
 
   (assert-file-contents
-    :file "test1.MY-SIMPADD0.c"
+    :file "new/test1.c"
     :content "int main() {
   int x = 5;
   return x;

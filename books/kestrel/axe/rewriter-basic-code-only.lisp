@@ -18,5 +18,7 @@
 
 (with-supporters
  (local (include-book "rewriter-basic"))
- :names (simplify-term-to-term-basic
+ :names (simplify-dag-basic
+         simplify-term-to-term-basic
+         simplify-conjunction-basic
          make-rule-alist!))

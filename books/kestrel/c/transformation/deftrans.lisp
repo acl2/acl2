@@ -124,6 +124,7 @@
        "            :unary (make-expr-unary"
        "                     :op expr.op"
        "                     :arg (my-simpadd0-expr expr.arg))"
+       "                     :info expr.info)"
        "            :sizeof (expr-sizeof (my-simpadd0-tyname expr.type))"
        "            :sizeof-ambig (prog2$"
        "                            (raise \"Misusage error: ~x0.\" (expr-fix expr))"
@@ -141,7 +142,8 @@
        "                        (make-expr-binary"
        "                          :op expr.op"
        "                          :arg1 arg1"
-       "                          :arg2 arg2)))"
+       "                          :arg2 arg2"
+       "                          :info expr.info)))"
        "            :cond (make-expr-cond"
        "                    :test (my-simpadd0-expr expr.test)"
        "                    :then (my-simpadd0-expr-option expr.then)"
@@ -212,7 +214,7 @@
 
 (defthy deftrans-theory-linear
   '((:linear c$::absdeclor-count-of-absdeclor-option-some->val)
-    (:linear c$::absdeclor-count-of-dirabsdeclor-paren->unwrap)
+    (:linear c$::absdeclor-count-of-dirabsdeclor-paren->inner)
     (:linear c$::absdeclor-count-of-paramdeclor-absdeclor->unwrap)
     (:linear c$::absdeclor-option-count-of-tyname->decl?)
     (:linear c$::align-spec-count-of-decl-spec-align->spec)
@@ -250,12 +252,12 @@
     (:linear c$::desiniter-list-count-of-expr-complit->elems)
     (:linear c$::desiniter-list-count-of-initer-list->elems)
     (:linear c$::dirabsdeclor-count-of-dirabsdeclor-option-some->val)
-    (:linear c$::dirabsdeclor-option-count-of-absdeclor->decl?)
-    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array->decl?)
-    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-star->decl?)
-    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static1->decl?)
-    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static2->decl?)
-    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-function->decl?)
+    (:linear c$::dirabsdeclor-option-count-of-absdeclor->direct?)
+    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array->declor?)
+    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-star->declor?)
+    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static1->declor?)
+    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static2->declor?)
+    (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-function->declor?)
     (:linear c$::dirdeclor-count-of-declor->direct)
     (:linear c$::dirdeclor-count-of-dirdeclor-array->declor)
     (:linear c$::dirdeclor-count-of-dirdeclor-array-star->declor)
@@ -269,10 +271,10 @@
     (:linear c$::enumspec-count-of-type-spec-enum->spec)
     (:linear c$::expr-count-of-car)
     (:linear c$::expr-count-of-const-expr->expr)
-    (:linear c$::expr-count-of-dirabsdeclor-array-static1->expr)
-    (:linear c$::expr-count-of-dirabsdeclor-array-static2->expr)
-    (:linear c$::expr-count-of-dirdeclor-array-static1->expr)
-    (:linear c$::expr-count-of-dirdeclor-array-static2->expr)
+    (:linear c$::expr-count-of-dirabsdeclor-array-static1->size)
+    (:linear c$::expr-count-of-dirabsdeclor-array-static2->size)
+    (:linear c$::expr-count-of-dirdeclor-array-static1->size)
+    (:linear c$::expr-count-of-dirdeclor-array-static2->size)
     (:linear c$::expr-count-of-expr-arrsub->arg1)
     (:linear c$::expr-count-of-expr-arrsub->arg2)
     (:linear c$::expr-count-of-expr-binary->arg1)
@@ -303,8 +305,8 @@
     (:linear c$::expr-count-of-type-spec-typeof-expr->expr)
     (:linear c$::expr-list-count-of-cdr)
     (:linear c$::expr-list-count-of-expr-funcall->args)
-    (:linear c$::expr-option-count-of-dirabsdeclor-array->expr?)
-    (:linear c$::expr-option-count-of-dirdeclor-array->expr?)
+    (:linear c$::expr-option-count-of-dirabsdeclor-array->size?)
+    (:linear c$::expr-option-count-of-dirdeclor-array->size?)
     (:linear c$::expr-option-count-of-expr-cond->then)
     (:linear c$::expr-option-count-of-stmt-expr->expr?)
     (:linear c$::expr-option-count-of-stmt-for-decl->next)
@@ -685,7 +687,8 @@
                  :final-comma expr.final-comma)
       :unary (make-expr-unary
                :op expr.op
-               :arg (,(cdr (assoc-eq 'expr names)) expr.arg ,@extra-args-names))
+               :arg (,(cdr (assoc-eq 'expr names)) expr.arg ,@extra-args-names)
+               :info expr.info)
       :sizeof (expr-sizeof (,(cdr (assoc-eq 'tyname names)) expr.type ,@extra-args-names))
       :sizeof-ambig (prog2$
                       (raise "Misusage error: ~x0." (expr-fix expr))
@@ -699,7 +702,8 @@
       :binary (make-expr-binary
                 :op expr.op
                 :arg1 (,(cdr (assoc-eq 'expr names)) expr.arg1 ,@extra-args-names)
-                :arg2 (,(cdr (assoc-eq 'expr names)) expr.arg2 ,@extra-args-names))
+                :arg2 (,(cdr (assoc-eq 'expr names)) expr.arg2 ,@extra-args-names)
+                :info expr.info)
       :cond (make-expr-cond
               :test (,(cdr (assoc-eq 'expr names)) expr.test ,@extra-args-names)
               :then (,(cdr (assoc-eq 'expr-option names)) expr.then ,@extra-args-names)
@@ -1181,19 +1185,19 @@
       :paren (dirdeclor-paren (,(cdr (assoc-eq 'declor names)) dirdeclor.inner ,@extra-args-names))
       :array (make-dirdeclor-array
                :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
-               :quals dirdeclor.quals
-               :expr? (,(cdr (assoc-eq 'expr-option names)) dirdeclor.expr? ,@extra-args-names))
+               :qualspecs dirdeclor.qualspecs
+               :size? (,(cdr (assoc-eq 'expr-option names)) dirdeclor.size? ,@extra-args-names))
       :array-static1 (make-dirdeclor-array-static1
                        :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
-                       :quals dirdeclor.quals
-                       :expr (,(cdr (assoc-eq 'expr names)) dirdeclor.expr ,@extra-args-names))
+                       :qualspecs dirdeclor.qualspecs
+                       :size (,(cdr (assoc-eq 'expr names)) dirdeclor.size ,@extra-args-names))
       :array-static2 (make-dirdeclor-array-static2
                        :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
-                       :quals dirdeclor.quals
-                       :expr (,(cdr (assoc-eq 'expr names)) dirdeclor.expr ,@extra-args-names))
+                       :qualspecs dirdeclor.qualspecs
+                       :size (,(cdr (assoc-eq 'expr names)) dirdeclor.size ,@extra-args-names))
       :array-star (make-dirdeclor-array-star
                     :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
-                    :quals dirdeclor.quals)
+                    :qualspecs dirdeclor.qualspecs)
       :function-params (make-dirdeclor-function-params
                          :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
                          :params (,(cdr (assoc-eq 'paramdecl-list names)) dirdeclor.params ,@extra-args-names)
@@ -1218,7 +1222,7 @@
    `(b* (((absdeclor absdeclor) absdeclor))
       (make-absdeclor
         :pointers absdeclor.pointers
-        :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) absdeclor.decl? ,@extra-args-names)))
+        :direct? (,(cdr (assoc-eq 'dirabsdeclor-option names)) absdeclor.direct? ,@extra-args-names)))
    '(:returns (new-absdeclor absdeclorp)
      :measure (absdeclor-count absdeclor))))
 
@@ -1256,23 +1260,23 @@
       :dummy-base (prog2$
                     (raise "Misusage error: ~x0." (dirabsdeclor-fix dirabsdeclor))
                     (dirabsdeclor-fix dirabsdeclor))
-      :paren (dirabsdeclor-paren (,(cdr (assoc-eq 'absdeclor names)) dirabsdeclor.unwrap ,@extra-args-names))
+      :paren (dirabsdeclor-paren (,(cdr (assoc-eq 'absdeclor names)) dirabsdeclor.inner ,@extra-args-names))
       :array (make-dirabsdeclor-array
-               :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names)
-               :tyquals dirabsdeclor.tyquals
-               :expr? (,(cdr (assoc-eq 'expr-option names)) dirabsdeclor.expr? ,@extra-args-names))
+               :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
+               :qualspecs dirabsdeclor.qualspecs
+               :size? (,(cdr (assoc-eq 'expr-option names)) dirabsdeclor.size? ,@extra-args-names))
       :array-static1 (make-dirabsdeclor-array-static1
-                       :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names)
-                       :tyquals dirabsdeclor.tyquals
-                       :expr (,(cdr (assoc-eq 'expr names)) dirabsdeclor.expr ,@extra-args-names))
+                       :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
+                       :qualspecs dirabsdeclor.qualspecs
+                       :size (,(cdr (assoc-eq 'expr names)) dirabsdeclor.size ,@extra-args-names))
       :array-static2 (make-dirabsdeclor-array-static2
-                       :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names)
-                       :tyquals dirabsdeclor.tyquals
-                       :expr (,(cdr (assoc-eq 'expr names)) dirabsdeclor.expr ,@extra-args-names))
+                       :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
+                       :qualspecs dirabsdeclor.qualspecs
+                       :size (,(cdr (assoc-eq 'expr names)) dirabsdeclor.size ,@extra-args-names))
       :array-star (dirabsdeclor-array-star
-                    (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names))
+                    (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names))
       :function (make-dirabsdeclor-function
-                  :decl? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.decl? ,@extra-args-names)
+                  :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
                   :params (,(cdr (assoc-eq 'paramdecl-list names)) dirabsdeclor.params ,@extra-args-names)
                   :ellipsis dirabsdeclor.ellipsis))
    '(:returns (new-dirabsdeclor dirabsdeclorp)
@@ -1910,35 +1914,6 @@
                member-equal)
      :induct t)))
 
-(define deftrans-filepath
-  ((path filepathp)
-   (name stringp))
-  :returns (new-path filepathp)
-  (b* ((string (filepath->unwrap path))
-       ((unless (stringp string))
-        (raise "Misusage error: file path ~x0 is not a string."
-               string)
-        (filepath "irrelevant"))
-       (chars (acl2::explode string))
-       (dot-pos-in-rev (index-of #\. (rev chars)))
-       (name-chars (acl2::explode name))
-       ((when (not dot-pos-in-rev))
-        (filepath
-          (acl2::implode (append chars (cons #\. name-chars)))))
-       (last-dot-pos (- (len chars) dot-pos-in-rev))
-       (new-chars (append (take last-dot-pos chars)
-                          name-chars
-                          (list #\.)
-                          (nthcdr last-dot-pos chars)))
-       (new-string (acl2::implode new-chars)))
-    (filepath new-string))
-  :guard-hints
-  (("Goal"
-     :use (:instance acl2::index-of-<-len (k #\.)
-                     (x (rev (acl2::explode (filepath->unwrap path)))))
-     :in-theory (e/d (nfix) (acl2::index-of-<-len))))
-  :hooks (:fix))
-
 (define deftrans-core
   ((name symbolp)
    (extra-args true-listp) ;; list of symbols or define-style guarded args
@@ -1963,8 +1938,8 @@
          ,(deftrans-defn-spec/qual           names bodies extra-args extra-args-names)
          ,(deftrans-defn-spec/qual-list      names bodies extra-args extra-args-names)
          ,(deftrans-defn-align-spec          names bodies extra-args extra-args-names)
-         ,(deftrans-defn-decl-spec            names bodies extra-args extra-args-names)
-         ,(deftrans-defn-decl-spec-list       names bodies extra-args extra-args-names)
+         ,(deftrans-defn-decl-spec           names bodies extra-args extra-args-names)
+         ,(deftrans-defn-decl-spec-list      names bodies extra-args extra-args-names)
          ,(deftrans-defn-initer              names bodies extra-args extra-args-names)
          ,(deftrans-defn-initer-option       names bodies extra-args extra-args-names)
          ,(deftrans-defn-desiniter           names bodies extra-args extra-args-names)
@@ -2014,10 +1989,9 @@
                            :hyp (filepath-transunit-mapp map))
          (b* (((when (omap::emptyp map)) nil)
               ((mv path tunit) (omap::head map))
-              (new-path (deftrans-filepath path ,(symbol-name name)))
               (new-tunit (,(cdr (assoc-eq 'transunit names)) tunit ,@extra-args-names))
               (new-map (,(cdr (assoc-eq 'filepath-transunit-map names)) (omap::tail map) ,@extra-args-names)))
-           (omap::update new-path new-tunit new-map))
+           (omap::update path new-tunit new-map))
          :verify-guards :after-returns)
        (define ,(cdr (assoc-eq 'transunit-ensemble names))
          ((tunits transunit-ensemblep)

@@ -1,7 +1,7 @@
 ; A utility to check all elements of a list for equality with a given value
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2022-2023 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -46,7 +46,6 @@
               (all-equal$ x lst)))
   :hints (("Goal" :in-theory (enable all-equal$))))
 
-;use a defforall?
 (defthm all-equal$-of-append
   (equal (all-equal$ x (binary-append lst1 lst2))
          (and (all-equal$ x lst1)

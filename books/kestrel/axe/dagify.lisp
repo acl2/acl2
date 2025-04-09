@@ -1,7 +1,7 @@
 ; DAG builders that depend on the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -64,8 +64,11 @@
                            nat-listp ;for speed
                            pseudo-dag-arrayp
                            true-listp-of-nth-1-of-nth-0-when-axe-treep
-                           ;CAR-OF-CAR-WHEN-PSEUDO-TERMP  ;; try
-                           )))
+                           car-of-car-when-pseudo-termp
+                           natp
+                           cddr-when-pseudo-termp-and-quotep
+                           len-when-pseudo-termp-and-quotep-alt
+                           len-of-car-when-pseudo-termp-cheap)))
 
 ;(local (in-theory (enable caadr-when-consecutivep-of-strip-cars)))
 
@@ -296,7 +299,7 @@
                      ;;term is a call of dag-val-with-axe-evaluator, and we can inline its embedded dag:
                      (b* ((quoted-dag (first arg-nodenums-or-quoteps))
                           (dag (unquote quoted-dag))
-                          (vars (dag-vars dag))
+                          (vars (dag-vars-unsorted dag))
                           (alist-nodenum (second arg-nodenums-or-quoteps)) ;todo: handle a constant alist
                           ((mv erp variable-node-alist-for-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                            (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array
@@ -500,7 +503,6 @@
 (set-case-split-limitations '(10 10))
 
 (local (in-theory (disable consp-from-len-cheap
-                           ;use-all-consp-for-car
                            default-+-2 default-cdr
                            quote-lemma-for-bounded-darg-listp-gen-alt)))
 
@@ -786,7 +788,7 @@
             ;; we embed a DAG in a call to dag-val-with-axe-evaluator, to avoid
             ;; explosion in the term size:
             `(dag-val-with-axe-evaluator ',item
-                                         ,(make-acons-nest (dag-vars item))
+                                         ,(make-acons-nest (dag-vars-unsorted item))
                                          ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
                                          '0 ;array depth (not very important)
                                          )))
