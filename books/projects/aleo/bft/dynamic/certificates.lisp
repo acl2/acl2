@@ -445,23 +445,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define certs-with-author ((author addressp)
-                           (certs certificate-setp))
+(define certs-with-author ((author addressp) (certs certificate-setp))
   :returns (certs-with-author certificate-setp)
   :short "Retrieve, from a set of certificates,
           the subset of certificates with a given author."
-  (b* (((when (set::emptyp certs)) nil)
+  (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
        ((certificate cert) (set::head certs)))
-    (if (equal (address-fix author) cert.author)
-        (set::insert (certificate-fix cert)
+    (if (equal cert.author (address-fix author))
+        (set::insert cert
                      (certs-with-author author (set::tail certs)))
       (certs-with-author author (set::tail certs))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
+  :hooks (:fix)
 
   ///
-
-  (fty::deffixequiv certs-with-author
-    :args ((author addressp)))
 
   (defret certs-with-author-subset
     (set::subset certs-with-author certs)

@@ -446,11 +446,10 @@
                                  set::expensive-rules))))
 
   (defruled in-of-certs-with-author
-    (implies (certificate-setp certs)
-             (equal (set::in cert (certs-with-author author certs))
-                    (and (set::in cert certs)
-                         (equal (certificate->author cert)
-                                (address-fix author)))))
+    (equal (set::in cert (certs-with-author author certs))
+           (and (set::in cert (certificate-set-fix certs))
+                (equal (certificate->author cert)
+                       (address-fix author))))
     :induct t)
 
   (defrule certs-with-author-of-empty
