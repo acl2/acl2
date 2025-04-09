@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "dag-arrays")
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/acl2-arrays/aref1-list" :dir :system) ; for some rules below

@@ -76,8 +76,9 @@
   (prove-equal-with-axe (dagify-term! '(bvplus '32 x y))
                         (dagify-term! '(bvplus '32 x z))))
 
+;; TODO: This is slow!
 ;TODO: Improve the error message here:
-;Sweeping-and-merging should just fail with no types provided -- or infer types.
+;Sweeping-and-merging should just fail with no types provided -- or infer types?.
 (must-fail
   (prove-equal-with-axe (dagify-term! '(bvplus '32 x y))
                         (dagify-term! '(bvmult '32 x y))))

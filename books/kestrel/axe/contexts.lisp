@@ -52,7 +52,6 @@
                            ;;nth-with-large-index-cheap
                            nth-when-zp-cheap
                            nth-when-not-consp-cheap
-                           nth-when-not-cddr
                            not-consp-of-nth-of-dargs-of-aref1
                            ;;consp-when-len-equal
                            )))
@@ -823,8 +822,7 @@
 ;;todo: pull out lemmas proved by induction (about all-> ?)
 (defund disjoin-contexts-of-parents (parent-nodenums nodenum dag-array-name dag-array dag-len context-array context-so-far)
   (declare (xargs :guard (and (natp nodenum)
-                              (all-natp parent-nodenums)
-                              (true-listp parent-nodenums)
+                              (nat-listp parent-nodenums)
                               (all-> parent-nodenums nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (all-< parent-nodenums dag-len)
@@ -839,8 +837,7 @@
 
 (defthm contextp-of-disjoin-contexts-of-parents
   (implies (and (natp nodenum)
-                (all-natp parent-nodenums)
-                (true-listp parent-nodenums)
+                (nat-listp parent-nodenums)
                 (all-> parent-nodenums nodenum)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< parent-nodenums dag-len)
@@ -851,8 +848,7 @@
 
 (defthm bounded-contextp-of-disjoin-contexts-of-parents
   (implies (and (natp nodenum)
-                (all-natp parent-nodenums)
-                (true-listp parent-nodenums)
+                (nat-listp parent-nodenums)
                 (all-> parent-nodenums nodenum)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (all-< parent-nodenums dag-len)
@@ -869,8 +865,7 @@
 ;;todo: pull out lemmas proved by induction
 (defund set-context-of-nodenum (nodenum parent-nodenums dag-array-name dag-array dag-len context-array)
   (declare (xargs :guard (and (natp nodenum)
-                              (all-natp parent-nodenums)
-                              (true-listp parent-nodenums)
+                              (nat-listp parent-nodenums)
                               (all-> parent-nodenums nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (< nodenum dag-len)
@@ -893,8 +888,7 @@
   (implies (and (context-arrayp 'context-array context-array len)
                 (natp nodenum)
                 ;(< nodenum len)
-                (all-natp parent-nodenums)
-                (true-listp parent-nodenums)
+                (nat-listp parent-nodenums)
                 (all-> parent-nodenums nodenum)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (< nodenum dag-len)
@@ -907,8 +901,7 @@
   (implies (and (bounded-context-arrayp 'context-array context-array dag-len bound)
                 (natp nodenum)
                 ;(< nodenum len)
-                (all-natp parent-nodenums)
-                (true-listp parent-nodenums)
+                (nat-listp parent-nodenums)
                 (all-> parent-nodenums nodenum)
                 (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                 (< nodenum dag-len)
