@@ -1865,36 +1865,6 @@
                                      subrange ;todo
                                      ))))
 
-;; (defun sub1-sub1-induct (n1 n2)
-;;   (if (zp n1)
-;;       (list n1 n2)
-;;     (sub1-sub1-induct (+ -1 n1) (+ -1 n2))))
-
-(local
-  (defthmd take-when-most-known
-    (implies (and (equal (take (+ -1 n) x) free)
-                  (posp n))
-             (equal (take n x)
-                    (append free (list (nth (+ -1 n) x)))))
-    :hints (("Goal" :in-theory (enable equal-of-append
-;                                     subrange ;todo
-                                       CAR-BECOMES-NTH-OF-0
-                                       )))))
-
-;move, but need
-(defthm take-of-bv-array-clear-range
-  (implies (and ; (natp elem-size)
-            (natp n)
-            (natp len)
-            (natp highindex)
-            (< highindex len)
-            (<= n (+ 1 highindex)))
-           (equal (take n (bv-array-clear-range elem-size len 0 highindex lst))
-                  (repeat n 0)))
-  :hints (("Goal" :induct t
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (enable take bv-array-clear-range take-when-most-known equal-of-append))))
-
 (defthm bv-array-clear-bottom-range
   (implies (and (posp len)
                 (< i len)
@@ -1989,14 +1959,6 @@
                   0))
   :hints (("Goal" :expand ((BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN INDEX HIGHINDEX LST))
            :in-theory (enable bv-array-clear-range))))
-
-(DEFTHM ALL-UNSIGNED-BYTE-P-OF-BV-ARRAY-CLEAR-range
-  (IMPLIES (AND (<= ELEMENT-SIZE SIZE)
-                (NATP SIZE)
-                (NATP ELEMENT-SIZE))
-           (ALL-UNSIGNED-BYTE-P SIZE (BV-ARRAY-CLEAR-range ELEMENT-SIZE LEN lowindex highindex LST)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE BV-ARRAY-CLEAR-range))))
-
 
 ;move these
 ;a hack for rc2, since we are no longer trimming array reads
