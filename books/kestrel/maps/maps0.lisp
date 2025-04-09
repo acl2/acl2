@@ -1,7 +1,7 @@
 ; Additions to the records library
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 ;; TODO: Clean this up
 
 (include-book "coi/records/records" :dir :system)  ;consider using the coi/records/domain stuff?
+(in-theory (disable clr-differential)) ; hung on equal
 
 (defmacro empty-map () nil)
 

@@ -1364,7 +1364,8 @@
                   (bv-array-write width len1 index val lst)))
   :hints (("Goal" :in-theory (e/d (bv-array-write-opener update-nth2 natp
                                                          ;;take
-                                                         <-of-if-arg1)
+                                                         ;<-of-if-arg1
+                                                         )
                                   (;bvchop-list-of-take
                                    )))))
 

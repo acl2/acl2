@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "all-less-than-or-equal")
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 
 (defund all-<=-all (x y)
   (if (endp y)
