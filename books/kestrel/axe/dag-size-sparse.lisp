@@ -15,6 +15,7 @@
 ;; This book deals with computing the size of some, but not necessarily all,
 ;; nodes in a DAG.  See also dag-size.lisp and dag-size-fast.lisp.
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "dag-arrays")
 (include-book "numeric-lists")
 (include-book "worklist-array")

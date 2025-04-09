@@ -6025,7 +6025,7 @@
                                             axe-treep-when-pseudo-termp
                                             natp-of-+-of-1
                                             ;;natp-of-max-key-2
-                                            <-of-if-arg1
+                                            ;<-of-if-arg1
                                             ;;max-key-hack
                                             ;;max-key-hack-2
                                             <-OF-+-OF-1-WHEN-INTEGERS
@@ -6217,7 +6217,7 @@
 
          ;; Core function of def-simplified-fn-xxx.  Unlike its wrapper, this function is in :logic mode.
          ;; Returns (mv erp event state).
-         ;; TODO: Perhaps add an option to take a rule-alist.
+         ;; TODO: Perhaps add an option to take a rule-alist, or a sequence of rule-alists.
          (defund ,def-simplified-fn-core-name (defconst-name ; the name of the constant to create
                                                dag
                                                assumptions
@@ -6260,7 +6260,18 @@
                 ((when erp) (mv erp nil state))
                 ;; Simplify the DAG:
                 ((mv erp dag-or-quotep &) ; todo: use the limits?
-                 ,call-of-simplify-dag)
+                 (,simplify-dag-name dag
+                                     assumptions
+                                     rule-alist
+                                     interpreted-function-alist
+                                     known-booleans
+                                     normalize-xors
+                                     limits
+                                     memoizep
+                                     count-hits
+                                     print
+                                     monitored-symbols
+                                     fns-to-elide))
                 ((when erp) (mv erp nil state))
                 ((mv end-time state) (get-real-time state))
                 ;; Print info about the DAG:
