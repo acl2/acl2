@@ -453,10 +453,8 @@
                                 (address-fix author)))))
     :induct t)
 
-  (defruled certs-with-author-when-emptyp
-    (implies (set::emptyp certs)
-             (equal (certs-with-author author certs)
-                    nil)))
+  (defrule certs-with-author-of-empty
+    (equal (certs-with-author author nil) nil))
 
   (defruled certificate-with-author-of-insert
     (implies (and (addressp author)
