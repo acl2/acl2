@@ -10,6 +10,7 @@
 ; (include-book "change-pkg") ; not used and kind of a hack.
 (include-book "doc")
 (include-book "foldr")
+(include-book "fun-space")
 (include-book "identity")
 (include-book "injective-funp")
 (include-book "inverse")
@@ -17,7 +18,6 @@
 (include-book "prove-acl2p")
 (include-book "schroeder-bernstein")
 (include-book "set-algebra")
-(include-book "zfns")
 (include-book "zify")
 ; (include-book "zify-motivation") ; incompatible with "zify"
-(include-book "zseqs")
+(include-book "finseqs")

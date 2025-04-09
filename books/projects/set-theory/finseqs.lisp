@@ -4,22 +4,21 @@
 
 (in-package "ZF")
 
-(include-book "zfns")
+(include-book "fun-space")
 
-(zsub zseqs                          ; name
-      (s)                            ; args
-      fn                             ; x
+(zsub finseqs (s)                  ; name, args
+      fn                           ; x
       (powerset (prod2 (omega) s)) ; s
       (and (funp fn)
            (in (domain fn) (omega)))
       )
 
-(local (defthmz in-zseqs-lemma
+(local (defthmz in-finseqs-lemma
          (implies (and (funp fn)
                        (natp (domain fn))
                        (subset (codomain fn) a))
                   (subset fn (prod2 (omega) a)))
-         :props (zfc prod2$prop domain$prop inverse$prop zseqs$prop)
+         :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop)
          :hints (("Goal"
                   :restrict
                   ((subset-transitivity
@@ -30,9 +29,9 @@
                   (equal (equal x y)
                          (iff x y)))))
 
-(defthmz in-zseqs ; alternate form of zseqs$comprehension
-  (equal (in fn (zseqs a))
+(defthmz in-finseqs ; alternate form of finseqs$comprehension
+  (equal (in fn (finseqs a))
          (and (funp fn)
               (in (domain fn) (omega))
               (subset (codomain fn) a)))
-  :props (zfc prod2$prop domain$prop inverse$prop zseqs$prop))
+  :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))
