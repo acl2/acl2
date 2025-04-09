@@ -798,9 +798,16 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory))))))
               theorems)))
-         (event `(progn ,defun
-                        ,@theorems
-                        (value-triple ',forall-fn)))
+         (event `(progn
+                   ;; (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
+                   (include-book "kestrel/lists-light/firstn-def" :dir :system)
+                   ;; (include-book "kestrel/lists-light/subrange-def" :dir :system)
+                   (include-book "kestrel/lists-light/memberp-def" :dir :system)
+                   (include-book "kestrel/lists-light/perm-def" :dir :system)
+                   (include-book "kestrel/lists-light/perm" :dir :system) ;needed for the congruence rules?  could split out the defequiv
+                   ,defun
+                   ,@theorems
+                   (value-triple ',forall-fn)))
          (event (if verbose
                     event
                   `(with-output
@@ -838,7 +845,7 @@
                             (true-listp 'nil)
                             (verbose 'nil)
                             )
-  (defforall-simple-fn pred name guard guard-hints true-listp verbose))
+  `(make-event (defforall-simple-fn ',pred ',name ',guard ',guard-hints ',true-listp ',verbose)))
 
 ;See examples in defforall-tests.lisp.  :FIXED indicates which formals are fixed  All other formals are lists that get cdred down.
 ;add more options?
@@ -851,4 +858,4 @@
                           (true-listp 'nil)
                           (verbose 'nil))
   (declare (xargs :guard (member-eq verbose '(t nil)))) ;for now, since it's passed to manage-screen-output without being evaluated
-  (defforall-fn name all-formals term fixed declares guard guard-hints true-listp verbose))
+  `(make-event (defforall-fn ',name ',all-formals ',term ',fixed ',declares ',guard ',guard-hints ',true-listp ',verbose)))

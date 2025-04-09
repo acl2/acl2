@@ -13,6 +13,7 @@
 
 (include-book "all-less-than-or-equal")
 (include-book "all-greater-than-or-equal")
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 
 ;; Checks that everything in X is >= everything in Y.
 (defund all->=-all (x y)

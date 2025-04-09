@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/sequences/defforall" :dir :system) ;todo: reduce?
+(local (include-book "kestrel/sequences/defforall" :dir :system)) ;todo: reduce?
 
 (defforall-simple rationalp)
 
