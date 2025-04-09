@@ -468,7 +468,6 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-  (in-theory (disable certs-with-author-subset))
 
   (defruled in-of-certs-with-author
     (implies (certificate-setp certs)
@@ -1026,8 +1025,7 @@
                          (tail certs))))
           (:instance set::in-head
                      (x certs)))
-    :enable (certs-with-author-subset
-             in-of-certs-with-author
+    :enable (in-of-certs-with-author
              emptyp-of-certs-with-author-if-no-author
              equal-certificate-authors-when-unequiv-and-same-round)
     :disable (set::in-head

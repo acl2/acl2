@@ -356,8 +356,7 @@
                                       (validator-state->dag
                                        (get-validator-state val systate)))))
                            (set::in author (committee-members commtt)))))
-       :enable (certs-with-author-subset
-                in-of-certs-with-author)
+       :enable in-of-certs-with-author
        :use ((:instance
               in-cert-set->author-set-to-nonempty-certs-with-author
               (certs (certificates-with-round
