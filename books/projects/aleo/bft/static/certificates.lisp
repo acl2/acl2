@@ -444,7 +444,6 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-  (in-theory (disable certs-with-author-subset))
 
   (defruled in-of-certs-with-author
     (implies (certificate-setp certs)
@@ -667,8 +666,7 @@
              (set::subset certs-with-authors certs))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* certs-with-author-subset
-                                 set::subset
+             :in-theory (enable* set::subset
                                  set::expensive-rules))))
   (in-theory (disable certs-with-authors-subset))
 
