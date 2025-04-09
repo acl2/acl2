@@ -19,6 +19,7 @@
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 (defund bv-array-clear (element-size len index data)
   (declare (xargs :guard (and (natp len)
@@ -347,3 +348,23 @@
                     (bv-array-clear element-size (- len 1)
                                     (- key 1) (cdr lst)))))
   :hints (("Goal" :in-theory (enable bv-array-clear))))
+
+(defthmd bv-array-clear-redef-special
+  (implies (and (< index len)
+                (equal len (len data)) ; this case
+                (natp index))
+           (equal (bv-array-clear element-size len index data)
+                  (append (bvchop-list element-size (take index data))
+                          (list 0)
+                          (bvchop-list element-size (nthcdr (+ 1 index) data)))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write-redef-special))))
+
+(defthmd bv-array-clear-redef
+  (implies (and (< index len)
+                (natp len)
+                (natp index))
+           (equal (bv-array-clear element-size len index data)
+                  (append (bvchop-list element-size (take index data))
+                          (list 0)
+                          (bvchop-list element-size (take (+ -1 (- index) len) (nthcdr (+ 1 index) data))))))
+  :hints (("Goal" :in-theory (enable bv-array-clear bv-array-write-redef))))
