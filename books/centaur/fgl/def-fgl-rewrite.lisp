@@ -126,8 +126,13 @@
          (b* ((lemmas (collect-lemmas-for-rune rune world)))
            (collect-lemma-lhses lemmas)))))
 
-(defun fgl-name-to-rewrite-rune (name)
-  (cond ((symbolp name) `(:formula ,name))
+(defun fgl-name-to-rewrite-rune (name world)
+  (cond ((symbolp name)
+         (if (not (eq (fgetprop name 'macro-args :none world) :none))
+             ;; name is a macro -- assume it's a macro alias and we need to dereference it
+             (let ((fnname (acl2::deref-macro-name name (macro-aliases world))))
+               `(:formula ,fnname))
+           `(:formula ,name)))
         ((and (consp name)
               (member-eq (car name) '(:rewrite :definition :formula)))
          name)
@@ -150,7 +155,7 @@
          `(:brewrite . ,(cdr name)))
         ((and (consp name) (eq (car name) :formula))
          `(:bformula . ,(cdr name)))
-        (t (er hard? 'fgl-name-to-rewrite-rune
+        (t (er hard? 'fgl-name-to-brewrite-rune
                "The name of a rewrite rule must either be a bare symbol or a ~
                 :rewrite, :definition, or :formula FGL rune -- ~x0 is not." name))))
 
@@ -207,7 +212,7 @@
 
 (defun add-fgl-rewrite-fn (name alist world)
   (declare (xargs :mode :program))
-  (b* ((rune (fgl-name-to-rewrite-rune name))
+  (b* ((rune (fgl-name-to-rewrite-rune name world))
        (lhses (fgl-rune-lhses rune world))
        (fns (lhses->leading-function-syms lhses))
        ((when (atom fns))
@@ -217,7 +222,7 @@
 
 (defun remove-fgl-rewrite-fn (name alist world)
   (declare (xargs :mode :program))
-  (b* ((rune (fgl-name-to-rewrite-rune name))
+  (b* ((rune (fgl-name-to-rewrite-rune name world))
        (lhses (fgl-rune-lhses rune world))
        (fns (lhses->leading-function-syms lhses))
        ((when (atom fns))
@@ -227,7 +232,7 @@
 
 (defun add-fgl-branch-merge-fn (name alist world)
   (declare (xargs :mode :program))
-  (b* ((rune (fgl-name-to-rewrite-rune name))
+  (b* ((rune (fgl-name-to-rewrite-rune name world))
        (lhses (fgl-rune-lhses rune world))
        (fns (lhses->branch-function-syms lhses))
        ((when (atom fns))
@@ -241,7 +246,7 @@
 
 (defun remove-fgl-branch-merge-fn (name alist world)
   (declare (xargs :mode :program))
-  (b* ((rune (fgl-name-to-rewrite-rune name))
+  (b* ((rune (fgl-name-to-rewrite-rune name world))
        (lhses (fgl-rune-lhses rune world))
        (fns (lhses->branch-function-syms lhses))
        ((when (atom fns))
