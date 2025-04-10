@@ -135,7 +135,7 @@
 
 (defun thmz-fn (event)
 
-; Despite the name, this function may be applied to any defthmz, defthmzd, or
+; Despite the name, this function may be applied to any defthmz, defthmdz, or
 ; thmz event, to extend its formula's hypotheses with calls of the zero-ary
 ; functions in its :props argument, default (zfc).
 
@@ -256,19 +256,20 @@
 ; This event is local to the surrounding encapsulate.
 (set-verify-guards-eagerness 0)
 
-(defun singleton (x) ; {x}
+(defun singleton (x) ; {x} = {x,x}
   (pair x x))
 
-(defun union2 (x y) ; x U y
+(defun union2 (x y) ; x U y = U{x,y}
   (union (pair x y)))
 
 (defthmz min-in-1
-; Regularity and choice, part 1: (min z) is in z if z is non-empty.
+; Regularity and global choice, part 1: (min z) is in z if z is non-empty.
   (equal (in (min-in z) z)
          (not (equal z 0))))
 
 (defthmz min-in-2
-; Regularity and choice, part 2: intersection of z and (min z) is empty.
+; Regularity and global choice, part 2: intersection of z and (min z) is
+; empty.
   (implies (in a z)
            (not (in a (min-in z)))))
 
@@ -297,7 +298,7 @@
   (equal (in a (powerset x))
          (subset a x)))
 
-; Now embed ACL2 data types into the set-theoretic universe.
+; Embedding of ACL2 data types into the set-theoretic universe:
 
 (defthm 0-is-emptyset ; 0 = {}
   (not (in a 0)))
@@ -319,77 +320,85 @@
 (defun insert (x s) ; {x} U s
   (union2 (singleton x) s))
 
-(defun triple (y z) ; {0,y,z}
+(defun ztriple (y z) ; {0,y,z}
   (declare (xargs :guard (and (posp y)
                               (not (natp z)))))
   (insert 0 (pair y z)))
 
-(defun negative-int-as-triple (x)
+(defun negative-int-as-ztriple (x)
   (declare (xargs :guard (and (integerp x)
                               (< x 0))))
-  (triple 1 (cons (- x) 0)))
+  (ztriple 1 (cons (- x) 0)))
 
-(defun numerator-as-triple (x)
+(defun integer-as-ztriple (x)
+  (declare (xargs :guard (integerp x)))
+  (if (< x 0)
+      (negative-int-as-ztriple x)
+    x))
+
+(defun numerator-as-ztriple (x)
   (declare (xargs :guard (rationalp x)))
-  (let ((n (numerator x)))
-    (if (< n 0)
-        (negative-int-as-triple n)
-      n)))
+  (integer-as-ztriple (numerator x)))
 
-(defun ratio-as-triple (x)
+(defun ratio-as-ztriple (x)
   (declare (xargs :guard (and (rationalp x)
                               (not (integerp x)))))
-  (triple 2 (cons (numerator-as-triple x) (denominator x))))
+  (ztriple 2 (cons (numerator-as-ztriple x) (denominator x))))
 
-(defun complex-as-triple (x)
+(defun complex-as-ztriple (x)
   (declare (xargs :guard (and (complex-rationalp x)
                               (not (rationalp x)))))
-  (triple 3 (cons (realpart x) (imagpart x))))
+  (ztriple 3 (cons (realpart x) (imagpart x))))
 
-(defun character-as-triple (x)
+(defun character-as-ztriple (x)
   (declare (xargs :guard (characterp x)))
-  (triple 4 (cons (char-code x) 0)))
+  (ztriple 4 (cons (char-code x) 0)))
 
-(defun string-as-triple (x)
+(defun string-as-ztriple (x)
   (declare (xargs :guard (stringp x)))
-  (triple 5 (cons (make-listp0 (coerce x 'list)) 0)))
+  (ztriple 5 (cons (make-listp0 (coerce x 'list)) 0)))
 
-(defun symbol-as-triple (x)
+(defun symbol-as-ztriple (x)
   (declare (xargs :guard (symbolp x)))
-  (triple 6 (cons (string-as-triple (symbol-package-name x))
-                  (string-as-triple (symbol-name x)))))
+  (ztriple 6 (cons (string-as-ztriple (symbol-package-name x))
+                   (string-as-ztriple (symbol-name x)))))
 
-(defthmz negative-int-as-triple-identity
+(defthmz negative-int-as-ztriple-identity
   (implies (and (integerp x)
                 (< x 0))
-           (equal (negative-int-as-triple x)
+           (equal (negative-int-as-ztriple x)
                   x)))
 
-(defthmz ratio-as-triple-identity
+(defthmz integer-as-ztriple-identity
+  (implies (integerp x)
+           (equal (integer-as-ztriple x)
+                  x)))
+
+(defthmz ratio-as-ztriple-identity
   (implies (and (rationalp x)
                 (not (integerp x)))
-           (equal (ratio-as-triple x)
+           (equal (ratio-as-ztriple x)
                   x)))
 
-(defthmz complex-as-triple-identity
+(defthmz complex-as-ztriple-identity
   (implies (and (complex-rationalp x)
                 (not (rationalp x)))
-           (equal (complex-as-triple x)
+           (equal (complex-as-ztriple x)
                   x)))
 
-(defthmz character-as-triple-identity
+(defthmz character-as-ztriple-identity
   (implies (characterp x)
-           (equal (character-as-triple x)
+           (equal (character-as-ztriple x)
                   x)))
 
-(defthmz string-as-triple-identity
+(defthmz string-as-ztriple-identity
   (implies (stringp x)
-           (equal (string-as-triple x)
+           (equal (string-as-ztriple x)
                   x)))
 
-(defthmz symbol-as-triple-identity
+(defthmz symbol-as-ztriple-identity
   (implies (symbolp x)
-           (equal (symbol-as-triple x)
+           (equal (symbol-as-ztriple x)
                   x)))
 )
 
@@ -397,14 +406,15 @@
 (verify-guards singleton)
 (verify-guards subset)
 (verify-guards insert)
-(verify-guards triple)
-(verify-guards negative-int-as-triple)
-(verify-guards numerator-as-triple)
-(verify-guards ratio-as-triple)
-(verify-guards complex-as-triple)
-(verify-guards character-as-triple)
-(verify-guards string-as-triple)
-(verify-guards symbol-as-triple)
+(verify-guards ztriple)
+(verify-guards negative-int-as-ztriple)
+(verify-guards integer-as-ztriple)
+(verify-guards numerator-as-ztriple)
+(verify-guards ratio-as-ztriple)
+(verify-guards complex-as-ztriple)
+(verify-guards character-as-ztriple)
+(verify-guards string-as-ztriple)
+(verify-guards symbol-as-ztriple)
 
 (in-theory (disable subset-necc subset in-in))
 
@@ -812,12 +822,11 @@
 ; (powerset (A U B))).  So A X B is a subset of (powerset (powerset (A U
 ; B))).
 
-; The following defines
+; The following defines the Cartesian product
 ; (prod2 a b)
 ; as:
 ; {p \in (powerset (powerset (union2 a b))) : (prod-member p a b)}
-(zsub prod2                              ; name
-      (a b)                              ; args
+(zsub prod2 (a b)                        ; name, args
       p                                  ; x
       (powerset (powerset (union2 a b))) ; s (see comment above)
       (prod-member p a b)                ; u
@@ -868,9 +877,7 @@
 
 (defthmz in-prod2 ; corollary of prod2$comprehension and in-prod2-lemma
   (equal (in p (prod2 a b))
-         (and (consp p)
-              (in (car p) a)
-              (in (cdr p) b)))
+         (prod-member p a b))
   :props (zfc prod2$prop)
   :hints (("Goal" :use in-prod2-lemma)))
 
@@ -913,8 +920,11 @@
 ;;; Domain, codomain, inverse and some basic lemmas
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(zsub domain            ; name
-      (r)               ; args
+; Introduce (domain r) = {x \in (union (union r)) : <x,r(x)> \in r.  The
+; bounding set is (union (union r)) because the domain of r is a subset of
+; (union (union r)).  That's because: If the ordered pair {{x},{x,y}} is in r,
+; then {x} \in (union r) so x \in (union (union r)).
+(zsub domain (r)        ; name, args
       x                 ; x
       (union (union r)) ; s
       (in (cons x (apply r x))
@@ -986,10 +996,15 @@
   :props (zfc domain$prop)
   :hints (("Goal" :in-theory (enable extensionality in-domain-rewrite))))
 
-; Inverse of a relation:
-(zsub inverse ; name
-      (r)     ; args
-      p       ; x
+; To define the inverse of a relation r, first note that the field of r (i.e.,
+; the union of the domain and range of r) is (union (union r)).  That's because
+; if the ordered pair {{x},{x,y}} is in r, then {x} and {x,y} are in (union r)
+; so x and y are in (union (union r)).  Thus, if s is the product of the field
+; of r with itself, i.e., s = (prod2 (union (union r)) (union (union r))),
+; then:
+; (inverse r) = {p \in s : for some x,y, p = (cons x y) and (cons y x) \in r}.
+(zsub inverse (r) ; name, args
+      p           ; x
       (prod2 (union (union r))
              (union (union r))) ; s
       (and (consp p)
@@ -1204,7 +1219,7 @@
 
   )
 
-(defun-sk linear-in-p (s)
+(defun-sk in-is-linear (s)
   (declare (xargs :guard t))
   (forall (x y) (implies (and (in x s)
                               (in y s)
@@ -1212,10 +1227,10 @@
                          (or (in x y)
                              (in y x)))))
 
-(verify-guards linear-in-p)
+(verify-guards in-is-linear)
 
-(defthmz linear-in-p-omega
-  (linear-in-p (omega)))
+(defthmz in-is-linear-omega
+  (in-is-linear (omega)))
 
 (defun-sk transitive (x)
   (declare (xargs :guard t))
@@ -1249,7 +1264,7 @@
 
 (defun ordinal-p (x)
   (declare (xargs :guard t))
-  (and (linear-in-p x)
+  (and (in-is-linear x)
        (transitive x)))
 
 (defthmz ordinal-p-omega
@@ -1272,8 +1287,7 @@
          (equal (cdr p1) (car p2))
          (equal p (cons (car p1) (cdr p2))))))
 
-(zsub rcompose                        ; name
-      (r s)                           ; args
+(zsub rcompose (r s)                  ; name, args
       p                               ; x
       (prod2 (domain r) (codomain s)) ; s
       (in-rcompose p r s)             ; u
@@ -1347,14 +1361,13 @@
 ;;; Function composition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The initial definition was (defun compose (f g) (rcompose g f)).  I might
-; later prove that equivalent to the following when assuming (subset
-; (codomain g) (domain f)).  But the following definition supports properties
-; without that assumption.
+; The initial definition was (defun compose (f g) (rcompose g f)).  The lemma
+; rcompose-is-compose below proves its equivalence to the definition below,
+; assuming (subset (codomain g) (domain f)).  But the following definition may
+; be better suited to avoiding that assumption in theorems about composition.
 
-(zsub compose ; name
-      (f g)   ; args
-      p       ; x
+(zsub compose (f g) ; name, args
+      p             ; x
       (prod2 (domain g) (codomain f))
       (equal (cdr p)
              (apply f (apply g (car p))))
@@ -1628,8 +1641,8 @@
          (or (equal a x)
              (in a s))))
 
-(defthmz in-triple
-  (equal (in a (triple y z))
+(defthmz in-ztriple
+  (equal (in a (ztriple y z))
          (or (equal a 0)
              (equal a y)
              (equal a z))))
@@ -1676,17 +1689,17 @@
                         (:instance subset-union2-1 (x y) (y x))
                         subset-union2-2))))
 
-(defthmz triple-disjointness
+(defthmz ztriple-disjointness
   (implies (and (posp y1)
                 (posp y2)
                 (not (equal y1 y2))
                 (not (natp z1))
                 (not (natp z2)))
-           (not (equal (triple y1 z1)
-                       (triple y2 z2))))
+           (not (equal (ztriple y1 z1)
+                       (ztriple y2 z2))))
   :hints (("Goal" :in-theory (enable extensionality-rewrite))))
 
-(in-theory (disable triple))
+(in-theory (disable ztriple))
 
 (defun v-n (n)
   (declare (type (integer 0 *) n))
@@ -1714,13 +1727,18 @@
   (implies (natp n)
            (transitive (v-n n))))
 
+; Our version of the Replacement Scheme gives us:
+; (forall x \in (omega)) (exists y) (equal y (v-n x))
+; =>
+; (exists v) (forall x \in (omega))
+;   (let ((y (apply v x)))
+;     (equal y (v-n x)))
+; The call of zfn just below implements that observation.
 ; The extra EQUAL call below is to make the $CHOOSES theorem a useful rewrite
 ; rule.
-(zfn v                           ; name
-     ()                          ; args
-     x                           ; x
-     y                           ; y
-     (omega)                     ; bound
+(zfn v ()                        ; name, args
+     x y                         ; x, y
+     (omega)                     ; bound for x
      (equal (equal y (v-n x)) t) ; u
      )
 
@@ -1903,7 +1921,7 @@
 
 ; Let's start with the claim.
 
-(defthmz subset-vn-sv-omega
+(defthmz subset-v-n-v-omega
   (implies (force (natp m))
            (subset (v-n m) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
@@ -2009,12 +2027,12 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :use v-omega-closed-under-union2-lemma)))
 
-(defthmz v-omega-closed-under-triple
+(defthmz v-omega-closed-under-ztriple
   (implies (and (in x (v-omega))
                 (in y (v-omega)))
-           (in (triple x y) (v-omega)))
+           (in (ztriple x y) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable triple singleton))))
+  :hints (("Goal" :in-theory (enable ztriple singleton))))
 
 (defthmz v-omega-closed-under-cons
   (implies (and (in x (v-omega))
@@ -2026,7 +2044,7 @@
 (defthmz v-omega-contains-integers-lemma
   (implies (and (integerp x)
                 (< x 0))
-           (in (negative-int-as-triple x) (v-omega)))
+           (in (negative-int-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :rule-classes nil)
 
@@ -2037,11 +2055,11 @@
   :hints (("Goal"
            :use v-omega-contains-integers-lemma
            :cases ((< x 0))
-           :in-theory (disable negative-int-as-triple))))
+           :in-theory (disable negative-int-as-ztriple))))
 
 (defthmz v-omega-contains-rationals-lemma
   (implies (rationalp x)
-           (in (ratio-as-triple x) (v-omega)))
+           (in (ratio-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :rule-classes nil)
 
@@ -2052,13 +2070,13 @@
   :hints (("Goal"
            :use v-omega-contains-rationals-lemma
            :cases ((integerp x))
-           :in-theory (disable ratio-as-triple))))
+           :in-theory (disable ratio-as-ztriple))))
 
 (defthmz v-omega-contains-complex-rationals-lemma
   (implies (complex-rationalp x)
-           (in (complex-as-triple x) (v-omega)))
+           (in (complex-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :in-theory (disable complex-as-triple-identity)))
+  :hints (("Goal" :in-theory (disable complex-as-ztriple-identity)))
   :rule-classes nil)
 
 (defthmz v-omega-contains-complex-rationals
@@ -2068,11 +2086,11 @@
   :hints (("Goal"
            :use v-omega-contains-complex-rationals-lemma
            :cases ((integerp x))
-           :in-theory (disable complex-as-triple))))
+           :in-theory (disable complex-as-ztriple))))
 
 (defthmz v-omega-contains-characters-lemma
   (implies (characterp x)
-           (in (character-as-triple x) (v-omega)))
+           (in (character-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :rule-classes nil)
 
@@ -2082,7 +2100,7 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
            :use v-omega-contains-characters-lemma
-           :in-theory (disable character-as-triple))))
+           :in-theory (disable character-as-ztriple))))
 
 (defthmz v-omega-contains-char-listp0
   (implies (char-listp0 x)
@@ -2095,7 +2113,7 @@
 
 (defthmz v-omega-contains-strings-lemma
   (implies (stringp x)
-           (in (string-as-triple x) (v-omega)))
+           (in (string-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :rule-classes nil)
 
@@ -2105,19 +2123,19 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
            :use v-omega-contains-strings-lemma
-           :in-theory (disable string-as-triple))))
+           :in-theory (disable string-as-ztriple))))
 
-(in-theory (disable negative-int-as-triple-identity
-                    ratio-as-triple-identity
-                    character-as-triple-identity
-                    string-as-triple-identity
-                    symbol-as-triple-identity))
+(in-theory (disable negative-int-as-ztriple-identity
+                    ratio-as-ztriple-identity
+                    character-as-ztriple-identity
+                    string-as-ztriple-identity
+                    symbol-as-ztriple-identity))
 
 (defthmz v-omega-contains-symbols-lemma
   (implies (symbolp x)
-           (in (symbol-as-triple x) (v-omega)))
+           (in (symbol-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable string-as-triple-identity)))
+  :hints (("Goal" :in-theory (enable string-as-ztriple-identity)))
   :rule-classes nil)
 
 (defthmz v-omega-contains-symbols
@@ -2126,15 +2144,14 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
            :use v-omega-contains-symbols-lemma
-           :in-theory (e/d (symbol-as-triple-identity)
-                           (symbol-as-triple)))))
+           :in-theory (e/d (symbol-as-ztriple-identity)
+                           (symbol-as-ztriple)))))
 
 (defun acl2p (x)
   (declare (xargs :guard t))
   (cond ((consp x) (and (acl2p (car x))
                         (acl2p (cdr x))))
-        ((bad-atom x) nil)
-        (t t)))
+        (t (not (bad-atom x)))))
 
 (defthmz v-omega-contains-numbers
   (implies (acl2-numberp x)
@@ -2184,7 +2201,7 @@
 ; objects are all in V_{omega*2}.
 ;;;;;
 
-; The following uses rule subset-vn-sv-omega in its proof.
+; The following uses rule subset-v-n-v-omega in its proof.
 (defthmz in-in-v-omega-implies-in-v-omega
   (implies (in-in x (v-omega))
            (in x (v-omega)))
