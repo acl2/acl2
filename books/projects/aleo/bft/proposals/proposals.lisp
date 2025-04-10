@@ -160,6 +160,14 @@
     :induct t
     :enable emptyp-of-proposal-set-fix)
 
+  (defruled not-emptyp-of-props-with-author+round
+    (implies (and (set::in prop props)
+                  (proposal-setp props)
+                  (equal (proposal->author prop) author)
+                  (equal (proposal->round prop) round))
+             (not (set::emptyp (props-with-author+round author round props))))
+    :induct t)
+
   (defruled props-with-author+round-when-none-author
     (implies (prop-set-none-author-p author props)
              (equal (props-with-author+round author round props) nil))
