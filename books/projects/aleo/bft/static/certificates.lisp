@@ -456,19 +456,19 @@
     (equal (certs-with-author author nil) nil))
 
   (defruled certificate-with-author-of-insert
-    (implies (and (addressp author)
-                  (certificatep cert)
+    (implies (and (certificatep cert)
                   (certificate-setp certs))
              (equal (certs-with-author author
                                        (set::insert cert certs))
-                    (if (equal (certificate->author cert) author)
+                    (if (equal (certificate->author cert)
+                               (address-fix author))
                         (set::insert cert
-                                     (certs-with-author author
-                                                        certs))
+                                     (certs-with-author author certs))
                       (certs-with-author author certs))))
     :enable (in-of-certs-with-author
              set::double-containment-no-backchain-limit
-             set::pick-a-point-subset-strategy))
+             set::pick-a-point-subset-strategy)
+    :disable certs-with-author)
 
   (defruled certificate-with-author-of-delete
     (implies (and (addressp author)
