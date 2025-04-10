@@ -51,9 +51,26 @@
                      (implies (set::in prop vstate.endorsed)
                               (not (equal (proposal->author prop)
                                           val))))))
+
   ///
+
   (fty::deffixequiv-sk endorsed-author-other-p
-    :args ((systate system-statep))))
+    :args ((systate system-statep)))
+
+  (defruled prop-set-none-author-p-when-endorsed-author-other-p
+    (implies (and (endorsed-author-other-p systate)
+                  (set::in val (correct-addresses systate)))
+             (prop-set-none-author-p
+              val (validator-state->endorsed
+                   (get-validator-state val systate))))
+    :disable (endorsed-author-other-p
+              endorsed-author-other-p-necc)
+    :enable prop-set-none-author-p
+    :use (:instance endorsed-author-other-p-necc
+                    (prop (prop-set-none-author-p-witness
+                           val
+                           (validator-state->endorsed
+                            (get-validator-state val systate)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
