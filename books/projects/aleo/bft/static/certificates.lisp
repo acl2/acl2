@@ -546,10 +546,8 @@
                        (pos-fix round))))
     :induct t)
 
-  (defruled certs-with-round-when-emptyp
-    (implies (set::emptyp certs)
-             (equal (certs-with-round round certs)
-                    nil)))
+  (defrule certs-with-round-of-empty
+    (equal (certs-with-round round nil) nil))
 
   (defruled certs-with-round-of-insert
     (implies (and (certificatep cert)
