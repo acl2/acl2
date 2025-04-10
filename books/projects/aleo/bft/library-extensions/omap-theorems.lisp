@@ -76,6 +76,7 @@
     :induct t
     :enable omap::submap)
 
+  ; pick-a-point:
   (define-sk omap::submap-sk ((map1 omap::mapp) (map2 omap::mapp))
     (forall (key)
             (implies (omap::assoc key map1)
