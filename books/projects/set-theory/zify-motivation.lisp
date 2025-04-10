@@ -20,10 +20,9 @@
         ((= n 1) 1)
         (t (+ (fib (- n 1)) (fib (- n 2))))))
 
-(zsub zfib                          ; name
-      ()                            ; args
+(zsub zfib ()                       ; name, args
       p                             ; x
-      (prod2 (omega) (omega))    ; s
+      (prod2 (omega) (omega))       ; s
       (equal (cdr p) (fib (car p))) ; u
       )
 
