@@ -505,6 +505,19 @@
              set::pick-a-point-subset-strategy)
     :disable certs-with-author)
 
+  (defruled certs-with-author-of-intersect
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2))
+             (equal (certs-with-author author
+                                       (set::intersect certs1 certs2))
+                    (set::intersect
+                     (certs-with-author author certs1)
+                     (certs-with-author author certs2))))
+    :enable (in-of-certs-with-author
+             set::expensive-rules
+             set::double-containment-no-backchain-limit)
+    :disable certs-with-author)
+
   (defruled cert-set->author-set-of-certs-with-author
     (implies (certificate-setp certs)
              (equal (cert-set->author-set
