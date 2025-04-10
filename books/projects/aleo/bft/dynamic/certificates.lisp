@@ -479,6 +479,21 @@
   (defrule certs-with-author-of-empty
     (equal (certs-with-author author nil) nil))
 
+  (defruled certs-with-author-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (equal (certs-with-author author
+                                       (set::insert cert certs))
+                    (if (equal (certificate->author cert)
+                               (address-fix author))
+                        (set::insert cert
+                                     (certs-with-author author certs))
+                      (certs-with-author author certs))))
+    :enable (in-of-certs-with-author
+             set::double-containment-no-backchain-limit
+             set::pick-a-point-subset-strategy)
+    :disable certs-with-author)
+
   (defruled cert-set->author-set-of-certs-with-author
     (implies (certificate-setp certs)
              (equal (cert-set->author-set
@@ -499,22 +514,6 @@
                                (certs-with-author author certs))))))
     :induct t
     :enable cert-set->author-set)
-
-  (defruled certs-with-author-of-insert
-    (implies (and (certificatep cert)
-                  (certificate-setp certs))
-             (equal (certs-with-author author
-                                       (set::insert cert certs))
-                    (if (equal (certificate->author cert)
-                               (address-fix author))
-                        (set::insert cert
-                                     (certs-with-author author
-                                                        certs))
-                      (certs-with-author author certs))))
-    :enable (in-of-certs-with-author
-             set::double-containment-no-backchain-limit
-             set::pick-a-point-subset-strategy)
-    :disable (certs-with-author))
 
   (defruled certs-with-author-of-delete
     (implies (certificate-setp certs)
