@@ -103,12 +103,7 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-getbit (size 1) (n n))
            :in-theory (disable unsigned-byte-p-of-getbit))))
 
-;drop?
-(defthm getbit-bound-linear
-  (<= (getbit n y) 1)
-  :rule-classes :linear)
-
-(in-theory (disable logtail)) ;move up
+(in-theory (disable logtail)) ;move up?
 
 (defthm getbit-of-bvchop
   (implies (and (< m n)
@@ -117,17 +112,13 @@
            (equal (getbit m (bvchop n x))
                   (getbit m x)))
   :hints (("Goal" :cases ((natp m))
-           :in-theory (e/d (getbit slice) (
-
-                                           logtail-of-bvchop)))))
+           :in-theory (e/d (getbit slice) (logtail-of-bvchop)))))
 
 (defthmd getbit-too-high
   (implies (unsigned-byte-p n x)
            (equal (getbit n x)
                   0))
-  :hints (("Goal" :in-theory (e/d (getbit slice)
-                                  (
-                                   )))))
+  :hints (("Goal" :in-theory (enable getbit slice))))
 
 (defthm getbit-too-high-cheap-2
   (implies (unsigned-byte-p n x)
