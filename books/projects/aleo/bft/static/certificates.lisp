@@ -471,15 +471,15 @@
     :disable certs-with-author)
 
   (defruled certificate-with-author-of-delete
-    (implies (and (addressp author)
-                  (certificate-setp certs))
+    (implies (certificate-setp certs)
              (equal (certs-with-author author
                                        (set::delete cert certs))
                     (set::delete cert
                                  (certs-with-author author certs))))
     :enable (in-of-certs-with-author
              set::double-containment-no-backchain-limit
-             set::pick-a-point-subset-strategy))
+             set::pick-a-point-subset-strategy)
+    :disable certs-with-author)
 
   (defruled emptyp-of-certs-with-author-if-no-author
     (implies (certificate-setp certs)
