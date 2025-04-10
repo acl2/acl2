@@ -494,14 +494,6 @@
              set::double-containment-no-backchain-limit)
     :disable certs-with-author)
 
-  (defruled emptyp-of-certs-with-author-if-no-author
-    (implies (certificate-setp certs)
-             (equal (set::emptyp (certs-with-author author certs))
-                    (not (set::in (address-fix author)
-                                  (cert-set->author-set certs)))))
-    :induct t
-    :enable cert-set->author-set)
-
   (defruled cert-set->author-set-of-certs-with-author
     (implies (certificate-setp certs)
              (equal (cert-set->author-set
@@ -512,7 +504,15 @@
                       nil)))
     :induct t
     :enable (cert-set->author-set
-             cert-set->author-set-of-insert)))
+             cert-set->author-set-of-insert))
+
+  (defruled emptyp-of-certs-with-author-if-no-author
+    (implies (certificate-setp certs)
+             (equal (set::emptyp (certs-with-author author certs))
+                    (not (set::in (address-fix author)
+                                  (cert-set->author-set certs)))))
+    :induct t
+    :enable cert-set->author-set))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

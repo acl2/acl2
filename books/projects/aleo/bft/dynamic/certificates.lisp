@@ -530,6 +530,14 @@
     :enable (cert-set->author-set
              cert-set->author-set-of-insert))
 
+  (defruled emptyp-of-certs-with-author-if-no-author
+    (implies (certificate-setp certs)
+             (equal (set::emptyp (certs-with-author author certs))
+                    (not (set::in (address-fix author)
+                                  (cert-set->author-set certs)))))
+    :induct t
+    :enable cert-set->author-set)
+
   (defruled in-cert-set->author-set-to-nonempty-certs-with-author
     (implies (certificate-setp certs)
              (equal (set::in author (cert-set->author-set certs))
@@ -555,15 +563,7 @@
                          nil))
              (not (cert-with-author+round author round certs)))
     :use cert-with-author+round-in-certs-with-author
-    :disable certs-with-author)
-
-  (defruled emptyp-of-certs-with-author-if-no-author
-    (implies (certificate-setp certs)
-             (equal (set::emptyp (certs-with-author author certs))
-                    (not (set::in (address-fix author)
-                                  (cert-set->author-set certs)))))
-    :induct t
-    :enable cert-set->author-set))
+    :disable certs-with-author))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
