@@ -311,3 +311,17 @@
                 (natp m))
            (equal (nth n x)
                   (nth n k))))
+
+(defthmd take-opener-alt
+  (implies (posp n)
+           (equal (take n x)
+                  (append (take (+ -1 n) x)
+                          (list (nth (+ -1 n) x)))))
+  :hints (("Goal" :in-theory (enable take))))
+
+(defthmd take-when-most-known
+  (implies (and (equal (take (+ -1 n) x) free)
+                (posp n))
+           (equal (take n x)
+                  (append free (list (nth (+ -1 n) x)))))
+  :hints (("Goal" :in-theory (enable take-opener-alt))))

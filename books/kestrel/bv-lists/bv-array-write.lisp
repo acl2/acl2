@@ -21,6 +21,7 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 
@@ -499,3 +500,28 @@
                             ;bv-array-write
                             ) (ceiling-of-lg
                                update-nth-becomes-update-nth2-extend-gen)))))
+
+(defthmd bv-array-write-redef-special
+  (implies (and (equal len (len data)) ; this case
+                (< index len)
+                (natp len)
+                (natp index))
+           (equal (bv-array-write element-size len index val data)
+                  (append (bvchop-list element-size (take index data))
+                          (list (bvchop element-size val))
+                          (bvchop-list element-size (nthcdr (+ 1 index) data)))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2
+                                     equal-of-append
+                                     cdr-of-nthcdr))))
+
+(defthmd bv-array-write-redef
+  (implies (and (< index len)
+                (natp len)
+                (natp index))
+           (equal (bv-array-write element-size len index val data)
+                  (append (bvchop-list element-size (take index data))
+                          (list (bvchop element-size val))
+                          (bvchop-list element-size (take (+ -1 (- index) len) (nthcdr (+ 1 index) data))))))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2
+                                     equal-of-append
+                                     cdr-of-nthcdr))))
