@@ -795,7 +795,8 @@
   :enable (outgoing
            cardinality-of-certs-with-authors+round-when-subset
            certificate-previous-in-dag-p
-           dag-previous-are-quorum-p-necc)
+           dag-previous-are-quorum-p-necc
+           posp)
   :use dag-previous-in-dag-p-necc)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

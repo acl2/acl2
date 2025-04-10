@@ -516,17 +516,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define certs-with-round ((round posp)
-                          (certs certificate-setp))
+(define certs-with-round ((round posp) (certs certificate-setp))
   :returns (certs-with-round certificate-setp)
   :short "Retrieve the set of certificates with a given round from a set."
-  (b* (((when (set::emptyp certs)) nil)
+  (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
        ((certificate cert) (set::head certs)))
-    (if (equal round cert.round)
-        (set::insert (certificate-fix cert)
+    (if (equal cert.round (pos-fix round))
+        (set::insert cert
                      (certs-with-round round (set::tail certs)))
       (certs-with-round round (set::tail certs))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
+  :hooks (:fix)
+
   ///
 
   (defret certs-with-round-subset
@@ -543,7 +545,8 @@
     (implies (certificate-setp certs)
              (equal (set::in cert (certs-with-round round certs))
                     (and (set::in cert certs)
-                         (equal (certificate->round cert) round))))
+                         (equal (certificate->round cert)
+                                (pos-fix round)))))
     :induct t)
 
   (defruled certs-with-round-when-emptyp
@@ -556,13 +559,14 @@
                   (certificate-setp certs))
              (equal (certs-with-round round
                                       (set::insert cert certs))
-                    (if (equal (certificate->round cert) round)
+                    (if (equal (certificate->round cert)
+                               (pos-fix round))
                         (set::insert cert
-                                     (certs-with-round round
-                                                       certs))
+                                     (certs-with-round round certs))
                       (certs-with-round round certs))))
-    :induct (set::weak-insert-induction cert certs)
-    :enable in-of-certs-with-round)
+    :enable (in-of-certs-with-round
+             set::double-containment-no-backchain-limit
+             set::pick-a-point-subset-strategy))
 
   (defruled certs-with-round-monotone
     (implies (and (certificate-setp certs1)
@@ -575,6 +579,7 @@
 
   (defruled cert-with-author+round-when-author-in-round
     (implies (and (certificate-setp certs)
+                  (posp round)
                   (set::in author
                            (cert-set->author-set
                             (certs-with-round round certs))))
@@ -606,7 +611,7 @@
             (certs-with-round round certs))
            (if (set::emptyp (certs-with-round round certs))
                nil
-             (set::insert round nil)))
+             (set::insert (pos-fix round) nil)))
     :induct t
     :enable cert-set->round-set-of-insert)
 
@@ -616,7 +621,7 @@
                nil)
         (equal (cert-set->round-set
                 (certs-with-round round certs))
-               (set::insert round nil)))
+               (set::insert (pos-fix round) nil)))
     :induct t
     :enable (cert-set->round-set
              cert-set->round-set-of-insert))
@@ -780,7 +785,8 @@
 
   (defruled certs-with-authors+round-to-authors-of-round
     (implies (and (certificate-setp certs)
-                  (address-setp authors))
+                  (address-setp authors)
+                  (posp round))
              (equal (certs-with-authors+round authors round certs)
                     (certs-with-authors
                      authors (certs-with-round round certs))))
@@ -792,7 +798,8 @@
 
   (defruled certs-with-authors+round-to-round-of-authors
     (implies (and (certificate-setp certs)
-                  (address-setp authors))
+                  (address-setp authors)
+                  (posp round))
              (equal (certs-with-authors+round authors round certs)
                     (certs-with-round
                      round (certs-with-authors authors certs))))

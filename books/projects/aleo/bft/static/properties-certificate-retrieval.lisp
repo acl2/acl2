@@ -360,6 +360,7 @@
   (implies (and (certificate-setp certs)
                 (certificate-set-unequivocalp certs)
                 (address-setp authors)
+                (posp round)
                 (set::subset authors
                              (cert-set->author-set
                               (certs-with-round round certs))))
