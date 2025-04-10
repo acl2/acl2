@@ -12,7 +12,9 @@
 (in-package "ALEOBFT")
 
 (include-book "std/osets/top" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -24,6 +26,14 @@
 (defsection oset-theorems
   :parents (library-extensions)
   :short "Some theorems about osets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Among other theorems,
+     we introduce an alternative pick-a-point reasoning support
+     for @(tsee set::subset).
+     Unlike @(see see:pick-a-point-subset-strategy),
+     this uses a @(tsee defun-sk) and a ruleset."))
 
   (defruled set::not-emptyp-when-in-of-subset
     (implies (and (set::in a x)
@@ -144,4 +154,51 @@
                   (set::in a y))
              (not (set::emptyp (set::intersect x y))))
     :use (:instance set::never-in-empty (a a) (x (set::intersect x y)))
-    :disable set::never-in-empty))
+    :disable set::never-in-empty)
+
+  ;; pick-a-point:
+  (define-sk set::subset-sk ((set1 set::setp) (set2 set::setp))
+    (forall (elem)
+            (implies (set::in elem set1)
+                     (set::in elem set2)))
+    :skolem-name set::subset-witness
+
+    ///
+
+    (in-theory (disable set::subset-sk set::subset-sk-necc))
+
+    (defruled set::subset-sk-of-tail-when-subset-sk
+      (implies (set::subset-sk set1 set2)
+               (set::subset-sk (set::tail set1) set2))
+      :expand (set::subset-sk (set::tail set1) set2)
+      :use (:instance set::subset-sk-necc
+                      (elem (set::subset-witness (set::tail set1) set2))))
+
+    (defruled set::subset-sk-when-subset
+      (implies (set::subset set1 set2)
+               (set::subset-sk set1 set2))
+      :enable (set::subset-sk
+               set::expensive-rules))
+
+    (defruled set::subset-when-subset-sk
+      (implies (set::subset-sk set1 set2)
+               (set::subset set1 set2))
+      :induct t
+      :enable (set::subset
+               set::subset-sk-of-tail-when-subset-sk)
+      :hints ('(:use (:instance set::subset-sk-necc
+                                (elem (set::head set1))))))
+
+    (defruled set::subset-to-subset-sk
+      (equal (set::subset set1 set2)
+             (set::subset-sk set1 set2))
+      :use (set::subset-sk-when-subset
+            set::subset-when-subset-sk))
+
+    ;; Enable this ruleset to perform pick-a-point reasoning on SET::SUBSET.
+    ;; The arbitrary element will be (SET::SUBSET-WITNESS <set1> <set2>),
+    ;; where <set1> and <set2> are the omaps for which
+    ;; we want to prove that (SET::SUBSET <set1> <set2>) holds.
+    (acl2::def-ruleset set::subset-pick-a-point
+      '(set::subset-to-subset-sk
+        set::subset-sk))))
