@@ -88,8 +88,7 @@
   :enable (no-self-buffer-p
            system-initp
            system-validators-initp-necc
-           validator-init
-           certs-with-author-when-emptyp))
+           validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

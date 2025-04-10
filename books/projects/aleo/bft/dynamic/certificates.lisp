@@ -498,10 +498,8 @@
     :induct t
     :enable cert-set->author-set)
 
-  (defruled certs-with-author-when-emptyp
-    (implies (set::emptyp certs)
-             (equal (certs-with-author author certs)
-                    nil)))
+  (defrule certs-with-author-of-empty
+    (equal (certs-with-author author nil) nil))
 
   (defruled certs-with-author-of-insert
     (implies (and (certificatep cert)
