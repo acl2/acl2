@@ -532,14 +532,12 @@
   ///
 
   (defret certs-with-round-subset
-    (implies (certificate-setp certs)
-             (set::subset certs-with-round certs))
+    (set::subset certs-with-round certs)
+    :hyp (certificate-setp certs)
     :hints (("Goal"
              :induct t
-             :in-theory (enable* in-of-certs-with-author
-                                 set::subset
+             :in-theory (enable* set::subset
                                  set::expensive-rules))))
-  (in-theory (disable certs-with-round-subset))
 
   (defruled in-of-certs-with-round
     (implies (certificate-setp certs)

@@ -113,8 +113,7 @@
                 (certificate-set-unequivocalp certs))
            (certificate-set-unequivocalp
             (certs-with-round round certs)))
-  :enable (certificate-set-unequivocalp-when-subset
-           certs-with-round-subset))
+  :enable certificate-set-unequivocalp-when-subset)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
