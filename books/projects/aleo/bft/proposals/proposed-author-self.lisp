@@ -53,9 +53,48 @@
   :guard-hints
   (("Goal"
     :in-theory (enable proposal-setp-of-keys-when-proposal-address-set-mapp)))
+
   ///
+
   (fty::deffixequiv-sk proposed-author-self-p
-    :args ((systate system-statep))))
+    :args ((systate system-statep)))
+
+  (defruled prop-set-all-author-p-when-proposed-author-self-p
+    (implies (and (proposed-author-self-p systate)
+                  (set::in val (correct-addresses systate)))
+             (prop-set-all-author-p
+              val (omap::keys (validator-state->proposed
+                               (get-validator-state val systate)))))
+    :disable (proposed-author-self-p
+              proposed-author-self-p-necc)
+    :enable (prop-set-all-author-p
+             proposal-setp-of-keys-when-proposal-address-set-mapp)
+    :use (:instance proposed-author-self-p-necc
+                    (prop (prop-set-all-author-p-witness
+                           val
+                           (omap::keys
+                            (validator-state->proposed
+                             (get-validator-state val systate)))))))
+
+  (defruled prop-set-none-author-p-when-proposed-author-self-p
+    (implies (and (proposed-author-self-p systate)
+                  (set::in val (correct-addresses systate))
+                  (not (equal (address-fix val1)
+                              (address-fix val))))
+             (prop-set-none-author-p
+              val1 (omap::keys
+                    (validator-state->proposed
+                     (get-validator-state val systate)))))
+    :disable (proposed-author-self-p
+              proposed-author-self-p-necc)
+    :enable (prop-set-none-author-p
+             proposal-setp-of-keys-when-proposal-address-set-mapp)
+    :use (:instance proposed-author-self-p-necc
+                    (prop (prop-set-none-author-p-witness
+                           val1
+                           (omap::keys
+                            (validator-state->proposed
+                             (get-validator-state val systate))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
