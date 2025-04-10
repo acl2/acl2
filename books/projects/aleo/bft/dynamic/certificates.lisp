@@ -477,6 +477,9 @@
                                 (address-fix author)))))
     :induct t)
 
+  (defrule certs-with-author-of-empty
+    (equal (certs-with-author author nil) nil))
+
   (defruled cert-set->author-set-of-certs-with-author
     (implies (certificate-setp certs)
              (equal (cert-set->author-set
@@ -497,9 +500,6 @@
                                (certs-with-author author certs))))))
     :induct t
     :enable cert-set->author-set)
-
-  (defrule certs-with-author-of-empty
-    (equal (certs-with-author author nil) nil))
 
   (defruled certs-with-author-of-insert
     (implies (and (certificatep cert)
