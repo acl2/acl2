@@ -114,7 +114,7 @@
                   (<= (set::cardinality (cert-set->round-set certs)) 1))
              (not (set::in (certificate->author (set::head certs))
                            (cert-set->author-set (set::tail certs)))))
-    :use ((:instance emptyp-of-certs-with-author-if-no-author
+    :use ((:instance emptyp-of-certs-with-author
                      (author (certificate->author (set::head certs)))
                      (certs (set::tail certs)))
           (:instance

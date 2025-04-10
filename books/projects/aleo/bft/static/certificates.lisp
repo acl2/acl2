@@ -506,7 +506,7 @@
     :enable (cert-set->author-set
              cert-set->author-set-of-insert))
 
-  (defruled emptyp-of-certs-with-author-if-no-author
+  (defruled emptyp-of-certs-with-author
     (implies (certificate-setp certs)
              (equal (set::emptyp (certs-with-author author certs))
                     (not (set::in (address-fix author)
@@ -586,7 +586,7 @@
              in-of-certs-with-author
              in-of-certs-with-round
              cert-with-author+round-when-element
-             emptyp-of-certs-with-author-if-no-author)
+             emptyp-of-certs-with-author)
     :disable set::in-head)
 
   (defruled certs-with-round-of-intersect

@@ -530,7 +530,7 @@
     :enable (cert-set->author-set
              cert-set->author-set-of-insert))
 
-  (defruled emptyp-of-certs-with-author-if-no-author
+  (defruled emptyp-of-certs-with-author
     (implies (certificate-setp certs)
              (equal (set::emptyp (certs-with-author author certs))
                     (not (set::in (address-fix author)
@@ -673,7 +673,7 @@
     :enable (in-of-certs-with-author
              in-of-certificates-with-round
              cert-with-author+round-when-element
-             emptyp-of-certs-with-author-if-no-author)
+             emptyp-of-certs-with-author)
     :disable (set::in-head
               certificates-with-round)))
 
@@ -1035,7 +1035,7 @@
           (:instance set::in-head
                      (x certs)))
     :enable (in-of-certs-with-author
-             emptyp-of-certs-with-author-if-no-author
+             emptyp-of-certs-with-author
              equal-certificate-authors-when-unequiv-and-same-round)
     :disable (set::in-head
               certificate-set-unequivocalp

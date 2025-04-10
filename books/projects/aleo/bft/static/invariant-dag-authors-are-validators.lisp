@@ -110,7 +110,7 @@
     :use (:instance set::in-head (x (certs-with-author author certs)))
     :enable (thecert
              in-of-certs-with-author
-             emptyp-of-certs-with-author-if-no-author))
+             emptyp-of-certs-with-author))
 
   (defrulel subset-lemma
     (implies (and (system-signers-are-validators-p systate)
