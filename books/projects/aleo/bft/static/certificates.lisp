@@ -540,11 +540,10 @@
                                  set::expensive-rules))))
 
   (defruled in-of-certs-with-round
-    (implies (certificate-setp certs)
-             (equal (set::in cert (certs-with-round round certs))
-                    (and (set::in cert certs)
-                         (equal (certificate->round cert)
-                                (pos-fix round)))))
+    (equal (set::in cert (certs-with-round round certs))
+           (and (set::in cert (certificate-set-fix certs))
+                (equal (certificate->round cert)
+                       (pos-fix round))))
     :induct t)
 
   (defruled certs-with-round-when-emptyp
