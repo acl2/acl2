@@ -151,7 +151,7 @@
           (or (and anchor? t)
               (and (timer-case vstate.timer :expired)
                    (>= (set::cardinality
-                        (certificates-with-round vstate.round vstate.dag))
+                        (certs-with-round vstate.round vstate.dag))
                        (committee-quorum commtt)))))
       (b* ((prev-commtt
             (active-committee-at-round (1- vstate.round)
@@ -161,7 +161,7 @@
            (anchor? (cert-with-author+round leader
                                                    (1- vstate.round)
                                                    vstate.dag))
-           (voters (certificates-with-round vstate.round vstate.dag))
+           (voters (certs-with-round vstate.round vstate.dag))
            ((mv yes-votes no-votes) (tally-leader-votes leader voters)))
         (or (not anchor?)
             (>= yes-votes

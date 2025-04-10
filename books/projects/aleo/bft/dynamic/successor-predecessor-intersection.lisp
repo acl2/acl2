@@ -404,7 +404,7 @@
                       (round (1+ (certificate->round cert1))))
            (:instance set::emptyp-subset-2
                       (x (successors cert1 dag1))
-                      (y (certificates-with-round (1+ (certificate->round cert1))
+                      (y (certs-with-round (1+ (certificate->round cert1))
                                                   dag1))))
      :enable (successors-subset-of-next-round
               cert-set->author-set-monotone
@@ -427,7 +427,7 @@
                       (round (1- (certificate->round cert2))))
            (:instance set::emptyp-subset-2
                       (x (predecessors cert2 dag2))
-                      (y (certificates-with-round (1- (certificate->round cert2))
+                      (y (certs-with-round (1- (certificate->round cert2))
                                                   dag2))))
      :enable (predecessors-subset-of-previous-round
               cert-set->author-set-monotone
