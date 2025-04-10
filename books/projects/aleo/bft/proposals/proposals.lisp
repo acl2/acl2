@@ -14,6 +14,12 @@
 (include-book "addresses")
 (include-book "transactions")
 
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
+
+(local (include-book "../library-extensions/oset-nonemptyp"))
+(local (include-book "../library-extensions/oset-theorems"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -90,6 +96,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk prop-set-all-author-p ((author addressp) (props proposal-setp))
+  :returns (yes/no booleanp)
+  :short "Check if all the proposals in a set have a given author."
+  (forall (prop)
+          (implies (set::in prop (proposal-set-fix props))
+                   (equal (proposal->author prop)
+                          (address-fix author))))
+  ///
+  (fty::deffixequiv-sk prop-set-all-author-p
+    :args ((author addressp) (props proposal-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk prop-set-none-author-p ((author addressp) (props proposal-setp))
+  :returns (yes/no booleanp)
+  :short "Check if none of the proposals in a set have a given author."
+  (forall (prop)
+          (implies (set::in prop (proposal-set-fix props))
+                   (not (equal (proposal->author prop)
+                               (address-fix author)))))
+  ///
+  (fty::deffixequiv-sk prop-set-none-author-p
+    :args ((author addressp) (props proposal-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define props-with-author+round ((author addressp)
                                  (round posp)
                                  (props proposal-setp))
@@ -126,7 +158,23 @@
                 (equal (proposal->round prop)
                        (pos-fix round))))
     :induct t
-    :enable emptyp-of-proposal-set-fix))
+    :enable emptyp-of-proposal-set-fix)
+
+  (defruled props-with-author+round-when-none-author
+    (implies (prop-set-none-author-p author props)
+             (equal (props-with-author+round author round props) nil))
+    :use lemma
+    :enable set::emptyp
+    :disable props-with-author+round
+    :prep-lemmas
+    ((defruled lemma
+       (implies (prop-set-none-author-p author props)
+                (set::emptyp (props-with-author+round author round props)))
+       :enable (set::emptyp-to-not-nonemptyp
+                set::nonemptyp
+                in-of-props-with-author+round
+                prop-set-none-author-p-necc)
+       :disable props-with-author+round))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -171,4 +219,15 @@
                   (proposal-setp props))
              (not (set::in prop props0)))
     :enable (not-in-prop-set-when-none-with-round
-             set::expensive-rules)))
+             set::expensive-rules))
+
+  (defruled props-with-author+round-to-props-with-round
+    (implies (prop-set-all-author-p author props)
+             (equal (props-with-author+round author round props)
+                    (props-with-round round props)))
+    :disable props-with-round
+    :enable (set::double-containment-no-backchain-limit
+             set::subset-pick-a-point
+             in-of-props-with-author+round
+             in-of-props-with-round
+             prop-set-all-author-p-necc)))
