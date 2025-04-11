@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -32,7 +32,7 @@
     "Among other theorems,
      we introduce an alternative pick-a-point reasoning support
      for @(tsee set::subset).
-     Unlike @(see see:pick-a-point-subset-strategy),
+     Unlike @(see set:pick-a-point-subset-strategy),
      this uses a @(tsee defun-sk) and a ruleset."))
 
   (defruled set::not-emptyp-when-in-of-subset
