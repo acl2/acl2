@@ -14,7 +14,7 @@
 
 ;; Somewhat similar to bounded-integer-listp, which is built-in.
 
-(include-book "kestrel/sequences/defforall" :dir :system) ;reduce?
+(local (include-book "kestrel/sequences/defforall" :dir :system)) ;reduce?
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 
 (defforall all-<= (x n) (<= x n) :fixed (n) :declares ((xargs :guard (and (rational-listp x) (rationalp n))))) ;why did (rationalp x) work as a guard?

@@ -25,13 +25,13 @@
                               (plist-worldp wrld))))
   (let* ((props (getprops fn 'current-acl2-world wrld)))
     (if (not props)
-        (hard-error 'add-to-interpreted-function-alist "Can't find a function named ~x0." (list (cons #\0 fn)))
+        (er hard? 'add-to-interpreted-function-alist "Can't find a function named ~x0." fn)
       ;;fixme, check that it's indeed a function?
       (let* ((body (lookup-eq 'unnormalized-body props))
              (formals (lookup-eq 'formals props)))
         (if (not body)
             ;; print a warning
-            (prog2$ ;(hard-error 'add-to-interpreted-function-alist "This function has no body: ~x0" (acons #\0 fn nil))
+            (prog2$ ;(er hard? 'add-to-interpreted-function-alist "This function has no body: ~x0" fn)
              (cw "NOTE: This function has no body: ~x0.~%" fn)
              alist)
           (if (not (pseudo-termp body))
@@ -49,7 +49,7 @@
                   (if (equal match (list formals body))
                       ;;consistent with previous definition:
                       alist
-                    (hard-error 'add-to-interpreted-function-alist "Inconsistent definitions for: ~x0" (acons #\0 fn nil)))
+                    (er hard? 'add-to-interpreted-function-alist "Inconsistent definitions for: ~x0" fn))
                 (if (not (symbol-listp formals))
                     (prog2$ (er hard? 'add-to-interpreted-function-alist "Bad formals for ~x0: ~x1" fn formals)
                             alist)

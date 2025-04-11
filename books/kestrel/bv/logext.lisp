@@ -806,3 +806,23 @@
   (equal (equal 0 (logext 32 x))
          (equal 0 (bvchop 32 x)))
   :hints (("Goal" :in-theory (enable))))
+
+;gen
+(defthm logext-when-equal-of-getbit
+  (implies (and (equal 0 (getbit 31 x))
+                (integerp x))
+           (equal (logext 32 x)
+                  (bvchop 31 x))))
+
+;gen
+(defthm <-of-0-and-logext-2
+  (equal (< 0 (logext 32 x))
+         (and (equal (getbit 31 x) 0)
+              (not (equal 0 (bvchop 32 x)))))
+  :hints (("Goal" :in-theory (enable logext))))
+
+;gen?
+;use polarities?
+(defthm logext-min-value
+  (equal (< -2147483648 (LOGEXT 32 X))
+         (not (equal -2147483648 (LOGEXT 32 X)))))

@@ -445,7 +445,7 @@
 ;;; end variant that is true-listp
 
 ;it is an error to have no list formals - check for that?
-(defun defforall-fn (forall-fn all-formals term fixed declares guard guard-hints true-listp verbose)
+(defun defforall-fn (forall-fn all-formals term fixed declares guard guard-hints true-listp verbose suppress-includes)
   (declare (xargs :guard (and (symbolp forall-fn)
                               (symbol-listp all-formals)
                               (pseudo-termp term)
@@ -453,7 +453,8 @@
                                   (symbol-listp fixed))
                               (true-listp declares)
                               (booleanp true-listp)
-                              (booleanp verbose))))
+                              (booleanp verbose)
+                              (booleanp suppress-includes))))
   (let* ((declares (if guard (cons `(xargs :guard ,guard) declares) declares)) ;i guess this excludes a guard of nil....
          (declares (if guard-hints (cons `(xargs :guard-hints ,guard-hints) declares) declares)) ;todo: combine the xargs
          (fixed-formals (if (and (symbolp fixed) fixed) (list fixed) fixed))
@@ -798,9 +799,19 @@
                                                       ,@fixed-formal-bindings)
                                ,@theory))))))
               theorems)))
-         (event `(progn ,defun
-                        ,@theorems
-                        (value-triple ',forall-fn)))
+         (event `(progn
+                   ,@(if suppress-includes
+                         nil
+                       `(;; (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
+                         (include-book "kestrel/lists-light/firstn-def" :dir :system)
+                         ;; (include-book "kestrel/lists-light/subrange-def" :dir :system)
+                         (include-book "kestrel/lists-light/memberp-def" :dir :system)
+                         (include-book "kestrel/lists-light/perm-def" :dir :system)
+                         (include-book "kestrel/lists-light/perm" :dir :system) ;needed for the congruence rules?  could split out the defequiv
+                         ))
+                   ,defun
+                   ,@theorems
+                   (value-triple ',forall-fn)))
          (event (if verbose
                     event
                   `(with-output
@@ -810,11 +821,12 @@
                      ,event))))
     event))
 
-(defun defforall-simple-fn (pred name guard guard-hints true-listp verbose)
+(defun defforall-simple-fn (pred name guard guard-hints true-listp verbose suppress-includes)
   (declare (xargs :guard (and (symbolp pred)
                               (symbolp name) ; may be nil
                               (booleanp true-listp)
-                              (booleanp verbose))
+                              (booleanp verbose)
+                              (booleanp suppress-includes))
                   :mode :program))
   (defforall-fn
     (or name ;use name if supplied
@@ -827,7 +839,7 @@
     guard-hints
     true-listp
     verbose
-    ))
+    suppress-includes))
 
 ;simple version for the common case of mapping a unary predicate over a single list
 (defmacro defforall-simple (pred ;the unary predicate to apply to each element in the list
@@ -837,18 +849,20 @@
                             (guard-hints 'nil) ;todo: add a test of this
                             (true-listp 'nil)
                             (verbose 'nil)
+                            (suppress-includes 'nil)
                             )
-  (defforall-simple-fn pred name guard guard-hints true-listp verbose))
+  `(make-event (defforall-simple-fn ',pred ',name ',guard ',guard-hints ',true-listp ',verbose ',suppress-includes)))
 
 ;See examples in defforall-tests.lisp.  :FIXED indicates which formals are fixed  All other formals are lists that get cdred down.
 ;add more options?
-;
 (defmacro defforall (name all-formals term &key
                           (fixed 'nil)
                           (declares 'nil)
                           (guard 'nil)
                           (guard-hints 'nil) ;todo: add a test of this
                           (true-listp 'nil)
-                          (verbose 'nil))
+                          (verbose 'nil)
+                          (suppress-includes 'nil) ; needed if defforall is used in an encapsulate (we put in the includes so the include of defforall can be local)
+                          )
   (declare (xargs :guard (member-eq verbose '(t nil)))) ;for now, since it's passed to manage-screen-output without being evaluated
-  (defforall-fn name all-formals term fixed declares guard guard-hints true-listp verbose))
+  `(make-event (defforall-fn ',name ',all-formals ',term ',fixed ',declares ',guard ',guard-hints ',true-listp ',verbose ',suppress-includes)))

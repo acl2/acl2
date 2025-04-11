@@ -17,6 +17,7 @@
 
 ;; TODO: Some of these are not needed any more; we could remove them from the base-evaluator...
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "misc/total-order" :dir :system) ;to get <<
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)

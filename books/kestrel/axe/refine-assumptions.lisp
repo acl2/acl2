@@ -19,6 +19,7 @@
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
+(local (include-book "kestrel/sequences/defforall" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))

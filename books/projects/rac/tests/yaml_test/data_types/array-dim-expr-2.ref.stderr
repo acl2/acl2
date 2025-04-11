@@ -1,0 +1,4 @@
+array-dim-expr-2.cpp:4 (6-14): variable must be assigned directly
+ 4 |   int a[1 + 1];
+   |       ^^^^^^^^
+note: non initialized variable can introduce undefined behavior

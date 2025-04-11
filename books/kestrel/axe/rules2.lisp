@@ -35,12 +35,12 @@
 (include-book "kestrel/lists-light/subrange" :dir :system)
 ;(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
-(local (in-theory (disable ;unsigned-byte-p-of-+-when-<-of-logtail-and-expt
-                           ;usb-plus-from-bounds
-                           ;;unsigned-byte-p-plus
-                           ))) ;bad?
+;; (local (in-theory (disable ;unsigned-byte-p-of-+-when-<-of-logtail-and-expt
+;;                            ;usb-plus-from-bounds
+;;                            ;;unsigned-byte-p-plus
+;;                            ))) ;bad?
 
-(local (in-theory (disable expt)))
+;; (local (in-theory (disable expt)))
 
 ;; (in-theory (disable ;logapp-0 ;bad forcing
 ;;                     ;logtail-equal-0
@@ -2677,7 +2677,7 @@
 ;;   :rule-classes ((:rewrite :backchain-limit-lst (nil 2))))
 
 ;move to be next to the other one
-(defthm not-less-when->=-max-of-containing-bag
+(defthmd not-less-when->=-max-of-containing-bag
   (implies (and (<= (maxelem bag) k)
                 (memberp elem bag))
            (equal (> elem k)

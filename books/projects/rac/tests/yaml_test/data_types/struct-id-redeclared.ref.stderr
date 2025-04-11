@@ -1,0 +1,6 @@
+struct-id-redeclared.cpp:5 (6-7): Duplicate identifier declaration (could be an enum, a variable template parameter or function) `A`
+ 5 |   int A;
+   |       ^
+note: first defined here
+ 4 |   int A;
+   |       ^

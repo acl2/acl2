@@ -1,3 +1,4 @@
-initializer-list-nested-array.cpp:7 (22-25): Wrong type provided, expected int[2] but got int
+initializer-list-nested-array.cpp:7 (22-25): Incompatible types: int cannot be cast to const int[2]
  7 |   const array<int, 2> arr[2] = { 3 }, arr2[1] = { 0 }, arr3[1] = { 0 };
    |                       ^^^
+note: To convert types depending on template parameters to primitive types, you should add an explicit conversion (like this ac_int<32, true>(...) to convert to int)

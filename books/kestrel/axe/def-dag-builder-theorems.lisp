@@ -1,7 +1,7 @@
 ; Tool to auto-generate theorems about functions that build dags
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,6 +17,8 @@
 ;; TODO: Add support for mutual-recursion
 ;; TODO: Maybe split the corollaries into a different tool
 
+(include-book "std/util/bstar" :dir :system)
+(include-book "kestrel/utilities/pack" :dir :system)
 (include-book "dag-parent-array")
 (include-book "wf-dagp")
 

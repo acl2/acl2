@@ -5,9 +5,12 @@ Usage:
   parse FILE [options]
 
 Options:
+  -v -version    display the version (the commit hash)
+  -h -help       display this message
+
   -rac           convert to RAC pseudocode and write to file.pc
   -acl2          write ACL2 translation to file.ast.lsp
   -pedantic      enable all possible warnings/errors.
-  -version       display the version (the commit hash)
+
   -dump-ast      display the intermediate AST in dot format
   -trace-parser  enable bison tracing, used to debug the parser

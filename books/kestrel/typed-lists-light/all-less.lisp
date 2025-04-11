@@ -1,7 +1,7 @@
 ; A utility to check whether all values in a list are less than a given value
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,8 @@
 
 ;; Somewhat similar to bounded-integer-listp, which is built-in.
 
-(include-book "kestrel/sequences/defforall" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
+(local (include-book "kestrel/sequences/defforall" :dir :system))
 
 ;; Checks whether each element of X is less than N.
 (defforall all-< (x n) (< x n) :fixed (n) :declares ((xargs :guard (and (rational-listp x) (rationalp n)))))

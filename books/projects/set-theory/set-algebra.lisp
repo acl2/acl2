@@ -13,8 +13,8 @@
 
 (include-book "base")
 
-(zsub diff           ; name
-      (x y)          ; args
+; (diff x y) = {a \in x : a \notin y}
+(zsub diff (x y)     ; name, args
       a              ; x
       x              ; s
       (not (in a y)) ; u

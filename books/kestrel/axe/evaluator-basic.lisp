@@ -15,6 +15,7 @@
 ;; A simple version of the Axe evaluator with verified guards and without skip-proofs.
 ;; This evaluator knows about a "basic" set of functions, hence the name.
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "unguarded-primitives")
 (include-book "unguarded-built-ins")
 (include-book "unguarded-defuns")

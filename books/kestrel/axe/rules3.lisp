@@ -424,10 +424,6 @@
 
 ;(in-theory (disable LOGEXT-BOUNDS)) ; now in a locally included book
 
-(defthm logext-min-value
-  (equal (< -2147483648 (LOGEXT 32 X))
-         (not (equal -2147483648 (LOGEXT 32 X)))))
-
 (defthm bvplus-equal-constant
   (implies (and (syntaxp (and (quotep k1)
                               (quotep k2)))
@@ -439,36 +435,35 @@
                        (equal (bvchop 32 x) (bvchop 32 (- k1 k2))))))
   :hints (("Goal" :in-theory (enable bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P))))
 
-(defthm <-of-0-and-logext-2
-  (equal (< 0 (logext 32 x))
-         (and (equal (getbit 31 x) 0)
-              (not (equal 0 (bvchop 32 x)))))
-  :hints (("Goal" :in-theory (enable logext))))
+;gen
+;; (defthm integerp-of-*-of-1/4-of-bvchop
+;;   (implies (integerp x)
+;;            (equal (integerp (* 1/4 (bvchop 31 x)))
+;;                   (integerp (* 1/4 x))))
+;;   :hints (("Goal" :in-theory (enable bvchop))))
 
-(defthm integerp-of-*-of-1/4-of-bvchop
-  (implies (integerp x)
-           (equal (integerp (* 1/4 (bvchop 31 x)))
-                  (integerp (* 1/4 x))))
-  :hints (("Goal" :in-theory (enable bvchop))))
+(defthm integerp-of-times-1/4-bvchop-31
+  (IMPLIES (AND (INTEGERP X)
+                )
+           (equal (INTEGERP (* 1/4 (bvchop 31 X)))
+                  (INTEGERP (* 1/4 X))))
+  :hints (("Goal" :in-theory (e/d (bvchop mod) (;MOD-RECOLLAPSE-LEMMA2 MOD-RECOLLAPSE-LEMMA
+                                                )))))
 
-(defthm integerp-of-*-of-1/4-of-logext
-  (implies (integerp x)
-           (equal (integerp (* 1/4 (logext 32 x)))
-                  (integerp (* 1/4 x))))
-  :hints (("Goal" :in-theory (enable logext logapp
-                                     integerp-of-*-of-1/4-of-bvchop))))
+;gen
+;; (defthm integerp-of-*-of-1/4-of-logext
+;;   (implies (integerp x)
+;;            (equal (integerp (* 1/4 (logext 32 x)))
+;;                   (integerp (* 1/4 x))))
+;;   :hints (("Goal" :in-theory (enable logext logapp
+;;                                      integerp-of-*-of-1/4-of-bvchop))))
 
-(defthm <-of-logext-and-0-linear
-  (implies (and (equal 1 (getbit 31 x))
-                (integerp x))
-           (< (logext 32 x) 0))
-  :rule-classes ((:linear :backchain-limit-lst (0 nil))))
-
-(defthm logext-when-equal-of-getbit
-  (implies (and (equal 0 (getbit 31 x))
-                (integerp x))
-           (equal (logext 32 x)
-                  (bvchop 31 x))))
+(defthm integerp-of-times-1/4-logext-32
+  (IMPLIES (AND (INTEGERP X)
+                )
+           (equal (INTEGERP (* 1/4 (LOGEXT 32 X)))
+                  (INTEGERP (* 1/4 X))))
+  :hints (("Goal" :in-theory (enable logext logapp))))
 
 (defthmd bound-when-mult-of-4
   (implies (and (natp x)
@@ -631,7 +626,6 @@
   :hints (("Goal" :in-theory (e/d (bvdiv bvplus bvchop-of-sum-cases bvlt bvchop-identity)
                                   (LOGEXT-MIN-VALUE
                                    FLOOR-UNIQUE-EQUAL-VERSION
-
                                    ;;bvchop-of-minus ;can this loop?
                                    ;bvchop-identity
 ;                                   if-backchain-rule
@@ -730,13 +724,6 @@
 ;;  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN bvcat logapp)
 ;;                                  (;BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
 ;;                                    plus-1-and-bvchop-becomes-bvplus)))))
-
-;gen
-(defthm bvplus-equal-same
-  (implies (integerp x)
-           (equal (equal 2147483647 (bvplus 31 2147483647 x))
-                  (equal 0 (bvchop 31 x))))
-  :hints (("Goal" :in-theory (enable bvplus))))
 
 (defthm <-of-bvplus-hack2
   (implies (integerp x)
@@ -1421,9 +1408,6 @@
   :hints (("Goal"
            :in-theory (enable bvlt))))
 
-;for speed:
-(in-theory (disable GETBIT-BOUND-LINEAR))
-
 ;; (defthm getbit-when-not-1-stronger
 ;;   (implies (not (equal (getbit n x) 1))
 ;;            (equal (getbit n x)
@@ -1445,15 +1429,11 @@
                   (bvmod 31 x 4)))
   :hints (("Goal" :in-theory (enable bvchop sbvmoddown bvmod sbvlt-rewrite))))
 
-(in-theory (disable bvmod))  ;fixme drop
-
 ;; (thm
 ;;  (implies (not (natp n))
 ;;           (equal (getbit n x)
 ;;                  0))
 ;;  :hints (("Goal" :in-theory (e/d (getbit slice) (anti-slice )))))
-
-(in-theory (disable BIT-BLAST-3)) ;move up
 
 (defthm bvchop-equal-constant-reduce-when-top-bit-3-2-4
   (implies (equal 1 (getbit 2 x))
@@ -1509,7 +1489,7 @@
   :hints (("Goal" :in-theory (e/d (bvcat logapp) (BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE))
            :use ((:instance split-with-bvcat (hs 2) (ls 30))))))
 
-(defthm bvplus-30-expand
+(defthmd bvplus-30-expand
   (implies (and (< (bvplus 32 x y) (expt 2 30))
                 (integerp x)
                 (integerp y)
@@ -1537,8 +1517,6 @@
            (equal (bvplus 32 k (bvplus 30 x y))
                   (bvplus 32 k (bvplus 32 x y))))
   :hints (("Goal" :in-theory (enable bvlt))))
-
-(in-theory (disable BVPLUS-30-EXPAND))
 
 (defthmd bvchop-32-split-30-hack2
   (equal (bvchop 32 x)
@@ -1627,20 +1605,6 @@
   (equal (equal '0 (if test '1 '0))
          (not test)))
 
-(defthm integerp-of-times-1/4-bvchop-31
-  (IMPLIES (AND (INTEGERP X)
-                )
-           (equal (INTEGERP (* 1/4 (bvchop 31 X)))
-                  (INTEGERP (* 1/4 X))))
-  :hints (("Goal" :in-theory (e/d (bvchop mod) (;MOD-RECOLLAPSE-LEMMA2 MOD-RECOLLAPSE-LEMMA
-                                                )))))
-
-(defthm integerp-of-times-1/4-logext-32
-  (IMPLIES (AND (INTEGERP X)
-                )
-           (equal (INTEGERP (* 1/4 (LOGEXT 32 X)))
-                  (INTEGERP (* 1/4 X))))
-  :hints (("Goal" :in-theory (enable logext logapp))))
 
 (defthm not-greater-than-1
   (implies (and (not (equal 0 garg0))

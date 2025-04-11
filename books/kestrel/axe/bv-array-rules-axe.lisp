@@ -27,6 +27,7 @@
 ;(include-book "kestrel/bv/bvplus" :dir :system)
 ;(include-book "list-rules") ;for EQUAL-OF-UPDATE-NTH
 (include-book "known-booleans")
+(include-book "kestrel/lists-light/subrange" :dir :system)
 ;(local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "rules1"))
 (local (include-book "list-rules")) ; for equal-of-update-nth

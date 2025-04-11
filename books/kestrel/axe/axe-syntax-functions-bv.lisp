@@ -15,6 +15,7 @@
 ;; This book contains bit-vector-related functions that support Axe
 ;; rules that call axe-syntaxp and axe-bind-free.
 
+(include-book "std/util/bstar" :dir :system)
 (include-book "axe-types") ;reduce?  we just need the bv and bv-array stuff
 (include-book "dag-arrays")
 (include-book "kestrel/bv/bv-syntax" :dir :system)

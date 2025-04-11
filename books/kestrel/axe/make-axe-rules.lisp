@@ -28,7 +28,7 @@
 (include-book "axe-syntax") ;since this book knows about axe-syntaxp and axe-bind-free
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
-(include-book "kestrel/sequences/defforall" :dir :system) ; todo: reduce
+(local (include-book "kestrel/sequences/defforall" :dir :system)) ; todo: reduce
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
