@@ -26,7 +26,7 @@
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "ihs/basic-definitions" :dir :system) ;for logext, todo: use bv/logext-def
+(include-book "kestrel/bv/logext-def" :dir :system)
 (include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
