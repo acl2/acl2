@@ -1,0 +1,18 @@
+This list is incomplete and is under development.
+
+==========
+
+The following is in ordinals.lisp and is needed there.
+
+(in-theory (disable (:e union2)))
+
+Probably this and many disables like it should be in base.lisp and
+other places.  Perhaps there should be a defunz event that is defun
+followed by disabling the :executable-counterpart rune.
+
+==========
+
+Consider moving in-is-linear-necc-rewrite and the subsequent disable
+of in-is-linear-necc from ordinals.lisp into base.lisp.
+
+==========
