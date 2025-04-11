@@ -19,6 +19,9 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/take2" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/all-equal-dollar2" :dir :system)) ;for ALL-EQUAL$-WHEN-TRUE-LISTP
 
 (defund bv-array-clear-range (esize len lowindex highindex data)
@@ -548,3 +551,74 @@
            :in-theory (e/d (bv-array-clear-range nthcdr) (
                                                           ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
                                                           )))))
+
+(defthm car-of-BV-ARRAY-CLEAR-RANGE-of-0
+  (implies (and (posp len)
+                (natp highindex))
+           (equal (CAR (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN 0 HIGHINDEX LST))
+                  0))
+  :hints (("Goal" :expand (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN 0 HIGHINDEX LST))))
+
+(defthm cdr-of-bv-array-clear-range-2
+  (implies (and (<= 1 lowindex)
+                (<= 1 len)
+                (< lowindex len)
+                (< highindex len)
+                (integerp len)
+                (natp lowindex)
+                (natp highindex))
+           (equal (cdr (bv-array-clear-range element-size len lowindex highindex lst))
+                  (bv-array-clear-range element-size (- len 1) (- lowindex 1) (- highindex 1) (cdr lst))))
+  :hints (("Goal" :induct t
+           :in-theory (enable bv-array-clear-range))))
+
+(defthm take-of-bv-array-clear-range
+  (implies (and ; (natp elem-size)
+             (natp n)
+             (natp len)
+             (natp highindex)
+             (< highindex len)
+             (<= n (+ 1 highindex)))
+           (equal (take n (bv-array-clear-range elem-size len 0 highindex lst))
+                  (repeat n 0)))
+  :hints (("Goal" :induct t
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (enable take bv-array-clear-range take-when-most-known equal-of-append))))
+
+(DEFTHM ALL-UNSIGNED-BYTE-P-OF-BV-ARRAY-CLEAR-range
+  (IMPLIES (AND (<= ELEMENT-SIZE SIZE)
+                (NATP SIZE)
+                (NATP ELEMENT-SIZE))
+           (ALL-UNSIGNED-BYTE-P SIZE (BV-ARRAY-CLEAR-range ELEMENT-SIZE LEN lowindex highindex LST)))
+  :HINTS (("Goal" :IN-THEORY (ENABLE BV-ARRAY-CLEAR-range))))
+
+;move
+(local
+  (defthm bvchop-list-of-repeat
+    (equal (bvchop-list size (repeat n x))
+           (repeat n (bvchop size x)))
+    :hints (("Goal" :in-theory (enable bvchop-list repeat)))))
+
+(defthmd bv-array-clear-range-redef-special
+  (implies (and (equal len (len data)) ; this case
+                (< highindex len)
+                (<= lowindex highindex)
+                (natp highindex)
+                (natp lowindex))
+           (equal (bv-array-clear-range element-size len lowindex highindex data)
+                  (append (bvchop-list element-size (take lowindex data))
+                          (repeat (+ 1 (- highindex lowindex)) 0)
+                          (bvchop-list element-size (nthcdr (+ 1 highindex) data)))))
+  :hints (("Goal" :in-theory (enable bv-array-clear-range bv-array-clear-redef equal-of-append))))
+
+(defthmd bv-array-clear-range-redef
+  (implies (and (< highindex len)
+                (<= lowindex highindex)
+                (natp len)
+                (natp highindex)
+                (natp lowindex))
+           (equal (bv-array-clear-range element-size len lowindex highindex data)
+                  (append (bvchop-list element-size (take lowindex data))
+                          (repeat (+ 1 (- highindex lowindex)) 0)
+                          (bvchop-list element-size (take (+ -1 (- highindex) len) (nthcdr (+ 1 highindex) data))))))
+  :hints (("Goal" :in-theory (enable bv-array-clear-range bv-array-clear-redef equal-of-append))))
