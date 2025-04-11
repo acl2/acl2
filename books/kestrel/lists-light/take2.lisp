@@ -1,7 +1,7 @@
 ; More rules about take
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "repeat")
+(include-book "firstn-def")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "take"))
 (local (include-book "cons"))
@@ -27,6 +28,13 @@
   (implies (not (consp x))
            (equal (take n x)
                   (repeat n nil)))
+  :hints (("Goal" :in-theory (enable take))))
+
+(defthm take-when-not-consp-cheap
+  (implies (not (consp x))
+           (equal (take n x)
+                  (repeat n nil)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable take))))
 
 ;; Not in the take book because this mentions repeat.
@@ -149,3 +157,9 @@
            (equal (take m x)
                   (take m free)))
   :hints (("Goal" :in-theory (enable take))))
+
+;move or drop
+(defthm take-of-firstn-same
+  (equal (take n (firstn n x))
+         (take n x))
+  :hints (("Goal" :in-theory (enable take firstn))))
