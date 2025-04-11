@@ -197,6 +197,7 @@
                                    EXPT-HALF-LINEAR
                                    EQUAL-OF-BVCHOP-AND-BVCHOP-ONE-WIDER
                                    UNSIGNED-BYTE-P-OF-+
+                                   <-of-mod-and-0
                                    )))))
 
 ;todo: simplify the rhs (do we know what sbvrem does in each case?)
