@@ -1,7 +1,5 @@
-#include <limits>
-
-#include "returnfalse.h"
 #include "typing.h"
+#include "returnfalse.h"
 
 #include "../parser/ast/expressions.h"
 #include "../parser/ast/types.h"
@@ -69,28 +67,28 @@ bool TypingAction::VisitInteger(Integer *e) {
   // fit. If the literal is written in decimal, then it is always signed.
   // https://en.cppreference.com/w/cpp/language/integer_literal
   if (!suffix_unsigned && !suffix_long && e->val_.can_fit_inside<int>()) {
-    e->set_type(&intType);
-  } else if ((!is_decimal || suffix_unsigned) && !suffix_long
-             && e->val_.can_fit_inside<unsigned>()) {
-    e->set_type(&uintType);
+    e->set_type(intType);
+  } else if ((!is_decimal || suffix_unsigned) && !suffix_long &&
+             e->val_.can_fit_inside<unsigned>()) {
+    e->set_type(uintType);
   } else if (!suffix_unsigned && e->val_.can_fit_inside<long>()) {
-    e->set_type(&int64Type);
-  } else if ((!is_decimal || suffix_unsigned)
-             && e->val_.can_fit_inside<unsigned long>()) {
-    e->set_type(&uint64Type);
+    e->set_type(int64Type);
+  } else if ((!is_decimal || suffix_unsigned) &&
+             e->val_.can_fit_inside<unsigned long>()) {
+    e->set_type(uint64Type);
   } else {
     diag_
         .new_error(e->loc(),
                    "Integer litteral cannot fit in any available types")
         .note("Try some suffix (U or/and L)")
         .report();
-    return false;
+    return error();
   }
   return true;
 }
 
 bool TypingAction::VisitBoolean(Boolean *e) {
-  e->set_type(&boolType);
+  e->set_type(boolType);
   return true;
 }
 
@@ -126,8 +124,8 @@ bool TypingAction::VisitFunCall(FunCall *e) {
   bool has_failed = false;
 
   for (auto [got, expected] : Zip(e->args, e->func->params())) {
-    if (!got->get_type()->canBeImplicitlyCastTo(expected->get_type())
-        && !got->get_type()->isEqual(expected->get_type())) {
+    if (!got->get_type()->canBeImplicitlyCastTo(expected->get_type()) &&
+        !got->get_type()->isEqual(expected->get_type())) {
 
       diag_
           .new_error(got->loc(),
@@ -174,8 +172,8 @@ bool TypingAction::VisitTempCall(TempCall *e) {
   bool has_failed = false;
 
   for (auto [got, expected] : Zip(e->params, temp->tempParams())) {
-    if (!got->get_type()->canBeImplicitlyCastTo(expected->get_type())
-        && !got->get_type()->isEqual(expected->get_type())) {
+    if (!got->get_type()->canBeImplicitlyCastTo(expected->get_type()) &&
+        !got->get_type()->isEqual(expected->get_type())) {
 
       diag_
           .new_error(got->loc(),
@@ -226,17 +224,17 @@ bool TypingAction::VisitTempCall(TempCall *e) {
 bool TypingAction::VisitInitializer(Initializer *e) {
 
   // Infer type.
-  std::vector<Type *> types;
+  std::vector<const Type *> types;
   for (auto c : e->vals) {
     types.push_back(c->get_type());
   }
-  e->set_type(new InitializerType({ e->loc() }, std::move(types)));
+  e->set_type(new InitializerType({e->loc()}, std::move(types)));
 
   return true;
 }
 
 bool TypingAction::VisitArrayRef(ArrayRef *e) {
-  if (auto array_type = dynamic_cast<ArrayType *>(e->array->get_type())) {
+  if (auto array_type = dynamic_cast<const ArrayType *>(e->array->get_type())) {
     e->set_type(deref(array_type->getBaseType()));
 
     if (auto i = dynamic_cast<const IntType *>(e->get_type())) {
@@ -245,14 +243,14 @@ bool TypingAction::VisitArrayRef(ArrayRef *e) {
     }
 
   } else {
-    e->set_type(&boolType);
+    e->set_type(boolType);
   }
   return true;
 }
 
 bool TypingAction::VisitStructRef(StructRef *e) {
   const StructType *t = always_cast<const StructType *>(e->base->get_type());
-  e->set_type(deref(t->getField(e->field)->type));
+  e->set_type(deref(t->getField(e->field)->get_type()));
   return true;
 }
 
@@ -268,6 +266,8 @@ bool TypingAction::VisitSubrange(Subrange *e) {
                           e->base->get_type()->to_string().c_str()))
         .context(e->loc())
         .report();
+    e->set_type(new ErrorType());
+    return error();
   }
 
   return true;
@@ -275,19 +275,19 @@ bool TypingAction::VisitSubrange(Subrange *e) {
 
 bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
 
-  Type *expr_type = e->expr->get_type();
+  const Type *expr_type = e->expr->get_type();
 
   // Convert an unscoped enum (scoped enum are not supported) to int.
-  if (isa<EnumType *>(expr_type)) {
-    expr_type = &intType;
+  if (isa<const EnumType *>(expr_type)) {
+    expr_type = intType;
   }
 
   // Type primtive type according to section: "Unary arithmetic operators" of
   // https://en.cppreference.com/w/cpp/language/operator_arithmetic
-  if (auto t = dynamic_cast<PrimType *>(expr_type)) {
+  if (auto t = dynamic_cast<const PrimType *>(expr_type)) {
 
     if (e->op == PrefixExpr::Op::Not) {
-      e->set_type(&boolType);
+      e->set_type(boolType);
     } else {
 
       PrimType *this_type = new PrimType(*t);
@@ -298,7 +298,7 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
   }
 
   // Type integer register type according to ac_datatypes_ref section 2.3.4.
-  if (auto t = dynamic_cast<IntType *>(expr_type)) {
+  if (auto t = dynamic_cast<const IntType *>(expr_type)) {
     switch (e->op) {
     case PrefixExpr::Op::UnaryPlus:
       e->set_type(t);
@@ -308,7 +308,7 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
                               new BinaryExpr(e->loc(), t->width(),
                                              Integer::one_v(e->loc()),
                                              BinaryExpr::Op::Plus),
-                              t->isSigned()));
+                              Boolean::true_v(e->loc())));
       break;
     case PrefixExpr::Op::BitNot:
       // ac_int<W+!S, true>
@@ -322,7 +322,7 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
                       Boolean::true_v(e->loc())));
       break;
     case PrefixExpr::Op::Not:
-      e->set_type(&boolType);
+      e->set_type(boolType);
       break;
     }
     return true;
@@ -332,11 +332,10 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
   diag_
       .new_error(
           e->expr->loc(),
-          format(
-              "Cannot apply `%s` to an argument of type `%s` which is not a "
-              "register type or a primitive type, aka int, int64, uint, "
-              "uint64, bool.",
-              to_string(e->op).c_str(), expr_type->to_string().c_str()))
+          format("Cannot apply `%s` to an argument of type `%s` which is not a "
+                 "register type or a primitive type, aka int, int64, uint, "
+                 "uint64, bool.",
+                 to_string(e->op).c_str(), expr_type->to_string().c_str()))
       .context(e->loc())
       .report();
 
@@ -346,16 +345,16 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
 
 bool TypingAction::VisitCastExpr(CastExpr *e) {
 
-  Type *t = deref(e->type);
+  const Type *t = deref(e->type);
 
   bool source_depends_on_template_parameter = false;
 
-  if (auto i = dynamic_cast<IntType *>(e->expr->get_type())) {
+  if (auto i = dynamic_cast<const IntType *>(e->expr->get_type())) {
     TraverseExpression(i->width());
     TraverseExpression(i->isSigned());
-    source_depends_on_template_parameter
-        = !i->width()->isStaticallyEvaluable()
-          || !i->isSigned()->isStaticallyEvaluable();
+    source_depends_on_template_parameter =
+        !i->width()->isStaticallyEvaluable() ||
+        !i->isSigned()->isStaticallyEvaluable();
   }
 
   e->set_type(t);
@@ -394,10 +393,10 @@ bool TypingAction::VisitBinaryExpr(BinaryExpr *e) {
 
   // Convert an unscoped enum (scoped enum are not supported) to int.
   if (isa<const EnumType *>(t1)) {
-    t1 = &intType;
+    t1 = intType;
   }
   if (isa<const EnumType *>(t2)) {
-    t2 = &intType;
+    t2 = intType;
   }
 
   // Both primtype: we follow those rules:
@@ -413,12 +412,12 @@ bool TypingAction::VisitBinaryExpr(BinaryExpr *e) {
     if (BinaryExpr::isOpShift(e->op)) {
       e->set_type(t1_promoted);
       delete t2_promoted;
-    } else if (BinaryExpr::isOpArithmetic(e->op)
-               || BinaryExpr::isOpBitwise(e->op)) {
+    } else if (BinaryExpr::isOpArithmetic(e->op) ||
+               BinaryExpr::isOpBitwise(e->op)) {
       e->set_type(PrimType::usual_conversions(t1_promoted, t2_promoted));
-    } else if (BinaryExpr::isOpCompare(e->op)
-               || BinaryExpr::isOpLogical(e->op)) {
-      e->set_type(&boolType);
+    } else if (BinaryExpr::isOpCompare(e->op) ||
+               BinaryExpr::isOpLogical(e->op)) {
+      e->set_type(boolType);
     } else {
       UNREACHABLE();
     }
@@ -503,8 +502,8 @@ bool TypingAction::VisitBinaryExpr(BinaryExpr *e) {
       s_res = (e->op == BinaryExpr::Op::Minus)
                   ? static_cast<Expression *>(Boolean::true_v(e->loc()))
                   : new BinaryExpr(e->loc(), s1, s2, BinaryExpr::Op::Or);
-    } else if (e->op == BinaryExpr::Op::Plus
-               || e->op == BinaryExpr::Op::Minus) {
+    } else if (e->op == BinaryExpr::Op::Plus ||
+               e->op == BinaryExpr::Op::Minus) {
       // w_res = std::max(w1 + (!s1 && s2), w2 + (!s2 && s1)) + 1;
 
       // w1 + (!s1 && s2)
@@ -536,8 +535,8 @@ bool TypingAction::VisitBinaryExpr(BinaryExpr *e) {
                   ? static_cast<Expression *>(Boolean::true_v(e->loc()))
                   : new BinaryExpr(e->loc(), s1, s2, BinaryExpr::Op::Or);
 
-    } else if (e->op == BinaryExpr::Op::Times
-               || e->op == BinaryExpr::Op::Divide) {
+    } else if (e->op == BinaryExpr::Op::Times ||
+               e->op == BinaryExpr::Op::Divide) {
       w_res = new BinaryExpr(e->loc(), w1, w2, BinaryExpr::Op::Plus);
       s_res = new BinaryExpr(e->loc(), s1, s2, BinaryExpr::Op::Or);
 
@@ -558,9 +557,9 @@ bool TypingAction::VisitBinaryExpr(BinaryExpr *e) {
 
       s_res = s1;
 
-    } else if (BinaryExpr::isOpCompare(e->op)
-               || BinaryExpr::isOpLogical(e->op)) {
-      e->set_type(&boolType);
+    } else if (BinaryExpr::isOpCompare(e->op) ||
+               BinaryExpr::isOpLogical(e->op)) {
+      e->set_type(boolType);
       return true;
     } else {
       UNREACHABLE();
@@ -633,7 +632,7 @@ bool TypingAction::VisitCondExpr(CondExpr *e) {
 
 bool TypingAction::VisitMultipleValue(MultipleValue *e) {
 
-  MvType *t = static_cast<MvType *>(e->get_type());
+  const MvType *t = static_cast<const MvType *>(e->get_type());
   // First, check if there number or argument is correct.
   if (e->expr().size() != t->size()) {
     diag_
@@ -701,8 +700,8 @@ bool TypingAction::VisitSwitchStmt(SwitchStmt *s) {
 
   const Type *t = s->test()->get_type();
 
-  bool canBeCastToInt = t->canBeImplicitlyCastTo(&uint64Type)
-                        || t->canBeImplicitlyCastTo(&int64Type);
+  bool canBeCastToInt = t->canBeImplicitlyCastTo(uint64Type) ||
+                        t->canBeImplicitlyCastTo(int64Type);
 
   if (!isa<const PrimType *>(t) && !canBeCastToInt) {
     diag_
@@ -723,8 +722,8 @@ bool TypingAction::VisitSwitchStmt(SwitchStmt *s) {
 
     // A label is either an enum value or a constant primtive.
     const Type *t = c->label->get_type();
-    if (!(isa<const PrimType *>(t) && c->label->isStaticallyEvaluable())
-        && !isa<const EnumType *>(t)) {
+    if (!(isa<const PrimType *>(t) && c->label->isStaticallyEvaluable()) &&
+        !isa<const EnumType *>(t)) {
       diag_
           .new_error(c->label->loc(),
                      "Case label must be an integer or an enum constant.")
@@ -739,8 +738,7 @@ bool TypingAction::VisitSwitchStmt(SwitchStmt *s) {
 bool TypingAction::VisitAssignment(Assignment *s) {
 
   if (auto symRef = dynamic_cast<SymRef *>(s->lval)) {
-    if (isa<MulConstDec *>(symRef->symDec)
-        || isa<ConstDec *>(symRef->symDec)) {
+    if (symRef->get_type()->isConst()) {
       diag_
           .new_error(s->lval->loc(),
                      format("Assignment of read-only variable %s",
@@ -815,18 +813,7 @@ bool TypingAction::VisitSymDec(SymDec *s) {
     auto sym_type = deref(s->get_type());
 
     if (isa<const EnumType *>(s->get_type())) {
-      sym_type = &intType;
-
-      if (!s->init->isStaticallyEvaluable()) {
-        diag_
-            .new_error(
-                s->init->loc(),
-                format("Expected an integral constant expression, got % s.",
-                       s->init->get_type()->to_string().c_str()))
-            .context(s->loc())
-            .report();
-        return error();
-      }
+      sym_type = intType;
     }
 
     return check_assignement(s->loc(), sym_type, s->init->get_type());
@@ -856,18 +843,11 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
         return error();
       }
 
-      Type *arrayBaseType = deref(array->baseType);
+      const Type *arrayBaseType = deref(array->baseType);
 
-      auto is_correct = std::all_of(
-          t->types().begin(), t->types().end(), [&](const Type *t) {
-            if (!t->canBeImplicitlyCastTo(arrayBaseType)) {
-              diag_
-                  .new_error(
-                      where,
-                      format("Wrong type provided, expected %s but got %s",
-                             array->baseType->to_string().c_str(),
-                             t->to_string().c_str()))
-                  .report();
+      auto is_correct =
+          std::all_of(t->types().begin(), t->types().end(), [&](const Type *t) {
+            if (!check_assignement(where, arrayBaseType, t)) {
               return false;
             }
             return true;
@@ -890,17 +870,10 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
       }
 
       unsigned i = 0;
-      auto is_correct = std::all_of(
-          t->types().begin(), t->types().end(), [&](const Type *t) {
-            Type *field_type = struct_->fields()[i]->type;
-            if (!t->canBeImplicitlyCastTo(deref(field_type))) {
-              diag_
-                  .new_error(
-                      where,
-                      format("Wrong type provided, expected %s but got %s",
-                             field_type->to_string().c_str(),
-                             t->to_string().c_str()))
-                  .report();
+      auto is_correct =
+          std::all_of(t->types().begin(), t->types().end(), [&](const Type *t) {
+            const Type *field_type = struct_->fields()[i]->get_type();
+            if (!check_assignement(where, deref(field_type), t)) {
               return false;
             }
             ++i;
@@ -922,8 +895,8 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
       }
 
       unsigned i = 0;
-      auto is_correct = std::all_of(
-          t->types().begin(), t->types().end(), [&](const Type *t) {
+      auto is_correct =
+          std::all_of(t->types().begin(), t->types().end(), [&](const Type *t) {
             if (!t->canBeImplicitlyCastTo(deref(mv->get(i)))) {
               diag_
                   .new_error(
@@ -957,16 +930,6 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
     return error();
   }
   return true;
-}
-
-Type *TypingAction::deref(Type *t) {
-
-  if (const DefinedType *dt = dynamic_cast<const DefinedType *>(t)) {
-    assert(dt->derefType());
-    return dt->derefType();
-  } else {
-    return t;
-  }
 }
 
 const Type *TypingAction::deref(const Type *t) {

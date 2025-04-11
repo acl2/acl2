@@ -10,9 +10,6 @@
 - name: pointers
   should_report_error: true
 
-- name: references
-  should_report_error: true
-
 - name: c-array-local
 - name: c-array-as-parameter
   stderr_not_empty: true
@@ -78,8 +75,18 @@
   should_report_error: true
 
 - name: initializer-list
+
+- name: initializer-list-ac-types
+
+- name: initializer-list-arrays-var
+
 - name: std-array-initializer-diff-size
+
 - name: std-array-initializer-incomplete
+  description: >
+              Same as above.
+
+- name: initializer-struct-not-enough-args
 
 - name: overflow
 
@@ -87,17 +94,79 @@
   should_report_error: true
 
 - name: initializer-list-tuple
+- name: std-tuple-copy
 
 - name: initializer-list-nested-array
   should_report_error: true
   bug: true
 
 - name: initializer-list-mismatch-types
+  # We only verify the error messages (there are two errors). An assert should
+  # fails while generating the output.
   env: {RAC_BYPASS_ERROR: 'true'}
   disabled-checks:
     - generated_code
+    - should_report_error
 
 - name: const-assign
   should_report_error: true
 
 - name: typedef-in-composite-types
+
+- name: const_ref_param
+
+- name: non_const_ref_param
+  should_report_error: true
+
+- name: const_ref_body
+  should_report_error: true
+
+- name: array-dim-expr
+  should_report_error: true
+- name: array-dim-expr-invalid
+  should_report_error: true
+
+- name: array-dim-expr-in-param
+- name: array-dim-expr-invalid-in-param
+  should_report_error: true
+
+- name: array-dim-expr-2
+  should_report_error: true
+- name: array-dim-expr-invalid-2
+  should_report_error: true
+
+- name: struct-id-redeclared
+  should_report_error: true
+
+- name: struct-default-values
+- name: struct-default-values-partially-init
+
+- name: struct-default-values-no-init-list
+  env: {RAC_BYPASS_ERROR: 'true'} # Bypass pedantic error
+  disabled-checks:
+    - stderr
+
+- name: global-arrays
+
+- name: const-arrays
+
+- name: array-in-struct
+  env: {RAC_BYPASS_ERROR: 'true'} # Bypass pedantic error
+  disabled-checks:
+    - stderr
+
+- name: array-in-struct-2
+
+- name: array-in-struct-with-default-value
+  env: {RAC_BYPASS_ERROR: 'true'} # Bypass pedantic error
+  disabled-checks:
+    - stderr
+
+- name: defined-type-const-and-not
+
+- name: array-of-struct-init-list
+
+- name: static
+- name: static-invalid
+  should_report_error: true
+

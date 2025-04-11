@@ -8,21 +8,18 @@
 #include "process/returnfalse.h"
 #include "process/typing.h"
 
-#include "parser/ast/functions.h"
-#include "parser/ast/types.h"
-
 #include <algorithm>
 
 std::optional<Program> Program::process(AST &&ast, bool all_warnings) {
 
   Program processed_ast(std::move(ast));
 
-#define RUNPASS(ACTION)                                                       \
-  {                                                                           \
-    ACTION a(processed_ast.diag_);                                            \
-    if (!processed_ast.runAction(&a) && !bypass_errors()) {                   \
-      return {};                                                              \
-    }                                                                         \
+#define RUNPASS(ACTION)                                                        \
+  {                                                                            \
+    ACTION a(processed_ast.diag_);                                             \
+    if (!processed_ast.runAction(&a) && !bypass_errors()) {                    \
+      return {};                                                               \
+    }                                                                          \
   }
 
   RUNPASS(TypingAction);
@@ -34,7 +31,7 @@ std::optional<Program> Program::process(AST &&ast, bool all_warnings) {
 
   RUNPASS(MarkAssertionAction);
 
-  return { std::move(processed_ast) };
+  return {std::move(processed_ast)};
 }
 
 void Program::dumpAsDot() {
@@ -51,28 +48,32 @@ void Program::displayTypeDefs(std::ostream &os, DispMode mode) const {
                   [&os](auto v) { v->displayDef(os); });
 }
 
-void Program::displayConstDecs(std::ostream &os, DispMode mode) const {
+void Program::displayGlobals(std::ostream &os, DispMode mode) const {
   if (mode == DispMode::rac)
-    std::for_each(constDecs_.begin(), constDecs_.end(),
+    std::for_each(globals_.begin(), globals_.end(),
                   [&os](auto v) { v->display(os); });
   else
-    std::for_each(constDecs_.begin(), constDecs_.end(),
+    std::for_each(globals_.begin(), globals_.end(),
                   [&os](auto v) { v->ACL2Expr()->display(os); });
 }
 
 void Program::displayFunDefs(std::ostream &os, DispMode mode) const {
   if (mode == DispMode::rac)
-    std::for_each(funDefs_.begin(), funDefs_.end(),
-                  [&os](auto v) { v->display(os, 0); });
+    std::for_each(funDefs_.begin(), funDefs_.end(), [&os](auto v) {
+      if (!v->loc().is_builtin)
+        v->display(os, 0);
+    });
   else
-    std::for_each(funDefs_.begin(), funDefs_.end(),
-                  [&os](auto v) { v->ACL2Expr()->display(os); });
+    std::for_each(funDefs_.begin(), funDefs_.end(), [&os](auto v) {
+      if (!v->loc().is_builtin)
+        v->ACL2Expr()->display(os);
+    });
 }
 
 void Program::display(std::ostream &os, DispMode mode) const {
   displayTypeDefs(os, mode);
   os << '\n';
-  displayConstDecs(os, mode);
+  displayGlobals(os, mode);
   os << '\n';
   displayFunDefs(os, mode);
   os << '\n';

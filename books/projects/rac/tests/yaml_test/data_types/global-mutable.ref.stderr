@@ -1,3 +1,4 @@
-global-mutable.cpp:3 (6-7): syntax error, unexpected '=', expecting '('
+global-mutable.cpp:3 (4-5): Global variable must be constant
  3 | int a = 2;
-   |       ^
+   |     ^
+note: Consider adding `const` here

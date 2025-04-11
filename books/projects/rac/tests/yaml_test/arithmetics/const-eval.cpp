@@ -43,7 +43,11 @@ enum NUMS_EXPR
   Q3 = 3 && 0,
   R = 3 || 4,
   R2 = 0 || 4,
-  R3 = 3 || 0
+  R3 = 3 || 0,
+  UNARY = +3,
+  UNARY2 = -(3), // Force unary operator instead of parsing "-3"
+  UNARY3 = ~3,
+  UNARY4 = ! 3
 };
 
 int a_val() { return A; }
@@ -68,5 +72,9 @@ int q3_val() { return Q3; }
 int r_val() { return R; }
 int r2_val() { return R2; }
 int r3_val() { return R3; }
+int unary_val() { return UNARY; }
+int unary2_val() { return UNARY2; }
+int unary3_val() { return UNARY3; }
+int unary4_val() { return UNARY4; }
 
 // RAC end

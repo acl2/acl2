@@ -18,11 +18,10 @@ enum class NodesId {
 };
 
 // Return the type of a node.
-template <typename NodeType>
-constexpr NodesId idOf(const NodeType *) {
+template <typename NodeType> constexpr NodesId idOf(const NodeType *) {
   if constexpr (false) {
   }
-#define APPLY(CLASS, _)                                                       \
+#define APPLY(CLASS, _)                                                        \
   else if constexpr (std::is_same_v<NodeType, CLASS>) return NodesId::CLASS;
 #include "astnodes.def"
 #include "types.def"
