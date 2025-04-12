@@ -30,8 +30,8 @@
     (mv-let (formals-res actuals-res)
       (filter-formals-and-actuals (rest formals) (rest actuals) formals-to-keep)
       (if (member-eq (first formals) formals-to-keep)
-          (mv (cons (first formals) formals-res)
-              (cons (first actuals) actuals-res))
+          (mv (cons-with-hint (first formals) formals-res formals)
+              (cons-with-hint (first actuals) actuals-res actuals))
         (mv formals-res
             actuals-res)))))
 
