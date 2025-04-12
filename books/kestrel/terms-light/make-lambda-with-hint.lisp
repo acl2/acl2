@@ -13,6 +13,8 @@
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
+;; Make a lambda from FORMALS and BODY, except return HINT (and avoid consing)
+;; if HINT is that lambda.
 (defund make-lambda-with-hint (formals
                                body
                                hint ; (lambda <formals> <body>)
@@ -20,19 +22,11 @@
   (declare (xargs :guard (and (true-listp hint)
                               (= 3 (len hint))
                               (eq 'lambda (car hint)))))
-  (if (and (equal formals (cadr hint))
-           (equal body (caddr hint))
-           (mbt (and (true-listp hint)
-                     (= 3 (len hint))
-                     (eq 'lambda (car hint)))))
-      hint ; reuse the hint, to avoid consing
-    `(lambda ,formals ,body)))
-
-(defthm make-lambda-with-hint-type
-  (and (consp (make-lambda-with-hint formals body hint))
-       (true-listp (make-lambda-with-hint formals body hint)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable make-lambda-with-hint))))
+  (mbe :exec (if (and (equal formals (cadr hint))
+                      (equal body (caddr hint)))
+                 hint ; reuse the hint, to avoid consing
+               `(lambda ,formals ,body))
+       :logic `(lambda ,formals ,body)))
 
 (defthm make-lambda-with-hint-opener
   (implies (and (true-listp hint)
