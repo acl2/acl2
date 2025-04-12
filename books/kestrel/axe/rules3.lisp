@@ -72,7 +72,7 @@
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor2" :dir :system))
 ;(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system))
-(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
+;(local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
 (local (in-theory (disable ;natp-rw ;comes in via ihs
                            ;; for speed:
@@ -88,10 +88,10 @@
                            mod-of-*-of-/-arg2-arg2
 
                            ;; rules that come in via ihs book above:
-                           logext-bounds
-                           logapp-0
-                           logext-identity
-                           logtail-equal-0 ;looped
+                           ;; logext-bounds
+                           ;; logapp-0
+                           ;; logext-identity
+                           ;; logtail-equal-0 ;looped
 
                            ;; from ihs:
                            ;; FLOOR-=-X/Y ;corollary is bad
@@ -2679,10 +2679,12 @@
            (equal (bvplus size k (bvuminus 4 x))
                   (bvplus size k (bvmult size 4 (bvuminus 2 (slice 3 2 x))))))
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 2) (ls 2)))
-           :in-theory (e/d (bvmult bvuminus bvminus bvchop-of-minus bvplus bvcat logapp unsigned-byte-p-of-integer-length-gen)
+           :cases ((unsigned-byte-p (binary-+ '-2 size) (binary-+ '4 (unary-- (slice '3 '2 x)))))
+           :in-theory (e/d (bvmult bvuminus bvminus bvchop-of-minus bvplus bvcat logapp unsigned-byte-p-of-integer-length-gen
+                                   unsigned-byte-p)
                            (bvminus-becomes-bvplus-of-bvuminus
-                                        unsigned-byte-p-of-+-of-minus-alt
-                                        unsigned-byte-p-of-+-of-minus)))))
+                            unsigned-byte-p-of-+-of-minus-alt
+                            unsigned-byte-p-of-+-of-minus)))))
 
 ;open a bvcat of a constant to a plus in a plus context
 ;kill special cases above
@@ -3619,7 +3621,10 @@
                   (if (zp size)
                       0
                     (getbit (+ -1 size) x))))
-  :hints (("Goal" :in-theory (e/d (getbit slice) (  anti-slice)))))
+  :hints (("Goal" :in-theory (e/d (getbit slice)
+                                  (anti-slice
+                                   ;logtail-equal-0 ; todo: loop with unsigned-byte-p-of-bvchop-bigger2
+                                   )))))
 
 ;does this cause many case splits?
 (defthm equal-of-1-and-getbit-of-bvplus
@@ -9781,7 +9786,8 @@
                 (natp n))
            (not (bvlt 25 (slice 30 n x) (slice 30 n y))))
   :hints (("Goal" :in-theory (e/d (bvlt slice BVCHOP-OF-LOGTAIL)
-                                  (LOGTAIL-LESSP <-of-logtail-arg2 anti-slice)))))
+                                  (;LOGTAIL-LESSP
+                                   <-of-logtail-arg2 anti-slice)))))
 
 (defthm bvmult-of-slice-when-bvchop-0
   (implies (and (equal free (bvchop 6 x))
@@ -9844,7 +9850,8 @@
                 (natp n))
            (bvlt 31 x y))
   :hints (("Goal" :in-theory (e/d (bvlt slice bvchop-of-logtail)
-                                  (logtail-lessp <-of-logtail-arg2 anti-slice)))))
+                                  (;logtail-lessp
+                                   <-of-logtail-arg2 anti-slice)))))
 
 (in-theory (disable LOGTAIL-OF-ONE-MORE))
 
@@ -9879,7 +9886,7 @@
            :in-theory (e/d (bvlt slice bvchop-of-logtail bvplus bvcat logapp logtail FLOOR-OF-SUM bvchop-of-sum-cases
                                  (:e expt)
                                  )
-                           (logtail-lessp
+                           (;logtail-lessp
                             anti-slice
                             *-OF-FLOOR-OF-SAME-WHEN-MULTIPLE ; big difference
                             )))))
@@ -9960,13 +9967,28 @@
 (in-theory (disable PLUS-OF-4-AND-BV-BECOMES-BVPLUS))
 
 (defthm <-of-bvchop-and-bvchop-when-<-of-slice-and-slice
+  (implies (and (< (slice kminus1 n x) (slice kminus1 n y))
+                (equal kminus1 (+ -1 k))
+                (natp n)
+                (natp k)
+                (<= n k))
+           (< (bvchop k x) (bvchop k y)))
+  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail)
+                                  (anti-slice ;bvchop-of-logtail
+                                   <-of-logtail-arg2
+                                   )))))
+
+;weaker than the rule just above
+(defthm <=-of-bvchop-and-bvchop-when-<-of-slice-and-slice
   (implies (and (< (slice kminus1 n y) (slice kminus1 n x))
                 (equal kminus1 (+ -1 k))
                 (natp n)
                 (natp k)
                 (<= n k))
            (not (< (bvchop k x) (bvchop k y))))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) (anti-slice)))))
+  :hints (("Goal" :use (:instance <-of-bvchop-and-bvchop-when-<-of-slice-and-slice
+                                  (x y) (y x))
+           :in-theory (disable <-of-bvchop-and-bvchop-when-<-of-slice-and-slice))))
 
 (in-theory (disable FLOOR-OF-64-WHEN-USB-31 FLOOR-OF-64-WHEN-USB-64))
 
@@ -10024,14 +10046,16 @@
                 (INTEGERP Y)
                 (< (SLICE 30 6 Y) (SLICE 30 6 X)))
            (not (EQUAL (SLICE 30 2 Y) (SLICE 30 2 X))))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) (anti-slice LOGTAIL-LESSP)))))
+  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) (anti-slice ;LOGTAIL-LESSP
+                                                             )))))
 
 (defthm <-of-slice-and-slice-when-<-of-slice-and-slice
   (implies (and (INTEGERP X)
                 (INTEGERP Y)
                 (< (SLICE 30 6 Y) (SLICE 30 6 X)))
            (< (SLICE 30 2 Y) (SLICE 30 2 X)))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) (anti-slice LOGTAIL-LESSP)))))
+  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) (anti-slice ;LOGTAIL-LESSP
+                                                             )))))
 
 (defthmd split-hack-lemma
   (equal (SLICE 30 2 X)
@@ -12891,20 +12915,13 @@
            (equal (unsigned-byte-p '10 (unary-- x))
                   (equal 0 x))))
 
+;move
 (defthmd integer-length-of-one-less-when-not-power-of-2p
   (implies (and (natp width)
                 (not (power-of-2p width)))
            (equal (integer-length (+ -1 width))
                   (+ 1 (lg width))))
-  :hints (("Subgoal *1/5" :in-theory (e/d (FLOOR-OF-SUM) (INTEGER-LENGTH-OF-FLOOR-BY-2 natp zip))
-           :expand ((:with INTEGER-LENGTH (INTEGER-LENGTH WIDTH))
-                    (:with INTEGER-LENGTH (INTEGER-LENGTH (+ -1 WIDTH)))))
-          ("Subgoal *1/4"  :in-theory (e/d (FLOOR-OF-SUM) (INTEGER-LENGTH-OF-FLOOR-BY-2 natp zip))
-           :expand ((:with INTEGER-LENGTH (INTEGER-LENGTH WIDTH))
-                    (:with INTEGER-LENGTH (INTEGER-LENGTH (+ -1 WIDTH)))))
-          ("Goal" :in-theory (e/d (power-of-2p lg integer-length zip expt-of-+)
-                                  (INTEGER-LENGTH-OF-FLOOR-BY-2)))))
-
+  :hints (("Goal" :in-theory (enable integer-length-of-+-of--1 power-of-2p lg))))
 
 ;gen
 (defthm <-of-lg-and-minus-1
