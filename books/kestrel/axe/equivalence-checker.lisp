@@ -509,6 +509,7 @@
     (call-appears-at-top-level body name))))
 
 ;ffixme what about packing functions?  we may not want to generate lemmas about them..
+;todo: rename to end in "p"
 (defun is-a-rec-fn-to-handle (fn state)
   (declare (xargs :stobjs state))
   (and (symbolp fn) ;excludes lambdas (fixme but lambdas should not appear in dags, so drop this?)
@@ -8690,7 +8691,7 @@
 
 ;returns a list of nodenums, in increasing order
 ;what's the best way to tell if it's a recursive function we should try to simplify?
-;ffixme should this check whether the function is recursive?!
+;; todo: what about the "unhandled" part?
 (defun find-unhandled-rec-fn-nodes-simple (dag acc state)
   (declare (xargs :guard (weak-dagp-aux dag)
                   :stobjs state))
@@ -8711,6 +8712,28 @@
                                                   (cons (car entry) acc)
                                                 acc)))
                                           state))))
+
+(defund some-node-is-a-rec-fn-to-handlep (n dag-array-name dag-array dag-len state)
+  (declare (xargs :guard (and (integerp n)
+                              (<= -1 n)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (< n dag-len))
+                  :measure (nfix (+ 1 n))
+                  :stobjs state))
+  (if (or (not (mbt (integerp n)))
+          (< n 0))
+      nil
+    (let* ((expr (aref1 dag-array-name dag-array n))
+           (is-a-rec-fn-to-handlep (if (not (consp expr))
+                                       ;;it's a variable:
+                                       nil
+                                     (let ((fn (ffn-symb expr)))
+                                       (if (eq 'quote fn)
+                                           nil
+                                         (is-a-rec-fn-to-handle fn state))))))
+      (if is-a-rec-fn-to-handlep
+          t
+        (some-node-is-a-rec-fn-to-handlep (+ -1 n) dag-array-name dag-array dag-len state)))))
 
 ;make the test cases but don't find probably-xxx nodes
 ;the alist pairs array names with test-case-arrays
@@ -16103,7 +16126,7 @@
          (find-probable-facts miter-array-name miter-array miter-len miter-depth
                               shuffled-test-cases
                               interpreted-function-alist print
-                              (not miter-is-purep) ;keep test cases if the miter is not pure (fixme what if there are no real rec-fns but the miter is somehow not pure?)
+                              (some-node-is-a-rec-fn-to-handlep (+ -1 miter-len) miter-array-name miter-array miter-len state) ; (not miter-is-purep) ; whether to keep test cases
                               debug-nodes
                               ;;(equal 0 miter-depth) ;abandon-testing-when-boringp (only do it on top-level miters since nested miters test are not in random order (may start with many tests from the same trace)
                               ))
