@@ -1,6 +1,6 @@
 ; Proofs about substitute-constants-in-lambdas
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -30,6 +30,8 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
+
+(local (in-theory (enable make-lambda-with-hint)))
 
 ;; (local (make-flag drop-trivial-lambdas))
 
