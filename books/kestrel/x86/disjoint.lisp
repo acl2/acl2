@@ -10,7 +10,7 @@
 
 (in-package "X")
 
-;; See also the function SEPARATE, but this machiner is intended to be more amenable to SMT solving.
+;; See also the function SEPARATE, but this machinery is intended to be more amenable to SMT solving.
 
 ;(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; reduce?  and get rid of ttags
 (include-book "kestrel/bv/bvlt" :dir :system)
@@ -18,18 +18,14 @@
 ;; Defines what it means for AD to be in the region of size LEN starting at
 ;; START-AD.  Note that the region may wrap around the end of the address
 ;; space, so AD may be in the region even if it is less than START-AD.
+;; We put the len argument before start-ad because len often be a small constant.
 (defund in-regionp (ad len start-ad)
   (declare (xargs :guard (and (unsigned-byte-p 48 ad)
                               (unsigned-byte-p 48 len) ; can't be 2^48 as the len gets chopped to 48 bits
                               (unsigned-byte-p 48 start-ad))))
   (bvlt 48 (bvminus 48 ad start-ad) len))
 
-;; if the region size if 2^48-1, being in the region means not being the single address just before the region
-(defthm in-regionp-of-2^48-1
-  (equal (in-regionp ad (+ -1 (expt 2 48)) start-ad)
-         (not (equal (bvchop 48 ad) (bvminus 48 start-ad 1))))
-  :hints (("Goal" :in-theory (enable in-regionp bvuminus bvplus ifix ACL2::BVCHOP-OF-SUM-CASES))))
-
+;; Nothing is in a region of size 0
 (defthm not-in-regionp-of-0
   (not (in-regionp ad 0 start-ad))
   :hints (("Goal" :in-theory (enable in-regionp bvuminus bvplus ifix ACL2::BVCHOP-OF-SUM-CASES))))
@@ -51,9 +47,16 @@
          (posp (bvchop 48 size)))
   :hints (("Goal" :in-theory (enable in-regionp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
+;; note that the region size can't be 2^48
 (defthm not-in-regionp-one-past-end
   (not (in-regionp (bvplus 48 ad size) size ad))
   :hints (("Goal" :in-theory (enable in-regionp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+
+;; if the region size is 2^48-1, being in the region means not being the single address just before the region
+(defthm in-regionp-of-2^48-1
+  (equal (in-regionp ad (+ -1 (expt 2 48)) start-ad)
+         (not (equal (bvchop 48 ad) (bvminus 48 start-ad 1))))
+  :hints (("Goal" :in-theory (enable in-regionp bvuminus bvplus ifix acl2::bvchop-of-sum-cases))))
 
 (defthm in-regionp-monotone
   (implies (and (in-regionp x len1 ad)
@@ -71,8 +74,17 @@
            (not (in-regionp y len ad)))
   :hints (("Goal" :in-theory (enable in-regionp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
+(defthm in-regionp-of-bvchop-arg1
+  (implies (and (<= 48 n)
+                (integerp n))
+           (equal (in-regionp (bvchop n ad) len start-ad)
+                  (in-regionp ad len start-ad)))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Defines what it means for 2 memory regions to be disjoint.
+;; We put the len arguments first because they will often be small constants.
 (defund disjoint-regionsp (len1 ad1 len2 ad2)
   (declare (xargs :guard (and (unsigned-byte-p 48 len1) ; can't be 2^48 as the len gets chopped to 48 bits
                               (unsigned-byte-p 48 ad1)
@@ -87,6 +99,12 @@
 
 ;; todo: more sanity check properties
 
+(defthmd disjoint-regionsp-symmetric
+  (equal (disjoint-regionsp len1 ad1 len2 ad2)
+         (disjoint-regionsp len2 ad2 len1 ad1))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+;; Addresses in dijoint regions cannot be equal.
 (defthm not-equal-of-bvchop-and-bvchop-when-in-disjoint-regions
   (implies (and (disjoint-regionsp len1 start1 len2 start2)
                 (in-regionp ad1 len1 start1)
@@ -94,10 +112,18 @@
            (not (equal (bvchop 48 ad1) (bvchop 48 ad2))))
   :hints (("Goal" :in-theory (enable in-regionp disjoint-regionsp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
+;; Addresses in dijoint regions cannot be equal.
 (defthm not-equal-when-in-disjoint-regions
   (implies (and (disjoint-regionsp len1 start1 len2 start2)
                 (in-regionp ad1 len1 start1)
                 (in-regionp ad2 len2 start2))
+           (not (equal ad1 ad2)))
+  :hints (("Goal" :in-theory (enable in-regionp disjoint-regionsp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+
+(defthm not-equal-when-in-disjoint-regions-alt
+  (implies (and (disjoint-regionsp len1 start1 len2 start2)
+                (in-regionp ad2 len1 start1)
+                (in-regionp ad1 len2 start2))
            (not (equal ad1 ad2)))
   :hints (("Goal" :in-theory (enable in-regionp disjoint-regionsp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
@@ -115,7 +141,7 @@
                      (in-regionp ad len2 start2))))
   :hints (("Goal" :in-theory (enable in-regionp disjoint-regionsp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
-;; If not disjoint, some address is in both (in fact, one of the start addresses will be in the other region:
+;; If not disjoint, some address is in both (in fact, one of the start addresses will be in the other region):
 (defthm not-disjoint
   (implies (not (disjoint-regionsp len1 start1 len2 start2))
            (or (in-regionp start1 len2 start2)
@@ -126,8 +152,6 @@
 ;; todo: use defun-sk to show correctness
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; TODO: Define containment of regions and prove disjointness from disjointness of containing regions
 
 ;; Checks whether all of the addresses in the first region are in the second region
 (defund subregionp (len1 ad1 len2 ad2)
@@ -317,3 +341,14 @@
                               acl2::bvlt-of-0-arg2
                               acl2::bvchop-of-sum-cases
                               zp))))
+
+(defthm disjoint-regionsp-when-disjoint-regionsp-and-subregionp-and-subregionp-alt
+  (implies (and (disjoint-regionsp len2 ad2 len1 ad1)
+                (subregionp len3 ad3 len1 ad1) ; expand to bv ops?
+                (subregionp len4 ad4 len2 ad2) ; expand to bv ops?
+                (unsigned-byte-p 48 len1)
+                (unsigned-byte-p 48 len2)
+                (unsigned-byte-p 48 len3)
+                (unsigned-byte-p 48 len4))
+           (disjoint-regionsp len3 ad3 len4 ad4))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp-symmetric))))
