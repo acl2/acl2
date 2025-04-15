@@ -1,7 +1,7 @@
 ; Lists of items that are either nodenums or nodenums wrapped in NOT
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+(include-book "dargp-less-than")
 (include-book "kestrel/utilities/forms" :dir :system) ;for call-of
 (include-book "kestrel/utilities/polarity" :dir :system) ;for want-to-weaken
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
@@ -325,3 +326,10 @@
          (and (natp x)
               (< x bound)))
   :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenump))))
+
+(defthmd dargp-less-than-of-cadr-of-car-when-bounded-possibly-negated-nodenumsp
+  (implies (bounded-possibly-negated-nodenumsp items dag-len)
+           (equal (dargp-less-than (cadr (first items)) dag-len) ; strips the NOT
+                  (consp (first items))))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
+                                     bounded-possibly-negated-nodenump))))
