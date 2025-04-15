@@ -197,6 +197,9 @@
     (b* ((this-step-increment (this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
+         ;; todo: try using a function from rewriter-jvm here (see below) but need to support multiple rule-alists:
+         (limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration)
+                   (run-until-return-from-stack-height-opener-fast-axe . ,steps-for-this-iteration)))
          ((mv erp dag-or-quotep state)
           (simp-dag dag
                     :assumptions assumptions
@@ -209,9 +212,22 @@
                     :memoizep memoizep
                     ;;:exhaustivep (if chunkedp t nil)
                     ;; todo: do we need both of these?:
-                    :limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration)
-                              (run-until-return-from-stack-height-opener-fast-axe . ,steps-for-this-iteration))
+                    :limits limits
                     :check-inputs nil))
+         ;; ((mv erp dag-or-quotep limits)
+         ;;  (acl2::simplify-dag-jvm dag
+         ;;                          assumptions
+         ;;                          rule-alist ; todo
+         ;;                          nil ; interpreted-function-alist
+         ;;                          (acl2::known-booleans (w state))
+         ;;                          normalize-xors
+         ;;                          limits
+         ;;                          memoizep
+         ;;                          count-hits
+         ;;                          print
+         ;;                          rules-to-monitor
+         ;;                          '(program-at) ; fns-to-elide
+         ;;                          ))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep))
           (cw "Note: The run produced the constant ~x0.~%" dag-or-quotep)
