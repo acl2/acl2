@@ -81,6 +81,20 @@
                   (in-regionp ad len start-ad)))
   :hints (("Goal" :in-theory (enable in-regionp))))
 
+(defthm in-regionp-of-+-arg1
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (in-regionp (+ x y) len ad)
+                  (in-regionp (bvplus 48 x y) len ad)))
+  :hints (("Goal" :in-theory (enable in-regionp bvplus))))
+
+(defthm in-regionp-of-+-arg3
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (in-regionp ad len (+ x y))
+                  (in-regionp ad len (bvplus 48 x y))))
+  :hints (("Goal" :in-theory (enable in-regionp bvplus))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Defines what it means for 2 memory regions to be disjoint.
@@ -213,6 +227,28 @@
                                      ACL2::BVLT-OF-0-ARG2
                                      acl2::bvchop-of-sum-cases
                                      zp))))
+
+;todo: more
+(defthm subregionp-of-bvplus-and-bvplus-cancel-2-2
+  (equal (subregionp len1 (bvplus '48 y x) len2 (bvplus '48 z x))
+         (subregionp len1 y len2 z))
+  :hints (("Goal" :in-theory (enable subregionp in-regionp))))
+
+(defthm subregionp-of-+-arg2
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (subregionp len1 (+ x y) len2 ad2)
+                  (subregionp len1 (bvplus 48 x y) len2 ad2)))
+  :hints (("Goal" :in-theory (enable subregionp
+                                     acl2::bvminus-of-+-arg2))))
+
+(defthm subregionp-of-+-arg4
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (subregionp len1 ad1 len2 (+ x y))
+                  (subregionp len1 ad1 len2 (bvplus 48 x y))))
+  :hints (("Goal" :in-theory (enable subregionp
+                                     acl2::bvminus-of-+-arg3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
