@@ -37,6 +37,7 @@
 (include-book "read-over-write-rules64")
 (include-book "write-over-write-rules64")
 (include-book "read-and-write")
+(include-book "read-and-write2")
 (include-book "read-bytes-and-write-bytes")
 (include-book "bytes-loadedp")
 (include-book "support2")
