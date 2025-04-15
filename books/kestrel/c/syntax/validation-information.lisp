@@ -77,9 +77,11 @@
     (xdoc::li
      "The @('_Bool') type [C17:6.2.5/2].")
     (xdoc::li
-     "A collective type for all structure types [C17:6.2.5/20].
+     "A family of structure types [C17:6.2.5/20].
+      Structure types are characterized by an optional tag.
       This is an approximation,
-      because there are different structure types.")
+      because there may be different structure types of a given tag,
+      or different tagless structure types.")
     (xdoc::li
      "A collective type for all union types [C17:6.2.5/20].
       This is an approximation,
@@ -141,7 +143,7 @@
   (:doublec ())
   (:ldoublec ())
   (:bool ())
-  (:struct ())
+  (:struct ((tag? ident-optionp)))
   (:union ())
   (:enum ())
   (:array ())
