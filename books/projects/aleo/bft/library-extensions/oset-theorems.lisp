@@ -32,7 +32,7 @@
     "Among other theorems,
      we introduce an alternative pick-a-point reasoning support
      for @(tsee set::subset).
-     Unlike @(see set:pick-a-point-subset-strategy),
+     Unlike @(see set::pick-a-point-subset-strategy),
      this uses a @(tsee defun-sk) and a ruleset."))
 
   (defruled set::not-emptyp-when-in-of-subset
