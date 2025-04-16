@@ -31,12 +31,18 @@
 ;(local (in-theory (disable symbol-listp))) ; prevent inductions
 
 ;; like strip-cars but that one requires an alist
-(defun map-ffn-symb (terms)
+(defund map-ffn-symb (terms)
   (declare (xargs :guard (all-consp terms)))
   (if (atom terms)
       nil
     (cons (ffn-symb (first terms))
           (map-ffn-symb (rest terms)))))
+
+(local
+  (defthm map-ffn-symb-of-cons
+    (equal (map-ffn-symb (cons term terms))
+           (cons (ffn-symb term) (map-ffn-symb terms)))
+    :hints (("Goal" :in-theory (enable map-ffn-symb)))))
 
 ;;;
 ;;; refining assumptions for matching (producing a list of terms)
