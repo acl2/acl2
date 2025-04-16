@@ -54,11 +54,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;the first binding for each key is the one kept
+;; Removes shadowed pairs from ALIST (that is, pairs that bind keys already
+;; bound by earlier pairs).  The first binding for each key is the one kept.
 (defun uniquify-alist-eq (alist)
   (declare (xargs :guard (symbol-alistp alist)))
   (uniquify-alist-eq-aux alist nil))
 
+;; Shows that calling uniquify-alist-eq does not change the result of looking up a key
 (defthm assoc-equal-of-uniquify-alist-eq
   (implies (alistp alist)
            (equal (assoc-equal key (uniquify-alist-eq alist))
