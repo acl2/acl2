@@ -430,7 +430,7 @@
                                  max-conflicts
                                  state)
   (declare (xargs :guard (and (pseudo-dagp dag)
-                              (<= (len dag) *max-1d-array-length*)
+                              ;(<= (len dag) *max-1d-array-length*)
                               (pseudo-term-listp assumptions)
                               ;; (symbol-listp rules)
                               ;; (symbol-listp interpreted-fns)
@@ -443,7 +443,8 @@
                               (ilks-plist-worldp (w state)))
                   :guard-hints (("Goal" :in-theory (enable car-of-car-when-pseudo-dagp)))
                   :stobjs state))
-  (b* ((- (cw "(Pruning DAG with approx. contexts (~x0 nodes, ~x1 unique):~%" (dag-or-quotep-size-fast dag) (len dag)))
+  (b* (((when (> (top-nodenum-of-dag dag) *max-1d-array-index*)) (mv :dag-too-big dag state))
+       (- (cw "(Pruning DAG with approx. contexts (~x0 nodes, ~x1 unique):~%" (dag-or-quotep-size-fast dag) (len dag)))
        (old-dag dag)
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; Generate the (approximate) contexts:
@@ -533,7 +534,7 @@
   (defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-approximately
     (implies (and (not (mv-nth 0 (prune-dag-approximately dag assumptions print max-conflicts state))) ; no error
                   (pseudo-dagp dag)
-                  (<= (len dag) *max-1d-array-length*)
+                  ;; (<= (len dag) *max-1d-array-length*)
                   (pseudo-term-listp assumptions)
                   (ilks-plist-worldp (w state))
                   (not (quotep (mv-nth 1 (prune-dag-approximately dag assumptions print max-conflicts state)))))
@@ -553,7 +554,7 @@
   (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
                               (pseudo-dagp dag)
-                              (<= (len dag) *max-1d-array-length*)
+                              ;; (<= (len dag) *max-1d-array-length*)
                               (pseudo-term-listp assumptions)
                               (print-levelp print)
                               (or (null max-conflicts)
@@ -566,6 +567,7 @@
        ((when (not (dag-fns-include-anyp dag '(if myif boolif bvif))))
         (and (print-level-at-least-tp print) (cw "(No approx pruning to do.)~%"))
         (mv nil dag state))
+       ((when (> (top-nodenum-of-dag dag) *max-1d-array-index*)) (mv :dag-too-big dag state)) ; due to guard of dag-or-quotep-size-less-thanp
        ((when (and (natp prune-branches) ; it's a limit on the dag-size
                    ;; todo: allow this to fail fast:
                    (not (dag-or-quotep-size-less-thanp dag prune-branches))))
@@ -588,7 +590,7 @@
                 ;; (or (booleanp prune-branches)
                 ;;     (natp prune-branches))
                 (pseudo-dagp dag)
-                (<= (len dag) *max-1d-array-length*)
+                ;; (<= (len dag) *max-1d-array-length*)
                 (pseudo-term-listp assumptions)
                 ;; (print-levelp print)
                 (or (null max-conflicts)
