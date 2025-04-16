@@ -1523,7 +1523,7 @@
      In our currently approximate type system,
      the other two operands must have
      both arithmetic type,
-     or both compatible structure types,
+     or both the same structure type,
      or both the union type,
      or both the void type,
      or both the pointer type,
@@ -1555,7 +1555,7 @@
         (retok (type-uaconvert type2 type3 ienv)))
        ((when (and (type-case type2 :struct)
                    (type-case type3 :struct)))
-        (if (type-compatiblep type2 type3)
+        (if (type-equiv type2 type3)
             (retok type2)
           (reterr (msg "Struct types ~x0 and ~x1 are incompatible."
                        type2
