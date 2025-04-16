@@ -1,7 +1,7 @@
 ; Tools to clean up lambda applications in terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,7 @@
 (include-book "tools/flag" :dir :system)
 (include-book "filter-formals-and-actuals")
 (include-book "free-vars-in-term")
+(include-book "make-lambda-with-hint")
 ;(local (include-book "std/system/all-vars" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
@@ -70,7 +71,7 @@
                        ;; don't need a lambda at all:
                        ;; TODO: Or rely on drop-trivial-lambdas for that?
                    ;;    body
-                   `((lambda ,formals ,body) ,@args)
+                   (cons-with-hint (make-lambda-with-hint formals body fn) args term)
                    ;)
                    ))
              ;; not a lambda:
@@ -101,4 +102,4 @@
          (len terms))
   :hints (("Goal" :induct (len terms))))
 
-(verify-guards drop-unused-lambda-bindings :hints (("Goal" :expand ((PSEUDO-TERMP TERM)))))
+(verify-guards drop-unused-lambda-bindings :hints (("Goal" :expand ((pseudo-termp term)))))

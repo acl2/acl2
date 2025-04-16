@@ -1001,6 +1001,9 @@
                                                nil ;;number of last interesting test case
                                                ))
        (probably-equal-node-sets (remove-set-of-unused-nodes probably-equal-node-sets never-used-nodes nil)) ;TODO: could try to prove that these are really unused (could give interesting counterexamples)
+       (- (flush-compress 'done-nodes-array)) ; reclaim memory
+       (- (and (not keep-test-casesp) ; when not keeping test-cases, test-case-array-name-base is used over and over
+               (flush-compress test-case-array-name-base)))
        (- (cw ")~%")))
     (mv all-passedp
         probably-equal-node-sets
