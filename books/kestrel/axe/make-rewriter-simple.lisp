@@ -2867,7 +2867,6 @@
                      (:compound-recognizer axe-treep-compound-recognizer)
                      (:compound-recognizer natp-compound-recognizer)
                      (:congruence iff-implies-equal-not)
-                     ;; (:definition add-variable-to-dag-array-in-stobj)
                      (:rewrite add-variable-to-dag-array-in-stobj-return-type)
                      (:rewrite add-variable-to-dag-array-in-stobj-return-type-2)
                      ;; (:definition alistp)
