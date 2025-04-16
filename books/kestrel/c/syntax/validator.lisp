@@ -1276,28 +1276,23 @@
      an lvalue as left operand [C17:6.5.16/2],
      but currently we do not check that.
      In our currently approximate type system,
-     the requirements in [C17:6.5.16.1/1] reduce to the two operands having
-     both arithmetic types,
-     or both the structure type,
-     or both the union type,
-     or both pointer types,
-     or one pointer type and one integer type.
-     We do not perform array-to-pointer or function-to-pointer conversion
+     the requirements in [C17:6.5.16.1/1] reduce to the following four cases.")
+   (xdoc::ol
+    (xdoc::li
+     "Both operands have arithmetic types.")
+    (xdoc::li
+     "The left operand has a structure or union type, and the two operand types
+      are compatible.")
+    (xdoc::li
+     "The left operand has the pointer type and the right operand is either a
+      pointer or a null pointer constant (approximated as anything of an
+      integer type).")
+    (xdoc::li
+     "The left operand has the boolean type and the right operand has the
+      pointer type."))
+   (xdoc::p
+    "We do not perform array-to-pointer or function-to-pointer conversion
      on the left operand, because the result would not be an lvalue.
-     In order to allow a pointer type on the left
-     and a null pointer constant [C17:6.3.2.3/3] without @('void *') cast
-     on the right,
-     since we do not have code to recognize such null pointer constants yet,
-     we allow any integer expressions on the right
-     when the expression on the left has pointer type.
-     We also allow the left operand to be boolean
-     and the right operand to be a pointer;
-     although [C17:6.5.9/2] does not mention that,
-     we found it accepted by practical compiler with a strict C17 option,
-     and [C17:6.3.1.2/1] mentions a conversion
-     from scalars (which includes pointer) to booleans,
-     although it does not say that it happens
-     (it says ``When any scalar valu is converted to @('_Bool'), ...'').
      The type of the result is the type of the left operand [C17:6.5.16/3].")
    (xdoc::p
     "The @('*=') and @('/=') operators require arithmetic operands
@@ -1405,15 +1400,14 @@
                  (type2 (type-fpconvert (type-apconvert type-arg2)))
                  ((unless (or (and (type-arithmeticp type1)
                                    (type-arithmeticp type2))
-                              (and (type-case type1 :struct)
-                                   (type-case type2 :struct))
-                              (and (type-case type1 :union)
-                                   (type-case type2 :union))
-                              (and (type-case type1 :bool)
-                                   (type-case type2 :pointer))
+                              (and (or (type-case type1 :struct)
+                                       (type-case type1 :union))
+                                   (type-compatiblep type1 type2))
                               (and (type-case type1 :pointer)
                                    (or (type-case type2 :pointer)
-                                       (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))))
+                                       (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))
+                              (and (type-case type1 :bool)
+                                   (type-case type2 :pointer))))
                   (reterr msg)))
               (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
@@ -1529,17 +1523,14 @@
      In our currently approximate type system,
      the other two operands must have
      both arithmetic type,
-     or both the structure type,
+     or both the same structure type,
      or both the union type,
      or both the void type,
      or both the pointer type,
-     or one pointer type and one integer type
+     or one pointer type and the other operand a null pointer constant
      [C17:6.5.15/3].
-     The latter is more than [C17:6.5.15/3] allows,
-     but serves to accommodate the case of a pointer and
-     a null pointer constants [C17:6.3.2.3/3] without the @('void *') cast;
-     since we do not have code to recognize such null pointer constants yet,
-     for now we accept all integer expressions there.
+     Currently, null pointer constants [C17:6.3.2.3/3] are approximated as any
+     expression with an integer type.
      The type of the result is
      the one from the usual arithmetic converions
      in the first case,
@@ -1564,7 +1555,11 @@
         (retok (type-uaconvert type2 type3 ienv)))
        ((when (and (type-case type2 :struct)
                    (type-case type3 :struct)))
-        (retok (type-struct)))
+        (if (type-equiv type2 type3)
+            (retok type2)
+          (reterr (msg "Struct types ~x0 and ~x1 are incompatible."
+                       type2
+                       type3))))
        ((when (and (type-case type2 :union)
                    (type-case type3 :union)))
         (retok (type-union)))
@@ -2672,9 +2667,10 @@
                  (retok (type-spec-atomic new-type) type nil types table))
        :struct (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                     ((erp new-spec types table)
-                     (valid-strunispec tyspec.spec table ienv)))
+                     (valid-strunispec tyspec.spec table ienv))
+                    ((strunispec tyspec.spec) tyspec.spec))
                  (retok (type-spec-struct new-spec)
-                        (type-struct)
+                        (type-struct tyspec.spec.name)
                         nil
                         types
                         table))
@@ -2759,7 +2755,7 @@
                           (reterr msg-bad-preceding))
        :struct-empty (if (endp tyspecs)
                          (retok (type-spec-struct-empty tyspec.name?)
-                                (type-struct)
+                                (type-struct tyspec.name?)
                                 nil
                                 nil
                                 same-table)
@@ -3209,7 +3205,7 @@
       "If the target type is the structure or union type,
        the initializer is a single expression,
        and the object has automatic storage duration,
-       that expression must also have the structure or union type
+       that expression must also have a compatible structure or union type
        [C17:6.7.9/13].")
      (xdoc::p
       "If the target type is an array of characters (of various types),
