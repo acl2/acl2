@@ -1292,7 +1292,8 @@
       pointer type."))
    (xdoc::p
     "We do not perform array-to-pointer or function-to-pointer conversion
-     on the left operand, because the result would not be an lvalue.")
+     on the left operand, because the result would not be an lvalue.
+     The type of the result is the type of the left operand [C17:6.5.16/3].")
    (xdoc::p
     "The @('*=') and @('/=') operators require arithmetic operands
      [C17:6.5.16.2/2],
