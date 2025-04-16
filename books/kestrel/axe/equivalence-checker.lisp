@@ -1057,19 +1057,6 @@
                     (declare (ignore value)) ;compare this to the value from the array (if any?)
                     trace)))))))
 
-(defund test-case-array-alistp (alist min-len)
-  (declare (xargs :guard (integerp min-len)))
-  (if (atom alist)
-      (null alist)
-    (let* ((entry (first alist)))
-      (and (consp entry)
-           (let ((array-name (car entry))
-                 (array (cdr entry)))
-             (and (array1p array-name array)
-                  (<= min-len (alen1 array-name array))
-                  (test-case-array-alistp (rest alist) min-len)))))))
-
-
 ;;returns (mv traces test-cases count) where test-cases are the ones on which the function is actually used
 ;;ffixme test-case-array-alist may be nil?
 (defun get-traces-for-node-aux (test-cases nodenum dag-array-name dag-array interpreted-function-alist test-case-array-alist traces-acc test-cases-acc count)
