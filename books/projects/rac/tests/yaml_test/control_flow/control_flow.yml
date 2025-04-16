@@ -38,11 +38,21 @@
 - name: switch-invalid-label
   should_report_error: true
 
+- name: switch-default-case-is-not-the-last
+  should_report_error: true
+
+- name: switch-empty
+  should_report_error: true
+
 - name: for-loop
 - name: for-loop-uint
 - name: for-loop-long
 - name: for-loop-init-from-const
 - name: for-loop-invalid
+  should_report_error: true
+- name: for-loop-bad-update
+  should_report_error: true
+- name: for-loop-init-not-assigned
   should_report_error: true
 
 - name: break-outside-of-switch

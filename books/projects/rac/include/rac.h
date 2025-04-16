@@ -36,8 +36,7 @@ static_assert(sizeof(unsigned long) == 8, "int64 is not 64 exactly bits.");
 // Templates for passing and returning arrays
 // ---------------------------------------------------------------------------
 
-template <class T, uint m>
-class array {
+template <class T, uint m> class array {
   T elt[m];
 
 public:
@@ -107,8 +106,8 @@ public:
 
   tuple(T0 t0, T1 t1 = dummy, T2 t2 = dummy, T3 t3 = dummy, T4 t4 = dummy,
         T5 t5 = dummy, T6 t6 = dummy, T7 t7 = dummy)
-      : el0(t0), el1(t1), el2(t2), el3(t3), el4(t4), el5(t5), el6(t6),
-        el7(t7) {}
+      : el0(t0), el1(t1), el2(t2), el3(t3), el4(t4), el5(t5), el6(t6), el7(t7) {
+  }
 };
 
 template <class T0, class T1, class T2, class T3, class T4, class T5, class T6,
@@ -132,10 +131,10 @@ private:
   T7 &el7;
 
 public:
-  ltuple(T0 &t0, T1 &t1 = dummy, T2 &t2 = dummy, T3 &t3 = dummy,
-         T4 &t4 = dummy, T5 &t5 = dummy, T6 &t6 = dummy, T7 &t7 = dummy)
-      : el0(t0), el1(t1), el2(t2), el3(t3), el4(t4), el5(t5), el6(t6),
-        el7(t7) {}
+  ltuple(T0 &t0, T1 &t1 = dummy, T2 &t2 = dummy, T3 &t3 = dummy, T4 &t4 = dummy,
+         T5 &t5 = dummy, T6 &t6 = dummy, T7 &t7 = dummy)
+      : el0(t0), el1(t1), el2(t2), el3(t3), el4(t4), el5(t5), el6(t6), el7(t7) {
+  }
 
   tuple<T0, T1, T2, T3, T4, T5, T6, T7>
   operator=(tuple<T0, T1, T2, T3, T4, T5, T6, T7> src) {
@@ -151,13 +150,9 @@ public:
   };
 };
 
-template <class T0>
-ltuple<T0> tie(T0 &t0) {
-  return ltuple<T0>(t0);
-}
+template <class T0> ltuple<T0> tie(T0 &t0) { return ltuple<T0>(t0); }
 
-template <class T0, class T1>
-ltuple<T0, T1> tie(T0 &t0, T1 &t1) {
+template <class T0, class T1> ltuple<T0, T1> tie(T0 &t0, T1 &t1) {
   return ltuple<T0, T1>(t0, t1);
 }
 
@@ -192,8 +187,7 @@ template <class T0, class T1, class T2, class T3, class T4, class T5, class T6,
           class T7>
 ltuple<T0, T1, T2, T3, T4, T5, T6, T7> tie(T0 &t0, T1 &t1, T2 &t2, T3 &t3,
                                            T4 &t4, T5 &t5, T6 &t6, T7 &t7) {
-  return ltuple<T0, T1, T2, T3, T4, T5, T6, T7>(t0, t1, t2, t3, t4, t5, t6,
-                                                t7);
+  return ltuple<T0, T1, T2, T3, T4, T5, T6, T7>(t0, t1, t2, t3, t4, t5, t6, t7);
 }
 #endif // __cplusplus > 199711L
 

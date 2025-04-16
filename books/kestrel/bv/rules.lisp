@@ -2360,12 +2360,6 @@
            (equal (SLICE 26 k (+ x (* 2 y (LOGEXT 31 z))))
                   (SLICE 26 k (+ x (* 2 y z))))))
 
-;FIXME gen or drop
-(defthm slice-linear-31-27
-  (<= (slice 31 27 x)
-      31)
-  :rule-classes :linear)
-
 ;make a version with x a constant
 (defthm <-of-constant-and-bvcat-with-low-constant
   (implies (and (syntaxp (and (quotep k1) (quotep k2) (quotep lowsize)))
@@ -4603,8 +4597,6 @@
                             bvcat)
                            (<-OF-*-AND-*-SAME-LINEAR ;why?
                             BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-
-
                             <-OF-LOGEXT-AND-0-ALT)))))
 
 ;move

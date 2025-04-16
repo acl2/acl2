@@ -21,7 +21,7 @@ public:
   virtual bool isInteger();
 
   const Type *get_type() const { return t_; }
-  Type *get_type() { return t_; }
+  const Type *get_type() { return t_; }
 
   virtual void display(std::ostream &os) const = 0;
 
@@ -35,12 +35,12 @@ public:
   inline const Location &loc() { return loc_; }
 
   // Only during the type passs we are allowed to modify the type.
-  void set_type(Type *t) { t_ = t; }
+  void set_type(const Type *t) { t_ = t; }
 
 private:
   // The type of the expression. Null means not yet typed, but after the type
   // pass, it should be always set with a concrete type (not a typedef).
-  Type *t_ = nullptr;
+  const Type *t_ = nullptr;
 
 protected:
   const NodesId id_;
@@ -51,7 +51,7 @@ class Constant : public Expression {
 public:
   Constant(NodesId id, Location loc, const char *n);
   Constant(NodesId id, Location loc, std::string &&n);
-  Constant(NodesId id, Location loc, int n);
+
   bool isStaticallyEvaluable() override;
   bool isInteger() override { return true; }
 
@@ -218,11 +218,14 @@ public:
   std::vector<Expression *> vals;
   Initializer(Location loc, std::vector<Expression *> v);
   void display(std::ostream &os) const override;
-  Sexpression *ACL2Expr() override;
 
-  Sexpression *ACL2ArrayExpr();
-  Sexpression *ACL2TupleExpr();
-  Sexpression *ACL2StructExpr(const std::vector<StructField *> &fields);
+  // Initializer does not make sense on their own: they must be cast to an
+  // actual type.
+  Sexpression *ACL2Expr() override { UNREACHABLE(); }
+
+  Sexpression *ACL2ArrayExpr(const ArrayType *t, bool output_optmized_const);
+  Sexpression *ACL2TupleExpr(const MvType *t);
+  Sexpression *ACL2StructExpr(const StructType *t);
 };
 
 class ArrayRef final : public Expression {
@@ -300,12 +303,21 @@ std::string to_string(PrefixExpr::Op op);
 class CastExpr final : public Expression {
 public:
   Expression *expr;
-  Type *type;
-  CastExpr(Location loc, Expression *e, Type *t);
-  bool isStaticallyEvaluable() override;
-  int evalConst() override;
-  bool isInteger() override;
-  void display(std::ostream &os) const override;
+  const Type *type;
+
+  CastExpr(Location loc, Expression *e, const Type *t)
+      : Expression(idOf(this), loc), expr(e), type(t) {}
+
+  bool isStaticallyEvaluable() override {
+    return expr->isStaticallyEvaluable();
+  }
+
+  int evalConst() override { return expr->evalConst(); }
+
+  bool isInteger() override { return expr->isInteger(); }
+
+  void display(std::ostream &os) const override { expr->display(os); }
+
   Sexpression *ACL2Expr() override;
 };
 
@@ -357,14 +369,14 @@ public:
 
   int evalConst() override;
   bool isStaticallyEvaluable() override {
-    return expr1->isStaticallyEvaluable() && expr2->isStaticallyEvaluable()
-           && test->isStaticallyEvaluable();
+    return expr1->isStaticallyEvaluable() && expr2->isStaticallyEvaluable() &&
+           test->isStaticallyEvaluable();
   }
 };
 
 class MultipleValue final : public Expression {
 public:
-  MultipleValue(Location loc, MvType *t, std::vector<Expression *> &&e);
+  MultipleValue(Location loc, const MvType *t, std::vector<Expression *> &&e);
 
   void display(std::ostream &os) const override;
   Sexpression *ACL2Expr() override;

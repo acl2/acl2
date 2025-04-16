@@ -20,10 +20,48 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 
 (local (in-theory (e/d (acl2-numberp-when-natp) (natp))))
+
+;; maps array-names to arrays with those names
+(defund test-case-array-alistp (alist min-len)
+  (declare (xargs :guard (integerp min-len)))
+  (if (atom alist)
+      (null alist)
+    (let* ((entry (first alist)))
+      (and (consp entry)
+           (let ((array-name (car entry))
+                 (array (cdr entry)))
+             (and (array1p array-name array)
+                  (<= min-len (alen1 array-name array))
+                  (test-case-array-alistp (rest alist) min-len)))))))
+
+(defthm test-case-array-alistp-of-nil
+  (test-case-array-alistp nil min-len)
+  :hints (("Goal" :in-theory (enable test-case-array-alistp))))
+
+(defthm test-case-array-alistp-of-cons-of-cons
+  (equal (test-case-array-alistp (cons (cons key val) alist) min-len)
+         (and (array1p key val)
+              (<= min-len (alen1 key val))
+              (test-case-array-alistp alist min-len)))
+  :hints (("Goal" :in-theory (enable test-case-array-alistp))))
+
+(defthm test-case-array-alistp-of-append
+  (equal (test-case-array-alistp (append alist1 alist2) min-len)
+         (and (test-case-array-alistp (true-list-fix alist1) min-len)
+              (test-case-array-alistp alist2 min-len)))
+  :hints (("Goal" :in-theory (enable test-case-array-alistp reverse-list true-list-fix))))
+
+(defthm test-case-array-alistp-of-reverse-list
+  (equal (test-case-array-alistp (reverse-list alist) min-len)
+         (test-case-array-alistp (true-list-fix alist) min-len))
+  :hints (("Goal" :in-theory (enable test-case-array-alistp reverse-list))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv alist unused-nodes).
 ;; Only for nodes that are not :unused.
@@ -738,7 +776,7 @@
             nil))
       (mv t ; all tests passed
           probably-equal-node-sets never-used-nodes probably-constant-node-alist
-          (reverse test-case-array-alist) ;new; keeps this in sync with the test cases (or do non-interesting ones get dropped?)
+          (reverse-list test-case-array-alist) ;new; keeps this in sync with the test cases (or do non-interesting ones get dropped?)
           )
     (b* ((- ;;TODO: Only print when things change?:
           (cw "(Test ~x0 (~x1 total sets, ~x2 singletons, ~x3 constants)"
@@ -926,6 +964,29 @@
                                                                      num-of-last-interesting-test-case))))
    :hints (("Goal" :in-theory (enable update-probable-facts-with-test-cases)))))
 
+(local
+  (defthm test-case-array-alistp-of-mv-nth-4-of-update-probable-facts-with-test-cases
+    (implies (and (test-case-array-alistp test-case-array-alist dag-len)
+                  (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                  (< 0 dag-len))
+             (test-case-array-alistp (mv-nth 4 (update-probable-facts-with-test-cases test-cases
+                                                                                      singleton-count
+                                                                                      dag-array-name dag-array dag-len
+                                                                                      probably-equal-node-sets
+                                                                                      never-used-nodes
+                                                                                      probably-constant-node-alist
+                                                                                      interpreted-function-alist print
+                                                                                      test-case-array-name-base
+                                                                                      keep-test-casesp
+                                                                                      test-case-array-alist
+                                                                                      test-case-number
+                                                                                      debug-nodes
+                                                                                      num-of-last-interesting-test-case))
+                                     dag-len))
+    :hints (("Goal" :in-theory (e/d (update-probable-facts-with-test-cases
+                                     test-case-array-alistp)
+                                    (reverse))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Repeatedly evaluates a test case and then uses it to split probably-equal node sets and eliminate probably-constant nodes.
@@ -1001,6 +1062,9 @@
                                                nil ;;number of last interesting test case
                                                ))
        (probably-equal-node-sets (remove-set-of-unused-nodes probably-equal-node-sets never-used-nodes nil)) ;TODO: could try to prove that these are really unused (could give interesting counterexamples)
+       (- (flush-compress 'done-nodes-array)) ; reclaim memory
+       (- (and (not keep-test-casesp) ; when not keeping test-cases, test-case-array-name-base is used over and over
+               (flush-compress test-case-array-name-base)))
        (- (cw ")~%")))
     (mv all-passedp
         probably-equal-node-sets
@@ -1080,6 +1144,13 @@
                 (nat-listp debug-nodes)
                 (all-< debug-nodes miter-len))
            (alistp (mv-nth 3 (find-probable-facts miter-array-name miter-array miter-len miter-depth test-cases interpreted-function-alist print keep-test-casesp debug-nodes))))
+  :hints (("Goal" :in-theory (enable find-probable-facts))))
+
+(defthm test-case-array-alistp-of-mv-nth-4-of-find-probable-facts
+  (implies (and (pseudo-dag-arrayp miter-array-name miter-array miter-len)
+                (< 0 miter-len))
+           (test-case-array-alistp (mv-nth 4 (find-probable-facts miter-array-name miter-array miter-len miter-depth test-cases interpreted-function-alist print keep-test-casesp debug-nodes))
+                                   miter-len))
   :hints (("Goal" :in-theory (enable find-probable-facts))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

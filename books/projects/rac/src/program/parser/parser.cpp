@@ -24,5 +24,5 @@ std::optional<AST> parse(const std::string &file, bool trace) {
     puts("Warning: no function definitions found,"
          " maybe you forgot the `// RAC begin` guard");
 
-  return { std::move(yyast) };
+  return {std::move(yyast)};
 }

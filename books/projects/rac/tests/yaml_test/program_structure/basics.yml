@@ -47,6 +47,8 @@
 
 - name: comment
 - name: multiline-comment
+- name: multiline-comment-inside-struct-def
+  should_report_error: true
 
 - name: unterminated-comment
   args: ['unterminated-comment.cpp']
@@ -166,3 +168,18 @@
 
 - name: mv-deref
   description: Multiple value return types should be dereferenced for type-checking
+
+- name: assign_as_function_parameter
+  should_report_error: true
+  description: Default values are not supported
+
+- name: const_param
+
+- name: variable-not-initialized
+  should_report_error: true
+
+- name: var-mismatch-case
+  should_report_error: true
+
+- name: very-long-error
+  should_report_error: true

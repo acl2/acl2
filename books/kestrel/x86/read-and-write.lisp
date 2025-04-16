@@ -3175,7 +3175,7 @@
   ;;                              (:i write)
   ;;                              write-of-1-becomes-write-byte
   ;;                              )
-  ;;                                 (acl2::getbit-bound-linear
+  ;;                                 (
   ;;                                  acl2::bvplus-when-low-bits-are-zero))
   ;;          :induct (write n1 ad1 val1 x86) ; causes the wrong first byte to be split off
   ;;          :expand ((WRITE (+ N1 N2)

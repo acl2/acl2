@@ -14,6 +14,7 @@
 ;; TODO: Consider also bool-fixing constants (see below, or sepatately?)
 ;; TODO: Consider lambda binding the X when we don't have boolean info.
 
+(include-book "make-lambda-with-hint")
 (local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
@@ -69,8 +70,8 @@
                        (body (lambda-body fn))
                        ;; propagate boolean context:
                        (body (simplify-ors body iffp)))
-                  ;; todo: use cons-with-hint
-                  `((lambda ,formals ,body) ,@args))
+                  `(,(make-lambda-with-hint formals body fn) ;;(lambda ,formals ,body)
+                    ,@args))
               ;; non-lambda:
               (cons-with-hint fn args term))))))))
 

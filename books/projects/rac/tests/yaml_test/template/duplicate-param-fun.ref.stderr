@@ -1,0 +1,6 @@
+duplicate-param-fun.cpp:3 (17-22): Duplicate identifier declaration (could be an enum, a variable template parameter or function) `a`
+ 3 | template <int a, int a>
+   |                  ^^^^^
+note: first defined here
+ 3 | template <int a, int a>
+   |           ^^^^^
