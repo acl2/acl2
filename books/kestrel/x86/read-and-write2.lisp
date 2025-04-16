@@ -14,7 +14,7 @@
 ;; opened up to BV terms.
 
 (include-book "read-and-write")
-(include-book "kestrel/x86/disjoint" :dir :system)
+(include-book "kestrel/x86/regions" :dir :system)
 
 (defthm read-byte-of-write-byte-when-disjoint-1
   (implies (and (disjoint-regionsp len1 start1 len2 start2)
