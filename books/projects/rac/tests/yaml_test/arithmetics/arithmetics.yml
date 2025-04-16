@@ -30,3 +30,5 @@
                will return -1 in C++ but -2 in lisp)
 
 - name: literal
+
+- name: prefix-expr-enum

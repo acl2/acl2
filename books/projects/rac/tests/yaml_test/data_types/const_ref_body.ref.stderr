@@ -1,0 +1,3 @@
+const_ref_body.cpp:4 (11-12): References are forbidden, except if they are used as function parameter
+ 4 |   const int& b = a;
+   |            ^

@@ -35,6 +35,17 @@ public:
   using origin_t = std::variant<const DefinedType *, Location>;
 
   Type(origin_t loc, NodesId id) : origin_(loc), id_(id) {}
+  virtual ~Type() {}
+  virtual Type *deep_copy() const = 0;
+  virtual bool isEqual(const Type *other) const = 0;
+
+  NodesId id() const { return id_; }
+
+  const origin_t &loc() const { return origin_; }
+  Location get_original_location() const;
+
+  void setConst() { isConst_ = true; }
+  bool isConst() const { return isConst_; }
 
   // Display the type (but not it is not the C++ representation).
   virtual void display(std::ostream &os = std::cout) const = 0;
@@ -52,7 +63,10 @@ public:
 
   // overridden by IntType
   // Convert rval to an S-expression to be assigned to an object of this
+  virtual bool canBeImplicitlyCastTo(const Type *target) const = 0;
   virtual Sexpression *cast(Expression *rval) const;
+  virtual Sexpression *eval(Sexpression *sexpr) const { return sexpr; }
+  virtual Sexpression *default_initializer_value() const = 0;
 
   // TODO refactore.
   // overridden by IntType
@@ -63,20 +77,12 @@ public:
     return 0;
   }
 
-  virtual bool isEqual(const Type *other) const = 0;
-  virtual bool canBeImplicitlyCastTo(const Type *target) const = 0;
-
-  virtual Sexpression *eval(Sexpression *sexpr) const { return sexpr; }
-
-  origin_t &loc() { return origin_; }
-  const origin_t &loc() const { return origin_; }
-
-  origin_t origin_;
-
-  NodesId id() const { return id_; }
+  // TODO
+  mutable origin_t origin_;
 
 private:
   const NodesId id_;
+  bool isConst_ = false;
 };
 
 class PrimType : public Symbol, public Type {
@@ -101,28 +107,37 @@ public:
 
   virtual ~PrimType() {}
 
-  virtual PrimType *deep_copy() const { return new PrimType(*this); }
+  virtual PrimType *deep_copy() const override { return new PrimType(*this); }
 
-  static PrimType Bool() {
-    return PrimType(Location::dummy(), "bool", nullptr, Rank::Bool, false);
+  static PrimType *Bool() {
+    return new PrimType(Location::builtin(), "bool", nullptr, Rank::Bool,
+                        false);
   }
-  static PrimType Int() {
-    return PrimType(Location::dummy(), "int", nullptr, Rank::Int, true);
+  static PrimType *Int() {
+    return new PrimType(Location::builtin(), "int", nullptr, Rank::Int, true);
   }
-  static PrimType Uint() {
-    return PrimType(Location::dummy(), "uint", nullptr, Rank::Int, false);
+  static PrimType *Uint() {
+    return new PrimType(Location::builtin(), "uint", nullptr, Rank::Int, false);
   }
-  static PrimType Int64() {
-    return PrimType(Location::dummy(), "int64", "int64", Rank::Long, true);
+  static PrimType *Int64() {
+    return new PrimType(Location::builtin(), "int64", "int64", Rank::Long,
+                        true);
   }
-  static PrimType Uint64() {
-    return PrimType(Location::dummy(), "uint64", "uint64", Rank::Long, false);
+  static PrimType *Uint64() {
+    return new PrimType(Location::builtin(), "uint64", "uint64", Rank::Long,
+                        false);
   }
 
   Sexpression *cast(Expression *rval) const override;
 
   virtual void display(std::ostream &os) const override {
+
     if (RACname_) {
+
+      if (isConst()) {
+        os << "const ";
+      }
+
       os << *RACname_;
     } else {
       Symbol::display(os);
@@ -150,25 +165,44 @@ public:
   static Type *usual_conversions(const PrimType *t1, const PrimType *t2,
                                  bool integer_promotion = true);
 
+  Sexpression *default_initializer_value() const override;
+
   const std::optional<std::string> RACname_;
   Rank rank_;
   bool signed_;
 };
 
-extern PrimType boolType;
-extern PrimType intType;
-extern PrimType uintType;
-extern PrimType int64Type;
-extern PrimType uint64Type;
+extern PrimType *boolType;
+extern PrimType *intType;
+extern PrimType *uintType;
+extern PrimType *int64Type;
+extern PrimType *uint64Type;
 
-class DefinedType : public Symbol, public Type {
+class DefinedType final : public Symbol, public Type {
 public:
-  DefinedType(origin_t loc, const char *s, Type *t)
+  DefinedType(origin_t loc, const char *s, const Type *t)
       : Symbol(s), Type(loc, idOf(this)), def_(t) {}
+
+  ~DefinedType() {}
+
+  Type *deep_copy() const override {
+    auto tmp = new DefinedType(*this);
+    if (def_) {
+      tmp->def_ = def_->deep_copy();
+    } else {
+      tmp->def_ = nullptr;
+    }
+    return tmp;
+  }
 
   void display(std::ostream &os) const override { Symbol::display(os); }
 
   void displayVarType(std::ostream &os = std::cout) const override {
+
+    if (isConst()) {
+      os << "const ";
+    }
+
     os << getname();
   }
 
@@ -185,23 +219,20 @@ public:
     return derefType()->cast(rval);
   }
 
-  unsigned ACL2ValWidth() const override {
-    return derefType()->ACL2ValWidth();
-  }
+  unsigned ACL2ValWidth() const override { return derefType()->ACL2ValWidth(); }
 
   void displayDef(std::ostream &os = std::cout) const {
     def_->makeDef(getname(), os);
   }
 
-  Type *getdef() { return def_; }
   const Type *getdef() const { return def_; }
 
-  Type *derefType() const {
+  const Type *derefType() const {
 
-    Type *t = def_;
+    const Type *t = def_;
     t->origin_ = this;
 
-    while (auto *dt = dynamic_cast<DefinedType *>(t)) {
+    while (auto *dt = dynamic_cast<const DefinedType *>(t)) {
       t = dt->getdef();
       t->origin_ = dt;
     }
@@ -216,14 +247,25 @@ public:
     return derefType()->canBeImplicitlyCastTo(target);
   }
 
+  Sexpression *default_initializer_value() const override {
+    return def_->default_initializer_value();
+  }
+
 private:
-  Type *def_;
+  const Type *def_;
 };
 
 class IntType final : public Type {
 public:
   IntType(origin_t loc, Expression *w, Expression *s)
       : Type(loc, idOf(this)), width_(w), isSigned_(s) {}
+
+  ~IntType() {}
+
+  Type *deep_copy() const override {
+    // TODO
+    return new IntType(*this);
+  }
 
   // Return an ac_int of the same sign and width as t.
   static IntType *FromPrimType(const PrimType *t);
@@ -241,20 +283,35 @@ public:
   bool isEqual(const Type *other) const override;
   bool canBeImplicitlyCastTo(const Type *target) const override;
 
+  Sexpression *default_initializer_value() const override;
+
 private:
   Expression *width_;
   Expression *isSigned_;
 };
 
-class ArrayType : public Type {
+class ArrayType final : public Type {
 public:
-  Type *baseType;
+  const Type *baseType;
   Expression *dim;
 
-  ArrayType(origin_t loc, Expression *d, Type *t)
+  ArrayType(origin_t loc, Expression *d, const Type *t)
       : Type(loc, idOf(this)), baseType(t), dim(d) {}
 
-  Type *getBaseType() { return baseType; }
+  ~ArrayType() {}
+
+  Type *deep_copy() const override {
+    auto tmp = new ArrayType(*this);
+    if (tmp->baseType) {
+      tmp->baseType = baseType->deep_copy();
+    } else {
+      tmp->baseType = nullptr;
+    }
+
+    return tmp;
+  }
+
+  const Type *getBaseType() { return baseType; }
   const Type *getBaseType() const { return baseType; }
 
   void display(std::ostream &os) const override;
@@ -265,13 +322,17 @@ public:
 
   bool isEqual(const Type *other) const override;
 
-  bool canBeImplicitlyCastTo([
-      [maybe_unused]] const Type *target) const override {
+  bool
+  canBeImplicitlyCastTo([[maybe_unused]] const Type *target) const override {
     return false;
   }
 
+  virtual Sexpression *cast(Expression *rval) const override;
+
   inline void setSTDArray() { isSTDarray_ = true; }
   inline bool isSTDArray() const { return isSTDarray_; }
+
+  Sexpression *default_initializer_value() const override;
 
 private:
   bool isSTDarray_ = false;
@@ -279,21 +340,39 @@ private:
 
 class StructField {
 public:
-  Symbol *sym;
-  Type *type;
-  StructField(Type *t, char *n);
-  const char *getname() const { return sym->getname(); }
+  StructField(const Type *t, const char *n)
+      : sym_(new Symbol(n)), type_(t), default_value_() {}
+  StructField(const Type *t, const char *n, Expression *default_value)
+      : sym_(new Symbol(n)), type_(t), default_value_(default_value) {}
+  ~StructField() {}
+
+  const char *getname() const { return sym_->getname(); }
+  Symbol *get_sym() const { return sym_; }
+  const Type *get_type() const { return type_; }
+  std::optional<Expression *> get_default_value() const {
+    return default_value_;
+  }
+
   void display(std::ostream &os, unsigned indent = 0) const;
 
   bool operator==(const StructField &other) const {
-    return strcmp(sym->getname(), other.getname())
-           && type->isEqual(other.type);
+    return strcmp(sym_->getname(), other.getname()) &&
+           type_->isEqual(other.type_);
   }
+
+private:
+  Symbol *sym_;
+  const Type *type_;
+  std::optional<Expression *> default_value_;
 };
 
-class StructType : public Type {
+class StructType final : public Type {
 public:
-  StructType(origin_t loc, std::vector<StructField *> f);
+  StructType(origin_t loc, std::vector<StructField *> f)
+      : Type(loc, idOf(this)), fields_(f) {}
+  ~StructType() {}
+
+  Type *deep_copy() const override { return new StructType(*this); }
 
   void displayFields(std::ostream &os) const;
   void display(std::ostream &os) const override;
@@ -305,18 +384,23 @@ public:
 
   bool isEqual(const Type *) const override;
 
-  bool canBeImplicitlyCastTo([
-      [maybe_unused]] const Type *target) const override {
+  bool
+  canBeImplicitlyCastTo([[maybe_unused]] const Type *target) const override {
     return false;
   }
+
+  virtual Sexpression *cast(Expression *rval) const override;
+
+  Sexpression *default_initializer_value() const override;
 
 private:
   std::vector<StructField *> fields_;
 };
 
-class EnumType : public PrimType {
+class EnumType final : public PrimType {
 public:
   EnumType(origin_t loc, std::vector<EnumConstDec *> v);
+  ~EnumType() {}
 
   PrimType *deep_copy() const override { return new EnumType(*this); }
 
@@ -334,53 +418,93 @@ public:
 
   bool isEqual(const Type *) const override;
 
-  const std::vector<EnumConstDec *> &values() { return vals_; }
+  const std::vector<EnumConstDec *> &values() const { return vals_; }
+
+  Sexpression *default_initializer_value() const override;
 
 private:
   std::vector<EnumConstDec *> vals_;
 };
 
 namespace priv {
-  class CompositeType : public Type {
-  public:
-    CompositeType(origin_t loc, NodesId id, std::vector<Type *> &&t)
-        : Type(loc, id), types_(t) {}
+class CompositeType : public Type {
+public:
+  CompositeType(origin_t loc, NodesId id, std::vector<const Type *> &&t)
+      : Type(loc, id), types_(t) {}
+  virtual ~CompositeType() {}
 
-    void display(std::ostream &os) const override;
+  void display(std::ostream &os) const override;
 
-    unsigned size() const { return types_.size(); }
-    const Type *get(unsigned n) const { return types_[n]; }
-    const Type *get(unsigned n) { return types_[n]; }
-    const std::vector<Type *> &types() const { return types_; }
+  unsigned size() const { return types_.size(); }
+  const Type *get(unsigned n) const { return types_[n]; }
+  const Type *get(unsigned n) { return types_[n]; }
+  const std::vector<const Type *> &types() const { return types_; }
 
-    bool isEqual(const Type *other) const override;
+  bool isEqual(const Type *other) const override;
 
-    bool canBeImplicitlyCastTo([
-        [maybe_unused]] const Type *target) const override {
-      return false;
-    }
+  bool
+  canBeImplicitlyCastTo([[maybe_unused]] const Type *target) const override {
+    return false;
+  }
 
-  private:
-    std::vector<Type *> types_;
-  };
-}
+private:
+  std::vector<const Type *> types_;
+};
+} // namespace priv
 
 class MvType final : public priv::CompositeType {
 public:
-  MvType(origin_t loc, std::vector<Type *> &&t)
+  MvType(origin_t loc, std::vector<const Type *> &&t)
       : CompositeType(loc, idOf(this), std::move(t)) {}
+  ~MvType() {}
+
+  Type *deep_copy() const override {
+
+    std::vector<const Type *> tmp;
+    for (unsigned i = 0; i < size(); ++i) {
+      if (get(i)) {
+        tmp.push_back(get(i)->deep_copy());
+      } else {
+        tmp.push_back(nullptr);
+      }
+    }
+    return new MvType(loc(), std::move(tmp));
+  }
+
+  Sexpression *cast(Expression *rval) const override;
+
+  Sexpression *default_initializer_value() const override;
 };
 
 class InitializerType final : public priv::CompositeType {
 public:
-  InitializerType(origin_t loc, std::vector<Type *> &&t)
+  InitializerType(origin_t loc, std::vector<const Type *> &&t)
       : CompositeType(loc, idOf(this), std::move(t)) {}
+  ~InitializerType() {}
+
+  Type *deep_copy() const override {
+
+    std::vector<const Type *> tmp;
+    for (unsigned i = 0; i < size(); ++i) {
+      if (get(i)) {
+        tmp.push_back(get(i)->deep_copy());
+      } else {
+        tmp.push_back(nullptr);
+      }
+    }
+    return new InitializerType(loc(), std::move(tmp));
+  }
+
+  Sexpression *default_initializer_value() const override { UNREACHABLE(); }
 };
 
 // Type used to recover from error during the type pass.
 class ErrorType final : public Type {
 public:
-  ErrorType() : Type(Location::dummy(), idOf(this)) {}
+  ErrorType() : Type(Location::builtin(), idOf(this)) {}
+  ~ErrorType() {}
+
+  Type *deep_copy() const override { return new ErrorType(*this); }
 
   void display(std::ostream &os = std::cout) const override {
     os << "error_type";
@@ -407,15 +531,19 @@ public:
   bool isEqual([[maybe_unused]] const Type *other) const override {
     return true;
   }
-  bool canBeImplicitlyCastTo([
-      [maybe_unused]] const Type *target) const override {
+  bool
+  canBeImplicitlyCastTo([[maybe_unused]] const Type *target) const override {
     return true;
+  }
+
+  Sexpression *default_initializer_value() const override {
+    return new Symbol("ErrorTypeValue");
   }
 };
 
 inline bool isIntegerType(const Type *t) {
-  return dynamic_cast<const PrimType *>(t) || dynamic_cast<const IntType *>(t)
-         || dynamic_cast<const EnumType *>(t);
+  return dynamic_cast<const PrimType *>(t) ||
+         dynamic_cast<const IntType *>(t) || dynamic_cast<const EnumType *>(t);
 }
 
 #endif // TYPES_H

@@ -430,6 +430,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund rule-alistsp (rule-alists)
+  (declare (xargs :guard t))
+  (if (not (consp rule-alists))
+      (null rule-alists)
+    (and (rule-alistp (first rule-alists))
+         (rule-alistsp (rest rule-alists)))))
+
+(defthm rule-alistp-of-car-when-rule-alistsp
+  (implies (rule-alistsp rule-alists)
+           (rule-alistp (car rule-alists)))
+  :hints (("Goal" :in-theory (enable rule-alistsp))))
+
+(defthm rule-alistsp-of-cdr-when-rule-alistsp
+  (implies (rule-alistsp rule-alists)
+           (rule-alistsp (cdr rule-alists)))
+  :hints (("Goal" :in-theory (enable rule-alistsp))))
+
+(defthm rule-alistsp-forward-to-true-listp
+  (implies (rule-alistsp rule-alists)
+           (true-listp rule-alists))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable rule-alistsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns a list of rule-names.
 (defund rules-from-rule-alists (alists)
   (declare (xargs :guard (and (all-rule-alistp alists)

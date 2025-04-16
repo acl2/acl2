@@ -15,6 +15,7 @@
 (include-book "injective-funp")
 (include-book "inverse")
 (include-book "iterate")
+(include-book "ordinals")
 (include-book "prove-acl2p")
 (include-book "schroeder-bernstein")
 (include-book "set-algebra")

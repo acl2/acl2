@@ -1,7 +1,7 @@
 ; A tool to clean up trivial lambdas (all formals mapped to themselves)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 
 (in-package "ACL2")
 
+(include-book "make-lambda-with-hint")
 (local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
@@ -36,7 +37,7 @@
                      ;; don't need a lambda at all:
                      body
                    ;; no change:
-                   `((lambda ,formals ,body) ,@args)))
+                   (cons-with-hint (make-lambda-with-hint formals body fn) args term)))
              ;; not a lambda:
              (cons-with-hint fn args term)))))))
  (defun drop-trivial-lambdas-lst (terms)

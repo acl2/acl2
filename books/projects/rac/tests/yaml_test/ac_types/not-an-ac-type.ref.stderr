@@ -1,0 +1,3 @@
+not-an-ac-type.cpp:4 (9-10): Base (of type int) is not a register
+ 4 |   return a.slc<4>(0);
+   |          ^

@@ -100,6 +100,7 @@
                        (cons-with-hint (make-lambda-with-hint remaining-formals new-body fn) remaining-args term)))))
              ;; not a lambda:
              (cons-with-hint fn new-args term)))))))
+
  (defund substitute-constants-in-lambdas-aux-lst (terms alist)
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (symbol-alistp alist)

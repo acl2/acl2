@@ -1,0 +1,4 @@
+for-loop-init-not-assigned.cpp:4 (11-12): variable must be assigned directly
+ 4 |   for (int i; i < 4; i++) {
+   |            ^
+note: non initialized variable can introduce undefined behavior

@@ -379,3 +379,12 @@
 (must-not-prove-with-stp equal-1 '(or (equal x 1) (equal x 0)))
 ;; makes sure it doesn't improperly assing a bv1 type to x:
 (must-not-prove-with-stp equal-1 '(if (equal x 1) t (equal x (bvand 1 x 0))))
+
+;; test where a hyp gives a type tighter than the obvious type.  works because we translate the unsigned-byte-p
+(must-prove-with-stp type-test1 '(implies (and (unsigned-byte-p 1 (bvplus 32 x y)) (not (equal 0 (bvplus 32 x y)))) (equal 1 (bvplus 32 x y))))
+
+;; test where a hyp gives a type tighter than the obvious type (and we don't translate the thing that has the type)
+(must-prove-with-stp type-test2 '(implies (and (unsigned-byte-p 1 (leftrotate 17 x y)) (not (equal 0 (leftrotate 17 x y)))) (equal 1 (leftrotate 17 x y))))
+
+;; still works, even though we have z
+(must-prove-with-stp type-test1 '(implies (and (unsigned-byte-p 1 (bvplus 32 x y)) (equal z (bvplus 32 x y)) (not (equal 0 z))) (equal 1 z)))
