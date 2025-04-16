@@ -1,0 +1,3 @@
+static-invalid.cpp:6 (9-12): syntax error, unexpected INT, expecting CONST
+ 6 |   static int foo = 3;
+   |          ^^^

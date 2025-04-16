@@ -797,7 +797,9 @@
   :short "Check if
           the round numbers of all the certificates in a list are even."
   (evenp (certificate->round x))
+
   ///
+
   (fty::deffixequiv cert-list-evenp
     :args ((x certificate-listp))))
 

@@ -14,6 +14,12 @@
 (include-book "addresses")
 (include-book "transactions")
 
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
+
+(local (include-book "../library-extensions/oset-nonemptyp"))
+(local (include-book "../library-extensions/oset-theorems"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -90,6 +96,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk prop-set-all-author-p ((author addressp) (props proposal-setp))
+  :returns (yes/no booleanp)
+  :short "Check if all the proposals in a set have a given author."
+  (forall (prop)
+          (implies (set::in prop (proposal-set-fix props))
+                   (equal (proposal->author prop)
+                          (address-fix author))))
+  ///
+  (fty::deffixequiv-sk prop-set-all-author-p
+    :args ((author addressp) (props proposal-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk prop-set-none-author-p ((author addressp) (props proposal-setp))
+  :returns (yes/no booleanp)
+  :short "Check if none of the proposals in a set have a given author."
+  (forall (prop)
+          (implies (set::in prop (proposal-set-fix props))
+                   (not (equal (proposal->author prop)
+                               (address-fix author)))))
+  ///
+  (fty::deffixequiv-sk prop-set-none-author-p
+    :args ((author addressp) (props proposal-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define props-with-author+round ((author addressp)
                                  (round posp)
                                  (props proposal-setp))
@@ -126,7 +158,31 @@
                 (equal (proposal->round prop)
                        (pos-fix round))))
     :induct t
-    :enable emptyp-of-proposal-set-fix))
+    :enable emptyp-of-proposal-set-fix)
+
+  (defruled not-emptyp-of-props-with-author+round
+    (implies (and (set::in prop props)
+                  (proposal-setp props)
+                  (equal (proposal->author prop) author)
+                  (equal (proposal->round prop) round))
+             (not (set::emptyp (props-with-author+round author round props))))
+    :induct t)
+
+  (defruled props-with-author+round-when-none-author
+    (implies (prop-set-none-author-p author props)
+             (equal (props-with-author+round author round props) nil))
+    :use lemma
+    :enable set::emptyp
+    :disable props-with-author+round
+    :prep-lemmas
+    ((defruled lemma
+       (implies (prop-set-none-author-p author props)
+                (set::emptyp (props-with-author+round author round props)))
+       :enable (set::emptyp-to-not-nonemptyp
+                set::nonemptyp
+                in-of-props-with-author+round
+                prop-set-none-author-p-necc)
+       :disable props-with-author+round))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -151,6 +207,13 @@
     :hyp (proposal-setp props)
     :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
 
+  (defruled in-of-props-with-round
+    (equal (set::in prop (props-with-round round props))
+           (and (set::in prop (proposal-set-fix props))
+                (equal (proposal->round prop)
+                       (pos-fix round))))
+    :induct t)
+
   (defruled not-in-prop-set-when-none-with-round
     (implies (and (set::emptyp (props-with-round (proposal->round prop) props))
                   (proposal-setp props))
@@ -164,4 +227,119 @@
                   (proposal-setp props))
              (not (set::in prop props0)))
     :enable (not-in-prop-set-when-none-with-round
-             set::expensive-rules)))
+             set::expensive-rules))
+
+  (defruled props-with-author+round-to-props-with-round
+    (implies (prop-set-all-author-p author props)
+             (equal (props-with-author+round author round props)
+                    (props-with-round round props)))
+    :disable props-with-round
+    :enable (set::double-containment-no-backchain-limit
+             set::subset-pick-a-point
+             in-of-props-with-author+round
+             in-of-props-with-round
+             prop-set-all-author-p-necc)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk prop-set-unequivp ((props proposal-setp))
+  :returns (yes/no booleanp)
+  :short "Check if a set of proposals is unequivocal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check whether the proposals in the set
+     have unique combinations of author and round.
+     We check that any two proposals in the set
+     with the same author and round
+     are in fact the same proposal.
+     This means that the proposals in the set
+     are uniquely identified by their author and round.")
+   (xdoc::p
+    "The rule @('prop-set-unequivp-of-insert')
+     is useful to prove the preservation of non-equivocation
+     when a set of proposals is extended.
+     Either the added proposal is already in the initial set,
+     or the initial set has no proposal with
+     the added proposal's author and round."))
+  (forall (prop1 prop2)
+          (implies (and (set::in prop1 (proposal-set-fix props))
+                        (set::in prop2 (proposal-set-fix props))
+                        (equal (proposal->author prop1)
+                               (proposal->author prop2))
+                        (equal (proposal->round prop1)
+                               (proposal->round prop2)))
+                   (equal prop1 prop2)))
+
+  ///
+
+  (fty::deffixequiv-sk prop-set-unequivp
+    :args ((props proposal-setp)))
+
+  (defruled prop-set-unequivp-when-subset
+    (implies (and (prop-set-unequivp props)
+                  (set::subset (proposal-set-fix props0)
+                               (proposal-set-fix props)))
+             (prop-set-unequivp props0))
+    :disable prop-set-unequivp-necc
+    :use (:instance prop-set-unequivp-necc
+                    (prop1 (mv-nth 0 (prop-set-unequivp-witness props0)))
+                    (prop2 (mv-nth 1 (prop-set-unequivp-witness props0))))
+    :enable set::expensive-rules)
+
+  (defrule proop-set-unequivp-of-empty
+    (prop-set-unequivp nil))
+
+  (defruled prop-set-unequivp-of-insert
+    (implies (and (proposal-setp props)
+                  (proposalp prop))
+             (equal (prop-set-unequivp (set::insert prop props))
+                    (and (prop-set-unequivp props)
+                         (or (set::in prop props)
+                             (set::emptyp (props-with-author+round
+                                           (proposal->author prop)
+                                           (proposal->round prop)
+                                           props))))))
+    :use (if-part only-if-part)
+    :prep-lemmas
+    ((defruled if-part
+       (implies (and (proposal-setp props)
+                     (proposalp prop)
+                     (prop-set-unequivp props)
+                     (or (set::in prop props)
+                         (set::emptyp (props-with-author+round
+                                       (proposal->author prop)
+                                       (proposal->round prop)
+                                       props))))
+                (prop-set-unequivp (set::insert prop props)))
+       :use (:instance prop-set-unequivp-necc
+                       (prop1 (mv-nth 0 (prop-set-unequivp-witness
+                                         (set::insert prop props))))
+                       (prop2 (mv-nth 1 (prop-set-unequivp-witness
+                                         (set::insert prop props))))
+                       (props props))
+       :enable not-emptyp-of-props-with-author+round
+       :disable prop-set-unequivp-necc)
+     (defruled only-if-part
+       (implies (and (proposal-setp props)
+                     (proposalp prop)
+                     (prop-set-unequivp (set::insert prop props)))
+                (and (prop-set-unequivp props)
+                     (or (set::in prop props)
+                         (set::emptyp (props-with-author+round
+                                       (proposal->author prop)
+                                       (proposal->round prop)
+                                       props)))))
+       :enable (prop-set-unequivp-when-subset
+                set::emptyp-to-not-nonemptyp
+                set::nonemptyp
+                in-of-props-with-author+round)
+       :disable (prop-set-unequivp
+                 prop-set-unequivp-necc)
+       :use (:instance prop-set-unequivp-necc
+                       (prop1 prop)
+                       (prop2 (set::nonempty-witness
+                               (props-with-author+round (proposal->author prop)
+                                                        (proposal->round prop)
+                                                        props)))
+                       (props (set::insert prop props)))))))

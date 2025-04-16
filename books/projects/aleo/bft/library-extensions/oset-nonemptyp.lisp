@@ -56,6 +56,15 @@
     :use (set::nonemptyp-when-not-emptyp
           set::not-emptyp-when-nonemptyp))
 
+  (defruled set::emptyp-to-not-nonemptyp
+    (equal (set::emptyp set)
+           (not (set::nonemptyp set)))
+    :use (:instance set::not-emptyp-to-nonemptyp (set set))
+    :enable not)
+
+  (theory-invariant (incompatible (:rewrite set::not-emptyp-to-nonemptyp)
+                                  (:rewrite set::emptyp-to-not-nonemptyp)))
+
   (defruled set::nonempty-witness-from-not-emptyp
     (implies (not (set::emptyp set))
              (set::in (set::nonempty-witness set) set))

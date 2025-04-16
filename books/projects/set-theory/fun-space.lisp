@@ -6,15 +6,17 @@
 
 (include-book "base")
 
-(zsub zfns                   ; name
-      (a b)                  ; args
+; Introduce the set of all functions mapping a to b, i.e., a -> b.
+; Note that every such function f is a subset of the cartesian product
+; (prod2 a b), hence a member of s = (powerset (prod2 a b)).
+(zsub fun-space (a b)        ; name, args
       fn                     ; x
       (powerset (prod2 a b)) ; s
       (and (funp fn)
            (equal (domain fn) a))
       )
 
-; Start proof of in-zfns.
+; Start proof of in-fun-space.
 
 (defthmz subset-prod2-domain-codomain
   (implies (relation-p r)
@@ -92,12 +94,12 @@
            :expand ((subset (codomain r) b))))
   :props (zfc prod2$prop domain$prop inverse$prop))
 
-(defthmz in-zfns ; alternate form of zfns$comprehension
-  (equal (in fn (zfns a b))
+(defthmz in-fun-space ; alternate form of fun-space$comprehension
+  (equal (in fn (fun-space a b))
          (and (funp fn)
               (equal (domain fn) a)
               (subset (codomain fn) b)))
-  :props (zfc prod2$prop domain$prop inverse$prop zfns$prop)
+  :props (zfc prod2$prop domain$prop inverse$prop fun-space$prop)
   :hints (("Goal"
            :restrict ((subset-transitivity
                        ((y (prod2 (domain fn) (codomain fn)))))))))
