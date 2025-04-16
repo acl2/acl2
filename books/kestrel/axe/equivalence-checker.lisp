@@ -17467,7 +17467,7 @@
                            (types 'nil)  ; gives types to the vars for the proofs
                            (interpreted-function-alist 'nil) ;affects soundness
                            (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
-                           (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                           (tests '50) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                            (tactic ':rewrite-and-sweep)
                            (print ':brief)
                            (debug-nodes 'nil)
@@ -17680,7 +17680,7 @@
                                   (types 'nil) ; gives types to the vars for the proofs
                                   (interpreted-function-alist 'nil) ;affects soundness
                                   (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
-                                  (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                                  (tests '50) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                                   (tactic ':rewrite-and-sweep)
                                   (print ':brief)
                                   (debug-nodes 'nil)
@@ -17897,7 +17897,7 @@
                                     (types 'nil) ; gives types to the vars for the proofs
                                     (interpreted-function-alist 'nil) ;affects soundness
                                     (test-types 'nil) ; overrides types to give more restricted types for pre-sweep testing
-                                    (tests '100) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
+                                    (tests '50) ; (max) number of tests to run, if :tactic is :rewrite-and-sweep
                                     (tactic ':rewrite-and-sweep)
                                     (print ':brief)
                                     (debug-nodes 'nil)
