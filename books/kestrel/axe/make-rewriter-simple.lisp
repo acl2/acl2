@@ -347,6 +347,7 @@
          (simplify-dag-nodes-name (pack$ 'simplify-dag-nodes- suffix))
          (simplify-dag-core-name (pack$ 'simplify-dag-core- suffix))
          (simplify-dag-name (pack$ 'simplify-dag- suffix)) ; produces a DAG
+         (simplify-dag-with-rule-alists-name (pack$ 'simplify-dag-with-rule-alists- suffix)) ; produces a DAG
          (simplify-term-name (pack$ 'simplify-term- suffix)) ; produces a DAG
          (simplify-term-to-term-name (pack$ 'simplify-term-to-term- suffix)) ; produces a term
          (simplify-terms-to-terms-name (pack$ 'simplify-terms-to-terms- suffix)) ; produces a list of terms
@@ -472,6 +473,7 @@
                                                   rewrite-stobj count))
          (call-of-simplify-term `(,simplify-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))
          (call-of-simplify-dag `(,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))
+         (call-of-simplify-dag-with-rule-alists `(,simplify-dag-with-rule-alists-name dag assumptions rule-alists interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))
          (call-of-simplify-dag-core `(,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))
          )
     `(progn
@@ -795,7 +797,8 @@
                      (otherwise                ; HYP is normal:
                        (b* ((old-try-count tries) ; might be nil
                             ((mv erp relievedp rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                             (b* (;; First, substitute in for all the vars in HYP (this also evaluates what it can):
+                             (b* (;; First, substitute in for all the vars in HYP (this also evaluates what it can)
+                                  ;; (TODO: Consider not instantiating the hyp but rather simplifying it wrt an alist):
                                   (instantiated-hyp (,instantiate-hyp-no-free-vars2-name hyp alist (get-interpreted-function-alist rewrite-stobj)))
                                   ;; instantiated-hyp is now fully instantiated.  It is an axe-tree with leaves that are quoteps and nodenums (from vars already bound)
                                   ((when (fquotep instantiated-hyp)) ;; we know the instantiated-hyp is a cons, because hyp is
@@ -805,14 +808,13 @@
                                        (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                                      ;; The instantiated-hyp is 'nil, so it failed to be relieved:
                                      (progn$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                                  ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
+                                                  ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting:
                                                   (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Instantiated to nil.)~%" hyp rule-symbol))
                                              (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
-                                  ;; There are no free vars, so we try to relieve the (fully-instantiated) hyp by simplifying it:
+                                  ;; There are no free vars (see bound-vars-suitable-for-hypp), so we try to relieve the (fully-instantiated) hyp by simplifying it:
                                   ((mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                                    ;; TODO: This tests whether atoms in the instiantiated-hyp are vars, but that seems wasteful because the hyp is fully instantiated):
                                    ;; bozo do we really want to add stupid natp hyps, etc. to the memoization? what about ground terms (most of them will have been evaluated above)?
-                                   ;; TODO: Consider not instantiating the hyp but rather simplifying it wrt an alist:
                                    (,simplify-tree-and-add-to-dag-name instantiated-hyp ; todo: is this known to be a non-var?  if so, take advantage of that fact
                                                                        nil ; nothing is yet known to be equal to instantiated-hyp
                                                                        rewrite-stobj2 memoization hit-counts tries limits
@@ -824,19 +826,20 @@
                                        (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                                      ;;hyp rewrote to 'nil, so it failed to be relieved:
                                      (progn$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                                  ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
+                                                  ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting:
                                                   (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol))
                                              (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
-                                  ;; hyp didn't rewrite to a constant, new-nodenum-or-quotep is a node number):
+                                  (new-nodenum new-nodenum-or-quotep) ;; didn't rewrite to a constant, so new-nodenum-or-quotep is a node number
                                   ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
-                                  ((when ;;(nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist (get-dag-array rewrite-stobj2)) ;todo: only do this if the hyp is not a known-boolean?
-                                       (known-true-in-node-replacement-arrayp new-nodenum-or-quotep node-replacement-array node-replacement-count))
+                                  ((when ;;(nodenum-equal-to-refined-assumptionp new-nodenum refined-assumption-alist (get-dag-array rewrite-stobj2)) ;todo: only do this if the hyp is not a known-boolean?
+                                       (known-true-in-node-replacement-arrayp new-nodenum node-replacement-array node-replacement-count))
                                    ;;hyp rewrote to a known assumption and so counts as relieved:
                                    (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
+                                  ;; TODO: Consider calling STP here, on new-nodenum and using the refined-assumption-alist (or similar information in a different format)
                                   ;; Hyp failed to be relieved:
                                   (- (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj)) ; todo: pull this out into a subroutine?:
                                           (let* ((relevant-nodes (nodenums-in-refined-assumption-alist refined-assumption-alist nil))
-                                                 ;; (relevant-nodes (let ((expr (aref1 'dag-array (get-dag-array rewrite-stobj2) new-nodenum-or-quotep)))
+                                                 ;; (relevant-nodes (let ((expr (aref1 'dag-array (get-dag-array rewrite-stobj2) new-nodenum)))
                                                  ;;                   (if (and (consp expr)
                                                  ;;                            (not (eq 'quote (ffn-symb expr))))
                                                  ;;                       (append-nodenum-dargs (dargs expr) relevant-nodes)
@@ -844,7 +847,7 @@
                                                  )
                                             (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
                                                     (cw "Reason: Rewrote to:~%")
-                                                    (print-dag-node-nicely new-nodenum-or-quotep 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 200)
+                                                    (print-dag-node-nicely new-nodenum 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 200)
                                                     (cw "(Alist: ~x0)~%(Refined assumption alist:~%" alist)
                                                     (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
                                                     (cw ")~%")
@@ -5865,6 +5868,177 @@
                            (not (myquotep (mv-nth 1 ,call-of-simplify-dag)))))
            :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
                     :in-theory (disable ,(pack$ simplify-dag-name '-return-type)))))
+
+
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+         ;; Returns (mv erp dag-or-quotep limits).
+         ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
+         ;; Only the first 5 arguments affect soundness.
+         (defund ,simplify-dag-with-rule-alists-name (dag
+                                                      assumptions
+                                                      rule-alists
+                                                      interpreted-function-alist
+                                                      known-booleans
+                                                      normalize-xors ; next few args do affect the result
+                                                      limits
+                                                      memoizep
+                                                      count-hits
+                                                      print
+                                                      monitored-symbols
+                                                      fns-to-elide)
+           (declare (xargs :guard (and (pseudo-dagp dag)
+                                       (pseudo-term-listp assumptions)
+                                       (rule-alistsp rule-alists)
+                                       (interpreted-function-alistp interpreted-function-alist)
+                                       (symbol-listp known-booleans)
+                                       (normalize-xors-optionp normalize-xors)
+                                       (rule-limitsp limits)
+                                       (booleanp memoizep)
+                                       (count-hits-argp count-hits)
+                                       (print-levelp print)
+                                       (symbol-listp monitored-symbols)
+                                       (symbol-listp fns-to-elide))
+                           :measure (len rule-alists)))
+           (if (endp rule-alists)
+               (mv (erp-nil) dag limits)
+             (b* (((mv erp dag-or-quotep limits)
+                   (,simplify-dag-name dag
+                                       assumptions
+                                       (first rule-alists)
+                                       interpreted-function-alist
+                                       known-booleans
+                                       normalize-xors
+                                       limits
+                                       memoizep
+                                       count-hits
+                                       print
+                                       monitored-symbols
+                                       fns-to-elide))
+                  ((when erp) (mv erp dag limits))
+                  ((when (quotep dag-or-quotep))
+                   (mv (erp-nil) dag-or-quotep limits))
+                  (dag dag-or-quotep) ; it's not a quotep
+                  )
+               (,simplify-dag-with-rule-alists-name dag
+                                                    assumptions
+                                                    (rest rule-alists)
+                                                    interpreted-function-alist
+                                                    known-booleans
+                                                    normalize-xors
+                                                    limits
+                                                    memoizep
+                                                    count-hits
+                                                    print
+                                                    monitored-symbols
+                                                    fns-to-elide))))
+
+         (defthm ,(pack$ simplify-dag-with-rule-alists-name '-return-type1)
+           (implies (and (not (mv-nth 0 ,call-of-simplify-dag-with-rule-alists)) ; no error
+                         (pseudo-dagp dag)
+                         (pseudo-term-listp assumptions)
+                         (rule-limitsp limits)
+                         (rule-alistsp rule-alists)
+                         ;; (count-hits-argp count-hits)
+                         (print-levelp print)
+                         (interpreted-function-alistp interpreted-function-alist)
+                         (symbol-listp known-booleans)
+                         (symbol-listp monitored-symbols)
+                         ;; (symbol-listp fns-to-elide)
+                         (normalize-xors-optionp normalize-xors)
+                         (booleanp memoizep))
+                    (or (myquotep (mv-nth 1 ,call-of-simplify-dag-with-rule-alists))
+                        (and (pseudo-dagp (mv-nth 1 ,call-of-simplify-dag-with-rule-alists))
+                             ;; (<= (len (mv-nth 1 ,call-of-simplify-dag-with-rule-alists))
+                             ;;     *max-1d-array-length*)
+                             ;; todo
+                             )))
+           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                    :in-theory (e/d (,simplify-dag-with-rule-alists-name)
+                                    (myquotep quotep)))))
+
+         ;; trying without this (since rule-alists might be nil and we just return the dag)
+         ;; (defthm ,(pack$ simplify-dag-with-rule-alists-name '-return-type1-linear)
+         ;;   (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag-with-rule-alists))) ; we got a dag
+         ;;                 (not (mv-nth 0 ,call-of-simplify-dag-with-rule-alists)) ; no error
+         ;;                 (pseudo-dagp dag)
+         ;;                 (pseudo-term-listp assumptions)
+         ;;                 (rule-limitsp limits)
+         ;;                 (rule-alistsp rule-alists)
+         ;;                 ;; (count-hits-argp count-hits)
+         ;;                 (print-levelp print)
+         ;;                 (interpreted-function-alistp interpreted-function-alist)
+         ;;                 (symbol-listp known-booleans)
+         ;;                 (symbol-listp monitored-symbols)
+         ;;                 ;; (symbol-listp fns-to-elide)
+         ;;                 (normalize-xors-optionp normalize-xors)
+         ;;                 (booleanp memoizep))
+         ;;            (<= (len (mv-nth 1 ,call-of-simplify-dag-with-rule-alists))
+         ;;                *max-1d-array-length*))
+         ;;   :rule-classes :linear
+         ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+         ;;            :in-theory (e/d (,simplify-dag-with-rule-alists-name)
+         ;;                            (myquotep natp)))))
+
+         ;; Uses myquotep as the normal form.   todo: would quotep or even fquotep be better?
+         (defthm ,(pack$ simplify-dag-with-rule-alists-name '-return-type1-corollary)
+           (implies (and (not (mv-nth 0 ,call-of-simplify-dag-with-rule-alists)) ; no error
+                         (pseudo-dagp dag)
+                         (pseudo-term-listp assumptions)
+                         (rule-limitsp limits)
+                         (rule-alistsp rule-alists)
+                         ;; (count-hits-argp count-hits)
+                         (print-levelp print)
+                         (interpreted-function-alistp interpreted-function-alist)
+                         (symbol-listp known-booleans)
+                         (symbol-listp monitored-symbols)
+                         ;; (symbol-listp fns-to-elide)
+                         (normalize-xors-optionp normalize-xors)
+                         (booleanp memoizep))
+                    (equal (pseudo-dagp (mv-nth 1 ,call-of-simplify-dag-with-rule-alists))
+                           (not (myquotep (mv-nth 1 ,call-of-simplify-dag-with-rule-alists)))))
+           :hints (("Goal" :use ,(pack$ simplify-dag-with-rule-alists-name '-return-type1)
+                    :in-theory (disable ,(pack$ simplify-dag-with-rule-alists-name '-return-type1)))))
+
+         ;; Uses myquotep as the normal form.
+         (defthm ,(pack$ simplify-dag-with-rule-alists-name '-return-type1-corollary2)
+           (implies (and (not (mv-nth 0 ,call-of-simplify-dag-with-rule-alists)) ; no error
+                         (pseudo-dagp dag)
+                         (pseudo-term-listp assumptions)
+                         (rule-limitsp limits)
+                         (rule-alistsp rule-alists)
+                         ;; (count-hits-argp count-hits)
+                         (print-levelp print)
+                         (interpreted-function-alistp interpreted-function-alist)
+                         (symbol-listp known-booleans)
+                         (symbol-listp monitored-symbols)
+                         ;; (symbol-listp fns-to-elide)
+                         (normalize-xors-optionp normalize-xors)
+                         (booleanp memoizep))
+                    (equal (quotep (mv-nth 1 ,call-of-simplify-dag-with-rule-alists))
+                           (myquotep (mv-nth 1 ,call-of-simplify-dag-with-rule-alists))))
+           :hints (("Goal" :use ,(pack$ simplify-dag-with-rule-alists-name '-return-type1)
+                    :in-theory (disable ,(pack$ simplify-dag-with-rule-alists-name '-return-type1)
+                                         ,(pack$ simplify-dag-with-rule-alists-name '-return-type1-corollary)))))
+
+         (defthm ,(pack$ simplify-dag-with-rule-alists-name '-return-type2)
+           (implies (and (not (mv-nth 0 ,call-of-simplify-dag-with-rule-alists)) ; no error
+                         (pseudo-dagp dag)
+                         (pseudo-term-listp assumptions)
+                         (rule-limitsp limits)
+                         (rule-alistsp rule-alists)
+                         ;; (count-hits-argp count-hits)
+                         (print-levelp print)
+                         (interpreted-function-alistp interpreted-function-alist)
+                         (symbol-listp known-booleans)
+                         (symbol-listp monitored-symbols)
+                         ;; (symbol-listp fns-to-elide)
+                         (normalize-xors-optionp normalize-xors)
+                         (booleanp memoizep))
+                    (rule-limitsp (mv-nth 2 ,call-of-simplify-dag-with-rule-alists)))
+           :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                    :in-theory (e/d (,simplify-dag-with-rule-alists-name)
+                                    (myquotep quotep)))))
 
          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

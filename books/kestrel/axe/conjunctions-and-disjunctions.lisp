@@ -993,14 +993,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;move
-(defthmd dargp-less-than-of-cadr-of-car-when-bounded-possibly-negated-nodenumsp
-  (implies (bounded-possibly-negated-nodenumsp items dag-len)
-           (equal (dargp-less-than (car (cdr (car items))) dag-len)
-                  (consp (car items))))
-  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
-                                     bounded-possibly-negated-nodenump))))
-
 ;; Returns an axe-disjunction that is boolean-equivalent to the disjunction of the ITEMS.
 (defund get-axe-disjunction-from-dag-items (items dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)

@@ -177,7 +177,8 @@
        (ord-info (cdr lookup)))
     (c$::valid-ord-info-case
       ord-info
-      :objfun (if (equal ord-info.type (c$::type-struct))
+      ;; TODO: also return struct tag?
+      :objfun (if (c$::type-case ord-info.type :struct)
                   ;; TODO also check defstatus isn't undefined?
                   (retok ord-info.linkage)
                 (reterr (msg "~x0 has type ~x1, not a struct type"

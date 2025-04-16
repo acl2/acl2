@@ -1557,8 +1557,7 @@
                          " ENDIF)")
                   constant-array-info))
             (mv (erp-t) nil constant-array-info)))
-        ;; todo: do we need this?
-        (unsigned-byte-p ;(UNSIGNED-BYTE-P WIDTH X)
+        (unsigned-byte-p ;(UNSIGNED-BYTE-P WIDTH X), needed for things like (unsigned-byte-p 1 (bvplus 8 x y))
          (if (and (= 2 (len (dargs expr)))
                   (darg-quoted-natp (darg1 expr))
                   (bv-arg-okp (darg2 expr)))
