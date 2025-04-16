@@ -710,14 +710,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Informally, two types are compatible if they are ``the same'' type;
-     this is actually a little weaker than type equality,
-     as two types (as captured in @(tsee type))
-     may differ syntactically yet denote the same semantic type.
-     [C17:6.2.7] phrases things in terms of
-     the two types ``having'' the same type,
-     which is a bit odd, since types are (not have) types;
-     but the intention is clear.")
+    "Type compatibility affects whether a redeclaration is permissible,
+     whether one type may be used when another is expected,
+     and whether two declarations referring to the same object are
+     well-defined.
+     This is a little weaker than type equality.
+     For instance,
+     an enumeration type is different than an integer type [C17:6.2.5/16],
+     but all enumeration types are compatible with some integer type
+     [C17:6.7.2.2/4].")
    (xdoc::p
     "Because we currently only model an approximation of C types,
      our notion of compatibility is also approximate.
