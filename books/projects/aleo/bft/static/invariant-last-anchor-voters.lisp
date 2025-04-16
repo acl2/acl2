@@ -68,7 +68,7 @@
      are at least one more than the maximum number of faulty validators."))
   (b* (((validator-state vstate) vstate)
        ((when (equal vstate.last 0)) t)
-       (voters (certificates-with-round (1+ vstate.last) vstate.dag))
+       (voters (certs-with-round (1+ vstate.last) vstate.dag))
        ((mv yes &)
         (tally-leader-votes (leader-at-round vstate.last vals) voters)))
     (>= yes (1+ max-faulty))))
@@ -136,7 +136,7 @@
               (max-faulty systate)
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
-             certificates-with-round-of-insert
+             certs-with-round-of-insert
              tally-leader-votes-of-insert
              validator-state->dag-of-create-certificate-next
              validator-state->last-of-create-certificate-next))
@@ -209,7 +209,7 @@
               (max-faulty systate)
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
-             certificates-with-round-of-insert
+             certs-with-round-of-insert
              tally-leader-votes-of-insert
              validator-state->dag-of-store-certificate-next
              validator-state->last-of-store-certificate-next))

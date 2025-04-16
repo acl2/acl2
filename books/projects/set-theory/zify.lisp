@@ -25,13 +25,14 @@
 ; We often want a function to have domain and range consisting of all ACL2
 ; objects.  We start by defining that set.
 
-(zsub acl2      ; name
-      ()        ; args
+(zsub acl2 ()   ; name, args
       x         ; x
       (v-omega) ; s
       (acl2p x) ; u
       )
 
+; Zify-prop will be useful in our applications of zify.  We introduce it now
+; because it's also useful for lemma acl2p-is-acl2 below.
 (extend-zfc-table zify-prop
                   prod2$prop domain$prop inverse$prop zfc)
 

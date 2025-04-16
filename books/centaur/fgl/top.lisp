@@ -45,6 +45,7 @@
 (include-book "sat-binder")
 (include-book "equivcheck")
 (include-book "extremize")
+(include-book "fty")
 
 (local (in-theory (disable w)))
 

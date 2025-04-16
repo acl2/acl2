@@ -133,7 +133,7 @@
        (anchor?
         (cert-with-author+round leader commit-round vstate.dag))
        ((unless anchor?) nil)
-       (voters (certificates-with-round vstate.round vstate.dag))
+       (voters (certs-with-round vstate.round vstate.dag))
        ((mv yes-votes &) (tally-leader-votes leader voters))
        ((unless (>= yes-votes
                     (1+ (committee-max-faulty vstate.round-commtt))))

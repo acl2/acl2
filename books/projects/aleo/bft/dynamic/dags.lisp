@@ -131,7 +131,7 @@
           (and (equal author (certificate->author cert))
                (certificate-fix cert)))
          (prev-certs
-          (certificates-with-authors+round (certificate->previous cert)
+          (certs-with-authors+round (certificate->previous cert)
                                            (1- (certificate->round cert))
                                            dag)))
       (path-to-author+round-set prev-certs author round dag))
@@ -168,7 +168,7 @@
                 (set1 (cert-set->round-set (set::tail certs)))
                 (set2 (cert-set->round-set certs)))
      (:instance
-      cert-set->round-set-of-certificates-with-authors+round-not-empty
+      cert-set->round-set-of-certs-with-authors+round-not-empty
       (authors (certificate->previous cert))
       (round (1- (certificate->round cert)))
       (certs dag)))))
@@ -183,7 +183,7 @@
                        certificate->round-in-cert-set->round-set)
     :use
     (:instance
-     cert-set->round-set-of-certificates-with-authors+round-not-empty
+     cert-set->round-set-of-certs-with-authors+round-not-empty
      (authors (certificate->previous cert))
      (round (1- (certificate->round cert)))
      (certs dag))))
@@ -233,7 +233,7 @@
       :hyp (and (certificate-setp dag)
                 (set::subset certs dag))
       :fn path-to-author+round-set)
-    :hints (("Goal" :in-theory (enable* certificates-with-authors+round-subset
+    :hints (("Goal" :in-theory (enable* certs-with-authors+round-subset
                                         set::expensive-rules))))
   (in-theory (disable path-to-author+round-in-dag
                       path-to-author+round-set-in-dag))
@@ -329,7 +329,7 @@
     :returns (hist certificate-setp)
     (b* (((certificate cert) cert)
          ((when (= cert.round 1)) (set::insert (certificate-fix cert) nil))
-         (prev-certs (certificates-with-authors+round cert.previous
+         (prev-certs (certs-with-authors+round cert.previous
                                                       (1- cert.round)
                                                       dag))
          (prev-hist (certificate-set-causal-history prev-certs dag)))
@@ -366,7 +366,7 @@
                 (set1 (cert-set->round-set (set::tail certs)))
                 (set2 (cert-set->round-set certs)))
      (:instance
-      cert-set->round-set-of-certificates-with-authors+round-not-empty
+      cert-set->round-set-of-certs-with-authors+round-not-empty
       (authors (certificate->previous cert))
       (round (1- (certificate->round cert)))
       (certs dag)))))
@@ -393,7 +393,7 @@
       :fn certificate-set-causal-history)
     :hints
     (("Goal" :in-theory (enable* set::expensive-rules
-                                 certificates-with-authors+round-subset))))
+                                 certs-with-authors+round-subset))))
   (in-theory (disable certificate-causal-history-subset
                       certificate-set-causal-history-subset)))
 
@@ -419,7 +419,7 @@
     "We obtain all the certificates from the successive round,
      and then we filter the ones that have an edge to @('cert'),
      i.e. that have the author of @('cert') in the @('previous') component."))
-  (successors-loop (certificates-with-round
+  (successors-loop (certs-with-round
                     (1+ (certificate->round cert)) dag)
                    (certificate->author cert))
 
@@ -492,7 +492,7 @@
 
   (defret successors-subset-of-next-round
     (set::subset certs
-                 (certificates-with-round (1+ (certificate->round cert)) dag))
+                 (certs-with-round (1+ (certificate->round cert)) dag))
     :hints (("Goal" :in-theory (enable successors-loop-subset))))
   (in-theory (disable successors-subset-of-next-round))
 
@@ -500,12 +500,12 @@
     (set::subset certs dag)
     :hyp (certificate-setp dag)
     :hints (("Goal"
-             :in-theory (e/d (certificates-with-round-subset
+             :in-theory (e/d (certs-with-round-subset
                               successors-subset-of-next-round)
                              (successors))
              :use (:instance set::subset-transitive
                              (x (successors cert dag))
-                             (y (certificates-with-round
+                             (y (certs-with-round
                                  (1+ (certificate->round cert)) dag))
                              (z dag)))))
   (in-theory (disable successors-subset-of-dag))
@@ -517,7 +517,7 @@
              (set::subset (successors cert dag1)
                           (successors cert dag2)))
     :enable (successors-loop-monotone
-             certificates-with-round-monotone))
+             certs-with-round-monotone))
 
   (defruled cert-set->round-set-of-successors
     (implies (certificate-setp dag)
@@ -525,11 +525,11 @@
                     (if (set::emptyp (successors cert dag))
                         nil
                       (set::insert (1+ (certificate->round cert)) nil))))
-    :enable (emptyp-of-certificates-with-round-to-no-round
-             cert-set->round-set-of-certificates-with-round)
+    :enable (emptyp-of-certs-with-round-to-no-round
+             cert-set->round-set-of-certs-with-round)
     :use (:instance cert-set->round-set-of-successors-loop
                     (prev (certificate->author cert))
-                    (certs (certificates-with-round
+                    (certs (certs-with-round
                             (+ 1 (certificate->round cert)) dag))
                     (round (+ 1 (certificate->round cert)))))
 
@@ -538,7 +538,7 @@
                   (set::in cert1 (successors cert dag)))
              (equal (certificate->round cert1)
                     (1+ (certificate->round cert))))
-    :enable (in-of-certificates-with-round
+    :enable (in-of-certs-with-round
              set::expensive-rules)
     :disable successors
     :use successors-subset-of-next-round))
@@ -570,7 +570,7 @@
      All the returned certificates are in the round just before @('cert')."))
   (if (equal (certificate->round cert) 1)
       nil
-    (certificates-with-authors+round (certificate->previous cert)
+    (certs-with-authors+round (certificate->previous cert)
                                      (1- (certificate->round cert))
                                      dag))
   :guard-hints (("Goal" :in-theory (enable posp)))
@@ -581,18 +581,18 @@
     (set::subset certs dag)
     :hyp (certificate-setp dag)
     :hints
-    (("Goal" :in-theory (enable certificates-with-authors+round-subset))))
+    (("Goal" :in-theory (enable certs-with-authors+round-subset))))
   (in-theory (disable predecessors-subset-of-dag))
 
   (defret predecessors-subset-of-previous-round
     (set::subset certs
-                 (certificates-with-round (1- (certificate->round cert)) dag))
+                 (certs-with-round (1- (certificate->round cert)) dag))
     :hyp (certificate-setp dag)
     :hints
     (("Goal"
-      :in-theory (enable certificates-with-authors+round-to-round-of-authors
-                         certificates-with-round-monotone
-                         certificates-with-authors-subset))))
+      :in-theory (enable certs-with-authors+round-to-round-of-authors
+                         certs-with-round-monotone
+                         certs-with-authors-subset))))
   (in-theory (disable predecessors-subset-of-previous-round))
 
   (defruled cert-set->round-set-of-predecessors
@@ -601,9 +601,9 @@
                     (if (set::emptyp (predecessors cert dag))
                         nil
                       (set::insert (1- (certificate->round cert)) nil))))
-    :enable (certificates-with-authors+round-to-round-of-authors
-             emptyp-of-certificates-with-round-to-no-round
-             cert-set->round-set-of-certificates-with-round
+    :enable (certs-with-authors+round-to-round-of-authors
+             emptyp-of-certs-with-round-to-no-round
+             cert-set->round-set-of-certs-with-round
              posp))
 
   (defruled head-of-predecessors-in-predecessors
@@ -626,7 +626,7 @@
                   (set::in cert1 (predecessors cert dag)))
              (equal (certificate->round cert1)
                     (1- (certificate->round cert))))
-    :enable (in-of-certificates-with-authors+round
+    :enable (in-of-certs-with-authors+round
              posp))
 
   (defruled round-of-head-of-predecessors
@@ -669,7 +669,7 @@
     (or (= cert.round 1)
         (set::subset cert.previous
                      (cert-set->author-set
-                      (certificates-with-round (1- cert.round) dag)))))
+                      (certs-with-round (1- cert.round) dag)))))
   :guard-hints (("Goal" :in-theory (enable posp)))
 
   ///
@@ -680,7 +680,7 @@
                   (certificate-setp dag)
                   (certificate-setp dag1))
              (certificate-previous-in-dag-p cert dag1))
-    :enable (certificates-with-round-monotone
+    :enable (certs-with-round-monotone
              cert-set->author-set-monotone
              set::subset-transitive)))
 
@@ -836,7 +836,7 @@
      that the committees is not @('nil') requires a few hints:
      we need to exhibit a witness certificate to use @('dag-committees-p-necc'):
      the witness certificate is
-     the first one in @(tsee certificates-with-round);
+     the first one in @(tsee certs-with-round);
      that set is not empty because of the equivalent hypothesis that
      the set of authors of those certificates is not empty."))
   (forall (round)
@@ -845,24 +845,24 @@
                                                            blocks
                                                            all-vals))
                         (authors (cert-set->author-set
-                                  (certificates-with-round round dag))))
+                                  (certs-with-round round dag))))
                      (implies (not (set::emptyp authors))
                               (set::subset authors
                                            (committee-members commtt))))))
   :guard-hints
   (("Goal"
     :use ((:instance set::in-head
-                     (x (certificates-with-round
+                     (x (certs-with-round
                          (dag-rounds-in-committees-p-witness
                           dag blocks all-vals)
                          dag)))
           (:instance dag-committees-p-necc
                      (cert (set::head
-                            (certificates-with-round
+                            (certs-with-round
                              (dag-rounds-in-committees-p-witness
                               dag blocks all-vals)
                              dag)))))
-    :in-theory (e/d (in-of-certificates-with-round)
+    :in-theory (e/d (in-of-certs-with-round)
                     (set::in-head)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -944,7 +944,7 @@
                                         dag)
                   cert))
   :use (:instance path-to-author+round-set-to-path-to-author+round
-                  (certs (certificates-with-authors+round
+                  (certs (certs-with-authors+round
                           (certificate->previous cert1)
                           (+ -1 (certificate->round cert1))
                           dag))
@@ -953,8 +953,8 @@
   :enable (path-to-author+round
            path-to-author+round-of-self
            nil-not-in-certificate-set
-           certificates-with-authors+round-subset
-           in-of-certificates-with-authors+round
+           certs-with-authors+round-subset
+           in-of-certs-with-authors+round
            posp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -983,10 +983,10 @@
                   cert))
   :enable (successors
            path-to-previous
-           in-of-certificates-with-round)
+           in-of-certs-with-round)
   :use (:instance successors-loop-member-and-previous
                   (cert cert1)
-                  (certs (certificates-with-round
+                  (certs (certs-with-round
                           (+ 1 (certificate->round cert))
                           dag))
                   (prev (certificate->author cert))))
@@ -1016,7 +1016,7 @@
                   cert))
   :enable (predecessors
            path-to-previous
-           in-of-certificates-with-authors+round
+           in-of-certs-with-authors+round
            posp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1062,8 +1062,8 @@
      does not imply the backward closure of the superset.
      The latter is not needed, in fact.
      The backward closure of the subset establishes the hypothesis of
-     @('certificates-with-authors+round-of-unequivocal-superset')
-     in @(see unequivocal-certificates-with-authors+round),
+     @('certs-with-authors+round-of-unequivocal-superset')
+     in @(see unequivocal-certs-with-authors+round),
      that the previous authors of the certificate
      are all in the round just before the certificate.")
    (xdoc::p
@@ -1072,8 +1072,8 @@
      of two backward-closed unequivocal and mutually unequivocal DAGs
      are the same in the two DAGs.
      The backward closure of the two sets establishes the hypothesis of
-     @('certificates-with-authors+round-of-unequivocal-sets')
-     in @(see unequivocal-certificates-with-authors+round),
+     @('certs-with-authors+round-of-unequivocal-sets')
+     in @(see unequivocal-certs-with-authors+round),
      that the previous authors of the certificate
      are all in the round just before the certificate, in both sets."))
 
@@ -1086,20 +1086,20 @@
                   (set::in cert dag0)
                   (or (not (equal (certificate->round cert) 1))
                       (set::emptyp (certificate->previous cert))))
-             (equal (certificates-with-authors+round
+             (equal (certs-with-authors+round
                      (certificate->previous cert)
                      (1- (certificate->round cert))
                      dag)
-                    (certificates-with-authors+round
+                    (certs-with-authors+round
                      (certificate->previous cert)
                      (1- (certificate->round cert))
                      dag0)))
     :enable (certificate-previous-in-dag-p
-             certificates-with-authors+round-when-emptyp
+             certs-with-authors+round-when-emptyp
              posp)
     :use ((:instance dag-closedp-necc
                      (dag dag0))
-          (:instance certificates-with-authors+round-of-unequivocal-superset
+          (:instance certs-with-authors+round-of-unequivocal-superset
                      (certs0 dag0)
                      (certs dag)
                      (authors (certificate->previous cert))
@@ -1117,22 +1117,22 @@
                   (set::in cert dag2)
                   (or (not (equal (certificate->round cert) 1))
                       (set::emptyp (certificate->previous cert))))
-             (equal (certificates-with-authors+round
+             (equal (certs-with-authors+round
                      (certificate->previous cert)
                      (1- (certificate->round cert))
                      dag1)
-                    (certificates-with-authors+round
+                    (certs-with-authors+round
                      (certificate->previous cert)
                      (1- (certificate->round cert))
                      dag2)))
     :enable (certificate-previous-in-dag-p
-             certificates-with-authors+round-when-emptyp
+             certs-with-authors+round-when-emptyp
              posp)
     :use ((:instance dag-closedp-necc
                      (dag dag1))
           (:instance dag-closedp-necc
                      (dag dag2))
-          (:instance certificates-with-authors+round-of-unequivocal-sets
+          (:instance certs-with-authors+round-of-unequivocal-sets
                      (certs1 dag1)
                      (certs2 dag2)
                      (authors (certificate->previous cert))
@@ -1218,7 +1218,7 @@
                 (enable* path-to-author+round
                          path-to-author+round-set
                          set::expensive-rules
-                         certificates-with-authors+round-subset
+                         certs-with-authors+round-subset
                          previous-certificates-of-unequivocal-superdag))))))
 
   (defruled path-to-author+round-of-unequivocal-dags
@@ -1270,12 +1270,12 @@
                (cond
                 ((acl2::occur-lst '(acl2::flag-is 'path-to-author+round) clause)
                  '(:use ((:instance
-                          certificates-with-authors+round-subset
+                          certs-with-authors+round-subset
                           (certs dag)
                           (authors (certificate->previous cert))
                           (round (1- (certificate->round cert))))
                          (:instance
-                          certificates-with-authors+round-subset
+                          certs-with-authors+round-subset
                           (certs dag2)
                           (authors (certificate->previous cert))
                           (round (1- (certificate->round cert)))))))))))))
@@ -1404,7 +1404,7 @@
         cert-with-author+round-of-element-when-unequivocal
         set::expensive-rules
         nil-not-in-certificate-set
-        certificates-with-authors+round-subset
+        certs-with-authors+round-subset
         element-of-certificate-set-not-nil
         round-leq-when-path-to-author+round))))))
 
@@ -1471,7 +1471,7 @@
                 (enable* certificate-causal-history
                          certificate-set-causal-history
                          set::expensive-rules
-                         certificates-with-authors+round-subset
+                         certs-with-authors+round-subset
                          previous-certificates-of-unequivocal-superdag
                          emptyp-of-certificate-set-fix))))))
 
@@ -1526,12 +1526,12 @@
                 ((acl2::occur-lst
                   '(acl2::flag-is 'certificate-causal-history) clause)
                  '(:use ((:instance
-                          certificates-with-authors+round-subset
+                          certs-with-authors+round-subset
                           (certs dag)
                           (authors (certificate->previous cert))
                           (round (1- (certificate->round cert))))
                          (:instance
-                          certificates-with-authors+round-subset
+                          certs-with-authors+round-subset
                           (certs dag2)
                           (authors (certificate->previous cert))
                           (round (1- (certificate->round cert)))))))))))))
@@ -1587,18 +1587,18 @@
                set::expensive-rules
                path-to-author+round-to-cert-with-author+round
                cert-with-author+round-of-element-when-unequivocal
-               cert-set->round-set-of-certificates-with-authors+round
+               cert-set->round-set-of-certs-with-authors+round
                pos-fix
                posp
                nil-not-in-certificate-set
-               certificates-with-authors+round-subset
+               certs-with-authors+round-subset
                certificate-causal-history-subset
                certificate-set-causal-history-subset
                emptyp-of-certificate-set-fix))
      (cond
       ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
        '(:use (:instance round-leq-when-path-to-author+round-set
-                         (certs (certificates-with-authors+round
+                         (certs (certs-with-authors+round
                                  (certificate->previous cert)
                                  (+ -1 (certificate->round cert))
                                  dag))

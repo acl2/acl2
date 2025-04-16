@@ -356,7 +356,7 @@
     (equal (set::cardinality (successors cert dag))
            (mv-nth 0 (tally-leader-votes
                       (certificate->author cert)
-                      (certificates-with-round
+                      (certs-with-round
                        (1+ (certificate->round cert))
                        dag))))
     :enable (successors

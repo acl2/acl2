@@ -40,18 +40,15 @@ public:
   STRONGTYPEDEF(type, FoundWithDifferentCase);
   using Result = std::variant<None, Found, FoundWithDifferentCase>;
 
-  template <typename T>
-  void push(T value) {
-    data_.push_front({ value });
-  }
+  template <typename T> void push(T value) { data_.push_front({value}); }
 
   void pushFrame() { data_.push_front(FrameBoundary{}); }
 
   void popFrame() {
     // While there is some values in the vector and the last one the boudary,
     // we remove the element of the last frame.
-    while (data_.size()
-           && !std::holds_alternative<FrameBoundary>(data_.front())) {
+    while (data_.size() &&
+           !std::holds_alternative<FrameBoundary>(data_.front())) {
       data_.pop_front();
     }
     data_.pop_front();
@@ -121,22 +118,22 @@ public:
 #endif
 
   const char *get_name(type v) {
-    return std::visit(overloaded{ [](SymDec *s) { return s->getname(); },
-                                  [](FunDef *s) { return s->getname(); },
-                                  [](FrameBoundary) {
-                                    UNREACHABLE();
-                                    return "";
-                                  } },
+    return std::visit(overloaded{[](SymDec *s) { return s->getname(); },
+                                 [](FunDef *s) { return s->getname(); },
+                                 [](FrameBoundary) {
+                                   UNREACHABLE();
+                                   return "";
+                                 }},
                       v);
   }
 
   Location get_loc(type v) {
-    return std::visit(overloaded{ [](SymDec *s) { return s->loc(); },
-                                  [](FunDef *s) { return s->loc(); },
-                                  [](FrameBoundary) {
-                                    UNREACHABLE();
-                                    return Location::dummy();
-                                  } },
+    return std::visit(overloaded{[](SymDec *s) { return s->loc(); },
+                                 [](FunDef *s) { return s->loc(); },
+                                 [](FrameBoundary) {
+                                   UNREACHABLE();
+                                   return Location::dummy();
+                                 }},
                       v);
   }
 

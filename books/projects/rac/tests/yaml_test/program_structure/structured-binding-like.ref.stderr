@@ -1,4 +1,4 @@
-structured-binding-like.cpp:10 (13-22): Incompatible types: <int, int> cannot be cast to int
+structured-binding-like.cpp:10 (13-14): Incompatible types: <int, int> cannot be cast to int
  10 |   int a = 0, b = foo();
-    |              ^^^^^^^^^
+    |              ^
 note: To convert types depending on template parameters to primitive types, you should add an explicit conversion (like this ac_int<32, true>(...) to convert to int)

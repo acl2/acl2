@@ -25,9 +25,8 @@
 
 ; Let b(f) = {x \in domain(f): not(x \in f(x)}.
 ; This is the set B from the Wikpedia article, expressed as a function of f.
-(zsub b   ; name
-      (f) ; args
-      x   ; x
+(zsub b (f) ; name, args
+      x     ; x
       (domain f)
       (not (in x (apply f x))))
 

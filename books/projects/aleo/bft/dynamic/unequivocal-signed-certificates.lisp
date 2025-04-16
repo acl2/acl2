@@ -143,7 +143,7 @@
 
   (defruled no-signer-record-when-create-certificate-author-possiblep
     (implies (and (create-certificate-author-possiblep cert vstate all-vals)
-                  (equal (certificates-with-author
+                  (equal (certs-with-author
                           (certificate->author cert)
                           (validator-state->buffer vstate))
                          nil)
@@ -157,7 +157,7 @@
     :enable (create-certificate-author-possiblep
              create-certificate-signer-possiblep
              signer-record-p
-             no-cert-with-author+round-if-no-certificates-with-author
+             no-cert-with-author+round-if-no-certs-with-author
              no-author+round-pair-if-no-pairs-with-author))
 
   (defruled no-signer-record-when-create-certificate-endorser-possiblep
