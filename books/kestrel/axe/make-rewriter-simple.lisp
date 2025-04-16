@@ -794,7 +794,8 @@
                      (otherwise                ; HYP is normal:
                        (b* ((old-try-count tries) ; might be nil
                             ((mv erp relievedp rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                             (b* (;; First, substitute in for all the vars in HYP (this also evaluates what it can):
+                             (b* (;; First, substitute in for all the vars in HYP (this also evaluates what it can)
+                                  ;; (TODO: Consider not instantiating the hyp but rather simplifying it wrt an alist):
                                   (instantiated-hyp (,instantiate-hyp-no-free-vars2-name hyp alist (get-interpreted-function-alist rewrite-stobj)))
                                   ;; instantiated-hyp is now fully instantiated.  It is an axe-tree with leaves that are quoteps and nodenums (from vars already bound)
                                   ((when (fquotep instantiated-hyp)) ;; we know the instantiated-hyp is a cons, because hyp is
@@ -804,14 +805,13 @@
                                        (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                                      ;; The instantiated-hyp is 'nil, so it failed to be relieved:
                                      (progn$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                                  ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
+                                                  ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting:
                                                   (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Instantiated to nil.)~%" hyp rule-symbol))
                                              (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
-                                  ;; There are no free vars, so we try to relieve the (fully-instantiated) hyp by simplifying it:
+                                  ;; There are no free vars (see bound-vars-suitable-for-hypp), so we try to relieve the (fully-instantiated) hyp by simplifying it:
                                   ((mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                                    ;; TODO: This tests whether atoms in the instiantiated-hyp are vars, but that seems wasteful because the hyp is fully instantiated):
                                    ;; bozo do we really want to add stupid natp hyps, etc. to the memoization? what about ground terms (most of them will have been evaluated above)?
-                                   ;; TODO: Consider not instantiating the hyp but rather simplifying it wrt an alist:
                                    (,simplify-tree-and-add-to-dag-name instantiated-hyp ; todo: is this known to be a non-var?  if so, take advantage of that fact
                                                                        nil ; nothing is yet known to be equal to instantiated-hyp
                                                                        rewrite-stobj2 memoization hit-counts tries limits
@@ -823,19 +823,20 @@
                                        (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                                      ;;hyp rewrote to 'nil, so it failed to be relieved:
                                      (progn$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                                  ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
+                                                  ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting:
                                                   (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol))
                                              (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
-                                  ;; hyp didn't rewrite to a constant, new-nodenum-or-quotep is a node number):
+                                  (new-nodenum new-nodenum-or-quotep) ;; didn't rewrite to a constant, so new-nodenum-or-quotep is a node number
                                   ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
-                                  ((when ;;(nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist (get-dag-array rewrite-stobj2)) ;todo: only do this if the hyp is not a known-boolean?
-                                       (known-true-in-node-replacement-arrayp new-nodenum-or-quotep node-replacement-array node-replacement-count))
+                                  ((when ;;(nodenum-equal-to-refined-assumptionp new-nodenum refined-assumption-alist (get-dag-array rewrite-stobj2)) ;todo: only do this if the hyp is not a known-boolean?
+                                       (known-true-in-node-replacement-arrayp new-nodenum node-replacement-array node-replacement-count))
                                    ;;hyp rewrote to a known assumption and so counts as relieved:
                                    (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
+                                  ;; TODO: Consider calling STP here, on new-nodenum and using the refined-assumption-alist (or similar information in a different format)
                                   ;; Hyp failed to be relieved:
                                   (- (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj)) ; todo: pull this out into a subroutine?:
                                           (let* ((relevant-nodes (nodenums-in-refined-assumption-alist refined-assumption-alist nil))
-                                                 ;; (relevant-nodes (let ((expr (aref1 'dag-array (get-dag-array rewrite-stobj2) new-nodenum-or-quotep)))
+                                                 ;; (relevant-nodes (let ((expr (aref1 'dag-array (get-dag-array rewrite-stobj2) new-nodenum)))
                                                  ;;                   (if (and (consp expr)
                                                  ;;                            (not (eq 'quote (ffn-symb expr))))
                                                  ;;                       (append-nodenum-dargs (dargs expr) relevant-nodes)
@@ -843,7 +844,7 @@
                                                  )
                                             (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
                                                     (cw "Reason: Rewrote to:~%")
-                                                    (print-dag-node-nicely new-nodenum-or-quotep 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 200)
+                                                    (print-dag-node-nicely new-nodenum 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 200)
                                                     (cw "(Alist: ~x0)~%(Refined assumption alist:~%" alist)
                                                     (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
                                                     (cw ")~%")
