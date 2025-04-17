@@ -584,12 +584,12 @@
     :use (:instance set::in-head
                     (x (certs-with-author
                         author (certs-with-round round certs))))
-    :enable (set::expensive-rules
-             in-of-certs-with-author
+    :enable (in-of-certs-with-author
              in-of-certs-with-round
              cert-with-author+round-when-element
              emptyp-of-certs-with-author)
-    :disable set::in-head)
+    :disable (set::in-head
+              certs-with-round))
 
   (defruled certs-with-round-of-intersect
     (implies (and (certificate-setp certs1)

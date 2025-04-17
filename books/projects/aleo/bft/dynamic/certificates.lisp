@@ -608,6 +608,23 @@
              set::expensive-rules)
     :disable certs-with-round)
 
+  (defruled cert-with-author+round-when-author-in-round
+    (implies (and (certificate-setp certs)
+                  (posp round)
+                  (set::in author
+                           (cert-set->author-set
+                            (certs-with-round round certs))))
+             (cert-with-author+round author round certs))
+    :use (:instance set::in-head
+                    (x (certs-with-author
+                        author (certs-with-round round certs))))
+    :enable (in-of-certs-with-author
+             in-of-certs-with-round
+             cert-with-author+round-when-element
+             emptyp-of-certs-with-author)
+    :disable (set::in-head
+              certs-with-round))
+
   (defruled cert-set->round-set-of-certs-with-round
     (implies (certificate-setp certs)
              (equal (cert-set->round-set
@@ -654,23 +671,6 @@
                      (y (cert-set->round-set
                          (certs-with-round round certs)))))
     :disable (set::subset-cardinality
-              certs-with-round))
-
-  (defruled cert-with-author+round-when-author-in-round
-    (implies (and (certificate-setp certs)
-                  (posp round)
-                  (set::in author
-                           (cert-set->author-set
-                            (certs-with-round round certs))))
-             (cert-with-author+round author round certs))
-    :use (:instance set::in-head
-                    (x (certs-with-author
-                        author (certs-with-round round certs))))
-    :enable (in-of-certs-with-author
-             in-of-certs-with-round
-             cert-with-author+round-when-element
-             emptyp-of-certs-with-author)
-    :disable (set::in-head
               certs-with-round)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
