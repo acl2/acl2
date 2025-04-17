@@ -571,7 +571,8 @@
              (set::subset (certs-with-round round certs1)
                           (certs-with-round round certs2)))
     :enable (set::expensive-rules
-             in-of-certs-with-round))
+             in-of-certs-with-round)
+    :disable certs-with-round)
 
   (defruled cert-with-author+round-when-author-in-round
     (implies (and (certificate-setp certs)
