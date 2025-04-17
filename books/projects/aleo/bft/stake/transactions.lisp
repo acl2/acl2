@@ -73,8 +73,7 @@
           (stake pos)))
   (:unbond ((validator address)))
   (:other ((unwrap any)))
-  :pred transactionp
-  :prepwork ((local (in-theory (enable identity)))))
+  :pred transactionp)
 
 ;;;;;;;;;;;;;;;;;;;;
 

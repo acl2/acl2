@@ -1,6 +1,6 @@
+#include "statements.h"
 #include "expressions.h"
 #include "functions.h"
-#include "statements.h"
 #include "types.h"
 
 #include <algorithm>
@@ -17,7 +17,6 @@
 //     VarDec              (variable declaration)
 //       ConstDec          (constant declaration)
 //     MulVarDec           (multiple variable declaration)
-//     MulConstDec         (multiple constant declaration)
 //
 //     BreakStmt           (break -- may occur only within a switch)
 //     ReturnStmt          (return)
@@ -77,7 +76,8 @@ void SimpleStatement::display(std::ostream &os, unsigned indent) {
 
 // Data members: Symbol* sym; Type *type; Expression *init; (init is optional)
 
-SymDec::SymDec(NodesId id, Location loc, const char *n, Type *t, Expression *i)
+SymDec::SymDec(NodesId id, Location loc, const char *n, const Type *t,
+               Expression *i)
     : SimpleStatement(id, loc), sym(new Symbol(n)), init(i), type_(t),
       original_type_(t) {}
 
@@ -91,7 +91,7 @@ void SymDec::displaySymDec(std::ostream &os) const {
   }
 }
 
-bool SymDec::isStaticallyEvaluable() {
+bool SymDec::isStaticallyEvaluable() const {
   return false;
 } // overridden by EnumConstDec and ConstDec
 
@@ -99,8 +99,6 @@ int SymDec::evalConst() {
   assert(init);
   return init->evalConst();
 }
-
-bool SymDec::isGlobal() { return false; }
 
 Sexpression *
 SymDec::ACL2SymExpr() { // Sexpression for a reference to this symbol.
@@ -112,7 +110,7 @@ SymDec::ACL2SymExpr() { // Sexpression for a reference to this symbol.
 // ----------------------------------
 
 EnumConstDec::EnumConstDec(Location loc, const char *n, Expression *v)
-    : SymDec(idOf(this), loc, n, &intType, v) {}
+    : SymDec(idOf(this), loc, n, intType, v) {}
 
 void EnumConstDec::display(std::ostream &os, unsigned) {
   os << getname();
@@ -122,15 +120,7 @@ void EnumConstDec::display(std::ostream &os, unsigned) {
   }
 }
 
-bool EnumConstDec::isStaticallyEvaluable() { return true; }
-
-Sexpression *EnumConstDec::ACL2Expr() {
-  if (init) {
-    return new Plist({ sym, init->ACL2Expr() });
-  } else {
-    return sym;
-  }
-}
+bool EnumConstDec::isStaticallyEvaluable() const { return true; }
 
 Sexpression *EnumConstDec::ACL2SymExpr() {
   return always_cast<const EnumType *>(get_type())->getEnumVal(sym);
@@ -150,65 +140,19 @@ void VarDec::displaySimple(std::ostream &os) { displaySymDec(os); }
 Sexpression *VarDec::ACL2Expr() {
 
   const Type *t = get_type();
-  //  if (auto dt = dynamic_cast<const DefinedType *>(t)) {
-  //    t = dt->derefType();
-  //  }
-
   Sexpression *val = nullptr;
-  if (isa<const ArrayType *>(t)) {
-    if (!init) {
-      val = new Plist();
-    } else if (isGlobal()) {
-      val = new Plist({ &s_quote, init->ACL2Expr() });
-    } else if (Initializer *i = dynamic_cast<Initializer *>(init)) {
-      val = i->ACL2ArrayExpr();
-    } else {
-      val = init->ACL2Expr();
-    }
-  } else if (isa<const StructType *>(t)) {
-    if (!init) {
-      val = new Plist();
-    } else if (Initializer *i = dynamic_cast<Initializer *>(init)) {
-      val = i->ACL2StructExpr(always_cast<const StructType *>(t)->fields());
-    } else {
-      val = init->ACL2Expr();
-    }
-  } else if (isa<const MvType *>(t)) {
-    if (Initializer *i = dynamic_cast<Initializer *>(init)) {
-      val = i->ACL2TupleExpr();
-    } else {
-      val = init->ACL2Expr();
-    }
+
+  if (init) {
+    val = t->cast(init);
   } else {
-    if (init) {
-      val = t->cast(init);
-    } else {
-      val = Integer::zero_v(loc_)->ACL2Expr();
-    }
+    val = t->default_initializer_value();
   }
-  return new Plist({ &s_declare, sym, val });
+  return new Plist({&s_declare, sym, val});
 }
 
-Sexpression *VarDec::ACL2SymExpr() { return sym; }
-
-// class ConstDec : public VarDec
-// ------------------------------
-
-ConstDec::ConstDec(Location loc, const char *n, Type *t, Expression *i)
-    : VarDec(idOf(this), loc, n, t, i) {}
-
-void ConstDec::displaySimple(std::ostream &os) {
-  os << "const ";
-  VarDec::displaySimple(os);
-}
-
-bool ConstDec::isStaticallyEvaluable() { return isIntegerType(get_type()); }
-
-bool ConstDec::isGlobal() { return isGlobal_; }
-
-Sexpression *ConstDec::ACL2SymExpr() {
+Sexpression *VarDec::ACL2SymExpr() {
   if (isGlobal()) {
-    return new Plist({ sym });
+    return new Plist({sym});
   } else {
     return sym;
   }
@@ -227,7 +171,7 @@ MulVarDec::MulVarDec(Location loc, std::vector<VarDec *> &&d)
     : SimpleStatement(idOf(this), loc), decs(d) {}
 
 Sexpression *MulVarDec::ACL2Expr() {
-  Plist *result = new Plist({ &s_list });
+  Plist *result = new Plist({&s_list});
   for (auto vd : decs) {
     result->add(vd->ACL2Expr());
   }
@@ -252,51 +196,13 @@ void MulVarDec::displaySimple(std::ostream &os) {
   }
 }
 
-// class MulConstDec : public SimpleStatement  (multiple constant declaration)
-// ---------------------------------------------------------------------------
-
-MulConstDec::MulConstDec(Location loc, ConstDec *dec1, ConstDec *dec2)
-    : SimpleStatement(idOf(this), loc) {
-  decs.push_back(dec1);
-  decs.push_back(dec2);
-}
-
-MulConstDec::MulConstDec(Location loc, std::vector<ConstDec *> &&d)
-    : SimpleStatement(idOf(this), loc), decs(d) {}
-
-Sexpression *MulConstDec::ACL2Expr() {
-  Plist *result = new Plist({ &s_list });
-  for (auto d : decs) {
-    result->add(d->ACL2Expr());
-  }
-  return result;
-}
-
-// TODO refactore
-void MulConstDec::displaySimple(std::ostream &os) {
-  auto dlist = decs.begin();
-  (*dlist)->get_type()->displayVarType(os);
-  while (dlist != decs.end()) {
-    os << " ";
-    (*dlist)->get_type()->displayVarName((*dlist)->getname(), os);
-    if ((*dlist)->init) {
-      os << " = ";
-      (*dlist)->init->display(os);
-    }
-    ++dlist;
-    if (dlist != decs.end()) {
-      os << ",";
-    }
-  }
-}
-
 // class TempParamDec : public VarDec  (template parameter declaration)
 // --------------------------------------------------------------------
 
-TempParamDec::TempParamDec(Location loc, const char *n, Type *t)
+TempParamDec::TempParamDec(Location loc, const char *n, const Type *t)
     : SymDec(idOf(this), loc, n, t) {}
 
-bool TempParamDec::isStaticallyEvaluable() { return init; }
+bool TempParamDec::isStaticallyEvaluable() const { return init; }
 
 Sexpression *TempParamDec::ACL2SymExpr() {
   return init ? get_type()->cast(init) : sym;
@@ -325,7 +231,7 @@ void ReturnStmt::displaySimple(std::ostream &os) {
 }
 
 Sexpression *ReturnStmt::ACL2Expr() {
-  return new Plist({ &s_return, returnType->cast(value) });
+  return new Plist({&s_return, returnType->cast(value)});
 }
 
 // class Assertion : public SimpleStatement
@@ -345,7 +251,7 @@ void Assertion::displaySimple(std::ostream &os) {
 Sexpression *Assertion::ACL2Expr() {
   assert(funDef && "MarkAssertion should be run first");
   return new Plist(
-      { &s_assert, expr->ACL2Expr(), new Symbol(funDef->getname()) });
+      {&s_assert, expr->ACL2Expr(), new Symbol(funDef->getname())});
 }
 
 // class Assignment : public SimpleStatement
@@ -389,11 +295,11 @@ void Assignment::desugar() {
     // Do nothing.
     return;
   } else if (!strcmp(op, "++")) {
-    rval = new BinaryExpr(loc_, lval, Integer::one_v(loc_),
-                          BinaryExpr::Op::Plus);
+    rval =
+        new BinaryExpr(loc_, lval, Integer::one_v(loc_), BinaryExpr::Op::Plus);
   } else if (!strcmp(op, "--")) {
-    rval = new BinaryExpr(loc_, lval, Integer::one_v(loc_),
-                          BinaryExpr::Op::Minus);
+    rval =
+        new BinaryExpr(loc_, lval, Integer::one_v(loc_), BinaryExpr::Op::Minus);
   } else if (!strcmp(op, ">>=")) {
     rval = new BinaryExpr(loc_, lval, rval, BinaryExpr::Op::RShift);
   } else if (!strcmp(op, "<<=")) {
@@ -481,17 +387,17 @@ Sexpression *MultipleAssignment::ACL2Expr() {
     }
   }
 
-  Plist *mv_assign = new Plist({ &s_mv_assign, vars, rval_->ACL2Expr() });
+  Plist *mv_assign = new Plist({&s_mv_assign, vars, rval_->ACL2Expr()});
 
   if (!needs_tmp_vars) {
     return mv_assign;
   }
 
-  Plist *result_with_tmp = new Plist({ &s_block });
+  Plist *result_with_tmp = new Plist({&s_block});
 
   for (int i = lval_.size() - 1; i >= 0; --i) {
     if (lval_[i]) {
-      result_with_tmp->add(new Plist({ &s_declare, tmp_vars[i] }));
+      result_with_tmp->add(new Plist({&s_declare, tmp_vars[i]}));
     }
   }
 
@@ -513,7 +419,7 @@ NullStmt::NullStmt(Location loc) : SimpleStatement(idOf(this), loc) {}
 
 void NullStmt::displaySimple([[maybe_unused]] std::ostream &os) {}
 
-Sexpression *NullStmt::ACL2Expr() { return new Plist({ &s_null }); }
+Sexpression *NullStmt::ACL2Expr() { return new Plist({&s_null}); }
 
 // class Block : public Statement
 // ------------------------------
@@ -566,7 +472,7 @@ void Block::displayWithinBlock(std::ostream &os, unsigned indent) {
 }
 
 Sexpression *Block::ACL2Expr() {
-  Plist *result = new Plist({ &s_block });
+  Plist *result = new Plist({&s_block});
   for (Statement *s : stmtList) {
     result->add(s->ACL2Expr());
   }
@@ -592,16 +498,14 @@ void IfStmt::displayAsRightBranch(std::ostream &os, unsigned indent) {
   os << ")";
   left->display(os, indent + 2);
   if (right) {
-    os << "\n"
-       << std::setw(indent) << " "
-       << "else ";
+    os << "\n" << std::setw(indent) << " " << "else ";
     right->displayAsRightBranch(os, indent);
   }
 }
 
 Sexpression *IfStmt::ACL2Expr() {
-  return new Plist({ &s_if, test->ACL2Expr(), left->blockify()->ACL2Expr(),
-                     right ? right->blockify()->ACL2Expr() : new Plist() });
+  return new Plist({&s_if, test->ACL2Expr(), left->blockify()->ACL2Expr(),
+                    right ? right->blockify()->ACL2Expr() : new Plist()});
 }
 
 // class ForStmt : public Statement
@@ -610,31 +514,29 @@ Sexpression *IfStmt::ACL2Expr() {
 // Data members: SimpleStatement *init; Expression *test; Assignment *update;
 // Statement *body;
 
-ForStmt::ForStmt(Location loc, SimpleStatement *v, Expression *t,
-                 Assignment *u, Statement *b)
-    : Statement(idOf(this), loc), init(v), test(t), update(u), body(b) {}
+ForStmt::ForStmt(Location loc, SimpleStatement *v, Expression *t, Assignment *u,
+                 Statement *b)
+    : Statement(idOf(this), loc), init_(v), test_(t), update_(u), body_(b) {}
 
 void ForStmt::display(std::ostream &os, unsigned indent) {
-  os << "\n"
-     << std::setw(indent) << " "
-     << "for (";
+  os << "\n" << std::setw(indent) << " " << "for (";
 
-  init->displaySimple(os);
+  init_->displaySimple(os);
   os << "; ";
-  test->display(os);
+  test_->display(os);
   os << "; ";
-  update->displaySimple(os);
+  update_->displaySimple(os);
   os << ")";
-  body->display(os, indent + 2);
+  body_->display(os, indent + 2);
 }
 
 Sexpression *ForStmt::ACL2Expr() {
-  Sexpression *sinit = init->ACL2Expr();
-  Sexpression *stest = test->ACL2Expr();
+  Sexpression *sinit = init_->ACL2Expr();
+  Sexpression *stest = test_->ACL2Expr();
 
-  Sexpression *supdate = ((Plist *)(update->ACL2Expr()))->nth(2);
-  return new Plist({ &s_for, new Plist({ sinit, stest, supdate }),
-                     body->blockify()->ACL2Expr() });
+  Sexpression *supdate = ((Plist *)(update_->ACL2Expr()))->nth(2);
+  return new Plist({&s_for, new Plist({sinit, stest, supdate}),
+                    body_->blockify()->ACL2Expr()});
 }
 
 // class Case : public Statement (component of switch statement)
@@ -669,23 +571,19 @@ SwitchStmt::SwitchStmt(Location loc, Expression *t, std::vector<Case *> c)
 
 void SwitchStmt::display(std::ostream &os, unsigned indent) {
 
-  os << "\n"
-     << std::setw(indent) << " "
-     << "switch (";
+  os << "\n" << std::setw(indent) << " " << "switch (";
   test_->display(os);
   os << ") {";
 
   std::for_each(cases_.begin(), cases_.end(),
                 [&](Case *c) { c->display(os, indent); });
 
-  os << "\n"
-     << std::setw(indent) << " "
-     << "}";
+  os << "\n" << std::setw(indent) << " " << "}";
 }
 
 Sexpression *SwitchStmt::ACL2Expr() {
 
-  Plist *result = new Plist({ &s_switch, test_->ACL2Expr() });
+  Plist *result = new Plist({&s_switch, test_->ACL2Expr()});
 
   std::vector<Sexpression *> labels;
   bool last_case_not_default = true;
@@ -712,7 +610,7 @@ Sexpression *SwitchStmt::ACL2Expr() {
         slabel = p;
       }
 
-      Plist *s_case = new Plist({ slabel });
+      Plist *s_case = new Plist({slabel});
 
       for (Statement *a : c->action) {
         if (isa<BreakStmt *>(a)) {
@@ -727,7 +625,7 @@ Sexpression *SwitchStmt::ACL2Expr() {
   });
 
   if (last_case_not_default) {
-    result->add(new Plist({ &s_t }));
+    result->add(new Plist({&s_t}));
   }
 
   return result;

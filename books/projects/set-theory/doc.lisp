@@ -311,8 +311,7 @@
  <p>That definition is captured by the following invocation of @('zsub').</p>
 
  @({
- (zsub domain                      ; name
-       (r)                         ; args
+ (zsub domain (r)                  ; name, args
        x                           ; x
        (union (union r))           ; s
        (in (cons x (apply r x)) r) ; u
@@ -661,8 +660,7 @@
  <p>By Comprehension we may define the set of good ACL2 objects.</p>
 
  @({
- (zsub acl2       ; name
-       ()         ; args
+ (zsub acl2 ()    ; name, args
        x          ; x
        (v-omega)  ; s
        (acl2p x)  ; u
@@ -844,7 +842,7 @@
  set), but no finite ordinal has that property.  Also note that a cons always
  has at most two elements.</p>
 
- <p>We encode the other atoms as sets of the form @('(zf::triple y z)') =
+ <p>We encode the other atoms as sets of the form @('(zf::ztriple y z)') =
  @('{0,y,z}'), where @('y') is a positive natural number and @('z') is not a
  natural number &mdash; in fact @('z') will always be a cons.  Thus each such
  set is a three-element set, hence is not a cons.  It is also not not a natural
@@ -855,76 +853,84 @@
  the encoding of the symbol, @('nil').</p>
 
  @({
- (defun negative-int-as-triple (x)
+ (defun negative-int-as-ztriple (x)
    (declare (xargs :guard (and (integerp x)
                                (< x 0))))
-   (triple 1 (cons (- x) 0)))
+   (ztriple 1 (cons (- x) 0)))
 
- (defun numerator-as-triple (x)
+ (defun integer-as-ztriple (x)
+   (declare (xargs :guard (integerp x)))
+   (if (< x 0)
+       (negative-int-as-ztriple x)
+     x))
+
+ (defun numerator-as-ztriple (x)
    (declare (xargs :guard (rationalp x)))
-   (let ((n (numerator x)))
-     (if (< n 0)
-         (negative-int-as-triple n)
-       n)))
+   (integer-as-ztriple (numerator x)))
 
- (defun ratio-as-triple (x)
+ (defun ratio-as-ztriple (x)
    (declare (xargs :guard (and (rationalp x)
                                (not (integerp x)))))
-   (triple 2 (cons (numerator-as-triple x) (denominator x))))
+   (ztriple 2 (cons (numerator-as-ztriple x) (denominator x))))
 
- (defun complex-as-triple (x)
+ (defun complex-as-ztriple (x)
    (declare (xargs :guard (and (complex-rationalp x)
                                (not (rationalp x)))))
-   (triple 3 (cons (realpart x) (imagpart x))))
+   (ztriple 3 (cons (realpart x) (imagpart x))))
 
- (defun character-as-triple (x)
+ (defun character-as-ztriple (x)
    (declare (xargs :guard (characterp x)))
-   (triple 4 (cons (char-code x) 0)))
+   (ztriple 4 (cons (char-code x) 0)))
 
- (defun string-as-triple (x)
+ (defun string-as-ztriple (x)
    (declare (xargs :guard (stringp x)))
-   (triple 5 (cons (make-listp0 (coerce x 'list)) 0)))
+   (ztriple 5 (cons (make-listp0 (coerce x 'list)) 0)))
 
- (defun symbol-as-triple (x)
+ (defun symbol-as-ztriple (x)
    (declare (xargs :guard (symbolp x)))
-   (triple 6 (cons (string-as-triple (symbol-package-name x))
-                   (string-as-triple (symbol-name x)))))
+   (ztriple 6 (cons (string-as-ztriple (symbol-package-name x))
+                    (string-as-ztriple (symbol-name x)))))
  })
 
  <p>These functions are then asserted to define the encodings, as follows.</p>
 
  @({
- (defthmz negative-int-as-triple-identity
+ (defthmz negative-int-as-ztriple-identity
    (implies (and (integerp x)
                  (< x 0))
-            (equal (negative-int-as-triple x)
+            (equal (negative-int-as-ztriple x)
                    x)))
 
- (defthmz ratio-as-triple-identity
+ (defthmz integer-as-ztriple-identity
+   (implies (integerp x)
+            (equal (integer-as-ztriple x)
+                   x)))
+
+ (defthmz ratio-as-ztriple-identity
    (implies (and (rationalp x)
                  (not (integerp x)))
-            (equal (ratio-as-triple x)
+            (equal (ratio-as-ztriple x)
                    x)))
 
- (defthmz complex-as-triple-identity
+ (defthmz complex-as-ztriple-identity
    (implies (and (complex-rationalp x)
                  (not (rationalp x)))
-            (equal (complex-as-triple x)
+            (equal (complex-as-ztriple x)
                    x)))
 
- (defthmz character-as-triple-identity
+ (defthmz character-as-ztriple-identity
    (implies (characterp x)
-            (equal (character-as-triple x)
+            (equal (character-as-ztriple x)
                    x)))
 
- (defthmz string-as-triple-identity
+ (defthmz string-as-ztriple-identity
    (implies (stringp x)
-            (equal (string-as-triple x)
+            (equal (string-as-ztriple x)
                    x)))
 
- (defthmz symbol-as-triple-identity
+ (defthmz symbol-as-ztriple-identity
    (implies (symbolp x)
-            (equal (symbol-as-triple x)
+            (equal (symbol-as-ztriple x)
                    x)))
  })
 

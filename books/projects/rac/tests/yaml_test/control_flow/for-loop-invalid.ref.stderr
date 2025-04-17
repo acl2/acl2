@@ -1,4 +1,4 @@
-for-loop-invalid.cpp:9 (16-22): The variable (res) used in the recursive calls in never tested
+for-loop-invalid.cpp:9 (16-22): The variable `res` used in the loop is never tested
  9 |   for (res = b; a != 0; a--)
    |                 ^^^^^^
  10 |     res++;

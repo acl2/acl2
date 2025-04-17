@@ -66,7 +66,7 @@
        ((when (= round 1)) t)
        (dag (validator-state->dag vstate))
        (previous-round (1- round))
-       (previous-certs (certificates-with-round previous-round dag))
+       (previous-certs (certs-with-round previous-round dag))
        (previous-authors (cert-set->author-set previous-certs)))
     (set::subset previous previous-authors))
   :guard-hints (("Goal" :in-theory (enable posp)))

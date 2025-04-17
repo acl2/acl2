@@ -41,9 +41,9 @@ public:
   Cons(Sexpression *a, Sexpression *d) : car_(a), cdr_(d) {}
 
   void display(std::ostream &os) const override {
-    os << "(";
+    os << "(cons ";
     car_->display(os);
-    os << " . ";
+    os << " ";
     cdr_->display(os);
     os << ")";
   }
@@ -74,6 +74,7 @@ extern Symbol s_as;
 extern Symbol s_ash;
 extern Symbol s_assert;
 extern Symbol s_assign;
+extern Symbol s_ainit;
 extern Symbol s_bitn;
 extern Symbol s_bits;
 extern Symbol s_block;

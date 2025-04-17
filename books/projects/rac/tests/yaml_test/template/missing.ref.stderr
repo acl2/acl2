@@ -1,0 +1,3 @@
+missing.cpp:4 (9-16): Unknown symbol `missing`
+ 4 |   return missing<3>();
+   |          ^^^^^^^

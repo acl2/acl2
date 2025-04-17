@@ -33,7 +33,6 @@ public:
   bool TraverseFunDef(FunDef *f);
   bool TraverseTemplate(Template *f);
   bool VisitVarDec(VarDec *s);
-  bool VisitMulConstDec(MulConstDec *s);
   bool VisitMulVarDec(MulVarDec *s);
 
   // Check if no C array are passed as parameter (they can't be const).

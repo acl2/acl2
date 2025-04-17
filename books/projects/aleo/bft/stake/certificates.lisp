@@ -713,6 +713,7 @@
                      (certs-with-authors authors (set::tail certs)))
       (certs-with-authors authors (set::tail certs))))
   :verify-guards :after-returns
+
   ///
 
   (fty::deffixequiv certs-with-authors
