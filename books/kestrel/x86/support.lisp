@@ -69,6 +69,7 @@
                            )))
 
 ;; could expand the bvminus
+;deprecate
 (defthmd canonical-address-p-becomes-bvlt-of-bvminus
   (implies (signed-byte-p 64 x)
            (equal (canonical-address-p x)
@@ -77,10 +78,29 @@
            :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
 
+;use more
+(defthmd canonical-address-p-becomes-bvlt-of-bvplus
+  (implies (signed-byte-p 64 x)
+           (equal (canonical-address-p x)
+                  (acl2::bvlt 64 (acl2::bvplus 64 140737488355328 x) 281474976710656)))
+  :hints (("Goal" :cases ((< x 0))
+           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+                              acl2::bvchop-when-negative-lemma))))
+
+;deprecate
 (defthmd canonical-address-p-becomes-bvlt-of-bvminus-strong
   (equal (canonical-address-p x)
          (and (signed-byte-p 64 x)
               (acl2::bvlt 64 (acl2::bvminus 64 x -140737488355328) 281474976710656)))
+  :hints (("Goal" :cases ((< x 0))
+           :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
+                              acl2::bvchop-when-negative-lemma))))
+
+;use more
+(defthmd canonical-address-p-becomes-bvlt-of-bvplus-strong
+  (equal (canonical-address-p x)
+         (and (signed-byte-p 64 x)
+              (acl2::bvlt 64 (acl2::bvplus 64 140737488355328 x) 281474976710656)))
   :hints (("Goal" :cases ((< x 0))
            :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
