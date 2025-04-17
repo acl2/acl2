@@ -1551,7 +1551,10 @@
     ruleset
     e/d*
 
-    defconst-computed-simple))
+    defconst-computed-simple
+
+    _  ; for printing non-pure node patterns
+    ))
 
 ;; Ideally, these would all be rewritten to BV ops
 (defconst *symbols-from-bitops*

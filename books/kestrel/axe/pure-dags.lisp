@@ -205,7 +205,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; replaces nodenums with <node>
+;; replaces nodenums with underscores
 (defund darg-patterns (dargs)
   (declare (xargs :guard (darg-listp dargs)))
   (if (endp dargs)
@@ -213,7 +213,7 @@
     (let ((darg (first dargs)))
       (if (consp darg) ; checks for quotep
           (cons darg (darg-patterns (rest dargs)))
-        (cons '<node> (darg-patterns (rest dargs)))))))
+        (cons '_ (darg-patterns (rest dargs)))))))
 
 (defund dag-expr-pattern (expr)
   (declare (xargs :guard (dag-exprp expr)))

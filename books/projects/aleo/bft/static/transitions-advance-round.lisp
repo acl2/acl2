@@ -80,13 +80,13 @@
           (or (and anchor? t)
               (and timeout
                    (>= (set::cardinality
-                        (certificates-with-round round dag))
+                        (certs-with-round round dag))
                        (quorum systate)))))
       (or (equal round 1)
           (b* ((leader (leader-at-round (1- round) vals))
                (anchor?
                 (cert-with-author+round leader (1- round) dag))
-               (voters (certificates-with-round round dag))
+               (voters (certs-with-round round dag))
                ((mv yes-votes no-votes) (tally-leader-votes leader voters)))
             (or (not anchor?)
                 (>= yes-votes

@@ -76,16 +76,30 @@
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-;gen?
+; almost subsumed by bvplus-of-bvchop-arg2-gen
 (defthm bvplus-of-bvchop-arg2
   (equal (bvplus size (bvchop size x) y)
          (bvplus size x y))
   :hints (("Goal" :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
 
-;gen?
+(defthm bvplus-of-bvchop-arg2-gen
+  (implies (and (<= size size2)
+                (integerp size2))
+           (equal (bvplus size (bvchop size2 x) y)
+                  (bvplus size x y)))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
+
+; almost subsumed by bvplus-of-bvchop-arg3-gen
 (defthm bvplus-of-bvchop-arg3
   (equal (bvplus size x (bvchop size y))
          (bvplus size x y))
+  :hints (("Goal" :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
+
+(defthm bvplus-of-bvchop-arg3-gen
+  (implies (and (<= size size2)
+                (integerp size2))
+           (equal (bvplus size x (bvchop size2 y))
+                  (bvplus size x y)))
   :hints (("Goal" :in-theory (enable bvplus bvchop-when-i-is-not-an-integer))))
 
 (defthm unsigned-byte-p-of-bvplus
