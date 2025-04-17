@@ -108,7 +108,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bounded-contextp (context bound)
-  (declare (type rational bound))
+  (declare (xargs :guard (natp bound)
+                  :split-types t)
+           (type (integer 0 *) bound))
   (or (eq (false-context) context)
       (bounded-possibly-negated-nodenumsp context bound)))
 

@@ -60,11 +60,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Recognizes a true-list of possible-negated-nodenums
+;; Recognizes a true-list of possibly-negated-nodenums.
 (defund possibly-negated-nodenumsp (lst)
   (declare (xargs :guard t))
   (if (atom lst)
-      (null lst) ;new
+      (null lst)
     (and (possibly-negated-nodenump (first lst))
          (possibly-negated-nodenumsp (rest lst)))))
 
@@ -210,13 +210,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Checks whether ITEM is either a nodenum less than BOUND or a call of NOT on such a nodenum.
 (defund bounded-possibly-negated-nodenump (item bound)
-  (declare (xargs :guard (rationalp bound))) ; say integerp?
+  (declare (xargs :guard (natp bound)
+                  :split-types t)
+           (type (integer 0 *) bound))
   (or (and (natp item)
            (< item bound))
       (and (call-of 'not item)
-           (consp (cdr item))
-           (null (cddr item))
+           (consp (fargs item))
+           (null (cdr (fargs item)))
            (natp (farg1 item))
            (< (farg1 item) bound))))
 
@@ -258,11 +261,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;requires 0 <= nodenum < bound for all the nodenums in the context:
+;; Checks that the ITEMS are all possibly-negated nodenums and also checks
+;; that all the nodenums in the items are less than BOUND.
 (defund bounded-possibly-negated-nodenumsp (items bound)
-  (declare (type rational bound))
+  (declare (xargs :guard (natp bound)
+                  :split-types t)
+           (type (integer 0 *) bound))
   (if (atom items)
-      (null items) ;new
+      (null items)
     (let ((item (first items)))
       (and (bounded-possibly-negated-nodenump item bound)
            (bounded-possibly-negated-nodenumsp (rest items) bound)))))
