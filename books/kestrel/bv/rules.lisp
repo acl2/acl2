@@ -6053,3 +6053,93 @@
                 (unsigned-byte-p-forced xsize x))
            (not (bvlt size k x)))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvplus-of-bvuminus-tighten-gen
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (< xsize n) ;this means the bvuminus is not tight
+                (<= n size)
+                (natp n)
+                (force (unsigned-byte-p-forced xsize x)))
+           (equal (bvplus size k (bvuminus n x))
+                  (if (equal 0 x)
+                      (bvchop size k)
+                    (bvplus size (bvplus size (- (expt 2 n) (expt 2 xsize)) k) (bvuminus xsize x)))))
+  :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvchop-of-minus bvplus bvcat logapp
+                                            bvchop-when-i-is-not-an-integer)
+                                  (bvminus-becomes-bvplus-of-bvuminus)))))
+
+(DEFTHM BVPLUS-OF-BVUMINUS-TIGHTEN-GEN-no-split
+  (IMPLIES (AND (syntaxp (and (quotep size)
+                              (quotep k)
+                              (quotep n)))
+                (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (< XSIZE N)
+                (not (EQUAL 0 X))
+                (<= N SIZE)
+                (NATP N)
+                (FORCE (UNSIGNED-BYTE-P-FORCED XSIZE X)))
+           (EQUAL (BVPLUS SIZE K (BVUMINUS N X))
+                  (BVPLUS SIZE
+                          (BVPLUS SIZE (- (EXPT 2 N) (EXPT 2 XSIZE))
+                                  K)
+                          (BVUMINUS XSIZE X))))
+  :hints (("Goal" :use (:instance BVPLUS-OF-BVUMINUS-TIGHTEN-GEN)
+           :in-theory (disable BVPLUS-OF-BVUMINUS-TIGHTEN-GEN))))
+
+;-alt?
+(defthm bvlt-tighten
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
+                (< (max xsize ysize) size)
+                (force (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced ysize y))
+                (natp size)
+                (posp xsize))
+           (equal (bvlt size x y)
+                  (bvlt (max xsize ysize) x y)))
+  :hints (("Goal"
+
+           :in-theory (e/d (bvlt unsigned-byte-p) (
+                                                   <-of-expt-and-expt-same-base)))))
+
+(defthm not-bvlt-of-constant-when-usb
+  (implies (and (syntaxp (quotep k))
+                (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (<= (expt 2 xsize) (bvchop size k))
+                (<= xsize size)
+                (natp xsize)
+                (integerp size)
+                (force (unsigned-byte-p-forced xsize x))
+                )
+           (not (BVLT size k x)))
+  :hints (("Goal" :in-theory (enable bvlt ; unsigned-byte-p
+                                     UNSIGNED-BYTE-P-FORCED))))
+
+(defthm bvdiv-tighten
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x))
+                (bind-free (bind-var-to-bv-term-size 'ysize y))
+                (< (max xsize ysize) size)
+                (force (unsigned-byte-p-forced xsize x))
+                (force (unsigned-byte-p-forced ysize y))
+                (natp size)
+                (posp xsize))
+           (equal (bvdiv size x y)
+                  (bvdiv (max xsize ysize) x y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvdiv))))
+
+(defthmd minus-becomes-bv
+  (implies (and (unsigned-byte-p free x)
+                (unsigned-byte-p free y)
+                (not (bvlt free x y))
+                (natp free))
+           (equal (+ x (- y))
+                  (bvplus free x (bvuminus free y))))
+  :hints (("Goal" :in-theory (e/d (bvplus
+                                   bvmod bvchop-of-sum-cases
+                                   bvuminus
+                                   bvminus
+                                   bvlt)
+                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
