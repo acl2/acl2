@@ -518,7 +518,8 @@
 
 (define certs-with-round ((round posp) (certs certificate-setp))
   :returns (certs-with-round certificate-setp)
-  :short "Retrieve the set of certificates with a given round from a set."
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with a given round."
   (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
        ((certificate cert) (set::head certs)))
     (if (equal cert.round (pos-fix round))
