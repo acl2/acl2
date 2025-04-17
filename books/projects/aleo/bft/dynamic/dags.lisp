@@ -500,8 +500,7 @@
     (set::subset certs dag)
     :hyp (certificate-setp dag)
     :hints (("Goal"
-             :in-theory (e/d (certs-with-round-subset
-                              successors-subset-of-next-round)
+             :in-theory (e/d (successors-subset-of-next-round)
                              (successors))
              :use (:instance set::subset-transitive
                              (x (successors cert dag))

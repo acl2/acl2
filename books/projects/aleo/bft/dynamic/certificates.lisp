@@ -590,7 +590,6 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-  (in-theory (disable certs-with-round-subset))
 
   (defruled in-of-certs-with-round
     (implies (certificate-setp certs)
@@ -1082,7 +1081,6 @@
     :enable (certs-with-authors+round-to-authors-of-round
              cert-set->author-set-of-certs-with-authors
              certs-with-authors-subset
-             certs-with-round-subset
              certificate-set-unequivocalp-when-subset)
     :disable (set::subset-transitive
               certificate-set-unequivocalp
