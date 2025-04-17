@@ -567,23 +567,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define certs-with-round ((round posp)
-                          (certs certificate-setp))
+(define certs-with-round ((round posp) (certs certificate-setp))
   :returns (certs-with-round certificate-setp)
   :short "Retrieve, from a set of certificates,
           the subset of certificates with a given round."
-  (b* (((when (set::emptyp certs)) nil)
+  (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
        ((certificate cert) (set::head certs)))
-    (if (equal (pos-fix round) cert.round)
-        (set::insert (certificate-fix cert)
+    (if (equal cert.round (pos-fix round))
+        (set::insert cert
                      (certs-with-round round (set::tail certs)))
       (certs-with-round round (set::tail certs))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
+  :hooks (:fix)
 
   ///
-
-  (fty::deffixequiv certs-with-round
-    :args ((round posp)))
 
   (defret certs-with-round-subset
     (set::subset certs-with-round certs)
