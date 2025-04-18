@@ -192,7 +192,7 @@
   (b* (((mv choice seed)
         (defdata::weighted-switch-nat 
           '(
-            75  ;; n/k for n,k integers
+            74  ;; n/k for n,k integers
             4   ;; +- 2^i + {-1,0,1} for |i| <= 64
             4   ;; +- 2^i + {-1,0,1} for 64 < |i| <= 1024
             3   ;; +- min/max magnitude normal 32-bit float + {-1,0,1}
@@ -205,6 +205,7 @@
             1   ; nan
             1   ; +inf
             1   ; -inf
+	    1   ; -0
             ) seed)))
     (case choice
       (0 ;; n/k for n,k integers
@@ -260,8 +261,10 @@
        (nth-py-nan/acc 0 seed))
       (8 ;; +inf
        (nth-py-pos-inf/acc 0 seed))
-      (t ;; -inf
-       (nth-py-neg-inf/acc 0 seed)))))
+      (9 ;; -inf
+       (nth-py-neg-inf/acc 0 seed))
+      (t ;; -0
+       (nth-py-neg-zero/acc 0 seed)))))
 
 (defun python-float-enum (n)
   (declare (xargs :mode :program))
