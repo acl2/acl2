@@ -299,3 +299,11 @@
 		  (in (cdr p) (codomain f)))
 	 :props (zfc domain$prop prod2$prop inverse$prop)
 	 :rule-classes :forward-chaining)
+
+; A necessary lemma for tc-contains-union in tc.lisp:
+(defthmz union-monotone
+  (implies (subset s1 s2)
+           (subset (union s1) (union s2)))
+  :hints (("Goal"
+           :in-theory (enable in-in)
+           :expand ((subset (union s1) (union s2))))))
