@@ -518,7 +518,8 @@
 
 (define certs-with-round ((round posp) (certs certificate-setp))
   :returns (certs-with-round certificate-setp)
-  :short "Retrieve the set of certificates with a given round from a set."
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with a given round."
   (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
        ((certificate cert) (set::head certs)))
     (if (equal cert.round (pos-fix round))
@@ -570,7 +571,8 @@
              (set::subset (certs-with-round round certs1)
                           (certs-with-round round certs2)))
     :enable (set::expensive-rules
-             in-of-certs-with-round))
+             in-of-certs-with-round)
+    :disable certs-with-round)
 
   (defruled cert-with-author+round-when-author-in-round
     (implies (and (certificate-setp certs)
@@ -582,12 +584,12 @@
     :use (:instance set::in-head
                     (x (certs-with-author
                         author (certs-with-round round certs))))
-    :enable (set::expensive-rules
-             in-of-certs-with-author
+    :enable (in-of-certs-with-author
              in-of-certs-with-round
              cert-with-author+round-when-element
              emptyp-of-certs-with-author)
-    :disable set::in-head)
+    :disable (set::in-head
+              certs-with-round))
 
   (defruled certs-with-round-of-intersect
     (implies (and (certificate-setp certs1)

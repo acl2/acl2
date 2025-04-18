@@ -567,23 +567,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define certs-with-round ((round posp)
-                          (certs certificate-setp))
+(define certs-with-round ((round posp) (certs certificate-setp))
   :returns (certs-with-round certificate-setp)
   :short "Retrieve, from a set of certificates,
           the subset of certificates with a given round."
-  (b* (((when (set::emptyp certs)) nil)
+  (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
        ((certificate cert) (set::head certs)))
-    (if (equal (pos-fix round) cert.round)
-        (set::insert (certificate-fix cert)
+    (if (equal cert.round (pos-fix round))
+        (set::insert cert
                      (certs-with-round round (set::tail certs)))
       (certs-with-round round (set::tail certs))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
+  :hooks (:fix)
 
   ///
-
-  (fty::deffixequiv certs-with-round
-    :args ((round posp)))
 
   (defret certs-with-round-subset
     (set::subset certs-with-round certs)
@@ -592,14 +590,12 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-  (in-theory (disable certs-with-round-subset))
 
   (defruled in-of-certs-with-round
-    (implies (certificate-setp certs)
-             (equal (set::in cert (certs-with-round round certs))
-                    (and (set::in cert certs)
-                         (equal (certificate->round cert)
-                                (pos-fix round)))))
+    (equal (set::in cert (certs-with-round round certs))
+           (and (set::in cert (certificate-set-fix certs))
+                (equal (certificate->round cert)
+                       (pos-fix round))))
     :induct t)
 
   (defruled certs-with-round-monotone
@@ -611,6 +607,23 @@
     :enable (in-of-certs-with-round
              set::expensive-rules)
     :disable certs-with-round)
+
+  (defruled cert-with-author+round-when-author-in-round
+    (implies (and (certificate-setp certs)
+                  (posp round)
+                  (set::in author
+                           (cert-set->author-set
+                            (certs-with-round round certs))))
+             (cert-with-author+round author round certs))
+    :use (:instance set::in-head
+                    (x (certs-with-author
+                        author (certs-with-round round certs))))
+    :enable (in-of-certs-with-author
+             in-of-certs-with-round
+             cert-with-author+round-when-element
+             emptyp-of-certs-with-author)
+    :disable (set::in-head
+              certs-with-round))
 
   (defruled cert-set->round-set-of-certs-with-round
     (implies (certificate-setp certs)
@@ -658,23 +671,6 @@
                      (y (cert-set->round-set
                          (certs-with-round round certs)))))
     :disable (set::subset-cardinality
-              certs-with-round))
-
-  (defruled cert-with-author+round-when-author-in-round
-    (implies (and (certificate-setp certs)
-                  (posp round)
-                  (set::in author
-                           (cert-set->author-set
-                            (certs-with-round round certs))))
-             (cert-with-author+round author round certs))
-    :use (:instance set::in-head
-                    (x (certs-with-author
-                        author (certs-with-round round certs))))
-    :enable (in-of-certs-with-author
-             in-of-certs-with-round
-             cert-with-author+round-when-element
-             emptyp-of-certs-with-author)
-    :disable (set::in-head
               certs-with-round)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1084,7 +1080,6 @@
     :enable (certs-with-authors+round-to-authors-of-round
              cert-set->author-set-of-certs-with-authors
              certs-with-authors-subset
-             certs-with-round-subset
              certificate-set-unequivocalp-when-subset)
     :disable (set::subset-transitive
               certificate-set-unequivocalp
