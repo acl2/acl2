@@ -12,6 +12,7 @@
 (include-book "foldr")
 (include-book "fun-space")
 (include-book "identity")
+(include-book "induction")
 (include-book "injective-funp")
 (include-book "inverse")
 (include-book "iterate")
@@ -19,6 +20,7 @@
 (include-book "prove-acl2p")
 (include-book "schroeder-bernstein")
 (include-book "set-algebra")
+(include-book "tc")
 (include-book "zify")
 ; (include-book "zify-motivation") ; incompatible with "zify"
 (include-book "finseqs")
