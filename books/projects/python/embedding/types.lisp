@@ -1,8 +1,10 @@
-;; python type definitions
+#|
+This file contains Python type definitions and attaches appropriate enumerators to them
+|#
 
 (in-package "ACL2S")
-(include-book "string_enum_utils")
-(include-book "py_listof")
+(include-book "enumerators/string")
+(include-book "enumerators/listof")
 
 (set-ccg-time-limit 5)  ;; 5 seconds
 

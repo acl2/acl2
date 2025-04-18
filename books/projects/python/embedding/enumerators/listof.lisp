@@ -1,5 +1,9 @@
+#|
+This file contains code to generate "list of" enumerators that generate lists of a wide variety of lengths. 
+|#
+
 (in-package "ACL2S")
-(include-book "util")
+(include-book "utils")
 
 (defconst *python-listof-enumerator-lengths*
   ;; min and max are inclusive
@@ -47,7 +51,3 @@
 (defun attach-pylistof-wrap (name element-type)
   `(generate-attach-pylistof-enumerators ',name ',element-type))
 
-#|
-(defdata foo-list (listof nat) :do-not-alias t)
-(generate-attach-pylistof-enumerators 'foo-list 'nat)
-|#

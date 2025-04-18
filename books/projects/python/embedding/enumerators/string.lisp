@@ -1,5 +1,5 @@
 (in-package "ACL2S")
-(include-book "util")
+(include-book "utils")
 
 (defun ascii-codepoint-enum (seed)
   (defdata::random-integer-between-seed 0 127 seed))

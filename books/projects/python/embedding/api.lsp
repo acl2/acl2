@@ -1,5 +1,11 @@
+#|
+This file contains definitions of the data structures in the type system model and 
+exposes several functions for making changes to the model (the API)
+|#
+
+
 (load "package.lsp")
-(in-package :wgdt)
+(in-package :acl2s-python-types)
 
 (declaim (ftype (function (* symbol) symbol) intern-sym-in-package))
 (defun intern-sym-in-package (pkg sym)
@@ -46,11 +52,10 @@ Entries in the type table are of one of the following forms:
   (add-nonparametric-type "integer" 'acl2s::py-integer)
   (add-alias-type "int" "integer")
   (add-nonparametric-type "float" 'acl2s::py-float)
-  (add-nonparametric-type "str" 'acl2s::py-str)
-  (add-nonparametric-type "bool" 'acl2s::py-bool)
-  (add-nonparametric-type "unicode-codepoint-string" 'acl2s::unicode-codepoint-string)
-  (add-alias-type "unicode" "unicode-codepoint-string")
+  (add-nonparametric-type "str" 'acl2s::unicode-codepoint-string)
   (add-alias-type "string" "str")
+  (add-alias-type "unicode-codepoint-string" "str")
+  (add-nonparametric-type "bool" 'acl2s::py-bool)
   (add-alias-type "boolean" "bool")
   (add-parametric-type "list"
                        (lambda (el-ty)
@@ -73,7 +78,6 @@ Entries in the type table are of one of the following forms:
                            `(acl2s::list ,@ty-syms))))
   (add-nonparametric-type "nonetype" 'acl2s::py-none)
   (add-nonparametric-type "bytes" 'acl2s::py-bytes))
-  ;;(add-nonparametric-type "string" 'acl2s::string))
 
 (defmacro get-field (obj fieldname)
   `(cdr (assoc ,fieldname ,obj)))

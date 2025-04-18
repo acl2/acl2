@@ -1,7 +1,7 @@
 (include-book "top")     ;; load the embedding's ACL2s book
 :q                       ;; quit into raw lisp
-(load "backend_py.lsp")  ;; Load the backend module, which contains the API
-(in-package :wgdt)       ;; "wgdt" is the name of the API package
+(load "api.lsp")  ;; Load the backend module, which contains the API
+(in-package :acl2s-python-types)       ;; "acl2s-python-types" is the name of the API package
 
 (defvar *enum-random-state*)  ;; create variable to hold random state
 (setf *enum-random-state* (make-cl-seed 1)) ;; Set seed
