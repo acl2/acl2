@@ -33,6 +33,7 @@
 (include-book "signed-proposals")
 (include-book "signed-in-signer")
 (include-book "author-round-pairs-in-validators")
+(include-book "unequivocal-signed-proposals")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,6 +69,7 @@
                     dag-previous-closed
                     signed-proposals
                     signed-in-signer
-                    author-round-pairs-in-validators))
+                    author-round-pairs-in-validators
+                    unequivocal-signed-proposals))
 
 ; TODO: continue
