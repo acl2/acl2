@@ -12,12 +12,10 @@
       (identity-fun (domain f))
     (compose f (iterate f (1- n)))))
 
-(defthm funp-iterate
-  (implies (and (funp f)
-                (zify-prop)
-                (force (compose$prop))
-                (force (identity-fun$prop)))
-           (funp (iterate f n))))
+(defthmz funp-iterate
+  (implies (funp f)
+           (funp (iterate f n)))
+  :props (zify-prop compose$prop identity-fun$prop))
 
 (defthmz subset-codomain-iterate
   (implies (and (funp f)

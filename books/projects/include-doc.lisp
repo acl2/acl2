@@ -37,7 +37,7 @@
      (include-book "aleo/top")
      (include-book "abnf/top")
      (include-book "bls12-377-curves/top")
-     (include-book "set-theory/top")
+     (include-book "set-theory/doc")
 
      (defxdoc projects
        :parents (top)

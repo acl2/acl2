@@ -345,10 +345,17 @@
                               (not (integerp x)))))
   (ztriple 2 (cons (numerator-as-ztriple x) (denominator x))))
 
+(defun rational-as-ztriple (x)
+  (declare (xargs :guard (rationalp x)))
+  (if (integerp x)
+      (integer-as-ztriple x)
+    (ratio-as-ztriple x)))
+
 (defun complex-as-ztriple (x)
   (declare (xargs :guard (and (complex-rationalp x)
                               (not (rationalp x)))))
-  (ztriple 3 (cons (realpart x) (imagpart x))))
+  (ztriple 3 (cons (rational-as-ztriple (realpart x))
+                   (rational-as-ztriple (imagpart x)))))
 
 (defun character-as-ztriple (x)
   (declare (xargs :guard (characterp x)))
@@ -378,6 +385,11 @@
   (implies (and (rationalp x)
                 (not (integerp x)))
            (equal (ratio-as-ztriple x)
+                  x)))
+
+(defthmz rational-as-ztriple-identity
+  (implies (rationalp x)
+           (equal (rational-as-ztriple x)
                   x)))
 
 (defthmz complex-as-ztriple-identity
@@ -411,6 +423,7 @@
 (verify-guards integer-as-ztriple)
 (verify-guards numerator-as-ztriple)
 (verify-guards ratio-as-ztriple)
+(verify-guards rational-as-ztriple)
 (verify-guards complex-as-ztriple)
 (verify-guards character-as-ztriple)
 (verify-guards string-as-ztriple)
