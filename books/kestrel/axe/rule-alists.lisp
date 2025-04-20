@@ -22,6 +22,8 @@
 
 (in-theory (disable fgetprop)) ;move
 
+(local (in-theory (disable ilks-plist-worldp)))
+
 ;; Rule-alists are structures that index rules by the top function symbol of their LHSes.
 ;; TODO: Consider using a property list world to make the lookups faster.
 
@@ -169,14 +171,14 @@
       (union-eq (stored-rule-names stored-rules)
                 (rules-from-rule-alist (rest alist))))))
 
+(verify-guards rules-from-rule-alist
+  :hints (("Goal" :in-theory (enable rule-alistp))))
+
 (defthm symbol-listp-of-rules-from-rule-alist
   (implies (rule-alistp alist)
            (symbol-listp (rules-from-rule-alist alist)))
   :hints (("Goal" :in-theory (enable rules-from-rule-alist
                                      rule-alistp))))
-
-(verify-guards rules-from-rule-alist
-  :hints (("Goal" :in-theory (enable rule-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -390,6 +392,13 @@
         (er hard? 'extend-rule-alist2 "Ill-formed priorities table.")
       (extend-rule-alist axe-rules t priorities rule-alist))))
 
+(defthm rule-alistp-of-extend-rule-alist2
+  (implies (and (axe-rule-listp axe-rules)
+                (rule-alistp rule-alist)
+                (plist-worldp wrld))
+           (rule-alistp (extend-rule-alist2 axe-rules rule-alist wrld)))
+  :hints (("Goal" :in-theory (enable extend-rule-alist2))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Optimize to not re-cons if not needed.
@@ -464,6 +473,11 @@
     (union-eq (rules-from-rule-alist (first alists))
               (rules-from-rule-alists (rest alists)))))
 
+(defthm symbol-listp-of-rules-from-rule-alists
+  (implies (all-rule-alistp alists)
+           (symbol-listp (rules-from-rule-alists alists)))
+  :hints (("Goal" :in-theory (enable rules-from-rule-alists))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Only used in once, in equivalence checker.
@@ -508,21 +522,26 @@
 ;todo: would prefer to just pass in named formulas here
 (defund extend-rule-alists2 (axe-rules rule-alists wrld)
   (declare (xargs :guard (and (axe-rule-listp axe-rules)
-                              (all-rule-alistp rule-alists)
-                              (true-listp rule-alists)
+                              (rule-alistsp rule-alists)
                               (plist-worldp wrld))))
   (if (endp rule-alists)
       nil
     (cons (extend-rule-alist2 axe-rules (first rule-alists) wrld)
           (extend-rule-alists2 axe-rules (rest rule-alists) wrld))))
 
+(defthm rule-alistsp-of-extend-rule-alists2
+  (implies (and (axe-rule-listp axe-rules)
+                (rule-alistsp rule-alists)
+                (plist-worldp wrld))
+           (rule-alistsp (extend-rule-alists2 axe-rules rule-alists wrld)))
+  :hints (("Goal" :in-theory (enable rule-alistsp extend-rule-alists2))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rule-alists).
 (defund add-to-rule-alists (rule-names rule-alists wrld)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (all-rule-alistp rule-alists)
-                              (true-listp rule-alists)
+                              (rule-alistsp rule-alists)
                               (ilks-plist-worldp wrld))))
   (if (endp rule-alists)
       (mv (erp-nil) nil)
@@ -535,18 +554,26 @@
       (mv (erp-nil)
           (cons rule-alist rule-alists)))))
 
+(defthm rule-alistsp-of-mv-nth-1-of-add-to-rule-alists
+  (implies (and (rule-alistsp rule-alists)
+                (symbol-listp rule-names)
+                (ilks-plist-worldp wrld))
+           (rule-alistsp (mv-nth 1 (add-to-rule-alists rule-names rule-alists wrld))))
+  :hints (("Goal" :in-theory (enable rule-alistsp
+                                     add-to-rule-alists))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund remove-from-rule-alists (rule-names rule-alists)
   (declare (xargs :guard (and (symbol-listp rule-names)
-                              (all-rule-alistp rule-alists)
-                              (true-listp rule-alists))))
+                              (rule-alistsp rule-alists))))
   (if (endp rule-alists)
       nil
     (cons (remove-from-rule-alist rule-names (first rule-alists))
           (remove-from-rule-alists rule-names (rest rule-alists)))))
 
-(defthm symbol-listp-of-rules-from-rule-alists
-  (implies (all-rule-alistp alists)
-           (symbol-listp (rules-from-rule-alists alists)))
-  :hints (("Goal" :in-theory (enable rules-from-rule-alists))))
+(defthm rule-alistsp-of-remove-from-rule-alists
+  (implies (rule-alistsp rule-alists)
+           (rule-alistsp (remove-from-rule-alists rule-names rule-alists)))
+  :hints (("Goal" :in-theory (enable rule-alistsp
+                                     remove-from-rule-alists))))
