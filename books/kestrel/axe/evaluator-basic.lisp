@@ -136,6 +136,8 @@
 
     (bvmod bvmod-unguarded)
     (bvdiv bvdiv-unguarded)
+    (sbvdiv sbvdiv-unguarded)
+    (sbvrem sbvrem-unguarded)
 
     (bvequal bvequal-unguarded)
     (bvand bvand-unguarded)
@@ -162,6 +164,10 @@
     (bv-array-write bv-array-write-unguarded)
     bv-arrayp ; unguarded
 
+    ;; array patterns:
+    (negated-elems-listp negated-elems-listp-unguarded)
+    all-integerp
+
     ;; bv-list functions:
     (packbv packbv-unguarded)
     ;; these can help with blasting arrays:
@@ -170,6 +176,7 @@
 
     (every-nth every-nth-unguarded)
     (all-equal$ all-equal$-unguarded)
+    (all-same all-same-unguarded)
 
     ; Axe doesn't really support force and case-split, but including them here
     ; means they will at least be evaluated on constants:
