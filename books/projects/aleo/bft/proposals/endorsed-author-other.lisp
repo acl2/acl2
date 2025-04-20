@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ ensorsed-author-other
+(defxdoc+ endorsed-author-other
   :parents (correctness)
   :short "Invariant that the author of each endorsed proposal
           in each validator state

@@ -68,7 +68,9 @@
                      (or (set::in prop (cert-set->prop-set vstate.dag))
                          (set::in prop (omap::keys vstate.proposed))
                          (set::in prop vstate.endorsed)))))
+
   ///
+
   (fty::deffixequiv-sk signed-in-signer-p
     :args ((systate system-statep))))
 

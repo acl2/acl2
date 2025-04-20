@@ -20,11 +20,11 @@
       (not (in a y)) ; u
       )
 
-; Forced version of diff:
-(defthm in-diff
-  (implies (force (diff$prop))
-           (equal (in a (diff x y))
-                  (and (in a x) (not (in a y))))))
+; Version of diff with forced (diff$prop) hypothesis:
+(defthmz in-diff
+  (equal (in a (diff x y))
+         (and (in a x) (not (in a y))))
+  :props (diff$prop))
 
 ; Subsumed by in-diff:
 (in-theory (disable diff$comprehension))
@@ -54,14 +54,14 @@
   :props (zfc diff$prop)
   :hints (("Goal" :in-theory (enable extensionality-rewrite))))
 
-(defthmz int2-distributes-over-union2
+(defthmz int2-distributes-over-union2 ; a De Morgan law
   (equal (int2 x (union2 y z))
          (union2 (int2 x y)
                  (int2 x z)))
   :props (zfc diff$prop)
   :hints (("Goal" :in-theory (enable extensionality-rewrite))))
 
-(defthmz union2-distributes-over-int2
+(defthmz union2-distributes-over-int2 ; a De Morgan law
   (equal (union2 x (int2 y z))
          (int2 (union2 x y)
                (union2 x z)))
@@ -299,3 +299,11 @@
 		  (in (cdr p) (codomain f)))
 	 :props (zfc domain$prop prod2$prop inverse$prop)
 	 :rule-classes :forward-chaining)
+
+; A necessary lemma for tc-contains-union in tc.lisp:
+(defthmz union-monotone
+  (implies (subset s1 s2)
+           (subset (union s1) (union s2)))
+  :hints (("Goal"
+           :in-theory (enable in-in)
+           :expand ((subset (union s1) (union s2))))))

@@ -795,7 +795,7 @@
              signed-props-in-validator-of-augment-next
              set::expensive-rules))
 
-  (defruled signed-props-of-augment-next
+  (defrule signed-props-of-augment-next
     (implies (augment-possiblep prop endor systate)
              (equal (signed-props signer (augment-next prop endor systate))
                     (signed-props signer systate)))
@@ -827,7 +827,8 @@
        (implies (augment-possiblep prop endor systate)
                 (implies (set::in x (signed-props signer systate))
                          (set::in x (signed-props
-                                     signer (augment-next prop endor systate)))))
+                                     signer
+                                     (augment-next prop endor systate)))))
        :enable (signed-props
                 signed-props-in-validators-of-augment-next
                 get-network-state-of-augment-next
@@ -1011,7 +1012,8 @@
                                       (certificate->signers cert)))
                         (set::insert (certificate->proposal cert)
                                      (signed-props-in-validator
-                                      signer (get-validator-state val1 systate)))
+                                      signer
+                                      (get-validator-state val1 systate)))
                       (signed-props-in-validator
                        signer (get-validator-state val1 systate)))))
     :enable (signed-props-in-validator
@@ -1037,7 +1039,7 @@
              signed-props-in-validator-of-accept-next
              set::expensive-rules))
 
-  (defruled signed-props-of-accept-next
+  (defrule signed-props-of-accept-next
     (implies (accept-possiblep val cert systate)
              (equal (signed-props signer (accept-next val cert systate))
                     (signed-props signer systate)))
@@ -1084,7 +1086,7 @@
              signed-props-in-validator-of-advance-next
              set::expensive-rules))
 
-  (defruled signed-props-of-advance-next
+  (defrule signed-props-of-advance-next
     (implies (advance-possiblep val systate)
              (equal (signed-props signer (advance-next val systate))
                     (signed-props signer systate)))
@@ -1124,7 +1126,7 @@
              signed-props-in-validator-of-commit-next
              set::expensive-rules))
 
-  (defruled signed-props-of-commit-next
+  (defrule signed-props-of-commit-next
     (implies (commit-possiblep val systate)
              (equal (signed-props signer (commit-next val systate))
                     (signed-props signer systate)))
