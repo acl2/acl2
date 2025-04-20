@@ -69,7 +69,7 @@
 ;; TODO: Document.
 ;; TODO: rename axe-work-hard?
 ;just the identity, but tells Axe (which parts?) to work hard to relieve the hyp that it encloses
-(defun work-hard (x) x)
+(defun work-hard (x) (declare (xargs :guard t)) x)
 
 ;; Indicates that the wrapped hyp is to be treated as a binding hyp.  It must
 ;; have the form (equal <free-var> <term-with-no-free-vars>) where the notion
