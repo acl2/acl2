@@ -737,7 +737,8 @@
     (merge-sort-symbol< (dag-fns-aux dag-or-quotep nil))))
 
 (defthm symbol-listp-of-dag-fns
-  (implies (weak-dagp dag-or-quotep)
+  (implies (or (quotep dag-or-quotep)
+               (weak-dagp dag-or-quotep))
            (symbol-listp (dag-fns dag-or-quotep)))
   :hints (("Goal" :in-theory (enable dag-fns))))
 
