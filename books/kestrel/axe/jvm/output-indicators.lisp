@@ -1,7 +1,7 @@
 ; Indicating the final value(s) of interest when lifting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,6 +18,7 @@
 (include-book "kestrel/jvm/heap0" :dir :system)
 (include-book "kestrel/jvm/arrays0" :dir :system)
 (include-book "kestrel/jvm/class-tables" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 
 ;; TODO: Move to jvm dir.
 ;; Recognizes an alist from class-names to class-infos.
@@ -119,7 +120,7 @@
 ;; If the output-indicator is :auto, do something sensible if we can.  Returns
 ;; an output-indicatorp-aux, or nil to indicate failure.
 ;; TODO: Prove that this always returns an output-indicatorp
-(defun resolve-auto-output-indicator (return-type)
+(defund resolve-auto-output-indicator (return-type)
   (declare (xargs :guard (or (eq :void return-type)
                              (jvm::typep return-type))))
   (if (eq :void return-type)
@@ -197,6 +198,27 @@
             ,(wrap-term-with-output-extractors (rest output-indicators) ;return-type
                                                initial-locals-term state-term class-table-alist)))))
 
+(local (make-flag wrap-term-with-output-extractor))
+
+(defthm-flag-wrap-term-with-output-extractor
+  (defthm pseudo-termp-of-wrap-term-with-output-extractor
+    (implies (and (output-indicatorp-aux output-indicator)
+                  (class-table-alistp class-table-alist)
+                  (pseudo-termp initial-locals-term)
+                  (pseudo-termp state-term))
+             (pseudo-termp (wrap-term-with-output-extractor output-indicator initial-locals-term state-term class-table-alist)))
+    :flag wrap-term-with-output-extractor)
+  (defthm pseudo-termp-of-wrap-term-with-output-extractors
+    (implies (and (output-indicatorp-aux-lst output-indicators)
+                  (class-table-alistp class-table-alist)
+                  (pseudo-termp initial-locals-term)
+                  (pseudo-termp state-term))
+             (pseudo-termp (wrap-term-with-output-extractors output-indicators initial-locals-term state-term class-table-alist)))
+    :flag wrap-term-with-output-extractors)
+  :hints (("Goal" :in-theory (enable wrap-term-with-output-extractor
+                                     wrap-term-with-output-extractors
+                                     len))))
+
 ;; Returns a term to wrap around a dag to extract the output.  In the result,
 ;; the special symbol 'replace-me should be replaced with the DAG.
 (defund output-extraction-term (output-indicator
@@ -207,7 +229,8 @@
                               (pseudo-termp initial-locals-term)
                               (or (eq :void return-type)
                                   (jvm::typep return-type))
-                              (class-table-alistp class-table-alist))))
+                              (class-table-alistp class-table-alist))
+                  :guard-hints (("Goal" :in-theory (enable resolve-auto-output-indicator))))) ; todo
   (let ((output-indicator (if (eq :auto output-indicator)
                               (resolve-auto-output-indicator return-type)
                             output-indicator)))
