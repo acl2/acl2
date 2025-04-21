@@ -395,7 +395,6 @@
                       jvm::method-staticp
                       jvm::method-namep
                       method-designator-stringp
-                      desugar-nice-output-indicatorp
                       output-indicatorp-aux
                       )))
 
@@ -567,7 +566,7 @@
        ;; Handle an output-indicator of :auto:
        (output-indicator (if (eq :auto maybe-nice-output-indicator)
                              (resolve-auto-output-indicator return-type)
-                           (desugar-nice-output-indicatorp maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
+                           (desugar-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
        (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
        ;; Decide which symbolic execution rule to use:
