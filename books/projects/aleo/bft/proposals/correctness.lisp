@@ -34,6 +34,7 @@
 (include-book "signed-in-signer")
 (include-book "author-round-pairs-in-validators")
 (include-book "unequivocal-signed-proposals")
+(include-book "active-committees-after-commit")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,6 +71,7 @@
                     signed-proposals
                     signed-in-signer
                     author-round-pairs-in-validators
-                    unequivocal-signed-proposals))
+                    unequivocal-signed-proposals
+                    active-committees-after-commit))
 
 ; TODO: continue
