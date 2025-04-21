@@ -35,6 +35,7 @@
 (include-book "author-round-pairs-in-validators")
 (include-book "unequivocal-signed-proposals")
 (include-book "active-committees-after-commit")
+(include-book "fault-tolerance")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,6 +73,7 @@
                     signed-in-signer
                     author-round-pairs-in-validators
                     unequivocal-signed-proposals
-                    active-committees-after-commit))
+                    active-committees-after-commit
+                    fault-tolerance))
 
 ; TODO: continue
