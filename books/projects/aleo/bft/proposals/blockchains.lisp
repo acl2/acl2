@@ -175,4 +175,25 @@
                                 blocks-last-round
                                 cert-list-orderedp
                                 last))))
-  (in-theory (disable blocks-orderedp-of-extend-blockchain)))
+  (in-theory (disable blocks-orderedp-of-extend-blockchain))
+
+  (defruled active-committee-at-round-of-extend-blockchain-no-change
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (implies (and (block-listp blockchain)
+                    (blocks-orderedp new-blockchain)
+                    (active-committee-at-round round blockchain))
+               (equal (active-committee-at-round round new-blockchain)
+                      (active-committee-at-round round blockchain))))
+    :disable extend-blockchain
+    :use (extend-blockchain-as-append
+          (:instance active-committee-at-round-of-append-no-change
+                     (blocks1 (b* (((mv new-blockchain &)
+                                    (extend-blockchain anchors
+                                                       dag
+                                                       blockchain
+                                                       committed-certs)))
+                                (take (- (len new-blockchain)
+                                         (len blockchain))
+                                      new-blockchain)))
+                     (blocks blockchain)))))
