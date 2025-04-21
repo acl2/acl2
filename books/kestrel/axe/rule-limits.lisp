@@ -70,6 +70,14 @@
             (rule-limitsp (acons-unique key val alist)))
    :hints (("Goal" :in-theory (enable acons-unique rule-limitsp)))))
 
+(defthm rule-limitsp-of-cons
+  (equal (rule-limitsp (cons pair limits))
+         (and (consp pair)
+              (symbolp (car pair))
+              (integerp (cdr pair))
+              (rule-limitsp limits)))
+   :hints (("Goal" :in-theory (enable rule-limitsp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check whether we can no longer apply the given STORED-RULE.

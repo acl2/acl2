@@ -79,6 +79,15 @@
     (and (not erp)
          (equal term ''t))))
 
+;; A test that uses an equality assumption
+(assert!
+  (mv-let (erp term)
+    (simplify-term-to-term-basic-wrapper '(binary-+ '1 x)
+                             :assumptions '((equal x (binary-* y z)))
+                             :known-booleans (known-booleans (w state)))
+    (and (not erp)
+         (equal term '(binary-+ '1 (binary-* y z))))))
+
 ;; A test that returns a variable
 (assert!
  (mv-let (erp res)

@@ -288,6 +288,7 @@
 ;;   or extend-refined-assumption-alist-assuming-negation-of-node.
 
 ;; How we use the node-replacement-array:
+;; - To replace nodenums that are otherwise simplified (e.g., before simplifying function calls applied to them)
 ;; - To check if a rewritten hyp is known to be non-nil (calling known-true-in-node-replacement-arrayp on its nodenum).
 ;; - To handle a simplified IF/MYIF/BOOLIF/BVIF test that is known to be non-nil (calling apply-node-replacement-array-bool-to-darg on it).
 ;; - To handle an argument to NOT that is known to be non-nil (calling apply-node-replacement-array-bool-to-darg on it).
@@ -1006,7 +1007,9 @@
                                                        node-replacement-array node-replacement-count refined-assumption-alist
                                                        rewrite-stobj (+ -1 count))
                  ;; No rule fired, so no simplification can be done.  Add the expression to the dag, but perhaps normalize nests of certain functions:
-                 (b* (((mv erp nodenum-or-quotep rewrite-stobj2)
+                 (b* ((- (and (all-consp dargs)
+                              (cw "Warning: Unevaluated ground application: ~x0.~%" (cons fn dargs)))) ; todo: add ability to suppress some functions
+                      ((mv erp nodenum-or-quotep rewrite-stobj2)
                        (add-and-maybe-normalize-expr fn dargs rewrite-stobj rewrite-stobj2))
                       ((when erp) (mv erp nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
                       ;; See if the nodenum returned is equated to anything:
@@ -1649,7 +1652,9 @@
                              (add-variable-to-dag-array-in-stobj tree rewrite-stobj2))
                             ((when erp) (mv erp nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
                             ;; See if the resulting node is known to be equal to something:
-                            (new-nodenum-or-quotep (apply-node-replacement-array nodenum node-replacement-array node-replacement-count)))
+                            (new-nodenum-or-quotep (apply-node-replacement-array nodenum node-replacement-array node-replacement-count))
+                            ;; (- (cw "Var ~x0 is node ~x1 and becomes node ~x2.~%" tree nodenum new-nodenum-or-quotep))
+                            )
                          (mv (erp-nil)
                              new-nodenum-or-quotep
                              rewrite-stobj2
@@ -1659,17 +1664,10 @@
                                                             memoization))
                              hit-counts tries limits
                              node-replacement-array))
-                     ;; TREE is a nodenum (because it's an atom but not a symbol): TODO: use equalities?
-                     ;; TODO: replacement works best if the nodes in the dag are already rewritten.  but what if this nodenum came from a node-equality assumption? in that case, it may not be rewritten! should we simplify the entries in the node-replacement-array once at the beginning?
-                     ;; First, see if the nodenum is mapped to anything in the node-replacement-count:
-                     (let* ((replacement-match nil ;(assoc-in-node-replacement-count tree node-replacement-count)
-                                               )
-                            (tree (if (and replacement-match
-                                           ;; This is new (8/10/15), so to be safe we only do it if the result is a constant (I am worried about loops):
-                                           (quotep (cdr replacement-match)))
-                                      (cdr replacement-match)
-                                    ;; No match found in the node-replacement-alist, so just use tree:
-                                    tree)))
+                     ;; TREE is a nodenum (because it's an atom but not a symbol):
+                     ;; TODO: replacement works best if the nodes in the dag are already rewritten.  but what if this nodenum came from a node-equality assumption? in that case, it may not be rewritten!  Consider always calling simplify-conjunction-xxx to simplify the entries in the node-replacement-array once at the beginning.
+                     ;; Apply a replacement from the node-replacement-array, if any:
+                     (let* ((tree (apply-node-replacement-array tree node-replacement-array node-replacement-count)))
                        (mv (erp-nil)
                            tree
                            rewrite-stobj2
@@ -1782,7 +1780,9 @@
                                                (,apply-axe-evaluator-to-quoted-args-name fn simplified-args (get-interpreted-function-alist rewrite-stobj))))
                                            (if erp
                                                (if (call-of :unknown-function erp) ; I suppose this could also be a bad arity?
-                                                   (mv (erp-nil) nil nil) ;no error, but it didn't produce a value (todo: print a warning?)
+                                                   (progn$ ;; (cw "Warning: Could not evaluate call of ~x0.~%" fn)
+                                                           (mv (erp-nil) nil nil) ;no error, but it didn't produce a value
+                                                           )
                                                  ;; anything else non-nil is a true error:
                                                  (mv erp nil nil))
                                              ;; normal case:
@@ -2870,7 +2870,6 @@
                      (:compound-recognizer axe-treep-compound-recognizer)
                      (:compound-recognizer natp-compound-recognizer)
                      (:congruence iff-implies-equal-not)
-                     ;; (:definition add-variable-to-dag-array-in-stobj)
                      (:rewrite add-variable-to-dag-array-in-stobj-return-type)
                      (:rewrite add-variable-to-dag-array-in-stobj-return-type-2)
                      ;; (:definition alistp)
@@ -4713,7 +4712,9 @@
                      (add-variable-to-dag-array-in-stobj expr rewrite-stobj2))
                     ((when erp) (mv erp nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
                     ;; Maybe apply a replacement:
-                    (new-nodenum-or-quotep (apply-node-replacement-array new-nodenum node-replacement-array node-replacement-count)))
+                    (new-nodenum-or-quotep (apply-node-replacement-array new-nodenum node-replacement-array node-replacement-count))
+                    ;; (- (cw "Var ~x0 is node ~x1 and becomes node ~x2.~%" expr new-nodenum new-nodenum-or-quotep))
+                    )
                  (mv (erp-nil) new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
              (let ((fn (ffn-symb expr)))
                (case fn
@@ -4735,16 +4736,14 @@
                         ;; The test was resolved, so the whole node is replaced by one branch:
                         ;; I suppose we could update the memoization here if we wanted to (but remember that it deals in the new nodenums).
                         (mv (erp-nil)
-                            (if (unquote renumbered-test-darg)
-                                (renumber-darg-with-stobj (second dargs) renumbering-stobj)
-                              (renumber-darg-with-stobj (third dargs) renumbering-stobj))
+                            (apply-node-replacement-array-to-darg (renumber-darg-with-stobj (if (unquote renumbered-test-darg) (second dargs) (third dargs)) renumbering-stobj) node-replacement-array node-replacement-count)
                             rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                       ;; The test was not resolved, so just try to apply rules:
                       (,simplify-fun-call-and-add-to-dag-name ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
                        fn (list renumbered-test-darg
-                                ;; TODO: Try to apply node replacements, including using info from the test?
-                                (renumber-darg-with-stobj (second dargs) renumbering-stobj)
-                                (renumber-darg-with-stobj (third dargs) renumbering-stobj))
+                                ;; TODO: Try to apply info from the test to the args here:
+                                (apply-node-replacement-array-to-darg (renumber-darg-with-stobj (second dargs) renumbering-stobj) node-replacement-array node-replacement-count)
+                                (apply-node-replacement-array-to-darg (renumber-darg-with-stobj (third dargs) renumbering-stobj) node-replacement-array node-replacement-count))
                        nil ; Can't memoize anything about EXPR because its nodenums are in the old dag (but we could cons the new expr?)
                        rewrite-stobj2 memoization hit-counts tries limits
                        node-replacement-array node-replacement-count refined-assumption-alist
@@ -4768,7 +4767,7 @@
                              rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                        ;; The expr is not constant, so just try to apply rules:
                        (,simplify-fun-call-and-add-to-dag-name ;; TODO: Perhaps pass in the original expr for use by cons-with-hint?
-                        fn (list renumbered-expr)
+                        fn (list (apply-node-replacement-array-to-darg renumbered-expr node-replacement-array node-replacement-count))
                         nil ; Can't memoize anything about EXPR because its nodenums are in the old dag (but we could cons the new expr?)
                         rewrite-stobj2 memoization hit-counts tries limits
                         node-replacement-array node-replacement-count refined-assumption-alist
@@ -4824,20 +4823,23 @@
                          (mv :bad-arity nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
                         ;; Renumber the size and test (then-branch and else-branch get renumbered below only if needed):
                         (renumbered-size-darg (renumber-darg-with-stobj (first dargs) renumbering-stobj))
+                        (renumbered-size-darg (apply-node-replacement-array-to-darg renumbered-size-darg node-replacement-array node-replacement-count)) ; this usually won't do much
                         (renumbered-test-darg (renumber-darg-with-stobj (second dargs) renumbering-stobj))
                         ;; Special treatment for BVIF (can rewrite the test in an IFF context):
                         (renumbered-test-darg (apply-node-replacement-array-bool-to-darg renumbered-test-darg node-replacement-array node-replacement-count))
                         ;; TODO: Consult the memoization?
                         )
-                     (if (consp renumbered-test-darg) ; test for quotep
+                     (if (consp renumbered-test-darg) ; tests for quotep
                          ;; The test was resolved, so the whole node is replaced by (the bvchop of) one branch:
                          ;; TODO: Do something faster, with no bvchop, if the selected branch is already a BV
                          (let ((selected-branch
-                                 (renumber-darg-with-stobj
-                                   (if (unquote renumbered-test-darg)
-                                       (third dargs)
-                                     (fourth dargs))
-                                   renumbering-stobj)))
+                                 (apply-node-replacement-array-to-darg
+                                   (renumber-darg-with-stobj
+                                     (if (unquote renumbered-test-darg)
+                                         (third dargs)
+                                       (fourth dargs))
+                                     renumbering-stobj)
+                                   node-replacement-array node-replacement-count)))
                            (if (and (consp selected-branch) ; tests for quotep
                                     (consp renumbered-size-darg))
                                ;; Ground term:
@@ -4855,8 +4857,8 @@
                         fn (list renumbered-size-darg
                                  renumbered-test-darg
                                  ;; TODO: Try to apply node replacements using info from the test as well
-                                 (renumber-darg-with-stobj (third dargs) renumbering-stobj)
-                                 (renumber-darg-with-stobj (fourth dargs) renumbering-stobj))
+                                 (apply-node-replacement-array-to-darg (renumber-darg-with-stobj (third dargs) renumbering-stobj) node-replacement-array node-replacement-count)
+                                 (apply-node-replacement-array-to-darg (renumber-darg-with-stobj (fourth dargs) renumbering-stobj) node-replacement-array node-replacement-count))
                         nil ; Can't memoize anything about EXPR because its nodenums are in the old dag (but we could cons the new expr?)
                         rewrite-stobj2 memoization hit-counts tries limits
                         node-replacement-array node-replacement-count refined-assumption-alist
@@ -4864,7 +4866,8 @@
                  (t ;; EXPR is some other function call (can't be a lambda application since it is a dag-expr):
                    (b* (;; Renumber the args:
                         (new-dargs (renumber-dargs-with-stobj (dargs expr) renumbering-stobj)) ; todo: have the renumbering function return a groundp flag
-                        ;; TODO: Try to apply node replacements?
+                        ;; Apply node-replacements:
+                        (new-dargs (apply-node-replacement-array-to-dargs new-dargs node-replacement-array node-replacement-count)) ; todo: return a groundp flag?
                         ;; TODO: Consider consulting the memoization here, now that the nodenums have been renumbered
                         ;; Handle possible ground term by evaluating (since ,simplify-fun-call-and-add-to-dag-name doesn't handle ground terms):
                         ((mv erp evaluatedp val)
@@ -5110,7 +5113,7 @@
                                             rewrite-stobj2
                                             memoization ; this is over the NEW nodenums (the ones in dag-array)
                                             hit-counts tries limits
-                                            node-replacement-array node-replacement-count ; this is over nodes in the NEW dag
+                                            node-replacement-array node-replacement-count-for-this-node ; this is over nodes in the NEW dag
                                             refined-assumption-alist-for-this-node
                                             rewrite-stobj
                                             renumbering-stobj))
@@ -5411,7 +5414,7 @@
          ;; TODO: Perhaps return hit-counts or tries, to be summed across invocations.
          (defund ,simplify-dag-core-name (dag
                                           assumptions
-                                          ;; may be pre-loaded with context info:
+                                          ;; may be pre-loaded all original nodes, for use with contexts:
                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                           maybe-internal-context-array
                                           rule-alist
