@@ -142,6 +142,17 @@
     :hints (("Goal" :induct t)))
   (in-theory (disable consp-of-extend-blockchain))
 
+  (defruled extend-blockchain-as-append
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (equal new-blockchain
+             (append (take (- (len new-blockchain)
+                              (len blockchain))
+                           new-blockchain)
+                     (block-list-fix blockchain))))
+    :induct t
+    :enable (len fix))
+
   (defret blocks-last-round-of-extend-blockchain
     (equal (blocks-last-round new-blockchain)
            (certificate->round (car anchors)))
