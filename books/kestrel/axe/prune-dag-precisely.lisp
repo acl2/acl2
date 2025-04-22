@@ -229,6 +229,26 @@
            (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state))))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))
 
+;; Uses quotep as the normal form
+(defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely-2
+  (implies (and (not (mv-nth 0 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state))) ;; no error
+                (pseudo-dagp dag)
+                (pseudo-term-listp assumptions)
+                (or (symbol-listp rules)
+                    (eq :none rules))
+                (or (rule-alistp rule-alist)
+                    (eq :none rule-alist))
+                (interpreted-function-alistp interpreted-function-alist)
+                (symbol-listp monitored-rules)
+                (or (booleanp call-stp)
+                    (natp call-stp))
+                ;; (ilks-plist-worldp (w state))
+                )
+           (equal (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+                  (not (quotep (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state))))))
+  :hints (("Goal" :use pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely
+           :in-theory (disable pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely))))
+
 (defthm w-of-mv-nth-2-of-maybe-prune-dag-precisely
   (equal (w (mv-nth 2 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state)))
          (w state))
