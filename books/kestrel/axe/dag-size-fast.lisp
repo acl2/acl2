@@ -241,3 +241,15 @@
   (if (quotep dag-or-quotep) ;size of a quotep is 1
       (< 1 limit)
     (dag-size-less-thanp dag-or-quotep limit)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This version throws an error if the dag is too big but does not have a guard about the dag size.
+(defund dag-or-quotep-size-less-thanp! (dag-or-quotep limit)
+  (declare (xargs :guard (and (or (pseudo-dagp dag-or-quotep)
+                                  (myquotep dag-or-quotep))
+                              (natp limit))))
+  (if (or (quotep dag-or-quotep)
+          (<= (len dag-or-quotep) *max-1d-array-length*))
+      (dag-or-quotep-size-less-thanp dag-or-quotep limit)
+    (er hard? 'dag-or-quotep-size-less-thanp! "Dag too big.")))

@@ -1201,7 +1201,7 @@
                   ;;bozo might get speed up by taking advantage of the fact that the expr came from a dag node and so can't be some big tree
                   ;;it's probably a function call tree? check whether it's of an if or lambda and if not, don't waste time simplifying the args? pass in a flag saying the args are simplified?
                   ;;fffixme do different things depending on whether expr is a var or a fn call:
-                  (simplify-tree-and-add-to-dag ;fffixme call simplify-fun-call-and-add-to-dag?? ;or (because we may still want to handle ifs and other stuff) pass a flag saying args are simplified - what about lambdas?
+                  (simplify-tree-and-add-to-dag ;fffixme call simplify-fun-call-and-add-to-dag (but may need to replace dargs using the context)?? ;or (because we may still want to handle ifs and other stuff) pass a flag saying args are simplified - what about lambdas?
                    (rename-var-or-fn-call-expr expr renaming-array (+ -1 nodenum))
                    dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                    rewriter-rule-alist

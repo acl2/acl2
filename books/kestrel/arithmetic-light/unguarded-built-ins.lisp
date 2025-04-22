@@ -126,6 +126,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund rem-unguarded (x y)
+  (declare (xargs :guard t))
+  (- (fix x) (binary-*-unguarded (truncate-unguarded x y) y)))
+
+(defthm rem-unguarded-correct
+  (equal (rem-unguarded x y)
+         (rem x y))
+  :hints (("Goal" :in-theory (enable rem
+                                     rem-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund min-unguarded (x y)
   (declare (xargs :guard t))
   (if (<-unguarded x y) x y))
