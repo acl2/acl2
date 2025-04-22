@@ -180,32 +180,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund strip-cars-unguarded (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) nil)
-        (t (cons (car-unguarded (car-unguarded x))
-                 (strip-cars-unguarded (cdr-unguarded x))))))
-
-(defthm strip-cars-unguarded-correct
-  (equal (strip-cars-unguarded x)
-         (strip-cars x))
-  :hints (("Goal" :in-theory (enable strip-cars-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund strip-cdrs-unguarded (x)
-  (declare (xargs :guard t))
-  (cond ((atom x) nil)
-        (t (cons (cdr-unguarded (car-unguarded x))
-                 (strip-cdrs-unguarded (cdr-unguarded x))))))
-
-(defthm strip-cdrs-unguarded-correct
-  (equal (strip-cdrs-unguarded x)
-         (strip-cdrs x))
-  :hints (("Goal" :in-theory (enable strip-cdrs-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defund bvnot-list-unguarded (size lst)
   (declare (xargs :guard t))
   (if (atom lst)
@@ -247,8 +221,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;TODO finish removing all guards!
 (defund unpackbv-less-guarded (num size bv)
   (declare (type (integer 0 *) size)
@@ -259,20 +231,6 @@
   (equal (unpackbv-less-guarded size x y)
          (unpackbv size x y))
 :hints (("Goal" :in-theory (enable unpackbv unpackbv-less-guarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund no-duplicatesp-equal-unguarded (l)
-  (declare (xargs :guard t))
-  (cond ((atom l) t)
-        ((member-equal-unguarded (car l) (cdr l)) nil)
-        (t (no-duplicatesp-equal-unguarded (cdr l)))))
-
-(defthm no-duplicatesp-equal-unguarded-correct
-  (equal (no-duplicatesp-equal-unguarded l)
-         (no-duplicatesp-equal l))
-  :hints (("Goal" :in-theory (enable no-duplicatesp-equal-unguarded
-                                     no-duplicatesp-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -399,7 +357,7 @@
            (code-char code-char-unguarded arg1) ;see code-char-unguarded-correct
            (symbol-package-name symbol-package-name-unguarded arg1) ;see symbol-package-name-unguarded-correct
            (symbol-name symbol-name-unguarded arg1) ;see symbol-name-unguarded-correct
-           (all-same all-same arg1)               ;unguarded
+           (all-same all-same-unguarded arg1)
            (bool-fix$inline bool-fix$inline arg1) ;unguarded
            (booleanp booleanp arg1) ;unguarded
 ;;           (contiguousp contiguousp arg1)

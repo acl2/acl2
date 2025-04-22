@@ -1,7 +1,7 @@
 ; An array to track replacements of nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -547,6 +547,75 @@
            (< (apply-node-replacement-array-bool-to-darg darg node-replacement-array node-replacement-count)
               bound))
   :hints (("Goal" :in-theory (e/d (apply-node-replacement-array-bool-to-darg) (dargp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund apply-node-replacement-array-to-darg (darg node-replacement-array node-replacement-count)
+  (declare (xargs :guard (and (dargp darg)
+                              (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                              (natp node-replacement-count)
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
+  (if (consp darg) ;; checks for quotep
+      darg ;; already a constant, so do not replace
+    ;; returns darg if no replacement:
+    (apply-node-replacement-array darg node-replacement-array node-replacement-count)))
+
+(defthm dargp-of-apply-node-replacement-array-to-darg
+  (implies (and (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                (dargp darg)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+           (dargp (apply-node-replacement-array-to-darg darg node-replacement-array node-replacement-count)))
+  :hints (("Goal" :in-theory (enable apply-node-replacement-array-to-darg))))
+
+(defthm dargp-less-than-of-apply-node-replacement-array-to-darg
+  (implies (and (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
+                (dargp-less-than darg bound)
+                (natp bound)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+           (dargp-less-than (apply-node-replacement-array-to-darg darg node-replacement-array node-replacement-count) bound))
+  :hints (("Goal" :in-theory (enable apply-node-replacement-array-to-darg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Applies replacements to a list of dargs.
+;; The result is equivalent to DARGS under iff (but not necessarily equal), given the information in the node-replacement-array.
+(defund apply-node-replacement-array-to-dargs (dargs node-replacement-array node-replacement-count)
+  (declare (xargs :guard (and (darg-listp dargs)
+                              (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                              (natp node-replacement-count)
+                              (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))))
+  (if (endp dargs)
+      nil
+    (let* ((darg (first dargs))
+           (new-darg (if (consp darg) ;; checks for quotep
+                         darg ;; already a constant, so do not replace
+                       ;; returns darg if no replacement:
+                       (apply-node-replacement-array darg node-replacement-array node-replacement-count))))
+      (cons-with-hint new-darg
+                      (apply-node-replacement-array-to-dargs (rest dargs) node-replacement-array node-replacement-count)
+                      dargs))))
+
+(defthm darg-listp-of-apply-node-replacement-array-to-dargs
+  (implies (and (node-replacement-arrayp 'node-replacement-array node-replacement-array)
+                (darg-listp dargs)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+           (darg-listp (apply-node-replacement-array-to-dargs dargs node-replacement-array node-replacement-count)))
+  :hints (("Goal" :in-theory (enable apply-node-replacement-array-to-dargs))))
+
+(defthm bounded-darg-listp-of-apply-node-replacement-array-to-dargs
+  (implies (and (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound)
+                (bounded-darg-listp dargs bound)
+                (natp bound)
+                (natp node-replacement-count)
+                (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array)))
+           (bounded-darg-listp (apply-node-replacement-array-to-dargs dargs node-replacement-array node-replacement-count) bound))
+  :hints (("Goal" :in-theory (enable apply-node-replacement-array-to-dargs bounded-darg-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 ;;;
 ;;; add-node-replacement-entry-and-maybe-expand

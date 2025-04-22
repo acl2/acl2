@@ -194,3 +194,45 @@
   (equal (member-equal-unguarded x y)
          (member-equal x y))
   :hints (("Goal" :in-theory (enable member-equal-unguarded member-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund strip-cars-unguarded (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) nil)
+        (t (cons (car-unguarded (car-unguarded x))
+                 (strip-cars-unguarded (cdr-unguarded x))))))
+
+(defthm strip-cars-unguarded-correct
+  (equal (strip-cars-unguarded x)
+         (strip-cars x))
+  :hints (("Goal" :in-theory (enable strip-cars-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund strip-cdrs-unguarded (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) nil)
+        (t (cons (cdr-unguarded (car-unguarded x))
+                 (strip-cdrs-unguarded (cdr-unguarded x))))))
+
+(defthm strip-cdrs-unguarded-correct
+  (equal (strip-cdrs-unguarded x)
+         (strip-cdrs x))
+  :hints (("Goal" :in-theory (enable strip-cdrs-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund no-duplicatesp-equal-unguarded (l)
+  (declare (xargs :guard t))
+  (cond ((atom l) t)
+        ((member-equal-unguarded (car l) (cdr l)) nil)
+        (t (no-duplicatesp-equal-unguarded (cdr l)))))
+
+(defthm no-duplicatesp-equal-unguarded-correct
+  (equal (no-duplicatesp-equal-unguarded l)
+         (no-duplicatesp-equal l))
+  :hints (("Goal" :in-theory (enable no-duplicatesp-equal-unguarded
+                                     no-duplicatesp-equal))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

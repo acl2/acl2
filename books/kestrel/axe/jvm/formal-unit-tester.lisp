@@ -292,7 +292,8 @@
   (declare (xargs :guard (and (jvm::method-info-alistp method-info-alist)
                               (or (eq :auto methods-to-test)
                                   (string-listp methods-to-test)))
-                  :guard-hints (("Goal" :in-theory (enable jvm::method-info-alistp)))))
+                  :guard-hints (("Goal" :in-theory (enable jvm::method-info-alistp
+                                                           jvm::all-keys-bound-to-method-infosp)))))
   (if (endp method-info-alist)
       nil
     (let* ((entry (first method-info-alist))
@@ -379,10 +380,10 @@
           (er hard? 'convert-assert-branches-unguarded "Bad dag: ~x0." dag))
     (convert-assert-branches dag)))
 
-(defun assert-assumptions (class-name)
+(defund assert-assumptions (class-name)
   (declare (xargs :guard (jvm::class-namep class-name)))
   `( ;; assertion checking is on:
-    (equal 0
+    (equal '0
            (jvm::get-static-field ',class-name
                                   '("$assertionsDisabled" . :boolean)
                                   initial-static-field-map))
@@ -392,7 +393,11 @@
                                     initial-heapref-table)
                       '(:special-data . :class)
                       initial-heap)
-           "java.lang.Class")))
+           '"java.lang.Class")))
+
+(defthm pseudo-term-listp-of-assert-assumptions
+  (pseudo-term-listp (assert-assumptions class-name))
+  :hints (("Goal" :in-theory (enable assert-assumptions))))
 
 (defun method-should-failp (method-name methods-expected-to-fail)
   (declare (xargs :guard (and (stringp method-name)

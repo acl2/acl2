@@ -1,7 +1,7 @@
 ; Tests of the evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -62,7 +62,7 @@
                           (symbol-package-name
                                (mv t (symbol-package-name-unguarded arg1)))
                           (symbol-name (mv t (symbol-name-unguarded arg1)))
-                          (all-same (mv t (all-same arg1)))
+                          (all-same (mv t (all-same-unguarded arg1)))
                           (bool-fix$inline (mv t (bool-fix$inline arg1)))
                           (booleanp (mv t (booleanp arg1)))
                           (list::2set (mv t (list::2set arg1)))
@@ -665,7 +665,7 @@
                         (symbol-package-name
                              (mv t (symbol-package-name-unguarded arg1)))
                         (symbol-name (mv t (symbol-name-unguarded arg1)))
-                        (all-same (mv t (all-same arg1)))
+                        (all-same (mv t (all-same-unguarded arg1)))
                         (bool-fix$inline (mv t (bool-fix$inline arg1)))
                         (booleanp (mv t (booleanp arg1)))
                         (list::2set (mv t (list::2set arg1)))

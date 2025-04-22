@@ -36,6 +36,7 @@
 ;; Rules used to simplify terms during unrolling.  TODO: Add these to more
 ;; basic rule sets.
 (defun unroll-java-code-rules ()
+  (declare (xargs :guard t))
   (append '(nth-of-myif ;todo: drop? or add to amazing-rules - needed to handle myifs properly...  or should we instead use myif of 2 update-nth-locals terms?
             nth-becomes-bv-array-read ;why?
             bvif-of-myif-arg3
@@ -87,6 +88,7 @@
 ;;                              `(s ',class-name ',class-info ,initial-term)))))
 
 (defun make-class-table-term-compact (class-alist initial-term)
+  (declare (xargs :guard t))
   `(jvm::set-classes ',class-alist ,initial-term))
 
 ;; (defun bit-width-from-type (type)

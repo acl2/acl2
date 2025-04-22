@@ -163,6 +163,7 @@
 ;; mostly for debugging?
 ;; todo: add a smart version of this
 (defun symbolic-execution-rules-for-run-n-steps ()
+  (declare (xargs :guard t))
   '(run-n-steps-opener-axe
     run-n-steps-zp
     run-n-steps-of-myif-split ;todo: do something smarter? (more like what the non-step-limited execution does?)
