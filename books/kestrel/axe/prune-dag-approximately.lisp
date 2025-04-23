@@ -435,8 +435,7 @@
                               ;; (symbol-listp rules)
                               ;; (symbol-listp interpreted-fns)
                               ;; (symbol-listp monitored-rules)
-                              ;; (or (booleanp call-stp)
-                              ;;     (natp call-stp))
+                              ;; (call-stp-optionp call-stp)
                               (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
@@ -545,14 +544,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Disabled to speed up later guard proofs
+(defund prune-approx-optionp (p)
+  (declare (xargs :guard t))
+  (or (booleanp p)
+      (natp p)))
+
 ;; Returns (mv erp dag-or-quotep state).
 ;; TODO: Add option of which kinds of IF to prune
 ;; TODO: Add support for pruning bv-array-ifs?
 ;; TODO: Add support for not trying to resolve conditions that are too large (e.g., top-level conjuncts of crypto tests).
 (defund maybe-prune-dag-approximately (prune-branches ; t, nil, or dag-size limit
                                        dag assumptions print max-conflicts state)
-  (declare (xargs :guard (and (or (booleanp prune-branches)
-                                  (natp prune-branches))
+  (declare (xargs :guard (and (prune-approx-optionp prune-branches)
                               (pseudo-dagp dag)
                               ;; (<= (len dag) *max-1d-array-length*)
                               (pseudo-term-listp assumptions)
@@ -587,8 +591,7 @@
 (defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-approximately
   (implies (and (not (mv-nth 0 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state))) ; no error
                 (not (quotep (mv-nth 1 (maybe-prune-dag-approximately prune-branches dag assumptions print max-conflicts state))))
-                ;; (or (booleanp prune-branches)
-                ;;     (natp prune-branches))
+                ;; (prune-approx-optionp prune-branches)
                 (pseudo-dagp dag)
                 ;; (<= (len dag) *max-1d-array-length*)
                 (pseudo-term-listp assumptions)

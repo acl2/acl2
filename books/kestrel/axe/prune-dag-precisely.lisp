@@ -33,8 +33,7 @@
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
-                              (or (booleanp call-stp)
-                                  (natp call-stp))
+                              (call-stp-optionp call-stp)
                               (booleanp check-fnsp)
                               (print-levelp print))
                   :stobjs state))
@@ -63,9 +62,9 @@
                 (pseudo-term-listp assumptions)
                 (rule-alistp rule-alist)
                 (interpreted-function-alistp interpreted-function-alist)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp)))
+                ;; (symbol-listp monitored-rules)
+                ;; (call-stp-optionp call-stp)
+                )
            (pseudo-dagp (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state))))
   :hints (("Goal" :in-theory (enable prune-dag-precisely-with-rule-alist))))
 
@@ -92,8 +91,7 @@
                                   1)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
-                              (or (booleanp call-stp)
-                                  (natp call-stp))
+                              (call-stp-optionp call-stp)
                               (booleanp check-fnsp)
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
@@ -119,9 +117,8 @@
                 (or (rule-alistp rule-alist)
                     (eq :none rule-alist))
                 (interpreted-function-alistp interpreted-function-alist)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp))
+                ;; (symbol-listp monitored-rules)
+                ;; (call-stp-optionp call-stp)
                 ;; (ilks-plist-worldp (w state))
                 )
            (pseudo-dagp (mv-nth 1 (prune-dag-precisely dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state))))
@@ -134,6 +131,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Disabled to speed up later guard proofs
+(defund prune-precise-optionp (p)
+  (declare (xargs :guard t))
+  (or (booleanp p)
+      (natp p)))
+
 ;;Returns (mv erp result-dag-or-quotep state).  Pruning turns the DAG into a term and
 ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
 ;; TODO: This can make the rule-alist each time it is called.
@@ -141,8 +144,7 @@
                                    dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp
                                    print
                                    state)
-  (declare (xargs :guard (and (or (booleanp prune-precise)
-                                  (natp prune-precise))
+  (declare (xargs :guard (and (prune-precise-optionp prune-precise)
                               (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
                               (or (symbol-listp rules)
@@ -155,8 +157,7 @@
                                   1)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
-                              (or (booleanp call-stp)
-                                  (natp call-stp))
+                              (call-stp-optionp call-stp)
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
@@ -221,9 +222,9 @@
                 (or (rule-alistp rule-alist)
                     (eq :none rule-alist))
                 (interpreted-function-alistp interpreted-function-alist)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp))
+                ;; (symbol-listp monitored-rules)
+                ;; (or (booleanp call-stp)
+                ;;     (natp call-stp))
                 ;; (ilks-plist-worldp (w state))
                 )
            (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state))))
@@ -239,9 +240,9 @@
                 (or (rule-alistp rule-alist)
                     (eq :none rule-alist))
                 (interpreted-function-alistp interpreted-function-alist)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp))
+                ;; (symbol-listp monitored-rules)
+                ;; (or (booleanp call-stp)
+                ;;     (natp call-stp))
                 ;; (ilks-plist-worldp (w state))
                 )
            (equal (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state)))
