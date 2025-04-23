@@ -1782,6 +1782,7 @@
     (let* ((disjunct (first disjuncts))
            (disjunct-core (strip-not-from-possibly-negated-nodenum disjunct)) ;a nodenum
            (process-this-disjunctp
+             ;; todo: improve the messages here (about "possibly ..")
             (let ((known-type-match (assoc disjunct-core known-nodenum-type-alist)))
               (if known-type-match
                   (let ((type (cdr known-type-match)))
@@ -1789,7 +1790,7 @@
                         t
                       (prog2$ (cw "TYPE ERROR: Disjunct (~x0) is given a type other than BOOLEAN in the known-nodenum-type-alist (possibly after stripping a not).~%" disjunct-core)
                               nil)))
-                ;;no type from the alist, so check the expr for an obvious type:
+                ;;no type from the alist, so check the expr for an obvious type (todo: would it be faster to do this first?):
                 (let ((expr (aref1 'dag-array dag-array disjunct-core)))
                   (if (atom expr) ;variable
                       (prog2$ (cw "Dropping a disjunct that is a (possibly negated) variable: ~x0.~%" expr)
