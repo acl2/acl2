@@ -38,7 +38,7 @@
 
 ;; CGRAPH type -- see ctrex-utils.lisp
 
-(defenum ctrex-ruletype-p (:elim :property nil))
+(defenum ctrex-ruletype-p (:elim :property :fixup nil))
 
 (defprod ctrex-rule
   ((name symbolp :rule-classes :type-prescription)

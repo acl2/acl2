@@ -264,7 +264,9 @@
 
 
 
-
+(defxdoc fgl-counterexample-implementation-details
+  :short "Parent topic for implementation specifics of FGL counterexample generation"
+  :parents (fgl-counterexamples))
 
 
 
@@ -432,12 +434,13 @@ for the given variable.  In this case, @('cdr-match') will be true if
 @('(intcdr x)') (the binding of @('cdr') in the @(':match') field)) was
 successfully assigned a value.</li>
 
-<li>@(':ruletype') may be @(':elim') or @(':property'), signifying how the rule
+<li>@(':ruletype') may be @(':elim'), @(':property'), or @(':fixup'), signifying how the rule
 is intended to be used.  An @(':elim') rule should be applied once when as many
 of the match expressions as possible have been assigned values; at that point,
 we apply the rule and compute the final value for the subexpression.  A
 @(':property') rule may be applied to several different matching expressions in
-order to compute a value for the same subexpression.</li>
+order to compute a value for the same subexpression. A @(':fixup') rule is placed
+last in the order and is intended to fix up a previously assigned value.</li>
 
 <li>An additional keyword @(':assign-cond') must (if provided) be a term, which
 will be evaluated in the same way as @(':assign').  If it evaluates to a
@@ -803,13 +806,25 @@ compute a value for @('x').</p>
                          (rule ctrex-rule-p)
                          (cgraph cgraph-p))
   :returns (new-cgraph cgraph-p)
+  :prepwork ((local (defthm cgraph-edgelist-p-implies-true-listp
+                      (implies (cgraph-edgelist-p x)
+                               (true-listp x))))
+             (local (defthm cgraph-edgelist-bfrlist-of-append
+                      (equal (Cgraph-edgelist-bfrlist (append x y))
+                             (append (cgraph-edgelist-bfrlist x)
+                                     (cgraph-edgelist-bfrlist y)))
+                      :hints(("Goal" :in-theory (enable cgraph-edgelist-bfrlist))))))
   (b* (((ctrex-rule rule))
        (to (cdr (hons-assoc-equal rule.assigned-var (fgl-object-bindings-fix subst))))
        (edge (make-cgraph-edge :match-vars (list matchvar) :rule rule :subst subst))
        (cgraph (cgraph-fix cgraph))
        (edges (cdr (hons-get to cgraph)))
        ((mv found new-edges) (add-cgraph-edge-join edge edges))
-       (new-edges (if found new-edges (cons edge edges))))
+       (new-edges (cond (found new-edges)
+                        ((eq rule.ruletype :fixup)
+                         ;; fixup rules are placed last
+                         (append edges (list edge)))
+                        (t (cons edge edges)))))
     (hons-acons to new-edges cgraph))
   ///
   (defret cgraph-edgelist-bfrlist-of-<fn>
@@ -2188,9 +2203,11 @@ compute a value for @('x').</p>
 
 
 (defines cgraph-derive-assignments
-  (define cgraph-derive-assignments-obj ((x fgl-object-p)
+  (define cgraph-derive-assignments-obj ((x fgl-object-p
+                                            "object to try and derive an assignment for")
                                          (cands candidate-assigns-p)
-                                         (assigns cgraph-alist-p)
+                                         (assigns cgraph-alist-p
+                                                  "accumulator of object assignments")
                                          (sts cgraph-derivstates-p)
                                          (env$)
                                          (cgraph cgraph-p)
@@ -2199,6 +2216,7 @@ compute a value for @('x').</p>
                                          (logicman 'logicman)
                                          (bvar-db 'bvar-db)
                                          (state 'state))
+    :parents (fgl-counterexample-implementation-details)
     :guard (and (lbfr-listp (fgl-object-bfrlist x))
                 (bfr-env$-p env$ (logicman->bfrstate))
                 (equal (bfr-nvars) (next-bvar bvar-db))
@@ -2368,8 +2386,21 @@ compute a value for @('x').</p>
          ((ctrex-rule x.rule))
          (cands (candidate-assigns-fix cands))
          ((mv eval-subst new-assigns new-sts)
+          ;; In the simple example, this doesn't do anything and returns
+          ;; eval-subst=nil, because the only variable in the subst is x which
+          ;; is the assigned-var.  In the complicated example, we additionally
+          ;; have (k . 'bar), which trivially evaluates to bar.  But in
+          ;; general, we use cgraph-derive-assignments-obj for any variables
+          ;; besides the assigned-var.  Another example: rule for deriving the
+          ;; value of x given an (update-nth n val x) term, we might have n be
+          ;; a symbolic integer and val be some arbitrary object, so we go and
+          ;; derive values for those before attempting to update x.
           (cgraph-derive-assignments-eval-subst x.subst x.rule.assigned-var assigns sts env$ cgraph replimit logicman bvar-db state))
+         ;; This takes the first candidate value (non-fake if any) and assigns
+         ;; it to x.rule.assigned-var, or leaves it unassigned if none.
          (var-subst (candidate-assigns-assigned-var-subst x.rule.assigned-var cands))
+         ;; This start-subst now has the variables of the rule, including the
+         ;; assigned var, assigned to some values.
          (start-subst (append var-subst eval-subst))
          ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
                            (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
@@ -2657,17 +2688,22 @@ compute a value for @('x').</p>
 
   (fty::deffixequiv-mutual fgl-object-vars))
 
-(define cgraph-derive-assignments-for-vars ((x pseudo-var-list-p)
-                                            (vals obj-alist-p)
-                                            (assigns cgraph-alist-p)
-                                            (sts cgraph-derivstates-p)
-                                            (env$)
+(define cgraph-derive-assignments-for-vars ((x pseudo-var-list-p
+                                               "list of variables to derive values for")
+                                            (vals obj-alist-p
+                                                  "accumulator of variable values")
+                                            (assigns cgraph-alist-p
+                                                     "accumulator of object values")
+                                            (sts cgraph-derivstates-p
+                                                 "accumulator of object derivstates")
+                                            (env$ "Boolean assignment environment")
                                             (cgraph cgraph-p)
                                             (replimit posp)
                                             &optional
                                             (logicman 'logicman)
                                             (bvar-db 'bvar-db)
                                             (state 'state))
+  :parents (fgl-counterexample-implementation-details)
   :returns (mv (new-vals obj-alist-p)
                (new-assigns cgraph-alist-p)
                (new-sts cgraph-derivstates-p))
@@ -2681,7 +2717,7 @@ compute a value for @('x').</p>
        (obj (g-var (car x)))
        ((mv assigns sts)
         (cgraph-derive-assignments-obj
-         (g-var (car x)) nil assigns sts env$ cgraph replimit))
+         obj nil assigns sts env$ cgraph replimit))
        (pair (hons-get obj assigns))
        (vals (if pair
                  (cons (cons (pseudo-var-fix (car x)) (cdr pair)) vals)
