@@ -18,10 +18,10 @@
 
 ; Start proof of in-fun-space.
 
-(defthmz subset-prod2-domain-codomain
+(defthmz subset-prod2-domain-image
   (implies (relation-p r)
            (subset r (prod2 (domain r)
-                            (codomain r))))
+                            (image r))))
   :props (zfc prod2$prop domain$prop inverse$prop)
   :hints (("Goal" :in-theory (enable subset))))
 
@@ -86,21 +86,21 @@
                     (subset b d))))
     :props (zfc prod2$prop domain$prop inverse$prop)))
 
-(defthmz subset-codomain
+(defthmz subset-image
   (implies (subset r (prod2 a b))
-           (subset (codomain r) b))
+           (subset (image r) b))
   :hints (("Goal"
-           :in-theory (enable in-codomain-rewrite)
-           :expand ((subset (codomain r) b))))
+           :in-theory (enable in-image-rewrite)
+           :expand ((subset (image r) b))))
   :props (zfc prod2$prop domain$prop inverse$prop))
 
 (defthmz in-fun-space ; alternate form of fun-space$comprehension
   (equal (in fn (fun-space a b))
          (and (funp fn)
               (equal (domain fn) a)
-              (subset (codomain fn) b)))
+              (subset (image fn) b)))
   :props (zfc prod2$prop domain$prop inverse$prop fun-space$prop)
   :hints (("Goal"
            :restrict ((subset-transitivity
-                       ((y (prod2 (domain fn) (codomain fn)))))))))
+                       ((y (prod2 (domain fn) (image fn)))))))))
 
