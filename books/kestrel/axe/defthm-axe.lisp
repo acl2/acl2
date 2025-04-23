@@ -1,7 +1,7 @@
 ; A tool to prove a theorem using the Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,6 +12,7 @@
 
 (in-package "ACL2")
 
+;; This version calls the legacy Axe Prover.
 ;; See also defthm-axe-basic, which does not depend on skip-proofs.
 
 (include-book "elaborate-rule-items")
