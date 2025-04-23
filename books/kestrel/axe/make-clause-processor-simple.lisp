@@ -35,7 +35,7 @@
          :ttag ,clause-processor-name)
 
        ;; Returns a defthm event.
-       (defun ,defthm-with-clause-processor-fn-name (name term tactic rules rule-lists remove-rules use no-splitp rule-classes count-hits print state)
+       (defun ,defthm-with-clause-processor-fn-name (name term tactic rules rule-lists remove-rules no-splitp print-as-clausesp no-print-fns monitor use print var-ordering count-hits rule-classes state)
          (declare (xargs :guard (and (symbolp name)
                                      ;; term need not be translated
                                      (or (null tactic)
@@ -43,11 +43,16 @@
                                      (rule-item-listp rules)
                                      (rule-item-list-listp rule-lists)
                                      (symbol-listp remove-rules) ;allow rule-items?
-                                     (axe-use-hintp use)
                                      (booleanp no-splitp)
-                                     ;; todo: rule-classes
+                                     (booleanp print-as-clausesp)
+                                     (symbol-listp no-print-fns)
+                                     (symbol-listp monitor)
+                                     (axe-use-hintp use)
+                                     (print-levelp print)
+                                     (symbol-listp var-ordering)
                                      (booleanp count-hits)
-                                     (print-levelp print))
+                                     ;; todo: rule-classes
+                                     )
                          :stobjs state))
          (b* (((when (and rules rule-lists))
                (er hard? ',defthm-with-clause-processor-fn-name "Both :rules and :rule-lists were given for ~x0." name))
@@ -63,12 +68,12 @@
                                                                             ;; no rules, only rule-lists
                                                                             (:rule-lists . ,rule-lists)
                                                                             (:no-splitp . ,no-splitp)
-                                                                            ;; todo print-as-clausesp
-                                                                            ;; todo no-print-fns
-                                                                            ;; todo monitor
+                                                                            (:print-as-clausesp . ,print-as-clausesp)
+                                                                            (:no-print-fns . ,no-print-fns)
+                                                                            (:monitor . ,monitor)
                                                                             (:use . ,use)
                                                                             (:print . ,print)
-                                                                            ;; todo var-ordering
+                                                                            (:var-ordering . ,var-ordering)
                                                                             (:count-hits . ,count-hits))
                                                                           state)))
               ,@(if (eq :auto rule-classes)
@@ -84,17 +89,20 @@
                                                      (rule-lists 'nil)
                                                      (remove-rules 'nil)
                                                      (no-splitp 'nil) ; whether to prevent splitting into cases
+                                                     (print-as-clausesp 'nil)
+                                                     (no-print-fns 'nil)
+                                                     (monitor 'nil)
                                                      (use 'nil)
                                                      (print 'nil)
+                                                     (var-ordering 'nil)
                                                      (count-hits 'nil)
                                                      (rule-classes ':auto))
          (if (and (consp term)
                   (eq :eval (car term)))
              ;; Evaluate TERM:
-             `(make-event (,',defthm-with-clause-processor-fn-name ',name ,(cadr term) ',tactic ',rules ',rule-lists ',remove-rules ',use ',no-splitp ',rule-classes ',count-hits ',print state))
+             `(make-event (,',defthm-with-clause-processor-fn-name ',name ,(cadr term) ',tactic ',rules ',rule-lists ',remove-rules ',no-splitp ',print-as-clausesp ',no-print-fns ',monitor ',use ',print ',var-ordering ',count-hits ',rule-classes state))
            ;; Don't evaluate TERM:
-           `(make-event (,',defthm-with-clause-processor-fn-name ',name ',term ',tactic ',rules ',rule-lists ',remove-rules ',use ',no-splitp ',rule-classes ',count-hits ',print state))))
-
+           `(make-event (,',defthm-with-clause-processor-fn-name ',name ',term ',tactic ',rules ',rule-lists ',remove-rules ',no-splitp ',print-as-clausesp ',no-print-fns ',monitor ',use ',print ',var-ordering ',count-hits ',rule-classes state))))
        )))
 
 (defmacro make-clause-processor-simple (suffix)
