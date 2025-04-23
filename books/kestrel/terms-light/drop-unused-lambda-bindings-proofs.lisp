@@ -22,6 +22,7 @@
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
+(local (include-book "filter-formals-and-actuals-proofs"))
 (local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
