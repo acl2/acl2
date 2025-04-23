@@ -563,7 +563,8 @@
            (defthm nat-listp-of-reverse-list
              (equal (nat-listp (reverse-list x))
                     (nat-listp (true-list-fix x)))
-             :hints (("Goal" :in-theory (enable nat-listp reverse-list)))))
+             :hints (("Goal" :induct (reverse-list x)
+                      :in-theory (enable nat-listp reverse-list)))))
 
          ;; Make versions of sublis-var-and-eval and subcor-var-and-eval:
          (make-sublis-var-and-eval-simple ,suffix ,evaluator-base-name)
@@ -6372,7 +6373,8 @@
          (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- simplify-terms-to-terms-name)
            (true-listp (mv-nth 1 (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide)))
            :rule-classes :type-prescription
-           :hints (("Goal" :in-theory (enable ,simplify-terms-to-terms-name))))
+           :hints (("Goal" :induct (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide)
+                    :in-theory (enable ,simplify-terms-to-terms-name))))
 
          (defthm ,(pack$ 'pseudo-term-listp-of-mv-nth-1-of- simplify-terms-to-terms-name)
            (implies (and (pseudo-term-listp terms)
@@ -6388,7 +6390,8 @@
                          (symbol-listp known-booleans)
                          (rule-limitsp limits))
                     (pseudo-term-listp (mv-nth 1 (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))))
-           :hints (("Goal" :in-theory (enable ,simplify-terms-to-terms-name))))
+           :hints (("Goal" :induct (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide)
+                    :in-theory (enable ,simplify-terms-to-terms-name))))
 
          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

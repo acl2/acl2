@@ -15,7 +15,7 @@
 (include-book "prover-basic-clause-processor")
 
 ;; Returns an event.
-(defun defthm-axe-basic-fn (name term rules rule-lists remove-rules rule-classes print state)
+(defun defthm-axe-basic-fn (name term rules rule-lists remove-rules rule-classes count-hits print state)
   (declare (xargs :guard (and (rule-item-listp rules)
                               (rule-item-list-listp rule-lists)
                               (symbol-listp remove-rules)
@@ -33,7 +33,8 @@
        :hints (("Goal" :clause-processor (prover-basic-clause-processor clause
                                                                       '((:must-prove . t)
                                                                         (:rule-lists . ,rule-lists)
-                                                                        (:print . ,print))
+                                                                        (:print . ,print)
+                                                                        (:count-hits . ,count-hits))
                                                                       state)))
        ,@(if (eq :auto rule-classes)
              nil
@@ -46,10 +47,11 @@
                            (rule-lists 'nil)
                            (remove-rules 'nil)
                            (rule-classes ':auto)
+                           (count-hits 'nil)
                            (print 'nil))
   (if (and (consp term)
            (eq :eval (car term)))
       ;; Evaluate TERM:
-      `(make-event (defthm-axe-basic-fn ',name ,(cadr term) ',rules ',rule-lists ',remove-rules ',rule-classes ',print state))
+      `(make-event (defthm-axe-basic-fn ',name ,(cadr term) ',rules ',rule-lists ',remove-rules ',rule-classes ',count-hits ',print state))
     ;; Don't evaluate TERM:
-    `(make-event (defthm-axe-basic-fn ',name ',term ',rules ',rule-lists ',remove-rules ',rule-classes ',print state))))
+    `(make-event (defthm-axe-basic-fn ',name ',term ',rules ',rule-lists ',remove-rules ',rule-classes ',count-hits ',print state))))

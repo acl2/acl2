@@ -96,7 +96,8 @@
                         ;(equal (len vars) (len dargs))
                         (symbolp var))
                    (dargp (subcor-var1-with-dargs vars dargs var)))
-          :hints (("Goal" :in-theory (enable subcor-var1-with-dargs)))))
+          :hints (("Goal" :induct (subcor-var1-with-dargs vars dargs var)
+                   :in-theory (enable subcor-var1-with-dargs)))))
 
        (local
         (defthm myquotep-of-subcor-var1-with-dargs
@@ -117,14 +118,16 @@
                         ;(equal (len vars) (len dargs))
                         (symbolp var))
                    (axe-treep (subcor-var1-with-dargs vars dargs var)))
-          :hints (("Goal" :in-theory (enable subcor-var1-with-dargs)))))
+          :hints (("Goal" :induct (subcor-var1-with-dargs vars dargs var)
+                   :in-theory (enable subcor-var1-with-dargs)))))
 
        (local
         (defthm bounded-axe-treep-of-subcor-var1-with-dargs
           (implies (and (bounded-darg-listp dargs dag-len)
                         (symbolp var))
                    (bounded-axe-treep (subcor-var1-with-dargs vars dargs var) dag-len))
-          :hints (("Goal" :in-theory (enable subcor-var1-with-dargs bounded-axe-treep-when-symbolp)))))
+          :hints (("Goal" :induct (subcor-var1-with-dargs vars dargs var)
+                   :in-theory (enable subcor-var1-with-dargs bounded-axe-treep-when-symbolp)))))
 
        ;; This handles lambda applications correctly (by handling their args) but does not beta reduce.
        (mutual-recursion
