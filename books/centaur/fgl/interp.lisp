@@ -2815,7 +2815,7 @@
                        2020 (pseudo-term-binding-count x) 60)
         :well-founded-relation acl2::nat-list-<
         :verify-guards nil
-        :measure-debug t
+        ;; :measure-debug t
         ;; :guard (bfr-listp (fgl-object-bindings-bfrlist alist) (interp-st->bfrstate interp-st))
         :returns (mv xbfr
                      new-interp-st new-state)
@@ -2829,6 +2829,36 @@
           ;; E.g. if x was a variable, it was probably not bound in an IFF
           ;; context.
           (fgl-interp-simplify-if-test was-fncall-p xobj interp-st state)))
+
+      (define fgl-interp-test-under-pathcond ((x pseudo-termp)
+                                              (interp-st interp-st-bfrs-ok)
+                                              state)
+        ;; Wrapper for fgl-interp-test that additionally checks the result against the path condition.
+        ;; Don't need use for an IF test because it's going to do the same thing anyway.
+        :measure (list (nfix (interp-st->reclimit interp-st))
+                       2020 (pseudo-term-binding-count x) 65)
+        :returns (mv xbfr new-interp-st new-state)
+        (b* (((fgl-interp-value xbfr)
+              (fgl-interp-test x interp-st state))
+             ((when (interp-st->errmsg interp-st))
+              (fgl-interp-value nil))
+             ((mv contra1 interp-st)
+              (interp-st-pathcond-assume xbfr interp-st))
+             (interp-st (if contra1
+                            interp-st
+                          (interp-st-pathcond-rewind interp-st)))
+             ((mv contra2 interp-st)
+              (interp-st-pathcond-assume (interp-st-bfr-not xbfr) interp-st))
+             (interp-st (if contra2
+                            interp-st
+                          (interp-st-pathcond-rewind interp-st)))
+             ((when (and contra1 contra2))
+              (b* ((interp-st (interp-st-set-error :unreachable interp-st)))
+                (fgl-interp-value nil))))
+          (fgl-interp-value (cond (contra1 nil)
+                                  (contra2 t)
+                                  (t xbfr)))))
+
 
       (define fgl-interp-term-equivs ((x pseudo-termp)
                                      (interp-st interp-st-bfrs-ok)
@@ -2865,7 +2895,7 @@
                   new-interp-st new-state)
         (b* ((contexts (interp-st->equiv-contexts interp-st))
              ((when (member-eq 'iff contexts))
-              (b* (((fgl-interp-value xbfr) (fgl-interp-test x interp-st state)))
+              (b* (((fgl-interp-value xbfr) (fgl-interp-test-under-pathcond x interp-st state)))
                 (fgl-interp-value (mk-g-boolean xbfr))))
              ((fgl-interp-recursive-call xobj)
               (fgl-interp-term-equivs x interp-st state))
@@ -3426,7 +3456,7 @@
              ((when bind-ok)
               (fgl-interp-value t))
              ((fgl-interp-value test-bfr)
-              (fgl-interp-test hyp interp-st state)))
+              (fgl-interp-test-under-pathcond hyp interp-st state)))
           ;; Could check against the pathcond here...
           (fgl-interp-value (eq test-bfr t))))
 
@@ -3570,8 +3600,8 @@
              ((fgl-interp-recursive-call successp var-val)
               (fgl-rewrite-binder-fncall form.fn argvals interp-st state))
              ((unless successp)
-              (fgl-interp-error
-               :msg (fgl-msg "Binder error: no binder rule succeeded on ~x0 to bind ~x1" form.fn varname)))
+              (b* ((interp-st (interp-st-set-error :abort-rewrite interp-st)))
+                (fgl-interp-value nil)))
              (interp-st (interp-st-add-binding varname var-val interp-st)))
           (fgl-interp-value var-val)))
 
@@ -8709,7 +8739,76 @@
 
 (local
  (defsection-unique fgl-interp-correct
+   
+   (defretd interp-st-pathcond-assume-contradictionp-implies
+     (implies (and contra
+                   (logicman-pathcond-eval
+                    (fgl-env->bfr-vals env) (interp-st->pathcond interp-st)
+                    (interp-st->logicman interp-st))
+                   (logicman-pathcond-eval
+                    (fgl-env->bfr-vals env)
+                    (interp-st->constraint interp-st)
+                    (interp-st->logicman interp-st)))
+              (not (gobj-bfr-eval test env (interp-st->logicman interp-st))))
+     :hints (("goal" :use ((:instance interp-st-pathcond-assume-not-contradictionp
+                            (env (fgl-env->bfr-vals env))))
+              :in-theory (e/d (gobj-bfr-eval))))
+     :fn interp-st-pathcond-assume)
 
+   ;; (local (defthm bfr-not-of-logicman-extension
+   ;;          (implies (and (logicman-extension-p new old)
+   ;;                        (bfr-p x (logicman->bfrstate old)))
+   ;;                   (equal (bfr-not x new)
+   ;;                          (bfr-not x old)))
+   ;;          :hints(("Goal" :in-theory (enable bfr-not aignet-lit->bfr
+   ;;                                            logicman-extension-p
+   ;;                                            bfr-p bfr-fix
+   ;;                                            bfr->aignet-lit
+   ;;                                            bfr-nvars)))))
+   
+   (defthmd interp-st-pathcond-assume-neg-contradictionp-implies
+     (b* (((mv contra ?interp-st2) (interp-st-pathcond-assume
+                                    (bfr-not test (interp-st->logicman interp-st))
+                                    interp-st1)))
+       (implies (and contra
+                     ;; (interp-st-bfr-p bfr interp-st)
+                     (equal (interp-st->logicman interp-st1)
+                            (interp-st->logicman interp-st))
+                     (logicman-pathcond-eval
+                      (fgl-env->bfr-vals env)
+                      (interp-st->pathcond interp-st1)
+                      (interp-st->logicman interp-st1))
+                     (logicman-pathcond-eval
+                      (fgl-env->bfr-vals env)
+                      (interp-st->constraint interp-st1)
+                      (interp-st->logicman interp-st1)))
+                (equal (gobj-bfr-eval test env (interp-st->logicman interp-st)) t)))
+     :hints (("goal" :use ((:instance interp-st-pathcond-assume-not-contradictionp
+                            (interp-st interp-st1)
+                            (test (bfr-not test (interp-st->logicman interp-st1)))
+                            (env (fgl-env->bfr-vals env))))
+              :in-theory (e/d (gobj-bfr-eval)
+                              (interp-st-pathcond-assume-not-contradictionp)))))
+   
+   (defthm interp-st-pathcond-assume-both-contra
+     (b* ((not-bfr (bfr-not bfr (interp-st->logicman interp-st)))
+          ((mv contra1 interp-st1) (interp-st-pathcond-assume bfr interp-st))
+          ((mv contra2 ?interp-st2) (interp-st-pathcond-assume not-bfr interp-st1)))
+       (implies (and (bind-free '((env . (fgl-env->bfr-vals$inline env))) (env))
+                     contra1
+                     (logicman-pathcond-eval env
+                                             (interp-st->pathcond interp-st)
+                                             (interp-st->logicman interp-st))
+                     (logicman-pathcond-eval env (interp-st->constraint interp-st)
+                                             (interp-st->logicman interp-st)))
+                (not contra2)))
+     :hints(("Goal" :use ((:instance interp-st-pathcond-assume-not-contradictionp
+                           (test bfr))
+                          (:instance interp-st-pathcond-assume-not-contradictionp
+                           (test (interp-st-bfr-not bfr))
+                           (interp-st (mv-nth 1 (interp-st-pathcond-assume bfr interp-st)))))
+             :in-theory (disable interp-st-pathcond-assume-not-contradictionp))))
+   
    (defret interp-st->errmsg-equal-unreachable-of-<fn>-special
       (implies (and (not (equal (interp-st->errmsg interp-st) :unreachable))
                     (bind-free '((env . (fgl-env->bfr-vals$inline env))) (env))
@@ -9184,7 +9283,8 @@
 
 
 
-                ((:fnname fgl-interp-test)
+                ((or (:fnname fgl-interp-test)
+                     (:fnname fgl-interp-test-under-pathcond))
                  (:add-concl
                   ;; (iff* (gobj-bfr-eval xbfr env new-logicman)
                   ;;       (fgl-ev x eval-alist))
@@ -9602,6 +9702,15 @@
             (value-triple :goals-saved))))))
 
 
+   (local (defun my-prettyify-clause (clause)
+            (cond ((atom clause) nil)
+                  ((atom (cdr clause)) (car clause))
+                  ((atom (cddr clause))
+                   `(implies ,(acl2::dumb-negate-lit (car clause))
+                             ,(cadr clause)))
+                  (t `(implies (and . ,(acl2::dumb-negate-lit-lst (take (- (len clause) 1) clause)))
+                               ,(nth (- (len clause) 1) clause))))))
+   
    ;; (local
    ;;  (defun prettyify-clause-list (clauses let*-abstractionp wrld)
    ;;    (declare (xargs :mode :program))
@@ -9611,9 +9720,13 @@
    ;;            (prettyify-clause-list (cdr clauses) let*-abstractionp wrld)))))
 
    (local (defun fgl-interp-clause-to-defthm (clause base-name let*-absp flag-index-alist hints wrld)
-            (declare (xargs :mode :program))
+            (declare (xargs :mode :program)
+                     (ignorable let*-absp wrld))
             (b* ((flag (find-flag-is-hyp clause))
-                 (goal (acl2::prettyify-clause clause let*-absp wrld))
+                 (goal ;; (acl2::prettyify-clause clause let*-absp wrld)
+                  (my-prettyify-clause clause)
+                  ;; (acl2::disjoin clause)
+                  )
                  ((unless flag)
                   (er hard? 'fgl-interp-clause-to-defthm
                       "Didn't find a flag for this clause: ~x0" goal)
@@ -9649,6 +9762,13 @@
    ;;         '(:in-theory (enable if*)
    ;;           :do-not-induct t))))
 
+
+   ;; NOTE: accumulated persistence hacking -- try enabling these if proofs fail unexpectedly
+   (local (in-theory (disable logicman-extension-of-update-2
+                              bfr-listp-when-logicman-extension
+                              logicman->mode-of-interp-st-logicman-extension
+                              logicman->aignet-of-interp-st->logicman)))
+   
    (with-output
      :off (event)
      :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
@@ -9657,7 +9777,7 @@
         ,(fgl-interp-clauses-to-defthms
           (@ fgl-interp-term-subgoals)
           'fgl-interp-correct
-          t nil
+          nil nil
           '(("goal" :do-not-induct t :do-not '(generalize))
             (and stable-under-simplificationp
                  (cond ((member-eq (find-flag-is-hyp clause)
@@ -9666,6 +9786,9 @@
                                      fgl-interp-fncall-casesplit
                                      fgl-interp-fncall-casesplit-branches))
                         '(:in-theory (enable if*)))
+                       ((eq (find-flag-is-hyp clause) 'fgl-interp-test-under-pathcond)
+                        '(:in-theory (enable interp-st-pathcond-assume-contradictionp-implies
+                                             interp-st-pathcond-assume-neg-contradictionp-implies)))
                        ;; ((member-eq (find-flag-is-hyp clause)
                        ;;             '(fgl-maybe-interp-fncall-casesplit))
                        ;;  '(:in-theory (enable implies*)))
@@ -9675,27 +9798,31 @@
    ;; (i-am-here)
    ))
 
-
-
 (with-output
-  :off (event)
+  :off (event warning)
   :evisc (:gag-mode (evisc-tuple 8 10 nil nil) :term nil)
   (make-event
    `(std::defret-mutual-generate
       ,*fgl-interp-correct-body*
-    :hints ((fgl-interp-default-hint 'fgl-interp-term id nil world)
-            ;; '(:expand (:lambdas))
-            (b* ((flag (find-flag-is-hyp clause))
-                 ((unless flag) (value nil))
-                 (thm (cdr (assoc-equal clause (table-alist 'fgl-interp-clauses-table (w state)))))
-                 ((unless thm)
-                  (cw "Couldn't find theorem for clause: ~x0~%"
-                      (acl2::prettyify-clause clause t (w state)))
-                  (value '(:error t))))
-              (value `(:clause-processor (my-by-hint-cp clause ',thm state)))))
-    ;; (prog2$ (cw "flag: ~x0~%" flag)
-    ;;         '(:do-not '(generalize) :do-not-induct t))))
-    ;; (and stable-under-simplificationp
-    ;;              '(:in-theory (enable bfr-listp-when-not-member-witness)))
+      :hints ((fgl-interp-default-hint 'fgl-interp-term id nil world)
+              (b* ((flag (find-flag-is-hyp clause))
+                   ((unless flag) (value nil))
+                   (thm (cdr (assoc-equal clause (table-alist 'fgl-interp-clauses-table (w state)))))
+                   ((unless thm)
+                    (cw "Couldn't find theorem for clause: ~x0~%"
+                        (acl2::prettyify-clause clause t (w state)))
+                    (value '(:error t))))
+                (value `(:computed-hint-replacement
+                         ('(:error t))
+                         :clause-processor (my-by-hint-cp clause ',thm state))))
+              )
+      ;; (prog2$ (cw "flag: ~x0~%" flag)
+      ;;         '(:do-not '(generalize) :do-not-induct t))))
+      ;; (and stable-under-simplificationp
+      ;;              '(:in-theory (enable bfr-listp-when-not-member-witness)))
 
-    :mutual-recursion fgl-interp)))
+      :mutual-recursion fgl-interp)))
+
+
+
+
