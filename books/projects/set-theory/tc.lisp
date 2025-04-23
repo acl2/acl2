@@ -54,7 +54,7 @@
 
 (defun tc (s)
   (declare (xargs :guard t))
-  (union (codomain (tc-fn s))))
+  (union (image (tc-fn s))))
 
 ; Start proof of subset-tc.
 
@@ -73,7 +73,7 @@
            (subset (tc-n m s) (tc s)))
   :props (zfc tc-fn$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
-           :restrict ((in-codomain-suff ((p (cons m (tc-n m s)))))))))
+           :restrict ((in-image-suff ((p (cons m (tc-n m s)))))))))
 
 ; A key theorem:
 (defthmz subset-tc
@@ -89,7 +89,7 @@
      ()
 
      (local (defthmz tc-is-transitive-1-1
-              (implies (in z (codomain (tc-fn s)))
+              (implies (in z (image (tc-fn s)))
                        (equal z (tc-n (apply (inverse (tc-fn s)) z)
                                       s)))
               :rule-classes nil
@@ -109,9 +109,9 @@
                  (implies (and (natp n)
                                (in x y)
                                (in y (tc-n n s)))
-                          (in x (union (codomain (tc-fn s)))))
+                          (in x (union (image (tc-fn s)))))
                  :hints (("Goal"
-                          :restrict ((in-codomain-suff
+                          :restrict ((in-image-suff
                                       ((p (cons (+ 1 n) (tc-n (+ 1 n) s)))))
                                      (in-in-suff
                                       ((y (tc-n (1+ n) s)))))
@@ -124,7 +124,7 @@
             (implies (and (natp n)
                           (in x y)
                           (in y z))
-                     (in x (union (codomain (tc-fn s))))))
+                     (in x (union (image (tc-fn s))))))
           :rule-classes nil
           :props (zfc tc-fn$prop domain$prop prod2$prop inverse$prop))))
 
@@ -133,15 +133,15 @@
         ()
 
         (local (defthmz tc-is-transitive-1-3-1
-                 (implies (in z (codomain (tc-fn s)))
+                 (implies (in z (image (tc-fn s)))
                           (in (apply (inverse (tc-fn s)) z)
                               (omega)))
-                 :hints (("Goal" :in-theory (enable in-codomain-rewrite)))
+                 :hints (("Goal" :in-theory (enable in-image-rewrite)))
                  :rule-classes nil
                  :props (zfc tc-fn$prop domain$prop prod2$prop inverse$prop)))
 
         (defthmz tc-is-transitive-1-3
-          (implies (in z (codomain (tc-fn s)))
+          (implies (in z (image (tc-fn s)))
                    (natp (apply (inverse (tc-fn s)) z)))
           :hints (("Goal"
                    :in-theory '(infinity)
@@ -152,8 +152,8 @@
      (defthmz tc-is-transitive-1
        (implies (and (in x y)
                      (in y z)
-                     (in z (codomain (tc-fn s))))
-                (in x (union (codomain (tc-fn s)))))
+                     (in z (image (tc-fn s))))
+                (in x (union (image (tc-fn s)))))
        :hints (("Goal"
                 :in-theory (theory 'minimal-theory)
                 :use (tc-is-transitive-1-1
@@ -218,27 +218,27 @@
            (equal (tc-n n s)
                   (tc-n 0 s))))
 
-(defthmz in-tc-0-codomain-tc-fn ; lemma for in-codomain-tc-fn
-  (in (tc-n 0 s) (codomain (tc-fn s)))
+(defthmz in-tc-0-image-tc-fn ; lemma for in-image-tc-fn
+  (in (tc-n 0 s) (image (tc-fn s)))
   :hints (("Goal"
-           :restrict ((in-codomain-suff
+           :restrict ((in-image-suff
                        ((p (cons 0 (tc-n 0 s))))))
            :in-theory (disable tc-n)))
   :otf-flg t
   :props (zfc tc-fn$prop domain$prop prod2$prop inverse$prop))
 
-(defthmz in-tc-n-codomain-tc-fn ; lemma for in-codomain-tc-fn
-  (in (tc-n n s) (codomain (tc-fn s)))
+(defthmz in-tc-n-image-tc-fn ; lemma for in-image-tc-fn
+  (in (tc-n n s) (image (tc-fn s)))
   :hints (("Goal"
-           :restrict ((in-codomain-suff
+           :restrict ((in-image-suff
                        ((p (cons n (tc-n n s))))))
            :in-theory (disable tc-n)
            :cases ((natp n))))
   :otf-flg t
   :props (zfc tc-fn$prop domain$prop prod2$prop inverse$prop))
 
-(defthmz in-codomain-tc-fn ; rewrite version of tc-is-transitive-1-1
-  (equal (in z (codomain (tc-fn s)))
+(defthmz in-image-tc-fn ; rewrite version of tc-is-transitive-1-1
+  (equal (in z (image (tc-fn s)))
          (equal z (tc-n (apply (inverse (tc-fn s)) z)
                         s)))
   :otf-flg t
@@ -251,7 +251,7 @@
            (subset (tc s) tr))
   :hints (("Goal"
            :in-theory (enable in-in)
-           :expand ((subset (union (codomain (tc-fn s))) tr))))
+           :expand ((subset (union (image (tc-fn s))) tr))))
   :props (zfc tc-fn$prop domain$prop prod2$prop inverse$prop))
 
 (in-theory (disable tc))

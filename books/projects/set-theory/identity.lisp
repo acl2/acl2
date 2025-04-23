@@ -10,7 +10,7 @@
 
 (defthmz compose-identity-fun-with-fn-equal
   (implies (and (force (funp f))
-                (force (subset (codomain f) s)))
+                (force (subset (image f) s)))
            (fn-equal (compose (identity-fun s) f)
                      f))
   :props (zify-prop compose$prop identity-fun$prop)
@@ -19,7 +19,7 @@
 
 (defthmz compose-identity-fun
   (implies (and (force (funp f))
-                (force (subset (codomain f) s)))
+                (force (subset (image f) s)))
            (equal (compose (identity-fun s) f)
                   f))
   :props (zify-prop compose$prop identity-fun$prop)
@@ -38,8 +38,8 @@
          s)
   :props (zfc identity-fun$prop prod2$prop domain$prop inverse$prop))
 
-(defthmz codomain-identity-fun
-  (equal (codomain (identity-fun s))
+(defthmz image-identity-fun
+  (equal (image (identity-fun s))
          s)
   :props (zfc identity-fun$prop prod2$prop domain$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable codomain))))
+  :hints (("Goal" :in-theory (enable image))))
