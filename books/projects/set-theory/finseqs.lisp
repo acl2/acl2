@@ -16,13 +16,13 @@
 (local (defthmz in-finseqs-lemma
          (implies (and (funp fn)
                        (natp (domain fn))
-                       (subset (codomain fn) a))
+                       (subset (image fn) a))
                   (subset fn (prod2 (omega) a)))
          :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop)
          :hints (("Goal"
                   :restrict
                   ((subset-transitivity
-                    ((y (prod2 (domain fn) (codomain fn))))))))))
+                    ((y (prod2 (domain fn) (image fn))))))))))
 
 (local (defthm iff-implies-equal
          (implies (and (booleanp x) (booleanp y))
@@ -33,5 +33,5 @@
   (equal (in fn (finseqs a))
          (and (funp fn)
               (in (domain fn) (omega))
-              (subset (codomain fn) a)))
+              (subset (image fn) a)))
   :props (zfc prod2$prop domain$prop inverse$prop finseqs$prop))

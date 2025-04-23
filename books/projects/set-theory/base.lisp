@@ -14,7 +14,7 @@
 ;;; Cartesian product,
 ;;;   including relevant lemmas about membership in pairs
 ;;; Apply
-;;; Domain, codomain, inverse and some basic lemmas
+;;; Domain, image, inverse and some basic lemmas
 ;;; Omega is an ordinal.
 ;;; Relational composition
 ;;; Function composition
@@ -655,8 +655,9 @@
 
 ; This macro is what gives us the Axioms of Collection and Replacement, as it
 ; introduces a set-theoretic function restricted to a set, which is named bound
-; here, without specifying a codomain or range.  (The codomain can then be
-; obtained from that function by using the Subset scheme.)
+; here, without specifying the image or even a codomain (i.e., superset of the
+; image).  (The image can then be obtained from that function by using the
+; Subset scheme.)
 
 ; The idea is that u is a term in x and y, possibly with parameters among args,
 ; that defines a mapping, potentially multi-valued, from x to y.  We then
@@ -930,7 +931,7 @@
 (in-theory (disable apply))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Domain, codomain, inverse and some basic lemmas
+;;; Domain, image, inverse and some basic lemmas
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Introduce (domain r) = {x \in (union (union r)) : <x,r(x)> \in r.  The
@@ -1010,7 +1011,7 @@
   :hints (("Goal" :in-theory (enable extensionality in-domain-rewrite))))
 
 ; To define the inverse of a relation r, first note that the field of r (i.e.,
-; the union of the domain and range of r) is (union (union r)).  That's because
+; the union of the domain and image of r) is (union (union r)).  That's because
 ; if the ordered pair {{x},{x,y}} is in r, then {x} and {x,y} are in (union r)
 ; so x and y are in (union (union r)).  Thus, if s is the product of the field
 ; of r with itself, i.e., s = (prod2 (union (union r)) (union (union r))),
@@ -1025,7 +1026,7 @@
                r)) ; u
       )
 
-(defun codomain (r)
+(defun image (r)
   (declare (xargs :guard t))
   (domain (inverse r)))
 
@@ -1117,24 +1118,24 @@
   :props (zfc prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable extensionality subset))))
 
-(defthmz in-codomain-suff
+(defthmz in-image-suff
   (implies (and (in p r)
                 (consp p)
                 (equal y (cdr p)))
-           (in y (codomain r)))
+           (in y (image r)))
   :props (zfc domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :restrict ((in-car-domain-alt
                               ((p (cons (cdr p) (car p)))))))))
 
-; We need the following disable for the proof of lemma in-apply-codomain just
-; below.  It seems reasonable to disable it globally, since codomain is
+; We need the following disable for the proof of lemma in-apply-image just
+; below.  It seems reasonable to disable it globally, since image is
 ; arguably a more basic notion than inverse.
-(in-theory (disable codomain))
+(in-theory (disable image))
 
-(defthmz in-apply-codomain
+(defthmz in-apply-image
   (implies (in x (domain r))
            (in (apply r x)
-                (codomain r)))
+                (image r)))
   :props (zfc domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable in-domain-rewrite))))
 
@@ -1302,13 +1303,13 @@
 
 (zsub rcompose (r s)                  ; name, args
       p                               ; x
-      (prod2 (domain r) (codomain s)) ; s
+      (prod2 (domain r) (image s)) ; s
       (in-rcompose p r s)             ; u
       )
 
 (defthmz in-rcompose-rewrite-lemma
   (implies (in-rcompose p r s)
-           (in p (prod2 (domain r) (codomain s))))
+           (in p (prod2 (domain r) (image s))))
   :props (zfc prod2$prop inverse$prop domain$prop))
 
 (defthmz in-rcompose-rewrite ; corollary of rcompose$comprehension.
@@ -1376,12 +1377,12 @@
 
 ; The initial definition was (defun compose (f g) (rcompose g f)).  The lemma
 ; rcompose-is-compose below proves its equivalence to the definition below,
-; assuming (subset (codomain g) (domain f)).  But the following definition may
+; assuming (subset (image g) (domain f)).  But the following definition may
 ; be better suited to avoiding that assumption in theorems about composition.
 
 (zsub compose (f g) ; name, args
       p             ; x
-      (prod2 (domain g) (codomain f))
+      (prod2 (domain g) (image f))
       (equal (cdr p)
              (apply f (apply g (car p))))
       )
@@ -1409,10 +1410,10 @@
            :in-theory (disable in-prod2)))
   :rule-classes nil)
 
-(defthmz in-codomain
+(defthmz in-image
   (implies (not (equal (apply f x) 0))
            (in (apply f x)
-               (codomain f)))
+               (image f)))
   :props (zfc prod2$prop domain$prop inverse$prop)
   :hints (("Goal" :in-theory (enable apply))))
 
@@ -1446,20 +1447,20 @@
                  apply-compose-2)
            :in-theory (disable compose$comprehension))))
 
-(in-theory (disable (:e codomain)))
+(in-theory (disable (:e image)))
 
 (defthmz inverse-0
   (equal (inverse 0) 0)
   :props (zfc prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable extensionality))))
 
-(defthmz codomain-0-lemma
-  (subset (codomain 0) 0)
+(defthmz image-0-lemma
+  (subset (image 0) 0)
   :props (zfc prod2$prop domain$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable codomain subset))))
+  :hints (("Goal" :in-theory (enable image subset))))
 
-(defthmz codomain-0
-  (equal (codomain 0) 0)
+(defthmz image-0
+  (equal (image 0) 0)
   :props (zfc prod2$prop domain$prop inverse$prop)
   :hints (("Goal" :in-theory (enable extensionality))))
 
@@ -1468,13 +1469,13 @@
   :props (zfc prod2$prop compose$prop domain$prop inverse$prop)
   :hints (("Goal" :in-theory (enable extensionality))))
 
-(defthmz in-apply-codomain-force
+(defthmz in-apply-image-force
   (implies (force (in x (domain r)))
-           (in (apply r x) (codomain r)))
+           (in (apply r x) (image r)))
   :props (zfc prod2$prop domain$prop inverse$prop))
 
 (defthmz domain-compose-lemma
-  (implies (subset (codomain g) (domain f))
+  (implies (subset (image g) (domain f))
            (subset (domain g)
                    (domain (compose f g))))
   :props (zfc prod2$prop compose$prop domain$prop inverse$prop)
@@ -1493,7 +1494,7 @@
 (defthmz domain-compose
   (implies (and (force (funp f))
                 (force (funp g))
-                (force (subset (codomain g) (domain f))))
+                (force (subset (image g) (domain f))))
            (equal (domain (compose f g))
                   (domain g)))
   :props (zfc prod2$prop compose$prop domain$prop inverse$prop)
@@ -1537,7 +1538,7 @@
 (local (defthmz rcompose-is-compose-2
          (implies (and (funp f)
                        (funp g)
-                       (subset (codomain f) (domain g)))
+                       (subset (image f) (domain g)))
                   (subset (compose g f)
                           (rcompose f g)))
          :hints (("Goal"
@@ -1570,7 +1571,7 @@
 (defthmz rcompose-is-compose
   (implies (and (funp f)
                 (funp g)
-                (subset (codomain f) (domain g)))
+                (subset (image f) (domain g)))
            (equal (rcompose f g)
                   (compose g f)))
   :hints (("Goal" :in-theory (enable extensionality-rewrite)))
@@ -1771,7 +1772,7 @@
 
 (defun v-omega ()
   (declare (xargs :guard t))
-  (union (codomain (v))))
+  (union (image (v))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; V-omega contains all ACL2 objects.
@@ -1820,7 +1821,7 @@
            (in n (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
-           :restrict ((in-codomain-suff
+           :restrict ((in-image-suff
                        ((p (cons (1+ n) (v-n (1+ n))))))
                       (in-in-suff
                        ((y (v-n (1+ n)))))))))
@@ -1911,15 +1912,15 @@
 ; (when I was proving the analogue for cons in place of pair) and may have had
 ; quite a distance to go.  So here is a hand proof that I can follow.
 
-; Suppose x, y \in (v-omega) = (union (codomain (v))).
+; Suppose x, y \in (v-omega) = (union (image (v))).
 ; So we may choose sx and sy such that
-;   x \in sx \in (codomain (v)) and
-;   y \in sy \in (codomain (v)).
+;   x \in sx \in (image (v)) and
+;   y \in sy \in (image (v)).
 ; then <nx,sx> \in (v) and <ny,sy>  \in (v) for some natp nx, ny.
-; (In fact, expanding codomain, we have:
+; (In fact, expanding image, we have:
 ;   nx = (apply (inverse (v)) sx) and
 ;   ny = (apply (inverse (v)) sy).
-;  That makes a nice lemma, in-codomain-necc.)
+;  That makes a nice lemma, in-image-necc.)
 ; But then sx = v-n(nx) and sy = vn(ny).
 ; So x \in v-n(nx) and y \in vn(ny).
 ; Let k = (1+ (max nx ny)).
@@ -1928,8 +1929,8 @@
 ; Then by the claim, where m = k, (in (pair x y) (v-omega)).  Q.E.D.
 
 ; To prove the claim that (subset (v-n m) (v-omega)) then since (v-omega)
-; = (union (codomain (v))), it suffices by in-implies-subset-union to
-; prove that (in (v-n m) (codomain (v))), for which it suffices that (in
+; = (union (image (v))), it suffices by in-implies-subset-union to
+; prove that (in (v-n m) (image (v))), for which it suffices that (in
 ; (cons m (v-n m)) (v).  But this follows from v-maps-n-to-v-n.
 
 ; Let's start with the claim.
@@ -1939,22 +1940,22 @@
            (subset (v-n m) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
-           :restrict ((in-codomain-suff ((p (cons m (v-n m)))))))))
+           :restrict ((in-image-suff ((p (cons m (v-n m)))))))))
 
 ; Now we turn to the proof of v-omega-closed-under-pair.
 
-(defthmz in-codomain-necc
-  (implies (in x (codomain f))
+(defthmz in-image-necc
+  (implies (in x (image f))
            (in (cons (apply (inverse f) x)
                       x)
                 f))
   :props (zfc domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :in-theory (e/d (codomain in-domain-rewrite)
+  :hints (("Goal" :in-theory (e/d (image in-domain-rewrite)
                                   (apply-default)))))
 
 (defthmz in-v-omega-implies-in-v-n-lemma
   (implies (in x (v-omega))
-           (let* ((sx (in-in-witness x (codomain (v))))
+           (let* ((sx (in-in-witness x (image (v))))
                   (nx (apply (inverse (v)) sx)))
              (in (cons nx sx) (v))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
@@ -1963,7 +1964,7 @@
 
 (defthmz in-v-omega-implies-in-v-n-lemma-corollary
   (implies (in x (v-omega))
-           (let* ((sx (in-in-witness x (codomain (v))))
+           (let* ((sx (in-in-witness x (image (v))))
                   (nx (apply (inverse (v)) sx)))
              (equal sx (v-n nx))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
@@ -1972,7 +1973,7 @@
 
 ; A handy abbreviation, defined so that it's clearly a natural number:
 (defun v-n-inv (x)
-  (let* ((sx (in-in-witness x (codomain (v))))
+  (let* ((sx (in-in-witness x (image (v))))
          (nx (apply (inverse (v)) sx)))
     (nfix nx)))
 
@@ -2234,8 +2235,8 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable transitive subset))))
 
-(defthmz in-codomain-implies-in-apply-inverse-domain
-  (implies (and (in y (codomain r))
+(defthmz in-image-implies-in-apply-inverse-domain
+  (implies (and (in y (image r))
                 (equal d (domain r)))
            (in (apply (inverse r) y)
                 d))
@@ -2352,44 +2353,44 @@
                                    (y x))))))
 ) ; end encapsulate
 
-; The following, in-codomain-rewrite, was originally developed in support of
+; The following, in-image-rewrite, was originally developed in support of
 ; proving iterate-plus in the book iterate.lisp.  But it's needed for the
-; encapsulate just below that proves codomain-prod2.
-(defthmdz in-codomain-rewrite
-  (equal (in x (codomain r))
+; encapsulate just below that proves image-prod2.
+(defthmdz in-image-rewrite
+  (equal (in x (image r))
          (in (cons (apply (inverse r) x) x) r))
   :props (zfc prod2$prop domain$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable codomain in-domain-rewrite))))
+  :hints (("Goal" :in-theory (enable image in-domain-rewrite))))
 
 (encapsulate ()
 
-(local (defthmz subset-codomain-prod2
-         (subset (codomain (prod2 x y)) y)
+(local (defthmz subset-image-prod2
+         (subset (image (prod2 x y)) y)
          :props (zfc domain$prop prod2$prop inverse$prop)
-         :hints (("Goal" :in-theory (enable subset in-codomain-rewrite))))
+         :hints (("Goal" :in-theory (enable subset in-image-rewrite))))
        )
 
-(local (defthmz codomain-prod2-lemma
+(local (defthmz image-prod2-lemma
          (implies (not (equal x 0))
-                  (subset y (codomain (prod2 x y))))
+                  (subset y (image (prod2 x y))))
          :hints
          (("Goal"
            :in-theory (enable subset)
            :restrict
-           ((in-codomain-suff
+           ((in-image-suff
              ((p (cons (min-in x)
-                       (subset-witness y (codomain (prod2 x y))))))))))
+                       (subset-witness y (image (prod2 x y))))))))))
          :props (zfc domain$prop prod2$prop inverse$prop)))
 
-(defthmz codomain-prod2
-  (equal (codomain (prod2 x y))
+(defthmz image-prod2
+  (equal (image (prod2 x y))
          (if (equal x 0)
              0
            y))
   :props (zfc domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :use ((:instance extensionality
                                    (x y)
-                                   (y (codomain (prod2 x y))))))))
+                                   (y (image (prod2 x y))))))))
 ) ; end encapsulate
 
 (defthmz subset-omega-v-omega
@@ -2406,34 +2407,34 @@
 ; The following lemmas support the proof of compose-associative, but may be
 ; useful in their own right.
 
-(defthmz subset-codomain-compose
+(defthmz subset-image-compose
 
 ; Here is a hand proof.
-; By definition of subset, let x \in (codomain (compose g h)).
+; By definition of subset, let x \in (image (compose g h)).
 ; So for some y, <y,x> \in (compose g h).
 ;   What is y?  Well, let r = (inverse (compose g h)); so
 ;   x \in (domain r).  So by in-domain-rewrite,
 ;   (in (cons x (apply r x)) r); let y = (apply r x).
 ; By compose$comprehension,
-;   <y,x> \in (prod2 (domain h) (codomain g))
-; So x \in (codomain g).
+;   <y,x> \in (prod2 (domain h) (image g))
+; So x \in (image g).
 
-  (subset (codomain (compose g h))
-          (codomain g))
+  (subset (image (compose g h))
+          (image g))
   :props (zfc prod2$prop domain$prop compose$prop inverse$prop)
   :hints (("Goal"
            :in-theory (enable subset compose$comprehension)
-           :use (:instance in-codomain-rewrite
-                           (x (subset-witness (codomain (compose g h))
-                                              (codomain g)))
+           :use (:instance in-image-rewrite
+                           (x (subset-witness (image (compose g h))
+                                              (image g)))
                            (r (compose g h))))))
 
 (defthmz compose-associative-with-fn-equal
   (implies (and (funp f)
                 (funp g)
                 (funp h)
-                (subset (codomain g) (domain f))
-                (subset (codomain h) (domain g)))
+                (subset (image g) (domain f))
+                (subset (image h) (domain g)))
            (fn-equal (compose (compose f g) h)
                      (compose f (compose g h))))
   :props (zfc prod2$prop domain$prop compose$prop inverse$prop)
@@ -2441,14 +2442,14 @@
            :in-theory (e/d (fn-equal)
                            (fn-equal-implies-in))
            :restrict ((subset-transitivity
-                       ((y (codomain g))))))))
+                       ((y (image g))))))))
 
 (defthmz compose-associative
   (implies (and (force (funp f))
                 (force (funp g))
                 (force (funp h))
-                (force (subset (codomain g) (domain f)))
-                (force (subset (codomain h) (domain g))))
+                (force (subset (image g) (domain f)))
+                (force (subset (image h) (domain g))))
            (equal (compose (compose f g) h)
                   (compose f (compose g h))))
   :props (zfc prod2$prop domain$prop compose$prop inverse$prop)
@@ -2488,9 +2489,9 @@
            :in-theory (disable in-inverse inverse$comprehension))))
 ) ; end encapsulate
 
-(defthmz subset-codomain-0
+(defthmz subset-image-0
   (implies (force (relation-p r))
-           (equal (equal (codomain r) 0)
+           (equal (equal (image r) 0)
                   (equal r 0)))
   :props (zfc domain$prop inverse$prop prod2$prop)
-  :hints (("Goal" :in-theory (enable codomain))))
+  :hints (("Goal" :in-theory (enable image))))

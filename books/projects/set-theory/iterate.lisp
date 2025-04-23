@@ -17,17 +17,17 @@
            (funp (iterate f n)))
   :props (zify-prop compose$prop identity-fun$prop))
 
-(defthmz subset-codomain-iterate
+(defthmz subset-image-iterate
   (implies (and (funp f)
-                (subset (codomain f) (domain f)))
-           (subset (codomain (iterate f n))
+                (subset (image f) (domain f)))
+           (subset (image (iterate f n))
                    (domain f)))
   :props (zify-prop compose$prop identity-fun$prop)
-  :hints (("Goal" :restrict ((subset-transitivity ((y (codomain f))))))))
+  :hints (("Goal" :restrict ((subset-transitivity ((y (image f))))))))
 
 (defthmz domain-iterate
   (implies (and (funp f)
-                (subset (codomain f) (domain f)))
+                (subset (image f) (domain f)))
            (equal (domain (iterate f n))
                   (domain f)))
   :props (zify-prop compose$prop identity-fun$prop))
@@ -36,7 +36,7 @@
   (implies (and (natp m)
                 (natp n)
                 (funp f)
-                (subset (codomain f) (domain f)))
+                (subset (image f) (domain f)))
            (equal (iterate f (+ m n))
                   (compose (iterate f m) (iterate f n))))
   :props (zify-prop compose$prop identity-fun$prop))

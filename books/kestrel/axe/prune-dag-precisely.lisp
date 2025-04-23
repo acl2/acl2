@@ -1,7 +1,7 @@
 ; Pruning irrelevant IF-branches
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -16,7 +16,7 @@
 
 (include-book "prune-term")
 (include-book "dag-size-fast")
-(include-book "make-term-into-dag-simple")
+;(include-book "make-term-into-dag-simple")
 ;(include-book "kestrel/utilities/real-time-since" :dir :system)
 ;(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
@@ -33,8 +33,7 @@
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
-                              (or (booleanp call-stp)
-                                  (natp call-stp))
+                              (call-stp-optionp call-stp)
                               (booleanp check-fnsp)
                               (print-levelp print))
                   :stobjs state))
@@ -63,9 +62,9 @@
                 (pseudo-term-listp assumptions)
                 (rule-alistp rule-alist)
                 (interpreted-function-alistp interpreted-function-alist)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp)))
+                ;; (symbol-listp monitored-rules)
+                ;; (call-stp-optionp call-stp)
+                )
            (pseudo-dagp (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state))))
   :hints (("Goal" :in-theory (enable prune-dag-precisely-with-rule-alist))))
 
@@ -92,8 +91,7 @@
                                   1)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
-                              (or (booleanp call-stp)
-                                  (natp call-stp))
+                              (call-stp-optionp call-stp)
                               (booleanp check-fnsp)
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
@@ -119,10 +117,10 @@
                 (or (rule-alistp rule-alist)
                     (eq :none rule-alist))
                 (interpreted-function-alistp interpreted-function-alist)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp))
-                (ilks-plist-worldp (w state)))
+                ;; (symbol-listp monitored-rules)
+                ;; (call-stp-optionp call-stp)
+                ;; (ilks-plist-worldp (w state))
+                )
            (pseudo-dagp (mv-nth 1 (prune-dag-precisely dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state))))
   :hints (("Goal" :in-theory (enable prune-dag-precisely))))
 
@@ -133,6 +131,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Disabled to speed up later guard proofs
+(defund prune-precise-optionp (p)
+  (declare (xargs :guard t))
+  (or (booleanp p)
+      (natp p)))
+
 ;;Returns (mv erp result-dag-or-quotep state).  Pruning turns the DAG into a term and
 ;;then tries to resolve IF tests via rewriting and perhaps by calls to STP.
 ;; TODO: This can make the rule-alist each time it is called.
@@ -140,8 +144,7 @@
                                    dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp
                                    print
                                    state)
-  (declare (xargs :guard (and (or (booleanp prune-precise)
-                                  (natp prune-precise))
+  (declare (xargs :guard (and (prune-precise-optionp prune-precise)
                               (pseudo-dagp dag)
                               (pseudo-term-listp assumptions)
                               (or (symbol-listp rules)
@@ -154,8 +157,7 @@
                                   1)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
-                              (or (booleanp call-stp)
-                                  (natp call-stp))
+                              (call-stp-optionp call-stp)
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
                   :stobjs state))
@@ -176,7 +178,6 @@
        ;; prune-precise is either t or is a size limit and the dag is small enough, so we prune
        ;;todo: size also computed above
        (- (cw "(Pruning DAG precisely (~x0 nodes, ~x1 unique):~%" (dag-or-quotep-size-fast dag) (len dag)))
-       (old-dag dag)
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (and (print-level-at-least-tp print)
                (progn$ (cw "(DAG:~%")
@@ -205,7 +206,9 @@
                             "many" ; too big to call dag-or-quotep-size-fast (todo: impossible?)
                           (dag-or-quotep-size-fast result-dag-or-quotep)))
        (- (cw " Done pruning (~x0 nodes, ~x1 unique)." result-dag-size result-dag-len)
-          (and (equal old-dag dag) (cw " No change."))
+          (and (equal dag ; the old dag
+                      result-dag-or-quotep)
+               (cw " No change."))
           (cw ")~%")))
     (mv nil result-dag-or-quotep state)))
 
@@ -219,12 +222,33 @@
                 (or (rule-alistp rule-alist)
                     (eq :none rule-alist))
                 (interpreted-function-alistp interpreted-function-alist)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp))
-                (ilks-plist-worldp (w state)))
+                ;; (symbol-listp monitored-rules)
+                ;; (or (booleanp call-stp)
+                ;;     (natp call-stp))
+                ;; (ilks-plist-worldp (w state))
+                )
            (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state))))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))
+
+;; Uses quotep as the normal form
+(defthm pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely-2
+  (implies (and (not (mv-nth 0 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state))) ;; no error
+                (pseudo-dagp dag)
+                (pseudo-term-listp assumptions)
+                (or (symbol-listp rules)
+                    (eq :none rules))
+                (or (rule-alistp rule-alist)
+                    (eq :none rule-alist))
+                (interpreted-function-alistp interpreted-function-alist)
+                ;; (symbol-listp monitored-rules)
+                ;; (or (booleanp call-stp)
+                ;;     (natp call-stp))
+                ;; (ilks-plist-worldp (w state))
+                )
+           (equal (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+                  (not (quotep (mv-nth 1 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state))))))
+  :hints (("Goal" :use pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely
+           :in-theory (disable pseudo-dagp-of-mv-nth-1-of-maybe-prune-dag-precisely))))
 
 (defthm w-of-mv-nth-2-of-maybe-prune-dag-precisely
   (equal (w (mv-nth 2 (maybe-prune-dag-precisely prune-precise dag assumptions rules rule-alist interpreted-function-alist monitored-rules call-stp print state)))

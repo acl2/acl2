@@ -1,7 +1,7 @@
 ; JVM instructions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,17 +14,9 @@
 (include-book "floats")
 (include-book "fields") ;for field-idp
 (include-book "method-descriptors")
+(include-book "method-names")
 
 (local (in-theory (disable member-equal jvm::typep))) ;for speed
-
-;; The name of a method is just a string
-(defun method-namep (obj) (declare (xargs :guard t)) (stringp obj))
-
-;; Disabled by default
-;; Needed if we call string functions on method-names
-(defthmd stringp-when-method-namep
-  (implies (stringp name)
-           (method-namep name)))
 
 ;takes the decimal number version of the opcode and gives back the symbolic name
 ;fixme could use an array for this, for speed.

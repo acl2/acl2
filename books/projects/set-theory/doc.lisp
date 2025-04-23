@@ -284,10 +284,9 @@
  <p>ZF is typically formulated not only with axioms as discussed above, but
  also with two axiom schemes: Comprehension (or Subset), which asserts that
  every definable subcollection of a set is a set; and Replacement, which
- asserts that the range of a function is a set (or, is contained in a set,
- though these two formulations of Replacement are trivially equivalent by
- Comprehension).  These schemes are implemented with macros @('zsub') and
- @('zfn'), which we now discuss in turn.</p>
+ asserts that a definable function maps into a set.  Versions of these schemes
+ are implemented with macros @('zsub') and @('zfn'), which we now discuss in
+ turn.</p>
 
  <p>The macro @('zsub') implements the Comprehension scheme.  If @('name') is a
  new name, @('(v1..vn)') is a formal parameters list, @('x') is a variable, and
@@ -442,13 +441,13 @@
 
  <p>Now that we have an ACL2 object, @('(v)'), that is a function mapping each
  natural number @('n') to @('(v-n n)'), we define the union of these @('(v-n
- n)') as follows.  See @('base.lisp') for the definition of the codomain (i.e.,
- image) of a function @('fn'), @('(codomain fn)').</p>
+ n)') as follows.  See @('base.lisp') for the definition of the image of a
+ function @('fn'), @('(image fn)').</p>
 
  @({
  (defun v-omega nil
    (declare (xargs :guard t))
-   (union (codomain (v))))
+   (union (image (v))))
  })
 
  <p>Future work may introduce ordinal recursion to extend this sort of
@@ -522,8 +521,8 @@
 
  <p>Evaluation of the following macro creates a zero-ary function, @('zfib'),
  which agrees with @('fib') on the natural numbers.  The @(':dom') and
- @(':ran') arguments specify the natural numbers as the domain and range.  (For
- us, the <i>range</i> of a relation is any set that contains its codomain.)</p>
+ @(':ran') arguments specify the natural numbers as the domain and
+ codomain (i.e., range, i.e., a set containing the image).</p>
 
  @({
  (zify zfib fib :dom (omega) :ran (omega))
