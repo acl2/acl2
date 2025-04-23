@@ -188,15 +188,7 @@
                     this is updated from
                     the homonymous component of @(tsee simpadd0-gin).")
    (vars ident-set
-         "Set of simplified variables.
-          This consists of the variables @('x') such that
-          an expression of the form @('x + 0')
-          occurs in the C construct transformed by the transformation function
-          (which is returning a value of this fixtype)
-          and was transformed into @('x').
-          This set will be soon used to generate hypotheses, in the theorems,
-          about those functions being in the computation state
-          and containing @('int') values.")
+         "Set of variables in scope.")
    (diffp bool
           "Flag saying whether the C construct was transformed
            into something different by the transformation function."))
