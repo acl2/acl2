@@ -6103,58 +6103,92 @@
          ;; state) where CLAUSES is nil if the Axe Prover proved the goal and otherwise
          ;; is a singleton set containing the original clause (indicating that no change
          ;; was made).  TODO: Allow it to change the clause but not prove it entirely?
-         ;; We don't actually define the clause-processor here, because that
+         ;; We don't actually call define-trusted-clause-processor, because that
          ;; requires a trust tag; see make-clause-processor-simple.lisp for that
          (defund ,clause-processor-name (clause hint state)
            (declare (xargs :guard (and (pseudo-term-listp clause)
-                                       (alistp hint)
-                                       ;;todo: make these into checks with nice error messages:
-                                       (simple-prover-tacticp (lookup-equal :tactic hint))
-                                       (true-listp (lookup-equal :rule-lists hint))
-                                       (booleanp (lookup-equal :no-splitp hint))
-                                       (booleanp (lookup-equal :print-as-clausesp hint))
-                                       (symbol-listp (lookup-equal :no-print-fns hint))
-                                       (member-eq (lookup-equal :no-print-fns hint) '(t nil :brief))
-                                       (symbol-listp (lookup-equal :monitor hint))
-                                       (axe-use-hintp (lookup-equal :use hint))
-                                       (print-levelp (lookup-equal :print hint))
-                                       (symbol-listp (lookup-equal :var-ordering hint))
                                        (ilks-plist-worldp (w state)))
                            :stobjs state))
-           (b* ((must-prove (lookup-eq :must-prove hint))
+           (b* (;; Check the the hint:
+                ((when (not (alistp hint)))
+                 (er hard? ',clause-processor-name "Unexpected hint (not an alist): ~x0." hint)
+                 (mv :bad-hint (list clause) state))
+                (hint-keys (strip-cars hint))
+                (expected-hint-keys '(:must-prove :tactic :rules :rule-lists :no-splitp :print-as-clausesp :no-print-fns :monitor :use :print :var-ordering :count-hits))
+                ((when (not (subsetp-eq hint-keys expected-hint-keys)))
+                 (er hard? ',clause-processor-name "Unexpected keys in hint: ~x0." (set-difference-eq hint-keys expected-hint-keys))
+                 (mv :bad-hint (list clause) state))
+                ;; Handle the :must-prove input:
+                (must-prove (lookup-eq :must-prove hint))
+                ((when (not (booleanp must-prove)))
+                 (er hard? ',clause-processor-name "Bad :must-prove argument: ~x0." must-prove)
+                 (mv :bad-must-prove-argument (list clause) state))
                 ;; Handle the :rules input:
-                (rules (lookup-eq :rules hint))
+                (rules (lookup-eq :rules hint)) ; todo: allow a rule-item-list?
                 ((when (not (symbol-listp rules)))
                  (er hard? ',clause-processor-name "Bad :rules argument: ~x0." rules)
-                 (mv (erp-t) (list clause) state))
+                 (mv :bad-rules (list clause) state))
                 ;; Handle the :rule-lists input:
                 (rule-lists (lookup-eq :rule-lists hint))
                 ((when (not (symbol-list-listp rule-lists)))
                  (er hard? ',clause-processor-name "Bad :rule-lists argument: ~x0." rule-lists)
-                 (mv (erp-t) (list clause) state))
+                 (mv :bad-rule-lists (list clause) state))
                 ((when (and rules rule-lists))
                  (er hard? ',clause-processor-name "Both :rules and :rule-lists given.") ;todo: perhaps allow (combine them?)
-                 (mv (erp-t) (list clause) state))
+                 (mv :bad-input (list clause) state))
                 (rule-lists (if rules
                                 (list rules)
                               rule-lists))
+                ;; Handle the :tactic input:
                 (tactic (lookup-eq :tactic hint))
+                ((when (not (or (null tactic)
+                                (simple-prover-tacticp tactic))))
+                 (er hard? ',clause-processor-name "Bad :tactic argument: ~x0." tactic)
+                 (mv :bad-tactic (list clause) state))
                 ;; Use a suitable default if no tactic is given in the hint:
                 (tactic (if (not tactic)
                             '(:rep :rewrite :subst)
                           tactic))
                 ;; Handle the :use input:
                 (use-hint (lookup-eq :use hint))
+                ((when (not (axe-use-hintp use-hint)))
+                 (er hard? ',clause-processor-name "Bad :use-hint argument: ~x0." use-hint)
+                 (mv :bad-use-hint (list clause) state))
+                ;; Handle the :monitor input:
                 (monitored-symbols (lookup-eq :monitor hint))
+                ((when (not (symbol-listp monitored-symbols)))
+                 (er hard? ',clause-processor-name "Bad :monitor argument: ~x0." monitored-symbols)
+                 (mv :bad-monitor (list clause) state))
+                ;; Handle the :no-splitp input:
                 (no-splitp (lookup-eq :no-splitp hint))
+                ((when (not (booleanp no-splitp)))
+                 (er hard? ',clause-processor-name "Bad :no-splitp argument: ~x0." no-splitp)
+                 (mv :bad-no-splitp (list clause) state))
+                ;; Handle the :print-as-clausesp argument:
                 (print-as-clausesp (lookup-eq :print-as-clausesp hint))
+                ((when (not (booleanp print-as-clausesp)))
+                 (er hard? ',clause-processor-name "Bad :print-as-clausesp argument: ~x0." print-as-clausesp)
+                 (mv :bad-print-as-clausesp (list clause) state))
+                ;; Handle the :no-print-fns argument:
                 (no-print-fns (lookup-eq :no-print-fns hint))
+                ((when (not (symbol-listp no-print-fns)))
+                 (er hard? ',clause-processor-name "Bad :no-print-fns argument: ~x0." no-print-fns)
+                 (mv :bad-no-print-fns (list clause) state))
+                ;; Handle the :count-hits argument:
                 (count-hits (lookup-eq :count-hits hint))
                 ((when (not (count-hits-argp count-hits)))
                  (er hard? ',clause-processor-name "Bad :count-hits argument: ~x0." count-hits)
-                 (mv (erp-t) (list clause) state))
+                 (mv :bad-count-hits (list clause) state))
+                ;; Handle the :var-ordering argument:
                 (var-ordering (lookup-eq :var-ordering hint))
+                ((when (not (symbol-listp var-ordering)))
+                 (er hard? ',clause-processor-name "Bad :var-ordering argument: ~x0." var-ordering)
+                 (mv :bad-var-ordering (list clause) state))
+                ;; Handle the :print argument:
                 (print (lookup-eq :print hint))
+                ((when (not (print-levelp print)))
+                 (er hard? ',clause-processor-name "Bad :print argument: ~x0." print)
+                 (mv :bad-print (list clause) state))
                 ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
                 ((when erp) (mv erp (list clause) state))
                 ;; Set up prover options:

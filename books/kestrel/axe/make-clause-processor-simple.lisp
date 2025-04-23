@@ -28,22 +28,6 @@
 
     `(encapsulate ()
 
-       ;; (local (include-book "kestrel/lists-light/nth" :dir :system))
-       ;; (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
-       ;; (local (include-book "kestrel/lists-light/len" :dir :system))
-       ;; (local (include-book "kestrel/lists-light/reverse" :dir :system))
-       ;; (local (include-book "kestrel/lists-light/last" :dir :system))
-       ;; (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
-       ;; (local (include-book "kestrel/lists-light/take" :dir :system))
-       ;; (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-       ;; (local (include-book "kestrel/lists-light/cons" :dir :system)) ; for true-listp-of-cons
-       ;; (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
-       ;; (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
-       ;; (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-       ;; (local (include-book "kestrel/utilities/acl2-count" :dir :system))
-       ;; (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
-       ;; (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
-
        ;; See also the define-trusted-clause-processor in prover2.lisp.
        (define-trusted-clause-processor
          ,clause-processor-name
@@ -53,15 +37,17 @@
        ;; Returns a defthm event.
        (defun ,defthm-with-clause-processor-fn-name (name term tactic rules rule-lists remove-rules use no-splitp rule-classes count-hits print state)
          (declare (xargs :guard (and (symbolp name)
-                                     ;; term need not be a pseudo-term
+                                     ;; term need not be translated
+                                     (or (null tactic)
+                                         (simple-prover-tacticp tactic))
                                      (rule-item-listp rules)
                                      (rule-item-list-listp rule-lists)
                                      (symbol-listp remove-rules) ;allow rule-items?
-                                     ;; todo: rule-classes
                                      (axe-use-hintp use)
                                      (booleanp no-splitp)
-                                     ;; print
-                                     )
+                                     ;; todo: rule-classes
+                                     (booleanp count-hits)
+                                     (print-levelp print))
                          :stobjs state))
          (b* (((when (and rules rule-lists))
                (er hard? ',defthm-with-clause-processor-fn-name "Both :rules and :rule-lists were given for ~x0." name))
@@ -73,11 +59,16 @@
               ,term
               :hints (("Goal" :clause-processor (,',clause-processor-name clause
                                                                           '((:must-prove . t)
+                                                                            (:tactic . ,tactic)
+                                                                            ;; no rules, only rule-lists
                                                                             (:rule-lists . ,rule-lists)
                                                                             (:no-splitp . ,no-splitp)
-                                                                            (:print . ,print)
-                                                                            (:tactic . ,tactic)
+                                                                            ;; todo print-as-clausesp
+                                                                            ;; todo no-print-fns
+                                                                            ;; todo monitor
                                                                             (:use . ,use)
+                                                                            (:print . ,print)
+                                                                            ;; todo var-ordering
                                                                             (:count-hits . ,count-hits))
                                                                           state)))
               ,@(if (eq :auto rule-classes)
@@ -93,10 +84,10 @@
                                                      (rule-lists 'nil)
                                                      (remove-rules 'nil)
                                                      (no-splitp 'nil) ; whether to prevent splitting into cases
-                                                     (rule-classes ':auto)
-                                                     (count-hits 'nil)
+                                                     (use 'nil)
                                                      (print 'nil)
-                                                     (use 'nil))
+                                                     (count-hits 'nil)
+                                                     (rule-classes ':auto))
          (if (and (consp term)
                   (eq :eval (car term)))
              ;; Evaluate TERM:
