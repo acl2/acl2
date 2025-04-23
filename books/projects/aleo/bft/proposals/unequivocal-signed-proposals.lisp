@@ -68,7 +68,7 @@
   (fty::deffixequiv-sk unequiv-signed-props-p
     :args ((systate system-statep)))
 
-  (defruled unequiv-signed-props-p-necc-fixing
+  (defruled unequiv-signed-props-p-necc-with-address-fix
     (implies (and (unequiv-signed-props-p systate)
                   (set::in (address-fix signer)
                            (correct-addresses systate)))
@@ -157,7 +157,7 @@
     :expand (unequiv-signed-props-p (endorse-next prop endor systate))
     :enable (signed-props-of-endorse-next
              prop-set-unequivp-of-insert
-             unequiv-signed-props-p-necc-fixing
+             unequiv-signed-props-p-necc-with-address-fix
              set::emptyp-to-not-nonemptyp
              set::nonemptyp
              in-of-props-with-author+round)
