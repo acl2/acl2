@@ -776,7 +776,15 @@
            (type-compatiblep x y))
     :enable type-compatiblep))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defomap ident-type-map
+  :short "Fixtype of omaps from identifiers to types."
+  :key-type ident
+  :val-type type
+  :pred ident-type-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expr-null-pointer-constp ((expr exprp) (type typep))
   (declare (ignore expr))
