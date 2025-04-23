@@ -638,6 +638,7 @@
            (defthm ,name$chooses
              (implies (and (equal (apply (,name ,@args) ,x)
                                   ,y)
+                           (in ,x (domain (,name ,@args)))
                            (force (,name$prop)))
                       ,u)))
         name$prop)))
@@ -980,6 +981,7 @@
                                 (IN X1 (DOMAIN (F1 A1 Z)))))
                      (DEFTHM F1$CHOOSES
                        (IMPLIES (AND (EQUAL (APPLY (F1 A1 Z) X1) Y1)
+                                     (IN X1 (DOMAIN (F1 A1 Z)))
                                      (FORCE (F1$PROP)))
                                 (P X1 Y1 Z))))
                    (TABLE ZFC-TABLE
