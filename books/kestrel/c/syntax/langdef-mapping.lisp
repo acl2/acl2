@@ -1104,7 +1104,7 @@
   (b* (((reterr) (c::param-declon (c::tyspecseq-void)
                                   (c::obj-declor-ident
                                    (c::ident "irrelevant"))))
-       (declspecs (paramdecl->spec paramdecl))
+       (declspecs (paramdecl->specs paramdecl))
        (declor (paramdecl->decl paramdecl))
        ((mv okp tyspecs) (check-decl-spec-list-all-typespec declspecs))
        ((unless okp)

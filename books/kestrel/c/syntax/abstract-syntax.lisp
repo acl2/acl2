@@ -2309,7 +2309,7 @@
        declaration specifiers followed by a parameter declarator;
        see @(tsee paramdeclor) for a description and motivation
        for this notion of parameter declarator."))
-    ((spec decl-spec-list)
+    ((specs decl-spec-list)
      (decl paramdeclor))
     :pred paramdeclp
     :measure (two-nats-measure (acl2-count x) 1))

@@ -603,10 +603,10 @@
     :expand (dirabsdeclor-unambp (dirabsdeclor-function declor? params ellipses)))
 
   (defrule paramdecl-unambp-of-paramdecl
-    (equal (paramdecl-unambp (paramdecl spec decl))
-           (and (decl-spec-list-unambp spec)
+    (equal (paramdecl-unambp (paramdecl specs decl))
+           (and (decl-spec-list-unambp specs)
                 (paramdeclor-unambp decl)))
-    :expand (paramdecl-unambp (paramdecl spec decl)))
+    :expand (paramdecl-unambp (paramdecl specs decl)))
 
   (defrule paramdeclor-unambp-of-paramdeclor-declor
     (equal (paramdeclor-unambp (paramdeclor-declor declor))
@@ -1319,9 +1319,9 @@
               (dirabsdeclor-function->params dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
-  (defrule decl-spec-list-unambp-of-paramdecl->spec
+  (defrule decl-spec-list-unambp-of-paramdecl->specs
     (implies (paramdecl-unambp paramdecl)
-             (decl-spec-list-unambp (paramdecl->spec paramdecl)))
+             (decl-spec-list-unambp (paramdecl->specs paramdecl)))
     :expand (paramdecl-unambp paramdecl))
 
   (defrule paramdeclor-unambp-of-paramdecl->decl

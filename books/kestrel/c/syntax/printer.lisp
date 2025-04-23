@@ -2536,10 +2536,10 @@
      (xdoc::p
       "We ensure that there are declaration specifiers."))
     (b* (((paramdecl paramdecl) paramdecl)
-         ((unless paramdecl.spec)
+         ((unless paramdecl.specs)
           (raise "Misusage error: no declaration specifiers.")
           (pristate-fix pstate))
-         (pstate (print-decl-spec-list paramdecl.spec pstate))
+         (pstate (print-decl-spec-list paramdecl.specs pstate))
          (pstate (print-paramdeclor paramdecl.decl pstate)))
       pstate)
     :measure (two-nats-measure (paramdecl-count paramdecl) 0))

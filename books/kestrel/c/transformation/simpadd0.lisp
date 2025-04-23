@@ -3448,20 +3448,20 @@
     :short "Transform a parameter declaration."
     (b* (((simpadd0-gin gin) gin)
          ((paramdecl paramdecl) paramdecl)
-         ((mv new-spec (simpadd0-gout gout-spec))
-          (simpadd0-decl-spec-list paramdecl.spec gin state))
-         (gin (simpadd0-gin-update gin gout-spec))
+         ((mv new-specs (simpadd0-gout gout-specs))
+          (simpadd0-decl-spec-list paramdecl.specs gin state))
+         (gin (simpadd0-gin-update gin gout-specs))
          ((mv new-decl (simpadd0-gout gout-decl))
           (simpadd0-paramdeclor paramdecl.decl gin state)))
-      (mv (make-paramdecl :spec new-spec
+      (mv (make-paramdecl :specs new-specs
                           :decl new-decl)
           (make-simpadd0-gout
-           :events (append gout-spec.events gout-decl.events)
+           :events (append gout-specs.events gout-decl.events)
            :thm-name nil
            :thm-index gout-decl.thm-index
            :names-to-avoid gout-decl.names-to-avoid
-           :vars (set::union gout-spec.vars gout-decl.vars)
-           :diffp (or gout-spec.diffp gout-decl.diffp))))
+           :vars (set::union gout-specs.vars gout-decl.vars)
+           :diffp (or gout-specs.diffp gout-decl.diffp))))
     :measure (paramdecl-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
