@@ -294,9 +294,9 @@
   :hints (("Goal" :in-theory '(union2-commutative apply-union2-first))))
 
 ; Analogue of in-implies-car-in-domain
-(defthmz in-implies-cdr-in-codomain
+(defthmz in-implies-cdr-in-image
 	 (implies (and (consp p) (in p f))
-		  (in (cdr p) (codomain f)))
+		  (in (cdr p) (image f)))
 	 :props (zfc domain$prop prod2$prop inverse$prop)
 	 :rule-classes :forward-chaining)
 
