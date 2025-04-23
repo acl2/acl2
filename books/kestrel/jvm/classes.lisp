@@ -448,6 +448,11 @@
            (alistp (class-decl-methods class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 method-info-alistp class-decl-methods))))
 
+(defthm alistp-of-class-decl-methods2
+  (implies (class-infop0 class-info)
+           (alistp (class-decl-methods class-info)))
+  :hints (("Goal" :in-theory (enable class-infop class-infop0 method-info-alistp class-decl-methods))))
+
 (defthm not-class-infop-of-nil
   (not (class-infop nil class-name))
   :hints (("Goal" :in-theory (enable class-infop))))
