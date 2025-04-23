@@ -601,6 +601,11 @@
            (weak-dagp x))
   :hints (("Goal" :in-theory (enable pseudo-dagp))))
 
+(defthmd not-pseudo-dagp-when-quotep-cheap
+  (implies (quotep x)
+           (not (pseudo-dagp x)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize either a dag or a quoted constant (which can occur if rewriting

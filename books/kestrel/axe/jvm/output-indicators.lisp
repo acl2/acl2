@@ -40,11 +40,25 @@
            (alistp class-table-alist))
   :hints (("Goal" :in-theory (enable class-table-alistp))))
 
+(defthm class-table-alistp-forward-to-alistp
+  (implies (class-table-alistp class-table-alist)
+           (alistp class-table-alist))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable class-table-alistp))))
+
+(defthmd lookup-equal-when-class-table-alistp-iff
+  (implies (class-table-alistp alist)
+           (iff (lookup-equal key alist)
+                (assoc-equal key alist)))
+  :hints (("Goal" :in-theory (enable class-table-alistp))))
+
 (defthm class-infop0-of-lookup-equal-when-class-table-alistp
   (implies (class-table-alistp class-table-alist)
            (iff (jvm::class-infop0 (lookup-equal class-name class-table-alist))
                 (lookup-equal class-name class-table-alist)))
   :hints (("Goal" :in-theory (enable lookup-equal class-table-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks that PAIR, a class-name + field-id pair is valid wrt the class-table-alist.
 (defund field-pair-okayp (pair class-table-alist)
@@ -117,15 +131,17 @@
   (or (eq :auto x)
       (output-indicatorp-aux x)))
 
-;; If the output-indicator is :auto, do something sensible if we can.  Returns
-;; an output-indicatorp-aux, or nil to indicate failure.
-;; TODO: Prove that this always returns an output-indicatorp
-(defund resolve-auto-output-indicator (return-type)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; For use when the output-indicator is :auto; do something sensible using the
+;; return-type, if we can.  Returns an output-indicatorp-aux, or nil to
+;; indicate failure.
+(defund output-indicator-for-return-type (return-type)
   (declare (xargs :guard (or (eq :void return-type)
                              (jvm::typep return-type))))
   (if (eq :void return-type)
       ;; If it is void, throw an error for now (TODO: maybe take the last param that can return a value?  what if it's a field?)
-      (er hard? 'resolve-auto-output-indicator "No output-indicator given and method is void.")
+      (er hard? 'output-indicator-for-return-type "No output-indicator given and method is void.")
     ;; If it's not void, we'll use the return type as the output:
     (if (member-eq return-type jvm::*primitive-types*)
         (if (member-eq return-type jvm::*two-slot-types*)
@@ -136,7 +152,14 @@
       ;; for any other kind of object, it's not clear what field to return (we probably don't want just the address)
       (if (jvm::is-one-dim-array-typep return-type)
           :array-return-value
-        (er hard? 'resolve-auto-output-indicator "Can't figure out which output to return: method returns a reference that is not a 1-D array.")))))
+        (er hard? 'output-indicator-for-return-type "Can't figure out which output to return: method returns a reference that is not a 1-D array.")))))
+
+(defthm output-indicatorp-aux-of-output-indicator-for-return-type
+  (implies (output-indicator-for-return-type return-type)
+           (output-indicatorp-aux (output-indicator-for-return-type return-type)))
+  :hints (("Goal" :in-theory (enable output-indicator-for-return-type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
  ;; TODO: The lambdas here may be not be necessary, since we always create a DAG to contain the result of this.
@@ -219,20 +242,22 @@
                                      wrap-term-with-output-extractors
                                      len))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns a term to wrap around a dag to extract the output.  In the result,
 ;; the special symbol 'replace-me should be replaced with the DAG.
 (defund output-extraction-term (output-indicator
-                               initial-locals-term
-                               return-type ; used when output-indicator is :auto
-                               class-table-alist)
+                                initial-locals-term
+                                return-type ; used when output-indicator is :auto
+                                class-table-alist)
   (declare (xargs :guard (and (output-indicatorp output-indicator)
                               (pseudo-termp initial-locals-term)
                               (or (eq :void return-type)
                                   (jvm::typep return-type))
                               (class-table-alistp class-table-alist))
-                  :guard-hints (("Goal" :in-theory (enable resolve-auto-output-indicator))))) ; todo
+                  :guard-hints (("Goal" :in-theory (enable output-indicator-for-return-type))))) ; todo
   (let ((output-indicator (if (eq :auto output-indicator)
-                              (resolve-auto-output-indicator return-type)
+                              (output-indicator-for-return-type return-type)
                             output-indicator)))
     (if (not output-indicator)
         (er hard? 'output-extraction-term "Failed to resove output indicator.")

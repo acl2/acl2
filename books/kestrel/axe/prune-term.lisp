@@ -230,6 +230,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; We name this to try to avoid case splits in later guard proofs
+(defund call-stp-optionp (call-stp)
+  (declare (xargs :guard t))
+  (or (booleanp call-stp)
+      (natp call-stp)))
+
 ;; Tries to resolve the TEST assuming the ASSUMPTIONS and EQUALITY-ASSUMPTIONS.  Uses rewriting and STP.
 ;; Returns (mv erp result state) where RESULT is :true (meaning non-nil), :false, or :unknown.
 ;; (It may be the case that the test can be shown to be both true and false,
@@ -243,8 +249,7 @@
                               (symbol-listp monitored-rules)
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
-                              (or (booleanp call-stp)
-                                  (natp call-stp))
+                              (call-stp-optionp call-stp)
                               (print-levelp print))
                   :stobjs state))
   (b* ((- (and (print-level-at-least-verbosep print)
@@ -362,8 +367,7 @@
                                (symbol-listp monitored-rules)
                                (rule-alistp rule-alist)
                                (interpreted-function-alistp interpreted-function-alist)
-                               (or (booleanp call-stp)
-                                   (natp call-stp))
+                               (call-stp-optionp call-stp)
                                (print-levelp print))
                    :stobjs state
                    :verify-guards nil ; done below
@@ -590,8 +594,7 @@
                                (rule-alistp rule-alist)
                                (interpreted-function-alistp interpreted-function-alist)
                                (symbol-listp monitored-rules)
-                               (or (booleanp call-stp)
-                                   (natp call-stp))
+                               (call-stp-optionp call-stp)
                                (print-levelp print))
                    :stobjs state))
    (if (endp terms)
@@ -622,7 +625,7 @@
       (implies (and (pseudo-termp term)
                     (pseudo-term-listp assumptions)
                     (pseudo-term-listp equality-assumptions) ;used only for looking up conditions
-                    (symbol-listp monitored-rules)
+                    ;; (symbol-listp monitored-rules)
                     (rule-alistp rule-alist)
                     (interpreted-function-alistp interpreted-function-alist))
                (pseudo-termp (mv-nth 1 (prune-term-aux term assumptions equality-assumptions
@@ -635,7 +638,8 @@
                     (pseudo-term-listp equality-assumptions)
                     (rule-alistp rule-alist)
                     (interpreted-function-alistp interpreted-function-alist)
-                    (symbol-listp monitored-rules))
+                    ;; (symbol-listp monitored-rules)
+                    )
                (pseudo-term-listp (mv-nth 1  (prune-terms-aux terms assumptions equality-assumptions
                                                               rule-alist interpreted-function-alist
                                                               monitored-rules call-stp print state))))
@@ -669,8 +673,7 @@
                               (rule-alistp rule-alist)
                               (interpreted-function-alistp interpreted-function-alist)
                               (symbol-listp monitored-rules)
-                              (or (booleanp call-stp)
-                                  (natp call-stp))
+                              (call-stp-optionp call-stp)
                               (print-levelp print))
                   :stobjs state))
   (b* ((- (and (print-level-at-least-tp print)
@@ -700,9 +703,8 @@
                 (pseudo-term-listp assumptions)
                 (rule-alistp rule-alist)
                 (interpreted-function-alistp interpreted-function-alist)
-                (symbol-listp monitored-rules)
-                (or (booleanp call-stp)
-                    (natp call-stp)))
+                ;; (symbol-listp monitored-rules)
+                )
            (pseudo-termp (mv-nth 2 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))))
   :hints (("Goal" :in-theory (enable prune-term))))
 

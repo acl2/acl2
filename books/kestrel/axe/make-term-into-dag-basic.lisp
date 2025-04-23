@@ -75,6 +75,28 @@
   :hints (("Goal" :use (:instance make-term-into-dag-basic-return-type)
            :in-theory (disable make-term-into-dag-basic-return-type))))
 
+;; Uses quotep as the normal form
+(defthm pseudo-dagp-of-mv-nth-1-of-make-term-into-dag-basic-2
+  (implies (and (pseudo-termp term)
+                (interpreted-function-alistp interpreted-function-alist)
+                ;; no error:
+                (not (mv-nth 0 (make-term-into-dag-basic term interpreted-function-alist))))
+           (equal (pseudo-dagp (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))
+                  (not (quotep (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist))))))
+  :hints (("Goal" :use (:instance make-term-into-dag-basic-return-type)
+           :in-theory (disable make-term-into-dag-basic-return-type))))
+
+;; Uses quotep as the normal form
+(defthm myquotep-of-mv-nth-1-of-make-term-into-dag-basic
+  (implies (and (pseudo-termp term)
+                (interpreted-function-alistp interpreted-function-alist)
+                ;; no error:
+                (not (mv-nth 0 (make-term-into-dag-basic term interpreted-function-alist))))
+           (equal (myquotep (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))
+                  (quotep (mv-nth 1 (make-term-into-dag-basic term interpreted-function-alist)))))
+  :hints (("Goal" :use (:instance make-term-into-dag-basic-return-type)
+           :in-theory (disable make-term-into-dag-basic-return-type))))
+
 (defthm <-of-len-of-mv-nth-1-of-make-term-into-dag-basic
   (implies (and (pseudo-termp term)
                 (interpreted-function-alistp interpreted-function-alist)
