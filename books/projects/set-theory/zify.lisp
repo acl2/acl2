@@ -220,27 +220,22 @@
           `(progn
              (check-zify ,name0 ,fn0 ,dom ,ran ,props0 ,xhyps ,all-args ,var)
              (check-arity ,fn ,(len fn-args))
+
              (zsub ,name                                           ; name
                    ,all-args                                       ; args
                    ,var                                            ; x
                    (prod2 ,dom ,ran)                              ; s
                    (equal (cdr ,var) (,fn (car ,var) ,@fn-params)) ; u
                    )
-             (defthm ,(prefix-symbol "RELATION-P-" name)
-               (implies (and (force (,name$prop))
-                             (zify-prop)
-                             ,@hyps)
-                        (relation-p ,call))
-               :hints (("Goal" :in-theory (enable relation-p))))
 
              (defthm ,(prefix-symbol "FUNP-" name)
                (implies (and (force (,name$prop))
                              (zify-prop)
                              ,@hyps)
                         (funp ,call))
-               :hints (("Goal" :in-theory (enable funp))))
+               :hints (("Goal" :in-theory (enable relation-p funp))))
 
-             (defthm ,(prefix-symbol "IN-DOMAIN-" name)
+             (defthm ,(prefix-symbol "DOMAIN-" name)
                (implies (and (force ,(if unforced-hyps
                                          `(and (,name$prop)
                                                ,@unforced-hyps)
@@ -249,20 +244,19 @@
                         (equal (domain ,call)
                                ,dom))
                :hints
-               (("Goal"
-                 :by (:functional-instance
-                      domain-of-generic-fn-is-generic-dom
-                      (generic-prop
-                       ,(if unforced-hyps
-                            `(lambda ()
-                               (and (,name$prop)
-                                    ,@unforced-hyps))
-                          name$prop))
-                      (generic-dom (lambda () ,dom))
-                      (generic-ran (lambda () ,ran))
-                      (generic-rel (lambda () ,call))
-                      (generic-fn  (lambda (,(car fn-args))
-                                     (,fn ,@fn-args)))))))
+               (("Goal" :by (:functional-instance
+                             domain-of-generic-fn-is-generic-dom
+                             (generic-prop
+                              ,(if unforced-hyps
+                                   `(lambda ()
+                                      (and (,name$prop)
+                                           ,@unforced-hyps))
+                                 name$prop))
+                             (generic-dom (lambda () ,dom))
+                             (generic-ran (lambda () ,ran))
+                             (generic-rel (lambda () ,call))
+                             (generic-fn  (lambda (,(car fn-args))
+                                            (,fn ,@fn-args)))))))
 
              (defthm ,(suffix-symbol (concatenate 'string
                                                   "-IS-"
