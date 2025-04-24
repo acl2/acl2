@@ -1587,3 +1587,78 @@
          (append (reverse-list (keep-nodenum-dargs items))
                  acc))
   :hints (("Goal" :in-theory (enable append-nodenum-dargs keep-nodenum-dargs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd natp-of-car-of-nth-when-pseudo-dagp
+  (implies (and (pseudo-dagp dag)
+                (natp n))
+           (equal (natp (car (nth n dag)))
+                  (<= n (top-nodenum dag))))
+  :hints (("Goal" :in-theory (e/d (pseudo-dagp
+                                   natp-of-car-of-nth-when-pseudo-dagp-aux)
+                                  (natp)))))
+
+(defthmd <-of-car-of-nth-when-bounded-natp-alistp
+  (implies (and (bounded-natp-alistp dag bound)
+                (natp n)
+                (< n (len dag))
+                )
+           (< (car (nth n dag)) bound))
+  :hints (("Goal" :in-theory (e/d (bounded-natp-alistp nth)
+                                  (natp)))))
+
+(defthmd <-of-car-of-nth-when-pseudo-dagp
+  (implies (and (<= (len dag) bound)
+                (pseudo-dagp dag)
+                (natp n)
+                (< n (len dag))
+                (natp bound))
+           (< (car (nth n dag)) bound))
+  :hints (("Goal" :in-theory (e/d (<-of-car-of-nth-when-bounded-natp-alistp)
+                                  (natp)))))
+
+(defthmd not-equal-of-car-of-nth-when-not-member-equal-of-strip-cars
+  (implies (and (not (member-equal key (strip-cars alist)))
+                (natp n)
+                (< n (len alist))
+                (alistp alist))
+           (not (equal key (car (nth n alist)))))
+  :hints (("Goal" :in-theory (enable nth))))
+
+(defthmd assoc-equal-of-car-of-nth-same-when-alistp-and-no-duplicatesp-equal-of-strip-cars
+  (implies (and (alistp alist)
+                (no-duplicatesp-equal (strip-cars alist))
+                (natp n)
+                (< n (len alist)))
+           (equal (assoc-equal (car (nth n alist)) alist)
+                  (nth n alist)))
+  :hints (("Goal" :in-theory (enable assoc-equal nth not-equal-of-car-of-nth-when-not-member-equal-of-strip-cars))))
+
+(defthmd member-equal-of-strip-cars-when-pseudo-dagp-aux-iff
+  (implies (and (pseudo-dagp-aux dag curr)
+                (integerp curr)
+                (<= -1 curr))
+           (iff (member-equal n (strip-cars dag))
+                (and (natp n)
+                     (<= n curr))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
+
+(defthmd member-equal-of-strip-cars-when-pseudo-dagp-iff
+  (implies (pseudo-dagp dag)
+           (iff (member-equal n (strip-cars dag))
+                (and (natp n)
+                     (<= n (top-nodenum dag)))))
+  :hints (("Goal" :in-theory (enable pseudo-dagp member-equal-of-strip-cars-when-pseudo-dagp-aux-iff))))
+
+(defthmd no-duplicatesp-equal-of-strip-cars-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag curr)
+                (natp curr))
+           (no-duplicatesp-equal (strip-cars dag)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable pseudo-dagp-aux member-equal-of-strip-cars-when-pseudo-dagp-aux-iff))))
+
+(defthmd no-duplicatesp-equal-of-strip-cars-when-pseudo-dagp
+  (implies (pseudo-dagp dag)
+           (no-duplicatesp-equal (strip-cars dag)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp no-duplicatesp-equal-of-strip-cars-when-pseudo-dagp-aux))))
