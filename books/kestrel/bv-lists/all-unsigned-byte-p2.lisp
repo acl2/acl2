@@ -20,7 +20,7 @@
 (include-book "../lists-light/subrange-def")
 (include-book "../lists-light/update-subrange")
 (include-book "../lists-light/update-subrange2")
-(include-book "kestrel/lists-light/firstn" :dir :system) ; reduce
+(include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (local (include-book "../lists-light/subrange"))
 (local (include-book "../lists-light/len"))
