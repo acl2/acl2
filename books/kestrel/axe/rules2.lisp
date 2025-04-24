@@ -31,7 +31,7 @@
 ;(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 ;(local (include-book "kestrel/lists-light/cdr" :dir :system))
 ;(local (include-book "kestrel/lists-light/update-nth" :dir :system))
-(include-book "kestrel/lists-light/memberp" :dir :system) ; todo
+;(include-book "kestrel/lists-light/memberp-def" :dir :system) ; todo
 (include-book "kestrel/lists-light/subrange" :dir :system)
 ;(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
@@ -2677,26 +2677,26 @@
 ;;   :rule-classes ((:rewrite :backchain-limit-lst (nil 2))))
 
 ;move to be next to the other one
-(defthmd not-less-when->=-max-of-containing-bag
-  (implies (and (<= (maxelem bag) k)
-                (memberp elem bag))
-           (equal (> elem k)
-                  nil))
-  :hints (("Goal" :in-theory (enable maxelem))))
+;; (defthmd not-less-when->=-max-of-containing-bag
+;;   (implies (and (<= (maxelem bag) k)
+;;                 (memberp elem bag))
+;;            (equal (> elem k)
+;;                   nil))
+;;   :hints (("Goal" :in-theory (enable maxelem))))
 
 ;drop?
-(defthmd memberp-of-maxelem-same
- (implies (consp x)
-          (memberp (maxelem x) x))
- :hints (("Goal" :in-theory (enable maxelem))))
+;; (defthmd memberp-of-maxelem-same
+;;  (implies (consp x)
+;;           (memberp (maxelem x) x))
+;;  :hints (("Goal" :in-theory (enable maxelem))))
 
 ;drop?
-(defthmd memberp-maxelem-when-subsetp-equal
-  (implies (and (subsetp-equal bag1 bag2)
-                (consp bag1))
-           (memberp (maxelem bag1) bag2))
-  :hints (("Goal" :use (:instance memberp-of-maxelem-same (x bag1))
-           :in-theory (disable memberp-of-maxelem-same))))
+;; (defthmd memberp-maxelem-when-subsetp-equal
+;;   (implies (and (subsetp-equal bag1 bag2)
+;;                 (consp bag1))
+;;            (memberp (maxelem bag1) bag2))
+;;   :hints (("Goal" :use (:instance memberp-of-maxelem-same (x bag1))
+;;            :in-theory (disable memberp-of-maxelem-same))))
 
 ;drop?
 (defthmd maxelem-subrange-shorten-hackb
