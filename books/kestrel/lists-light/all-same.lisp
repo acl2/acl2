@@ -1,9 +1,19 @@
+; Recognizing a list all of whose elements are the same
+;
+; Copyright (C) 2008-2011 Eric Smith and Stanford University
+; Copyright (C) 2013-2025 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "all-equal-dollar")
 
-;todo: disable
-(defun all-same (lst)
+(defund all-same (lst)
   (declare (xargs :guard (true-listp lst)))
   (or (atom lst)
       (all-equal$ (car lst) (cdr lst))))
@@ -18,8 +28,7 @@
                   (if (< x (len lst))
                       (first lst)
                     nil)))
-  :hints (("Goal" :in-theory (e/d ((:i nth) all-equal$) (;nth-of-cdr
-                                                    )))))
+  :hints (("Goal" :in-theory (enable (:i nth) all-equal$ all-same))))
 
 (defthm nth-when-all-same-cheap
   (implies (and (syntaxp (quotep lst))
