@@ -1,6 +1,6 @@
 ; Proofs about subst-var-alt
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,6 +25,7 @@
 (include-book "lambdas-closed-in-termp")
 (include-book "no-duplicate-lambda-formals-in-termp")
 (include-book "make-lambda-terms-simple")
+(local (include-book "filter-formals-and-actuals-proofs"))
 (local (include-book "replace-corresponding-arg-proofs"))
 (local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))

@@ -1,6 +1,6 @@
 ; Top file for terms-light library
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,6 +19,7 @@
 
 ;; Utilities:
 (include-book "filter-formals-and-actuals")
+(include-book "filter-formals-and-actuals-proofs")
 (include-book "termp-simple")
 (include-book "all-quotep")
 (include-book "trivial-formals")

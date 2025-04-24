@@ -26,6 +26,7 @@
 (include-book "free-vars-in-term")
 (include-book "make-lambda-with-hint")
 ;(local (include-book "std/system/all-vars" :dir :system))
+(local (include-book "filter-formals-and-actuals-proofs"))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -44,8 +45,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Gets rid of lambda formals not used in the corresponding lambda bodies, and
-;; gets rid of trivial lambdas (ones that bind all of their formals to themselves).
+;; Gets rid of lambda formals not used in the corresponding lambda bodies, and their corresponding actuals of those formals.
+;; TODO: Get rid of trivial lambdas (ones that bind all of their formals to themselves)?  Or at least empty lambdas (ones with no formals).
 (mutual-recursion
  (defun drop-unused-lambda-bindings (term)
    (declare (xargs :guard (pseudo-termp term)
@@ -65,7 +66,7 @@
                       (body-vars (free-vars-in-term body)))
                  (mv-let (formals args)
                    (filter-formals-and-actuals formals args body-vars)
-                   ;; could put this back, or call make-lambdas-application-simple:
+                   ;; could put this back, or call make-lambda-application-simple:
                    ;;(if (equal formals args)
                        ;; If the remaining formals are the same as the args, we
                        ;; don't need a lambda at all:

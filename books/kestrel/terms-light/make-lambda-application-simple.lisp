@@ -1,6 +1,6 @@
 ; A simple utility to make a lambda application (drops ignored vars)
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,7 @@
 
 (include-book "free-vars-in-term")
 (include-book "filter-formals-and-actuals")
+(local (include-book "filter-formals-and-actuals-proofs"))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
