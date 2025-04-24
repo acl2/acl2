@@ -181,7 +181,7 @@ Sexpression *MulVarDec::ACL2Expr() {
 // TODO refactore
 void MulVarDec::displaySimple(std::ostream &os) {
   auto dlist = decs.begin();
-  (*dlist)->get_type()->displayVarType(os);
+  (*dlist)->get_original_type()->displayVarType(os);
   while (dlist != decs.end()) {
     os << " ";
     (*dlist)->get_type()->displayVarName((*dlist)->getname(), os);
@@ -337,10 +337,13 @@ MultipleAssignment::MultipleAssignment(Location loc, FunCall *r,
 void MultipleAssignment::displaySimple(std::ostream &os) {
   assert(lval_.size() > 0);
   os << "<";
-  lval_[0]->display(os);
+  bool first = true;
   for (Expression *e : lval_) {
-    os << ", ";
+    if (!first) {
+      os << ", ";
+    }
     e->display(os);
+    first = false;
   }
   os << "> = ";
   rval_->display(os);
