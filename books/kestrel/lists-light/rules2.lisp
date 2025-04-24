@@ -781,7 +781,7 @@
                          (true-listp k)
                          (equal n (len k))
                          (equal val (car k))))))
-  :hints (("Goal" :in-theory (e/d (all-equal$ repeat all-equal$-when-true-listp)
+  :hints (("Goal" :in-theory (e/d (all-equal$ all-same repeat all-equal$-when-true-listp)
                                   (cons-onto-repeat equal-of-repeat-of-len-same)))))
 
 ;gross?
