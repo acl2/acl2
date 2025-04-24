@@ -2878,7 +2878,8 @@
                       (bvar-db (interp-st->bvar-db interp-st)))
                      (error val pathcond)
                      (try-equivalences-loop
-                      xobj contexts 100 ;; bozo, configure reclimit for try-equivalences-loop?
+                      ;; BOZO this isn't necessarily the right place to hons-copy it.
+                      (hons-copy xobj) contexts 100 ;; bozo, configure reclimit for try-equivalences-loop?
                       pathcond bvar-db logicman state)
                      (b* (((when error)
                            (fgl-interp-error
