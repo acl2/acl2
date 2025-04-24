@@ -33,10 +33,10 @@
   :props (zfc identity-fun$prop prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable extensionality-rewrite))))
 
-(defthmz domain-identity-fun
+(defthmz domain-identity-fun ; redundant
   (equal (domain (identity-fun s))
          s)
-  :props (zfc identity-fun$prop prod2$prop domain$prop inverse$prop))
+  :props (identity-fun$prop zify-prop))
 
 (defthmz image-identity-fun
   (equal (image (identity-fun s))

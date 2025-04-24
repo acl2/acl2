@@ -134,6 +134,12 @@
   out_generated: ../../../examples/imul/imul.cpp.pc
   ref_generated: imul-pc.cpp.ref.pc
 
+- name: mulvar-pc
+  args: ['mulvar-pc.cpp', '-rac']
+  preprocess: 'mulvar-pc.cpp'
+  out_generated: mulvar-pc.cpp.pc
+  ref_generated: mulvar-pc.cpp.ref.pc
+
 - name: variable-mix-upper-lower-case
   should_report_error: true
 

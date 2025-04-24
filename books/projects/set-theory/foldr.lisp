@@ -17,9 +17,7 @@
            (list (car lst)
                  (foldr (cdr lst) fn init)))))
 
-(extend-zfc-table foldr-prop
-                  prod2$prop domain$prop inverse$prop v$prop acl2$prop
-                  zfc)
+(extend-zfc-table foldr-prop zify-prop v$prop acl2$prop)
 
 (zify* zbinary-* binary-* 2)
 
