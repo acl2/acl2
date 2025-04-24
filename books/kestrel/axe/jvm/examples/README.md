@@ -40,7 +40,7 @@ Then, after ensuring that jdk-7u80-linux-x64.tar.gz is in this examples/ directo
 
 tar xfz jdk-7u80-linux-x64.tar.gz
 
-This untarred files should include jdk1.7.0_80/jre/lib/rt.jar.  Unzip it like this:
+The untarred files should include jdk1.7.0_80/jre/lib/rt.jar.  Unzip it like this:
 
 unzip ./jdk1.7.0_80/jre/lib/rt.jar -d ./jdk1.7.0_80/jre/lib/rt.jar.unzipped
 

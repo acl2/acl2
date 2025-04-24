@@ -1,7 +1,7 @@
 ; A JVM lifter for use when not unrolling
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -6383,7 +6383,7 @@
                           (or (eq :auto param-names)
                               (symbol-listp param-names) ;; todo: what else to check here?
                               )
-                          (or (booleanp prune-branches)
+                          (or (booleanp prune-branches) ; todo: precise or approx?
                               (natp prune-branches))
                           (booleanp disable-loop-openers)
                           )

@@ -405,7 +405,8 @@
                               (booleanp prove-with-acl2)
                               ;; print
                               (booleanp abstract-state-components)
-                              (booleanp prune-branches)
+                              (booleanp prune-branches)  ; todo: precise or approx? allow a natp and see prune-precise-optionp/prune-approx-optionp
+
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp))
                               (or (eq :auto param-names)
