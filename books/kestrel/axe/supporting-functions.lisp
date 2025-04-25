@@ -1,7 +1,7 @@
 ; Getting the functions that support the definitions of other functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -88,8 +88,7 @@
                               (plist-worldp wrld)
                               (function-symbolp fn-name wrld))))
   (if (member-eq fn-name *acl2-primitives*)
-      (hard-error 'get-immediate-supporting-fns "Trying to get the body of the ACL2 primitive ~x0.  Consider adding it to the base evaluator.  Or investigate why a function that calls this function (transitively) is suddenly appearing."
-                  (acons #\0 fn-name nil))
+      (er hard? 'get-immediate-supporting-fns "Trying to get the body of the ACL2 primitive ~x0.  Consider adding it to the base evaluator.  Or investigate why a function that calls this function (transitively) is suddenly appearing." fn-name)
     (if (not (fn-definedp fn-name wrld))
         ;; an undefined function has no supporters
         (prog2$ (cw "(Note: Undefined function ~x0 is present in DAG.)~%" fn-name)
