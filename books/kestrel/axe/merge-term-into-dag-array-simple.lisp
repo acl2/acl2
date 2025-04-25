@@ -111,7 +111,6 @@
            :in-theory (e/d (darg-listp lookup-equal strip-cdrs)
                            (myquotep)))))
 
-;; TODO: Consider handling other versions of IF top-down.
 ;; TODO: Include subst in the name since this also substitutes for vars.
 (mutual-recursion
  ;; This one can replace vars in term using var-replacement-alist (helps us deal with lambdas).

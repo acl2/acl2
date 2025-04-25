@@ -1740,7 +1740,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Walk through the disjuncts, processing each one.  First, strip the negation, if present.  If the disjunct isn't a call of a known-boolean, we drop it.
+;; Walk through the disjuncts, processing each one.  We strip the negation, if present, and analyze the core of the disjunct.  If the disjunct isn't a call of a known-boolean, we drop it.
 ;;otherwise, we process it top down.  for each node processed we can tell by looking at it what its type is (really?), and we have to decide whether to make a variable of that type, or translate the node (if the argument types are okay).
 ;; Returns (mv erp disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)
 ;;TODO: Think about something like this: (prove-with-stp '(+ 1 x)).  Why is the query false instead of a single boolean var?  Because non-known-booleans get dropped here.  Is that necessary at the top level?
@@ -1780,7 +1780,7 @@
   (if (endp disjuncts)
       (mv (erp-nil) disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)
     (let* ((disjunct (first disjuncts))
-           (disjunct-core (strip-not-from-possibly-negated-nodenum disjunct)) ;a nodenum
+           (disjunct-core (strip-not-from-possibly-negated-nodenum disjunct)) ;a nodenum ; todo: what about a nodenum of a NOT?
            (process-this-disjunctp
              ;; todo: improve the messages here (about "possibly ..")
             (let ((known-type-match (assoc disjunct-core known-nodenum-type-alist)))
