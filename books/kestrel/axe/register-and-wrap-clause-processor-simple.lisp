@@ -82,21 +82,21 @@
 
        ;; Submit a defthm that uses the clause-processor:
        (defmacro ,defthm-axe-name (name
-                                                     term
-                                                     &key
-                                                     (tactic '(:rep :rewrite :subst))
-                                                     (rules 'nil)
-                                                     (rule-lists 'nil)
-                                                     (remove-rules 'nil)
-                                                     (no-splitp 'nil) ; whether to prevent splitting into cases
-                                                     (print-as-clausesp 'nil)
-                                                     (no-print-fns 'nil)
-                                                     (monitor 'nil)
-                                                     (use 'nil)
-                                                     (print 'nil)
-                                                     (var-ordering 'nil)
-                                                     (count-hits 'nil)
-                                                     (rule-classes ':auto))
+                                   term
+                                   &key
+                                   (tactic '(:rep :rewrite :subst))
+                                   (rules 'nil)
+                                   (rule-lists 'nil)
+                                   (remove-rules 'nil)
+                                   (no-splitp 'nil) ; whether to prevent splitting into cases
+                                   (print-as-clausesp 'nil)
+                                   (no-print-fns 'nil)
+                                   (monitor 'nil)
+                                   (use 'nil)
+                                   (print 'nil)
+                                   (var-ordering 'nil)
+                                   (count-hits 'nil)
+                                   (rule-classes ':auto))
          (if (and (consp term)
                   (eq :eval (car term)))
              ;; Evaluate TERM:
