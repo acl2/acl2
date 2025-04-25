@@ -6104,7 +6104,7 @@
          ;; is a singleton set containing the original clause (indicating that no change
          ;; was made).  TODO: Allow it to change the clause but not prove it entirely?
          ;; We don't actually call define-trusted-clause-processor, because that
-         ;; requires a trust tag; see make-clause-processor-simple.lisp for that
+         ;; requires a trust tag; see register-and-wrap-clause-processor-simple.lisp for that
          (defund ,clause-processor-name (clause hint state)
            (declare (xargs :guard (and (pseudo-term-listp clause)
                                        (ilks-plist-worldp (w state)))

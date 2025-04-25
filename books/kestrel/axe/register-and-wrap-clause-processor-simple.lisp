@@ -19,12 +19,12 @@
 (include-book "kestrel/utilities/pack" :dir :system)
 
 ;; Returns an event
-(defun make-clause-processor-simple-fn (suffix ;; gets added to generated names
+(defun register-and-wrap-clause-processor-simple-fn (suffix ;; gets added to generated names
                                         )
   (declare (xargs :guard (symbolp suffix)))
   (let* ((clause-processor-name (pack$ 'prover- suffix '-clause-processor)) ; should already be defined
-         (defthm-with-clause-processor-fn-name (pack$ 'defthm-with- clause-processor-name '-fn))
-         (defthm-with-clause-processor-name (pack$ 'defthm-with- clause-processor-name)))
+         (defthm-axe-fn-name (pack$ 'defthm-axe- suffix '-fn))
+         (defthm-axe-name (pack$ 'defthm-axe- suffix)))
 
     `(encapsulate ()
 
@@ -35,7 +35,7 @@
          :ttag ,clause-processor-name)
 
        ;; Returns a defthm event.
-       (defun ,defthm-with-clause-processor-fn-name (name term tactic rules rule-lists remove-rules no-splitp print-as-clausesp no-print-fns monitor use print var-ordering count-hits rule-classes state)
+       (defun ,defthm-axe-fn-name (name term tactic rules rule-lists remove-rules no-splitp print-as-clausesp no-print-fns monitor use print var-ordering count-hits rule-classes state)
          (declare (xargs :guard (and (symbolp name)
                                      ;; term need not be translated
                                      (or (null tactic)
@@ -55,7 +55,7 @@
                                      )
                          :stobjs state))
          (b* (((when (and rules rule-lists))
-               (er hard? ',defthm-with-clause-processor-fn-name "Both :rules and :rule-lists were given for ~x0." name))
+               (er hard? ',defthm-axe-fn-name "Both :rules and :rule-lists were given for ~x0." name))
               (rule-lists (if rules
                               (list (elaborate-rule-items rules state))
                             (elaborate-rule-item-lists rule-lists state)))
@@ -81,7 +81,7 @@
                   `(:rule-classes ,rule-classes)))))
 
        ;; Submit a defthm that uses the clause-processor:
-       (defmacro ,defthm-with-clause-processor-name (name
+       (defmacro ,defthm-axe-name (name
                                                      term
                                                      &key
                                                      (tactic '(:rep :rewrite :subst))
@@ -100,10 +100,10 @@
          (if (and (consp term)
                   (eq :eval (car term)))
              ;; Evaluate TERM:
-             `(make-event (,',defthm-with-clause-processor-fn-name ',name ,(cadr term) ',tactic ',rules ',rule-lists ',remove-rules ',no-splitp ',print-as-clausesp ',no-print-fns ',monitor ',use ',print ',var-ordering ',count-hits ',rule-classes state))
+             `(make-event (,',defthm-axe-fn-name ',name ,(cadr term) ',tactic ',rules ',rule-lists ',remove-rules ',no-splitp ',print-as-clausesp ',no-print-fns ',monitor ',use ',print ',var-ordering ',count-hits ',rule-classes state))
            ;; Don't evaluate TERM:
-           `(make-event (,',defthm-with-clause-processor-fn-name ',name ',term ',tactic ',rules ',rule-lists ',remove-rules ',no-splitp ',print-as-clausesp ',no-print-fns ',monitor ',use ',print ',var-ordering ',count-hits ',rule-classes state))))
+           `(make-event (,',defthm-axe-fn-name ',name ',term ',tactic ',rules ',rule-lists ',remove-rules ',no-splitp ',print-as-clausesp ',no-print-fns ',monitor ',use ',print ',var-ordering ',count-hits ',rule-classes state))))
        )))
 
-(defmacro make-clause-processor-simple (suffix)
-  (make-clause-processor-simple-fn suffix))
+(defmacro register-and-wrap-clause-processor-simple (suffix)
+  (register-and-wrap-clause-processor-simple-fn suffix))
