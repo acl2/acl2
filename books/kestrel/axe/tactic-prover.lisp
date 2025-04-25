@@ -123,7 +123,7 @@
   (and (true-listp prob)
        (eql 2 (len prob))
        (pseudo-dag-or-quotep (first prob)) ; TODO: or don't even create a problem if it's a constant
-       (pseudo-term-listp (second prob)) ;; todo: disallow constant assumptions?
+       (pseudo-term-listp (second prob)) ;; todo: disallow constant assumptions? ; todo: do we somewhere handle ground terms and resolvable IFs in assumptions?
        ))
 
 (defthm proof-problemp-forward-to-true-listp
