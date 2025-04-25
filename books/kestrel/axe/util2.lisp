@@ -297,7 +297,7 @@
                               (true-listp y))))
   (if (equal (len x) (len y))
       (pairlis$ x y)
-    (hard-error 'pairlis$-safe "Lists lengths unequal" nil)))
+    (er hard? 'pairlis$-safe "Lists lengths unequal")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

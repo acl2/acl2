@@ -1,7 +1,7 @@
 ; Printing DAGs to files
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -39,7 +39,7 @@
   (mv-let (channel state)
           (open-output-channel! fname :character state)
           (if (not channel)
-              (prog2$ (hard-error 'print-dag-to-file "Unable to open file ~s0 for :character output." (acons #\0 fname nil))
+              (prog2$ (er hard? 'print-dag-to-file "Unable to open file ~s0 for :character output." fname)
                       state)
             (prog2$ (cw "Writing DAG to file:~%~s0~%.~%" fname)
                     (if (quotep dag-lst)
