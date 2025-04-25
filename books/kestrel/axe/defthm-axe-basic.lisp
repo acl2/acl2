@@ -17,5 +17,6 @@
 (include-book "prover-basic") ; defines the clause processor function
 (include-book "register-and-wrap-clause-processor-simple")
 
-;; Creates defthm-axe-basic, which uses the basic prover
+;; Creates defthm-axe-basic, which uses the basic prover.
+;; This is similar to the old, deprecated utility defthm-with-prover-basic-clause-processor.
 (register-and-wrap-clause-processor-simple basic) ; ttag
