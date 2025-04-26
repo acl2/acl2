@@ -123,6 +123,26 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "aleo::aleo" "Aleo Library"))
+
+   (xdoc::p
+    "Formalizations and proofs about the "
+    (xdoc::ahref "https://aleo.org" "Aleo blockchain and ecosystem")
+    ".")
+
+   (xdoc::p
+    "The existing "
+    (xdoc::seetopic "aleobft::aleobft" "AleoBFT library")
+    " is now a sub-library of this broader Aleo library.")
+
+   (xdoc::p
+    "We have added an ABNF grammar of the "
+    (xdoc::ahref "https://www.leo-lang.org" "Leo language")
+    ", along with ACL2 code to parse the grammar into an ACL2 representation
+     and prove some properties of the grammar.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "HOL-ACL2 Link Support")
 
    (xdoc::p
