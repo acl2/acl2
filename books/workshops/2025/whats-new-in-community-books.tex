@@ -1,0 +1,271 @@
+% GENERAL FORMAT OF EACH SLIDE
+% ----------------------------
+
+%\begin{frame}
+
+%\newlibtitle or \implibtitle % for new vs. improved libraries
+
+%\bookpath{path/to/the/library}: % directory or file, use macro for font
+% Short description of what this library is, 1-2 lines.
+%\begin{itemize}
+%\item
+% A highlight about this new or improved library.
+%\item
+% Another highlight.
+%\item
+% Say if it's described in a paper at this workshop,
+% in which case, there may be little to say here.
+%\end{itemize}
+
+%\separation % to separate the next entry, if any
+
+%\bookpath{another/path}: % as above
+
+%\end{frame}
+
+% ORDER OF THE SLIDES AND ENTRIES
+% -------------------------------
+
+% First all the new libraries, in alphabetical order.
+
+% Then all the improved libraries, in alphabetical order.
+
+% Then one or more slides with additional contributions.
+
+% Don't worry about adding your contributions in order:
+% Alessandro will quickly put them in order if needed,
+% and also fix any formatting issues.
+
+% TITLE SLIDE
+% -----------
+
+% Add your name as co-author, in alphabetical order of last name.
+
+% Add your organization, in alphabetical order.
+% Renumber the \inst{n} instances as needed
+% (both inside \author{...} and inside \institute{...}).
+
+% Or ask Alessandro to do this.
+
+% OTHER REMARKS
+% -------------
+
+% Use the \code{...} macro for code (i.e.\ fixed-width) font within the text.
+
+% If you want to show code block snippets,
+% use the verbatim environment,
+% and add [fragile] just after \begin{frame}.
+
+% For guidelines on content and level of detail,
+% please see existing entries.
+% The goal is to provide enough information to get possible users interested.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{beamer}
+\usetheme{Singapore}
+\usecolortheme{seagull}
+\usepackage{inconsolata}
+
+\beamertemplatenavigationsymbolsempty
+
+\setbeamertemplate{footline}[frame number]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newenvironment{codeblock}{\begin{alltt}}{\end{alltt}}
+
+\newcommand{\bookpath}[1]{\textbf{\code{#1}}}
+
+\newcommand{\newlibtitle}{\frametitle{New Libraries}}
+\newcommand{\implibtitle}{\frametitle{Improved Libraries}}
+
+\newcommand{\separation}{\vspace*{1.5ex}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{What's New in the Community Books}
+
+\subtitle{Since the ACL2-2023 Workshop}
+
+\author{Alessandro Coglio\inst{1,2,3} (presenter),\\
+        Grant Jurgensen\inst{1},
+        Eric McCarthy\inst{1,3},\\
+        \textit{add more authors}}
+
+\institute{\inst{1}Kestrel Institute,
+           \inst{2}Kestrel Technology LLC,
+           \inst{3}Provable Inc.,\\
+           \textit{add more affiliations}}
+
+\date{ACL2-2025 Workshop}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame[noframenumbering,plain]{\titlepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\frametitle{Overview}
+
+\begin{itemize}
+\item Over 7,000 non-merge commits since the last Workshop.
+\item From several contributors from several organizations.
+\item Spanning hardware, mathematics, cryptography, blockchain,
+      programming languages, virtual machines, machine code,
+      standards, analysis, synthesis, and more.
+\item These slides provide succinct summaries of major items,
+      ordered by book path within each of the new and improved library parts.
+      See the book release notes for more details.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/c/syntax}:
+Representation, with accompanying tools,
+of the syntax of all of C after preprocessing,
+including many GCC extensions:
+\begin{itemize}
+\item A tool to invoke an external C preprocessor.
+\item An abstract syntax that retains
+      much of the information from the concrete syntax.
+\item An ABNF grammar.
+\item A parser that captures ambiguous constructs as such.
+\item A disambiguator to be used after parsing.
+\item A partial validator to check typing rules, scoping rules, etc.,
+      and to annotate the abstract syntax with validation information
+      (e.g.\ types, linkage).
+\item A pretty-printer with some customization options.
+\item Tools to input/output C code from/to files.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/c/transformation}:
+Tools for transforming C code,
+generating correctness proofs (when supported):
+\begin{itemize}
+\item Constant propagation and folding.
+\item Simplification of certain kinds of expressions.
+\item Specialization.
+\item Function splitting.
+\item Struct splitting.
+\end{itemize}
+
+\separation
+
+\bookpath{kestrel/c/transformation/utilities}:
+Auxiliary utilities for C code:
+\begin{itemize}
+\item Call graph calculation.
+\item Identifier manipulation.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/riscv}:
+A preliminary model of the RISC-V ISA:
+\begin{itemize}
+\item Unprivileged RV32IM and RV64IM
+      (except \code{FENCE}, \code{HINT}, \code{ECALL}, and \code{EBREAK}).
+\item Little endian memory access.
+\item Fully readable and writable address space.
+\item Being extended to support different bases and extensions,
+      via a data structure representing the ISA features.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{projects/aleo}:
+Formal specifications and proofs about the Aleo blockchain and ecosystem:
+\begin{itemize}
+\item Formal model and correctness proofs of AleoBFT,
+      a Byzantine-fault-tolerant blockchain consensus protocol.
+\item Definition and proofs of the ABNF grammar of
+      the Leo programming language for zero-knowledge applications.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{projects/poseidon}:
+Poseidon cryptographic hash:
+\begin{itemize}
+\item Parameterized definition.
+\item Various instantiations.
+\item Tests for the instantiations.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/fty}:
+Fixtype library (the part under the Kestrel Books):
+\begin{itemize}
+\item Added a new \code{deffold-reduce} tool
+      to generate a class of ``reducing'' fold functions over fixtypes.
+\item Added some utilities to query the fixtype database,
+      extending the ones under \code{centaur/fty}.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{projects/x86isa}:
+Formal model of the x86 ISA:
+\begin{itemize}
+\item Added support for a number of new instructions.
+\item Added some test tools.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
