@@ -227,7 +227,6 @@ Formal specifications and proofs about the Aleo blockchain and ecosystem:
 
 \newlibtitle
 
-% From Matt Kaufmann:
 \bookpath{projects/hol-acl2}:
 Support for much of the ACL2 side of the dormant HOL-ACL2 link.
 
@@ -255,9 +254,8 @@ Poseidon cryptographic hash:
 
 \newlibtitle
 
-% From Matt Kaufmann:
-\bookpath{projects/set-theory}
-Set Theory Library
+\bookpath{projects/set-theory}:
+Set theory:
 \begin{itemize}
 \item Supports the use of ACL2 to reason about first-order set theory.
 \item Provides an alternative to \code{apply\$} for higher-order
@@ -273,36 +271,28 @@ Set Theory Library
 \implibtitle
 
 \bookpath{demos}:
-Demo libraries
+Demos:
 \begin{itemize}
-% From Matt Kaufmann:
 \item Added demos for \code{attach-stobjs} (in
       \code{demos/attach-stobj});
       see also directory \code{system/tests/attachable-stobjs/}.
-% From Matt Kaufmann:
 \item Added demos for floating-point operations (in \code{demos/fp});
       see also extensive suite in \code{books/demos/floating-point-input.lsp}
       with corresponding output file \code{books/demos/floating-point-log.txt}.
-% From Matt Kaufmann and J Moore:
 \item Added \code{demos/swap-stobj-fields.lisp} to demonstrate how
       to swap two stobj fields of a given stobj and to illustrate the
       corresponding implicit update of the parent stobj.
-% From Matt Kaufmann:
 \item Added \code{demos/element-type.lisp} to show how to specify
       the raw-Lisp  element type for a stobj array field.
-% From Matt Kaufmann:
 \item Added \code{demos/defabsstobj-example-1-df.lisp} to illustrate
       the use of dfs (ACL2 floats) with abstract stobjs.
-% From J Moore:
 \item Added \code{demos/ppr1-experiments-thm-1-ppr1.lisp} and
       \code{demos/ppr1-experiments.lisp} to illustrate how
       ruler-extenders can sometimes improve the induction scheme
       suggested by a recursive function (see :DOC
       induction-coarse-v-fine-grained).
-% From J Moore:
 \item Added \code{demos/toy-csort.lisp} as an interesting exercise in
       generalization.
-% From Matt Kaufmann and (mostly) J Moore:
 \item Added answers to the problems in :DOC introduction-to-apply\$ in
       \code{projects/apply/answers-to-doc-intro-to-apply.lisp}.
 \end{itemize}
