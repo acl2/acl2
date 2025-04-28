@@ -211,6 +211,23 @@ A preliminary model of the RISC-V ISA:
 
 \newlibtitle
 
+\bookpath{kestrel/treeset}:
+Ordered finite sets represented as treaps:
+\begin{itemize}
+\item A treap (= ``tree'' + ``heap'') is a binary search tree with an
+      additional max heap property.
+\item Unique representations, like \code{oset}s.
+\item Logarithmic complexity for membership, insertion, and deletion.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{projects/aleo}:
 Formal specifications and proofs about the Aleo blockchain and ecosystem:
 \begin{itemize}
@@ -245,6 +262,21 @@ Poseidon cryptographic hash:
 \item Parameterized definition.
 \item Various instantiations.
 \item Tests for the instantiations.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{projects/schroeder-bernstein}:
+A proof of the Schr{\"o}der-Bernstein theorem:
+\begin{itemize}
+\item Described in this year's workshop paper,
+      ``A Proof of the Schr{\"o}der-Bernstein Theorem in {ACL2}.''
 \end{itemize}
 
 \end{frame}
@@ -313,6 +345,7 @@ Fixtype library (the part under the Kestrel Books):
       to generate a class of ``reducing'' fold functions over fixtypes.
 \item Added some utilities to query the fixtype database,
       extending the ones under \code{centaur/fty}.
+\item Made \code{defset} and \code{defomap} more robust.
 \end{itemize}
 
 \end{frame}
