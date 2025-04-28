@@ -89,7 +89,7 @@
                (tunits-old transunit-ensemblep)
                (const-new$ symbolp))
   :short "Process all the inputs."
-  (b* (((reterr) (c$::irr-transunit-ensemble) nil)
+  (b* (((reterr) (irr-transunit-ensemble) nil)
        ((unless (symbolp const-old))
         (reterr (msg "The first input must be a symbol, ~
                       but it is ~x0 instead."
@@ -187,7 +187,7 @@
                    "Updated list of event names to avoid;
                     this is updated from
                     the homonymous component of @(tsee simpadd0-gin).")
-   (vartys c$::ident-type-map
+   (vartys ident-type-map
            "Variables in scope, with their types.")
    (diffp bool
           "Flag saying whether the C construct was transformed
@@ -224,7 +224,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-gen-var-hyps ((vartys c$::ident-type-mapp))
+(define simpadd0-gen-var-hyps ((vartys ident-type-mapp))
   :returns (hyps true-listp)
   :short "Generate variable hypotheses for certain theorems."
   :long
@@ -237,12 +237,11 @@
      and it contains an @('int') value;
      for now we return a hard error if the type of the variable is not @('int'),
      which never happens when we call this function."))
-  (b* (((when (omap::emptyp (c$::ident-type-map-fix vartys))) nil)
+  (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
-       ((unless (c$::type-case type :sint))
+       ((unless (type-case type :sint))
         (raise "Internal error: variable ~x0 has type ~x1." var type))
-       (hyp `(b* ((var (mv-nth 1 (c$::ldm-ident
-                                  (ident ,(ident->unwrap var)))))
+       (hyp `(b* ((var (mv-nth 1 (ldm-ident (ident ,(ident->unwrap var)))))
                   (objdes (c::objdesign-of-var var compst))
                   (val (c::read-object objdes compst)))
                (and objdes
@@ -256,7 +255,7 @@
 
 (define simpadd0-gen-expr-pure-thm ((old exprp)
                                     (new exprp)
-                                    (vartys c$::ident-type-mapp)
+                                    (vartys ident-type-mapp)
                                     (const-new symbolp)
                                     (thm-index posp)
                                     (hints true-listp))
@@ -270,7 +269,7 @@
   (xdoc::topstring
    (xdoc::p
     "This function takes the old and new expressions as inputs,
-     which must satisfy @(tsee c$::expr-pure-formalp).
+     which must satisfy @(tsee expr-pure-formalp).
      If the two expressions are syntactically equal,
      the generated theorem just says that
      if the execution of the expression does not yield an error,
@@ -281,9 +280,9 @@
      then neither is the result of executing the new expression,
      and the values of the two results are equal.")
    (xdoc::p
-    "Note that the calls of @(tsee c$::ldm-expr) in the theorem
+    "Note that the calls of @(tsee ldm-expr) in the theorem
      are known to succeed (i.e. not return any error),
-     given that @(tsee c$::expr-pure-formalp) holds.")
+     given that @(tsee expr-pure-formalp) holds.")
    (xdoc::p
     "This function also takes as input a set of identifiers,
      which are the variables in scope of type @('int').
@@ -295,24 +294,24 @@
      since the proof varies depending on the kind of expression."))
   (b* ((old (expr-fix old))
        (new (expr-fix new))
-       ((unless (c$::expr-pure-formalp old))
+       ((unless (expr-pure-formalp old))
         (raise "Internal error: ~x0 is not in the formalized subset." old)
         (mv '(_) nil 1))
        (equalp (equal old new))
-       ((unless (or equalp (c$::expr-pure-formalp new)))
+       ((unless (or equalp (expr-pure-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
-            `(b* ((expr (mv-nth 1 (c$::ldm-expr ',old)))
+            `(b* ((expr (mv-nth 1 (ldm-expr ',old)))
                   (result (c::exec-expr-pure expr compst))
                   (value (c::expr-value->value result)))
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (equal (c::value-kind value) :sint)))
-          `(b* ((old-expr (mv-nth 1 (c$::ldm-expr ',old)))
-                (new-expr (mv-nth 1 (c$::ldm-expr ',new)))
+          `(b* ((old-expr (mv-nth 1 (ldm-expr ',old)))
+                (new-expr (mv-nth 1 (ldm-expr ',new)))
                 (old-result (c::exec-expr-pure old-expr compst))
                 (new-result (c::exec-expr-pure new-expr compst))
                 (old-value (c::expr-value->value old-result))
@@ -338,7 +337,7 @@
 
 (define simpadd0-gen-stmt-thm ((old stmtp)
                                (new stmtp)
-                               (vartys c$::ident-type-mapp)
+                               (vartys ident-type-mapp)
                                (const-new symbolp)
                                (thm-index posp)
                                (hints true-listp))
@@ -365,24 +364,24 @@
      and that the execution of the new statement does not yield an error."))
   (b* ((old (stmt-fix old))
        (new (stmt-fix new))
-       ((unless (c$::stmt-formalp old))
+       ((unless (stmt-formalp old))
         (raise "Internal error: ~x0 is not in the formalized subset." old)
         (mv '(_) nil 1))
        (equalp (equal old new))
-       ((unless (or equalp (c$::stmt-formalp new)))
+       ((unless (or equalp (stmt-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
-            `(b* ((stmt (mv-nth 1 (c$::ldm-stmt ',old)))
+            `(b* ((stmt (mv-nth 1 (ldm-stmt ',old)))
                   ((mv result &) (c::exec-stmt stmt compst fenv limit)))
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
                              (equal (c::value-kind result) :sint))))
-          `(b* ((old-stmt (mv-nth 1 (c$::ldm-stmt ',old)))
-                (new-stmt (mv-nth 1 (c$::ldm-stmt ',new)))
+          `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
+                (new-stmt (mv-nth 1 (ldm-stmt ',new)))
                 ((mv old-result old-compst)
                  (c::exec-stmt old-stmt compst old-fenv limit))
                 ((mv new-result new-compst)
@@ -410,7 +409,7 @@
 
 (define simpadd0-gen-block-item-thm ((old block-itemp)
                                      (new block-itemp)
-                                     (vartys c$::ident-type-mapp)
+                                     (vartys ident-type-mapp)
                                      (const-new symbolp)
                                      (thm-index posp)
                                      (hints true-listp))
@@ -437,24 +436,24 @@
      and that the execution of the new block item does not yield an error."))
   (b* ((old (block-item-fix old))
        (new (block-item-fix new))
-       ((unless (c$::block-item-formalp old))
+       ((unless (block-item-formalp old))
         (raise "Internal error: ~x0 is not in the formalized subset." old)
         (mv '(_) nil 1))
        (equalp (equal old new))
-       ((unless (or equalp (c$::block-item-formalp new)))
+       ((unless (or equalp (block-item-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
-            `(b* ((item (mv-nth 1 (c$::ldm-block-item ',old)))
+            `(b* ((item (mv-nth 1 (ldm-block-item ',old)))
                   ((mv result &) (c::exec-block-item item compst fenv limit)))
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
                              (equal (c::value-kind result) :sint))))
-          `(b* ((old-item (mv-nth 1 (c$::ldm-block-item ',old)))
-                (new-item (mv-nth 1 (c$::ldm-block-item ',new)))
+          `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
+                (new-item (mv-nth 1 (ldm-block-item ',new)))
                 ((mv old-result old-compst)
                  (c::exec-block-item old-item compst old-fenv limit))
                 ((mv new-result new-compst)
@@ -482,7 +481,7 @@
 
 (define simpadd0-gen-block-item-list-thm ((old block-item-listp)
                                           (new block-item-listp)
-                                          (vartys c$::ident-type-mapp)
+                                          (vartys ident-type-mapp)
                                           (const-new symbolp)
                                           (thm-index posp)
                                           (hints true-listp))
@@ -510,25 +509,25 @@
      does not yield an error."))
   (b* ((old (block-item-list-fix old))
        (new (block-item-list-fix new))
-       ((unless (c$::block-item-list-formalp old))
+       ((unless (block-item-list-formalp old))
         (raise "Internal error: ~x0 is not in the formalized subset." old)
         (mv '(_) nil 1))
        (equalp (equal old new))
-       ((unless (or equalp (c$::block-item-list-formalp new)))
+       ((unless (or equalp (block-item-list-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
-            `(b* ((items (mv-nth 1 (c$::ldm-block-item-list ',old)))
+            `(b* ((items (mv-nth 1 (ldm-block-item-list ',old)))
                   ((mv result &)
                    (c::exec-block-item-list items compst fenv limit)))
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
                              (equal (c::value-kind result) :sint))))
-          `(b* ((old-items (mv-nth 1 (c$::ldm-block-item-list ',old)))
-                (new-items (mv-nth 1 (c$::ldm-block-item-list ',new)))
+          `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
+                (new-items (mv-nth 1 (ldm-block-item-list ',new)))
                 ((mv old-result old-compst)
                  (c::exec-block-item-list old-items compst old-fenv limit))
                 ((mv new-result new-compst)
@@ -608,7 +607,7 @@
        (arg-type `(and (c::valuep ,arg)
                        (equal (c::value-kind ,arg) :sint)))
        (arg-type-compst
-        `(b* ((var (mv-nth 1 (c$::ldm-ident (ident ,par))))
+        `(b* ((var (mv-nth 1 (ldm-ident (ident ,par))))
               (objdes (c::objdesign-of-var var compst))
               (val (c::read-object objdes compst)))
            (and objdes
@@ -749,8 +748,8 @@
                     ,(car arg-types-compst))))
        (hints
         '(("Goal" :in-theory '(init-scope-thm
-                               (:e c$::ident)
-                               (:e c$::ldm-ident)
+                               (:e ident)
+                               (:e ldm-ident)
                                c::push-frame
                                c::objdesign-of-var
                                c::objdesign-of-var-aux
@@ -831,7 +830,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-expr-ident ((ident identp)
-                             (info c$::var-infop)
+                             (info var-infop)
                              (gin simpadd0-ginp))
   :returns (mv (expr exprp) (gout simpadd0-goutp))
   :short "Transform an identifier expression (i.e. a variable)."
@@ -852,10 +851,10 @@
      The generated theorem is proved via a general supporting lemma,
      which is proved below."))
   (b* ((ident (ident-fix ident))
-       ((c$::var-info info) (c$::var-info-fix info))
+       ((var-info info) (var-info-fix info))
        ((simpadd0-gin gin) gin)
        (expr (make-expr-ident :ident ident :info info))
-       ((unless (c$::type-case info.type :sint))
+       ((unless (type-case info.type :sint))
         (mv expr
             (make-simpadd0-gout :events nil
                                 :thm-name nil
@@ -863,11 +862,11 @@
                                 :names-to-avoid gin.names-to-avoid
                                 :vartys nil
                                 :diffp nil)))
-       (vartys (omap::update ident (c$::type-sint) nil))
+       (vartys (omap::update ident (type-sint) nil))
        (hints `(("Goal"
-                 :in-theory '((:e c$::expr-ident)
-                              (:e c$::expr-pure-formalp)
-                              (:e c$::ident))
+                 :in-theory '((:e expr-ident)
+                              (:e expr-pure-formalp)
+                              (:e ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
                                  (ident ',ident)
                                  (info ',info)))))
@@ -894,11 +893,11 @@
     (expr-unambp expr))
 
   (defruled simpadd0-expr-ident-support-lemma
-    (b* ((expr (mv-nth 1 (c$::ldm-expr (c$::expr-ident ident info))))
+    (b* ((expr (mv-nth 1 (ldm-expr (expr-ident ident info))))
          (result (c::exec-expr-pure expr compst))
          (value (c::expr-value->value result)))
-      (implies (and (c$::expr-pure-formalp (c$::expr-ident ident info))
-                    (b* ((var (mv-nth 1 (c$::ldm-ident ident)))
+      (implies (and (expr-pure-formalp (expr-ident ident info))
+                    (b* ((var (mv-nth 1 (ldm-ident ident)))
                          (objdes (c::objdesign-of-var var compst))
                          (val (c::read-object objdes compst)))
                       (and objdes
@@ -907,8 +906,8 @@
                (equal (c::value-kind value) :sint)))
     :enable (c::exec-expr-pure
              c::exec-ident
-             c$::ldm-expr
-             c$::expr-pure-formalp)))
+             ldm-expr
+             expr-pure-formalp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -947,13 +946,13 @@
                                         :diffp nil))
        ((unless (const-case const :int)) (mv expr no-thm-gout))
        ((iconst iconst) (const-int->unwrap const))
-       ((c$::iconst-info info) (c$::coerce-iconst-info iconst.info))
-       ((unless (and (c$::type-case info.type :sint)
+       ((iconst-info info) (coerce-iconst-info iconst.info))
+       ((unless (and (type-case info.type :sint)
                      (<= info.value (c::sint-max))))
         (mv expr no-thm-gout))
-       (expr (c$::expr-const const))
+       (expr (expr-const const))
        (hints `(("Goal" :in-theory '(c::exec-expr-pure
-                                     (:e c$::ldm-expr)
+                                     (:e ldm-expr)
                                      (:e c::expr-const)
                                      (:e c::expr-fix)
                                      (:e c::expr-kind)
@@ -989,7 +988,7 @@
                              (inner-new exprp)
                              (inner-events pseudo-event-form-listp)
                              (inner-thm-name symbolp)
-                             (inner-vartys c$::ident-type-mapp)
+                             (inner-vartys ident-type-mapp)
                              (inner-diffp booleanp)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp inner)
@@ -1004,7 +1003,7 @@
      We generate a theorem iff
      a theorem was generated for the inner expression,
      which we see from whether the theorem name is @('nil') or not.
-     The function @(tsee c$::ldm-expr) maps
+     The function @(tsee ldm-expr) maps
      a parenthesized expression to the same as the inner expression.
      Thus, the theorem for the parenthesized expression
      follows directly from the one for the inner expression."))
@@ -1020,7 +1019,7 @@
                                 :vartys inner-vartys
                                 :diffp inner-diffp)))
        (hints `(("Goal"
-                 :in-theory '((:e c$::ldm-expr))
+                 :in-theory '((:e ldm-expr))
                  :use ,inner-thm-name)))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
@@ -1046,14 +1045,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-expr-unary ((op c$::unopp)
+(define simpadd0-expr-unary ((op unopp)
                              (arg exprp)
                              (arg-new exprp)
                              (arg-events pseudo-event-form-listp)
                              (arg-thm-name symbolp)
-                             (arg-vartys c$::ident-type-mapp)
+                             (arg-vartys ident-type-mapp)
                              (arg-diffp booleanp)
-                             (info c$::unary-infop)
+                             (info unary-infop)
                              (gin simpadd0-ginp))
   :guard (and (expr-unambp arg)
               (expr-unambp arg-new))
@@ -1074,7 +1073,7 @@
        (expr (make-expr-unary :op op :arg arg :info info))
        (expr-new (make-expr-unary :op op :arg arg-new :info info))
        ((unless (and arg-thm-name
-                     (member-eq (c$::unop-kind op)
+                     (member-eq (unop-kind op)
                                 '(:plus :minus :bitnot :lognot))))
         (mv expr-new
             (make-simpadd0-gout :events arg-events
@@ -1084,31 +1083,31 @@
                                 :vartys arg-vartys
                                 :diffp arg-diffp)))
        (hints `(("Goal"
-                 :in-theory '((:e c$::ldm-expr)
+                 :in-theory '((:e ldm-expr)
                               (:e c::unop-nonpointerp)
                               (:e c::expr-unary))
                  :use (,arg-thm-name
                        (:instance
                         simpadd0-expr-unary-support-lemma-1
-                        (op ',(c$::unop-case
+                        (op ',(unop-case
                                op
                                :plus (c::unop-plus)
                                :minus (c::unop-minus)
                                :bitnot (c::unop-bitnot)
                                :lognot (c::unop-lognot)
                                :otherwise (impossible)))
-                        (old-arg (mv-nth 1 (c$::ldm-expr ',arg)))
-                        (new-arg (mv-nth 1 (c$::ldm-expr ',arg-new))))
+                        (old-arg (mv-nth 1 (ldm-expr ',arg)))
+                        (new-arg (mv-nth 1 (ldm-expr ',arg-new))))
                        (:instance
                         simpadd0-expr-unary-support-lemma-2
-                        (op ',(c$::unop-case
+                        (op ',(unop-case
                                op
                                :plus (c::unop-plus)
                                :minus (c::unop-minus)
                                :bitnot (c::unop-bitnot)
                                :lognot (c::unop-lognot)
                                :otherwise (impossible)))
-                        (arg (mv-nth 1 (c$::ldm-expr ',arg))))))))
+                        (arg (mv-nth 1 (ldm-expr ',arg))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr-new
@@ -1233,20 +1232,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-expr-binary ((op c$::binopp)
+(define simpadd0-expr-binary ((op binopp)
                               (arg1 exprp)
                               (arg1-new exprp)
                               (arg1-events pseudo-event-form-listp)
                               (arg1-thm-name symbolp)
-                              (arg1-vartys c$::ident-type-mapp)
+                              (arg1-vartys ident-type-mapp)
                               (arg1-diffp booleanp)
                               (arg2 exprp)
                               (arg2-new exprp)
                               (arg2-events pseudo-event-form-listp)
                               (arg2-thm-name symbolp)
-                              (arg2-vartys c$::ident-type-mapp)
+                              (arg2-vartys ident-type-mapp)
                               (arg2-diffp booleanp)
-                              (info c$::binary-infop)
+                              (info binary-infop)
                               (gin simpadd0-ginp))
   :guard (and (expr-unambp arg1)
               (expr-unambp arg1-new)
@@ -1275,15 +1274,15 @@
      but we always use it in the proof for simplicity."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
-       (simpp (and (c$::binop-case op :add)
-                   (c$::type-case (c$::expr-type arg1-new) :sint)
-                   (c$::expr-zerop arg2-new)))
+       (simpp (and (binop-case op :add)
+                   (type-case (expr-type arg1-new) :sint)
+                   (expr-zerop arg2-new)))
        (expr-new (if simpp
                      (expr-fix arg1-new)
                    (make-expr-binary
                     :op op :arg1 arg1-new :arg2 arg2-new :info info)))
-       (arg1-vartys (c$::ident-type-map-fix arg1-vartys))
-       (arg2-vartys (c$::ident-type-map-fix arg2-vartys))
+       (arg1-vartys (ident-type-map-fix arg1-vartys))
+       (arg2-vartys (ident-type-map-fix arg2-vartys))
        ((unless (omap::compatiblep arg1-vartys arg2-vartys))
         (raise "Internal error: ~
                 incompatible variable-type maps ~x0 and ~x1."
@@ -1293,7 +1292,7 @@
        (diffp (or arg1-diffp arg2-diffp simpp))
        ((unless (and arg1-thm-name
                      arg2-thm-name
-                     (member-eq (c$::binop-kind op)
+                     (member-eq (binop-kind op)
                                 '(:mul :div :rem :add :sub :shl :shr
                                   :lt :gt :le :ge :eq :ne
                                   :bitand :bitxor :bitior))))
@@ -1305,7 +1304,7 @@
                                 :vartys vartys
                                 :diffp diffp)))
        (hints `(("Goal"
-                 :in-theory '((:e c$::ldm-expr)
+                 :in-theory '((:e ldm-expr)
                               (:e c::iconst-length-none)
                               (:e c::iconst-base-oct)
                               (:e c::iconst)
@@ -1319,19 +1318,19 @@
                        ,arg2-thm-name
                        (:instance
                         simpadd0-expr-binary-support-lemma-1
-                        (op ',(c$::ldm-binop op))
-                        (old-arg1 (mv-nth 1 (c$::ldm-expr ',arg1)))
-                        (old-arg2 (mv-nth 1 (c$::ldm-expr ',arg2)))
-                        (new-arg1 (mv-nth 1 (c$::ldm-expr ',arg1-new)))
-                        (new-arg2 (mv-nth 1 (c$::ldm-expr ',arg2-new))))
+                        (op ',(ldm-binop op))
+                        (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                        (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
+                        (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
+                        (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
                        (:instance
                         simpadd0-expr-binary-support-lemma-2
-                        (op ',(c$::ldm-binop op))
-                        (arg1 (mv-nth 1 (c$::ldm-expr ',arg1)))
-                        (arg2 (mv-nth 1 (c$::ldm-expr ',arg2))))
+                        (op ',(ldm-binop op))
+                        (arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                        (arg2 (mv-nth 1 (ldm-expr ',arg2))))
                        (:instance
                         simpadd0-expr-binary-support-lemma-3
-                        (expr (mv-nth 1 (c$::ldm-expr ',arg1-new))))))))
+                        (expr (mv-nth 1 (ldm-expr ',arg1-new))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr-new
@@ -1691,7 +1690,7 @@
                               (expr?-new expr-optionp)
                               (expr?-events pseudo-event-form-listp)
                               (expr?-thm-name symbolp)
-                              (expr?-vartys c$::ident-type-mapp)
+                              (expr?-vartys ident-type-mapp)
                               (expr?-diffp booleanp)
                               (gin simpadd0-ginp))
   :guard (and (expr-option-unambp expr?)
@@ -1722,23 +1721,23 @@
              :vartys expr?-vartys
              :diffp expr?-diffp)))
        (hints `(("Goal"
-                 :in-theory '((:e c$::ldm-stmt)
-                              (:e c$::ldm-expr)
-                              (:e c$::ldm-ident)
-                              (:e c$::ident)
+                 :in-theory '((:e ldm-stmt)
+                              (:e ldm-expr)
+                              (:e ldm-ident)
+                              (:e ident)
                               (:e c::expr-kind)
                               (:e c::stmt-return))
                  :use (,expr?-thm-name
                        (:instance
                         simpadd0-stmt-return-support-lemma-1
-                        (old-expr (mv-nth 1 (c$::ldm-expr ',expr?)))
-                        (new-expr (mv-nth 1 (c$::ldm-expr ',expr?-new)))
+                        (old-expr (mv-nth 1 (ldm-expr ',expr?)))
+                        (new-expr (mv-nth 1 (ldm-expr ',expr?-new)))
                         ,@(and (not expr?-diffp)
                                '((old-fenv fenv)
                                  (new-fenv fenv))))
                        (:instance
                         simpadd0-stmt-return-support-lemma-2
-                        (expr (mv-nth 1 (c$::ldm-expr ',expr?)))
+                        (expr (mv-nth 1 (ldm-expr ',expr?)))
                         ,@(and expr?-diffp
                                '((fenv old-fenv))))))))
        ((mv thm-event thm-name thm-index)
@@ -1808,7 +1807,7 @@
                                   (stmt-new stmtp)
                                   (stmt-events pseudo-event-form-listp)
                                   (stmt-thm-name symbolp)
-                                  (stmt-vartys c$::ident-type-mapp)
+                                  (stmt-vartys ident-type-mapp)
                                   (stmt-diffp booleanp)
                                   (gin simpadd0-ginp))
   :guard (and (stmt-unambp stmt)
@@ -1840,22 +1839,22 @@
                                 :vartys stmt-vartys
                                 :diffp stmt-diffp)))
        (hints `(("Goal"
-                 :in-theory '((:e c$::ldm-block-item)
-                              (:e c$::ldm-stmt)
-                              (:e c$::ldm-ident)
-                              (:e c$::ident)
+                 :in-theory '((:e ldm-block-item)
+                              (:e ldm-stmt)
+                              (:e ldm-ident)
+                              (:e ident)
                               (:e c::block-item-stmt))
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-stmt-support-lemma-1
-                        (old-stmt (mv-nth 1 (c$::ldm-stmt ',stmt)))
-                        (new-stmt (mv-nth 1 (c$::ldm-stmt ',stmt-new)))
+                        (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                        (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
                         ,@(and (not stmt-diffp)
                                '((old-fenv fenv)
                                  (new-fenv fenv))))
                        (:instance
                         simpadd0-block-item-stmt-support-lemma-2
-                        (stmt (mv-nth 1 (c$::ldm-stmt ',stmt)))
+                        (stmt (mv-nth 1 (ldm-stmt ',stmt)))
                         ,@(and stmt-diffp
                                '((fenv old-fenv))))))))
        ((mv thm-event thm-name thm-index)
@@ -1919,7 +1918,7 @@
                                       (item-new block-itemp)
                                       (item-events pseudo-event-form-listp)
                                       (item-thm-name symbolp)
-                                      (item-vartys c$::ident-type-mapp)
+                                      (item-vartys ident-type-mapp)
                                       (item-diffp booleanp)
                                       (gin simpadd0-ginp))
   :guard (and (block-item-unambp item)
@@ -1949,21 +1948,21 @@
                                 :vartys item-vartys
                                 :diffp item-diffp)))
        (hints `(("Goal"
-                 :in-theory '((:e c$::ldm-block-item-list)
-                              (:e c$::ldm-block-item)
-                              (:e c$::ldm-ident)
-                              (:e c$::ident))
+                 :in-theory '((:e ldm-block-item-list)
+                              (:e ldm-block-item)
+                              (:e ldm-ident)
+                              (:e ident))
                  :use ((:instance ,item-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-list-support-lemma-1
-                        (old-item (mv-nth 1 (c$::ldm-block-item ',item)))
-                        (new-item (mv-nth 1 (c$::ldm-block-item ',item-new)))
+                        (old-item (mv-nth 1 (ldm-block-item ',item)))
+                        (new-item (mv-nth 1 (ldm-block-item ',item-new)))
                         ,@(and (not item-diffp)
                                '((old-fenv fenv)
                                  (new-fenv fenv))))
                        (:instance
                         simpadd0-block-item-list-support-lemma-2
-                        (item (mv-nth 1 (c$::ldm-block-item ',item)))
+                        (item (mv-nth 1 (ldm-block-item ',item)))
                         ,@(and item-diffp
                                '((fenv old-fenv))))))))
        ((mv thm-event thm-name thm-index)
@@ -2046,7 +2045,7 @@
       (expr-case
        expr
        :ident (simpadd0-expr-ident expr.ident
-                                   (c$::coerce-var-info expr.info)
+                                   (coerce-var-info expr.info)
                                    gin)
        :const (simpadd0-expr-const expr.const gin)
        :string (mv (expr-fix expr)
@@ -2164,7 +2163,7 @@
                               gout-arg.thm-name
                               gout-arg.vartys
                               gout-arg.diffp
-                              (c$::coerce-unary-info expr.info)
+                              (coerce-unary-info expr.info)
                               gin))
        :sizeof
        (b* (((mv new-type (simpadd0-gout gout-type))
@@ -2224,7 +2223,7 @@
                                gout-arg2.thm-name
                                gout-arg2.vartys
                                gout-arg2.diffp
-                               (c$::coerce-binary-info expr.info)
+                               (coerce-binary-info expr.info)
                                gin))
        :cond
        (b* (((mv new-test (simpadd0-gout gout-test))
@@ -4612,8 +4611,8 @@
        ((unless (stmt-case fundef.body :compound))
         (raise "Internal error: the body of ~x0 is not a compound statement."
                (fundef-fix fundef))
-        (mv (c$::irr-fundef) (irr-simpadd0-gout)))
-       (items (c$::stmt-compound->items fundef.body))
+        (mv (irr-fundef) (irr-simpadd0-gout)))
+       (items (stmt-compound->items fundef.body))
        ((mv new-items (simpadd0-gout gout-body))
         (simpadd0-block-item-list items gin state))
        ((simpadd0-gin gin) (simpadd0-gin-update gin gout-body))
@@ -4645,7 +4644,7 @@
                     gout-body.diffp)))
        ((unless gout-body.thm-name)
         (mv new-fundef gout-no-thm))
-       ((unless (c$::fundef-formalp fundef))
+       ((unless (fundef-formalp fundef))
         (mv new-fundef gout-no-thm))
        ((declor declor) fundef.declor)
        ((when (consp declor.pointers))
@@ -4653,16 +4652,16 @@
        ((unless (dirdeclor-case declor.direct :function-params))
         (mv new-fundef gout-no-thm))
        (params (dirdeclor-function-params->params declor.direct))
-       (dirdeclor (c$::dirdeclor-function-params->declor declor.direct))
+       (dirdeclor (dirdeclor-function-params->declor declor.direct))
        ((unless (dirdeclor-case dirdeclor :ident))
         (raise "Internal error: ~x0 is not just the function name."
                dirdeclor)
-        (mv (c$::irr-fundef) (irr-simpadd0-gout)))
-       (fun (c$::ident->unwrap (c$::dirdeclor-ident->ident dirdeclor)))
+        (mv (irr-fundef) (irr-simpadd0-gout)))
+       (fun (ident->unwrap (dirdeclor-ident->ident dirdeclor)))
        ((unless (stringp fun))
         (raise "Internal error: non-string identifier ~x0." fun)
-        (mv (c$::irr-fundef) (irr-simpadd0-gout)))
-       ((mv erp ldm-params) (c$::ldm-paramdecl-list params))
+        (mv (irr-fundef) (irr-simpadd0-gout)))
+       ((mv erp ldm-params) (ldm-paramdecl-list params))
        ((when erp) (mv new-fundef gout-no-thm))
        ((mv okp args parargs arg-types arg-types-compst)
         (simpadd0-gen-from-params ldm-params gin))
@@ -4678,7 +4677,7 @@
        (formula
         `(b* ((old ',(fundef-fix fundef))
               (new ',new-fundef)
-              (fun (mv-nth 1 (c$::ldm-ident (c$::ident ,fun))))
+              (fun (mv-nth 1 (ldm-ident (ident ,fun))))
               ((mv old-result old-compst)
                (c::exec-fun fun (list ,@args) compst old-fenv limit))
               ((mv new-result new-compst)
@@ -4686,10 +4685,10 @@
            (implies (and ,@arg-types
                          (equal (c::fun-env-lookup fun old-fenv)
                                 (c::fun-info-from-fundef
-                                 (mv-nth 1 (c$::ldm-fundef old))))
+                                 (mv-nth 1 (ldm-fundef old))))
                          (equal (c::fun-env-lookup fun new-fenv)
                                 (c::fun-info-from-fundef
-                                 (mv-nth 1 (c$::ldm-fundef new))))
+                                 (mv-nth 1 (ldm-fundef new))))
                          (not (c::errorp old-result)))
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
@@ -4707,8 +4706,8 @@
                  (:instance ,gout-body.thm-name
                             (compst
                              (c::push-frame
-                              (c::frame (mv-nth 1 (c$::ldm-ident
-                                                   (c$::ident ,fun)))
+                              (c::frame (mv-nth 1 (ldm-ident
+                                                   (ident ,fun)))
                                         (list
                                          (c::init-scope
                                           ',ldm-params
@@ -4719,10 +4718,10 @@
                         (:e c::fun-info->params$inline)
                         (:e c::fun-info->result$inline)
                         (:e c::fun-info-from-fundef)
-                        (:e c$::ident)
-                        (:e c$::ldm-block-item-list)
-                        (:e c$::ldm-fundef)
-                        (:e c$::ldm-ident)
+                        (:e ident)
+                        (:e ldm-block-item-list)
+                        (:e ldm-fundef)
+                        (:e ldm-ident)
                         c::errorp-of-error))))
        (thm-event `(defruled ,thm-name
                      ,formula
@@ -4758,7 +4757,7 @@
           (thm (car thms))
           (lemma-instance
            `(:instance ,thm
-                       (fun (mv-nth 1 (c$::ldm-ident (c$::ident ,fun))))
+                       (fun (mv-nth 1 (ldm-ident (ident ,fun))))
                        (compst0 compst)))
           (more-lemma-instances
            (simpadd0-fundef-loop (cdr thms) fun)))
@@ -4768,7 +4767,7 @@
 
   (defret fundef-unambp-of-simpadd0-fundef
     (fundef-unambp new-fundef)
-    :hints (("Goal" :in-theory (enable (:e c$::irr-fundef))))))
+    :hints (("Goal" :in-theory (enable (:e irr-fundef))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
