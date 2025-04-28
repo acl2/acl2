@@ -555,14 +555,14 @@
        (type-assumptions-for-fields (type-assumptions-for-get-field-nodes dag (top-nodenum dag) nil))
        ((mv result
             & ;info-acc
-            & ;actual-dag
-            & ;assumptions-given
             state)
         (apply-tactic-prover dag
-                             '(:rewrite :stp) ;todo: maybe prune? ;; tactics
                              (append param-var-assumptions
                                      type-assumptions-for-fields
                                      assumptions)
+                             nil ;interpreted-fns
+                             :bit ;type
+                             '(:rewrite :stp) ;todo: maybe prune? ;; tactics
                              nil ;simplify-assumptions
                              print
                              nil ;*default-stp-max-conflicts* ;max-conflicts ;a number of conflicts, or nil for no max
@@ -572,10 +572,9 @@
                              (append extra-rules
                                      (set-difference-eq (formal-unit-testing-extra-simplification-rules)
                                                         remove-rules))
-                             nil ;interpreted-fns
+
                              nil  ;monitor
                              t ;normalize-xors (todo: try nil? or make an option?)
-                             :bit ;type
                              state))
        (- (cw ")~%"))
        ((when (eq *error* result)) (prog2$ (cw "An error occured when testing method ~x0.)~%" method-designator-string)
