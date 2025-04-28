@@ -1740,7 +1740,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Walk through the disjuncts, processing each one.  First, strip the negation, if present.  If the disjunct isn't a call of a known-boolean, we drop it.
+;; Walk through the disjuncts, processing each one.  We strip the negation, if present, and analyze the core of the disjunct.  If the disjunct isn't a call of a known-boolean, we drop it.
 ;;otherwise, we process it top down.  for each node processed we can tell by looking at it what its type is (really?), and we have to decide whether to make a variable of that type, or translate the node (if the argument types are okay).
 ;; Returns (mv erp disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)
 ;;TODO: Think about something like this: (prove-with-stp '(+ 1 x)).  Why is the query false instead of a single boolean var?  Because non-known-booleans get dropped here.  Is that necessary at the top level?
@@ -1780,7 +1780,7 @@
   (if (endp disjuncts)
       (mv (erp-nil) disjuncts-to-include-in-query nodenums-to-translate cut-nodenum-type-alist)
     (let* ((disjunct (first disjuncts))
-           (disjunct-core (strip-not-from-possibly-negated-nodenum disjunct)) ;a nodenum
+           (disjunct-core (strip-not-from-possibly-negated-nodenum disjunct)) ;a nodenum ; todo: what about a nodenum of a NOT?
            (process-this-disjunctp
              ;; todo: improve the messages here (about "possibly ..")
             (let ((known-type-match (assoc disjunct-core known-nodenum-type-alist)))
@@ -2276,16 +2276,14 @@
 
 ;; Tries to establish that the darg is either known to be true or known to be false.
 ;; Returns (mv erp result state), where result is :true (meaning non-nil), :false, or :unknown.
-;; rename to say darg instead of node?
 ;; TODO: Also use rewriting?  See also try-to-resolve-test.
 ;; TODO: Generalize the printing, which refers to the darg here as a "test".
 (defund try-to-resolve-darg-with-stp (darg
                                       assumptions ; possibly-negated-nodenums
-                                      ;; rule-alist interpreted-function-alist monitored-rules call-stp
                                       dag-array ;must be named 'dag-array (todo: generalize?)
                                       dag-len
                                       dag-parent-array ;must be named 'dag-parent-array (todo: generalize?)
-                                      base-filename    ;a string
+                                      base-filename
                                       print
                                       max-conflicts ;a number of conflicts, or nil for no max
                                       ;; counterexamplep
@@ -2305,7 +2303,7 @@
         (if (unquote darg)
             (mv (erp-nil) :true state)
           (mv (erp-nil) :false state)))
-       (nodenum darg)
+       (nodenum darg) ; darg is a nodenum
        (- (and (print-level-at-least-tp print) (cw "(Attempting to resolve test with STP using ~x0 assumptions.~%" (len assumptions))))
        ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test).
        (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test true with STP:~%")))
@@ -2323,7 +2321,7 @@
        ((when (eq *valid* true-result)) ;; STP proved the test
         (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test true.))~%"))
                 (mv (erp-nil) :true state)))
-       (- (and (print-level-at-least-tp print) (cw "STP failed to prove the test true.)~%")))
+       (- (and (print-level-at-least-tp print) (cw "STP failed to prove the test true (~x0).)~%" true-result)))
        (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test false with STP:~%")))
        ((mv false-result state)
         (prove-implication-with-stp assumptions
@@ -2337,10 +2335,10 @@
         (prog2$ (er hard? 'try-to-resolve-darg-with-stp "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
        ((when (eq *valid* false-result)) ;; STP proved the negation of the test
-        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test false.))~%"))
-                (mv (erp-nil) :false state))))
-    (prog2$ (and (print-level-at-least-tp print) (cw "STP did not resolve the test.))~%"))
-            (mv (erp-nil) :unknown state))))
+        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test false (~x0).))~%" false-result))
+                (mv (erp-nil) :false state)))
+       (- (and (print-level-at-least-tp print) (cw "STP did not resolve the test.))~%"))))
+    (mv (erp-nil) :unknown state)))
 
 (defthm w-of-mv-nth-2-of-try-to-resolve-darg-with-stp
   (equal (w (mv-nth 2 (try-to-resolve-darg-with-stp dag dag-array dag-len dag-parent-array context-array print max-conflicts dag-acc state)))

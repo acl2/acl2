@@ -14,6 +14,7 @@
 ;; The function CEILING-OF-LG computes the ceiling of the base-2 logarithm of
 ;; its argument.
 
+(include-book "power-of-2p-def")
 (local (include-book "integer-length"))
 (local (include-book "expt"))
 (local (include-book "times"))
@@ -119,3 +120,9 @@
                   (+ -1 (ceiling-of-lg n))))
   :hints (("Goal"
            :in-theory (enable integer-length-of-+-of--1 ceiling-of-lg expt-of-+))))
+
+(defthm <-of-expt-2-of-ceiling-of-lg-same
+  (implies (posp x)
+           (equal (< x (expt 2 (ceiling-of-lg x)))
+                  (not (power-of-2p x))))
+  :hints (("Goal" :in-theory (enable ceiling-of-lg power-of-2p))))
