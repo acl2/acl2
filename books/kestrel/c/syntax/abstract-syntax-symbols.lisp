@@ -12,7 +12,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; List of symbols that provide an API to the abstract syntax,
+; List of symbols that provide an API to
+; the abstract syntax and related concepts,
 ; importable in a package definition.
 ; The list does not contain all the symbols yet; it can be extended as needed.
 
