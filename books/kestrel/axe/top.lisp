@@ -114,7 +114,7 @@
 (include-book "make-axe-rules")
 (include-book "make-axe-rules2")
 (include-book "make-axe-syntaxp-evaluator")
-(include-book "make-clause-processor-simple")
+(include-book "register-and-wrap-clause-processor-simple")
 (include-book "make-conjunction-dag")
 (include-book "make-dag-constant-alist")
 (include-book "make-dag-indices")
@@ -257,7 +257,6 @@
 (include-book "rewriter-basic")
 ;; (include-book "rewriter-basic-code-only") ; not worth including here?
 (include-book "prover-basic")
-(include-book "prover-basic-clause-processor")
 (include-book "def-simplified")
 (include-book "unroll-spec-basic")
 (include-book "defthm-axe-basic")

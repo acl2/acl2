@@ -462,6 +462,12 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable rule-alistsp))))
 
+(defthm rule-alistsp-of-cons
+  (equal (rule-alistsp (cons rule-alist rule-alists))
+         (and (rule-alistp rule-alist)
+              (rule-alistsp rule-alists)))
+  :hints (("Goal" :in-theory (enable rule-alistsp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a list of rule-names.

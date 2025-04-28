@@ -706,6 +706,15 @@
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! '(boolif test 'nil 't))))))
 
+;; Substitutes 8 for x in the then-branch:
+(assert!
+  (mv-let (erp res limits)
+    (simplify-dag-basic (make-term-into-dag-simple! '(if (equal x '8) (binary-+ x '1) '0))
+                        '() ; assumptions
+                        (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (and (not erp) (null limits)
+         (equal res (make-term-into-dag-simple! '(if (equal x '8) '9 '0))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; test with a binding hyp

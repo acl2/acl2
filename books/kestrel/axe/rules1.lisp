@@ -52,13 +52,6 @@
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 
-;move
-(defthm <-of-expt-2-of-ceiling-of-lg-same
-  (implies (posp x)
-           (equal (< x (expt 2 (ceiling-of-lg x)))
-                  (not (power-of-2p x))))
-  :hints (("Goal" :in-theory (enable ceiling-of-lg power-of-2p))))
-
 (local
  (defthmd even-when-power-of-2-and-at-least-2
    (implies (and (<= 2 n)
@@ -718,12 +711,6 @@
 ;;                   t))
 ;;   :hints (("Goal" :in-theory (enable logext-list all-signed-byte-p))))
 
-(defthm all-unsigned-byte-p-of-myif-strong
-  (equal (all-unsigned-byte-p n (myif test a b))
-         (myif test (all-unsigned-byte-p n a)
-               (all-unsigned-byte-p n b)))
-  :hints (("Goal" :in-theory (enable myif))))
-
 ;yuck?
 ;; (defthm all-signed-byte-p-of-bv-array-write
 ;;   (implies (and (unsigned-byte-p (+ -1 n) (bvchop n val))
@@ -739,14 +726,6 @@
 ;;                   t))
 ;;   :hints (("Goal" :in-theory (e/d (UPDATE-NTH2 BV-ARRAY-WRITE)
 ;;                                   (REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER)))))
-
-(defthm all-unsigned-byte-p-of-bvchop-list-gen2
-  (implies (and ;(<= element-size size)
-            (all-unsigned-byte-p size lst)
-            (natp size)
-            (natp element-size))
-           (all-unsigned-byte-p size (bvchop-list element-size lst)))
-  :hints (("Goal" :in-theory (enable all-unsigned-byte-p bvchop-list))))
 
 ;; (thm
 ;;  (IMPLIES (AND (< X K)

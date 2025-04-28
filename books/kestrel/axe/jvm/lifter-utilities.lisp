@@ -143,7 +143,7 @@
 
 ;replace things like (contents <blah>) with (GET-FIELD <blah> '("ARRAY" "contents" . "dummy-descriptor") (JVM::HEAP <state-var>))
 (mutual-recursion
- (defun desugar-calls-of-contents-in-term (term heap-term)
+ (defund desugar-calls-of-contents-in-term (term heap-term)
    (declare (xargs :guard (and (pseudo-termp term)
                                (pseudo-termp heap-term))))
    (if (atom term)
@@ -163,7 +163,7 @@
                  `(get-field ,arg '("ARRAY" "contents" . "dummy-descriptor") ,heap-term))
              ;;normal case:
              (cons fn new-args)))))))
- (defun desugar-calls-of-contents-in-terms (terms heap-term)
+ (defund desugar-calls-of-contents-in-terms (terms heap-term)
    (declare (xargs :guard (and (pseudo-term-listp terms)
                                (pseudo-termp heap-term))))
    (if (endp terms)
@@ -180,7 +180,8 @@
   (defthm len-of-desugar-calls-of-contents-in-terms
     (equal (len (desugar-calls-of-contents-in-terms terms heap-term))
            (len terms))
-    :flag desugar-calls-of-contents-in-terms))
+    :flag desugar-calls-of-contents-in-terms)
+  :hints (("Goal" :in-theory (enable desugar-calls-of-contents-in-terms))))
 
 (defthm-flag-desugar-calls-of-contents-in-term
   (defthm pseudo-termp-of-desugar-calls-of-contents-in-term
@@ -192,7 +193,8 @@
     (implies (and (pseudo-term-listp terms)
                   (pseudo-termp heap-term))
              (pseudo-term-listp (desugar-calls-of-contents-in-terms terms heap-term)))
-    :flag desugar-calls-of-contents-in-terms))
+    :flag desugar-calls-of-contents-in-terms)
+  :hints (("Goal" :in-theory (enable desugar-calls-of-contents-in-term desugar-calls-of-contents-in-terms))))
 
 ; A dummy function that has special meaning when used in invariants (it gets
 ; replaced by a term representing the local var with the given name in the
@@ -239,7 +241,7 @@
                (let* ((string (unquote (first new-args)))
                       (match (assoc-equal string local-vars-for-pc)))
                  (if (not match)
-                     (hard-error 'desugar-invar "No match in local variable table for ~x0.~%" (acons #\0 string nil))
+                     (er hard? 'desugar-invar "No match in local variable table for ~x0.~%" string)
                    (let ((local-num (second match)))
                      `(jvm::NTH-local ',local-num (JVM::LOCALS (JVM::thread-top-frame (th) ,state-var))))))
              (if (eq 'field fn)
@@ -279,7 +281,7 @@
 (defun check-quotep (obj)
   (if (quotep obj)
       obj
-    (hard-error 'check-quotep "expected the object to be a quotep: ~x0." (acons #\0 obj nil))))
+    (er hard? 'check-quotep "expected the object to be a quotep: ~x0." obj)))
 
 ;; Make an assumption about term. This is for values stored in stack slots,
 ;; local vars, instance fields, and static fields.  Not for arrays.
@@ -356,7 +358,7 @@
                           (param-name (pack$ (string-upcase string)))
                           (match (assoc-equal param-name param-name-to-slot-alist)))
                      (if (not match)
-                         (hard-error 'desugar-params-in-assumption-term "No match in local variable table for ~x0.~%" (acons #\0 string nil))
+                         (er hard? 'desugar-params-in-assumption-term "No match in local variable table for ~x0.~%" string)
                        (let ((local-num (cdr match)))
                          `(jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var))))))
                  (er hard? 'desugar-params-in-assumption-term "Ill-formed call of param: ~x0." term))
@@ -378,6 +380,8 @@
                     JVM::REFERENCE-TYPEP
                     JVM::LOCAL-VARIABLE-TABLEP))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund param-slot-to-name-alistp (alist)
   (declare (xargs :guard t))
   (and (alistp alist)
@@ -390,10 +394,22 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable param-slot-to-name-alistp))))
 
+(defthmd alistp-when-param-slot-to-name-alistp
+  (implies (param-slot-to-name-alistp alist)
+           (alistp alist))
+  :hints (("Goal" :in-theory (enable param-slot-to-name-alistp))))
+
 (defthmd symbolp-of-lookup-equal-when-param-slot-to-name-alistp
   (implies (param-slot-to-name-alistp alist)
            (symbolp (lookup-equal slot alist)))
   :hints (("Goal" :in-theory (enable param-slot-to-name-alistp lookup-equal assoc-equal))))
+
+(defthmd symbol-listp-of-strip-cdrs-when-param-slot-to-name-alistp
+  (implies (param-slot-to-name-alistp alist)
+           (symbol-listp (strip-cdrs alist)))
+  :hints (("Goal" :in-theory (enable param-slot-to-name-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The alist returned is ordered by slot.
 (defun make-param-slot-to-name-alist-aux (parameter-types slot local-variable-table param-names)

@@ -22,7 +22,10 @@
  <ul>
 
  <li>This remains work in progress as of April 2025, so substantial changes are
- still possible.</li>
+ still possible.  Links to slides used in three 1.5 hour talks that month,
+ together with links to videos of those talks, may be found at <a
+ href='http://www.cs.utexas.edu/users/moore/acl2/seminar/index.html#04-11-25'>this
+ entry</a> of the ACL2 seminar website.</li>
 
  <li>This documentation is intended to be reasonably self-contained.  Basic
  familiarity with ZF set theory may be helpful but is probably not
@@ -411,38 +414,39 @@
 
  <p>Let's see a use of @('zfn') in the book @('base.lisp'), to define a
  function (as an ACL2 object) with domain the set @('(omega)') of natural
- numbers, which maps each natural number @('x') to the value @('(v-n x)'),
+ numbers, which maps each natural number @('x') to the value @('(v-map x)'),
  as described further below.</p>
 
  @({
- (zfn v                           ; name
-      ()                          ; args
-      x                           ; x
-      y                           ; y
-      (omega)                     ; bound
-      (equal (equal y (v-n x)) t) ; u
+ (zfn v                             ; name
+      ()                            ; args
+      x                             ; x
+      y                             ; y
+      (omega)                       ; bound
+      (equal (equal y (v-map x)) t) ; u
       )
  })
 
- <p>The nature of @('v-n') isn't important here, but for those interested, we
- note that for a natural number @('n'), @('(v-n n)') is the result of iterating
- the powerset operation @('n') times on the empty set, @('0').  The definition
- of @('v-n') is a typical ACL2 recursive definition, which illustrates a cool
- benefit of combining ACL2 with ZF in this way: the richness of ZF is combined
- with ACL2 mechanization, including induction and recursion.</p>
+ <p>The nature of @('v-map') isn't important here, but for those interested, we
+ note that for a natural number @('n'), @('(v-map n)') is the result of
+ iterating the powerset operation @('n') times on the empty set, @('0').  The
+ definition of @('v-map') is a typical ACL2 recursive definition, which
+ illustrates a cool benefit of combining ACL2 with ZF in this way: the richness
+ of ZF is combined with ACL2 mechanization, including induction and
+ recursion.</p>
 
  @({
- (defun v-n (n)
+ (defun v-map (n)
    (declare (type (integer 0 *) n))
    (if (zp n)
        0
-     (powerset (v-n (1- n)))))
+     (powerset (v-map (1- n)))))
  })
 
  <p>Now that we have an ACL2 object, @('(v)'), that is a function mapping each
- natural number @('n') to @('(v-n n)'), we define the union of these @('(v-n
- n)') as follows.  See @('base.lisp') for the definition of the image of a
- function @('fn'), @('(image fn)').</p>
+ natural number @('n') to @('(v-map n)'), we define the union of these
+ @('(v-map n)') as follows.  See @('base.lisp') for the definition of the image
+ of a function @('fn'), @('(image fn)').</p>
 
  @({
  (defun v-omega nil

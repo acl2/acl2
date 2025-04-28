@@ -424,10 +424,8 @@
                               (stringp root-of-class-hierarchy) ;a directory name
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              (or (booleanp prune-precise)
-                                  (natp prune-precise))
-                              (or (booleanp prune-approx)
-                                  (natp prune-approx))
+                              (prune-precise-optionp prune-precise)
+                              (prune-approx-optionp prune-approx)
                               (symbol-listp monitor))
                   :mode :program ;; for several reasons
                   ))
@@ -623,11 +621,9 @@
                    (or (eq :any methods-expected-to-fail)
                        (eq :auto methods-expected-to-fail)
                        (string-listp methods-expected-to-fail))
-                   (booleanp  error-on-unexpectedp)
-                   (or (booleanp prune-precise)
-                       (natp prune-precise))
-                   (or (booleanp prune-approx)
-                       (natp prune-approx)))
+                   (booleanp error-on-unexpectedp)
+                   (prune-precise-optionp prune-precise)
+                   (prune-approx-optionp prune-approx))
                   :stobjs state
                   :mode :program))
   (if (endp method-ids)
@@ -694,10 +690,8 @@
                                   (string-listp methods-expected-to-fail) ;these are just bare names, for now
                                   )
                               (booleanp error-on-unexpectedp)
-                              (or (booleanp prune-precise)
-                                  (natp prune-precise))
-                              (or (booleanp prune-approx)
-                                  (natp prune-approx)))))
+                              (prune-precise-optionp prune-precise)
+                              (prune-approx-optionp prune-approx))))
   (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
        ((when (not java-bootstrap-classes-root))
         (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")

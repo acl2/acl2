@@ -1,7 +1,7 @@
 ; Utilities for unrolling Java code
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -77,6 +77,10 @@
 
 (ensure-rules-known (unroll-java-code-rules))
 
+;; in case the :executable-counterpart is disabled
+(defthmd symbol-listp-of-unroll-java-code-rules
+  (symbol-listp (unroll-java-code-rules)))
+
 ;; ;; Wrap initial-term in a list of calls to S, setting each class name to its corresponding class-info.
 ;; (defun make-class-table-term (class-alist initial-term)
 ;;   (if (endp class-alist)
@@ -87,9 +91,14 @@
 ;;       (make-class-table-term (rest class-alist)
 ;;                              `(s ',class-name ',class-info ,initial-term)))))
 
-(defun make-class-table-term-compact (class-alist initial-term)
+(defund make-class-table-term-compact (class-alist initial-term)
   (declare (xargs :guard t))
   `(jvm::set-classes ',class-alist ,initial-term))
+
+(defthm pseudo-termp-of-make-class-table-term-compact
+  (implies (pseudo-termp initial-term)
+           (pseudo-termp (make-class-table-term-compact class-alist initial-term)))
+  :hints (("Goal" :in-theory (enable make-class-table-term-compact))))
 
 ;; (defun bit-width-from-type (type)
 ;;   (declare (xargs :guard (member-eq type '(:byte :char ;:float
@@ -106,10 +115,35 @@
 ;; An array-length-alist maps arrays (indicated by symbol names) to their types.
 ;; TODO: Should the keys in array-length-alist be strings?
 ;; TODO: Also, throw an error if an invalid key is given (the set of valid names depends on whether we have debugging info?)
-(defun array-length-alistp (alist)
+(defund array-length-alistp (alist)
   (declare (xargs :guard t))
   (and (symbol-alistp alist)
        (all-natp (strip-cdrs alist))))
+
+(defthm array-length-alistp-forward-to-alistp
+  (implies (array-length-alistp alist)
+           (alistp alist))
+  :hints (("Goal" :in-theory (enable array-length-alistp))))
+
+;; (defthm natp-of-cdr-of-assoc-equal-when-array-length-alistp
+;;   (implies (array-length-alistp alist)
+;;            (iff (natp (cdr (assoc-equal name alist)))
+;;                 (assoc-equal name alist)))
+;;   :hints (("Goal" :in-theory (enable array-length-alistp strip-cdrs all-natp lookup-equal assoc-equal symbol-alistp))))
+
+(defthm natp-of-lookup-equal-when-array-length-alistp
+  (implies (array-length-alistp alist)
+           (iff (natp (lookup-equal name alist))
+                (lookup-equal name alist)))
+  :hints (("Goal" :induct (assoc-equal name alist)
+           :in-theory (enable assoc-equal lookup-equal ARRAY-LENGTH-ALISTP))))
+
+(defthmd symbol-listp-of-strip-cars-when-array-length-alistp
+  (implies (array-length-alistp alist)
+           (symbol-listp (strip-cars alist)))
+  :hints (("Goal" :in-theory (enable array-length-alistp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;move
 (local
