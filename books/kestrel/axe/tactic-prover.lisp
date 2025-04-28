@@ -521,6 +521,7 @@
                                                          true-listp-when-stp-resultp
                                                          cdr-when-stp-resultp-iff
                                                          <-of-+-of-1-when-integers
+                                                         integerp-when-natp
                                                          myquotep-when-pseudo-dag-or-quotep-cheap
                                                          ;; pseudo-dagp-when-pseudo-dag-or-quotep-cheap
                                                          )
@@ -586,12 +587,10 @@
         (make-dag-indices dag-array-name dag-array dag-parent-array-name dag-len))
        ;; Add the assumptions to the DAG (todo: negating these may not be necessary now that prove-disjunction-with-stp can take negated nodenums):
        ((mv erp negated-assumption-nodenum-or-quoteps dag-array dag-len dag-parent-array & &)
-        (merge-trees-into-dag-array ;inefficient? call a merge-terms... function?  or call merge-trees-into-dag-array-basic?
+        (merge-terms-into-dag-array-simple
          (negate-terms assumptions)
          nil
-         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-         nil ; todo: ifns
-         ))
+         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
        ((when erp) (mv *error* nil state))
        ;; Handle any disjuncts that are constants:
        ((mv provedp negated-assumption-nodenums) ; todo: can there really be constants in negated-assumption-nodenum-or-quoteps?
