@@ -1,7 +1,7 @@
 ; The Axe Prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -2137,11 +2137,11 @@
   (mv-let (erp provedp state)
     (prove-theorem-with-axe-prover conc hyps defthm-name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
     (if erp
-        (prog2$ (hard-error 'prove-theorem-with-axe-prover2 "Failed to prove ~s0.~%" (acons #\0 defthm-name nil))
+        (prog2$ (er hard? 'prove-theorem-with-axe-prover2 "Failed to prove ~s0.~%" defthm-name)
                 state)
       (if provedp
           state
-        (prog2$ (hard-error 'prove-theorem-with-axe-prover2 "Failed to prove ~s0.~%" (acons #\0 defthm-name nil))
+        (prog2$ (er hard? 'prove-theorem-with-axe-prover2 "Failed to prove ~s0.~%" defthm-name)
                 state)))))
 
 ;; Returns (mv erp provedp state).  Attempts to prove the clause (a disjunction

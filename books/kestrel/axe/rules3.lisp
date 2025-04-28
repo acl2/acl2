@@ -37,7 +37,6 @@
 ;(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
 (local (include-book "list-rules"))
-;(local (include-book "kestrel/lists-light/rules2" :dir :system)) ;todo
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 ;(local (include-book "arithmetic/equalities" :dir :system))

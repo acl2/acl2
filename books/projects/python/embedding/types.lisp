@@ -194,9 +194,9 @@ This file contains Python type definitions and attaches appropriate enumerators 
   (b* (((mv choice seed)
         (defdata::weighted-switch-nat 
           '(
-            74  ;; n/k for n,k integers
-            4   ;; +- 2^i + {-1,0,1} for |i| <= 64
-            4   ;; +- 2^i + {-1,0,1} for 64 < |i| <= 1024
+            76  ;; n/k for n,k integers
+            5   ;; +- 2^i + {-1,0,1} for |i| <= 64
+            5   ;; +- 2^i + {-1,0,1} for 64 < |i| <= 1024
             3   ;; +- min/max magnitude normal 32-bit float + {-1,0,1}
             3   ;; +- min/max magnitude normal 64-bit float + {-1,0,1}
             2   ;; +- max integer representible as a 32/64 bit float
@@ -207,7 +207,7 @@ This file contains Python type definitions and attaches appropriate enumerators 
             1   ; nan
             1   ; +inf
             1   ; -inf
-	    1   ; -0
+            1   ; -0
             ) seed)))
     (case choice
       (0 ;; n/k for n,k integers

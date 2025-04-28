@@ -22,7 +22,10 @@
  <ul>
 
  <li>This remains work in progress as of April 2025, so substantial changes are
- still possible.</li>
+ still possible.  Links to slides used in three 1.5 hour talks that month,
+ together with links to videos of those talks, may be found at <a
+ href='http://www.cs.utexas.edu/users/moore/acl2/seminar/index.html#04-11-25'>this
+ entry</a> of the ACL2 seminar website.</li>
 
  <li>This documentation is intended to be reasonably self-contained.  Basic
  familiarity with ZF set theory may be helpful but is probably not

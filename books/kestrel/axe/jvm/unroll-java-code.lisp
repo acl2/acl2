@@ -67,7 +67,8 @@
                   (cw "(Result DAG: ~x0)~%" dag))
                 (cw "(Assumptions were: ~x0)~%" assumptions)
                 (and error-on-incomplete-runsp
-                     (hard-error 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above)." nil)))
+                     ;; todo: pass in ctx:
+                     (er hard? 'unroll-java-code-fn "ERROR: Symbolic simulation did not seem to finish (see DAG and assumptions above).")))
       t)))
 
 ;; Works for terms or dag-exprs
