@@ -529,6 +529,7 @@
     ;; validation information:
 
     type-case
+    type-kind
     type-sint
 
     ident-type-map

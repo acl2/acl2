@@ -234,19 +234,30 @@
      the @('vartys') component of @(tsee simpadd0-gout).
      For each such variable, we add a hypothesis about it saying that
      the variable can be read from the computation state
-     and it contains an @('int') value;
-     for now we return a hard error if the type of the variable is not @('int'),
-     which never happens when we call this function."))
+     and it contains a value of the appropriate type.
+     For now only certain types are supported,
+     namely the ones for which are formal semantics has values;
+     we throw a hard error if the type is not supported,
+     which never happens when we call this function
+     because we test that in advance."))
   (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
-       ((unless (type-case type :sint))
+       (kind (type-kind type))
+       ((unless (member-eq kind '(:uchar :schar
+                                  :ushort :sshort
+                                  :uint :sint
+                                  :ulong :slong
+                                  :ullong :sllong
+                                  :pointer
+                                  :array
+                                  :struct)))
         (raise "Internal error: variable ~x0 has type ~x1." var type))
        (hyp `(b* ((var (mv-nth 1 (ldm-ident (ident ,(ident->unwrap var)))))
                   (objdes (c::objdesign-of-var var compst))
                   (val (c::read-object objdes compst)))
                (and objdes
                     (c::valuep val)
-                    (c::value-case val :sint))))
+                    (c::value-case val ,kind))))
        (hyps (simpadd0-gen-var-hyps (omap::tail vartys))))
     (cons hyp hyps))
   :hooks (:fix))
