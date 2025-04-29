@@ -272,7 +272,7 @@
      If the two expressions are syntactically equal,
      the generated theorem just says that
      if the execution of the expression does not yield an error,
-     then the resulting value has type @('int').
+     then the resulting value has type of the expression.
      If the two expressions are not syntactically equal,
      the theorem also says that
      if the result of executing the old expression is not an error
@@ -283,11 +283,11 @@
      are known to succeed (i.e. not return any error),
      given that @(tsee expr-pure-formalp) holds.")
    (xdoc::p
-    "This function also takes as input a set of identifiers,
-     which are the variables in scope of type @('int').
+    "This function also takes as input a map from identifiers to types,
+     which are the variables in scope with their types.
      The theorem includes a hypothesis for each of these variables,
      saying that they are in the computation state
-     and that they contain @('int') values.")
+     and that they contain values of the appropriate types.")
    (xdoc::p
     "The hints to prove the theorem are passed as input too,
      since the proof varies depending on the kind of expression."))
@@ -300,6 +300,16 @@
        ((unless (or equalp (expr-pure-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
+       (type (expr-type old))
+       ((unless (or equalp
+                    (equal (expr-type new)
+                           type)))
+        (raise "Internal error: ~
+                the type ~x0 of the new expression ~x1 differs from ~
+                the type ~x2 of the old expression ~x3."
+               (expr-type new) new type old)
+        (mv '(_) nil 1))
+       (value-kind (type-to-value-kind type))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
@@ -308,7 +318,8 @@
                   (value (c::expr-value->value result)))
                (implies (and ,@hyps
                              (not (c::errorp result)))
-                        (equal (c::value-kind value) :sint)))
+                        (equal (c::value-kind value)
+                               ,value-kind)))
           `(b* ((old-expr (mv-nth 1 (ldm-expr ',old)))
                 (new-expr (mv-nth 1 (ldm-expr ',new)))
                 (old-result (c::exec-expr-pure old-expr compst))
@@ -319,7 +330,8 @@
                            (not (c::errorp old-result)))
                       (and (not (c::errorp new-result))
                            (equal old-value new-value)
-                           (equal (c::value-kind old-value) :sint))))))
+                           (equal (c::value-kind old-value)
+                                  ,value-kind))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
