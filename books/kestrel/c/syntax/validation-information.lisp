@@ -644,3 +644,48 @@
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stmt-type ((stmt stmtp))
+  :guard (stmt-unambp stmt)
+  :returns (type typep)
+  :short "Type of a statement, from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently very limited.
+     If the statement is a return statement with an expression,
+     the type of the expression is returned;
+     if the return statement has no expression, @('void') is returned.
+     For the other kinds of statement, the unknown type is returned.")
+   (xdoc::p
+    "This is adequate for the current use of this function,
+     but it will need to be suitably extended.
+     In particular, a statement may have multiple types,
+     in the sense of returning values of possibly different types;
+     cf. @(tsee valid-stmt)."))
+  (stmt-case
+   stmt
+   :labeled (stmt-type stmt.stmt)
+   :compound (type-unknown)
+   :expr (type-unknown)
+   :if (type-unknown)
+   :ifelse (type-unknown)
+   :switch (type-unknown)
+   :while (type-unknown)
+   :dowhile (type-unknown)
+   :for-expr (type-unknown)
+   :for-decl (type-unknown)
+   :for-ambig (prog2$ (impossible) (type-unknown))
+   :goto (type-unknown)
+   :continue (type-unknown)
+   :break (type-unknown)
+   :return (expr-option-case
+            stmt.expr?
+            :some (expr-type stmt.expr?.val)
+            :none (type-unknown))
+   :asm (type-unknown))
+  :measure (stmt-count stmt)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :hooks (:fix))
