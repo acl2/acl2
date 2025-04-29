@@ -211,13 +211,13 @@
        (gso (extdecl-list-find-gso-candidate tunit.decls blacklist))
        ((unless gso)
         (reterr t))
-       ((erp linkage)
+       ((erp linkage tag?)
         (get-gso-linkage-from-valid-table
           gso
           (c$::transunit-info->table (c$::transunit->info tunit))))
-       ((erp struct-type)
-        (get-gso-type-name gso tunit))
-       (field-name (transunit-find-first-field-name tunit struct-type))
+       ((unless tag?)
+        (reterr t))
+       (field-name (transunit-find-first-field-name tunit tag?))
        ((unless field-name)
         (reterr t)))
     (retok gso field-name (equal linkage (c$::linkage-internal))))
