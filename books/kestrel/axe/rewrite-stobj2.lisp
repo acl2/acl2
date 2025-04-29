@@ -33,13 +33,7 @@
 (local (in-theory (e/d (integerp-when-natp
                         rationalp-when-natp
                         consp-of-cdr)
-                       (natp))))
-
-(local
-  (defthm natp-of-+  ; move to natp.lisp
-    (implies (and (natp x)
-                  (natp y))
-             (natp (+ x y)))))
+                       (natp nth min max))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,7 +193,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Recognizes a well-formed rewrite-stobj2.
 ;; todo: use this more?
+;; todo: check the xor-signature fields as well?
 (defund wf-rewrite-stobj2p (rewrite-stobj2)
   (declare (xargs :stobjs rewrite-stobj2))
   (wf-dagp 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 'dag-parent-array (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2)))
@@ -503,7 +499,9 @@
                                                          wf-dagp
                                                          ;; todo:
                                                          bvxor-signature
-                                                         bitxor-signature)
+                                                         bitxor-signature
+                                                         nth ; todo
+                                                         )
                                                         (wf-rewrite-stobj2p-conjuncts))))))
   (if (or (not (mbt (and (natp nodenum) ; for termination
                          (natp (get-dag-len rewrite-stobj2)))))
@@ -561,6 +559,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Loads a DAG (representing as the 5 standard components) into the rewrite-stobj2.
 (defund load-dag (dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rewrite-stobj2)
   (declare (xargs :guard (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                   :stobjs rewrite-stobj2))
@@ -573,17 +572,13 @@
 
 (defthm rewrite-stobj2p-of-load-dag
   (implies (and (rewrite-stobj2p rewrite-stobj2)
-                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                ;(natp dag-len)
-                )
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist))
            (rewrite-stobj2p (load-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rewrite-stobj2)))
   :hints (("Goal" :in-theory (enable load-dag))))
 
 (defthm wf-rewrite-stobj2p-of-load-dag
   (implies (and (rewrite-stobj2p rewrite-stobj2)
-                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                ;(natp dag-len)
-                )
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist))
            (wf-rewrite-stobj2p (load-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rewrite-stobj2)))
   :hints (("Goal" :in-theory (e/d (load-dag wf-rewrite-stobj2p) (wf-rewrite-stobj2p-conjuncts)))))
 
