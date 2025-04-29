@@ -365,9 +365,8 @@
      but for statments instead of pure expressions;
      see that function's documentation first.")
    (xdoc::p
-    "For now, this is limited to statements
-     whose execution yields an @('int') value.
-     The theorem says that the old statement returns an @('int') value,
+    "The theorem says that
+     the old statement returns a value of the appropriate type,
      regardless of whether old and new statements
      are syntactically equal or not.
      If they are not, the theorem also says that
@@ -382,6 +381,16 @@
        ((unless (or equalp (stmt-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
+       (type (stmt-type old))
+       ((unless (or equalp
+                    (equal (stmt-type new)
+                           type)))
+        (raise "Internal error: ~
+                the type ~x0 of the new statement ~x1 differs from ~
+                the type ~x2 of the old statement ~x3."
+               (stmt-type new) new type old)
+        (mv '(_) nil 1))
+       (value-kind (type-to-value-kind type))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
@@ -390,7 +399,8 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
-                             (equal (c::value-kind result) :sint))))
+                             (equal (c::value-kind result)
+                                    ,value-kind))))
           `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
                 (new-stmt (mv-nth 1 (ldm-stmt ',new)))
                 ((mv old-result old-compst)
@@ -403,7 +413,8 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            old-result
-                           (equal (c::value-kind old-result) :sint))))))
+                           (equal (c::value-kind old-result)
+                                  ,value-kind))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
