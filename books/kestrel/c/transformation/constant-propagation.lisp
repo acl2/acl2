@@ -1399,11 +1399,11 @@
     (b* ((env (env-fix env))
          ((paramdecl paramdecl) paramdecl)
          ((mv spec env)
-          (const-prop-decl-spec-list paramdecl.spec env))
+          (const-prop-decl-spec-list paramdecl.specs env))
          ((mv decl env)
           (const-prop-paramdeclor paramdecl.decl env)))
       (mv (make-paramdecl
-            :spec spec
+            :specs spec
             :decl decl)
           env))
     :measure (paramdecl-count paramdecl))
