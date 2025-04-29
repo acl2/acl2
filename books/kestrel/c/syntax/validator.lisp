@@ -3903,7 +3903,7 @@
             ((erp new-params more-types table)
              (if (equal dirdeclor.params
                         (list (make-paramdecl
-                               :spec (list (decl-spec-typespec (type-spec-void)))
+                               :specs (list (decl-spec-typespec (type-spec-void)))
                                :decl (paramdeclor-none))))
                  (retok dirdeclor.params nil table)
                (valid-paramdecl-list
@@ -4140,7 +4140,7 @@
             ((erp new-params more-types table)
              (if (equal dirabsdeclor.params
                         (list (make-paramdecl
-                               :spec (list (decl-spec-typespec (type-spec-void)))
+                               :specs (list (decl-spec-typespec (type-spec-void)))
                                :decl (paramdeclor-none))))
                  (retok dirabsdeclor.params nil table)
                (valid-paramdecl-list dirabsdeclor.params nil table ienv)))
@@ -4224,8 +4224,8 @@
        they are considered defined [C17:6.7/5]."))
     (b* (((reterr) (irr-paramdecl) nil (irr-valid-table))
          ((paramdecl paramdecl) paramdecl)
-         ((erp new-spec type storspecs types table)
-          (valid-decl-spec-list paramdecl.spec nil nil nil table ienv))
+         ((erp new-specs type storspecs types table)
+          (valid-decl-spec-list paramdecl.specs nil nil nil table ienv))
          ((unless (or (endp storspecs)
                       (stor-spec-list-register-p storspecs)))
           (reterr (msg "The parameter declaration ~x0 ~
@@ -4246,7 +4246,7 @@
                    (type-pointer)
                  type))
          ((when (not ident?))
-          (retok (make-paramdecl :spec new-spec :decl new-decl)
+          (retok (make-paramdecl :specs new-specs :decl new-decl)
                  (set::union types more-types)
                  table))
          (ord-info (make-valid-ord-info-objfun
@@ -4260,7 +4260,7 @@
                         with associated information ~x1."
                        (paramdecl-fix paramdecl) info?)))
          (table (valid-add-ord ident? ord-info table)))
-      (retok (make-paramdecl :spec new-spec :decl new-decl)
+      (retok (make-paramdecl :specs new-specs :decl new-decl)
              (set::union types more-types)
              table))
     :measure (paramdecl-count paramdecl))

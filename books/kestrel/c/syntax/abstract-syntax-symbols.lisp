@@ -12,7 +12,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; List of symbols that provide an API to the abstract syntax,
+; List of symbols that provide an API to
+; the abstract syntax and related concepts,
 ; importable in a package definition.
 ; The list does not contain all the symbols yet; it can be extended as needed.
 
@@ -52,10 +53,19 @@
 
     typequal/attribspec-list-listp
 
+    unopp
+    unop-case
+    unop-kind
+
+    binopp
+    binop-case
+    binop-kind
+
     exprp
     expr-fix
     expr-count
     expr-case
+    expr-ident
     make-expr-ident
     expr-ident->ident
     expr-const
@@ -214,6 +224,7 @@
     dirdeclorp
     dirdeclor-fix
     dirdeclor-ident
+    dirdeclor-ident->ident
     dirdeclor-count
     dirdeclor-case
     dirdeclor-kind
@@ -225,6 +236,7 @@
     make-dirdeclor-array-star
     make-dirdeclor-function-params
     make-dirdeclor-function-names
+    dirdeclor-function-params->declor
     dirdeclor-function-params->params
     dirdeclor-function-names->names
 
@@ -365,6 +377,7 @@
     stmt-case
     make-stmt-labeled
     stmt-compound
+    stmt-compound->items
     stmt-expr
     make-stmt-if
     make-stmt-ifelse
@@ -431,7 +444,12 @@
     fileset
     fileset->unwrap
 
-    ;; unambiguity predicates:
+    ;; irrelevants:
+
+    irr-fundef
+    irr-transunit-ensemble
+
+    ;; unambiguity:
 
     expr-unambp
     expr-list-unambp
@@ -489,8 +507,57 @@
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
 
-    ;; validation information predicates:
+    ;; formalized:
+
+    expr-pure-formalp
+    stmt-formalp
+    block-item-formalp
+    block-item-list-formalp
+    fundef-formalp
+
+    ;; language mapping:
+
+    ldm-ident
+    ldm-binop
+    ldm-expr
+    ldm-stmt
+    ldm-block-item
+    ldm-block-item-list
+    ldm-paramdecl-list
+    ldm-fundef
+
+    ;; validation information:
+
+    type-case
+    type-kind
+    type-sint
+
+    ident-type-map
+    ident-type-mapp
+    ident-type-map-fix
+
+    type-to-value-kind
+
+    iconst-info
+    coerce-iconst-info
+
+    var-info
+    var-infop
+    var-info-fix
+    coerce-var-info
+
+    unary-infop
+    coerce-unary-info
+
+    binary-infop
+    coerce-binary-info
+
+    expr-type
 
     transunit-ensemble-annop
+
+    ;; other operations:
+
+    expr-zerop
 
    ))

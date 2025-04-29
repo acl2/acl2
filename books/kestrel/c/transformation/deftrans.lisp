@@ -243,7 +243,7 @@
     (:linear c$::decl-spec-count-of-car)
     (:linear c$::decl-spec-list-count-of-cdr)
     (:linear c$::decl-spec-list-count-of-decl-decl->specs)
-    (:linear c$::decl-spec-list-count-of-paramdecl->spec)
+    (:linear c$::decl-spec-list-count-of-paramdecl->specs)
     (:linear c$::designor-count-of-car)
     (:linear c$::designor-list-count-of-cdr)
     (:linear c$::designor-list-count-of-desiniter->designors)
@@ -1312,7 +1312,7 @@
    '((paramdecl paramdeclp))
    extra-args
    `(b* (((paramdecl paramdecl) paramdecl))
-      (make-paramdecl :spec (,(cdr (assoc-eq 'decl-spec-list names)) paramdecl.spec ,@extra-args-names)
+      (make-paramdecl :specs (,(cdr (assoc-eq 'decl-spec-list names)) paramdecl.specs ,@extra-args-names)
                       :decl (,(cdr (assoc-eq 'paramdeclor names)) paramdecl.decl ,@extra-args-names)))
    '(:returns (new-paramdecl paramdeclp)
      :measure (paramdecl-count paramdecl))))

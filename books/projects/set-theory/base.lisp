@@ -638,6 +638,7 @@
            (defthm ,name$chooses
              (implies (and (equal (apply (,name ,@args) ,x)
                                   ,y)
+                           (in ,x (domain (,name ,@args)))
                            (force (,name$prop)))
                       ,u)))
         name$prop)))
@@ -980,6 +981,7 @@
                                 (IN X1 (DOMAIN (F1 A1 Z)))))
                      (DEFTHM F1$CHOOSES
                        (IMPLIES (AND (EQUAL (APPLY (F1 A1 Z) X1) Y1)
+                                     (IN X1 (DOMAIN (F1 A1 Z)))
                                      (FORCE (F1$PROP)))
                                 (P X1 Y1 Z))))
                    (TABLE ZFC-TABLE
@@ -1715,11 +1717,11 @@
 
 (in-theory (disable ztriple))
 
-(defun v-n (n)
+(defun v-map (n)
   (declare (type (integer 0 *) n))
   (if (zp n)
       0
-    (powerset (v-n (1- n)))))
+    (powerset (v-map (1- n)))))
 
 (defthmz transitive-0
   (transitive 0))
@@ -1737,35 +1739,35 @@
            (transitive (powerset x)))
   :hints (("Goal" :expand ((transitive (powerset x))))))
 
-(defthmz transitive-v-n
+(defthmz transitive-v-map
   (implies (natp n)
-           (transitive (v-n n))))
+           (transitive (v-map n))))
 
 ; Our version of the Replacement Scheme gives us:
-; (forall x \in (omega)) (exists y) (equal y (v-n x))
+; (forall x \in (omega)) (exists y) (equal y (v-map x))
 ; =>
 ; (exists v) (forall x \in (omega))
 ;   (let ((y (apply v x)))
-;     (equal y (v-n x)))
+;     (equal y (v-map x)))
 ; The call of zfn just below implements that observation.
 ; The extra EQUAL call below is to make the $CHOOSES theorem a useful rewrite
 ; rule.
 (zfn v ()                        ; name, args
      x y                         ; x, y
      (omega)                     ; bound for x
-     (equal (equal y (v-n x)) t) ; u
+     (equal (equal y (v-map x)) t) ; u
      )
 
-(defthmz v-n$domain-lemma
+(defthmz v-map$domain-lemma
   (subset (omega) (domain (v)))
   :props (zfc v$prop domain$prop)
   :hints (("Goal"
            :expand ((subset (omega) (domain (v))))
            :restrict ((v$domain-2
-                       ((y (v-n (subset-witness (omega)
-                                                 (domain (v)))))))))))
+                       ((y (v-map (subset-witness (omega)
+                                                  (domain (v)))))))))))
 
-(defthmz v-n$domain
+(defthmz v-map$domain
   (equal (domain (v)) (omega))
   :props (zfc v$prop domain$prop)
   :hints (("Goal" :in-theory (enable extensionality))))
@@ -1784,9 +1786,9 @@
 
 ; We start by proving v-omega-contains-naturals.
 
-(defthmz v-maps-n-to-v-n
+(defthmz v-maps-n-to-v-map
   (implies (natp n)
-           (in (cons n (v-n n))
+           (in (cons n (v-map n))
                (v)))
   :props (zfc v$prop domain$prop)
   :hints (("Goal"
@@ -1802,18 +1804,18 @@
            :in-theory (enable in-natp)
            :expand ((subset x (- n 1))))))
 
-(defthmz subset-n-v-n ; towards proving in-n-vn-n+1
+(defthmz subset-n-v-map ; towards proving in-n-vn-n+1
   (implies (natp n)
-           (subset n (v-n n)))
+           (subset n (v-map n)))
   :props (zfc v$prop domain$prop)
   :hints (("Goal"
            :induct t
            :restrict ((subset-transitivity ((y (+ -1 n)))))
-           :expand ((subset n (powerset (v-n (+ -1 n))))))))
+           :expand ((subset n (powerset (v-map (+ -1 n))))))))
 
 (defthmz in-n-vn-n+1
   (implies (natp n)
-           (in n (v-n (+ 1 n))))
+           (in n (v-map (+ 1 n))))
   :props (zfc v$prop domain$prop))
 
 (defthmz v-omega-contains-naturals
@@ -1822,9 +1824,9 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
            :restrict ((in-image-suff
-                       ((p (cons (1+ n) (v-n (1+ n))))))
+                       ((p (cons (1+ n) (v-map (1+ n))))))
                       (in-in-suff
-                       ((y (v-n (1+ n)))))))))
+                       ((y (v-map (1+ n)))))))))
 
 ; We now work towards showing that v-omega contains the remaining ACL2
 ; objects.
@@ -1834,51 +1836,51 @@
          (equal x 0))
   :hints (("Goal" :in-theory (enable extensionality))))
 
-(in-theory (disable (:e v-n))) ; avoid some attempts to call powerset
+(in-theory (disable (:e v-map))) ; avoid some attempts to call powerset
 
 ; The following may avoid an induction below, but isn't necessary (or at least,
 ; it wasn't when it was developed).
-(defthmz in-0-v-n
+(defthmz in-0-v-map
   (implies (not (zp j))
-           (in 0 (v-n j))))
+           (in 0 (v-map j))))
 
-(defthmz subset-v-n-implies-in-larger-vn
-  (implies (and (subset x (v-n i))
+(defthmz subset-v-map-implies-in-larger-v-map
+  (implies (and (subset x (v-map i))
                 (natp i)
                 (natp j)
                 (< i j))
-           (in x (v-n j)))
+           (in x (v-map j)))
   :instructions (:induct :prove :prove)) ; :hints (("Goal" :induct t)) failed
 
-(defthmz subset-monotone-wrt-v-n
+(defthmz subset-monotone-wrt-v-map
   (implies (and (natp i)
                 (natp j)
                 (<= i j))
-           (subset (v-n i) (v-n j)))
-  :hints (("Goal" :expand ((subset (powerset (v-n (+ -1 i)))
-                                   (v-n j))))))
+           (subset (v-map i) (v-map j)))
+  :hints (("Goal" :expand ((subset (powerset (v-map (+ -1 i)))
+                                   (v-map j))))))
 
-(defthmz v-n-closed-under-pair-1
+(defthmz v-map-closed-under-pair-1
   (implies (and (natp nx)
                 (natp ny)
-                (in x (v-n nx))
-                (in y (v-n ny))
+                (in x (v-map nx))
+                (in y (v-map ny))
                 (natp k)
                 (<= nx k)
                 (<= ny k))
-           (subset (pair x y) (v-n k)))
-  :hints (("Goal" :expand ((subset (pair x y) (v-n k))))))
+           (subset (pair x y) (v-map k)))
+  :hints (("Goal" :expand ((subset (pair x y) (v-map k))))))
 
-(defthmz v-n-closed-under-pair
+(defthmz v-map-closed-under-pair
   (implies (and (natp nx)
                 (natp ny)
-                (in x (v-n nx))
-                (in y (v-n ny))
+                (in x (v-map nx))
+                (in y (v-map ny))
                 (natp k)
                 (< nx k)
                 (< ny k))
-           (in (pair x y) (v-n k)))
-  :hints (("Goal" :expand ((v-n k)))))
+           (in (pair x y) (v-map k)))
+  :hints (("Goal" :expand ((v-map k)))))
 
 ; Here come two potentially useful and harmelss (and related) lemmas about
 ; membership in (v).
@@ -1908,7 +1910,7 @@
   :hints (("Goal" :in-theory (enable subset))))
 
 ; Our next goal is v-omega-closed-under-pair, which "should" be an easy
-; consequence of v-n-closed-under-pair.  But I spent awhile on this with ACL2
+; consequence of v-map-closed-under-pair.  But I spent awhile on this with ACL2
 ; (when I was proving the analogue for cons in place of pair) and may have had
 ; quite a distance to go.  So here is a hand proof that I can follow.
 
@@ -1921,26 +1923,26 @@
 ;   nx = (apply (inverse (v)) sx) and
 ;   ny = (apply (inverse (v)) sy).
 ;  That makes a nice lemma, in-image-necc.)
-; But then sx = v-n(nx) and sy = vn(ny).
-; So x \in v-n(nx) and y \in vn(ny).
+; But then sx = v-map(nx) and sy = vn(ny).
+; So x \in v-map(nx) and y \in vn(ny).
 ; Let k = (1+ (max nx ny)).
-; By v-n-closed-under-pair, (in (pair x y) (v-n k)).
-; Claim: (subset (v-n m) (v-omega)) for all natp m.
+; By v-map-closed-under-pair, (in (pair x y) (v-map k)).
+; Claim: (subset (v-map m) (v-omega)) for all natp m.
 ; Then by the claim, where m = k, (in (pair x y) (v-omega)).  Q.E.D.
 
-; To prove the claim that (subset (v-n m) (v-omega)) then since (v-omega)
+; To prove the claim that (subset (v-map m) (v-omega)) then since (v-omega)
 ; = (union (image (v))), it suffices by in-implies-subset-union to
-; prove that (in (v-n m) (image (v))), for which it suffices that (in
-; (cons m (v-n m)) (v).  But this follows from v-maps-n-to-v-n.
+; prove that (in (v-map m) (image (v))), for which it suffices that (in
+; (cons m (v-map m)) (v).  But this follows from v-maps-n-to-v-map.
 
 ; Let's start with the claim.
 
-(defthmz subset-v-n-v-omega
+(defthmz subset-v-map-v-omega
   (implies (force (natp m))
-           (subset (v-n m) (v-omega)))
+           (subset (v-map m) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
-           :restrict ((in-image-suff ((p (cons m (v-n m)))))))))
+           :restrict ((in-image-suff ((p (cons m (v-map m)))))))))
 
 ; Now we turn to the proof of v-omega-closed-under-pair.
 
@@ -1953,7 +1955,7 @@
   :hints (("Goal" :in-theory (e/d (image in-domain-rewrite)
                                   (apply-default)))))
 
-(defthmz in-v-omega-implies-in-v-n-lemma
+(defthmz in-v-omega-implies-in-v-map-lemma
   (implies (in x (v-omega))
            (let* ((sx (in-in-witness x (image (v))))
                   (nx (apply (inverse (v)) sx)))
@@ -1962,47 +1964,47 @@
   :hints (("Goal" :in-theory (enable in-in)))
   :rule-classes nil)
 
-(defthmz in-v-omega-implies-in-v-n-lemma-corollary
+(defthmz in-v-omega-implies-in-v-map-lemma-corollary
   (implies (in x (v-omega))
            (let* ((sx (in-in-witness x (image (v))))
                   (nx (apply (inverse (v)) sx)))
-             (equal sx (v-n nx))))
+             (equal sx (v-map nx))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :use in-v-omega-implies-in-v-n-lemma))
+  :hints (("Goal" :use in-v-omega-implies-in-v-map-lemma))
   :rule-classes nil)
 
 ; A handy abbreviation, defined so that it's clearly a natural number:
-(defun v-n-inv (x)
+(defun v-map-inv (x)
   (let* ((sx (in-in-witness x (image (v))))
          (nx (apply (inverse (v)) sx)))
     (nfix nx)))
 
-(defthmz in-v-omega-implies-in-v-n
+(defthmz in-v-omega-implies-in-v-map
   (implies (in x (v-omega))
-           (in x (v-n (v-n-inv x))))
+           (in x (v-map (v-map-inv x))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :use in-v-omega-implies-in-v-n-lemma-corollary
+  :hints (("Goal" :use in-v-omega-implies-in-v-map-lemma-corollary
            :do-not '(preprocess)
            :in-theory (enable in-in)))
   :rule-classes (:rewrite :forward-chaining))
 
-(in-theory (disable v-n-inv v-omega (v-omega)))
+(in-theory (disable v-map-inv v-omega (v-omega)))
 
-(defthmz in-v-n-preserved-by-1+
+(defthmz in-v-map-preserved-by-1+
   (implies (and (natp k)
-                (in x (v-n k)))
-           (in x (v-n (+ 1 k)))))
+                (in x (v-map k)))
+           (in x (v-map (+ 1 k)))))
 
 (defthmz v-omega-closed-under-pair-lemma
   (implies (and (in x (v-omega))
                 (in y (v-omega)))
            (in (pair x y)
-               (v-n (1+ (max (v-n-inv x)
-                             (v-n-inv y))))))
+               (v-map (1+ (max (v-map-inv x)
+                               (v-map-inv y))))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :rule-classes nil)
 
-(in-theory (disable v-n))
+(in-theory (disable v-map))
 
 (defthmz v-omega-closed-under-pair
   (implies (and (in x (v-omega))
@@ -2016,21 +2018,21 @@
   :hints (("Goal" :in-theory (e/d (in-in extensionality)
                                   (subset-x-0)))))
 
-(defthmz v-n-closed-under-union
-  (implies (in x (v-n n))
-           (in (union x) (v-n n)))
-  :hints (("Goal" :in-theory (enable v-n subset in-in))))
+(defthmz v-map-closed-under-union
+  (implies (in x (v-map n))
+           (in (union x) (v-map n)))
+  :hints (("Goal" :in-theory (enable v-map subset in-in))))
 
 (defthmz v-omega-closed-under-union2-lemma
   (implies (and (in x (v-omega))
                 (in y (v-omega)))
            (in (union2 x y)
-               (v-n (1+ (max (v-n-inv x)
-                             (v-n-inv y))))))
+               (v-map (1+ (max (v-map-inv x)
+                               (v-map-inv y))))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
-           :restrict ((v-n-closed-under-pair
-                       ((ny (v-n-inv y)) (nx (v-n-inv x)))))
+           :restrict ((v-map-closed-under-pair
+                       ((ny (v-map-inv y)) (nx (v-map-inv x)))))
            :in-theory (enable union2)))
   :rule-classes nil)
 
@@ -2215,14 +2217,14 @@
 ; objects are all in V_{omega*2}.
 ;;;;;
 
-; The following uses rule subset-v-n-v-omega in its proof.
+; The following uses rule subset-v-map-v-omega in its proof.
 (defthmz in-in-v-omega-implies-in-v-omega
   (implies (in-in x (v-omega))
            (in x (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
            :expand ((in-in x (v-omega)))
-           :cases ((in x (v-n (v-n-inv (in-in-witness x (v-omega)))))))))
+           :cases ((in x (v-map (v-map-inv (in-in-witness x (v-omega)))))))))
 
 (defthmz transitive-v-omega-lemma
   (implies (and (in x y)

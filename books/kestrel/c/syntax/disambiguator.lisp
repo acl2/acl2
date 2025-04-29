@@ -1076,7 +1076,7 @@
           (param (car params))
           ((unless (paramdeclor-case (paramdecl->decl param) :none))
            (mv nil nil))
-          (declspecs (paramdecl->spec param))
+          (declspecs (paramdecl->specs param))
           ((unless (and (consp declspecs) (endp (cdr declspecs))))
            (mv nil nil))
           (declspec (car declspecs))
@@ -2217,11 +2217,11 @@
        see @(tsee paramdeclor))."))
     (b* (((reterr) (irr-paramdecl) (irr-dimb-table))
          ((paramdecl paramdecl) paramdecl)
-         ((erp new-spec & table)
-          (dimb-decl-spec-list paramdecl.spec (dimb-kind-objfun) table))
+         ((erp new-specs & table)
+          (dimb-decl-spec-list paramdecl.specs (dimb-kind-objfun) table))
          ((erp new-decl table)
           (dimb-paramdeclor paramdecl.decl table)))
-      (retok (make-paramdecl :spec new-spec :decl new-decl) table))
+      (retok (make-paramdecl :specs new-specs :decl new-decl) table))
     :measure (paramdecl-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

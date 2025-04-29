@@ -12167,7 +12167,7 @@
        ((or (token-punctuatorp token ")") ; declspecs )
             (token-punctuatorp token ",")) ; declspecs ,
         (b* ((parstate (unread-token parstate))) ; declspecs
-          (retok (make-paramdecl :spec declspecs
+          (retok (make-paramdecl :specs declspecs
                                  :decl (paramdeclor-none))
                  span
                  parstate)))
@@ -12186,7 +12186,7 @@
            ;; we return a parameter declaration with that.
            :declor
            (retok (make-paramdecl
-                   :spec declspecs
+                   :specs declspecs
                    :decl (paramdeclor-declor declor/absdeclor.unwrap))
                   (span-join span last-span)
                   parstate)
@@ -12194,7 +12194,7 @@
            ;; we return a parameter declaration with that.
            :absdeclor
            (retok (make-paramdecl
-                   :spec declspecs
+                   :specs declspecs
                    :decl (paramdeclor-absdeclor declor/absdeclor.unwrap))
                   (span-join span last-span)
                   parstate)
@@ -12202,7 +12202,7 @@
            ;; we return a parameter declaration with that.
            :ambig
            (retok (make-paramdecl
-                   :spec declspecs
+                   :specs declspecs
                    :decl (paramdeclor-ambig declor/absdeclor.unwrap))
                   (span-join span last-span)
                   parstate))))))
