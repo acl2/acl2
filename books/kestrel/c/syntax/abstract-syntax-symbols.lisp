@@ -536,6 +536,8 @@
     ident-type-mapp
     ident-type-map-fix
 
+    type-to-value-kind
+
     iconst-info
     coerce-iconst-info
 
