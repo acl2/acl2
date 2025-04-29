@@ -69,20 +69,26 @@
 ;;            (pseudo-termp a))
 ;;   :hints (("Goal" :in-theory (enable pseudo-term-listp MEMBERP))))
 
-;; Returns nil.  Throws an error if any assumption is a constant.
+;; Returns nil.  May print a warning.
+;; could perhaps check someting about the vars, but assumptions might be used to replace terms with new vars.
+(defund check-assumption (assumption)
+  (declare (xargs :guard (pseudo-termp assumption)))
+  (if (variablep assumption)
+      (cw "WARNING: Assumption ~x0 is a variable.~%" assumption)
+    (if (quotep assumption)
+        (cw "WARNING: Assumption ~x0 is a constant.~%" assumption)
+      (if (not (all-vars assumption))
+          (cw "WARNING: Assumption ~x0 is a ground term.~%" assumption)
+        nil))))
+
+;; Returns nil.  May print some warnings.
 ;; TODO: Can we do others checks to catch the case where the user gives a term instead of a list of terms for the :assumptions?
 (defund check-assumptions (assumptions)
   (declare (xargs :guard (pseudo-term-listp assumptions)))
   (if (endp assumptions)
       nil
-    (let ((assumption (first assumptions)))
-      (if (variablep assumption)
-          (prog2$ (cw "WARNING: Assumption ~x0 is a variable.~%" assumption)
-                  (check-assumptions (rest assumptions)))
-        (if (quotep assumption)
-            (er hard? 'check-assumptions "Constant assumption detected: ~x0." assumption)
-          ;; could check someting about the vars, but assumptions might be used to replace terms with new vars...
-          (check-assumptions (rest assumptions)))))))
+    (prog2$ (check-assumption (first assumptions))
+            (check-assumptions (rest assumptions)))))
 
 ;; Returns (mv erp dag-or-quotep assumptions) where dag-or-quotep is boolean-valued.
 ;todo: redo this to first convert to a dag, then extract hyps and conc from the dag (may blow up but unlikely in practice?)
@@ -998,18 +1004,18 @@
                 (cw "(1 assumption given.)~%")
               (cw "(~x0 assumptions given.)~%" (len assumptions)))))
        (assumptions (translate-terms assumptions 'apply-tactic-prover (w state))) ;throws an error on bad input
-       ;; (- (check-assumptions assumptions)) ; may throw an error ; todo: put back, but allow constants
-       ;;TODO: which assumptions / term / dag should be used in the theorem below? ; drop this?
+       (- (check-assumptions assumptions)) ; may print some warnings
        ((mv erp assumptions state)
         (if simplify-assumptionsp
             (simplify-terms-repeatedly ;; simplify-terms-using-each-other ; todo: consider simplify-conjunction-basic here
-             assumptions rule-alist
-             nil ; monitored-rules
-             t ; memoizep
-             t ; warn-missingp
-             state)
+              assumptions rule-alist
+              nil ; monitored-rules
+              t ; memoizep
+              t ; warn-missingp
+              state)
           (mv nil assumptions state)))
        ((when erp) (mv *error* nil state))
+       ;; TODO: Handle constant assumptions here (and perhaps negated constants)
        (vars (dag-vars dag))
        (- (and print (cw "(Variables in DAG: ~x0)~%" vars)))
        ((mv result info-acc state)
