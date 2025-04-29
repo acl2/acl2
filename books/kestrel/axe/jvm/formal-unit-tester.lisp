@@ -563,16 +563,15 @@
                              nil ;interpreted-fns
                              :bit ;type
                              '(:rewrite :stp) ;todo: maybe prune? ;; tactics
+                             (append extra-rules
+                                     (set-difference-eq (formal-unit-testing-extra-simplification-rules)
+                                                        remove-rules))
                              nil ;simplify-assumptions
                              print
                              nil ;*default-stp-max-conflicts* ;max-conflicts ;a number of conflicts, or nil for no max
                              t   ;call-stp-when-pruning
                              t ; counterexamplep
                              t ; print counterexamples as signed
-                             (append extra-rules
-                                     (set-difference-eq (formal-unit-testing-extra-simplification-rules)
-                                                        remove-rules))
-
                              nil  ;monitor
                              t ;normalize-xors (todo: try nil? or make an option?)
                              state))

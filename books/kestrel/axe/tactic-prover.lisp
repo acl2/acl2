@@ -37,7 +37,7 @@
 (include-book "kestrel/utilities/system/fresh-names" :dir :system)
 (include-book "kestrel/utilities/redundancy" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
-(include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
+;(include-book "kestrel/utilities/progn" :dir :system) ; for extend-progn
 ;(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 ;(include-book "kestrel/utilities/real-time-since" :dir :system)
 ;(include-book "kestrel/bv/bvashr" :dir :system)
@@ -928,11 +928,12 @@
 
 ;; Returns (mv result info-acc state), where result is :valid, :invalid, :error, or :unknown.
 (defun apply-tactic-prover (dag-or-constant
-                            assumptions
+                            assumptions ; may be untranslated (todo: translate outside)
                             interpreted-fns
                             type ; Either :boolean (try to prove the dag is true) or :bit (try to prove the dag is 1)
                             ;;tests ;a natp indicating how many tests to run
                             tactics
+                            rules
                             simplify-assumptionsp
                             ;;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                             print
@@ -941,21 +942,24 @@
                             call-stp-when-pruning
                             counterexamplep
                             print-cex-as-signedp
-                            rules
                             monitor
                             normalize-xors
                             state)
   (declare (xargs :guard (and (or (quotep dag-or-constant)
                                   (pseudo-dagp dag-or-constant))
+                              ;; assumptions are untranslated terms
+                              (symbol-listp interpreted-fns)
                               (member-eq type '(:bit :boolean))
-                              ;(natp tests) ;TODO: add to guard
+                              (tacticsp tactics)
+                              (symbol-listp rules)
+                              (booleanp simplify-assumptionsp)
+                              (print-levelp print)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
-                              (booleanp simplify-assumptionsp)
-                              (symbol-listp rules)
                               (booleanp call-stp-when-pruning)
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
+                              (symbol-listp monitor)
                               (booleanp normalize-xors))
                   :mode :program
                   :stobjs state))
@@ -963,10 +967,10 @@
        ;; Check for a constant:
        ((when (quotep dag-or-constant))
         (if (unquote dag-or-constant)
-            ;; the goal is a true (non-nil) constant:
-            (mv *valid* nil state)
-          ;; the goal is the constant nil:
-          (mv *invalid* nil state)))
+            (prog2$ (cw "NOTE: The goal is the (non-nil) constant ~x0.~%" dag-or-constant)
+                    (mv *valid* nil state))
+          (prog2$ (cw "NOTE: The goal is the constant NIL.~%")
+                  (mv *invalid* nil state))))
        (dag dag-or-constant) ; it was not a constant
        ;; Convert the result type to boolean if needed:
        ((mv erp dag-or-constant)
@@ -1018,6 +1022,8 @@
        )
     (mv result info-acc state)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp event state).
 ;TODO: erp is a bit of a misnomer; failure to prove isn't necessarily an error..
 ;TODO: Auto-generate the name
@@ -1027,6 +1033,7 @@
                               interpreted-fns
                               type
                               tactics
+                              rules
                               simplify-assumptions
                               ;types
                               ;test-types
@@ -1037,24 +1044,25 @@
                               call-stp-when-pruning
                               counterexamplep
                               print-cex-as-signedp
-                              rules
                               monitor
                               normalize-xors
+                              produce-theoremp
                               rule-classes
                               whole-form
                               state)
   (declare (xargs :guard (and (member-eq type '(:boolean :bit))
                               (tacticsp tactics)
+                              (symbol-listp rules)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
                               (booleanp simplify-assumptions)
                               (booleanp debug)
-                              (symbol-listp rules)
                               (symbol-listp interpreted-fns)
                               (booleanp call-stp-when-pruning)
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
-                              (booleanp normalize-xors))
+                              (booleanp normalize-xors)
+                              (booleanp produce-theoremp))
                   :mode :program
                   :stobjs state))
   (b* (((when (command-is-redundantp whole-form state))
@@ -1078,13 +1086,13 @@
                              interpreted-fns
                              type
                              tactics
+                             rules
                              simplify-assumptions
                              print
                              max-conflicts
                              call-stp-when-pruning
                              counterexamplep
                              print-cex-as-signedp
-                             rules
                              monitor
                              normalize-xors
                              state))
@@ -1092,58 +1100,55 @@
        ;; Remove the temp dir unless debug is set:
        (state (if debug state (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
-        (b* ((- (cw "Proof of theorem succeeded.~%")) ; todo: move into apply-tactic-prover?
-             ;; make the theorem:
-             (theorem-conclusion (if (< (dag-or-quotep-size dag-or-constant) 1000)
-                                     (if (quotep dag-or-constant) dag-or-constant (dag-to-term dag-or-constant))
-                                   (embed-dag-in-term dag-or-constant (w state))))
-             (defthm-name (or name (fresh-name-in-world-with-$s 'prove-with-tactics nil (w state))))
-             (disablep (if rule-classes t nil)) ;can't disable if :rule-classes nil ;todo: make this an option
-             (defthm-variant (if disablep 'defthmd 'defthm))
-             (defthm `(skip-proofs ;todo: have apply-proof-tactics-to-problem return a theorem and use it to prove this
-                       (,defthm-variant ,defthm-name
-                         (implies (and ,@assumptions) ;the original assumptions, not translated, no assumptions extracted from the dag
-                                  ,theorem-conclusion)
-                         :rule-classes ,rule-classes ;todo: suppress if just :rewrite
-                         )))
-             ;; (- (and types ;todo: remove this restriction
-             ;;         (cw "Note: Suppressing theorem because :types are not yet supported when generating theorems.~%")))
-             ;; (event (if types
-             ;;            '(progn)
-             ;;          defthm))
-             )
+        (b* ((- (cw "Proof of theorem succeeded.~%"))
+             (table-event `(table prove-with-tactics-table ',whole-form ',name)) ; just using the name here, since there may be no theorem
+             (maybe-theorem
+               (and produce-theoremp
+                    (b* ((theorem-conclusion (if (< (dag-or-quotep-size dag-or-constant) 1000)
+                                                 (if (quotep dag-or-constant) dag-or-constant (dag-to-term dag-or-constant))
+                                               (embed-dag-in-term dag-or-constant (w state))))
+                         (defthm-name (or name (fresh-name-in-world-with-$s 'prove-with-tactics nil (w state))))
+                         (disablep (if rule-classes t nil)) ;can't disable if :rule-classes nil ;todo: make this an option
+                         (defthm-variant (if disablep 'defthmd 'defthm)))
+                      `(skip-proofs ;todo: have apply-tactic-prover return a theorem and use it to prove this
+                         (,defthm-variant ,defthm-name
+                           (implies (and ,@assumptions) ;the original assumptions, not translated, no assumptions extracted from the dag
+                                    ,theorem-conclusion)
+                           :rule-classes ,rule-classes ;todo: suppress if just :rewrite
+                           ))))))
           (mv (erp-nil)
-              (extend-progn defthm `(table prove-with-tactics-table ',whole-form ',defthm))
+              `(progn ,@(and maybe-theorem (list maybe-theorem)) ,table-event (value-triple ',name))
               state))
       (progn$ (cw "Failure info: ~X01." info-acc nil)
               (er hard 'prove-with-tactics-fn "Failed to prove.~%")
               (mv (erp-t) nil state)))))
 
-;todo: allow :rule-classes
 ;todo: add option to suppress generation of the theorem
 ;; todo: get doc from kestrel-acl2/axe/doc.lisp
 (defmacro prove-with-tactics (&whole whole-form
-                              dag-or-term
+                              dag-or-term ; gets evaluated
                               &key
                               (assumptions 'nil)
                               (interpreted-fns 'nil)
                               (type ':boolean) ;; Indicates whether to try to prove the term is non-nil (:boolean) or 1 (:bit).
                               (tactics ''(:rewrite))
+                              (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here for the :acl2 tactic
                               (simplify-assumptions 'nil) ;todo: consider making t the default
+                              (name 'nil) ;the name of the proof, if we care to give it one.  also used for the name of the theorem
                               (print ':brief)
-                              (name 'nil) ;the name of the proof if we care to give it one.  also used for the name of the theorem
                               (debug 'nil)
                               (max-conflicts '*default-stp-max-conflicts*) ;1000 here broke proofs
-                              (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include rules for the :acl2 tactic
-                              (monitor 'nil)
-                              (normalize-xors 't)
-                              (rule-classes '(:rewrite))
                               (call-stp-when-pruning 't)
                               (counterexamplep 't)
-                              (print-cex-as-signedp 'nil))
-  `(make-event (prove-with-tactics-fn ,dag-or-term ,assumptions ,interpreted-fns ',type ,tactics ',simplify-assumptions ,name ',print ,debug ,max-conflicts
-                                      ,call-stp-when-pruning ,counterexamplep ,print-cex-as-signedp ,rules ,monitor
-                                      ,normalize-xors ',rule-classes ',whole-form state)))
+                              (print-cex-as-signedp 'nil)
+                              (monitor 'nil)
+                              (normalize-xors 't)
+                              (produce-theorem 'nil)
+                              (rule-classes '(:rewrite)))
+  `(make-event-quiet
+     (prove-with-tactics-fn ,dag-or-term ,assumptions ,interpreted-fns ',type ,tactics ,rules ',simplify-assumptions ,name ',print ,debug ,max-conflicts
+                            ,call-stp-when-pruning ,counterexamplep ,print-cex-as-signedp ,monitor
+                            ,normalize-xors ',produce-theorem ',rule-classes ',whole-form state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1155,6 +1160,7 @@
                                     interpreted-fns
                                     ;; no type arg (always :boolean)
                                     tactics
+                                    rules
                                     simplify-assumptions
                                     name ; nil means generate a name
                                     print
@@ -1163,14 +1169,16 @@
                                     call-stp-when-pruning
                                     counterexamplep
                                     print-cex-as-signedp
-                                    rules
                                     monitor
                                     normalize-xors
+                                    produce-theoremp
+                                    rule-classes
                                     different-vars-ok
                                     whole-form
                                     state)
   (declare (xargs :guard (and (symbol-listp interpreted-fns)
                               (tacticsp tactics)
+                              (symbol-listp rules)
                               (booleanp simplify-assumptions)
                               (symbolp name)
                               (print-levelp print)
@@ -1180,9 +1188,9 @@
                               (booleanp call-stp-when-pruning)
                               (booleanp counterexamplep)
                               (booleanp print-cex-as-signedp)
-                              (symbol-listp rules)
                               (symbol-listp monitor)
                               (booleanp normalize-xors)
+                              (booleanp produce-theoremp)
                               (booleanp different-vars-ok))
                   :mode :program
                   :stobjs state))
@@ -1197,83 +1205,69 @@
        ((when erp) (mv erp nil state))
        ;; Do the proof:
        ((mv result info-acc state)
-        (apply-tactic-prover dag-or-constant
-                             assumptions
-                             interpreted-fns
-                             :boolean
-                             tactics
-                             simplify-assumptions
-                             print
-                             max-conflicts
-                             call-stp-when-pruning
-                             counterexamplep
-                             print-cex-as-signedp
-                             rules
-                             monitor
-                             normalize-xors
-                             state))
+        (apply-tactic-prover dag-or-constant assumptions interpreted-fns :boolean tactics rules
+                             simplify-assumptions print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp
+                             monitor normalize-xors state))
        ;; Remove the temp dir unless debug is set:
        (state (if debug state (maybe-remove-temp-dir state))))
     (if (eq result *valid*)
         (b* ((- (cw "Proof of equivalence succeeded.~%"))
-             ;; make the theorem: ; todo: make this optional!
-             (term1 (dag-or-term-to-term dag-or-term1 state)) ; todo: can blow up?
-             (term2 (dag-or-term-to-term dag-or-term2 state)) ; todo: can blow up?
-             (defthm-name (or name (FRESH-NAME-IN-WORLD-WITH-$S 'prove-equal-with-tactics-fn nil (w state))))
-             (defthm `(skip-proofs ;todo: have make-problem return a theorem and use it to prove this
-                       (defthmd ,defthm-name
-                         (implies (and ,@assumptions)
-                                  (equal ,term1
-                                         ,term2))))))
+             (table-event `(table prove-equal-with-tactics-table ',whole-form ',name)) ; just using the name here, since there may be no theorem
+             (maybe-theorem
+               (and produce-theoremp
+                    (b* ((term1 (dag-or-term-to-term dag-or-term1 state)) ; todo: can blow up?
+                         (term2 (dag-or-term-to-term dag-or-term2 state)) ; todo: can blow up?
+                         (defthm-name (or name (fresh-name-in-world-with-$s 'prove-equal-with-tactics nil (w state))))
+                         (disablep (if rule-classes t nil)) ;can't disable if :rule-classes nil ;todo: make this an option
+                         (defthm-variant (if disablep 'defthmd 'defthm)))
+                      `(skip-proofs ;todo: have apply-tactic-prover return a theorem and use it to prove this
+                         (,defthm-variant ,defthm-name
+                           (implies (and ,@assumptions)
+                                    (equal ,term1
+                                           ,term2))
+                           :rule-classes ,rule-classes ;todo: suppress if just :rewrite
+                           ))))))
           (mv (erp-nil)
-              (extend-progn defthm `(table prove-equal-with-tactics-table ',whole-form ',defthm))
+              `(progn ,@(and maybe-theorem (list maybe-theorem)) ,table-event (value-triple ',name))
               state))
       (progn$ (cw "Failure info: ~X01." info-acc nil)
               (er hard 'prove-equal-with-tactics-fn "Failed to prove.~%")
               (mv (erp-t) nil state)))))
 
-;todo: allow :rule-classes
 ;todo: add option to suppress generation of the theorem
 ;; todo: get doc from kestrel-acl2/axe/doc.lisp
 (defmacro prove-equal-with-tactics (&whole
                                     whole-form
-                                    dag-or-term1
-                                    dag-or-term2
+                                    dag-or-term1 ; gets evaluated
+                                    dag-or-term2 ; gets evaluated
                                     &key
                                     ;; Options that affect what is proved:
                                     (assumptions 'nil)
-                                    (interpeted-fns 'nil)
+                                    (interpreted-fns 'nil)
                                     ;; no type arg (always :boolean)
                                     ;; Options that affect how the proof goes: ; todo: put the ones that just affect printing last
                                     (tactics ''(:rewrite))
+                                    (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here for the :acl2 tactic
                                     (simplify-assumptions 'nil) ;todo: consider making t the default
-                                    (name 'nil) ;the name of the miter, if we care to give it one.  also used for the name of the theorem ; todo: call choose-miter-name
+                                    (name 'nil) ;the name of the proof, if we care to give it one.  also used for the name of the theorem ; todo: call choose-miter-name
                                     (print ':brief)
                                     (debug 'nil)
                                     (max-conflicts '*default-stp-max-conflicts*)
                                     (call-stp-when-pruning 't)
                                     (counterexamplep 't)
                                     (print-cex-as-signedp 'nil)
-                                    (rules 'nil) ;todo: these are for use by the axe rewriter.  think about how to also include acl2 rules here...
                                     (monitor 'nil)
                                     (normalize-xors 't)
-                                    (different-vars-ok 'nil))
-  `(make-event (prove-equal-with-tactics-fn ,dag-or-term1
-                                            ,dag-or-term2
-                                            ,assumptions
-                                            ,interpeted-fns
-                                            ,tactics
-                                            ',simplify-assumptions
-                                            ,name
-                                            ',print
-                                            ,debug
-                                            ,max-conflicts
-                                            ,call-stp-when-pruning
-                                            ,counterexamplep
-                                            ,print-cex-as-signedp
-                                            ,rules
-                                            ,monitor
-                                            ,normalize-xors
-                                            ',different-vars-ok
-                                            ',whole-form
-                                            state)))
+                                    (produce-theorem 'nil)
+                                    (rule-classes '(:rewrite))
+                                    (different-vars-ok 'nil) ; not present in prove-with-tactics
+                                    )
+  `(make-event-quiet
+     (prove-equal-with-tactics-fn ,dag-or-term1 ,dag-or-term2 ,assumptions ,interpreted-fns ,tactics ,rules
+                                  ',simplify-assumptions ,name ',print ,debug ,max-conflicts ,call-stp-when-pruning
+                                  ,counterexamplep ,print-cex-as-signedp ,monitor ,normalize-xors
+                                  ',produce-theorem
+                                  ',rule-classes
+                                  ',different-vars-ok
+                                  ',whole-form
+                                  state)))

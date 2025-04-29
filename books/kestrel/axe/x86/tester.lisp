@@ -446,6 +446,7 @@
                                    :bit ; type (means try to prove that the DAG is 1)
                                    ;; tests ;a natp indicating how many tests to run
                                    tactics
+                                   proof-rules
                                    t   ; simplify-assumptions
                                    ;; types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                                    print
@@ -454,8 +455,6 @@
                                    t       ; call-stp-when-pruning
                                    t ; counterexamplep
                                    nil ; print-cex-as-signedp
-                                   proof-rules
-                                   ;; monitor:
                                    (append '(;ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-BETTER ;drop?
                                              ;;bvlt-reduce-when-not-equal-one-less
                                              ;;boolif-of-bvlt-strengthen-to-equal
