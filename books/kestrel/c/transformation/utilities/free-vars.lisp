@@ -522,7 +522,7 @@
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* (((paramdecl paramdecl) paramdecl)
-         (free-vars0 (free-vars-decl-spec-list paramdecl.spec bound-vars))
+         (free-vars0 (free-vars-decl-spec-list paramdecl.specs bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-paramdeclor paramdecl.decl bound-vars)))
       (mv (union free-vars0 free-vars1)

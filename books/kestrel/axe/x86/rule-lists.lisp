@@ -610,7 +610,13 @@
 
     x86isa::rflagsbits$inline-constant-opener
 
-    x86isa::!rflagsbits->af$inline-constant-opener ; why just this one?
+    x86isa::!rflagsbits->ac$inline-constant-opener
+    x86isa::!rflagsbits->af$inline-constant-opener
+    x86isa::!rflagsbits->cf$inline-constant-opener
+    x86isa::!rflagsbits->of$inline-constant-opener
+    x86isa::!rflagsbits->pf$inline-constant-opener
+    x86isa::!rflagsbits->sf$inline-constant-opener
+    x86isa::!rflagsbits->zf$inline-constant-opener
 
     x86isa::rflagsbits->ac$inline-constant-opener
     x86isa::rflagsbits->af$inline-constant-opener

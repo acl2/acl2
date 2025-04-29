@@ -1,7 +1,7 @@
 ; More theorems about all-unsigned-byte-p
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,12 +14,14 @@
 ;; This book mixes all-unsigned-byte-p with other non-buit-in functions
 
 (include-book "all-unsigned-byte-p")
+(include-book "bvchop-list")
 (include-book "../lists-light/repeat")
 (include-book "../lists-light/reverse-list-def")
 (include-book "../lists-light/subrange-def")
 (include-book "../lists-light/update-subrange")
 (include-book "../lists-light/update-subrange2")
-(include-book "kestrel/lists-light/firstn" :dir :system)
+(include-book "kestrel/lists-light/firstn-def" :dir :system)
+(include-book "kestrel/utilities/myif" :dir :system)
 (local (include-book "../lists-light/subrange"))
 (local (include-book "../lists-light/len"))
 (local (include-book "../lists-light/take"))
@@ -113,3 +115,18 @@
            (all-unsigned-byte-p size (update-subrange2 len start end vals lst)))
   :hints (("Goal" :cases ((<= start len))
            :in-theory (enable natp))))
+
+(defthm all-unsigned-byte-p-of-bvchop-list-gen2
+  (implies (and ;(<= element-size size)
+            (all-unsigned-byte-p size lst)
+            (natp size)
+            (natp element-size))
+           (all-unsigned-byte-p size (bvchop-list element-size lst)))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p bvchop-list))))
+
+;used in some examples
+(defthmd all-unsigned-byte-p-of-myif-strong
+  (equal (all-unsigned-byte-p n (myif test a b))
+         (myif test (all-unsigned-byte-p n a)
+               (all-unsigned-byte-p n b)))
+  :hints (("Goal" :in-theory (enable myif))))

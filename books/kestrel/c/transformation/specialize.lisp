@@ -95,7 +95,7 @@
       :declor (mv t
                   (make-decl-decl
                     :extension nil
-                    :specs paramdecl.spec
+                    :specs paramdecl.specs
                     :init (cons (initdeclor paramdecl.decl.unwrap nil nil init?) nil)))
       ;; TODO: add irr-decl to exported symbols
       :otherwise (mv nil (c$::irr-decl)))))

@@ -111,7 +111,6 @@
            :in-theory (e/d (darg-listp lookup-equal strip-cdrs)
                            (myquotep)))))
 
-;; TODO: Consider handling other versions of IF top-down.
 ;; TODO: Include subst in the name since this also substitutes for vars.
 (mutual-recursion
  ;; This one can replace vars in term using var-replacement-alist (helps us deal with lambdas).
@@ -352,6 +351,7 @@
            :in-theory (e/d (merge-term-into-dag-array-simple merge-terms-into-dag-array-simple car-becomes-nth-of-0)
                            (natp dargp pseudo-term-listp)))))
 
+;; avoids bound from dargp-less-than
 (defthm dargp-of-mv-nth-1-of-merge-term-into-dag-array-simple
   (implies (and (pseudo-termp term)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -363,6 +363,7 @@
   :hints (("Goal" :use (:instance merge-term-into-dag-array-simple-return-type)
            :in-theory (disable merge-term-into-dag-array-simple-return-type dargp))))
 
+;; generalizes the bound
 (defthm dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-simple
   (implies (and (<= (mv-nth 3 (merge-term-into-dag-array-simple term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
                     bound)
@@ -377,6 +378,7 @@
   :hints (("Goal" :use (:instance merge-term-into-dag-array-simple-return-type)
            :in-theory (disable merge-term-into-dag-array-simple-return-type))))
 
+;drop?
 (defthm merge-term-into-dag-array-simple-return-type-corollary4
   (implies (and (not (consp (mv-nth 1 (merge-term-into-dag-array-simple term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))) ; not a quotep
                 (pseudo-termp term)
@@ -391,6 +393,7 @@
                                dargp-of-mv-nth-1-of-merge-term-into-dag-array-simple
                                dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-simple))))
 
+;generalizes the bound
 (defthm merge-term-into-dag-array-simple-return-type-corollary
   (implies (and (<= bound dag-len)
                 (pseudo-termp term)
@@ -418,6 +421,7 @@
            :in-theory (disable merge-term-into-dag-array-simple-return-type))))
 
 ;; the nodenum returned is less than the final dag length
+;do we need this variant?
 (defthm merge-term-into-dag-array-simple-return-type-corollary3
   (implies (and (pseudo-termp term)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -435,6 +439,7 @@
                                dargp-less-than-of-mv-nth-1-of-merge-term-into-dag-array-simple
                                merge-term-into-dag-array-simple-return-type-corollary))))
 
+;generalizes the bound
 (defthm merge-term-into-dag-array-simple-return-type-corollary3-gen
   (implies (and (<= (mv-nth 3 (merge-term-into-dag-array-simple term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))
                     bound)
@@ -605,14 +610,10 @@
 
 (defthm-flag-merge-term-into-dag-array-simple
   (defthm true-listp-of-mv-nth-1-of-merge-terms-into-dag-array-simple-dummy
-    t
-    :rule-classes nil
+    :skip t
     :flag merge-term-into-dag-array-simple)
   (defthm true-listp-of-mv-nth-1-of-merge-terms-into-dag-array-simple
-    (true-listp (mv-nth 1 (merge-terms-into-dag-array-simple
-                           terms var-replacement-alist
-                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                           )))
+    (true-listp (mv-nth 1 (merge-terms-into-dag-array-simple terms var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))
     :rule-classes :type-prescription
     :flag merge-terms-into-dag-array-simple)
   :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-simple merge-terms-into-dag-array-simple) (natp)))))
@@ -652,8 +653,7 @@
                               ))))
     :flag merge-term-into-dag-array-simple)
   (defthm posp-of-mv-nth-3-of-merge-term-into-dag-array-simple-fake-helper
-    t
-    :rule-classes nil
+    :skip t
     :flag merge-terms-into-dag-array-simple)
   :hints (("Goal" :in-theory (e/d ( ;merge-term-into-dag-array-simple
                                    merge-terms-into-dag-array-simple
@@ -668,6 +668,7 @@
 ;; This one replaces vars in term using var-replacement-alist.
 ;; Returns (mv erp dag-or-quotep).
 ;; If dag-or-quotep is a quotep, it essentially gets ignored as there are no nodes for the var-replacement-alist to mention.
+;; Smashes the arrays 'dag-array and 'dag-parent-array.
 (defund merge-term-into-dag-simple (term
                                     var-replacement-alist ; maps vars in TERM to quoteps or nodenums in DAG-ARRAY
                                     dag-or-quotep)
@@ -688,7 +689,7 @@
        (slack-amount 100) ; could count the expressions in the term
        ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (if (myquotep dag-or-quotep)
-            ;; No DAG yet, so wqe have to make one:
+            ;; No DAG yet, so we have to make one:
             (empty-dag-array slack-amount)
           (b* ((dag-len (len dag-or-quotep))
                (dag-array (make-dag-into-array dag-array-name dag-or-quotep slack-amount))
@@ -724,7 +725,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp dag-or-quotep).
-;; TODO: Allow the DAG to be quotep?
 (defund wrap-term-around-dag (term var dag-or-quotep)
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbolp var)
@@ -766,15 +766,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns the new dag-or-quotep.  This version does not return an erp.
-(defund wrap-term-around-dag! (term var dag-or-quotep)
-  (mv-let (erp dag-or-quotep)
-    (wrap-term-around-dag term var dag-or-quotep)
-    (if erp
-        (prog2$ (er hard? 'wrap-term-around-dag! "Error wrapping term around dag: ~x0." erp)
-                *nil* ; just return some constant
-                )
-      dag-or-quotep)))
+;; ;; Returns the new dag-or-quotep.  This version does not return an erp.
+;; (defund wrap-term-around-dag! (term var dag-or-quotep)
+;;   (mv-let (erp dag-or-quotep)
+;;     (wrap-term-around-dag term var dag-or-quotep)
+;;     (if erp
+;;         (prog2$ (er hard? 'wrap-term-around-dag! "Error wrapping term around dag: ~x0." erp)
+;;                 *nil* ; just return some constant
+;;                 )
+;;       dag-or-quotep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
