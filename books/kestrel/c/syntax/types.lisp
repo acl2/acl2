@@ -772,3 +772,40 @@
   :key-type ident
   :val-type type
   :pred ident-type-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-formalp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type corresponds to a kind of value
+          in the subset of C for which we have formal semantics."
+  (and (member-eq (type-kind type)
+                  '(:uchar :schar
+                    :ushort :sshort
+                    :uint :sint
+                    :ulong :slong
+                    :ullong :sllong
+                    :pointer
+                    :array
+                    :struct))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-to-value-kind ((type typep))
+  :returns (kind keywordp
+                 :hints (("Goal" :in-theory (enable type-kind))))
+  :short "Map a type to the corresponding @(tsee c::value) kind."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We throw a hard error unless the type has
+     a corresponding kind of values in the formal semantics.
+     This function is always called when this condition is satisfied;
+     the hard error signals an implementation error."))
+  (if (type-formalp type)
+      (type-kind type)
+    (prog2$ (raise "Internal error: type ~x0 has no corresponding value kind.")
+            :irrelevant))
+  :hooks (:fix))
