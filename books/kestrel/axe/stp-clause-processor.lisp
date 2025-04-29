@@ -67,7 +67,7 @@
         (if must-prove
             (prog2$ (er hard? 'stp-clause-processor "Failed to prove but :must-prove was given.")
                     (mv (erp-t) (list clause) state))
-          ;; no error but change to clause set:
+          ;; no error but no change to clause set:
           (mv (erp-nil) (list clause) state))))))
 
 (define-trusted-clause-processor

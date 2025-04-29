@@ -541,3 +541,17 @@
   (equal (car (cons a b)) a)
   :use (:instance car-cons (x a) (y b))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm-axe-basic constant-1 t :rule-classes nil)
+(defthm-axe-basic constant-2 3 :rule-classes nil) ; 3 is a non-nil constant
+(defthm-axe-basic constant-3 '(x) :rule-classes nil) ; '(x) is a non-nil constant
+(must-fail (defthm-axe-basic constant-4 nil :rule-classes nil))
+(must-fail (defthm-axe-basic constant-5 'nil :rule-classes nil))
+(defthm-axe-basic constant-6 ''nil :rule-classes nil) ; since ''nil is a non-nil constant
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm-axe-basic implies-1 (implies x x) :rule-classes nil)
+(must-fail (defthm-axe-basic implies-2 (implies x y) :rule-classes nil))
