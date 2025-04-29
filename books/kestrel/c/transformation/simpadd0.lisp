@@ -235,29 +235,17 @@
      For each such variable, we add a hypothesis about it saying that
      the variable can be read from the computation state
      and it contains a value of the appropriate type.
-     For now only certain types are supported,
-     namely the ones for which are formal semantics has values;
-     we throw a hard error if the type is not supported,
-     which never happens when we call this function
-     because we test that in advance."))
+     Only types with corresponding values in the formal semantics
+     are supported, as in @(tsee type-to-value-kind)."))
   (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
-       (kind (type-kind type))
-       ((unless (member-eq kind '(:uchar :schar
-                                  :ushort :sshort
-                                  :uint :sint
-                                  :ulong :slong
-                                  :ullong :sllong
-                                  :pointer
-                                  :array
-                                  :struct)))
-        (raise "Internal error: variable ~x0 has type ~x1." var type))
+       (value-kind (type-to-value-kind type))
        (hyp `(b* ((var (mv-nth 1 (ldm-ident (ident ,(ident->unwrap var)))))
                   (objdes (c::objdesign-of-var var compst))
                   (val (c::read-object objdes compst)))
                (and objdes
                     (c::valuep val)
-                    (c::value-case val ,kind))))
+                    (c::value-case val ,value-kind))))
        (hyps (simpadd0-gen-var-hyps (omap::tail vartys))))
     (cons hyp hyps))
   :hooks (:fix))
