@@ -553,6 +553,7 @@
     coerce-binary-info
 
     expr-type
+    stmt-type
 
     transunit-ensemble-annop
 
