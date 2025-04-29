@@ -5652,13 +5652,11 @@
   (("Goal"
     :IN-THEORY (E/D (BVLT UNSIGNED-BYTE-p bvplus bvchop-of-sum-cases)
                     (PLUS-1-AND-BVCHOP-BECOMES-BVPLUS
-                     BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-
-
-                      )))))
+                     BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 ;yuck!
-(defthm car-when-equal-nthcdr
+;move
+(defthmd car-when-equal-nthcdr
   (implies (and (equal x (nthcdr free free2))
                 (natp free) ;drop?
                 )
@@ -5703,9 +5701,6 @@
                            (BVCAT-OF-SLICE-AND-X-ADJACENT
                             plus-1-and-bvchop-becomes-bvplus
                             bvminus-becomes-bvplus-of-bvuminus
-
-
-
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite)))))
 
@@ -5731,9 +5726,6 @@
            :in-theory (e/d (bvlt unsigned-byte-p bvplus bvchop-of-sum-cases posp)
                            (plus-1-and-bvchop-becomes-bvplus
                             bvminus-becomes-bvplus-of-bvuminus
-
-
-
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite)))))
 
@@ -5771,9 +5763,6 @@
                             PLUS-32-1-BVUMIUNS
                             +-OF-MINUS-1-AND-BV2
                             bvminus-becomes-bvplus-of-bvuminus
-
-
-
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite)))))
 
@@ -5802,10 +5791,7 @@
   (("Goal"
     :IN-THEORY
     (E/D (BVLT bvplus bvchop-of-sum-cases)
-         (
-
-
-          )))))
+         ()))))
 
 (defthm plus-of-minus-3-bv-5
   (implies (and (unsigned-byte-p 5 x) ;use bind-free
@@ -5816,10 +5802,7 @@
   (("Goal"
     :in-theory
     (e/d (bvlt bvplus bvchop-of-sum-cases)
-         (
-
-
-          )))))
+         ()))))
 
 (defthm equal-0-top-slice-5-4-2
   (implies (unsigned-byte-p 5 x)
@@ -5946,7 +5929,7 @@
                   (bvplus (+ 1 size) 1 (BVPLUS SIZE X Y))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(defthm cdr-of-nthcdr-of-bvplus
+(defthmd cdr-of-nthcdr-of-bvplus
   (implies (natp size)
            (equal (CDR (NTHCDR (bvplus size x y) lst))
                   (NTHCDR (bvplus (+ 1 size) 1 (bvplus size x y)) lst)))
