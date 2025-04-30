@@ -856,7 +856,7 @@
   (declare (xargs :guard (and (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-possibly-negated-nodenumsp disjuncts dag-len))
                   :guard-hints (("Goal" :in-theory (enable strip-not-from-possibly-negated-nodenum rational-listp-when-all-natp)))))
-  (let* ((nodenums-to-assume (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len)) ;todo: what about ones that are not negated?
+  (let* ((nodenums-to-assume (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len)) ;todo: what about ones that are not negated? ; todo: since the disjuncts are pnns, consider not using the dag here
          (nodenum-count (len nodenums-to-assume)))
     (build-known-nodenum-type-alist-aux (* (+ 1 nodenum-count) ;not sure what we should use here
                                            (+ 1 nodenum-count)
