@@ -419,21 +419,21 @@
 
 
 
-;;   (local (defthmd fgl-object-bfrlist-of-get-bvar->term$a-aux
+;;   (local (defthmd fgl-object-bfrlist-of-get-bvar->term$c-aux
 ;;            (implies (and (not (member v (bvar-db-bfrlist-aux m bvar-db)))
 ;;                          (< (nfix n) (nfix m))
-;;                          (<= (base-bvar$a bvar-db) (nfix n)))
-;;                     (not (member v (fgl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+;;                          (<= (base-bvar$c bvar-db) (nfix n)))
+;;                     (not (member v (fgl-object-bfrlist (get-bvar->term$c n bvar-db)))))
 ;;            :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)))))
 
-;;   (local (defthm fgl-object-bfrlist-of-get-bvar->term$a
+;;   (local (defthm fgl-object-bfrlist-of-get-bvar->term$c
 ;;            (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
-;;                          (<= (base-bvar$a bvar-db) (nfix n))
-;;                          (< (nfix n) (next-bvar$a bvar-db)))
-;;                     (not (member v (fgl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+;;                          (<= (base-bvar$c bvar-db) (nfix n))
+;;                          (< (nfix n) (next-bvar$c bvar-db)))
+;;                     (not (member v (fgl-object-bfrlist (get-bvar->term$c n bvar-db)))))
 ;;            :hints (("goal" :in-theory (enable bvar-db-bfrlist)
-;;                     :use ((:instance fgl-object-bfrlist-of-get-bvar->term$a-aux
-;;                            (m (next-bvar$a bvar-db))))))))
+;;                     :use ((:instance fgl-object-bfrlist-of-get-bvar->term$c-aux
+;;                            (m (next-bvar$c bvar-db))))))))
 
 ;;(local (in-theory (enable gobj-bfr-list-eval-is-bfr-list-eval)))
 

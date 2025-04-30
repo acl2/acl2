@@ -5428,10 +5428,10 @@
 
   (local (in-theory (disable w)))
 
-  (local (defthm bfr-varname-p-of-get-term->bvar$a
+  (local (defthm bfr-varname-p-of-get-term->bvar$c
            (b* ((bvar-db (interp-st->bvar-db interp-st))
                 (logicman (interp-st->logicman interp-st))
-                (bvar (get-term->bvar$a obj bvar-db)))
+                (bvar (get-term->bvar$c obj bvar-db)))
              (implies (and (interp-st-bfrs-ok interp-st)
                            bvar)
                       (bfr-varname-p bvar logicman)))
@@ -8053,10 +8053,10 @@
   (implies (interp-st-bvar-db-ok interp-st env)
            (b* ((bvar-db (interp-st->bvar-db interp-st))
                 (logicman (interp-st->logicman interp-st)))
-             (implies (and (<= (base-bvar$a bvar-db) (nfix n))
-                           (< (nfix n) (next-bvar$a bvar-db)))
+             (implies (and (<= (base-bvar$c bvar-db) (nfix n))
+                           (< (nfix n) (next-bvar$c bvar-db)))
                       (iff* (gobj-bfr-eval (bfr-var n) env logicman)
-                            (fgl-object-eval (get-bvar->term$a n bvar-db) env logicman))))))
+                            (fgl-object-eval (get-bvar->term$c n bvar-db) env logicman))))))
 
 
 
@@ -8167,7 +8167,7 @@
                      contexts
                      (fgl-object-eval x env))))
     :hints (("goal" :induct (len bvars)
-             :in-theory (enable (:i len))
+             :in-theory (enable (:i len) bvar-list-okp$c)
              :expand ((:free (logicman pathcond bvar-db) <call>)))
             (and stable-under-simplificationp
                  '(:use ((:instance eval-when-logicman-pathcond-implies

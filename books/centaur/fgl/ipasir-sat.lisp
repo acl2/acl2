@@ -948,10 +948,10 @@
   
   ;; (defret get-bvar->term-eval-of-<fn>
   ;;   (implies (equal bvar-db (interp-st->bvar-db interp-st))
-  ;;            (iff (fgl-object-eval (get-bvar->term$a n bvar-db)
+  ;;            (iff (fgl-object-eval (get-bvar->term$c n bvar-db)
   ;;                                  env
   ;;                                  (interp-st->logicman new-interp-st))
-  ;;                 (fgl-object-eval (get-bvar->term$a n bvar-db)
+  ;;                 (fgl-object-eval (get-bvar->term$c n bvar-db)
   ;;                                  env
   ;;                                  (interp-st->logicman interp-st)))))
 

@@ -1078,7 +1078,7 @@ compute a value for @('x').</p>
   (defret cgraph-bfrlist-of-<fn>
     (implies (and (bfr-listp (bvar-db-bfrlist bvar-db))
                   (bfr-listp (cgraph-bfrlist cgraph))
-                  (<= (base-bvar$a bvar-db) (nfix n)))
+                  (<= (base-bvar$c bvar-db) (nfix n)))
              (bfr-listp (cgraph-bfrlist new-cgraph)))))
 
 (define bvar-db-create-cgraph (bvar-db
@@ -2090,10 +2090,10 @@ compute a value for @('x').</p>
 
 
 
-(local (defthm bfr-varname-p-of-get-term->bvar$a
-         (implies (and (equal (bfr-nvars) (next-bvar$a bvar-db))
-                       (get-term->bvar$a x bvar-db))
-                  (bfr-varname-p (get-term->bvar$a x bvar-db)))
+(local (defthm bfr-varname-p-of-get-term->bvar$c
+         (implies (and (equal (bfr-nvars) (next-bvar$c bvar-db))
+                       (get-term->bvar$c x bvar-db))
+                  (bfr-varname-p (get-term->bvar$c x bvar-db)))
          :hints(("Goal" :in-theory (enable bfr-varname-p)))))
 
 

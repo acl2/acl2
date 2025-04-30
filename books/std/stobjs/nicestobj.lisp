@@ -432,14 +432,14 @@
          (acl2::add-to-ruleset! <stobjname>-defs <access>))
        (:@ :not-stobjp
         (define <update> ((:@ :arrayp (i natp))
-                          (v (<pred> v) :type <elt-type>)
+                          (<field> (<pred> <field>) :type <elt-type>)
                           <stobjname>)
           (:@ :arrayp :guard (< i (<length> <stobjname>)))
           :inline t
           :split-types t
           ;; :returns (new-<stobjname> <stobjpred> :hyp (<stobjpred> <stobjname>))
-          (mbe :logic (<base-update> (:@ :arrayp i) (<fix> v) <stobjname>)
-               :exec (<base-update> (:@ :arrayp i) v <stobjname>))
+          (mbe :logic (<base-update> (:@ :arrayp i) (<fix> <field>) <stobjname>)
+               :exec (<base-update> (:@ :arrayp i) <field> <stobjname>))
          ///
          (acl2::add-to-ruleset! <stobjname>-defs <update>))))
 

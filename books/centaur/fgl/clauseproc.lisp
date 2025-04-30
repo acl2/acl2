@@ -265,17 +265,17 @@
 
 (local (defthm member-bfrlist-of-lookup-in-bvar-db
          (implies (and (not (consp (bvar-db-bfrlist bvar-db)))
-                       (<= (base-bvar$a bvar-db) (nfix n))
-                       (< (nfix n) (next-bvar$a bvar-db)))
-                  (not (member v (fgl-object-bfrlist (get-bvar->term$a n bvar-db)))))))
+                       (<= (base-bvar$c bvar-db) (nfix n))
+                       (< (nfix n) (next-bvar$c bvar-db)))
+                  (not (member v (fgl-object-bfrlist (get-bvar->term$c n bvar-db)))))))
 
 (local (defthm atom-bfrlist-of-lookup-in-bvar-db
          (implies (and (not (consp (bvar-db-bfrlist bvar-db)))
-                       (<= (base-bvar$a bvar-db) (nfix n))
-                       (< (nfix n) (next-bvar$a bvar-db)))
-                  (not (consp (fgl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+                       (<= (base-bvar$c bvar-db) (nfix n))
+                       (< (nfix n) (next-bvar$c bvar-db)))
+                  (not (consp (fgl-object-bfrlist (get-bvar->term$c n bvar-db)))))
          :hints (("goal" :use ((:instance member-bfrlist-of-lookup-in-bvar-db
-                                (v (car (fgl-object-bfrlist (get-bvar->term$a n bvar-db))))))
+                                (v (car (fgl-object-bfrlist (get-bvar->term$c n bvar-db))))))
                   :in-theory (disable member-bfrlist-of-lookup-in-bvar-db
                                       bfrlist-of-get-bvar->term)))))
 
@@ -461,14 +461,14 @@
 
   (defthm bvar-db-to-bfr-env-aux-correct
     (implies (and (bvar-db-boundedp bvar-db logicman)
-                  (<= (base-bvar$a bvar-db) (nfix n))
+                  (<= (base-bvar$c bvar-db) (nfix n))
                   (<= (nfix n) (nfix m))
-                  (< (nfix m) (next-bvar$a bvar-db))
-                  (equal (next-bvar$a bvar-db) (bfr-nvars logicman)))
+                  (< (nfix m) (next-bvar$c bvar-db))
+                  (equal (next-bvar$c bvar-db) (bfr-nvars logicman)))
              (iff (bfr-lookup m
                               (fgl-env->bfr-vals (bvar-db-to-bfr-env-aux n env bvar-db logicman))
                               logicman)
-                  (fgl-object-eval (get-bvar->term$a m bvar-db)
+                  (fgl-object-eval (get-bvar->term$c m bvar-db)
                                    (bvar-db-to-bfr-env-aux n env bvar-db logicman)
                                    logicman)))
     :hints (("goal"

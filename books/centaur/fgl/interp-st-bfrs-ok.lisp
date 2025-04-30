@@ -144,7 +144,7 @@
                     (bfr-listp (bvar-db-bfrlist (interp-st->bvar-db interp-st)))
                     (bvar-db-boundedp (interp-st->bvar-db interp-st) logicman)
                     (interp-st-nvars-ok interp-st)
-                    (equal (next-bvar$a (interp-st->bvar-db interp-st))
+                    (equal (next-bvar$c (interp-st->bvar-db interp-st))
                            (bfr-nvars (interp-st->logicman interp-st)))
                     (logicman-invar logicman)
                     (logicman-ipasirs-assumption-free logicman)

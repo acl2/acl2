@@ -183,9 +183,9 @@
     (forall n
             (b* ((bvar-db (interp-st->bvar-db interp-st))
                  (logicman (interp-st->logicman interp-st)))
-              (implies (and (<= (base-bvar$a bvar-db) (nfix n))
-                            (< (nfix n) (next-bvar$a bvar-db)))
-                       (iff* (fgl-object-eval (get-bvar->term$a n bvar-db) env logicman)
+              (implies (and (<= (base-bvar$c bvar-db) (nfix n))
+                            (< (nfix n) (next-bvar$c bvar-db)))
+                       (iff* (fgl-object-eval (get-bvar->term$c n bvar-db) env logicman)
                              (gobj-bfr-eval (bfr-var n) env logicman)))))
     :rewrite :direct)
 
@@ -198,21 +198,21 @@
 
   ;; (local (in-theory (disable not-member-of-append)))
 
-  (local (defthmd fgl-object-bfrlist-of-get-bvar->term$a-aux
+  (local (defthmd fgl-object-bfrlist-of-get-bvar->term$c-aux
            (implies (and (not (member v (bvar-db-bfrlist-aux m bvar-db)))
                          (< (nfix n) (nfix m))
-                         (<= (base-bvar$a bvar-db) (nfix n)))
-                    (not (member v (fgl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+                         (<= (base-bvar$c bvar-db) (nfix n)))
+                    (not (member v (fgl-object-bfrlist (get-bvar->term$c n bvar-db)))))
            :hints(("Goal" :in-theory (enable bvar-db-bfrlist-aux)))))
 
-  (local (defthm fgl-object-bfrlist-of-get-bvar->term$a
+  (local (defthm fgl-object-bfrlist-of-get-bvar->term$c
            (implies (and (not (member v (bvar-db-bfrlist bvar-db)))
-                         (<= (base-bvar$a bvar-db) (nfix n))
-                         (< (nfix n) (next-bvar$a bvar-db)))
-                    (not (member v (fgl-object-bfrlist (get-bvar->term$a n bvar-db)))))
+                         (<= (base-bvar$c bvar-db) (nfix n))
+                         (< (nfix n) (next-bvar$c bvar-db)))
+                    (not (member v (fgl-object-bfrlist (get-bvar->term$c n bvar-db)))))
            :hints (("goal" :in-theory (enable bvar-db-bfrlist)
-                    :use ((:instance fgl-object-bfrlist-of-get-bvar->term$a-aux
-                           (m (next-bvar$a bvar-db))))))))
+                    :use ((:instance fgl-object-bfrlist-of-get-bvar->term$c-aux
+                           (m (next-bvar$c bvar-db))))))))
 
   (local (defthm bfr-listp-of-bvar-db-bfrlist-when-equal
            (implies (and (equal bvar-db (interp-st->bvar-db interp-st))
@@ -359,13 +359,13 @@
                        (interp-st->logicman interp-st)))))
 
     (defret next-bvar-of-<fn>
-      (>= (next-bvar$a (interp-st->bvar-db new-interp-st))
-          (next-bvar$a (interp-st->bvar-db interp-st)))
+      (>= (next-bvar$c (interp-st->bvar-db new-interp-st))
+          (next-bvar$c (interp-st->bvar-db interp-st)))
       :rule-classes :linear)
 
     (defret base-bvar-of-<fn>
-      (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
-             (base-bvar$a (interp-st->bvar-db interp-st))))
+      (equal (base-bvar$c (interp-st->bvar-db new-interp-st))
+             (base-bvar$c (interp-st->bvar-db interp-st))))
 
     (defret w-state-of-<fn>
       (equal (w new-state) (w state)))
@@ -374,12 +374,12 @@
     (defret get-bvar->term-eval-of-<fn>
       (b* ((bvar-db (interp-st->bvar-db interp-st)))
         (implies (and (interp-st-bfrs-ok interp-st)
-                      (<= (base-bvar$a bvar-db) (nfix n))
-                      (< (nfix n) (next-bvar$a bvar-db)))
-                 (iff (fgl-object-eval (get-bvar->term$a n (interp-st->bvar-db new-interp-st))
+                      (<= (base-bvar$c bvar-db) (nfix n))
+                      (< (nfix n) (next-bvar$c bvar-db)))
+                 (iff (fgl-object-eval (get-bvar->term$c n (interp-st->bvar-db new-interp-st))
                                        env
                                        (interp-st->logicman new-interp-st))
-                      (fgl-object-eval (get-bvar->term$a n bvar-db)
+                      (fgl-object-eval (get-bvar->term$c n bvar-db)
                                        env
                                        (interp-st->logicman interp-st))))))
 
