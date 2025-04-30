@@ -399,15 +399,17 @@ struct S_1 s_1 = {.x = 0};
   (c$::output-files :const *new*
                     :path "new")
 
+  ;; No definitions of my_0 and my_1!
   (assert-file-contents
     :file "new/typedef1.c"
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 struct myStruct_0 { int foo; _Bool bar; };
 struct myStruct_1 { unsigned long int baz; };
 typedef struct myStruct myStruct_t;
-static myStruct_t my;
+static struct myStruct_0 my_0;
+static struct myStruct_1 my_1;
 int main(void) {
-  return my_0.foo + (-my_0.bar);
+  return my_0.foo + (-my_1.baz);
 }
 ")
 
@@ -432,9 +434,10 @@ int main(void) {
     :content "typedef struct myStruct { int foo; _Bool bar; unsigned long int baz; } myStruct_t;
 struct myStruct_0 { int foo; _Bool bar; };
 struct myStruct_1 { unsigned long int baz; };
-static myStruct_t my;
+static struct myStruct_0 my_0;
+static struct myStruct_1 my_1;
 int main(void) {
-  return my_0.foo + (-my_0.bar);
+  return my_0.foo + (-my_1.baz);
 }
 ")
 

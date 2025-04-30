@@ -39,7 +39,7 @@
 
 ;; Find the object and its type
 
-(define type-spec-from-dec-spec
+(define type-spec-from-decl-spec
   ((decl-spec decl-specp))
   :returns (type-spec? type-spec-optionp)
   (decl-spec-case
@@ -53,14 +53,14 @@
    :stdcall nil
    :declspec nil))
 
-(define type-spec-from-dec-specs
+(define type-spec-from-decl-specs
   ((decl-specs decl-spec-listp))
   :returns (type-spec? type-spec-optionp)
   (b* (((when (endp decl-specs))
         nil)
-       (type-spec? (type-spec-from-dec-spec (first decl-specs))))
+       (type-spec? (type-spec-from-decl-spec (first decl-specs))))
     (or type-spec?
-        (type-spec-from-dec-specs (rest decl-specs)))))
+        (type-spec-from-decl-specs (rest decl-specs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,8 +182,7 @@
    (tunits transunit-ensemblep))
   :guard (c$::transunit-ensemble-annop tunits)
   :returns (mv erp
-               ;; TODO: rename to tag
-               (struct-type identp)
+               (struct-tag identp)
                (filepath filepathp)
                (linkage c$::linkagep))
   (b* (((reterr) (c$::irr-ident) (filepath "") (c$::irr-linkage))
@@ -288,7 +287,7 @@
     (decl-case
       decl
       :decl
-      (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
+      (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
            ((erp type-match new1 new2 remanining-struct-decls split-struct-decls)
             (b* (((reterr) nil nil nil nil nil)
                  ((unless (and type-spec?
@@ -679,7 +678,7 @@
     (decl-case
       decl
       :decl
-      (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
+      (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
            ((unless type-spec?)
             (retok nil (list (decl-fix decl))))
            ;; TODO: check that the object is indeed file-scope, as assumed
@@ -687,6 +686,7 @@
             (type-spec-case
               type-spec?
               :struct (split-struct-initdeclors original split-members decl.init)
+              :typedef (split-struct-initdeclors original split-members decl.init)
               :otherwise (mv nil nil nil nil)))
            ((unless match)
             (retok nil (list (decl-fix decl))))
@@ -1233,14 +1233,14 @@
 ;; TODO: add `:fragment` argument indicate the map does not represent a
 ;;   complete program. In such cases, fail if the gso is external.
 (define splitgso-filepath-transunit-map
-  ((struct-type identp)
+  ((struct-tag identp)
    (filepath filepathp)
    (linkage c$::linkagep)
    (orig-struct identp)
    (new-struct1 ident-optionp)
    (new-struct2 ident-optionp)
-   (new-struct-type1 ident-optionp)
-   (new-struct-type2 ident-optionp)
+   (new-struct-tag1 ident-optionp)
+   (new-struct-tag2 ident-optionp)
    (split-members ident-listp)
    (map filepath-transunit-mapp))
   :guard (omap::assoc filepath map)
@@ -1254,21 +1254,21 @@
        (new-struct1 (or new-struct1 orig-struct))
        (new-struct2 (or new-struct2 orig-struct))
        ((when (equal linkage (c$::linkage-external)))
-        (b* (((erp new-struct-type1 new-struct-type2 map)
+        (b* (((erp new-struct-tag1 new-struct-tag2 map)
               (dup-split-struct-type-filepath-transunit-map
-                struct-type
-                new-struct-type1
-                new-struct-type2
+                struct-tag
+                new-struct-tag1
+                new-struct-tag2
                 ident-blacklist
                 split-members
                 map))
-             ((when (or (not new-struct-type1)
-                        (not new-struct-type2)))
+             ((when (or (not new-struct-tag1)
+                        (not new-struct-tag2)))
               ;; Shouldn't happen; the AST is validated and the object is in
               ;; the validation table.
               (reterr (msg "Could not find struct type.")))
              (ident-blacklist
-               (insert new-struct-type1 (insert new-struct-type2 ident-blacklist)))
+               (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
              ((list new-struct1 new-struct2)
               (fresh-idents (list new-struct1
                                   new-struct2)
@@ -1279,8 +1279,8 @@
                 linkage
                 new-struct1
                 new-struct2
-                new-struct-type1
-                new-struct-type2
+                new-struct-tag1
+                new-struct-tag2
                 split-members
                 map))
              (map
@@ -1293,21 +1293,21 @@
                  split-members)))
           (retok map)))
        (tunit (omap::lookup filepath map))
-       ((erp new-struct-type1 new-struct-type2 tunit)
+       ((erp new-struct-tag1 new-struct-tag2 tunit)
         (dup-split-struct-type-transunit
-          struct-type
-          new-struct-type1
-          new-struct-type2
+          struct-tag
+          new-struct-tag1
+          new-struct-tag2
           ident-blacklist
           split-members
           tunit))
-       ((when (or (not new-struct-type1)
-                  (not new-struct-type2)))
+       ((when (or (not new-struct-tag1)
+                  (not new-struct-tag2)))
         ;; Shouldn't happen; the AST is validated and the object is in
         ;; the validation table.
         (reterr (msg "Could not find struct type.")))
        (ident-blacklist
-         (insert new-struct-type1 (insert new-struct-type2 ident-blacklist)))
+         (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
        ((list new-struct1 new-struct2)
         (fresh-idents (list new-struct1
                             new-struct2)
@@ -1318,8 +1318,8 @@
           linkage
           new-struct1
           new-struct2
-          new-struct-type1
-          new-struct-type2
+          new-struct-tag1
+          new-struct-tag2
           split-members
           tunit))
        (tunit
@@ -1339,27 +1339,27 @@
    (orig-struct identp)
    (new-struct1 ident-optionp)
    (new-struct2 ident-optionp)
-   (new-struct-type1 ident-optionp)
-   (new-struct-type2 ident-optionp)
+   (new-struct-tag1 ident-optionp)
+   (new-struct-tag2 ident-optionp)
    (split-members ident-listp)
    (tunits transunit-ensemblep))
   :guard (c$::transunit-ensemble-annop tunits)
   :returns (mv erp
                (tunits$ transunit-ensemblep))
   (b* (((reterr) (c$::transunit-ensemble-fix tunits))
-       ((erp struct-type filepath linkage)
+       ((erp struct-tag filepath linkage)
         (get-gso-info filepath? orig-struct tunits))
        (map (transunit-ensemble->unwrap tunits))
        ((erp map)
         (splitgso-filepath-transunit-map
-          struct-type
+          struct-tag
           filepath
           linkage
           orig-struct
           new-struct1
           new-struct2
-          new-struct-type1
-          new-struct-type2
+          new-struct-tag1
+          new-struct-tag2
           split-members
           map)))
     (retok
