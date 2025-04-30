@@ -17,3 +17,4 @@
 (in-package "ACL2S")
 (acl2s-defaults :set testing-enabled nil)
 (set-acl2s-property-table-proof-timeout 50000)
+(set-defunc-timeout 50000)
