@@ -625,11 +625,11 @@
       and the variable for the corresponding argument.")
     (xdoc::li
      "A list @('arg-types') of terms that assert that
-      each variable in @('args') is a value of type @('int').")
+      each variable in @('args') is a value of the appropriate type.")
     (xdoc::li
      "A list @('arg-types-compst') of terms that assert that
       each parameter in @('params') can be read from a computation state
-      and its reading yields a value of type @('int')."))
+      and its reading yields a value of the appropriate type."))
    (xdoc::p
     "These results are generated only if all the parameters have type @('int'),
      which we check as we go through the parameters.
