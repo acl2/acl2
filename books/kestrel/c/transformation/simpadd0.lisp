@@ -651,11 +651,10 @@
       each parameter in @('params') can be read from a computation state
       and its reading yields a value of the appropriate type."))
    (xdoc::p
-    "These results are generated only if all the parameters have type @('int'),
+    "These results are generated only if
+     all the parameters have certain types
+     (see @(tsee simpadd0-tyspecseq-to-value-kind)),
      which we check as we go through the parameters.
-     This is because for now we only support theorem generation
-     for functions whose parameters are all @('int');
-     we will generalize this.
      The @('okp') result says whether this is the case;
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil))
