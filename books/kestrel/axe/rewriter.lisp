@@ -24,6 +24,7 @@
 
 (include-book "rewriter-common")
 (include-book "refined-assumption-alists")
+(include-book "refined-assumption-alists3")
 (include-book "equality-assumption-alists")
 (include-book "dag-array-builders3")
 (include-book "node-replacement-alist")
