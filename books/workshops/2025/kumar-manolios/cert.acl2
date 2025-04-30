@@ -1,0 +1,12 @@
+#+acl2-par
+(set-waterfall-parallelism nil)
+
+#+acl2-par
+(set-parallel-execution nil)
+
+; cert-flags: ? t :ttags :all :skip-proofs-okp t
+
+(in-package "ACL2S")
+(acl2s-defaults :set testing-enabled nil)
+(set-acl2s-property-table-proof-timeout 100000)
+(set-defunc-timeout 100000)
