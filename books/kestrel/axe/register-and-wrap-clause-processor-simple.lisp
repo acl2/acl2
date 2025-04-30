@@ -93,7 +93,7 @@
                                    (no-print-fns 'nil)
                                    (monitor 'nil)
                                    (use 'nil)
-                                   (print 'nil)
+                                   (print ':brief)
                                    (var-ordering 'nil)
                                    (count-hits 'nil)
                                    (rule-classes ':auto))

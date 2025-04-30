@@ -438,15 +438,15 @@
                                                '(acl2::boolif-x-x-y-becomes-boolor ;drop?
                                                  acl2::boolif-when-quotep-arg2
                                                  acl2::boolif-when-quotep-arg3))))
-       ((mv result info-acc
-            & ; actual-dag
-            & ; assumptions-given
-            state)
+       ((mv result info-acc state)
         (acl2::apply-tactic-prover result-dag
-                                   ;; tests ;a natp indicating how many tests to run
-                                   tactics
                                    ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
                                    register-type-assumptions ;TODO: We may need separateness assumptions!
+                                   nil ; interpreted-fns
+                                   :bit ; type (means try to prove that the DAG is 1)
+                                   ;; tests ;a natp indicating how many tests to run
+                                   tactics
+                                   proof-rules
                                    t   ; simplify-assumptions
                                    ;; types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                                    print
@@ -455,19 +455,13 @@
                                    t       ; call-stp-when-pruning
                                    t ; counterexamplep
                                    nil ; print-cex-as-signedp
-                                   proof-rules
-                                   nil ; interpreted-fns
-                                   ;; monitor:
                                    (append '(;ACL2::EQUAL-OF-BVPLUS-MOVE-BVMINUS-BETTER ;drop?
                                              ;;bvlt-reduce-when-not-equal-one-less
                                              ;;boolif-of-bvlt-strengthen-to-equal
                                              )
                                            rules-to-monitor)
                                    t ;normalize-xors
-                                   :bit ; type (means try to prove that the DAG is 1)
-                                   state
-                                   ;;rand
-                                   ))
+                                   state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state)))
     (if (eq result acl2::*error*)
         (mv :error-in-tactic-proof nil nil state)
