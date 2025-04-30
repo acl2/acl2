@@ -700,11 +700,11 @@
                  (b* ((hyp (first hyps))
                       (print (get-print rewrite-stobj))
                       (- (and (eq :verbose! print)
-                              (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist)))
+                              (cw "Relieving hyp ~x0 with alist ~x1.~%" hyp alist)))
                       (fn (ffn-symb hyp)) ;; all hyps are conses, fn may be a special keyword tag, like :axe-syntaxp
                       )
                    (case fn
-                     (:axe-syntaxp ; (:axe-syntaxp . <expr>) ; note the dot!
+                     (:axe-syntaxp ; (:axe-syntaxp . <expr>)
                       (let* ((syntaxp-expr (cdr hyp)) ;; strip off the :axe-syntaxp
                              (result (,eval-axe-syntaxp-expr-fn syntaxp-expr alist (get-dag-array rewrite-stobj2)) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
                                      ))
@@ -723,7 +723,7 @@
                                                ;; (cw ")~%")
                                                ))
                                   (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))))
-                     (:axe-bind-free ; (:axe-bind-free <expr> . <vars-to-bind>) ; note the dot
+                     (:axe-bind-free ; (:axe-bind-free <expr> . <vars-to-bind>)
                       ;; To evaluate the axe-bind-free hyp, we use alist, which binds vars to their nodenums or quoteps.
                       ;; The soundness of Axe should not depend on what an axe-bind-free function does; thus we cannot pass alist to such a function and trust it to faithfully extend it.  Nor can we trust it to extend the dag without changing any existing nodes. So we require the axe-bind-free-function to return an alist binding exactly certain vars, and we check the keys and vals of that alist.
                       ;;TODO: It might be nice to be able to pass in the assumptions to the axe-bind-free-function? e.g., for finding sizes from unsigned-byte-p assumptions.
@@ -747,7 +747,8 @@
                           (prog2$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                        (cw "(Failed to relieve axe-bind-free hyp ~x0 for ~x1.)~%" bind-free-expr rule-symbol))
                                   (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))))
-                     (:free-vars ; can't be a work-hard since there are free vars
+                     (:free-vars ; (:free-vars . hyp)
+                      ;; can't be a work-hard since there are free vars
                       (b* (;; Partially instantiate the hyp (the free vars will remain free):
                            ;; TODO: Could we just do the matching wrt the alist, and skip this instantiation step?:
                            (partially-instantiated-hyp (,instantiate-hyp-free-vars-name (cdr hyp) ;strip the :free-vars
