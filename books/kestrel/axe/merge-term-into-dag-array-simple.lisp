@@ -609,13 +609,11 @@
                                merge-terms-into-dag-array-simple-return-type))))
 
 (defthm-flag-merge-term-into-dag-array-simple
-  (defthm true-listp-of-mv-nth-1-of-merge-terms-into-dag-array-simple-dummy
-    :skip t
-    :flag merge-term-into-dag-array-simple)
   (defthm true-listp-of-mv-nth-1-of-merge-terms-into-dag-array-simple
     (true-listp (mv-nth 1 (merge-terms-into-dag-array-simple terms var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name)))
     :rule-classes :type-prescription
     :flag merge-terms-into-dag-array-simple)
+  :skip-others t
   :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-simple merge-terms-into-dag-array-simple) (natp)))))
 
 ;; handle the case of a lambda whose body is a var
@@ -652,9 +650,7 @@
                               dag-array-name dag-parent-array-name
                               ))))
     :flag merge-term-into-dag-array-simple)
-  (defthm posp-of-mv-nth-3-of-merge-term-into-dag-array-simple-fake-helper
-    :skip t
-    :flag merge-terms-into-dag-array-simple)
+  :skip-others t
   :hints (("Goal" :in-theory (e/d ( ;merge-term-into-dag-array-simple
                                    merge-terms-into-dag-array-simple
                                    consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs)

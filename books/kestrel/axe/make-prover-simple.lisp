@@ -4036,7 +4036,7 @@
                 ((mv provedp literal-nodenums assumption-array)
                  (make-assumption-array literal-nodenums dag-array dag-len known-booleans print))
                 ((when provedp)
-                 (and print (cw "NOTE: Proved due to contradiction in assumptions.~%"))
+                 (and print (cw "NOTE: Proved due to contradiction among literals.~%"))
                  (mv (erp-nil) t t literal-nodenums dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))
                 (- (and print (cw "(Rewriting with rule set ~x0 (~x1 literals, ~x2 DAG nodes):~%" rule-set-number (len literal-nodenums) dag-len))) ;the printed paren is closed below
                 ;; (print-hit-countsp (member-eq print '(t :verbose :verbose!)))

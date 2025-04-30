@@ -143,3 +143,64 @@ struct S_1 s_1 = {.x = 0};
 ")
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Test typedefs
+
+(acl2::must-succeed*
+  (c$::input-files :files ("typedef1.c")
+                   :const *old*)
+
+  (split-all-gso *old*
+                 *new*)
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  (assert-file-contents
+    :file "new/typedef1.c"
+    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+struct myStruct_0 { _Bool bar; unsigned long int baz; };
+struct myStruct_0_0 { unsigned long int baz; };
+struct myStruct_0_1 { _Bool bar; };
+struct myStruct_1 { int foo; };
+typedef struct myStruct myStruct_t;
+static struct myStruct_0_0 my_0_0;
+static struct myStruct_0_1 my_0_1;
+static struct myStruct_1 my_1;
+int main(void) {
+  return my_1.foo + (-my_0_0.baz);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("typedef2.c")
+                   :const *old*)
+
+  (split-all-gso *old*
+                 *new*)
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  (assert-file-contents
+    :file "new/typedef2.c"
+    :content "typedef struct myStruct { int foo; _Bool bar; unsigned long int baz; } myStruct_t;
+struct myStruct_0 { _Bool bar; unsigned long int baz; };
+struct myStruct_0_0 { unsigned long int baz; };
+struct myStruct_0_1 { _Bool bar; };
+struct myStruct_1 { int foo; };
+static struct myStruct_0_0 my_0_0;
+static struct myStruct_0_1 my_0_1;
+static struct myStruct_1 my_1;
+int main(void) {
+  return my_1.foo + (-my_0_0.baz);
+}
+")
+
+  :with-output-off nil)
