@@ -105,25 +105,25 @@
 ;todo: move these (and disable them)?
 
 ;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
-(defthm equal-of-myif-same-1
+(defthmd equal-of-myif-same-1
   (equal (equal x (myif test x y))
          (if test t (equal x y)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
-(defthm equal-of-myif-same-2
+(defthmd equal-of-myif-same-2
   (equal (equal x (myif test y x))
          (if test (equal x y) t))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;; may not be needed if we flip equalities to bring smaller terms first
-(defthm equal-of-myif-same-1-alt
+(defthmd equal-of-myif-same-1-alt
   (equal (equal (myif test x y) x)
          (if test t (equal x y)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;; may not be needed if we flip equalities to bring smaller terms first
-(defthm equal-of-myif-same-2-alt
+(defthmd equal-of-myif-same-2-alt
   (equal (equal (myif test y x) x)
          (if test (equal x y) t))
   :hints (("Goal" :in-theory (enable myif))))
@@ -6346,10 +6346,7 @@
                                         bvmult bvchop-when-i-is-not-an-integer
                                         bvchop-when-top-bit-1)
                                   (plus-1-and-bvchop-becomes-bvplus ;fixme
-                                   bvminus-becomes-bvplus-of-bvuminus
-
-
-                                    )))))
+                                   bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm bvlt-of-bvmult-for-sha1
   (implies (and (bvle 5 x 6)
@@ -6412,8 +6409,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus sbvmoddown bvmult bvmod bvchop logext logapp getbit slice
                                           bvlt)
                                   (+-of-minus-1-and-bv2
-                                   anti-slice
-                                   )))))
+                                   anti-slice)))))
 
 ;gen!
 (defthm bvmult-of-bvplus-for-sha1
@@ -6426,13 +6422,8 @@
   (("Goal"
     :IN-THEORY
     (E/D (BVCAT BVMULT LOGAPP BVPLUS bvlt)
-         (
-           BVCHOP-SHIFT-GEN BVPLUS-OF-BVCHOP-ARG3
-          BVPLUS-OF-BVCHOP-ARG2
-
-
-
-          )))))
+         (BVCHOP-SHIFT-GEN BVPLUS-OF-BVCHOP-ARG3
+          BVPLUS-OF-BVCHOP-ARG2)))))
 
 (defthm bvmult-when-bvlt-6-5-3-4
   (implies (and (not (BVLT '3 '4 x))
@@ -6476,8 +6467,7 @@
                                    +-of-minus-1-and-bv2
                                    anti-slice
                                    mod-sum-cases
-                                   MOD-UPPER-BOUND-LINEAR
-                                   )))))
+                                   MOD-UPPER-BOUND-LINEAR)))))
 
 ;gen!
 (defthm bvmult-tighten-hack-for-sha1
@@ -6497,10 +6487,7 @@
                                         bvmult bvchop-when-i-is-not-an-integer
                                         bvchop-when-top-bit-1)
                                   (plus-1-and-bvchop-becomes-bvplus ;fixme
-                                   bvminus-becomes-bvplus-of-bvuminus
-
-
-                                    )))))
+                                   bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm bvlt-of-bvmult-for-sha1-gen2
   (implies (and (bvle 5 x 6)
@@ -6514,10 +6501,7 @@
                                         bvmult bvchop-when-i-is-not-an-integer
                                         bvchop-when-top-bit-1)
                                   (plus-1-and-bvchop-becomes-bvplus ;fixme
-                                   bvminus-becomes-bvplus-of-bvuminus
-
-
-                                    )))))
+                                   bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm bvlt-of-bvmult-for-sha1-gen3
   (implies (and (bvle 5 x 6)
@@ -6531,10 +6515,7 @@
                                         bvmult bvchop-when-i-is-not-an-integer
                                         bvchop-when-top-bit-1)
                                   (plus-1-and-bvchop-becomes-bvplus ;fixme
-                                   bvminus-becomes-bvplus-of-bvuminus
-
-
-                                    )))))
+                                   bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm bvplus-of-bvmult-tigthen-for-sha1
   (implies (and (UNSIGNED-BYTE-P '3 x)
@@ -6654,10 +6635,7 @@
                                         GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                         bvchop-when-top-bit-1)
                                   (plus-1-and-bvchop-becomes-bvplus ;fixme
-                                   bvminus-becomes-bvplus-of-bvuminus
-
-
-                                    )))))
+                                   bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthmd <-when-unsigned-byte-p-and-not-unsigned-byte-p
   (implies (and (unsigned-byte-p n x)
@@ -6709,9 +6687,7 @@
                                           bvuminus
                                           bvminus
                                           bvlt)
-                                  (
-
-                                   bvminus-becomes-bvplus-of-bvuminus
+                                  (bvminus-becomes-bvplus-of-bvuminus
                                    minus-becomes-bv
                                    PLUS-1-AND-BVCHOP-BECOMES-BVPLUS
                                    UNSIGNED-BYTE-P-WHEN-BVLT-3-31)))))
@@ -6777,8 +6753,6 @@
   :hints (("Goal" :use (:instance getbit-of-bvplus-flip (x (+ x (bvchop n y))))
            :in-theory (e/d (bvcat logapp bvplus getbit-of-+)
                            (getbit-of-bvplus-flip
-
-
                             <-OF-BVCHOP-HACK ;looped
                             )))))
 
