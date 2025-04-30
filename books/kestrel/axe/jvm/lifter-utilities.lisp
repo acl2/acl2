@@ -174,13 +174,11 @@
 (make-flag desugar-calls-of-contents-in-term)
 
 (defthm-flag-desugar-calls-of-contents-in-term
-  (defthm len-of-desugar-calls-of-contents-in-terms-skip
-    :skip t
-    :flag desugar-calls-of-contents-in-term)
   (defthm len-of-desugar-calls-of-contents-in-terms
     (equal (len (desugar-calls-of-contents-in-terms terms heap-term))
            (len terms))
     :flag desugar-calls-of-contents-in-terms)
+  :skip-others t
   :hints (("Goal" :in-theory (enable desugar-calls-of-contents-in-terms))))
 
 (defthm-flag-desugar-calls-of-contents-in-term
