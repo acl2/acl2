@@ -597,6 +597,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-tyspecseq-to-value-kind ((tyspecseq c::tyspecseqp))
+  :returns (mv (okp booleanp) (kind keywordp))
+  :short "Map a type specifier sequence from the language formalization
+          to the corresponding kind of value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only allow certain types."))
+  (b* ((kind (c::tyspecseq-kind tyspecseq)))
+    (if (member-eq kind '(:uchar :schar
+                          :ushort :sshort
+                          :uint :sint
+                          :ulong :slong
+                          :ullong :sllong))
+        (mv t kind)
+      (mv nil :irrelevant)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-gen-from-params ((params c::param-declon-listp)
                                   (gin simpadd0-ginp))
   :returns (mv (okp booleanp)
@@ -640,7 +660,8 @@
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil))
        ((c::param-declon param) (car params))
-       ((unless (c::tyspecseq-case param.tyspec :sint))
+       ((mv okp value-kind) (simpadd0-tyspecseq-to-value-kind param.tyspec))
+       ((unless okp)
         (mv nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
         (mv nil nil nil nil nil))
@@ -649,14 +670,15 @@
        (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
        (pararg `(cons (c::ident ,par) ,arg))
        (arg-type `(and (c::valuep ,arg)
-                       (equal (c::value-kind ,arg) :sint)))
+                       (equal (c::value-kind ,arg)
+                              ,value-kind)))
        (arg-type-compst
         `(b* ((var (mv-nth 1 (ldm-ident (ident ,par))))
               (objdes (c::objdesign-of-var var compst))
               (val (c::read-object objdes compst)))
            (and objdes
                 (c::valuep val)
-                (c::value-case val :sint))))
+                (c::value-case val ,value-kind))))
        ((mv okp more-args more-parargs more-arg-types more-arg-types-compst)
         (simpadd0-gen-from-params (cdr params) gin))
        ((unless okp) (mv nil nil nil nil nil)))
