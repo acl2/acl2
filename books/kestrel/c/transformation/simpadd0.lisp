@@ -743,10 +743,37 @@
                                (:e omap::emptyp)
                                c::errorp
                                c::init-scope
+                               c::not-flexible-array-member-p-when-ucharp
+                               c::not-flexible-array-member-p-when-scharp
+                               c::not-flexible-array-member-p-when-ushortp
+                               c::not-flexible-array-member-p-when-sshortp
+                               c::not-flexible-array-member-p-when-uintp
                                c::not-flexible-array-member-p-when-sintp
+                               c::not-flexible-array-member-p-when-ulongp
+                               c::not-flexible-array-member-p-when-slongp
+                               c::not-flexible-array-member-p-when-ullongp
+                               c::not-flexible-array-member-p-when-sllongp
                                c::remove-flexible-array-member-when-absent
+                               c::ucharp-alt-def
+                               c::scharp-alt-def
+                               c::ushortp-alt-def
+                               c::sshortp-alt-def
+                               c::uintp-alt-def
                                c::sintp-alt-def
+                               c::ulongp-alt-def
+                               c::slongp-alt-def
+                               c::ullongp-alt-def
+                               c::sllongp-alt-def
+                               c::type-of-value-when-ucharp
+                               c::type-of-value-when-scharp
+                               c::type-of-value-when-ushortp
+                               c::type-of-value-when-sshortp
+                               c::type-of-value-when-uintp
                                c::type-of-value-when-sintp
+                               c::type-of-value-when-ulongp
+                               c::type-of-value-when-slongp
+                               c::type-of-value-when-ullongp
+                               c::type-of-value-when-sllongp
                                c::value-fix-when-valuep
                                c::value-list-fix-of-cons
                                (:e c::adjust-type)
@@ -755,7 +782,16 @@
                                (:e c::param-declon-list-fix$inline)
                                (:e c::param-declon-to-ident+tyname)
                                (:e c::tyname-to-type)
+                               (:e c::type-uchar)
+                               (:e c::type-schar)
+                               (:e c::type-ushort)
+                               (:e c::type-sshort)
+                               (:e c::type-uint)
                                (:e c::type-sint)
+                               (:e c::type-ulong)
+                               (:e c::type-slong)
+                               (:e c::type-ullong)
+                               (:e c::type-sllong)
                                (:e c::value-list-fix$inline)
                                mv-nth
                                car-cons
