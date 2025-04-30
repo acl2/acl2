@@ -23,7 +23,8 @@
 
 (defund normalize-xors-optionp (n)
   (declare (xargs :guard t))
-  (member-eq n '(t nil :compact)))
+  ;; coerce to boolean (allows us to use MBT):
+  (if (member-eq n '(t nil :compact)) t nil))
 
 ; todo: eventually remove?
 (defthm normalize-xors-optionp-when-booleanp
