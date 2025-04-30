@@ -448,9 +448,8 @@
      but for block items instead of statements;
      see that function's documentation first.")
    (xdoc::p
-    "For now, this is limited to block items
-     whose execution yields an @('int') value.
-     The theorem says that the old block item returns an @('int') value,
+    "The theorem says that
+     the old block item returns a value of the appropriate type,
      regardless of whether old and new block items
      are syntactically equal or not.
      If they are not, the theorem also says that
@@ -465,6 +464,16 @@
        ((unless (or equalp (block-item-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
+       (type (block-item-type old))
+       ((unless (or equalp
+                    (equal (block-item-type new)
+                           type)))
+        (raise "Internal error: ~
+                the type ~x0 of the new block item ~x1 differs from ~
+                the type ~x2 of the old block item ~x3."
+               (block-item-type new) new type old)
+        (mv '(_) nil 1))
+       (value-kind (type-to-value-kind type))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
@@ -473,7 +482,8 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
-                             (equal (c::value-kind result) :sint))))
+                             (equal (c::value-kind result)
+                                    ,value-kind))))
           `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
                 (new-item (mv-nth 1 (ldm-block-item ',new)))
                 ((mv old-result old-compst)
@@ -486,7 +496,8 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            old-result
-                           (equal (c::value-kind old-result) :sint))))))
+                           (equal (c::value-kind old-result)
+                                  ,value-kind))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -520,9 +531,8 @@
      but for lists of block items instead of single block items;
      see that function's documentation first.")
    (xdoc::p
-    "For now, this is limited to lists of block items
-     whose execution yields an @('int') value.
-     The theorem says that the old block item list returns an @('int') value,
+    "The theorem says that
+     the old block item list returns a value of the appropriate type,
      regardless of whether old and new block item lists
      are syntactically equal or not.
      If they are not, the theorem also says that
@@ -538,6 +548,16 @@
        ((unless (or equalp (block-item-list-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
+       (type (block-item-list-type old))
+       ((unless (or equalp
+                    (equal (block-item-list-type new)
+                           type)))
+        (raise "Internal error: ~
+                the type ~x0 of the new block item list ~x1 differs from ~
+                the type ~x2 of the old block item list ~x3."
+               (block-item-list-type new) new type old)
+        (mv '(_) nil 1))
+       (value-kind (type-to-value-kind type))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
@@ -547,7 +567,8 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
-                             (equal (c::value-kind result) :sint))))
+                             (equal (c::value-kind result)
+                                    ,value-kind))))
           `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
                 (new-items (mv-nth 1 (ldm-block-item-list ',new)))
                 ((mv old-result old-compst)
@@ -560,7 +581,8 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            old-result
-                           (equal (c::value-kind old-result) :sint))))))
+                           (equal (c::value-kind old-result)
+                                  ,value-kind))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
