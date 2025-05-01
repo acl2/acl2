@@ -14,6 +14,7 @@
 (include-book "round-after-last")
 (include-book "last-blockchain-round")
 (include-book "ordered-blockchain")
+(include-book "active-committees-after-commit")
 (include-book "proposed-author-self")
 (include-book "proposal-to-other")
 (include-book "endorsement-from-other")
@@ -34,7 +35,6 @@
 (include-book "signed-in-signer")
 (include-book "author-round-pairs-in-validators")
 (include-book "unequivocal-signed-proposals")
-(include-book "active-committees-after-commit")
 (include-book "fault-tolerance")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -53,6 +53,7 @@
   :order-subtopics (round-after-last
                     last-blockchain-round
                     ordered-blockchain
+                    active-committees-after-commit
                     proposed-author-self
                     proposal-to-other
                     endorsement-from-other
@@ -73,7 +74,6 @@
                     signed-in-signer
                     author-round-pairs-in-validators
                     unequivocal-signed-proposals
-                    active-committees-after-commit
                     fault-tolerance))
 
 ; TODO: continue
