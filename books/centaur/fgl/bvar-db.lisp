@@ -219,27 +219,6 @@
   (defthm bvar-list-okp$c-of-nil
     (bvar-list-okp$c nil bvar-db)))
 
-;; (define bvar-list-cleanup$c ((x nat-listp) bvar-db$c)
-;;   :returns (new-x nat-listp)
-;;   (if (atom x)
-;;       nil
-;;     (if (and (<= (base-bvar$c bvar-db$c) (lnfix (car x)))
-;;              (< (lnfix (car x)) (next-bvar1$c bvar-db$c)))
-;;         (cons (lnfix (car x)) (bvar-list-cleanup$c (cdr x) bvar-db$c))
-;;       (bvar-list-cleanup$c (cdr x) bvar-db$c)))
-;;   ///
-;;   (defthm bvar-list-okp$c-of-<fn>
-;;     (bvar-list-okp$c (bvar-list-cleanup$c x bvar-db$c) bvar-db$c)
-;;     :hints(("Goal" :in-theory (enable bvar-list-okp$c))))
-
-;;   (defthm bvar-list-cleanup$c-when-bvar-list-okp$c
-;;     (implies (bvar-list-okp$c x bvar-db$c)
-;;              (equal (bvar-list-cleanup$c x bvar-db$c)
-;;                     (acl2::nat-list-fix x)))
-;;     :hints(("Goal" :in-theory (enable bvar-list-okp$c))))
-
-;;   (local (in-theory (enable acl2::nat-list-fix))))
-
 
 (define term-equivs-okp$c ((equivs term-equivs-p) bvar-db$c)
   (declare (xargs :stobjs bvar-db$c))
@@ -866,25 +845,54 @@
 (local (in-theory (disable (create-bvar-db$c) create-bvar-db$c)))
 
 
+(define bvar-list-cleanup$c ((x nat-listp) bvar-db$c)
+  :returns (new-x nat-listp)
+  (if (atom x)
+      nil
+    (if (and (<= (base-bvar$c bvar-db$c) (lnfix (car x)))
+             (< (lnfix (car x)) (next-bvar1$c bvar-db$c)))
+        (cons (lnfix (car x)) (bvar-list-cleanup$c (cdr x) bvar-db$c))
+      (bvar-list-cleanup$c (cdr x) bvar-db$c)))
+  ///
+  (defthm bvar-list-okp$c-of-<fn>
+    (bvar-list-okp$c (bvar-list-cleanup$c x bvar-db$c) bvar-db$c)
+    :hints(("Goal" :in-theory (enable bvar-list-okp$c))))
+
+  (defthm bvar-list-cleanup$c-when-bvar-list-okp$c
+    (implies (bvar-list-okp$c x bvar-db$c)
+             (equal (bvar-list-cleanup$c x bvar-db$c)
+                    (acl2::nat-list-fix x)))
+    :hints(("Goal" :in-theory (enable bvar-list-okp$c))))
+
+  (def-updater-independence-thm bvar-list-cleanup$c-updater-independence
+    (implies (and (equal (base-bvar$c new) (base-bvar$c old))
+                  (equal (next-bvar1$c new) (next-bvar1$c old)))
+             (equal (bvar-list-cleanup$c x new)
+                    (bvar-list-cleanup$c x old))))
+
+  (local (in-theory (enable acl2::nat-list-fix))))
+
+
+
 (define bvar-fn-term-indices$c ((fn pseudo-fnsym-p) bvar-db$c)
   :returns (indices nat-listp)
-  (cdr (hons-get (pseudo-fnsym-fix fn)
-                 (bvar-fn-indices$c bvar-db$c)))
+  :guard (bvar-db-wfp$c bvar-db$c)
+  (mbe :logic (bvar-list-cleanup$c
+               (cdr (hons-get (pseudo-fnsym-fix fn)
+                              (bvar-fn-indices$c bvar-db$c)))
+               bvar-db$c)
+       :exec (cdr (hons-get fn (bvar-fn-indices$c bvar-db$c))))
   ///
   (def-updater-independence-thm bvar-fn-term-indices$c-updater-independence
-    (implies (equal (bvar-fn-indices$c new)
-                    (bvar-fn-indices$c old))
+    (implies (and (equal (bvar-fn-indices$c new)
+                         (bvar-fn-indices$c old))
+                  (equal (base-bvar$c new) (base-bvar$c old))
+                  (equal (next-bvar1$c new) (next-bvar1$c old)))
              (equal (bvar-fn-term-indices$c fn new)
                     (bvar-fn-term-indices$c fn old))))
 
-  (defthm bvar-fn-term-indices-of-add-term-bvar$c
-    (equal (bvar-fn-term-indices$c fn (add-term-bvar$c x bvar-db$c))
-           (if (fgl-object-case x :g-apply (equal x.fn (pseudo-fnsym-fix fn))
-                 :otherwise nil)
-               (cons (next-bvar$c bvar-db$c)
-                     (bvar-fn-term-indices$c fn bvar-db$c))
-             (bvar-fn-term-indices$c fn bvar-db$c)))
-    :hints(("Goal" :in-theory (enable add-term-bvar$c)))))
+  (defthm bvar-list-okp$c-of-bvar-fn-term-indices$c
+    (bvar-list-okp$c (bvar-fn-term-indices$c fn bvar-db$c) bvar-db$c)))
 
 
 (define bvar-db$ap (x)

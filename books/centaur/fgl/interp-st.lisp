@@ -1043,6 +1043,17 @@
              (bvar-db-debug bvar-db)
              alist))
 
+(define interp-st-bvar-fn-term-indices ((fn pseudo-fnsym-p) interp-st)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
+             (alist)
+             (bvar-fn-term-indices fn bvar-db)
+             alist))
+
+(define interp-st-bvar-list-okp ((indices nat-listp) interp-st)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
+             (alist)
+             (bvar-list-okp indices bvar-db)
+             alist))
 
 
 (defines fgl-minor-frame-subterm-count

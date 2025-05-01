@@ -281,6 +281,11 @@ sign bit, which we must implicitly extend out to infinity.</p>"
   :enabled t
   x)
 
+;; Wrapped around a hypothesis, says to bind free variables by matching against assumptions
+(define match-assums (x)
+  :enabled t
+  x)
+
 
 (define int->bools ((x integerp))
   :measure (integer-length x)

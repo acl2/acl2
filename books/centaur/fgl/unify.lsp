@@ -342,6 +342,42 @@
                            pseudo-term-listp
                            acl2::pseudo-termp-opener)))
 
+
+(ifndef "DEFS_ONLY"
+        (define fgl-bindings-extension-p ((x fgl-object-bindings-p)
+                                          (y fgl-object-bindings-p))
+          (or (fgl-object-bindings-equiv x y)
+              (and (consp x)
+                   (if (mbt (and (consp (car x))
+                                 (pseudo-var-p (caar x))))
+                       (not (hons-assoc-equal (caar x) (cdr x)))
+                     t)
+                   (fgl-bindings-extension-p (cdr x) y)))
+          ///
+
+          (deffixequiv fgl-bindings-extension-p
+            :hints(("Goal" :in-theory (enable fgl-object-bindings-fix))))
+
+          (defthm fgl-bindings-extension-p-transitive
+            (implies (and (fgl-bindings-extension-p x y)
+                          (fgl-bindings-extension-p y z))
+                     (fgl-bindings-extension-p x z))
+            :hints (("Goal" :induct (fgl-bindings-extension-p x y))))
+
+          (defthm fgl-bindings-extension-p-self
+            (fgl-bindings-extension-p x x)
+            :hints (("goal" :expand ((fgl-bindings-extension-p x x)))))
+
+          (defthm fgl-bindings-extension-p-of-cons
+            (equal (fgl-bindings-extension-p (cons pair x) y)
+                   (or (fgl-object-bindings-equiv (cons pair x) y)
+                       (and (or (not (and (consp pair)
+                                          (pseudo-var-p (car pair))))
+                                (not (hons-assoc-equal (car pair) x)))
+                            (fgl-bindings-extension-p x y))))))
+        :endif)
+
+
 (acl2::process-ifdefs
  (with-output :off (prove)
    (defines fgl-unify-term/gobj
@@ -714,6 +750,28 @@
                      :in-theory (enable (:i <fn>))
                      :expand ((:free (x) <call>)))))))
        :functions fgl-unify-fnset)
+
+
+       (std::defretgen <fn>-fgl-bindings-extension-p
+         :rules
+         ((t (:add-hyp (and (fgl-bindings-extension-p alist base)
+                            flag))
+             (:add-concl (fgl-bindings-extension-p new-alist base)))
+          (:mutrec
+           (:add-keyword
+            :hints ('(:expand ((:free (x-key) <call>))))))
+          (:recursive
+           (:add-keyword
+            :hints (("goal" :induct <call>
+                     :in-theory (enable (:i <fn>))
+                     :expand ((:free (x) <call>)))))))
+         :functions fgl-unify-fnset)
+
+       (defthm fgl-bindings-extension-p-of-fgl-unify-term/gobj-top
+         (b* (((mv flag new-alist) (fgl-unify-term/gobj pat x alist)))
+           (implies flag
+                    (fgl-bindings-extension-p new-alist alist))))
+
 
        (std::defretgen <fn>-preserves-all-keys-bound
          :rules

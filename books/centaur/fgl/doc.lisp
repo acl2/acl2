@@ -854,6 +854,158 @@ it to be reinitialized).</li>
 
 ")
 
+(defxdoc binder-rules
+  :parents (fgl-rewrite-rules)
+  :short "Determining free variable bindings using rewriting"
+  :long "<p>A binder rewrite rule can be created from a theorem with the following form:</p>
+
+@({
+ (implies (and hypotheses
+               (rhs-equiv var rhs-form))
+          (equiv (binder-function var args)
+                 var))
+ })
+
+<p>Here @('var') cannot be used in hypotheses, args, or rhs-form, and
+@('equiv') and @('rhs-equiv') are both equivalence relations.</p>
+
+<p>Such a rule is used as follows. If the FGL rewriter encounters a form
+@('(binder-function free-var actuals)') where free-var is unbound, it first
+rewrites the actuals, then may attempt to apply the rule as follows:</p>
+
+<ul>
+<li>Check that the current equivalence context allows rewriting under
+@('equiv'), or else abort the attempt.</li>
+<li>Unify @('args') with the results of rewriting @('actuals') to get the
+initial set of variable bindings, or abort the attempt if they don't
+unify.</li>
+<li>Push a new rewrite stack frame containing the initial bindings.</li>
+<li>Relieve @('hypotheses') under the bindings exactly as with any other
+rewrite rule, perhaps extending the variable bindings, or abort if relieving
+any hypothesis fails.</li>
+<li>Rewrite @('rhs-form') under the bindings in a @('rhs-equiv') equivalence
+context. The attempt succeeds unless this causes an abort or error.</li>
+<li>Pop the rewrite stack back to the outer context.</li>
+<li>Bind @('free-var') to the result from rewriting @('rhs-form') and replace
+the @('binder-function') call with that same result.</li>
+</ul>
+
+<p>See also @(see binder-functions).</p>
+
+")
+
+(defxdoc binder-functions
+  :parents (fgl-rewrite-rules)
+  :short "Functions that describe constraints on bindings for free variables."
+  :long "<p>A binder function doesn't have a particular form (other than having at least
+one argument), but it is one intended to be used with FGL free variable binding
+constructs such as @(see binder-rules).</p>
+
+<p>A binder function essentially places some logical restrictions on what may
+be bound to a particular free variable, so that these restrictions may be used
+in proving the theorem where the binder function. After the theorem is proved,
+when it is used in rewriting, @(see binder-rules) can be used to provide
+bindings for the variables such that the restrictions are satisfied.</p>
+
+<p>The most trivial example is @(see bind-var), which is defined to simply
+return its first argument:</p>
+@({
+ (define bind-var (ans form)
+   ans)
+ })
+
+<p>Because bind-var returns its first argument unchanged no matter what, this
+places no restrictions on what it returns: it can be made to return any object,
+just by setting its first argument to that object. Therefore we can create any
+binder rule we like. E.g., the following rule says that if the second argument
+to the bind-var form is @('(foo x)'), its free variable argument should be
+bound to @('(+ 1 x)'):</p>
+@({
+ (fgl::def-fgl-brewrite bind-var-of-foo
+   (implies (equal free-var (+ 1 x))
+            (equal (bind-var free-var (foo x))
+                   free-var)))
+ })
+
+<p>When interpreted as a <see topic='@(url binder-rules)'>binder rule</see>, this
+has no hypotheses (so it can apply whenever bind-var is called on a free
+variable and an argument that unifies with @('(foo x)')), and it rewrites to
+@('(+ 1 x)'), meaning when it is applied, that free variable will be bound to
+the object resulting from rewriting @('(+ 1 x)') and this same object will be
+returned from the @('bind-var') form.</p>
+
+<p>A slightly less simple example: @('check-equal') is a binder function that
+is Boolean-valued and may only return T if its second and third arguments are equal:</p>
+@({
+ (define check-equal (ans x y)
+   (and (equal x y)
+        ans
+        t))
+ })
+
+<p>FGL has a binder meta rule implementing this, which returns T if the two
+objects are syntactically equal. But another way to get a similar effect would
+be with this binder rewrite rule:</p>
+
+@({
+ (fgl::def-fgl-brewrite check-equal-brewrite
+   (implies (and (equal x y)
+                 (equal ans t))
+            (equal (check-equal ans x y) ans)))
+ })
+<p>This rule says that if the hypothesis @('(equal x y)') is satisfied, then
+the free variable should be bound to @('t') and @('t') returned from the
+check-equal call.</p>
+
+
+<p>A non-trivial example: @('common-suffix-binder') must always return
+something that is a common suffix of its second and third arguments, or else
+@('nil'):</p>
+
+@({
+ (define common-suffix-binder (res list1 list2)
+   (and (suffixp res list1)
+        (suffixp res list2)
+        res))
+ })
+
+<p>If this binder is used in a theorem, then when proving that theorem, it is
+known that the return value of the common-suffix-binder call is either a suffix
+of both lists or NIL.</p>
+
+<p>When applying a rewrite rule that contains a call of common-suffix-binder
+whose first argument is a free variable, FGL needs to find an object that
+satisfies that condition; if it can do so, it will bind that object to the free
+variable and return it from the call of common-suffix-binder. There might be
+several strategies that could find an object that would satisfy the needed
+conditions. Here is one example: this pair of binder rewrite rules finds such a suffix
+for two CONS nest terms if they are the same length and have a syntactically
+equal common suffix:</p>
+
+@({
+ (fgl::def-fgl-brewrite find-common-suffix-when-equal
+   (implies (and (equal list1 list2)
+                 (equal res list1))
+            (equal (common-suffix-binder res list1 list2) res)))
+
+ (fgl::def-fgl-brewrite find-common-suffix-when-not-equal
+   (implies (and (not (and (check-equal car-eq a1 a2)
+                           (check-equal cdr-eq d1 d2)))
+                 (equal res (common-suffix-binder res2 d1 d2)))
+            (equal (common-suffix-binder res (cons a1 d1) (cons a2 d2)) res)))
+ })
+
+<p>The first rule says that if the two lists are provably equal, then the first
+list should be bound to the free variable and returned from the
+common-suffix-binder form. The second rule applies when the two terms are both
+CONS calls, and their arguments are pairwise <em>not</em> provably equal (so
+that the first rule can apply in the case where they are). In this case, it
+says to continue the search by looking for a common suffix of the two cdr
+arguments d1 and d2.</p>
+
+
+")
+
 
 (defxdoc fgl-rewrite-rules
   :parents (fgl)
@@ -909,16 +1061,40 @@ if-then-else branch.  These rules can be added using
 then else)') where @('then') is a function call.  Generally, @('test') and
 @('else') should be free variables, but this isn't a hard and fast rule.</p>
 
+<h3>Binding Free Variables</h3>
+
+<p>There are several ways in which variables not present in the LHS of the rule
+can become bound:</p>
+
+<ul>
+
+<li>Bind-free hypotheses: similar to ACL2's @(see bind-free), but sees existing
+variables' values as FGL objects and must bind new variables to FGL
+objects (see @(see fgl-object)), rather than ACL2 terms.</li>
+
+<li>Binder functions: see @(see bind-var), @(see binder), and @(see
+syntax-bind).  Binder functions can also determine the values to be assigned to
+the free variables using rewriting; see @(see binder-rules).</li>
+
+<li>Equivalence-based binding hypotheses: a hypothesis of the form @('(equiv
+free-var form)') where equiv is a known equivalence relation and free-var is a
+variable not bound in the current rewriting context. This will result in FGL
+rewriting @('form') under equivalence relation @('equiv') and binding the
+result to @('free-var').</li>
+
+<li>Match-assums hypotheses: A hypothesis of the form @('(fgl::match-assums
+hyp)') will look for an assumption in the current path condition that matches
+the form of @('hyp') and binds any free variables in @('hyp') accordingly. In
+more detail, for each Boolean variable in the interpreter's Boolean variable
+database whose associated object's leading function symbol is the same as that
+of @('hyp'), we check whether that object unifies with @('hyp') under the
+existing variable bindings, and if so whether that variable is currently
+assumed in the path condition. If so, we add the unifying subsitution to the
+current variable bindings.</li>
+
+</ul>
 
 <h3>Advanced Features</h3>
-
-<p>FGL rewrite rules support ACL2's @(see syntaxp) and @(see bind-free)
-hypothesis forms.  However, it generally won't work to use the same rewrite
-rule in both the ACL2 and FGL rewriters if it has syntaxp or bind-free
-hypotheses, because in FGL the variables in the syntaxp/bind-free forms will be
-bound to symbolic objects, whereas in ACL2 they will be bound to
-terms. Therefore to use syntaxp, bind-free, and bind-var (discussed below),
-one needs to be familiar with FGL symbolic objects -- see @(see fgl-object).</p>
 
 <p>Two additional features support a new style of programming rewrite rules.
 @('Bind-var') and @('syntax-bind') allow functionality similar to bind-free,
@@ -937,14 +1113,12 @@ right-hand side.</p>
                          (n (nfix (int n)))
                          ((when (syntax-bind n-concrete (fgl-object-case n :g-concrete)))
                           (logtail n x))
-                         (n-width (syntax-bind n-width (fgl-object-case n
-                                                         :g-integer (max 0 (1- (len n.bits)))
-                                                         :otherwise nil)))
-                         ((unless (and n-width
-                                       (check-unsigned-byte-p n-width n)))
+                         (n-width (integer-length-bound n-width n))
+                         ((unless n-width)
                           (abort-rewrite (logtail n x)))
                          (n-rev (int-revapp n-width n 0)))
-                      (logtail-helper n-rev n-width x)))))
+                      (logtail-helper n-rev n-width x))))
+
  })
 
 <p>When attempting to apply this rewrite rule, the FGL rewriter starts in much
@@ -974,25 +1148,31 @@ produce a Boolean value, which is a concrete FGL object representing itself.  If
 true, then n is concrete and we will produce the result of again rewriting
 @('(logtail n x)') -- note that we haven't created a loop here because the
 syntaxp hyp required that the original @('n') was not concrete. Otherwise, we
-proceed with the next syntax-bind form.</p>
+proceed with the next form.</p>
 
-<p>This next syntax-bind form (note it must use a different free variable than
-the other form!) returns either some natural number value or else NIL.  Again,
-either way it is a concrete object representing itself.  We bind this to
-@('n-width').  We then require that n-width is nonnil and that we can show
-@('n') satisfies @('(unsigned-byte-p n-width n)') (note: check-unsigned-byte-p
-is an alias for unsigned-byte-p which has rules that try to prove it cheaply).
-If not, then we come to an @('abort-rewrite') form.  When FGL arrives at an
-abort-rewrite form, it aborts the current rewrite rule attempt, ignoring the
-form inside the abort-rewrite.  (In this case the form @('(logtail n x)')
-inside the abort-rewrite was selected to make it easy to prove
-@('logtail-to-logtail-helper') correct.)  Otherwise, we go on with our rewrite.</p>
+<p>The next form appears to bind @('(integer-length-bound n-width n)') to
+@('n-width'), which may appear mysterious since @('n-width') is used in its own
+binding. This is because @('integer-length-bound') is a
+<see topic='@(url binder-functions)'>binder-function</see>
+intended to bind its first argument (which must be a free variable) to some
+value determined by the rest of its arguments. So here @('n-width') is a free
+variable that will be bound to some value determined by examining @('n'); the
+definition of @('integer-length-bound') guarantees that that value is either a
+bound on the integer-length of @('n') or is NIL. In fact, the value to be bound
+is derived in this case by a meta rule @('integer-length-bound-binder'). In
+other cases it could be determined by a rewrite rule; see @(see binder-rules).</p>
 
-<p>Note we needed to know @('(unsigned-byte-p n-width n)') in order to prove
-@('logtail-to-logtail-helper').  The @('syntax-bind') form produces the correct
-number, but while proving @('logtail-to-logtail-helper') we don't know that.
-Fortunately, it's fairly efficient to verify that after the fact using
-@('check-unsigned-byte-p').</p>
+<p>We then require that @('n-width') is nonnil, meaning we have found a good
+bound for the integer-length of @('n'). If not, we have an @('abort-rewrite')
+form which causes the current rewrite rule attempt to end, ignoring the form
+inside the abort-rewrite.  (In this case the form @('(logtail n x)') inside the
+abort-rewrite was selected to make it easy to prove
+@('logtail-to-logtail-helper') correct.)  Otherwise, we go on with our
+rewrite.</p>
+
+<p>Last, we finish this rewrite: the point of this rule was to replace a call
+of @('logtail') with a @('logtail-helper') form which can be opened iteratively
+to create the symbolic value needed.</p>
 
 <h3>Examining the Interpreter State</h3>
 
