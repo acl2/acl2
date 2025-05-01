@@ -38,7 +38,9 @@
     "We also provide a @(see parser) of Yul, based on our ABNF grammar.
      The parser is currently not verified, but it follows the grammar closely.
      The primary API for parsing Yul is
-     @(see parse-yul) and @(see parse-yul-bytes).")
+     @(see parse-yul) and @(see parse-yul-bytes).
+     This parser can be regarded as providing a low-level version of
+     the predicates over the grammar mentioned in the previous paragraph.")
    (xdoc::p
     "There are currently two published grammars of Yul:
      one is in [Yul: Specification of Yul];
