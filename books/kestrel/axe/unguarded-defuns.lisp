@@ -37,11 +37,13 @@
 (include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
+(include-book "kestrel/bv/sbvrem" :dir :system)
 (include-book "kestrel/bv/bit-to-bool-def" :dir :system)
 (include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
+(include-book "kestrel/lists-light/all-same" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
@@ -49,6 +51,7 @@
 (include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "unguarded-built-ins") ; for assoc-equal-unguarded
+(include-book "kestrel/lists-light/subrange" :dir :system)
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
@@ -656,6 +659,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defund sbvrem-unguarded (n x y)
+  (declare (xargs :guard t))
+  (bvchop-unguarded n (rem-unguarded (logext-unguarded n x) (logext-unguarded n y))))
+
+(defthm sbvrem-unguarded-correct
+  (equal (sbvrem-unguarded size x y)
+         (sbvrem size x y))
+  :hints (("Goal" :in-theory (enable sbvrem sbvrem-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund firstn-unguarded (n lst)
   (declare (xargs :guard t))
   (if (true-listp lst)
@@ -728,6 +742,18 @@
   (equal (all-equal$-unguarded x lst)
          (all-equal$ x lst))
   :hints (("Goal" :in-theory (enable all-equal$-unguarded all-equal$))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund all-same-unguarded (lst)
+  (declare (xargs :guard t))
+  (or (atom lst)
+      (all-equal$-unguarded (car lst) (cdr lst))))
+
+(defthm all-same-unguarded-correct
+  (equal (all-same-unguarded lst)
+         (all-same lst))
+  :hints (("Goal" :in-theory (enable all-same-unguarded all-same))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

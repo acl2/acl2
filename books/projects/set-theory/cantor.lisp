@@ -8,9 +8,8 @@
 ; https://en.wikipedia.org/wiki/Cantor%27s_theorem
 
 ; That version states that a function f : A -> Powerset(A) cannot be
-; surjective.  Since then A is the domain of f, I prove it in the form:
-; the codomain of f (i.e., the image of f) can not equal the powerset of the
-; domain of f.
+; surjective.  Since then A is the domain of f, I prove it in the form: the
+; image of f can not equal the powerset of the domain of f.
 
 ; In the theorem statements below, the :props arguments generate hypotheses,
 ; all of which are justified by ACL2 formulations of the axioms of ZF plus
@@ -25,9 +24,8 @@
 
 ; Let b(f) = {x \in domain(f): not(x \in f(x)}.
 ; This is the set B from the Wikpedia article, expressed as a function of f.
-(zsub b   ; name
-      (f) ; args
-      x   ; x
+(zsub b (f) ; name, args
+      x     ; x
       (domain f)
       (not (in x (apply f x))))
 
@@ -50,16 +48,16 @@
   (local
    (defthmz lemma-2a
      (implies (and (funp f)
-                   (equal (codomain f)
+                   (equal (image f)
                           (powerset (domain f))))
               (in (b f)
-                  (codomain f)))
+                  (image f)))
      :props (zfc b$prop)))
 
 ; f(xi) = B
   (defthmz lemma-2
     (implies (and (funp f)
-                  (equal (codomain f)
+                  (equal (image f)
                          (powerset (domain f))))
              (equal (apply f (xi f))
                     (b f)))
@@ -68,19 +66,19 @@
 ; xi \in A
 (defthmz lemma-3
   (implies (and (funp f)
-                (equal (codomain f)
+                (equal (image f)
                        (powerset (domain f))))
            (in (xi f)
                (domain f)))
   :instructions (:bash
-                 (:rewrite in-codomain-implies-in-apply-inverse-domain)
+                 (:rewrite in-image-implies-in-apply-inverse-domain)
                  :prove)
   :props (zfc prod2$prop domain$prop inverse$prop b$prop))
 
 ; Function f does not map onto the powerset of A.
 (defthmz cantor
   (implies (funp f)
-           (not (equal (codomain f)
+           (not (equal (image f)
                        (powerset (domain f)))))
   :props (zfc prod2$prop domain$prop inverse$prop b$prop)
   :hints (("Goal"

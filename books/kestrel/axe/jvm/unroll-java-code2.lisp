@@ -1,7 +1,7 @@
 ; A more compositional version of the unrolling lifter
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -40,9 +40,11 @@
 (include-book "kestrel/typed-lists-light/map-strip-cars" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
+(include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "unroll-java-code") ;for unroll-java-code-rules
 (include-book "../dag-to-term-with-lets")
 (include-book "../prune-dag-precisely")
+(include-book "../rewriter")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; Used by Axe
@@ -403,7 +405,8 @@
                               (booleanp prove-with-acl2)
                               ;; print
                               (booleanp abstract-state-components)
-                              (booleanp prune-branches)
+                              (booleanp prune-branches)  ; todo: precise or approx? allow a natp and see prune-precise-optionp/prune-approx-optionp
+
                               (or (member-eq call-stp '(t nil))
                                   (natp call-stp))
                               (or (eq :auto param-names)
@@ -554,6 +557,7 @@
        (- (cw "(Assumptions: ~x0)~%" assumptions))
        (- (cw "(Simplifying term:~%"))
        ((mv erp result-dag state)
+        ;; todo: use jvm rewriter:
         (simp-term term-to-simplify
                         ;;TODO: I had this and it caused a crash! `(run-until-return ,(jvm::step (th) state-var))
                         :rule-alists rule-alists
@@ -598,7 +602,7 @@
                       :check-inputs nil)
           (mv (erp-nil) result-dag state)))
        ((when erp) (mv erp nil state))
-       (dag-okp (dag-ok-after-symbolic-execution result-dag assumptions t (w state)))
+       (dag-okp (dag-ok-after-symbolic-execution result-dag assumptions t state))
        ((when (not dag-okp)) (mv :symbolic-execution-failed nil state))
 
        ;; Result-dag should be over the single variable S0 and should represent

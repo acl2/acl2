@@ -39,65 +39,7 @@
 
 ;; Find the object and its type
 
-(define initdeclor-list-get-idents
-  ((initdeclors initdeclor-listp))
-  :returns (idents ident-listp)
-  (b* (((when (endp initdeclors))
-        nil)
-       (ident? (c$::initdeclor->ident (first initdeclors))))
-    (if ident?
-        (cons ident?
-              (initdeclor-list-get-idents (rest initdeclors)))
-      (initdeclor-list-get-idents (rest initdeclors)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define get-gso-decl-specs-extdecl
-  ((ident identp)
-   (extdecl extdeclp))
-  :returns (mv found
-               (type decl-spec-listp))
-  (extdecl-case
-   extdecl
-   :fundef (mv nil nil)
-   :decl (decl-case
-           extdecl.unwrap
-           :decl
-           (if (member-equal ident
-                             (initdeclor-list-get-idents extdecl.unwrap.init))
-               ;; TODO: does this necessarily contain a type? Perhaps check,
-               ;;   and keep looking if incomplete type.
-               (mv t extdecl.unwrap.specs)
-             (mv nil nil))
-           :statassert (mv nil nil))
-   :empty (mv nil nil)
-   :asm (mv nil nil)))
-
-(define get-gso-decl-specs-extdecl-list
-  ((ident identp)
-   (extdecls extdecl-listp))
-  :returns (mv erp
-               (type decl-spec-listp))
-  (b* (((reterr) nil)
-       ((when (endp extdecls))
-        (reterr (msg "No object found")))
-       ((mv found type)
-        (get-gso-decl-specs-extdecl ident (first extdecls))))
-    (if found
-        (retok type)
-      (get-gso-decl-specs-extdecl-list ident (rest extdecls)))))
-
-(define get-gso-decl-specs-transunit
-  ((ident identp)
-   (tunit transunitp))
-  :returns (mv erp
-               (type decl-spec-listp))
-  (b* (((transunit tunit) tunit))
-    (get-gso-decl-specs-extdecl-list ident tunit.decls)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-from-dec-spec
+(define type-spec-from-decl-spec
   ((decl-spec decl-specp))
   :returns (type-spec? type-spec-optionp)
   (decl-spec-case
@@ -111,47 +53,14 @@
    :stdcall nil
    :declspec nil))
 
-(define type-spec-from-dec-specs
+(define type-spec-from-decl-specs
   ((decl-specs decl-spec-listp))
   :returns (type-spec? type-spec-optionp)
   (b* (((when (endp decl-specs))
         nil)
-       (type-spec? (type-spec-from-dec-spec (first decl-specs))))
+       (type-spec? (type-spec-from-decl-spec (first decl-specs))))
     (or type-spec?
-        (type-spec-from-dec-specs (rest decl-specs)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define get-gso-type-spec
-  ((ident identp)
-   (tunit transunitp))
-  :returns (mv erp
-               (type type-specp))
-  (b* (((reterr) (irr-type-spec))
-       ((erp decl-specs)
-        (get-gso-decl-specs-transunit ident tunit))
-       (type?
-         (type-spec-from-dec-specs decl-specs)))
-    (if type?
-        (retok type?)
-      (reterr (msg "Could not convert declaration specifiers to type")))))
-
-(define get-gso-type-name
-  ((ident identp)
-   (tunit transunitp))
-  :returns (mv erp
-               (name identp))
-  (b* (((reterr) (c$::irr-ident))
-       ((erp type-spec)
-        (get-gso-type-spec ident tunit)))
-    (type-spec-case
-      type-spec
-      :struct (b* (((strunispec strunispec) type-spec.spec)
-                   (ident? strunispec.name))
-                (if ident?
-                    (retok ident?)
-                  (reterr (msg "Struct type is anonymous"))))
-      :otherwise (reterr (msg "Type is not a struct")))))
+        (type-spec-from-decl-specs (rest decl-specs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,8 +68,9 @@
   ((ident identp)
    (table c$::valid-tablep))
   :returns (mv erp
-               (linkage c$::linkagep))
-  (b* (((reterr) (c$::irr-linkage))
+               (linkage c$::linkagep)
+               (tag? ident-optionp))
+  (b* (((reterr) (c$::irr-linkage) nil)
        (scopes (c$::valid-table->scopes table))
        ((when (endp scopes))
         (reterr (msg "Ill-formed validation table, no scope found")))
@@ -177,12 +87,14 @@
        (ord-info (cdr lookup)))
     (c$::valid-ord-info-case
       ord-info
-      :objfun (if (equal ord-info.type (c$::type-struct))
-                  ;; TODO also check defstatus isn't undefined?
-                  (retok ord-info.linkage)
-                (reterr (msg "~x0 has type ~x1, not a struct type"
-                             ident
-                             ord-info.type)))
+      ;; TODO: also return struct tag?
+      :objfun (c$::type-case
+                ord-info.type
+                :struct ;; TODO also check defstatus isn't undefined?
+                        (retok ord-info.linkage ord-info.type.tag?)
+                :otherwise (reterr (msg "~x0 has type ~x1, not a struct type"
+                                        ident
+                                        ord-info.type)))
       :otherwise (reterr (msg "~x0 is not an object." ident)))))
 
 (define get-gso-filepath-linkage-search
@@ -191,18 +103,19 @@
   :guard (c$::filepath-transunit-map-annop tunits)
   :returns (mv erp
                (filepath filepathp)
-               (linkage c$::linkagep))
-  (b* (((reterr) (filepath "") (c$::irr-linkage))
+               (linkage c$::linkagep)
+               (tag? ident-optionp))
+  (b* (((reterr) (filepath "") (c$::irr-linkage) nil)
        ((when (omap::emptyp tunits))
         (reterr (msg "Global struct object ~x0 does not exist." ident)))
        (filepath (c$::filepath-fix (omap::head-key tunits)))
        (tunit (omap::head-val tunits))
-       ((mv erp linkage)
+       ((mv erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
           (c$::transunit-info->table (c$::transunit->info tunit))))
        ((unless erp)
-        (retok filepath linkage)))
+        (retok filepath linkage tag?)))
     (get-gso-filepath-linkage-search ident (omap::tail tunits)))
   :guard-hints (("Goal" :in-theory (enable c$::filepath-transunit-map-annop
                                            c$::transunit-annop))))
@@ -223,8 +136,9 @@
   :guard (c$::transunit-ensemble-annop tunits)
   :returns (mv erp
                (filepath filepathp)
-               (linkage c$::linkagep))
-  (b* (((reterr) (filepath "") (c$::irr-linkage) )
+               (linkage c$::linkagep)
+               (tag? ident-optionp))
+  (b* (((reterr) (filepath "") (c$::irr-linkage) nil)
        (unwrapped-tunits (transunit-ensemble->unwrap tunits))
        ((unless filepath?)
         (get-gso-filepath-linkage-search ident unwrapped-tunits))
@@ -235,11 +149,11 @@
                       unit ensemble."
                      filepath?)))
        (tunit (cdr lookup))
-       ((erp linkage)
+       ((erp linkage tag?)
         (get-gso-linkage-from-valid-table
           ident
           (c$::transunit-info->table (c$::transunit->info tunit)))))
-    (retok filepath? linkage))
+    (retok filepath? linkage tag?))
   :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop)))
   :prepwork
   ((defrulel transunit-infop-of-assoc-tunits
@@ -268,17 +182,15 @@
    (tunits transunit-ensemblep))
   :guard (c$::transunit-ensemble-annop tunits)
   :returns (mv erp
-               (struct-type identp)
+               (struct-tag identp)
                (filepath filepathp)
                (linkage c$::linkagep))
   (b* (((reterr) (c$::irr-ident) (filepath "") (c$::irr-linkage))
-       ((erp filepath linkage)
+       ((erp filepath linkage tag?)
         (get-gso-filepath-linkage filepath? ident tunits))
-       (tunit
-         (omap::lookup filepath (transunit-ensemble->unwrap tunits)))
-       ((erp struct-type)
-        (get-gso-type-name ident tunit)))
-    (retok struct-type filepath linkage)))
+       ((unless tag?)
+        (reterr (msg "Tagless struct type is not supported."))))
+    (retok tag? filepath linkage)))
 
 (defruled assoc-of-get-gso-info.filepath?
   (implies
@@ -353,6 +265,13 @@
         (retok structdecls1 (cons structdecl structdecls2))
       (retok (cons structdecl structdecls1) structdecls2))))
 
+(define all-no-init
+  ((initdeclors initdeclor-listp))
+  (declare (xargs :type-prescription (booleanp (all-no-init initdeclors))))
+  (or (endp initdeclors)
+      (and (null (c$::initdeclor->init? (first initdeclors)))
+           (all-no-init (rest initdeclors)))))
+
 (define dup-split-struct-type-decl
   ((original identp)
    (new1 ident-optionp)
@@ -368,11 +287,11 @@
     (decl-case
       decl
       :decl
-      (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
+      (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
            ((erp type-match new1 new2 remanining-struct-decls split-struct-decls)
             (b* (((reterr) nil nil nil nil nil)
                  ((unless (and type-spec?
-                               (endp decl.init)))
+                               (all-no-init decl.init)))
                   (retok nil nil nil nil nil)))
               (type-spec-case
                 type-spec?
@@ -759,7 +678,7 @@
     (decl-case
       decl
       :decl
-      (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
+      (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
            ((unless type-spec?)
             (retok nil (list (decl-fix decl))))
            ;; TODO: check that the object is indeed file-scope, as assumed
@@ -767,6 +686,7 @@
             (type-spec-case
               type-spec?
               :struct (split-struct-initdeclors original split-members decl.init)
+              :typedef (split-struct-initdeclors original split-members decl.init)
               :otherwise (mv nil nil nil nil)))
            ((unless match)
             (retok nil (list (decl-fix decl))))
@@ -1313,14 +1233,14 @@
 ;; TODO: add `:fragment` argument indicate the map does not represent a
 ;;   complete program. In such cases, fail if the gso is external.
 (define splitgso-filepath-transunit-map
-  ((struct-type identp)
+  ((struct-tag identp)
    (filepath filepathp)
    (linkage c$::linkagep)
    (orig-struct identp)
    (new-struct1 ident-optionp)
    (new-struct2 ident-optionp)
-   (new-struct-type1 ident-optionp)
-   (new-struct-type2 ident-optionp)
+   (new-struct-tag1 ident-optionp)
+   (new-struct-tag2 ident-optionp)
    (split-members ident-listp)
    (map filepath-transunit-mapp))
   :guard (omap::assoc filepath map)
@@ -1334,21 +1254,21 @@
        (new-struct1 (or new-struct1 orig-struct))
        (new-struct2 (or new-struct2 orig-struct))
        ((when (equal linkage (c$::linkage-external)))
-        (b* (((erp new-struct-type1 new-struct-type2 map)
+        (b* (((erp new-struct-tag1 new-struct-tag2 map)
               (dup-split-struct-type-filepath-transunit-map
-                struct-type
-                new-struct-type1
-                new-struct-type2
+                struct-tag
+                new-struct-tag1
+                new-struct-tag2
                 ident-blacklist
                 split-members
                 map))
-             ((when (or (not new-struct-type1)
-                        (not new-struct-type1)))
+             ((when (or (not new-struct-tag1)
+                        (not new-struct-tag2)))
               ;; Shouldn't happen; the AST is validated and the object is in
               ;; the validation table.
               (reterr (msg "Could not find struct type.")))
              (ident-blacklist
-               (insert new-struct-type1 (insert new-struct-type2 ident-blacklist)))
+               (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
              ((list new-struct1 new-struct2)
               (fresh-idents (list new-struct1
                                   new-struct2)
@@ -1359,8 +1279,8 @@
                 linkage
                 new-struct1
                 new-struct2
-                new-struct-type1
-                new-struct-type2
+                new-struct-tag1
+                new-struct-tag2
                 split-members
                 map))
              (map
@@ -1373,21 +1293,21 @@
                  split-members)))
           (retok map)))
        (tunit (omap::lookup filepath map))
-       ((erp new-struct-type1 new-struct-type2 tunit)
+       ((erp new-struct-tag1 new-struct-tag2 tunit)
         (dup-split-struct-type-transunit
-          struct-type
-          new-struct-type1
-          new-struct-type2
+          struct-tag
+          new-struct-tag1
+          new-struct-tag2
           ident-blacklist
           split-members
           tunit))
-       ((when (or (not new-struct-type1)
-                  (not new-struct-type1)))
+       ((when (or (not new-struct-tag1)
+                  (not new-struct-tag2)))
         ;; Shouldn't happen; the AST is validated and the object is in
         ;; the validation table.
         (reterr (msg "Could not find struct type.")))
        (ident-blacklist
-         (insert new-struct-type1 (insert new-struct-type2 ident-blacklist)))
+         (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
        ((list new-struct1 new-struct2)
         (fresh-idents (list new-struct1
                             new-struct2)
@@ -1398,8 +1318,8 @@
           linkage
           new-struct1
           new-struct2
-          new-struct-type1
-          new-struct-type2
+          new-struct-tag1
+          new-struct-tag2
           split-members
           tunit))
        (tunit
@@ -1419,27 +1339,27 @@
    (orig-struct identp)
    (new-struct1 ident-optionp)
    (new-struct2 ident-optionp)
-   (new-struct-type1 ident-optionp)
-   (new-struct-type2 ident-optionp)
+   (new-struct-tag1 ident-optionp)
+   (new-struct-tag2 ident-optionp)
    (split-members ident-listp)
    (tunits transunit-ensemblep))
   :guard (c$::transunit-ensemble-annop tunits)
   :returns (mv erp
                (tunits$ transunit-ensemblep))
   (b* (((reterr) (c$::transunit-ensemble-fix tunits))
-       ((erp struct-type filepath linkage)
+       ((erp struct-tag filepath linkage)
         (get-gso-info filepath? orig-struct tunits))
        (map (transunit-ensemble->unwrap tunits))
        ((erp map)
         (splitgso-filepath-transunit-map
-          struct-type
+          struct-tag
           filepath
           linkage
           orig-struct
           new-struct1
           new-struct2
-          new-struct-type1
-          new-struct-type2
+          new-struct-tag1
+          new-struct-tag2
           split-members
           map)))
     (retok

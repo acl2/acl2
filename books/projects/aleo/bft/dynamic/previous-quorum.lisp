@@ -91,9 +91,9 @@
      is the same as the number of predecessor certificates;
      these invariant conditions are backward closure and non-equivocation.
      The key rule is
-     @('cardinality-of-certificates-with-authors+round-when-subset'),
+     @('cardinality-of-certs-with-authors+round-when-subset'),
      since @(tsee predecessors) is defined
-     in terms of @(tsee certificates-with-authors+round).
+     in terms of @(tsee certs-with-authors+round).
      This rule gives us the desired equality to prove the theorem,
      but we need to discharge the hypothesis that
      the set of references to previous certificates
@@ -131,7 +131,7 @@
                                     all-vals)))
                         (committee-quorum commtt)))))
     :enable (predecessors
-             cardinality-of-certificates-with-authors+round-when-subset
+             cardinality-of-certs-with-authors+round-when-subset
              certificate-previous-in-dag-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -290,7 +290,7 @@
   (defruled signer-in-committee-at-round-when-signer-quorum-p
     (implies (and (signer-quorum-p systate)
                   (set::in val (correct-addresses systate))
-                  (set::in cert (certificates-with-round
+                  (set::in cert (certs-with-round
                                  round
                                  (validator-state->dag
                                   (get-validator-state val systate))))
@@ -303,12 +303,12 @@
                (set::in signer (committee-members commtt))))
     :use (:instance signer-in-committee-when-signer-quorum-p)
     :enable (accepted-certificates
-             in-of-certificates-with-round))
+             in-of-certs-with-round))
 
   (defruled author-in-committee-at-round-when-signer-quorum-p
     (implies (and (signer-quorum-p systate)
                   (set::in val (correct-addresses systate))
-                  (set::in cert (certificates-with-round
+                  (set::in cert (certs-with-round
                                  round
                                  (validator-state->dag
                                   (get-validator-state val systate)))))
@@ -333,7 +333,7 @@
                             (get-validator-state val systate))
                            (all-addresses systate))))
                (set::subset (cert-set->author-set
-                             (certificates-with-round
+                             (certs-with-round
                               round
                               (validator-state->dag
                                (get-validator-state val systate))))
@@ -351,30 +351,29 @@
                               (all-addresses systate))))
                   (implies (set::in author
                                     (cert-set->author-set
-                                     (certificates-with-round
+                                     (certs-with-round
                                       round
                                       (validator-state->dag
                                        (get-validator-state val systate)))))
                            (set::in author (committee-members commtt)))))
-       :enable (certificates-with-author-subset
-                in-of-certificates-with-author)
+       :enable in-of-certs-with-author
        :use ((:instance
               in-cert-set->author-set-to-nonempty-certs-with-author
-              (certs (certificates-with-round
+              (certs (certs-with-round
                       round
                       (validator-state->dag (get-validator-state val systate)))))
              (:instance
               author-in-committee-at-round-when-signer-quorum-p
-              (cert (set::head (certificates-with-author
+              (cert (set::head (certs-with-author
                                 author
-                                (certificates-with-round
+                                (certs-with-round
                                  round
                                  (validator-state->dag
                                   (get-validator-state val systate)))))))
              (:instance set::in-head
-                        (x (certificates-with-author
+                        (x (certs-with-author
                             author
-                            (certificates-with-round
+                            (certs-with-round
                              round
                              (validator-state->dag
                               (get-validator-state val systate)))))))

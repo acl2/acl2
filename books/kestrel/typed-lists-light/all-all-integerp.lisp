@@ -1,7 +1,7 @@
 ; A recognizer for lists of lists of integers
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "all-integerp")
-(include-book "kestrel/sequences/defforall" :dir :system)
+(local (include-book "kestrel/sequences/defforall" :dir :system))
 
 (defforall all-all-integerp (x) (all-integerp x) :declares ((type t x)))
 

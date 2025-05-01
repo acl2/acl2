@@ -553,8 +553,8 @@
                       in direct abstract declarator ~x0 for object."
                      (dirabsdeclor-fix dirabsdeclor))))
        ((erp iconst?)
-        (if dirabsdeclor.expr?
-            (b* ((iconst (check-expr-iconst dirabsdeclor.expr?)))
+        (if dirabsdeclor.size?
+            (b* ((iconst (check-expr-iconst dirabsdeclor.size?)))
               (if iconst
                   (retok (ldm-iconst iconst))
                 (reterr (msg "Unsupported non-integer-constant size ~
@@ -1104,7 +1104,7 @@
   (b* (((reterr) (c::param-declon (c::tyspecseq-void)
                                   (c::obj-declor-ident
                                    (c::ident "irrelevant"))))
-       (declspecs (paramdecl->spec paramdecl))
+       (declspecs (paramdecl->specs paramdecl))
        (declor (paramdecl->decl paramdecl))
        ((mv okp tyspecs) (check-decl-spec-list-all-typespec declspecs))
        ((unless okp)

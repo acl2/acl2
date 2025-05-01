@@ -14,7 +14,7 @@
 ;;; Cartesian product,
 ;;;   including relevant lemmas about membership in pairs
 ;;; Apply
-;;; Domain, codomain, inverse and some basic lemmas
+;;; Domain, image, inverse and some basic lemmas
 ;;; Omega is an ordinal.
 ;;; Relational composition
 ;;; Function composition
@@ -135,7 +135,7 @@
 
 (defun thmz-fn (event)
 
-; Despite the name, this function may be applied to any defthmz, defthmzd, or
+; Despite the name, this function may be applied to any defthmz, defthmdz, or
 ; thmz event, to extend its formula's hypotheses with calls of the zero-ary
 ; functions in its :props argument, default (zfc).
 
@@ -256,19 +256,20 @@
 ; This event is local to the surrounding encapsulate.
 (set-verify-guards-eagerness 0)
 
-(defun singleton (x) ; {x}
+(defun singleton (x) ; {x} = {x,x}
   (pair x x))
 
-(defun union2 (x y) ; x U y
+(defun union2 (x y) ; x U y = U{x,y}
   (union (pair x y)))
 
 (defthmz min-in-1
-; Regularity and choice, part 1: (min z) is in z if z is non-empty.
+; Regularity and global choice, part 1: (min z) is in z if z is non-empty.
   (equal (in (min-in z) z)
          (not (equal z 0))))
 
 (defthmz min-in-2
-; Regularity and choice, part 2: intersection of z and (min z) is empty.
+; Regularity and global choice, part 2: intersection of z and (min z) is
+; empty.
   (implies (in a z)
            (not (in a (min-in z)))))
 
@@ -297,7 +298,7 @@
   (equal (in a (powerset x))
          (subset a x)))
 
-; Now embed ACL2 data types into the set-theoretic universe.
+; Embedding of ACL2 data types into the set-theoretic universe:
 
 (defthm 0-is-emptyset ; 0 = {}
   (not (in a 0)))
@@ -319,77 +320,97 @@
 (defun insert (x s) ; {x} U s
   (union2 (singleton x) s))
 
-(defun triple (y z) ; {0,y,z}
+(defun ztriple (y z) ; {0,y,z}
   (declare (xargs :guard (and (posp y)
                               (not (natp z)))))
   (insert 0 (pair y z)))
 
-(defun negative-int-as-triple (x)
+(defun negative-int-as-ztriple (x)
   (declare (xargs :guard (and (integerp x)
                               (< x 0))))
-  (triple 1 (cons (- x) 0)))
+  (ztriple 1 (cons (- x) 0)))
 
-(defun numerator-as-triple (x)
+(defun integer-as-ztriple (x)
+  (declare (xargs :guard (integerp x)))
+  (if (< x 0)
+      (negative-int-as-ztriple x)
+    x))
+
+(defun numerator-as-ztriple (x)
   (declare (xargs :guard (rationalp x)))
-  (let ((n (numerator x)))
-    (if (< n 0)
-        (negative-int-as-triple n)
-      n)))
+  (integer-as-ztriple (numerator x)))
 
-(defun ratio-as-triple (x)
+(defun ratio-as-ztriple (x)
   (declare (xargs :guard (and (rationalp x)
                               (not (integerp x)))))
-  (triple 2 (cons (numerator-as-triple x) (denominator x))))
+  (ztriple 2 (cons (numerator-as-ztriple x) (denominator x))))
 
-(defun complex-as-triple (x)
+(defun rational-as-ztriple (x)
+  (declare (xargs :guard (rationalp x)))
+  (if (integerp x)
+      (integer-as-ztriple x)
+    (ratio-as-ztriple x)))
+
+(defun complex-as-ztriple (x)
   (declare (xargs :guard (and (complex-rationalp x)
                               (not (rationalp x)))))
-  (triple 3 (cons (realpart x) (imagpart x))))
+  (ztriple 3 (cons (rational-as-ztriple (realpart x))
+                   (rational-as-ztriple (imagpart x)))))
 
-(defun character-as-triple (x)
+(defun character-as-ztriple (x)
   (declare (xargs :guard (characterp x)))
-  (triple 4 (cons (char-code x) 0)))
+  (ztriple 4 (cons (char-code x) 0)))
 
-(defun string-as-triple (x)
+(defun string-as-ztriple (x)
   (declare (xargs :guard (stringp x)))
-  (triple 5 (cons (make-listp0 (coerce x 'list)) 0)))
+  (ztriple 5 (cons (make-listp0 (coerce x 'list)) 0)))
 
-(defun symbol-as-triple (x)
+(defun symbol-as-ztriple (x)
   (declare (xargs :guard (symbolp x)))
-  (triple 6 (cons (string-as-triple (symbol-package-name x))
-                  (string-as-triple (symbol-name x)))))
+  (ztriple 6 (cons (string-as-ztriple (symbol-package-name x))
+                   (string-as-ztriple (symbol-name x)))))
 
-(defthmz negative-int-as-triple-identity
+(defthmz negative-int-as-ztriple-identity
   (implies (and (integerp x)
                 (< x 0))
-           (equal (negative-int-as-triple x)
+           (equal (negative-int-as-ztriple x)
                   x)))
 
-(defthmz ratio-as-triple-identity
+(defthmz integer-as-ztriple-identity
+  (implies (integerp x)
+           (equal (integer-as-ztriple x)
+                  x)))
+
+(defthmz ratio-as-ztriple-identity
   (implies (and (rationalp x)
                 (not (integerp x)))
-           (equal (ratio-as-triple x)
+           (equal (ratio-as-ztriple x)
                   x)))
 
-(defthmz complex-as-triple-identity
+(defthmz rational-as-ztriple-identity
+  (implies (rationalp x)
+           (equal (rational-as-ztriple x)
+                  x)))
+
+(defthmz complex-as-ztriple-identity
   (implies (and (complex-rationalp x)
                 (not (rationalp x)))
-           (equal (complex-as-triple x)
+           (equal (complex-as-ztriple x)
                   x)))
 
-(defthmz character-as-triple-identity
+(defthmz character-as-ztriple-identity
   (implies (characterp x)
-           (equal (character-as-triple x)
+           (equal (character-as-ztriple x)
                   x)))
 
-(defthmz string-as-triple-identity
+(defthmz string-as-ztriple-identity
   (implies (stringp x)
-           (equal (string-as-triple x)
+           (equal (string-as-ztriple x)
                   x)))
 
-(defthmz symbol-as-triple-identity
+(defthmz symbol-as-ztriple-identity
   (implies (symbolp x)
-           (equal (symbol-as-triple x)
+           (equal (symbol-as-ztriple x)
                   x)))
 )
 
@@ -397,14 +418,16 @@
 (verify-guards singleton)
 (verify-guards subset)
 (verify-guards insert)
-(verify-guards triple)
-(verify-guards negative-int-as-triple)
-(verify-guards numerator-as-triple)
-(verify-guards ratio-as-triple)
-(verify-guards complex-as-triple)
-(verify-guards character-as-triple)
-(verify-guards string-as-triple)
-(verify-guards symbol-as-triple)
+(verify-guards ztriple)
+(verify-guards negative-int-as-ztriple)
+(verify-guards integer-as-ztriple)
+(verify-guards numerator-as-ztriple)
+(verify-guards ratio-as-ztriple)
+(verify-guards rational-as-ztriple)
+(verify-guards complex-as-ztriple)
+(verify-guards character-as-ztriple)
+(verify-guards string-as-ztriple)
+(verify-guards symbol-as-ztriple)
 
 (in-theory (disable subset-necc subset in-in))
 
@@ -615,6 +638,7 @@
            (defthm ,name$chooses
              (implies (and (equal (apply (,name ,@args) ,x)
                                   ,y)
+                           (in ,x (domain (,name ,@args)))
                            (force (,name$prop)))
                       ,u)))
         name$prop)))
@@ -632,8 +656,9 @@
 
 ; This macro is what gives us the Axioms of Collection and Replacement, as it
 ; introduces a set-theoretic function restricted to a set, which is named bound
-; here, without specifying a codomain or range.  (The codomain can then be
-; obtained from that function by using the Subset scheme.)
+; here, without specifying the image or even a codomain (i.e., superset of the
+; image).  (The image can then be obtained from that function by using the
+; Subset scheme.)
 
 ; The idea is that u is a term in x and y, possibly with parameters among args,
 ; that defines a mapping, potentially multi-valued, from x to y.  We then
@@ -812,12 +837,11 @@
 ; (powerset (A U B))).  So A X B is a subset of (powerset (powerset (A U
 ; B))).
 
-; The following defines
+; The following defines the Cartesian product
 ; (prod2 a b)
 ; as:
 ; {p \in (powerset (powerset (union2 a b))) : (prod-member p a b)}
-(zsub prod2                              ; name
-      (a b)                              ; args
+(zsub prod2 (a b)                        ; name, args
       p                                  ; x
       (powerset (powerset (union2 a b))) ; s (see comment above)
       (prod-member p a b)                ; u
@@ -868,9 +892,7 @@
 
 (defthmz in-prod2 ; corollary of prod2$comprehension and in-prod2-lemma
   (equal (in p (prod2 a b))
-         (and (consp p)
-              (in (car p) a)
-              (in (cdr p) b)))
+         (prod-member p a b))
   :props (zfc prod2$prop)
   :hints (("Goal" :use in-prod2-lemma)))
 
@@ -910,11 +932,14 @@
 (in-theory (disable apply))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Domain, codomain, inverse and some basic lemmas
+;;; Domain, image, inverse and some basic lemmas
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(zsub domain            ; name
-      (r)               ; args
+; Introduce (domain r) = {x \in (union (union r)) : <x,r(x)> \in r.  The
+; bounding set is (union (union r)) because the domain of r is a subset of
+; (union (union r)).  That's because: If the ordered pair {{x},{x,y}} is in r,
+; then {x} \in (union r) so x \in (union (union r)).
+(zsub domain (r)        ; name, args
       x                 ; x
       (union (union r)) ; s
       (in (cons x (apply r x))
@@ -956,6 +981,7 @@
                                 (IN X1 (DOMAIN (F1 A1 Z)))))
                      (DEFTHM F1$CHOOSES
                        (IMPLIES (AND (EQUAL (APPLY (F1 A1 Z) X1) Y1)
+                                     (IN X1 (DOMAIN (F1 A1 Z)))
                                      (FORCE (F1$PROP)))
                                 (P X1 Y1 Z))))
                    (TABLE ZFC-TABLE
@@ -986,10 +1012,15 @@
   :props (zfc domain$prop)
   :hints (("Goal" :in-theory (enable extensionality in-domain-rewrite))))
 
-; Inverse of a relation:
-(zsub inverse ; name
-      (r)     ; args
-      p       ; x
+; To define the inverse of a relation r, first note that the field of r (i.e.,
+; the union of the domain and image of r) is (union (union r)).  That's because
+; if the ordered pair {{x},{x,y}} is in r, then {x} and {x,y} are in (union r)
+; so x and y are in (union (union r)).  Thus, if s is the product of the field
+; of r with itself, i.e., s = (prod2 (union (union r)) (union (union r))),
+; then:
+; (inverse r) = {p \in s : for some x,y, p = (cons x y) and (cons y x) \in r}.
+(zsub inverse (r) ; name, args
+      p           ; x
       (prod2 (union (union r))
              (union (union r))) ; s
       (and (consp p)
@@ -997,7 +1028,7 @@
                r)) ; u
       )
 
-(defun codomain (r)
+(defun image (r)
   (declare (xargs :guard t))
   (domain (inverse r)))
 
@@ -1089,24 +1120,24 @@
   :props (zfc prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable extensionality subset))))
 
-(defthmz in-codomain-suff
+(defthmz in-image-suff
   (implies (and (in p r)
                 (consp p)
                 (equal y (cdr p)))
-           (in y (codomain r)))
+           (in y (image r)))
   :props (zfc domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :restrict ((in-car-domain-alt
                               ((p (cons (cdr p) (car p)))))))))
 
-; We need the following disable for the proof of lemma in-apply-codomain just
-; below.  It seems reasonable to disable it globally, since codomain is
+; We need the following disable for the proof of lemma in-apply-image just
+; below.  It seems reasonable to disable it globally, since image is
 ; arguably a more basic notion than inverse.
-(in-theory (disable codomain))
+(in-theory (disable image))
 
-(defthmz in-apply-codomain
+(defthmz in-apply-image
   (implies (in x (domain r))
            (in (apply r x)
-                (codomain r)))
+                (image r)))
   :props (zfc domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable in-domain-rewrite))))
 
@@ -1204,7 +1235,7 @@
 
   )
 
-(defun-sk linear-in-p (s)
+(defun-sk in-is-linear (s)
   (declare (xargs :guard t))
   (forall (x y) (implies (and (in x s)
                               (in y s)
@@ -1212,10 +1243,10 @@
                          (or (in x y)
                              (in y x)))))
 
-(verify-guards linear-in-p)
+(verify-guards in-is-linear)
 
-(defthmz linear-in-p-omega
-  (linear-in-p (omega)))
+(defthmz in-is-linear-omega
+  (in-is-linear (omega)))
 
 (defun-sk transitive (x)
   (declare (xargs :guard t))
@@ -1249,7 +1280,7 @@
 
 (defun ordinal-p (x)
   (declare (xargs :guard t))
-  (and (linear-in-p x)
+  (and (in-is-linear x)
        (transitive x)))
 
 (defthmz ordinal-p-omega
@@ -1272,16 +1303,15 @@
          (equal (cdr p1) (car p2))
          (equal p (cons (car p1) (cdr p2))))))
 
-(zsub rcompose                        ; name
-      (r s)                           ; args
+(zsub rcompose (r s)                  ; name, args
       p                               ; x
-      (prod2 (domain r) (codomain s)) ; s
+      (prod2 (domain r) (image s)) ; s
       (in-rcompose p r s)             ; u
       )
 
 (defthmz in-rcompose-rewrite-lemma
   (implies (in-rcompose p r s)
-           (in p (prod2 (domain r) (codomain s))))
+           (in p (prod2 (domain r) (image s))))
   :props (zfc prod2$prop inverse$prop domain$prop))
 
 (defthmz in-rcompose-rewrite ; corollary of rcompose$comprehension.
@@ -1347,15 +1377,14 @@
 ;;; Function composition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The initial definition was (defun compose (f g) (rcompose g f)).  I might
-; later prove that equivalent to the following when assuming (subset
-; (codomain g) (domain f)).  But the following definition supports properties
-; without that assumption.
+; The initial definition was (defun compose (f g) (rcompose g f)).  The lemma
+; rcompose-is-compose below proves its equivalence to the definition below,
+; assuming (subset (image g) (domain f)).  But the following definition may
+; be better suited to avoiding that assumption in theorems about composition.
 
-(zsub compose ; name
-      (f g)   ; args
-      p       ; x
-      (prod2 (domain g) (codomain f))
+(zsub compose (f g) ; name, args
+      p             ; x
+      (prod2 (domain g) (image f))
       (equal (cdr p)
              (apply f (apply g (car p))))
       )
@@ -1383,10 +1412,10 @@
            :in-theory (disable in-prod2)))
   :rule-classes nil)
 
-(defthmz in-codomain
+(defthmz in-image
   (implies (not (equal (apply f x) 0))
            (in (apply f x)
-               (codomain f)))
+               (image f)))
   :props (zfc prod2$prop domain$prop inverse$prop)
   :hints (("Goal" :in-theory (enable apply))))
 
@@ -1420,20 +1449,20 @@
                  apply-compose-2)
            :in-theory (disable compose$comprehension))))
 
-(in-theory (disable (:e codomain)))
+(in-theory (disable (:e image)))
 
 (defthmz inverse-0
   (equal (inverse 0) 0)
   :props (zfc prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable extensionality))))
 
-(defthmz codomain-0-lemma
-  (subset (codomain 0) 0)
+(defthmz image-0-lemma
+  (subset (image 0) 0)
   :props (zfc prod2$prop domain$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable codomain subset))))
+  :hints (("Goal" :in-theory (enable image subset))))
 
-(defthmz codomain-0
-  (equal (codomain 0) 0)
+(defthmz image-0
+  (equal (image 0) 0)
   :props (zfc prod2$prop domain$prop inverse$prop)
   :hints (("Goal" :in-theory (enable extensionality))))
 
@@ -1442,13 +1471,13 @@
   :props (zfc prod2$prop compose$prop domain$prop inverse$prop)
   :hints (("Goal" :in-theory (enable extensionality))))
 
-(defthmz in-apply-codomain-force
+(defthmz in-apply-image-force
   (implies (force (in x (domain r)))
-           (in (apply r x) (codomain r)))
+           (in (apply r x) (image r)))
   :props (zfc prod2$prop domain$prop inverse$prop))
 
 (defthmz domain-compose-lemma
-  (implies (subset (codomain g) (domain f))
+  (implies (subset (image g) (domain f))
            (subset (domain g)
                    (domain (compose f g))))
   :props (zfc prod2$prop compose$prop domain$prop inverse$prop)
@@ -1467,7 +1496,7 @@
 (defthmz domain-compose
   (implies (and (force (funp f))
                 (force (funp g))
-                (force (subset (codomain g) (domain f))))
+                (force (subset (image g) (domain f))))
            (equal (domain (compose f g))
                   (domain g)))
   :props (zfc prod2$prop compose$prop domain$prop inverse$prop)
@@ -1511,7 +1540,7 @@
 (local (defthmz rcompose-is-compose-2
          (implies (and (funp f)
                        (funp g)
-                       (subset (codomain f) (domain g)))
+                       (subset (image f) (domain g)))
                   (subset (compose g f)
                           (rcompose f g)))
          :hints (("Goal"
@@ -1544,7 +1573,7 @@
 (defthmz rcompose-is-compose
   (implies (and (funp f)
                 (funp g)
-                (subset (codomain f) (domain g)))
+                (subset (image f) (domain g)))
            (equal (rcompose f g)
                   (compose g f)))
   :hints (("Goal" :in-theory (enable extensionality-rewrite)))
@@ -1628,8 +1657,8 @@
          (or (equal a x)
              (in a s))))
 
-(defthmz in-triple
-  (equal (in a (triple y z))
+(defthmz in-ztriple
+  (equal (in a (ztriple y z))
          (or (equal a 0)
              (equal a y)
              (equal a z))))
@@ -1676,23 +1705,23 @@
                         (:instance subset-union2-1 (x y) (y x))
                         subset-union2-2))))
 
-(defthmz triple-disjointness
+(defthmz ztriple-disjointness
   (implies (and (posp y1)
                 (posp y2)
                 (not (equal y1 y2))
                 (not (natp z1))
                 (not (natp z2)))
-           (not (equal (triple y1 z1)
-                       (triple y2 z2))))
+           (not (equal (ztriple y1 z1)
+                       (ztriple y2 z2))))
   :hints (("Goal" :in-theory (enable extensionality-rewrite))))
 
-(in-theory (disable triple))
+(in-theory (disable ztriple))
 
-(defun v-n (n)
+(defun v-map (n)
   (declare (type (integer 0 *) n))
   (if (zp n)
       0
-    (powerset (v-n (1- n)))))
+    (powerset (v-map (1- n)))))
 
 (defthmz transitive-0
   (transitive 0))
@@ -1710,37 +1739,42 @@
            (transitive (powerset x)))
   :hints (("Goal" :expand ((transitive (powerset x))))))
 
-(defthmz transitive-v-n
+(defthmz transitive-v-map
   (implies (natp n)
-           (transitive (v-n n))))
+           (transitive (v-map n))))
 
+; Our version of the Replacement Scheme gives us:
+; (forall x \in (omega)) (exists y) (equal y (v-map x))
+; =>
+; (exists v) (forall x \in (omega))
+;   (let ((y (apply v x)))
+;     (equal y (v-map x)))
+; The call of zfn just below implements that observation.
 ; The extra EQUAL call below is to make the $CHOOSES theorem a useful rewrite
 ; rule.
-(zfn v                           ; name
-     ()                          ; args
-     x                           ; x
-     y                           ; y
-     (omega)                     ; bound
-     (equal (equal y (v-n x)) t) ; u
+(zfn v ()                        ; name, args
+     x y                         ; x, y
+     (omega)                     ; bound for x
+     (equal (equal y (v-map x)) t) ; u
      )
 
-(defthmz v-n$domain-lemma
+(defthmz v-map$domain-lemma
   (subset (omega) (domain (v)))
   :props (zfc v$prop domain$prop)
   :hints (("Goal"
            :expand ((subset (omega) (domain (v))))
            :restrict ((v$domain-2
-                       ((y (v-n (subset-witness (omega)
-                                                 (domain (v)))))))))))
+                       ((y (v-map (subset-witness (omega)
+                                                  (domain (v)))))))))))
 
-(defthmz v-n$domain
+(defthmz v-map$domain
   (equal (domain (v)) (omega))
   :props (zfc v$prop domain$prop)
   :hints (("Goal" :in-theory (enable extensionality))))
 
 (defun v-omega ()
   (declare (xargs :guard t))
-  (union (codomain (v))))
+  (union (image (v))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; V-omega contains all ACL2 objects.
@@ -1752,9 +1786,9 @@
 
 ; We start by proving v-omega-contains-naturals.
 
-(defthmz v-maps-n-to-v-n
+(defthmz v-maps-n-to-v-map
   (implies (natp n)
-           (in (cons n (v-n n))
+           (in (cons n (v-map n))
                (v)))
   :props (zfc v$prop domain$prop)
   :hints (("Goal"
@@ -1770,18 +1804,18 @@
            :in-theory (enable in-natp)
            :expand ((subset x (- n 1))))))
 
-(defthmz subset-n-v-n ; towards proving in-n-vn-n+1
+(defthmz subset-n-v-map ; towards proving in-n-vn-n+1
   (implies (natp n)
-           (subset n (v-n n)))
+           (subset n (v-map n)))
   :props (zfc v$prop domain$prop)
   :hints (("Goal"
            :induct t
            :restrict ((subset-transitivity ((y (+ -1 n)))))
-           :expand ((subset n (powerset (v-n (+ -1 n))))))))
+           :expand ((subset n (powerset (v-map (+ -1 n))))))))
 
 (defthmz in-n-vn-n+1
   (implies (natp n)
-           (in n (v-n (+ 1 n))))
+           (in n (v-map (+ 1 n))))
   :props (zfc v$prop domain$prop))
 
 (defthmz v-omega-contains-naturals
@@ -1789,10 +1823,10 @@
            (in n (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
-           :restrict ((in-codomain-suff
-                       ((p (cons (1+ n) (v-n (1+ n))))))
+           :restrict ((in-image-suff
+                       ((p (cons (1+ n) (v-map (1+ n))))))
                       (in-in-suff
-                       ((y (v-n (1+ n)))))))))
+                       ((y (v-map (1+ n)))))))))
 
 ; We now work towards showing that v-omega contains the remaining ACL2
 ; objects.
@@ -1802,51 +1836,51 @@
          (equal x 0))
   :hints (("Goal" :in-theory (enable extensionality))))
 
-(in-theory (disable (:e v-n))) ; avoid some attempts to call powerset
+(in-theory (disable (:e v-map))) ; avoid some attempts to call powerset
 
 ; The following may avoid an induction below, but isn't necessary (or at least,
 ; it wasn't when it was developed).
-(defthmz in-0-v-n
+(defthmz in-0-v-map
   (implies (not (zp j))
-           (in 0 (v-n j))))
+           (in 0 (v-map j))))
 
-(defthmz subset-v-n-implies-in-larger-vn
-  (implies (and (subset x (v-n i))
+(defthmz subset-v-map-implies-in-larger-v-map
+  (implies (and (subset x (v-map i))
                 (natp i)
                 (natp j)
                 (< i j))
-           (in x (v-n j)))
+           (in x (v-map j)))
   :instructions (:induct :prove :prove)) ; :hints (("Goal" :induct t)) failed
 
-(defthmz subset-monotone-wrt-v-n
+(defthmz subset-monotone-wrt-v-map
   (implies (and (natp i)
                 (natp j)
                 (<= i j))
-           (subset (v-n i) (v-n j)))
-  :hints (("Goal" :expand ((subset (powerset (v-n (+ -1 i)))
-                                   (v-n j))))))
+           (subset (v-map i) (v-map j)))
+  :hints (("Goal" :expand ((subset (powerset (v-map (+ -1 i)))
+                                   (v-map j))))))
 
-(defthmz v-n-closed-under-pair-1
+(defthmz v-map-closed-under-pair-1
   (implies (and (natp nx)
                 (natp ny)
-                (in x (v-n nx))
-                (in y (v-n ny))
+                (in x (v-map nx))
+                (in y (v-map ny))
                 (natp k)
                 (<= nx k)
                 (<= ny k))
-           (subset (pair x y) (v-n k)))
-  :hints (("Goal" :expand ((subset (pair x y) (v-n k))))))
+           (subset (pair x y) (v-map k)))
+  :hints (("Goal" :expand ((subset (pair x y) (v-map k))))))
 
-(defthmz v-n-closed-under-pair
+(defthmz v-map-closed-under-pair
   (implies (and (natp nx)
                 (natp ny)
-                (in x (v-n nx))
-                (in y (v-n ny))
+                (in x (v-map nx))
+                (in y (v-map ny))
                 (natp k)
                 (< nx k)
                 (< ny k))
-           (in (pair x y) (v-n k)))
-  :hints (("Goal" :expand ((v-n k)))))
+           (in (pair x y) (v-map k)))
+  :hints (("Goal" :expand ((v-map k)))))
 
 ; Here come two potentially useful and harmelss (and related) lemmas about
 ; membership in (v).
@@ -1876,101 +1910,101 @@
   :hints (("Goal" :in-theory (enable subset))))
 
 ; Our next goal is v-omega-closed-under-pair, which "should" be an easy
-; consequence of v-n-closed-under-pair.  But I spent awhile on this with ACL2
+; consequence of v-map-closed-under-pair.  But I spent awhile on this with ACL2
 ; (when I was proving the analogue for cons in place of pair) and may have had
 ; quite a distance to go.  So here is a hand proof that I can follow.
 
-; Suppose x, y \in (v-omega) = (union (codomain (v))).
+; Suppose x, y \in (v-omega) = (union (image (v))).
 ; So we may choose sx and sy such that
-;   x \in sx \in (codomain (v)) and
-;   y \in sy \in (codomain (v)).
+;   x \in sx \in (image (v)) and
+;   y \in sy \in (image (v)).
 ; then <nx,sx> \in (v) and <ny,sy>  \in (v) for some natp nx, ny.
-; (In fact, expanding codomain, we have:
+; (In fact, expanding image, we have:
 ;   nx = (apply (inverse (v)) sx) and
 ;   ny = (apply (inverse (v)) sy).
-;  That makes a nice lemma, in-codomain-necc.)
-; But then sx = v-n(nx) and sy = vn(ny).
-; So x \in v-n(nx) and y \in vn(ny).
+;  That makes a nice lemma, in-image-necc.)
+; But then sx = v-map(nx) and sy = vn(ny).
+; So x \in v-map(nx) and y \in vn(ny).
 ; Let k = (1+ (max nx ny)).
-; By v-n-closed-under-pair, (in (pair x y) (v-n k)).
-; Claim: (subset (v-n m) (v-omega)) for all natp m.
+; By v-map-closed-under-pair, (in (pair x y) (v-map k)).
+; Claim: (subset (v-map m) (v-omega)) for all natp m.
 ; Then by the claim, where m = k, (in (pair x y) (v-omega)).  Q.E.D.
 
-; To prove the claim that (subset (v-n m) (v-omega)) then since (v-omega)
-; = (union (codomain (v))), it suffices by in-implies-subset-union to
-; prove that (in (v-n m) (codomain (v))), for which it suffices that (in
-; (cons m (v-n m)) (v).  But this follows from v-maps-n-to-v-n.
+; To prove the claim that (subset (v-map m) (v-omega)) then since (v-omega)
+; = (union (image (v))), it suffices by in-implies-subset-union to
+; prove that (in (v-map m) (image (v))), for which it suffices that (in
+; (cons m (v-map m)) (v).  But this follows from v-maps-n-to-v-map.
 
 ; Let's start with the claim.
 
-(defthmz subset-vn-sv-omega
+(defthmz subset-v-map-v-omega
   (implies (force (natp m))
-           (subset (v-n m) (v-omega)))
+           (subset (v-map m) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
-           :restrict ((in-codomain-suff ((p (cons m (v-n m)))))))))
+           :restrict ((in-image-suff ((p (cons m (v-map m)))))))))
 
 ; Now we turn to the proof of v-omega-closed-under-pair.
 
-(defthmz in-codomain-necc
-  (implies (in x (codomain f))
+(defthmz in-image-necc
+  (implies (in x (image f))
            (in (cons (apply (inverse f) x)
                       x)
                 f))
   :props (zfc domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :in-theory (e/d (codomain in-domain-rewrite)
+  :hints (("Goal" :in-theory (e/d (image in-domain-rewrite)
                                   (apply-default)))))
 
-(defthmz in-v-omega-implies-in-v-n-lemma
+(defthmz in-v-omega-implies-in-v-map-lemma
   (implies (in x (v-omega))
-           (let* ((sx (in-in-witness x (codomain (v))))
+           (let* ((sx (in-in-witness x (image (v))))
                   (nx (apply (inverse (v)) sx)))
              (in (cons nx sx) (v))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable in-in)))
   :rule-classes nil)
 
-(defthmz in-v-omega-implies-in-v-n-lemma-corollary
+(defthmz in-v-omega-implies-in-v-map-lemma-corollary
   (implies (in x (v-omega))
-           (let* ((sx (in-in-witness x (codomain (v))))
+           (let* ((sx (in-in-witness x (image (v))))
                   (nx (apply (inverse (v)) sx)))
-             (equal sx (v-n nx))))
+             (equal sx (v-map nx))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :use in-v-omega-implies-in-v-n-lemma))
+  :hints (("Goal" :use in-v-omega-implies-in-v-map-lemma))
   :rule-classes nil)
 
 ; A handy abbreviation, defined so that it's clearly a natural number:
-(defun v-n-inv (x)
-  (let* ((sx (in-in-witness x (codomain (v))))
+(defun v-map-inv (x)
+  (let* ((sx (in-in-witness x (image (v))))
          (nx (apply (inverse (v)) sx)))
     (nfix nx)))
 
-(defthmz in-v-omega-implies-in-v-n
+(defthmz in-v-omega-implies-in-v-map
   (implies (in x (v-omega))
-           (in x (v-n (v-n-inv x))))
+           (in x (v-map (v-map-inv x))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :use in-v-omega-implies-in-v-n-lemma-corollary
+  :hints (("Goal" :use in-v-omega-implies-in-v-map-lemma-corollary
            :do-not '(preprocess)
            :in-theory (enable in-in)))
   :rule-classes (:rewrite :forward-chaining))
 
-(in-theory (disable v-n-inv v-omega (v-omega)))
+(in-theory (disable v-map-inv v-omega (v-omega)))
 
-(defthmz in-v-n-preserved-by-1+
+(defthmz in-v-map-preserved-by-1+
   (implies (and (natp k)
-                (in x (v-n k)))
-           (in x (v-n (+ 1 k)))))
+                (in x (v-map k)))
+           (in x (v-map (+ 1 k)))))
 
 (defthmz v-omega-closed-under-pair-lemma
   (implies (and (in x (v-omega))
                 (in y (v-omega)))
            (in (pair x y)
-               (v-n (1+ (max (v-n-inv x)
-                             (v-n-inv y))))))
+               (v-map (1+ (max (v-map-inv x)
+                               (v-map-inv y))))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :rule-classes nil)
 
-(in-theory (disable v-n))
+(in-theory (disable v-map))
 
 (defthmz v-omega-closed-under-pair
   (implies (and (in x (v-omega))
@@ -1984,21 +2018,21 @@
   :hints (("Goal" :in-theory (e/d (in-in extensionality)
                                   (subset-x-0)))))
 
-(defthmz v-n-closed-under-union
-  (implies (in x (v-n n))
-           (in (union x) (v-n n)))
-  :hints (("Goal" :in-theory (enable v-n subset in-in))))
+(defthmz v-map-closed-under-union
+  (implies (in x (v-map n))
+           (in (union x) (v-map n)))
+  :hints (("Goal" :in-theory (enable v-map subset in-in))))
 
 (defthmz v-omega-closed-under-union2-lemma
   (implies (and (in x (v-omega))
                 (in y (v-omega)))
            (in (union2 x y)
-               (v-n (1+ (max (v-n-inv x)
-                             (v-n-inv y))))))
+               (v-map (1+ (max (v-map-inv x)
+                               (v-map-inv y))))))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
-           :restrict ((v-n-closed-under-pair
-                       ((ny (v-n-inv y)) (nx (v-n-inv x)))))
+           :restrict ((v-map-closed-under-pair
+                       ((ny (v-map-inv y)) (nx (v-map-inv x)))))
            :in-theory (enable union2)))
   :rule-classes nil)
 
@@ -2009,12 +2043,12 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :use v-omega-closed-under-union2-lemma)))
 
-(defthmz v-omega-closed-under-triple
+(defthmz v-omega-closed-under-ztriple
   (implies (and (in x (v-omega))
                 (in y (v-omega)))
-           (in (triple x y) (v-omega)))
+           (in (ztriple x y) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable triple singleton))))
+  :hints (("Goal" :in-theory (enable ztriple singleton))))
 
 (defthmz v-omega-closed-under-cons
   (implies (and (in x (v-omega))
@@ -2026,7 +2060,7 @@
 (defthmz v-omega-contains-integers-lemma
   (implies (and (integerp x)
                 (< x 0))
-           (in (negative-int-as-triple x) (v-omega)))
+           (in (negative-int-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :rule-classes nil)
 
@@ -2037,11 +2071,11 @@
   :hints (("Goal"
            :use v-omega-contains-integers-lemma
            :cases ((< x 0))
-           :in-theory (disable negative-int-as-triple))))
+           :in-theory (disable negative-int-as-ztriple))))
 
 (defthmz v-omega-contains-rationals-lemma
   (implies (rationalp x)
-           (in (ratio-as-triple x) (v-omega)))
+           (in (ratio-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :rule-classes nil)
 
@@ -2052,13 +2086,13 @@
   :hints (("Goal"
            :use v-omega-contains-rationals-lemma
            :cases ((integerp x))
-           :in-theory (disable ratio-as-triple))))
+           :in-theory (disable ratio-as-ztriple))))
 
 (defthmz v-omega-contains-complex-rationals-lemma
   (implies (complex-rationalp x)
-           (in (complex-as-triple x) (v-omega)))
+           (in (complex-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :in-theory (disable complex-as-triple-identity)))
+  :hints (("Goal" :in-theory (disable complex-as-ztriple-identity)))
   :rule-classes nil)
 
 (defthmz v-omega-contains-complex-rationals
@@ -2068,11 +2102,11 @@
   :hints (("Goal"
            :use v-omega-contains-complex-rationals-lemma
            :cases ((integerp x))
-           :in-theory (disable complex-as-triple))))
+           :in-theory (disable complex-as-ztriple))))
 
 (defthmz v-omega-contains-characters-lemma
   (implies (characterp x)
-           (in (character-as-triple x) (v-omega)))
+           (in (character-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :rule-classes nil)
 
@@ -2082,7 +2116,7 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
            :use v-omega-contains-characters-lemma
-           :in-theory (disable character-as-triple))))
+           :in-theory (disable character-as-ztriple))))
 
 (defthmz v-omega-contains-char-listp0
   (implies (char-listp0 x)
@@ -2095,7 +2129,7 @@
 
 (defthmz v-omega-contains-strings-lemma
   (implies (stringp x)
-           (in (string-as-triple x) (v-omega)))
+           (in (string-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :rule-classes nil)
 
@@ -2105,19 +2139,19 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
            :use v-omega-contains-strings-lemma
-           :in-theory (disable string-as-triple))))
+           :in-theory (disable string-as-ztriple))))
 
-(in-theory (disable negative-int-as-triple-identity
-                    ratio-as-triple-identity
-                    character-as-triple-identity
-                    string-as-triple-identity
-                    symbol-as-triple-identity))
+(in-theory (disable negative-int-as-ztriple-identity
+                    ratio-as-ztriple-identity
+                    character-as-ztriple-identity
+                    string-as-ztriple-identity
+                    symbol-as-ztriple-identity))
 
 (defthmz v-omega-contains-symbols-lemma
   (implies (symbolp x)
-           (in (symbol-as-triple x) (v-omega)))
+           (in (symbol-as-ztriple x) (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable string-as-triple-identity)))
+  :hints (("Goal" :in-theory (enable string-as-ztriple-identity)))
   :rule-classes nil)
 
 (defthmz v-omega-contains-symbols
@@ -2126,15 +2160,14 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
            :use v-omega-contains-symbols-lemma
-           :in-theory (e/d (symbol-as-triple-identity)
-                           (symbol-as-triple)))))
+           :in-theory (e/d (symbol-as-ztriple-identity)
+                           (symbol-as-ztriple)))))
 
 (defun acl2p (x)
   (declare (xargs :guard t))
   (cond ((consp x) (and (acl2p (car x))
                         (acl2p (cdr x))))
-        ((bad-atom x) nil)
-        (t t)))
+        (t (not (bad-atom x)))))
 
 (defthmz v-omega-contains-numbers
   (implies (acl2-numberp x)
@@ -2184,14 +2217,14 @@
 ; objects are all in V_{omega*2}.
 ;;;;;
 
-; The following uses rule subset-vn-sv-omega in its proof.
+; The following uses rule subset-v-map-v-omega in its proof.
 (defthmz in-in-v-omega-implies-in-v-omega
   (implies (in-in x (v-omega))
            (in x (v-omega)))
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal"
            :expand ((in-in x (v-omega)))
-           :cases ((in x (v-n (v-n-inv (in-in-witness x (v-omega)))))))))
+           :cases ((in x (v-map (v-map-inv (in-in-witness x (v-omega)))))))))
 
 (defthmz transitive-v-omega-lemma
   (implies (and (in x y)
@@ -2204,8 +2237,8 @@
   :props (zfc v$prop domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :in-theory (enable transitive subset))))
 
-(defthmz in-codomain-implies-in-apply-inverse-domain
-  (implies (and (in y (codomain r))
+(defthmz in-image-implies-in-apply-inverse-domain
+  (implies (and (in y (image r))
                 (equal d (domain r)))
            (in (apply (inverse r) y)
                 d))
@@ -2322,44 +2355,44 @@
                                    (y x))))))
 ) ; end encapsulate
 
-; The following, in-codomain-rewrite, was originally developed in support of
+; The following, in-image-rewrite, was originally developed in support of
 ; proving iterate-plus in the book iterate.lisp.  But it's needed for the
-; encapsulate just below that proves codomain-prod2.
-(defthmdz in-codomain-rewrite
-  (equal (in x (codomain r))
+; encapsulate just below that proves image-prod2.
+(defthmdz in-image-rewrite
+  (equal (in x (image r))
          (in (cons (apply (inverse r) x) x) r))
   :props (zfc prod2$prop domain$prop inverse$prop)
-  :hints (("Goal" :in-theory (enable codomain in-domain-rewrite))))
+  :hints (("Goal" :in-theory (enable image in-domain-rewrite))))
 
 (encapsulate ()
 
-(local (defthmz subset-codomain-prod2
-         (subset (codomain (prod2 x y)) y)
+(local (defthmz subset-image-prod2
+         (subset (image (prod2 x y)) y)
          :props (zfc domain$prop prod2$prop inverse$prop)
-         :hints (("Goal" :in-theory (enable subset in-codomain-rewrite))))
+         :hints (("Goal" :in-theory (enable subset in-image-rewrite))))
        )
 
-(local (defthmz codomain-prod2-lemma
+(local (defthmz image-prod2-lemma
          (implies (not (equal x 0))
-                  (subset y (codomain (prod2 x y))))
+                  (subset y (image (prod2 x y))))
          :hints
          (("Goal"
            :in-theory (enable subset)
            :restrict
-           ((in-codomain-suff
+           ((in-image-suff
              ((p (cons (min-in x)
-                       (subset-witness y (codomain (prod2 x y))))))))))
+                       (subset-witness y (image (prod2 x y))))))))))
          :props (zfc domain$prop prod2$prop inverse$prop)))
 
-(defthmz codomain-prod2
-  (equal (codomain (prod2 x y))
+(defthmz image-prod2
+  (equal (image (prod2 x y))
          (if (equal x 0)
              0
            y))
   :props (zfc domain$prop prod2$prop inverse$prop)
   :hints (("Goal" :use ((:instance extensionality
                                    (x y)
-                                   (y (codomain (prod2 x y))))))))
+                                   (y (image (prod2 x y))))))))
 ) ; end encapsulate
 
 (defthmz subset-omega-v-omega
@@ -2376,34 +2409,34 @@
 ; The following lemmas support the proof of compose-associative, but may be
 ; useful in their own right.
 
-(defthmz subset-codomain-compose
+(defthmz subset-image-compose
 
 ; Here is a hand proof.
-; By definition of subset, let x \in (codomain (compose g h)).
+; By definition of subset, let x \in (image (compose g h)).
 ; So for some y, <y,x> \in (compose g h).
 ;   What is y?  Well, let r = (inverse (compose g h)); so
 ;   x \in (domain r).  So by in-domain-rewrite,
 ;   (in (cons x (apply r x)) r); let y = (apply r x).
 ; By compose$comprehension,
-;   <y,x> \in (prod2 (domain h) (codomain g))
-; So x \in (codomain g).
+;   <y,x> \in (prod2 (domain h) (image g))
+; So x \in (image g).
 
-  (subset (codomain (compose g h))
-          (codomain g))
+  (subset (image (compose g h))
+          (image g))
   :props (zfc prod2$prop domain$prop compose$prop inverse$prop)
   :hints (("Goal"
            :in-theory (enable subset compose$comprehension)
-           :use (:instance in-codomain-rewrite
-                           (x (subset-witness (codomain (compose g h))
-                                              (codomain g)))
+           :use (:instance in-image-rewrite
+                           (x (subset-witness (image (compose g h))
+                                              (image g)))
                            (r (compose g h))))))
 
 (defthmz compose-associative-with-fn-equal
   (implies (and (funp f)
                 (funp g)
                 (funp h)
-                (subset (codomain g) (domain f))
-                (subset (codomain h) (domain g)))
+                (subset (image g) (domain f))
+                (subset (image h) (domain g)))
            (fn-equal (compose (compose f g) h)
                      (compose f (compose g h))))
   :props (zfc prod2$prop domain$prop compose$prop inverse$prop)
@@ -2411,14 +2444,14 @@
            :in-theory (e/d (fn-equal)
                            (fn-equal-implies-in))
            :restrict ((subset-transitivity
-                       ((y (codomain g))))))))
+                       ((y (image g))))))))
 
 (defthmz compose-associative
   (implies (and (force (funp f))
                 (force (funp g))
                 (force (funp h))
-                (force (subset (codomain g) (domain f)))
-                (force (subset (codomain h) (domain g))))
+                (force (subset (image g) (domain f)))
+                (force (subset (image h) (domain g))))
            (equal (compose (compose f g) h)
                   (compose f (compose g h))))
   :props (zfc prod2$prop domain$prop compose$prop inverse$prop)
@@ -2458,9 +2491,9 @@
            :in-theory (disable in-inverse inverse$comprehension))))
 ) ; end encapsulate
 
-(defthmz subset-codomain-0
+(defthmz subset-image-0
   (implies (force (relation-p r))
-           (equal (equal (codomain r) 0)
+           (equal (equal (image r) 0)
                   (equal r 0)))
   :props (zfc domain$prop inverse$prop prod2$prop)
-  :hints (("Goal" :in-theory (enable codomain))))
+  :hints (("Goal" :in-theory (enable image))))

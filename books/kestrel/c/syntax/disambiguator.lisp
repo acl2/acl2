@@ -1076,7 +1076,7 @@
           (param (car params))
           ((unless (paramdeclor-case (paramdecl->decl param) :none))
            (mv nil nil))
-          (declspecs (paramdecl->spec param))
+          (declspecs (paramdecl->specs param))
           ((unless (and (consp declspecs) (endp (cdr declspecs))))
            (mv nil nil))
           (declspec (car declspecs))
@@ -2136,30 +2136,30 @@
        :array
        (b* (((erp new-declor? table)
              (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
-            ((erp new-expr? table)
-             (dimb-expr-option dirabsdeclor.expr? table)))
+            ((erp new-size? table)
+             (dimb-expr-option dirabsdeclor.size? table)))
          (retok (make-dirabsdeclor-array
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
-                 :expr? new-expr?)
+                 :size? new-size?)
                 table))
        :array-static1
        (b* (((erp new-declor? table)
              (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
-            ((erp new-expr table) (dimb-expr dirabsdeclor.expr table)))
+            ((erp new-size table) (dimb-expr dirabsdeclor.size table)))
          (retok (make-dirabsdeclor-array-static1
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
-                 :expr new-expr)
+                 :size new-size)
                 table))
        :array-static2
        (b* (((erp new-declor? table)
              (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
-            ((erp new-expr table) (dimb-expr dirabsdeclor.expr table)))
+            ((erp new-size table) (dimb-expr dirabsdeclor.size table)))
          (retok (make-dirabsdeclor-array-static2
                  :declor? new-declor?
                  :qualspecs dirabsdeclor.qualspecs
-                 :expr new-expr)
+                 :size new-size)
                 table))
        :array-star
        (b* (((erp new-declor? table)
@@ -2217,11 +2217,11 @@
        see @(tsee paramdeclor))."))
     (b* (((reterr) (irr-paramdecl) (irr-dimb-table))
          ((paramdecl paramdecl) paramdecl)
-         ((erp new-spec & table)
-          (dimb-decl-spec-list paramdecl.spec (dimb-kind-objfun) table))
+         ((erp new-specs & table)
+          (dimb-decl-spec-list paramdecl.specs (dimb-kind-objfun) table))
          ((erp new-decl table)
           (dimb-paramdeclor paramdecl.decl table)))
-      (retok (make-paramdecl :spec new-spec :decl new-decl) table))
+      (retok (make-paramdecl :specs new-specs :decl new-decl) table))
     :measure (paramdecl-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

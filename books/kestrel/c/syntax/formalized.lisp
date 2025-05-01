@@ -921,7 +921,7 @@
      and must form a supported type.
      The parameter declarator must be a supported one."))
   (b* (((paramdecl paramdecl) paramdecl)
-       ((mv okp tyspecs) (check-decl-spec-list-all-typespec paramdecl.spec)))
+       ((mv okp tyspecs) (check-decl-spec-list-all-typespec paramdecl.specs)))
     (and okp
          (type-spec-list-formalp tyspecs)
          (paramdeclor-formalp paramdecl.decl)))

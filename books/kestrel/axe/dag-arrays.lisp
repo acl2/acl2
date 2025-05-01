@@ -23,26 +23,26 @@
 (include-book "kestrel/utilities/erp" :dir :system)
 (local (include-book "rational-lists"))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
-(local (include-book "kestrel/lists-light/memberp" :dir :system))
 ;(include-book "kestrel/utilities/polarity" :dir :system) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
-;move
+;move? localize?
 (in-theory (disable true-listp ;looped?
                     ))
 
-(defthmd nth-when-not-cddr
-  (implies (and (not (cddr x))
-                (<= 2 n)
-                (natp n))
-           (equal (nth n x)
-                  nil))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
-  :hints (("Goal" :in-theory (e/d (nth len) (len-of-cdr nth-of-cdr)))))
+;; (defthmd nth-when-not-cddr
+;;   (implies (and (not (cddr x))
+;;                 (<= 2 n)
+;;                 (natp n))
+;;            (equal (nth n x)
+;;                   nil))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
+;;   :hints (("Goal" :in-theory (e/d (nth len) (len-of-cdr nth-of-cdr)))))
 
 (defthm <-of-len-when-integerp-of-nth
   (implies (and (INTEGERP (NTH n x))
@@ -58,12 +58,12 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :hints (("Goal" :in-theory (enable NTH-WHEN-<=-LEN))))
 
-(defthmd len-bound-when-not-cddr
-  (implies (not (cddr x))
-           (<= (len x) 2))
-  :rule-classes :linear)
+;; (defthmd len-bound-when-not-cddr
+;;   (implies (not (cddr x))
+;;            (<= (len x) 2))
+;;   :rule-classes :linear)
 
-(local (in-theory (enable len-bound-when-not-cddr)))
+;(local (in-theory (enable len-bound-when-not-cddr)))
 
 (defthm memberp-of-nth-and-cdr
   (implies (posp n)
@@ -76,6 +76,17 @@
                                   (nth-of-cdr)))))
 
 (local (in-theory (enable len-when-dargp-less-than)))
+
+(defthm all-<-of-0-when-nat-listp
+  (implies (nat-listp nats)
+           (equal (all-< nats 0)
+                  (atom nats))))
+
+(defthm all-<-of-0-when-all-natp
+  (implies (all-natp nats)
+           (equal (all-< nats 0)
+                  (atom nats)))
+  :hints (("Goal" :in-theory (enable all-natp))))
 
 (defthm <-when-bounded-darg-listp-gen
   (implies (and (bounded-darg-listp vals bound)
@@ -600,9 +611,8 @@
                 (integerp m)
                 (natp n))
            (bounded-dag-exprp m (aref1 dag-array-name dag-array n)))
-  :hints (("Goal" :in-theory (e/d (pseudo-dag-arrayp
-                                   BOUNDED-DAG-EXPRP ;prove a monotone rule for this
-                                   ) (bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux))
+  :hints (("Goal" :in-theory (e/d (pseudo-dag-arrayp)
+                                  (bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux))
            :use (:instance bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux
                            (m n)))))
 
@@ -1615,17 +1625,6 @@
            :in-theory (enable pseudo-dag-arrayp-aux aref1-when-not-assoc-equal
                               assoc-equal-when-PSEUDO-DAGP))))
 
-(defthm all-<-of-0-when-nat-listp
-  (implies (nat-listp nats)
-           (equal (ALL-< nats 0)
-                  (atom nats))))
-
-(defthm all-<-of-0-when-all-natp
-  (implies (all-natp nats)
-           (equal (all-< nats 0)
-                  (atom nats)))
-  :hints (("Goal" :in-theory (enable all-natp))))
-
 (defthm not-<-of-alen1-when-pseudo-dag-arrayp
   (implies (pseudo-dag-arrayp dag-array-name dag-array dag-len)
            (not (< (alen1 dag-array-name dag-array) dag-len))))
@@ -1642,7 +1641,6 @@
            ;; :cases ((consp (nth n (dargs (aref1 dag-array-name dag-array nodenum)))))
            ;; :expand ((PSEUDO-DAG-ARRAYP-AUX DAG-ARRAY-NAME DAG-ARRAY 0))
            :in-theory (e/d (<-of-nth-when-bounded-darg-listp
-                            MEMBER-EQUAL-BECOMES-MEMBERP
                             dargs-when-not-consp-cheap
                             bounded-dag-exprp)
                            (bounded-dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux-helper
@@ -1929,26 +1927,27 @@
                    (nth n (dargs (aref1 dag-array-name dag-array nodenum))))))
   :hints (("Goal" :in-theory (enable pseudo-dag-arrayp))))
 
-(defthm aref1-of-cdr-irrel
-  (implies (and (< index (CAR (CAR DAG-LST)))
-                (natp index))
-           (equal (AREF1 ARRAY-NAME (CDR DAG-LST) index)
-                  (AREF1 ARRAY-NAME DAG-LST index)))
-  :hints (("Goal" :in-theory (enable aref1))))
+(local
+  (defthm aref1-of-cdr-irrel
+    (implies (and (< index (car (car array)))
+                  (natp index))
+             (equal (aref1 array-name (cdr array) index)
+                    (aref1 array-name array index)))
+    :hints (("Goal" :in-theory (enable aref1)))))
 
-(defthm PSEUDO-DAG-ARRAYP-AUX-of-cdr-irrel
+(defthm pseudo-dag-arrayp-aux-of-cdr-irrel
   (implies (and (< top-nodenum (car (car dag-lst)))
-                (integerp top-nodenum)
-                )
-           (equal (PSEUDO-DAG-ARRAYP-AUX ARRAY-NAME (CDR DAG-LST) top-nodenum)
-                  (PSEUDO-DAG-ARRAYP-AUX ARRAY-NAME DAG-LST top-nodenum)))
-  :hints (("Goal" :in-theory (enable PSEUDO-DAG-ARRAYP-AUX))))
+                (integerp top-nodenum))
+           (equal (pseudo-dag-arrayp-aux array-name (cdr dag-lst) top-nodenum)
+                  (pseudo-dag-arrayp-aux array-name dag-lst top-nodenum)))
+  :hints (("Goal" :in-theory (enable pseudo-dag-arrayp-aux))))
 
-(defthm aref1-of-car-of-car-2
-  (implies (natp (CAR (CAR DAG-LST)))
-           (equal (AREF1 ARRAY-NAME DAG-LST (CAR (CAR DAG-LST)))
-                  (cdr (car dag-lst))))
-  :hints (("Goal" :in-theory (enable AREF1))))
+(local
+  (defthm aref1-of-car-of-car-2
+    (implies (natp (car (car array)))
+             (equal (aref1 array-name array (car (car array)))
+                    (cdr (car array))))
+    :hints (("Goal" :in-theory (enable aref1)))))
 
 (defthm pseudo-dag-arrayp-aux-lemma
   (implies (and (natp (car (car dag-lst)))
@@ -2433,3 +2432,89 @@
                            (car-of-car-when-pseudo-dagp-aux
                             natp
                             pseudo-dagp-aux-of-array-to-alist-aux)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund dag-and-array-agreep-aux (dag dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (weak-dagp-aux dag)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (all-< (strip-cars dag) dag-len))
+                  :guard-hints (("Goal" :in-theory (enable car-of-car-when-pseudo-dagp-cheap
+                                                           pseudo-dagp
+                                                           pseudo-dagp-aux)))))
+  (if (endp dag)
+      t
+    (let* ((entry (first dag))
+           (nodenum (car entry))
+           (expr (cdr entry)))
+      (and (equal expr (aref1 dag-array-name dag-array nodenum))
+           (dag-and-array-agreep-aux (rest dag) dag-array-name dag-array dag-len)))))
+
+(local
+  (defun ind (n len)
+    (declare (xargs :measure (nfix (+ 1 (- len n)))))
+    (if (or (<= len n)
+            (not (natp n))
+            (not (natp len)))
+        (list n len)
+      (ind (+ 1 n) len))))
+
+(local
+  (defthmd dag-and-array-agreep-aux-of-make-into-array-with-len-helper
+    (implies (and (pseudo-dagp dag)
+                  (<= (len dag) initial-array-size)
+                  (<= initial-array-size 1152921504606846974)
+                  (natp initial-array-size)
+                  (symbolp dag-array-name)
+                  (<= (+ 1 (top-nodenum dag)) dag-len)
+                  (natp dag-len)
+                  (natp n)
+                  (<= n (len dag)))
+             (dag-and-array-agreep-aux (nthcdr n dag) dag-array-name (make-into-array-with-len dag-array-name dag initial-array-size) dag-len))
+    :hints (("Goal" :do-not '(generalize eliminate-destructors)
+             :induct (ind n (len dag))
+             :in-theory (e/d (dag-and-array-agreep-aux
+                              car-of-car-when-pseudo-dagp
+                              nthcdr-opener-alt2
+                              natp-of-car-of-nth-when-pseudo-dagp-aux
+                              alistp-when-pseudo-dagp
+                              natp-of-car-of-nth-when-pseudo-dagp
+                              <-of-car-of-nth-when-pseudo-dagp
+                              assoc-equal-of-car-of-nth-same-when-alistp-and-no-duplicatesp-equal-of-strip-cars
+                              no-duplicatesp-equal-of-strip-cars-when-pseudo-dagp)
+                             (natp
+                              len-when-pseudo-dagp-aux ; looped
+                              ))))))
+
+(local
+  (defthm dag-and-array-agreep-aux-of-make-into-array-with-len
+    (implies (and (pseudo-dagp dag)
+                  (<= (len dag) initial-array-size)
+                  (<= initial-array-size 1152921504606846974)
+                  (natp initial-array-size)
+                  (symbolp dag-array-name)
+                  (<= (len dag) dag-len)
+                  (natp dag-len))
+             (dag-and-array-agreep-aux dag dag-array-name (make-into-array-with-len dag-array-name dag initial-array-size) dag-len))
+    :hints (("Goal" :use (:instance dag-and-array-agreep-aux-of-make-into-array-with-len-helper
+                                    (n 0))
+             :in-theory (enable car-of-car-when-pseudo-dagp)))))
+
+;; Checks that all the nodes of DAG has the same numbers in DAG-ARRAY
+;; cleaner guard than dag-and-array-agreep-aux
+(defund dag-and-array-agreep (dag dag-array-name dag-array dag-len)
+  (declare (xargs :guard (and (pseudo-dagp dag)
+                              (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+                              (<= (len dag) dag-len))))
+  (dag-and-array-agreep-aux dag dag-array-name dag-array dag-len))
+
+(defthm dag-and-array-agreep-of-make-into-array-with-len
+  (implies (and (pseudo-dagp dag)
+                (<= (len dag) initial-array-size)
+                (<= initial-array-size 1152921504606846974)
+                (natp initial-array-size)
+                (symbolp dag-array-name)
+                (<= (len dag) dag-len)
+                (natp dag-len))
+           (dag-and-array-agreep dag dag-array-name (make-into-array-with-len dag-array-name dag initial-array-size) dag-len))
+  :hints (("Goal" :in-theory (enable dag-and-array-agreep))))

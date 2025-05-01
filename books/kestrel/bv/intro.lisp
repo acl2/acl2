@@ -1,6 +1,6 @@
 ; Rules to introduce BV ops
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,7 +20,7 @@
 (include-book "bvif")
 (include-book "defs-bitwise")
 (include-book "unsigned-byte-p-forced")
-(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
+(include-book "ihs/basic-definitions" :dir :system) ;for logmask
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

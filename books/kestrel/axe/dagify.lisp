@@ -64,8 +64,11 @@
                            nat-listp ;for speed
                            pseudo-dag-arrayp
                            true-listp-of-nth-1-of-nth-0-when-axe-treep
-                           ;CAR-OF-CAR-WHEN-PSEUDO-TERMP  ;; try
-                           )))
+                           car-of-car-when-pseudo-termp
+                           natp
+                           cddr-when-pseudo-termp-and-quotep
+                           len-when-pseudo-termp-and-quotep-alt
+                           len-of-car-when-pseudo-termp-cheap)))
 
 ;(local (in-theory (enable caadr-when-consecutivep-of-strip-cars)))
 

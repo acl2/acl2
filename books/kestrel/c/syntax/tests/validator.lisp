@@ -444,6 +444,42 @@ struct my_struct bar(void);
 ")
 
 (test-valid
+  "struct my_struct { int x; };
+void foo(void) {
+  struct my_struct a;
+  struct my_struct b;
+  a = b;
+}
+")
+
+(test-valid-fail
+  "struct my_struct1 { int x; };
+struct my_struct2 { _Bool y; };
+void foo(void) {
+  struct my_struct1 a;
+  struct my_struct2 b;
+  a = b;
+}
+")
+
+(test-valid
+  "struct my_struct { int x; };
+void foo(void) {
+  struct my_struct a;
+  struct my_struct b = a;
+}
+")
+
+(test-valid-fail
+  "struct my_struct1 { int x; };
+struct my_struct2 { _Bool y; };
+void foo(void) {
+  struct my_struct1 a;
+  struct my_struct2 b = a;
+}
+")
+
+(test-valid
  "typedef struct foo_s { int x; } foo_t;
 typedef foo_t foo_t_alias;
 foo_t_alias bar;

@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-(include-book "file-paths")
 (include-book "files")
 
 (include-book "centaur/misc/tshell" :dir :system)
@@ -23,6 +22,7 @@
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
@@ -78,41 +78,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; filepath-setp rules
-
-(defrulel filepath-setp-of-cdr-when-filepath-setp-cheap
-  (implies (filepath-setp setp)
-           (filepath-setp (cdr setp)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable (filepath-setp))
-
-(defrulel filepath-setp-compound-recognizer
-  (implies (filepath-setp files)
-           (true-listp files))
-  :rule-classes :compound-recognizer)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define join-filepath
-  ((x filepathp)
-   (y filepathp))
-  :returns (filepath filepathp)
-  (b* (((filepath x) x)
-       ((filepath y) y)
-       (x-str (if (stringp x.unwrap)
-                  x.unwrap
-                ""))
-       (y-str (if (stringp y.unwrap)
-                  y.unwrap
-                "")))
-    ;; TODO: avoid redundant slashes
-    (filepath (concatenate 'string x-str "/" y-str))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define preprocess-file
-  ((file filepathp
-         "The C file to preprocess.")
+  ((file stringp
+         "The file path of the C file to preprocess.")
    &key
    ((out (or (not out)
              (stringp out))
@@ -162,15 +130,10 @@
       linemarkers. This behavior may be overriden by explicitly providing a
       @(':extra-args') value."))
   (b* (((reterr) "" (filedata nil) state)
-       (filename (filepath->unwrap file))
+       (filename (canonical-pathname file nil state))
        ((unless (stringp filename))
-        (reterr (msg "Filepath is not a string: ~x0"
-                     filename)))
-       (canonical-filename (canonical-pathname filename nil state))
-       ((unless (stringp canonical-filename))
         (reterr (msg "Filepath does not exist: ~x0"
-                     filename)))
-       (filename canonical-filename)
+                     file)))
        (- (acl2::tshell-ensure))
        (save (if (eq :auto save)
                  (and out t)
@@ -238,8 +201,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define preprocess-files
-  ((files filepath-setp
-          "The set of C files to preprocess.")
+  ((files string-listp
+          "The file path list specifying C file to preprocess.")
    &key
    ((path stringp
           "The base path to which @('files') are relative. By default, the
@@ -281,18 +244,19 @@
       preprocess-file) for a similar utility which operates on individuals
       files."))
   (b* (((reterr) (irr-fileset) state)
-       ((when (emptyp files))
+       ((when (endp files))
         (retok (fileset nil) state))
        (out (and out-dir
-                 (b* ((filename (filepath->unwrap (head files))))
+                 (b* ((filename (first files)))
                    (and (stringp filename)
                         (concatenate 'string
                                      out-dir
                                      "/"
                                      filename
                                      ".i")))))
+       (filename (concatenate 'string path "/" (first files)))
        ((erp - filedata state)
-        (preprocess-file (join-filepath (filepath path) (head files))
+        (preprocess-file filename
                          :out out
                          :save save
                          :preprocessor preprocessor
@@ -306,7 +270,7 @@
                           :preprocessor preprocessor
                           :extra-args extra-args
                           :state state)))
-    (retok (fileset (omap::update (head files)
+    (retok (fileset (omap::update (filepath (first files))
                                   filedata
                                   fileset.unwrap))
            state))

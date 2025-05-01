@@ -209,6 +209,11 @@
          (read-byte addr x86))
   :hints (("Goal" :in-theory (enable read-byte))))
 
+(defthm read-byte-of-ifix
+  (equal (read-byte (ifix ad) x86)
+         (read-byte ad x86))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
 (defthm read-byte-of-logext
   (implies (and (<= 48 size)
                 (integerp size))
@@ -1116,6 +1121,18 @@
  :hints (("Goal" :in-theory (enable read-when-bvchops-agree
                                     acl2::bvchop-of-+-becomes-bvplus))))
 
+;; opposite of read-of-bvplus
+(defthmd read-of-+-arg2
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (read n (+ x y) x86)
+                  (read n (bvplus 48 x y) x86)))
+  :hints (("Goal" :in-theory (e/d (read) (READ-OF-BVPLUS-TIGHTEN ; todo loop
+                                          ;ACL2::BVPLUS-COMMUTATIVE-2-SIZES-DIFFER
+                                          )))))
+
+(theory-invariant (incompatible (:rewrite read-of-+-arg2) (:rewrite read-of-bvplus)))
+
 (defthm read-of-+-of-expt ; gen the 48?
   (implies (integerp addr)
            (equal (read n (+ addr (expt 2 48)) x86)
@@ -1323,6 +1340,11 @@
   (implies (integerp ad)
            (equal (write-byte ad byte1 (write-byte ad byte2 x86))
                   (write-byte ad byte1 x86)))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthm write-byte-of-ifix
+  (equal (write-byte (ifix ad) val x86)
+         (write-byte ad val x86))
   :hints (("Goal" :in-theory (enable write-byte))))
 
 (defthm write-byte-subst-term-arg1
@@ -1921,6 +1943,18 @@
                   (write n (+ x y) val x86)))
   :hints (("Goal" :in-theory (enable write-when-bvchops-agree
                                      acl2::bvchop-of-+-becomes-bvplus))))
+
+;opposite of WRITE-OF-BVPLUS
+(defthmd write-of-+-arg2
+  (implies (and (integerp ad1)
+                (integerp ad2))
+           (equal (write n (+ ad1 ad2) val x86)
+                  (write n (bvplus 48 ad1 ad2) val x86)))
+  :hints (("Goal" :in-theory (e/d (write) (;READ-OF-BVPLUS-TIGHTEN ; todo loop
+                                          ;ACL2::BVPLUS-COMMUTATIVE-2-SIZES-DIFFER
+                                          )))))
+
+(theory-invariant (incompatible (:rewrite write-of-+-arg2) (:rewrite write-of-bvplus)))
 
 (defthm write-of-+-normalize
   (implies (and (syntaxp (quotep k))
@@ -3175,7 +3209,7 @@
   ;;                              (:i write)
   ;;                              write-of-1-becomes-write-byte
   ;;                              )
-  ;;                                 (acl2::getbit-bound-linear
+  ;;                                 (
   ;;                                  acl2::bvplus-when-low-bits-are-zero))
   ;;          :induct (write n1 ad1 val1 x86) ; causes the wrong first byte to be split off
   ;;          :expand ((WRITE (+ N1 N2)

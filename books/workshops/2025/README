@@ -48,6 +48,8 @@ RV32I in ACL2
 Mayank Manjrekar
 [Extended Abstract] On Automating Proofs of Multiplier Adder Trees using the RTL Books
 
+manjrekar/
+
 ------------------------------
 
 Zeke Medley and Panagiotis Manolios
@@ -68,9 +70,13 @@ A Formalization of Elementary Linear Algebra: Part II
 Andrew T. Walter and Panagiotis Manolios
 An ACL2s Interface to Z3
 
+walter-manolios/
+
 ------------------------------
 
 Samuel Xifaras, Panagiotis Manolios, Andrew Walter and William Robertson
 An Enumerative Embedding of the Python Type System into ACL2s
+
+[books]/projects/python/embedding/
 
 ------------------------------

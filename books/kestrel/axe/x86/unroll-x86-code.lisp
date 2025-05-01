@@ -101,24 +101,24 @@
 (acl2::ensure-rules-known (step-opener-rules32))
 (acl2::ensure-rules-known (step-opener-rules64))
 
-;move
-;; We often want these for ACL2 proofs, but not for 64-bit examples
-(deftheory 32-bit-reg-rules
-  '(xw-becomes-set-eip
-    xw-becomes-set-eax
-    xw-becomes-set-ebx
-    xw-becomes-set-ecx
-    xw-becomes-set-edx
-    xw-becomes-set-esp
-    xw-becomes-set-ebp
-    ;; introduce eip too?
-    xr-becomes-eax
-    xr-becomes-ebx
-    xr-becomes-ecx
-    xr-becomes-edx
-    xr-becomes-ebp
-    xr-becomes-esp)
-  :redundant-okp t)
+;; ;move
+;; ;; We often want these for ACL2 proofs, but not for 64-bit examples
+;; (deftheory 32-bit-reg-rules
+;;   '(xw-becomes-set-eip
+;;     xw-becomes-set-eax
+;;     xw-becomes-set-ebx
+;;     xw-becomes-set-ecx
+;;     xw-becomes-set-edx
+;;     xw-becomes-set-esp
+;;     xw-becomes-set-ebp
+;;     ;; introduce eip too?
+;;     xr-becomes-eax
+;;     xr-becomes-ebx
+;;     xr-becomes-ecx
+;;     xr-becomes-edx
+;;     xr-becomes-ebp
+;;     xr-becomes-esp)
+;;   :redundant-okp t)
 
 ;; For safety:
 (in-theory (disable (:executable-counterpart sys-call)))
@@ -246,7 +246,7 @@
 
 ;; ;; Returns (mv erp result).
 ;; ;move
-;; ; TODO: Errors about program-only code
+;; ; TODO: Errors about program-only code, e.g., for (acl2::translate-terms-logic '((+ x y)) 'ctx (w state) state)
 ;; (defund acl2::translate-terms-logic (terms ctx wrld state)
 ;;   (declare (xargs :guard (and (true-listp terms) ; untranslated
 ;;                                     (plist-worldp wrld))
@@ -270,13 +270,14 @@
                           acl2::true-listp-when-symbol-listp-rewrite-unlimited)))
 
 ;move
-(defthm w-of-set-print-base-radix
-  (equal (w (set-print-base-radix base state))
-         (w state))
-  :hints (("Goal" :in-theory (enable set-print-base-radix w))))
+(local
+ (defthm w-of-set-print-base-radix
+   (equal (w (set-print-base-radix base state))
+          (w state))
+   :hints (("Goal" :in-theory (enable set-print-base-radix w)))))
 
 (local
-  (defthm not-quote-forward-to-not-myquotep
+  (defthm not-quotep-forward-to-not-myquotep
     (implies (not (quotep x))
              (not (myquotep x)))
     :rule-classes :forward-chaining

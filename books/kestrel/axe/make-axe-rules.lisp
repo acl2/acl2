@@ -28,7 +28,7 @@
 (include-book "axe-syntax") ;since this book knows about axe-syntaxp and axe-bind-free
 (include-book "kestrel/world-light/defthm-or-defaxiom-symbolp" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
-(include-book "kestrel/sequences/defforall" :dir :system) ; todo: reduce
+(local (include-book "kestrel/sequences/defforall" :dir :system)) ; todo: reduce
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -1184,7 +1184,7 @@
               (if (member-eq fn known-boolean-fns)
                   ;; pred -> (equal pred 't)
                   (mv nil (expand-lambdas-in-term conc) *t*)
-                (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion (not an equality, a call of not, or a call of a known-boolean) ~x0 in rule ~x1" conc rule-symbol)
+                (prog2$ (er hard? 'lhs-and-rhs-of-conc "Unexpected form of conclusion, ~x0, in rule ~x1.  Consider calling ~x2." conc rule-symbol `(add-known-boolean ,fn))
                         (mv :bad-conclusion nil nil))))))))))
 
 (local

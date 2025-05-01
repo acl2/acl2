@@ -38,15 +38,23 @@
 
 (in-package "X86ISA")
 
-(include-book "instructions/top"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+;; (include-book "instructions/top"
+;;               :ttags (:syscall-exec :other-non-det :undef-flg))
+;; Other instruction books may be needed here eventually:
+(include-book "instructions/bit")
+(include-book "instructions/padd")
+(include-book "instructions/psub")
+(include-book "instructions/rotate-and-shift")
+(include-book "instructions/fp/logical")
+(include-book "instructions/fp/mov")
+(include-book "instructions/fp/non-arith")
 (include-book "prefix-modrm-sib-decoding")
-(include-book "dispatch-macros")
-(include-book "cpuid")
-(include-book "std/strings/hexify" :dir :system)
+;; (include-book "dispatch-macros")
+;; (include-book "cpuid")
+;; (include-book "std/strings/hexify" :dir :system)
 
 (local (include-book "dispatch-creator"))
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+;; (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
 (local (in-theory (e/d ()
@@ -83,8 +91,6 @@
      (modr/m                 :type (unsigned-byte 8))
      (sib                    :type (unsigned-byte 8))
      x86)
-
-    :ignore-ok t
 
     :parents (x86-decoder)
     :no-function t
@@ -124,8 +130,6 @@
      (modr/m                 :type (unsigned-byte 8))
      (sib                    :type (unsigned-byte 8))
      x86)
-
-    :ignore-ok t
 
     :parents (x86-decoder)
     :no-function t
@@ -168,8 +172,6 @@
      (sib                    :type (unsigned-byte 8))
      x86)
 
-    :ignore-ok t
-
     :parents (x86-decoder)
     :no-function t
     :short "Dispatch function for EVEX-encoded instructions in the second
@@ -208,8 +210,6 @@
                            "Only @('byte0') and @('byte1') fields are populated
                             when this function is called.")
    x86)
-
-  :ignore-ok t
 
   :guard (and (evex-prefixes-p evex-prefixes)
               (prefixes-p prefixes))

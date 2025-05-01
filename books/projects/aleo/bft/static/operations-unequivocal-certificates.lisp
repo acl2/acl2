@@ -72,7 +72,7 @@
                     (cert2
                      (mv-nth 1 (certificate-set-unequivocalp-witness certs0))))
     :enable (set::expensive-rules
-             in-of-certificates-with-author)
+             in-of-certs-with-author)
     :disable certificate-set-unequivocalp)
 
   (defruled certificate-set-unequivocalp-of-tail
@@ -114,21 +114,21 @@
                   (<= (set::cardinality (cert-set->round-set certs)) 1))
              (not (set::in (certificate->author (set::head certs))
                            (cert-set->author-set (set::tail certs)))))
-    :use ((:instance emptyp-of-certificates-with-author-if-no-author
+    :use ((:instance emptyp-of-certs-with-author
                      (author (certificate->author (set::head certs)))
                      (certs (set::tail certs)))
           (:instance
            same-certificate-when-unequivocal-same-authors-and-round-card-leq-1
            (cert1 (set::head certs))
-           (cert2 (set::head (certificates-with-author
+           (cert2 (set::head (certs-with-author
                               (certificate->author (set::head certs))
                               (set::tail certs)))))
           (:instance set::in-head
-                     (x (certificates-with-author
+                     (x (certs-with-author
                          (certificate->author (head certs))
                          (tail certs)))))
     :enable (set::expensive-rules
-             in-of-certificates-with-author))
+             in-of-certs-with-author))
 
   ;; In an unequivocal set of certificates in the same round,
   ;; the number of certificates is the same as the number of their authors.

@@ -19,6 +19,8 @@
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 
+(local (in-theory (enable make-lambda-with-hint)))
+
 (local (in-theory (disable strip-cdrs
                            strip-cars
                            symbol-alistp
@@ -161,8 +163,10 @@
              (mv-let (formals-to-subst formals-to-keep)
                (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)
                (declare (ignore formals-to-keep)) ; todo
-               (progn$ (and print hands-off-fns "Will subst for ~x0 in lambda.~%" formals-to-subst)
-                       (subst-formals-in-lambda-application formals lambda-body args formals-to-subst))))
+               (if formals-to-subst
+                   (progn$ (and print (cw "Will subst for ~x0 in lambda.~%" formals-to-subst))
+                           (subst-formals-in-lambda-application formals lambda-body args formals-to-subst))
+                 `((lambda ,formals ,lambda-body) ,@args))))
          ;;not a lambda application, so just rebuild the function call:
          (cons-with-hint fn args term)))))
 

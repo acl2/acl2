@@ -96,23 +96,23 @@
 
 ; A next goal is a corollary of inverse-rcompose for functions.
 
-(defthmz apply-apply-inverse ; to prove codomain-inverse-1
+(defthmz apply-apply-inverse ; to prove image-inverse-1
   (implies (and (funp f)
-                (in x (codomain f)))
+                (in x (image f)))
            (equal (apply f (apply (inverse f) x))
                   x))
   :props (zfc prod2$prop domain$prop inverse$prop))
 
-(defthmz codomain-inverse-1
-  (subset (codomain (inverse r))
+(defthmz image-inverse-1
+  (subset (image (inverse r))
           (domain r))
   :hints (("Goal"
            :expand ((subset (domain (inverse (inverse r)))
                             (domain r)))
-           :in-theory (enable codomain in-domain-rewrite)))
+           :in-theory (enable image in-domain-rewrite)))
   :props (zfc prod2$prop inverse$prop domain$prop))
 
-(defthmz in-cons-apply ; to prove codomain-inverse-2
+(defthmz in-cons-apply ; to prove image-inverse-2
   (equal (in (cons x (apply f x))
              f)
          (in x (domain f)))
@@ -124,13 +124,13 @@
                   :key in-domain-rewrite-vs-in-cons-apply
                   :error t)
 
-(defthmz codomain-inverse-2
+(defthmz image-inverse-2
   (subset (domain r)
-          (codomain (inverse r)))
+          (image (inverse r)))
   :hints (("Goal"
            :expand ((subset (domain r)
                             (domain (inverse (inverse r)))))
-           :in-theory (enable codomain)
+           :in-theory (enable image)
            :restrict
            ((in-car-domain-alt
              ((p (cons (subset-witness
@@ -142,24 +142,24 @@
                                (domain (inverse (inverse r))))))))))))
   :props (zfc prod2$prop inverse$prop domain$prop))
 
-(defthmz codomain-inverse
+(defthmz image-inverse
 ; The following can be proved easily, without the two lemmas just above and
 ; without domain$prop, if we add a (relation-p r) hypothesis.
-  (equal (codomain (inverse r))
+  (equal (image (inverse r))
          (domain r))
   :hints (("Goal" :in-theory (enable extensionality-rewrite)))
   :props (zfc prod2$prop inverse$prop domain$prop))
 
 (defthmz domain-inverse
   (equal (domain (inverse r))
-         (codomain r))
-  :hints (("Goal" :in-theory (enable codomain)))
+         (image r))
+  :hints (("Goal" :in-theory (enable image)))
   :props (zfc prod2$prop inverse$prop))
 
 (defthmz inverse-compose-weak
   (implies (and (funp g)
                 (funp f)
-                (subset (codomain g) (domain f)))
+                (subset (image g) (domain f)))
            (equal (inverse (compose f g))
                   (rcompose (inverse f) (inverse g))))
   :hints
@@ -171,7 +171,7 @@
 (defthmz inverse-compose-strong
   (implies (and (injective-funp g)
                 (injective-funp f)
-                (equal (codomain g) (domain f)))
+                (equal (image g) (domain f)))
            (equal (inverse (compose f g))
                   (compose (inverse g) (inverse f))))
   :props (zfc prod2$prop rcompose$prop compose$prop domain$prop inverse$prop))

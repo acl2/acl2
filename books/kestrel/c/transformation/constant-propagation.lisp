@@ -1334,31 +1334,31 @@
         (b* (((mv declor? env)
               (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr? - env)
-              (const-prop-expr-option dirabsdeclor.expr? env)))
+              (const-prop-expr-option dirabsdeclor.size? env)))
           (mv (make-dirabsdeclor-array
                 :declor? declor?
                 :qualspecs dirabsdeclor.qualspecs
-                :expr? expr?)
+                :size? expr?)
               env))
         :array-static1
         (b* (((mv declor? env)
               (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr - env)
-              (const-prop-expr dirabsdeclor.expr env)))
+              (const-prop-expr dirabsdeclor.size env)))
           (mv (make-dirabsdeclor-array-static1
                 :declor? declor?
                 :qualspecs dirabsdeclor.qualspecs
-                :expr expr)
+                :size expr)
               env))
         :array-static2
         (b* (((mv declor? env)
               (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv expr - env)
-              (const-prop-expr dirabsdeclor.expr env)))
+              (const-prop-expr dirabsdeclor.size env)))
           (mv (make-dirabsdeclor-array-static2
                 :declor? declor?
                 :qualspecs dirabsdeclor.qualspecs
-                :expr expr)
+                :size expr)
               env))
         :array-star
         (b* (((mv declor? env)
@@ -1399,11 +1399,11 @@
     (b* ((env (env-fix env))
          ((paramdecl paramdecl) paramdecl)
          ((mv spec env)
-          (const-prop-decl-spec-list paramdecl.spec env))
+          (const-prop-decl-spec-list paramdecl.specs env))
          ((mv decl env)
           (const-prop-paramdeclor paramdecl.decl env)))
       (mv (make-paramdecl
-            :spec spec
+            :specs spec
             :decl decl)
           env))
     :measure (paramdecl-count paramdecl))

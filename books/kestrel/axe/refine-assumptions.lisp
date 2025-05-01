@@ -19,6 +19,7 @@
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-consp" :dir :system)
+(local (include-book "kestrel/sequences/defforall" :dir :system))
 (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -29,29 +30,52 @@
 
 ;(local (in-theory (disable symbol-listp))) ; prevent inductions
 
+;;dup!
+(local
+ (defthm pseudo-term-listp-of-reverse-list
+   (equal (pseudo-term-listp (reverse-list acc))
+          (pseudo-term-listp (true-list-fix acc)))
+   :hints (("Goal" :in-theory (enable pseudo-term-listp reverse-list)))))
+
+(local
+  (defthm all-consp-ofreverse-list
+    (equal (all-consp (reverse-list acc))
+           (all-consp acc))
+    :hints (("Goal" :in-theory (enable all-consp reverse-list)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; like strip-cars but that one requires an alist
-(defun map-ffn-symb (terms)
+(defund map-ffn-symb (terms)
   (declare (xargs :guard (all-consp terms)))
   (if (atom terms)
       nil
     (cons (ffn-symb (first terms))
           (map-ffn-symb (rest terms)))))
 
-;;;
-;;; refining assumptions for matching (producing a list of terms)
-;;;
+(local
+  (defthm map-ffn-symb-of-cons
+    (equal (map-ffn-symb (cons term terms))
+           (cons (ffn-symb term) (map-ffn-symb terms)))
+    :hints (("Goal" :in-theory (enable map-ffn-symb)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;use this more?
-(defund call-of-a-pred-except-not (term known-boolean-fns)
+(defund call-of-one-of (term known-boolean-fns)
   (declare (xargs :guard (symbol-listp known-boolean-fns)))
   (and (consp term)
        (member-eq (ffn-symb term) known-boolean-fns)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Why just "for matching"?
 ;; TODO: What if it contains lambdas but not at the top level (may be fine?)
 ;returns either the refined assumption (a term) or nil, meaning to drop this assumption
 ;fffixme what if it's a booland - should refine the parts and return several assumptions?
 ;the refined assumptions should not be quoteps or vars (might we ever want to assume a var?)?
 ;this could return an indication of when an assumption is known to be false (e.g., equality of two constants)?
+;; todo: verify that this preserves the meaning of terms, perhaps using meta-extract for the known-boolean-fns
 (defund refine-assumption-for-matching (assumption known-boolean-fns)
   (declare (xargs :guard (and (pseudo-termp assumption)
                               (symbol-listp known-boolean-fns))))
@@ -67,25 +91,25 @@
             (prog2$ (cw "!! refine-assumption-for-matching is dropping assumption ~x0, which is a lambda application~%" assumption)
                     nil)
           (if (not (eq 'equal fn))
-              ;;can't refine this assumption (fixme what about other equivalence relations?):
+              ;;can't refine this assumption (todo: what about other equivalence relations?):
               assumption
             ;;it's a call of equal:
             ;;refine (equal <predicate> 't) to <predicate>:
             (if (and (equal (farg2 assumption) *t*)
-                     (call-of-a-pred-except-not (farg1 assumption) known-boolean-fns)) ;why are we excluding not here and elsewhere?
+                     (call-of-one-of (farg1 assumption) known-boolean-fns))
                 (farg1 assumption)
               ;;refine (equal 't <predicate>) to <predicate>:
               (if (and (equal (farg1 assumption) *t*)
-                       (call-of-a-pred-except-not (farg2 assumption) known-boolean-fns))
+                       (call-of-one-of (farg2 assumption) known-boolean-fns))
                   (farg2 assumption)
                 ;;refine (equal <predicate> 'nil) to (not <predicate>):
                 (if (and (equal (farg2 assumption) *nil*)
-                         (call-of-a-pred-except-not (farg1 assumption) known-boolean-fns) ;could drop this check!
+                         (call-of-one-of (farg1 assumption) known-boolean-fns) ;could drop this check!
                          )
                     `(not ,(farg1 assumption))
                   ;;refine (equal 'nil <predicate>) to (not <predicate>):
                   (if (and (equal (farg1 assumption) *nil*)
-                           (call-of-a-pred-except-not (farg2 assumption) known-boolean-fns) ;could drop this check!
+                           (call-of-one-of (farg2 assumption) known-boolean-fns) ;could drop this check!
                            )
                       `(not ,(farg2 assumption))
                     (if (quotep (farg2 assumption))
@@ -100,33 +124,34 @@
                       ;;can't refine this assumption:
                       assumption)))))))))))
 
-(defthm pseudo-termp-of-refine-assumption-for-matching
-  (implies (pseudo-termp assumption)
-           (pseudo-termp (refine-assumption-for-matching assumption known-boolean-fns)))
-  :hints (("Goal" :in-theory (enable refine-assumption-for-matching))))
-
-(defthm symbolp-of-car-of-refine-assumption-for-matching
-  (implies (and (pseudo-termp assumption)
-                (symbol-listp known-boolean-fns))
-           (symbolp (car (refine-assumption-for-matching assumption known-boolean-fns))))
-  :hints (("Goal" :in-theory (enable refine-assumption-for-matching call-of-a-pred-except-not
-                                     symbol-listp ;todo
-                                     ))))
-
-(defthm consp-of-refine-assumption-for-matching
-  (implies (and (pseudo-termp assumption)
-                )
-           (iff (consp (refine-assumption-for-matching assumption known-boolean-fns))
-                (refine-assumption-for-matching assumption known-boolean-fns)))
-  :hints (("Goal" :in-theory (enable refine-assumption-for-matching call-of-a-pred-except-not))))
-
-;;dup!
 (local
- (defthm pseudo-term-listp-of-reverse-list
-   (equal (pseudo-term-listp (reverse-list acc))
-          (pseudo-term-listp (true-list-fix acc)))
-   :hints (("Goal" :in-theory (enable pseudo-term-listp reverse-list)))))
+  ;; happens to hold for NIL as well
+  (defthm pseudo-termp-of-refine-assumption-for-matching
+    (implies (pseudo-termp assumption)
+             (pseudo-termp (refine-assumption-for-matching assumption known-boolean-fns)))
+    :hints (("Goal" :in-theory (enable refine-assumption-for-matching)))))
 
+(local
+  ;; no top-level lambda in the result
+  (defthm symbolp-of-car-of-refine-assumption-for-matching
+    (implies (and (pseudo-termp assumption)
+                  (symbol-listp known-boolean-fns))
+             (symbolp (car (refine-assumption-for-matching assumption known-boolean-fns))))
+    :hints (("Goal" :in-theory (enable refine-assumption-for-matching call-of-one-of
+                                       symbol-listp ;todo
+                                       )))))
+
+(local
+;; we don't return any atoms other than nil (which means failure)
+  (defthm consp-of-refine-assumption-for-matching
+    (implies (pseudo-termp assumption)
+             (iff (consp (refine-assumption-for-matching assumption known-boolean-fns))
+                  (refine-assumption-for-matching assumption known-boolean-fns)))
+    :hints (("Goal" :in-theory (enable refine-assumption-for-matching call-of-one-of)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; refining assumptions for matching (producing a list of terms)
 ;; Returns a list of terms, each of which should be a function call term.
 ;; Currently reverses the order of the assumptions (but see comment below).
 (defund refine-assumptions-for-matching (assumptions known-boolean-fns acc)
@@ -158,12 +183,6 @@
            (symbol-listp (map-ffn-symb (refine-assumptions-for-matching assumptions known-boolean-fns acc))))
   :hints (("Goal" :in-theory (enable refine-assumptions-for-matching))))
 
-(local
-  (defthm all-consp-ofreverse-list
-    (equal (all-consp (reverse-list acc))
-           (all-consp acc))
-    :hints (("Goal" :in-theory (enable all-consp reverse-list)))))
-
 (defthm all-consp-of-refine-assumptions-for-matching
   (implies (and (pseudo-term-listp assumptions)
                 (all-consp acc))
@@ -172,9 +191,7 @@
 
 (local (in-theory (disable wf-dagp wf-dagp-expander)))
 
-;;;
-;;; add-refined-assumptions-to-dag-array
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; For each of the ASSUMPTIONS, adds its args to the dag-array.  Returns a list of all the fns applied to their corresponding args (added to the array).
 ;; Returns (mv erp refined-assumption-exprs ;function calls applied to quoteps / nodenums in dag-array
@@ -188,7 +205,7 @@
   ;;todo: strengthen:
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (all-consp assumptions) ; error below if any is a quotep
-                              (symbol-listp (map-ffn-symb assumptions)) ; no lambdas
+                              (symbol-listp (map-ffn-symb assumptions)) ; no lambdas (at top-level, todo: strengthen to require no lambdas anywhere?)
                               (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist))
                   :guard-hints (("Goal" :expand ((pseudo-termp (car assumptions))
                                                  (pseudo-term-listp assumptions))))))
@@ -199,7 +216,7 @@
           (prog2$ (er hard? 'add-refined-assumptions-to-dag-array "Constant assumption encountered.")
                   (mv (erp-t) nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist))
         (mv-let (erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-          ;; TODO: This can do evaluation.  shall we avoid that?
+          ;; TODO: This can do evaluation.  shall we avoid that, by using merge-term-into-dag-array-simple ?
           (merge-terms-into-dag-array-basic (fargs assumption)
                                             nil ;var-replacement-alist
                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist

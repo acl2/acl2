@@ -106,16 +106,16 @@ ui64[17] Align(ui3 bds[17], ui33 pps[17]) {
 ui64 Sum(ui64 in[17]) {
   ui64 A1[8] = {};
   for (uint i = 0; i < 4; i++) {
-    <A1[2 * i + 0], A1[2 * i + 0], A1[2 * i + 1]> = Compress42(in[4 * i], in[4 * i + 1], in[4 * i + 2], in[4 * i + 3]);
+    <A1[2 * i + 0], A1[2 * i + 1]> = Compress42(in[4 * i], in[4 * i + 1], in[4 * i + 2], in[4 * i + 3]);
   }
   ui64 A2[4] = {};
   for (uint i = 0; i < 2; i++) {
-    <A2[2 * i + 0], A2[2 * i + 0], A2[2 * i + 1]> = Compress42(A1[4 * i], A1[4 * i + 1], A1[4 * i + 2], A1[4 * i + 3]);
+    <A2[2 * i + 0], A2[2 * i + 1]> = Compress42(A1[4 * i], A1[4 * i + 1], A1[4 * i + 2], A1[4 * i + 3]);
   }
   ui64 A3[2] = {};
-  <A3[0], A3[0], A3[1]> = Compress42(A2[0], A2[1], A2[2], A2[3]);
+  <A3[0], A3[1]> = Compress42(A2[0], A2[1], A2[2], A2[3]);
   ui64 A4[2] = {};
-  <A4[0], A4[0], A4[1]> = Compress32(A3[0], A3[1], in[16]);
+  <A4[0], A4[1]> = Compress32(A3[0], A3[1], in[16]);
   return A4[0] + A4[1];
 }
 

@@ -22,16 +22,17 @@
 
 (include-book "prove-acl2p")
 
-; We often want a function to have domain and range consisting of all ACL2
-; objects.  We start by defining that set.
+; We often want a function to have domain and codomain (set containing the
+; image) that consist of all ACL2 objects.  We start by defining that set.
 
-(zsub acl2      ; name
-      ()        ; args
+(zsub acl2 ()   ; name, args
       x         ; x
       (v-omega) ; s
       (acl2p x) ; u
       )
 
+; Zify-prop will be useful in our applications of zify.  We introduce it now
+; because it's also useful for lemma acl2p-is-acl2 below.
 (extend-zfc-table zify-prop
                   prod2$prop domain$prop inverse$prop zfc)
 
@@ -57,7 +58,7 @@
   (local (defun generic-ran () 0))
   (local (defun generic-rel () 0))
   (local (defun generic-fn (x) x))
-  (defthm generic-range-is-range
+  (defthm generic-image-is-image
     (implies (and (in x (generic-dom))
                   (generic-prop)
                   (zify-prop))
@@ -219,27 +220,22 @@
           `(progn
              (check-zify ,name0 ,fn0 ,dom ,ran ,props0 ,xhyps ,all-args ,var)
              (check-arity ,fn ,(len fn-args))
+
              (zsub ,name                                           ; name
                    ,all-args                                       ; args
                    ,var                                            ; x
                    (prod2 ,dom ,ran)                              ; s
                    (equal (cdr ,var) (,fn (car ,var) ,@fn-params)) ; u
                    )
-             (defthm ,(prefix-symbol "RELATION-P-" name)
-               (implies (and (force (,name$prop))
-                             (zify-prop)
-                             ,@hyps)
-                        (relation-p ,call))
-               :hints (("Goal" :in-theory (enable relation-p))))
 
              (defthm ,(prefix-symbol "FUNP-" name)
                (implies (and (force (,name$prop))
                              (zify-prop)
                              ,@hyps)
                         (funp ,call))
-               :hints (("Goal" :in-theory (enable funp))))
+               :hints (("Goal" :in-theory (enable relation-p funp))))
 
-             (defthm ,(prefix-symbol "IN-DOMAIN-" name)
+             (defthm ,(prefix-symbol "DOMAIN-" name)
                (implies (and (force ,(if unforced-hyps
                                          `(and (,name$prop)
                                                ,@unforced-hyps)
@@ -248,20 +244,19 @@
                         (equal (domain ,call)
                                ,dom))
                :hints
-               (("Goal"
-                 :by (:functional-instance
-                      domain-of-generic-fn-is-generic-dom
-                      (generic-prop
-                       ,(if unforced-hyps
-                            `(lambda ()
-                               (and (,name$prop)
-                                    ,@unforced-hyps))
-                          name$prop))
-                      (generic-dom (lambda () ,dom))
-                      (generic-ran (lambda () ,ran))
-                      (generic-rel (lambda () ,call))
-                      (generic-fn  (lambda (,(car fn-args))
-                                     (,fn ,@fn-args)))))))
+               (("Goal" :by (:functional-instance
+                             domain-of-generic-fn-is-generic-dom
+                             (generic-prop
+                              ,(if unforced-hyps
+                                   `(lambda ()
+                                      (and (,name$prop)
+                                           ,@unforced-hyps))
+                                 name$prop))
+                             (generic-dom (lambda () ,dom))
+                             (generic-ran (lambda () ,ran))
+                             (generic-rel (lambda () ,call))
+                             (generic-fn  (lambda (,(car fn-args))
+                                            (,fn ,@fn-args)))))))
 
              (defthm ,(suffix-symbol (concatenate 'string
                                                   "-IS-"
@@ -284,9 +279,9 @@
 ; vi are distinct variables and k is the arity of the ACL2 function symbol, fn.
 ; We define a function, name, that is the set-theoretic realization of fn
 ; viewed as a function of its first argument, the other arguments being
-; considered as parameters, whose domain is dom and codomain is contained in
-; ran.  More precisely, (name . args) is that function if fn is a symbol, and
-; otherwise (name v2 ... vk . args) is that function.
+; considered as parameters, whose domain and codomain (range) are specified as
+; dom and ran.  More precisely, (name . args) is that function if fn is a
+; symbol, and otherwise (name v2 ... vk . args) is that function.
 
 ; The keyword arguments are optional.  Dom and ran default to (acl2) and the
 ; others default to nil.  Args contains all variables occurring free in dom or
@@ -619,7 +614,7 @@
 
 ; Fn is an ACL2 function symbol with the given arity.  We define a function,
 ; name, that is the set-theoretic realization of fn, whose domain is dom and
-; codomain is contained in ran.  Dom defaults to the arity-fold product of
+; image is contained in ran.  Dom defaults to the arity-fold product of
 ; (acl2) and should be a set of true lists, each of length arity, corresponding
 ; to the valid argument lists for fn.  For example, if fn has arity 2 and name
 ; is intended to take any two natural numbers i < j, then dom would contain all

@@ -1,0 +1,15 @@
+very-long-error.cpp:12-20 (9-7): Cannot apply `+` to arguments of type int and int[1]
+(Too much context, show only the 5 first lines)
+ 12 |   return 1
+    |          ^^
+ 13 |     + 2
+    | ^^^^^^^^
+ 14 |     + 3
+    | ^^^^^^^^
+ 15 |     + 4
+    | ^^^^^^^^
+ 16 |     + 5
+    | ^^^^^^^^
+ 17 |     + 6
+    | ^^^^^^^^
+note: They should be both a primitive type (like an int or enum) or a register type.

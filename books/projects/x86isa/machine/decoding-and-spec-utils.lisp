@@ -1995,6 +1995,7 @@ reference made from privilege level 3.</blockquote>"
     (equal (rip-guard-okp #.*compatibility-mode* rip)
            (unsigned-byte-p 32 rip))))
 
+;; ======================================================================
 
 (defmacro def-inst
   (name &key
@@ -2085,6 +2086,81 @@ reference made from privilege level 3.</blockquote>"
 ;; this ruleset automatically if def-inst is used to define these
 ;; functions.
 (def-ruleset instruction-decoding-and-spec-rules nil)
+
+;; ======================================================================
+
+(define x86-step-unimplemented (message x86)
+  :parents (instructions)
+  :short "Semantic function corresponding to Intel's instructions unsupported
+  in the @('x86isa') books"
+  :long "<p>Note that the @('ms') field is populated with @('message') here
+  because this function is called when a model-related error occurs.</p>"
+  :returns (x86 x86p :hyp (x86p x86))
+  (b* ((ctx 'x86-step-unimplemented))
+    (!!ms-fresh :message message)))
+
+(define x86-illegal-instruction
+  (message
+   (start-rip :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+   x86)
+  :parents (instructions)
+  :short "Semantic function corresponding to opcodes that Intel deems to be
+  illegal or reserved"
+  :long "<p>Note that the @('#UD') (undefined operation) exception should be
+  thrown here, which is why the @('fault') field is populated with
+  @('message').</p>"
+  :returns (x86 x86p :hyp (x86p x86))
+  (b* ((ctx 'x86-illegal-instruction)
+       ;; We update the RIP to point to the next instruction --- in case we
+       ;; ever get to the point that we can recover from #UD exceptions, this
+       ;; may be the right thing to do.
+       (x86 (!rip temp-rip x86)))
+    (!!fault-fresh :ud message :instruction-address start-rip)))
+
+(define x86-general-protection
+  (message
+   (start-rip :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+   x86)
+  :parents (instructions)
+  :short "Semantic function corresponding to a general protection fault"
+  :long "<p>Note that the @('#GP') (general protection) exception should be
+  thrown here, which is why the @('fault') field is populated with
+  @('message').</p>"
+  :returns (x86 x86p :hyp (x86p x86))
+  (b* ((ctx 'x86-general-protection)
+       ;; We update the RIP to point to the next instruction --- in case we
+       ;; ever get to the point that we can recover from #GP exceptions, this
+       ;; may be the right thing to do.
+       (x86 (!rip temp-rip x86)))
+    (!!fault-fresh :gp message :instruction-address start-rip)))
+
+(define x86-device-not-available
+  (message
+   (start-rip :type (signed-byte   #.*max-linear-address-size*))
+   (temp-rip  :type (signed-byte   #.*max-linear-address-size*))
+   x86)
+  :parents (instructions)
+  :short "Semantic function corresponding to a device not available (no math coprocessor) fault"
+  :long "<p>Note that the @('#NM') (device not available) exception should be
+  thrown here, which is why the @('fault') field is populated with
+  @('message').</p>"
+  :returns (x86 x86p :hyp (x86p x86))
+  (b* ((ctx 'x86-device-not-available)
+       ;; We update the RIP to point to the next instruction --- in case we
+       ;; ever get to the point that we can recover from #NM exceptions, this
+       ;; may be the right thing to do.
+       (x86 (!rip temp-rip x86)))
+    (!!fault-fresh :nm message :instruction-address start-rip)))
+
+(add-to-ruleset instruction-decoding-and-spec-rules
+                '(x86-step-unimplemented
+                  x86-illegal-instruction
+                  x86-general-protection
+                  x86-device-not-available))
+
+;; ======================================================================
 
 (define select-operand-size
   ((proc-mode     :type (integer 0 #.*num-proc-modes-1*))

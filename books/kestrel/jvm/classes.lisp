@@ -17,7 +17,7 @@
 ;; See also class-tables.lisp.
 
 (include-book "methods")
-(include-book "kestrel/sequences/defforall" :dir :system) ; reduce?
+(local (include-book "kestrel/sequences/defforall" :dir :system)) ; reduce?
 (local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 ;move
@@ -41,10 +41,10 @@
 
 ;; (verify-guards string-descriptor-pairsp)
 
-(defforall all-class-namesp (item) (class-namep item))
+(acl2::defforall all-class-namesp (item) (class-namep item))
 (verify-guards all-class-namesp)
 
-(defforall all-field-idp (item) (field-idp item))
+(acl2::defforall all-field-idp (item) (field-idp item))
 (verify-guards all-field-idp)
 
 ;; A method-id is a pair of two strings: a name and a descriptor.
@@ -93,7 +93,7 @@
               (method-descriptorp desc)))
   :hints (("Goal" :in-theory (enable method-idp make-method-id))))
 
-(defforall all-method-idp (item) (method-idp item))
+(acl2::defforall all-method-idp (item) (method-idp item))
 (verify-guards all-method-idp)
 
 (defun all-keys-bound-to-field-infosp (field-info-alist)
@@ -445,6 +445,11 @@
 
 (defthm alistp-of-class-decl-methods
   (implies (class-infop class-info class-name) ;class-name is a free var
+           (alistp (class-decl-methods class-info)))
+  :hints (("Goal" :in-theory (enable class-infop class-infop0 method-info-alistp class-decl-methods))))
+
+(defthm alistp-of-class-decl-methods2
+  (implies (class-infop0 class-info)
            (alistp (class-decl-methods class-info)))
   :hints (("Goal" :in-theory (enable class-infop class-infop0 method-info-alistp class-decl-methods))))
 

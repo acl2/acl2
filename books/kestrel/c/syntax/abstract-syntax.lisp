@@ -2269,13 +2269,13 @@
     (:paren ((inner absdeclor)))
     (:array ((declor? dirabsdeclor-option)
              (qualspecs typequal/attribspec-list)
-             (expr? expr-option)))
+             (size? expr-option)))
     (:array-static1 ((declor? dirabsdeclor-option)
                      (qualspecs typequal/attribspec-list)
-                     (expr expr)))
+                     (size expr)))
     (:array-static2 ((declor? dirabsdeclor-option)
                      (qualspecs typequal/attribspec-list)
-                     (expr expr)))
+                     (size expr)))
     (:array-star ((declor? dirabsdeclor-option)))
     (:function ((declor? dirabsdeclor-option)
                 (params paramdecl-list)
@@ -2309,7 +2309,7 @@
        declaration specifiers followed by a parameter declarator;
        see @(tsee paramdeclor) for a description and motivation
        for this notion of parameter declarator."))
-    ((spec decl-spec-list)
+    ((specs decl-spec-list)
      (decl paramdeclor))
     :pred paramdeclp
     :measure (two-nats-measure (acl2-count x) 1))

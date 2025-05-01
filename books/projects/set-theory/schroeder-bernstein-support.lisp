@@ -29,8 +29,8 @@
   (declare (xargs :guard t))
   (and (injective-funp f)
        (injective-funp g)
-       (subset (codomain f) (domain g))
-       (subset (codomain g) (domain f))
+       (subset (image f) (domain g))
+       (subset (image g) (domain f))
        (sbt-prop)))
 
 ; Replacements for the original (from projects/schroeder-bernstein/) generic
@@ -66,7 +66,7 @@
   (implies (p x)
            (q (f x)))
   :hints (("Goal" :restrict ((subset-preserves-in-2
-                              ((x (codomain fun-f))))))))
+                              ((x (image fun-f))))))))
 
 (defthm injectivity-of-f
   (implies (and (p x)
@@ -86,7 +86,7 @@
   (implies (q x)
            (p (g x)))
   :hints (("Goal" :restrict ((subset-preserves-in-2
-                              ((x (codomain fun-g))))))))
+                              ((x (image fun-g))))))))
 ; The following events were originally in an encapsulate in
 ; projects/schroeder-bernstein/ (although in the "SBT" package.  They are now
 ; redundant.
@@ -1018,8 +1018,8 @@
   (implies (good-f-g f g)
            (and (injective-funp f)
                 (injective-funp g)
-                (subset (codomain f) (domain g))
-                (subset (codomain g) (domain f))
+                (subset (image f) (domain g))
+                (subset (image g) (domain f))
                 (sbt-prop)))
   :rule-classes :forward-chaining)
 
@@ -1041,8 +1041,8 @@
 (defthmz schroeder-bernstein-main-1
   (implies (and (injective-funp f)
                 (injective-funp g)
-                (subset (codomain f) (domain g))
-                (subset (codomain g) (domain f)))
+                (subset (image f) (domain g))
+                (subset (image g) (domain f)))
            (funp (inverse (fun-bij f g))))
   :hints (("Goal"
            :in-theory (enable injective-funp good-f-g
@@ -1060,12 +1060,12 @@
 (defthmz schroeder-bernstein-main-2-1
   (implies (and (injective-funp f)
                 (injective-funp g)
-                (subset (codomain f) (domain g))
-                (subset (codomain g) (domain f)))
-           (subset (codomain (fun-bij f g))
+                (subset (image f) (domain g))
+                (subset (image g) (domain f)))
+           (subset (image (fun-bij f g))
                    (domain g)))
   :hints (("Goal"
-           :in-theory (e/d (codomain in-domain-rewrite)
+           :in-theory (e/d (image in-domain-rewrite)
                            (domain-inverse in-cons-apply))
            :expand ((subset (domain (inverse (fun-bij f g)))
                             (domain g)))))
@@ -1074,8 +1074,8 @@
 (defthmz schroeder-bernstein-main-2-2-1
   (implies (and (injective-funp f)
                 (injective-funp g)
-                (subset (codomain f) (domain g))
-                (subset (codomain g) (domain f))
+                (subset (image f) (domain g))
+                (subset (image g) (domain f))
                 (in x (domain g)))
            (and (in (my-sb-inverse x f g)
                     (domain f))
@@ -1092,8 +1092,8 @@
 (defthmz schroeder-bernstein-main-2-2-2
   (implies (and (injective-funp f)
                 (injective-funp g)
-                (subset (codomain f) (domain g))
-                (subset (codomain g) (domain f))
+                (subset (image f) (domain g))
+                (subset (image g) (domain f))
                 (in x (domain g)))
            (in (cons (my-sb-inverse x f g) x)
                (fun-bij f g)))
@@ -1104,37 +1104,37 @@
 (defthmz schroeder-bernstein-main-2-2
 
 ; Here's a proof outline.  We want to show that if x \in (domain g) then x \in
-; (codomain (fun-bij f g)).  Let inv = (my-sb-inverse x f g).  Then by
+; (image (fun-bij f g)).  Let inv = (my-sb-inverse x f g).  Then by
 ; surjectivity-of-my-sb-witness-alt, (in inv (domain f) and (my-sb-witness inv
 ; f g) = x.  Then by fun-bij$comprehension, since (good-f-g f g) holds by
-; hypothesis, we have (cons inv x) \in (fun-bij f g).  So x \in (codomain
+; hypothesis, we have (cons inv x) \in (fun-bij f g).  So x \in (image
 ; (fun-bij f g)).
 
   (implies (and (injective-funp f)
                 (injective-funp g)
-                (subset (codomain f) (domain g))
-                (subset (codomain g) (domain f)))
+                (subset (image f) (domain g))
+                (subset (image g) (domain f)))
            (subset (domain g)
-                   (codomain (fun-bij f g))))
+                   (image (fun-bij f g))))
   :hints (("Goal"
            :restrict
-           ((in-codomain-suff
+           ((in-image-suff
              ((p (cons (my-sb-inverse
                         (subset-witness (domain g)
-                                        (codomain (fun-bij f g)))
+                                        (image (fun-bij f g)))
                         f g)
                        (subset-witness (domain g)
-                                       (codomain (fun-bij f g))))))))
+                                       (image (fun-bij f g))))))))
            :expand ((subset (domain g)
-                            (codomain (fun-bij f g))))))
+                            (image (fun-bij f g))))))
   :props (sbt-prop fun-bij$prop))
 
 (defthmz schroeder-bernstein-main-2
   (implies (and (injective-funp f)
                 (injective-funp g)
-                (subset (codomain f) (domain g))
-                (subset (codomain g) (domain f)))
-           (equal (codomain (fun-bij f g))
+                (subset (image f) (domain g))
+                (subset (image g) (domain f)))
+           (equal (image (fun-bij f g))
                   (domain g)))
   :hints (("Goal" :in-theory (enable extensionality-rewrite)))
   :props (sbt-prop fun-bij$prop))
@@ -1142,12 +1142,12 @@
 (defthmz schroeder-bernstein-main
   (implies (and (injective-funp f)
                 (injective-funp g)
-                (subset (codomain f) (domain g))
-                (subset (codomain g) (domain f)))
+                (subset (image f) (domain g))
+                (subset (image g) (domain f)))
            (let ((bij (fun-bij f g)))
              (and (injective-funp bij)
                   (equal (domain bij) (domain f))
-                  (equal (codomain bij) (domain g)))))
+                  (equal (image bij) (domain g)))))
   :hints (("Goal" :in-theory (enable injective-funp good-f-g)))
   :props (sbt-prop fun-bij$prop))
 
@@ -1155,7 +1155,7 @@
   (exists fn
     (and (injective-funp fn)
          (equal (domain fn) s1)
-         (equal (codomain fn) s2))))
+         (equal (image fn) s2))))
 
 (in-theory (disable exists-bijection
                     (:e injective-funp)))
@@ -1165,8 +1165,8 @@
                 (injective-funp g)
                 (equal s1 (domain f))
                 (equal s2 (domain g))
-                (subset (codomain f) s2)
-                (subset (codomain g) s1))
+                (subset (image f) s2)
+                (subset (image g) s1))
            (exists-bijection s1 s2))
   :props (sbt-prop fun-bij$prop)
   :hints (("Goal" :restrict ((exists-bijection-suff

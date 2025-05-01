@@ -1,7 +1,7 @@
 ; A tool for making (non-simple) evaluators
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -665,7 +665,7 @@
          (declare (xargs :measure 1)) ;;bogus measure
          (let ((match (assoc-eq fn interpreted-function-alist)))
            (if (not match)
-               (mv (hard-error ',apply-with-tracing-function-name "Attempt to trace function ~x0 without passing in its definition. (Pass it as an interpreted function, or add to the list of built-ins -- or add it to the list of functions not to trace)." (acons #\0 fn nil))
+               (mv (er hard? ',apply-with-tracing-function-name "Attempt to trace function ~x0 without passing in its definition. (Pass it as an interpreted function, or add to the list of built-ins -- or add it to the list of functions not to trace)." fn)
                    nil)
              (let* ((fn-info (cdr match))
                     (formals (first fn-info))

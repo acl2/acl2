@@ -164,7 +164,7 @@
        (omap::update
          ident
          (make-paramdecl
-           :spec declspecs
+           :specs declspecs
            :decl (paramdeclor-declor initdeclor.declor))
          (decl-to-ident-paramdecl-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))

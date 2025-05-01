@@ -1,6 +1,6 @@
 ; Proof of correctness of drop-unused-lambda-bindings
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,11 +22,14 @@
 (include-book "kestrel/evaluators/empty-eval" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/map-lookup-equal" :dir :system)
+(local (include-book "filter-formals-and-actuals-proofs"))
 (local (include-book "helpers"))
 (local (include-book "empty-eval-helpers"))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
+
+(local (in-theory (enable make-lambda-with-hint)))
 
 ;; The point of this is to change the alist:
 (mutual-recursion
