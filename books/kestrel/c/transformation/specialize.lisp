@@ -97,8 +97,7 @@
                     :extension nil
                     :specs paramdecl.specs
                     :init (cons (initdeclor paramdecl.decl.unwrap nil nil init?) nil)))
-      ;; TODO: add irr-decl to exported symbols
-      :otherwise (mv nil (c$::irr-decl)))))
+      :otherwise (mv nil (irr-decl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,8 +110,7 @@
   :short "Remove a parameter from a list of parameter declarations."
   (b* ((params (param-declon-list-fix params))
        ((when (endp params))
-        ;; TODO: add irr-param-declon to exported symbols
-        (mv nil params (c$::irr-param-declon)))
+        (mv nil params (irr-param-declon)))
        (param (first params))
        (param-name (ident-from-param-declon param))
        ((when (equal param-name param-to-remove))
