@@ -583,6 +583,13 @@
   :hints (("Goal" :in-theory (e/d (state-p1)
                                   (true-listp)))))
 
+(defthm state-p-of-update-written-files
+  (implies (state-p state)
+           (equal (state-p (update-written-files x state))
+                  (written-files-p x)))
+  :hints (("Goal" :in-theory (e/d (state-p)
+                                  (true-listp)))))
+
 (defthm state-p-of-update-acl2-oracle
   (implies (and (state-p state)
                 (true-listp x))
