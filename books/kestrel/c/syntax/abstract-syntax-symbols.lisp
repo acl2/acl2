@@ -90,7 +90,6 @@
     make-expr-offsetof
     make-expr-va-arg
     expr-extension
-    irr-expr
 
     expr-listp
     expr-list-fix
@@ -105,7 +104,6 @@
     const-expr-count
     const-expr
     const-expr->expr
-    irr-const-expr
 
     const-expr-optionp
     const-expr-option-fix
@@ -140,7 +138,6 @@
     type-spec-enum
     make-type-spec-typeof-expr
     make-type-spec-typeof-type
-    irr-type-spec
 
     type-spec-optionp
 
@@ -162,7 +159,6 @@
     align-spec-case
     align-spec-alignas-type
     align-spec-alignas-expr
-    irr-align-spec
 
     decl-specp
     decl-spec-fix
@@ -245,7 +241,6 @@
     absdeclor-count
     absdeclor
     make-absdeclor
-    irr-absdeclor
 
     absdeclor-optionp
     absdeclor-option-fix
@@ -267,7 +262,6 @@
     dirabsdeclor-option-fix
     dirabsdeclor-option-count
     dirabsdeclor-option-case
-    irr-dirabsdeclor
 
     param-declon
     param-declonp
@@ -286,7 +280,6 @@
     paramdeclor-declor
     paramdeclor-absdeclor
     paramdeclor-none
-    irr-paramdeclor
 
     tynamep
     tyname-fix
@@ -387,7 +380,6 @@
     make-stmt-for-expr
     make-stmt-for-decl
     stmt-return
-    irr-stmt
 
     block-itemp
     block-item-fix
@@ -395,7 +387,6 @@
     block-item-case
     block-item-decl
     block-item-stmt
-    irr-block-item
 
     block-item-listp
     block-item-list-fix
@@ -446,6 +437,15 @@
 
     ;; irrelevants:
 
+    irr-expr
+    irr-const-expr
+    irr-type-spec
+    irr-align-spec
+    irr-absdeclor
+    irr-dirabsdeclor
+    irr-paramdeclor
+    irr-stmt
+    irr-block-item
     irr-fundef
     irr-transunit-ensemble
 
