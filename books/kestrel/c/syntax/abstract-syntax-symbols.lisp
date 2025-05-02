@@ -269,15 +269,15 @@
     dirabsdeclor-option-case
     irr-dirabsdeclor
 
-    paramdecl
-    paramdeclp
-    paramdecl-fix
-    paramdecl-count
-    make-paramdecl
+    param-declon
+    param-declonp
+    param-declon-fix
+    param-declon-count
+    make-param-declon
 
-    paramdecl-listp
-    paramdecl-list-fix
-    paramdecl-list-count
+    param-declon-listp
+    param-declon-list-fix
+    param-declon-list-count
 
     paramdeclorp
     paramdeclor-fix
@@ -479,8 +479,8 @@
     absdeclor-option-unambp
     dirabsdeclor-unambp
     dirabsdeclor-option-unambp
-    paramdecl-unambp
-    paramdecl-list-unambp
+    param-declon-unambp
+    param-declon-list-unambp
     paramdeclor-unambp
     tyname-unambp
     strunispec-unambp
@@ -523,7 +523,7 @@
     ldm-stmt
     ldm-block-item
     ldm-block-item-list
-    ldm-paramdecl-list
+    ldm-param-declon-list
     ldm-fundef
 
     ;; validation information:

@@ -3238,7 +3238,7 @@
                               (simpadd0-dirdeclor dirdeclor.declor gin state))
                              (gin (simpadd0-gin-update gin gout-decl))
                              ((mv new-params (simpadd0-gout gout-params))
-                              (simpadd0-paramdecl-list dirdeclor.params
+                              (simpadd0-param-declon-list dirdeclor.params
                                                        gin
                                                        state)))
                           (mv (make-dirdeclor-function-params
@@ -3417,7 +3417,7 @@
                                                      state))
                       (gin (simpadd0-gin-update gin gout-declor?))
                       ((mv new-params (simpadd0-gout gout-params))
-                       (simpadd0-paramdecl-list dirabsdeclor.params gin state)))
+                       (simpadd0-param-declon-list dirabsdeclor.params gin state)))
                    (mv (make-dirabsdeclor-function
                         :declor? new-declor?
                         :params new-params
@@ -3458,21 +3458,21 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-paramdecl ((paramdecl paramdeclp) (gin simpadd0-ginp) state)
-    :guard (paramdecl-unambp paramdecl)
-    :returns (mv (new-paramdecl paramdeclp)
+  (define simpadd0-param-declon ((paramdecl param-declonp) (gin simpadd0-ginp) state)
+    :guard (param-declon-unambp paramdecl)
+    :returns (mv (new-paramdecl param-declonp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a parameter declaration."
     (b* (((simpadd0-gin gin) gin)
-         ((paramdecl paramdecl) paramdecl)
+         ((param-declon paramdecl) paramdecl)
          ((mv new-specs (simpadd0-gout gout-specs))
           (simpadd0-decl-spec-list paramdecl.specs gin state))
          (gin (simpadd0-gin-update gin gout-specs))
          ((mv new-decl (simpadd0-gout gout-decl))
           (simpadd0-paramdeclor paramdecl.decl gin state)))
-      (mv (make-paramdecl :specs new-specs
-                          :decl new-decl)
+      (mv (make-param-declon :specs new-specs
+                             :decl new-decl)
           (make-simpadd0-gout
            :events (append gout-specs.events gout-decl.events)
            :thm-name nil
@@ -3480,15 +3480,15 @@
            :names-to-avoid gout-decl.names-to-avoid
            :vartys (omap::update* gout-specs.vartys gout-decl.vartys)
            :diffp (or gout-specs.diffp gout-decl.diffp))))
-    :measure (paramdecl-count paramdecl))
+    :measure (param-declon-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-paramdecl-list ((paramdecls paramdecl-listp)
-                                   (gin simpadd0-ginp)
-                                   state)
-    :guard (paramdecl-list-unambp paramdecls)
-    :returns (mv (new-paramdecls paramdecl-listp)
+  (define simpadd0-param-declon-list ((paramdecls param-declon-listp)
+                                      (gin simpadd0-ginp)
+                                      state)
+    :guard (param-declon-list-unambp paramdecls)
+    :returns (mv (new-paramdecls param-declon-listp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of parameter declarations."
@@ -3503,10 +3503,10 @@
                :vartys nil
                :diffp nil)))
          ((mv new-paramdecl (simpadd0-gout gout-paramdecl))
-          (simpadd0-paramdecl (car paramdecls) gin state))
+          (simpadd0-param-declon (car paramdecls) gin state))
          (gin (simpadd0-gin-update gin gout-paramdecl))
          ((mv new-paramdecls (simpadd0-gout gout-paramdecls))
-          (simpadd0-paramdecl-list (cdr paramdecls) gin state)))
+          (simpadd0-param-declon-list (cdr paramdecls) gin state)))
       (mv (cons new-paramdecl new-paramdecls)
           (make-simpadd0-gout
            :events (append gout-paramdecl.events gout-paramdecls.events)
@@ -3515,7 +3515,7 @@
            :names-to-avoid gout-paramdecls.names-to-avoid
            :vartys (omap::update* gout-paramdecl.vartys gout-paramdecls.vartys)
            :diffp (or gout-paramdecl.diffp gout-paramdecls.diffp))))
-    :measure (paramdecl-list-count paramdecls))
+    :measure (param-declon-list-count paramdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4468,12 +4468,12 @@
     (defret dirabsdeclor-option-unambp-of-simpadd0-dirabsdeclor-option
       (dirabsdeclor-option-unambp new-dirabsdeclor?)
       :fn simpadd0-dirabsdeclor-option)
-    (defret paramdecl-unambp-of-simpadd0-paramdecl
-      (paramdecl-unambp new-paramdecl)
-      :fn simpadd0-paramdecl)
-    (defret paramdecl-list-unambp-of-simpadd0-paramdecl-list
-      (paramdecl-list-unambp new-paramdecls)
-      :fn simpadd0-paramdecl-list)
+    (defret param-declon-unambp-of-simpadd0-param-declon
+      (param-declon-unambp new-paramdecl)
+      :fn simpadd0-param-declon)
+    (defret param-declon-list-unambp-of-simpadd0-param-declon-list
+      (param-declon-list-unambp new-paramdecls)
+      :fn simpadd0-param-declon-list)
     (defret paramdeclor-unambp-of-simpadd0-paramdeclor
       (paramdeclor-unambp new-paramdeclor)
       :fn simpadd0-paramdeclor)
@@ -4557,8 +4557,8 @@
                                        simpadd0-absdeclor-option
                                        simpadd0-dirabsdeclor
                                        simpadd0-dirabsdeclor-option
-                                       simpadd0-paramdecl
-                                       simpadd0-paramdecl-list
+                                       simpadd0-param-declon
+                                       simpadd0-param-declon-list
                                        simpadd0-paramdeclor
                                        simpadd0-tyname
                                        simpadd0-strunispec
@@ -4672,7 +4672,7 @@
        ((unless (stringp fun))
         (raise "Internal error: non-string identifier ~x0." fun)
         (mv (irr-fundef) (irr-simpadd0-gout)))
-       ((mv erp ldm-params) (ldm-paramdecl-list params))
+       ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
        ((mv okp args parargs arg-types arg-types-compst)
         (simpadd0-gen-from-params ldm-params gin))

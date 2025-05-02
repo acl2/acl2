@@ -11193,12 +11193,12 @@
            ;; which we parse.
            (t ; ( other
             (b* ((parstate (if token2 (unread-token parstate) parstate)) ; (
-                 ((erp paramdecls ellipsis & parstate) ; ( params [, ...]
+                 ((erp params ellipsis & parstate) ; ( params [, ...]
                   (parse-parameter-declaration-list parstate))
                  ((erp last-span parstate) ; ( params [, ...] )
                   (read-punctuator ")" parstate)))
               (retok (make-dirabsdeclor-function :declor? nil
-                                                 :params paramdecls
+                                                 :params params
                                                  :ellipsis ellipsis)
                      (span-join span last-span)
                      parstate))))))
@@ -11703,12 +11703,12 @@
            ;; we must have a list of one or more parameter declarations.
            (t ; ( other
             (b* ((parstate (if token2 (unread-token parstate) parstate))
-                 ((erp paramdecls ellipsis & parstate) ; ( params [, ...]
+                 ((erp params ellipsis & parstate) ; ( params [, ...]
                   (parse-parameter-declaration-list parstate))
                  ((erp last-span parstate) ; ( params [, ...] )
                   (read-punctuator ")" parstate)))
               (retok (make-dirdeclor-function-params :declor prev-dirdeclor
-                                                     :params paramdecls
+                                                     :params params
                                                      :ellipsis ellipsis)
                      (span-join prev-span last-span)
                      parstate))))))
@@ -12134,7 +12134,7 @@
 
   (define parse-parameter-declaration ((parstate parstatep))
     :returns (mv erp
-                 (paramdecl paramdeclp)
+                 (param param-declonp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -12154,7 +12154,7 @@
        we parse a possibly ambiguous declarator or abstract declarator,
        and generate a parameter declarator accordingly,
        and then a parameter declaration with the declaration specifiers."))
-    (b* (((reterr) (irr-paramdecl) (irr-span) parstate)
+    (b* (((reterr) (irr-param-declon) (irr-span) parstate)
          (psize (parsize parstate))
          ((erp declspecs span parstate) ; declspecs
           (parse-declaration-specifiers nil parstate))
@@ -12167,8 +12167,8 @@
        ((or (token-punctuatorp token ")") ; declspecs )
             (token-punctuatorp token ",")) ; declspecs ,
         (b* ((parstate (unread-token parstate))) ; declspecs
-          (retok (make-paramdecl :specs declspecs
-                                 :decl (paramdeclor-none))
+          (retok (make-param-declon :specs declspecs
+                                    :decl (paramdeclor-none))
                  span
                  parstate)))
        ;; Otherwise, we parse
@@ -12185,7 +12185,7 @@
            ;; If we parsed an unambiguous declarator,
            ;; we return a parameter declaration with that.
            :declor
-           (retok (make-paramdecl
+           (retok (make-param-declon
                    :specs declspecs
                    :decl (paramdeclor-declor declor/absdeclor.unwrap))
                   (span-join span last-span)
@@ -12193,7 +12193,7 @@
            ;; If we parsed an unambiguous abstract declarator,
            ;; we return a parameter declaration with that.
            :absdeclor
-           (retok (make-paramdecl
+           (retok (make-param-declon
                    :specs declspecs
                    :decl (paramdeclor-absdeclor declor/absdeclor.unwrap))
                   (span-join span last-span)
@@ -12201,7 +12201,7 @@
            ;; If we parsed an ambiguous declarator or abstract declarator,
            ;; we return a parameter declaration with that.
            :ambig
-           (retok (make-paramdecl
+           (retok (make-param-declon
                    :specs declspecs
                    :decl (paramdeclor-ambig declor/absdeclor.unwrap))
                   (span-join span last-span)
@@ -12212,7 +12212,7 @@
 
   (define parse-parameter-declaration-list ((parstate parstatep))
     :returns (mv erp
-                 (paramdecls paramdecl-listp)
+                 (params param-declon-listp)
                  (ellipsis booleanp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
@@ -12229,7 +12229,7 @@
        we recursively parse the remaining list of one or more."))
     (b* (((reterr) nil nil (irr-span) parstate)
          (psize (parsize parstate))
-         ((erp paramdecl span parstate) ; paramdecl
+         ((erp param span parstate) ; paramdeclon
           (parse-parameter-declaration parstate))
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
@@ -12237,33 +12237,33 @@
       (cond
        ;; If token is a comma, we might have another parameter declaration,
        ;; but we need to check whether we have an ellipsis instead.
-       ((token-punctuatorp token ",") ; paramdecl ,
+       ((token-punctuatorp token ",") ; paramdeclon ,
         (b* (((erp token2 span2 parstate) (read-token parstate)))
           (cond
            ;; If token2 is an ellipsis,
            ;; we have reached the end of the parameter declaration list.
-           ((token-punctuatorp token2 "...") ; paramdecl , ...
-            (retok (list paramdecl)
+           ((token-punctuatorp token2 "...") ; paramdeclon , ...
+            (retok (list param)
                    t
                    (span-join span span2)
                    parstate))
            ;; If token2 is not an ellipsis,
            ;; we must have more parameter declarators.
-           (t ; paramdecl , other
-            (b* ((parstate ; paramdecl ,
+           (t ; paramdeclon , other
+            (b* ((parstate ; paramdeclon ,
                   (if token2 (unread-token parstate) parstate))
-                 ((erp paramdecls ellipsis last-span parstate)
-                  ;; paramdecl , paramdecls [, ...]
+                 ((erp params ellipsis last-span parstate)
+                  ;; paramdeclon , paramdeclons [, ...]
                   (parse-parameter-declaration-list parstate)))
-              (retok (cons paramdecl paramdecls)
+              (retok (cons param params)
                      ellipsis
                      (span-join span last-span)
                      parstate))))))
        ;; If token is not a comma,
        ;; we have reached the end of the parameter declaration list.
-       (t ; paramdecl other
+       (t ; paramdeclon other
         (b* ((parstate (if token (unread-token parstate) parstate)))
-          (retok (list paramdecl)
+          (retok (list param)
                  nil
                  span
                  parstate)))))

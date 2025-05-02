@@ -69,27 +69,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ident-from-paramdecl
-  ((paramdecl paramdeclp))
+(define ident-from-param-declon
+  ((paramdecl param-declonp))
   :short "Get the identifier from a parameter declaration."
   :long
   (xdoc::topstring
    (xdoc::p
      "This may return @('nil') when the parameter declaration is unnamed."))
   :returns (ident ident-optionp)
-  (b* (((paramdecl paramdecl) paramdecl))
+  (b* (((param-declon paramdecl) paramdecl))
     (paramdeclor-case
       paramdecl.decl
       :declor (declor->ident paramdecl.decl.unwrap)
       :otherwise nil)))
 
-(define paramdecl-to-decl
-  ((paramdecl paramdeclp)
+(define param-declon-to-decl
+  ((paramdecl param-declonp)
    (init? initer-optionp))
   :short "Convert a parameter declaration to a regular declaration."
   :returns (mv (success booleanp)
                (decl declp))
-  (b* (((paramdecl paramdecl) paramdecl))
+  (b* (((param-declon paramdecl) paramdecl))
     (paramdeclor-case
       paramdecl.decl
       :declor (mv t
@@ -102,27 +102,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define paramdecl-list-remove-param-by-ident
-  ((params paramdecl-listp)
+(define param-declon-list-remove-param-by-ident
+  ((params param-declon-listp)
    (param-to-remove identp))
   :returns (mv (success booleanp)
-               (new-params paramdecl-listp)
-               (removed-param paramdeclp))
+               (new-params param-declon-listp)
+               (removed-param param-declonp))
   :short "Remove a parameter from a list of parameter declarations."
-  (b* ((params (paramdecl-list-fix params))
+  (b* ((params (param-declon-list-fix params))
        ((when (endp params))
-        ;; TODO: add irr-paramdecl to exported symbols
-        (mv nil params (c$::irr-paramdecl)))
+        ;; TODO: add irr-param-declon to exported symbols
+        (mv nil params (c$::irr-param-declon)))
        (param (first params))
-       (param-name (ident-from-paramdecl param))
+       (param-name (ident-from-param-declon param))
        ((when (equal param-name param-to-remove))
         (mv t (rest params) param))
        ((mv success new-params removed-param)
-        (paramdecl-list-remove-param-by-ident (rest params) param-to-remove)))
+        (param-declon-list-remove-param-by-ident (rest params) param-to-remove)))
     (mv success
         (cons param new-params)
         removed-param))
-  :measure (paramdecl-list-count params)
+  :measure (param-declon-list-count params)
   :hints (("Goal" :in-theory (enable o< o-finp endp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -147,7 +147,7 @@
                              (c$::dirdeclor->ident fundef.declor.direct.declor)))
               (mv nil (fundef-fix fundef)))
              ((mv success new-params removed-param)
-              (paramdecl-list-remove-param-by-ident fundef.declor.direct.params target-param))
+              (param-declon-list-remove-param-by-ident fundef.declor.direct.params target-param))
              ((unless success)
               (prog2$ (raise "Function ~x0 did not have a parameter ~x1"
                              target-fn
@@ -159,7 +159,7 @@
                  :params new-params
                  :ellipsis fundef.declor.direct.ellipsis))
              ((mv - decl)
-              (paramdecl-to-decl removed-param (initer-single const))))
+              (param-declon-to-decl removed-param (initer-single const))))
           (mv t
               (make-fundef
                 :extension fundef.extension
