@@ -443,7 +443,9 @@
     irr-align-spec
     irr-absdeclor
     irr-dirabsdeclor
+    irr-param-declon
     irr-paramdeclor
+    irr-decl
     irr-stmt
     irr-block-item
     irr-fundef
