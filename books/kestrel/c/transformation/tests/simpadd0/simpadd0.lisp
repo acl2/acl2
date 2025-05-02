@@ -17,33 +17,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("file1.c")
+(c$::input-files :files ("file.c")
                  :path "old"
-                 :const *old-code1*)
+                 :const *old-code*)
 
-(simpadd0 *old-code1* *new-code1*)
+(simpadd0 *old-code* *new-code*)
 
-(c$::output-files :const *new-code1*
-                  :path "new")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(c$::input-files :files ("file2.c")
-                 :path "old"
-                 :const *old-code2*)
-
-(simpadd0 *old-code2* *new-code2*)
-
-(c$::output-files :const *new-code2*
-                  :path "new")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(c$::input-files :files ("file3.c")
-                 :path "old"
-                 :const *old-code3*)
-
-(simpadd0 *old-code3* *new-code3*)
-
-(c$::output-files :const *new-code3*
+(c$::output-files :const *new-code*
                   :path "new")
