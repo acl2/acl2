@@ -1393,7 +1393,7 @@
   (define const-prop-param-declon
     ((paramdecl param-declonp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::paramdecl)."
+    :short "Propagate a constant through a @(see c$::param-declon)."
     :returns (mv (new-paramdecl param-declonp)
                  (new-env envp))
     (b* ((env (env-fix env))
