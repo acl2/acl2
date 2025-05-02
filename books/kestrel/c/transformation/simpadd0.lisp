@@ -365,9 +365,8 @@
      but for statments instead of pure expressions;
      see that function's documentation first.")
    (xdoc::p
-    "For now, this is limited to statements
-     whose execution yields an @('int') value.
-     The theorem says that the old statement returns an @('int') value,
+    "The theorem says that
+     the old statement returns a value of the appropriate type,
      regardless of whether old and new statements
      are syntactically equal or not.
      If they are not, the theorem also says that
@@ -382,6 +381,16 @@
        ((unless (or equalp (stmt-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
+       (type (stmt-type old))
+       ((unless (or equalp
+                    (equal (stmt-type new)
+                           type)))
+        (raise "Internal error: ~
+                the type ~x0 of the new statement ~x1 differs from ~
+                the type ~x2 of the old statement ~x3."
+               (stmt-type new) new type old)
+        (mv '(_) nil 1))
+       (value-kind (type-to-value-kind type))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
@@ -390,7 +399,8 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
-                             (equal (c::value-kind result) :sint))))
+                             (equal (c::value-kind result)
+                                    ,value-kind))))
           `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
                 (new-stmt (mv-nth 1 (ldm-stmt ',new)))
                 ((mv old-result old-compst)
@@ -403,7 +413,8 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            old-result
-                           (equal (c::value-kind old-result) :sint))))))
+                           (equal (c::value-kind old-result)
+                                  ,value-kind))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -437,9 +448,8 @@
      but for block items instead of statements;
      see that function's documentation first.")
    (xdoc::p
-    "For now, this is limited to block items
-     whose execution yields an @('int') value.
-     The theorem says that the old block item returns an @('int') value,
+    "The theorem says that
+     the old block item returns a value of the appropriate type,
      regardless of whether old and new block items
      are syntactically equal or not.
      If they are not, the theorem also says that
@@ -454,6 +464,16 @@
        ((unless (or equalp (block-item-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
+       (type (block-item-type old))
+       ((unless (or equalp
+                    (equal (block-item-type new)
+                           type)))
+        (raise "Internal error: ~
+                the type ~x0 of the new block item ~x1 differs from ~
+                the type ~x2 of the old block item ~x3."
+               (block-item-type new) new type old)
+        (mv '(_) nil 1))
+       (value-kind (type-to-value-kind type))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
@@ -462,7 +482,8 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
-                             (equal (c::value-kind result) :sint))))
+                             (equal (c::value-kind result)
+                                    ,value-kind))))
           `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
                 (new-item (mv-nth 1 (ldm-block-item ',new)))
                 ((mv old-result old-compst)
@@ -475,7 +496,8 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            old-result
-                           (equal (c::value-kind old-result) :sint))))))
+                           (equal (c::value-kind old-result)
+                                  ,value-kind))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -509,9 +531,8 @@
      but for lists of block items instead of single block items;
      see that function's documentation first.")
    (xdoc::p
-    "For now, this is limited to lists of block items
-     whose execution yields an @('int') value.
-     The theorem says that the old block item list returns an @('int') value,
+    "The theorem says that
+     the old block item list returns a value of the appropriate type,
      regardless of whether old and new block item lists
      are syntactically equal or not.
      If they are not, the theorem also says that
@@ -527,6 +548,16 @@
        ((unless (or equalp (block-item-list-formalp new)))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
+       (type (block-item-list-type old))
+       ((unless (or equalp
+                    (equal (block-item-list-type new)
+                           type)))
+        (raise "Internal error: ~
+                the type ~x0 of the new block item list ~x1 differs from ~
+                the type ~x2 of the old block item list ~x3."
+               (block-item-list-type new) new type old)
+        (mv '(_) nil 1))
+       (value-kind (type-to-value-kind type))
        (hyps (simpadd0-gen-var-hyps vartys))
        (formula
         (if equalp
@@ -536,7 +567,8 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
-                             (equal (c::value-kind result) :sint))))
+                             (equal (c::value-kind result)
+                                    ,value-kind))))
           `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
                 (new-items (mv-nth 1 (ldm-block-item-list ',new)))
                 ((mv old-result old-compst)
@@ -549,7 +581,8 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            old-result
-                           (equal (c::value-kind old-result) :sint))))))
+                           (equal (c::value-kind old-result)
+                                  ,value-kind))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -561,6 +594,26 @@
   ///
   (fty::deffixequiv simpadd0-gen-block-item-list-thm
     :args ((old block-item-listp) (new block-item-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-tyspecseq-to-value-kind ((tyspecseq c::tyspecseqp))
+  :returns (mv (okp booleanp) (kind keywordp))
+  :short "Map a type specifier sequence from the language formalization
+          to the corresponding kind of value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we only allow certain types."))
+  (b* ((kind (c::tyspecseq-kind tyspecseq)))
+    (if (member-eq kind '(:uchar :schar
+                          :ushort :sshort
+                          :uint :sint
+                          :ulong :slong
+                          :ullong :sllong))
+        (mv t kind)
+      (mv nil :irrelevant)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -592,22 +645,22 @@
       and the variable for the corresponding argument.")
     (xdoc::li
      "A list @('arg-types') of terms that assert that
-      each variable in @('args') is a value of type @('int').")
+      each variable in @('args') is a value of the appropriate type.")
     (xdoc::li
      "A list @('arg-types-compst') of terms that assert that
       each parameter in @('params') can be read from a computation state
-      and its reading yields a value of type @('int')."))
+      and its reading yields a value of the appropriate type."))
    (xdoc::p
-    "These results are generated only if all the parameters have type @('int'),
+    "These results are generated only if
+     all the parameters have certain types
+     (see @(tsee simpadd0-tyspecseq-to-value-kind)),
      which we check as we go through the parameters.
-     This is because for now we only support theorem generation
-     for functions whose parameters are all @('int');
-     we will generalize this.
      The @('okp') result says whether this is the case;
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil))
        ((c::param-declon param) (car params))
-       ((unless (c::tyspecseq-case param.tyspec :sint))
+       ((mv okp value-kind) (simpadd0-tyspecseq-to-value-kind param.tyspec))
+       ((unless okp)
         (mv nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
         (mv nil nil nil nil nil))
@@ -616,14 +669,15 @@
        (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
        (pararg `(cons (c::ident ,par) ,arg))
        (arg-type `(and (c::valuep ,arg)
-                       (equal (c::value-kind ,arg) :sint)))
+                       (equal (c::value-kind ,arg)
+                              ,value-kind)))
        (arg-type-compst
         `(b* ((var (mv-nth 1 (ldm-ident (ident ,par))))
               (objdes (c::objdesign-of-var var compst))
               (val (c::read-object objdes compst)))
            (and objdes
                 (c::valuep val)
-                (c::value-case val :sint))))
+                (c::value-case val ,value-kind))))
        ((mv okp more-args more-parargs more-arg-types more-arg-types-compst)
         (simpadd0-gen-from-params (cdr params) gin))
        ((unless okp) (mv nil nil nil nil nil)))
@@ -688,10 +742,37 @@
                                (:e omap::emptyp)
                                c::errorp
                                c::init-scope
+                               c::not-flexible-array-member-p-when-ucharp
+                               c::not-flexible-array-member-p-when-scharp
+                               c::not-flexible-array-member-p-when-ushortp
+                               c::not-flexible-array-member-p-when-sshortp
+                               c::not-flexible-array-member-p-when-uintp
                                c::not-flexible-array-member-p-when-sintp
+                               c::not-flexible-array-member-p-when-ulongp
+                               c::not-flexible-array-member-p-when-slongp
+                               c::not-flexible-array-member-p-when-ullongp
+                               c::not-flexible-array-member-p-when-sllongp
                                c::remove-flexible-array-member-when-absent
+                               c::ucharp-alt-def
+                               c::scharp-alt-def
+                               c::ushortp-alt-def
+                               c::sshortp-alt-def
+                               c::uintp-alt-def
                                c::sintp-alt-def
+                               c::ulongp-alt-def
+                               c::slongp-alt-def
+                               c::ullongp-alt-def
+                               c::sllongp-alt-def
+                               c::type-of-value-when-ucharp
+                               c::type-of-value-when-scharp
+                               c::type-of-value-when-ushortp
+                               c::type-of-value-when-sshortp
+                               c::type-of-value-when-uintp
                                c::type-of-value-when-sintp
+                               c::type-of-value-when-ulongp
+                               c::type-of-value-when-slongp
+                               c::type-of-value-when-ullongp
+                               c::type-of-value-when-sllongp
                                c::value-fix-when-valuep
                                c::value-list-fix-of-cons
                                (:e c::adjust-type)
@@ -700,7 +781,16 @@
                                (:e c::param-declon-list-fix$inline)
                                (:e c::param-declon-to-ident+tyname)
                                (:e c::tyname-to-type)
+                               (:e c::type-uchar)
+                               (:e c::type-schar)
+                               (:e c::type-ushort)
+                               (:e c::type-sshort)
+                               (:e c::type-uint)
                                (:e c::type-sint)
+                               (:e c::type-ulong)
+                               (:e c::type-slong)
+                               (:e c::type-ullong)
+                               (:e c::type-sllong)
                                (:e c::value-list-fix$inline)
                                mv-nth
                                car-cons

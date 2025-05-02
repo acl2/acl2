@@ -555,6 +555,9 @@
     coerce-binary-info
 
     expr-type
+    stmt-type
+    block-item-type
+    block-item-list-type
 
     transunit-ensemble-annop
 
