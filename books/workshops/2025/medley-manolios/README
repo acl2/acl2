@@ -1,0 +1,17 @@
+Book for the paper _Cellular Automata Surviving k Steps_ by Zeke
+Medley and Panagiotis Manolios.
+
+`automata.lisp` formalizes inhomogeneous elementary cellular automata
+[1] and the Survive-k-Steps problem introduced by Wolfram in a series
+of blog posts [2][3][4].
+
+`technique1` proves that odd-numbered elementary cellular automata
+cannot be composed to survive k steps. `technique2` proves that if a
+set of automata cannot be composed to transition from a state with a
+live cell to a state with no live cells, then the automata cannot be
+composed to survive k steps.
+
+[1]: https://link.springer.com/chapter/10.1007/978-3-642-82657-3_5
+[2]: https://writings.stephenwolfram.com/2024/05/why-does-biological-evolution-work-a-minimal-model-for-biological-evolution-and-other-adaptive-processes/
+[3]: https://writings.stephenwolfram.com/2024/08/whats-really-going-on-in-machine-learning-some-minimal-models/
+[4]: https://writings.stephenwolfram.com/2024/12/foundations-of-biological-evolution-more-results-more-surprises/
