@@ -1,6 +1,6 @@
 ; Utilities to write string-trees to files
 ;
-; Copyright (C) 2017-2022 Kestrel Institute
+; Copyright (C) 2017-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,8 +14,10 @@
 
 (local (include-book "kestrel/file-io-light/princ-dollar" :dir :system))
 (local (include-book "kestrel/file-io-light/open-output-channel-bang" :dir :system))
+(local (include-book "kestrel/file-io-light/close-output-channel" :dir :system))
 (include-book "string-trees")
 (local (include-book "w"))
+(local (include-book "state"))
 
 (defttag file-io!)
 
@@ -59,10 +61,11 @@
                 (state-p state))
            (state-p (write-string-tree-to-channel string-tree channel state))))
 
+;move
+;make local?
 (defthmd open-output-channel-p-forward-to-open-output-channel-p-1
   (implies (open-output-channel-p channel typ state)
            (open-output-channel-p1 channel typ state))
-
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable OPEN-OUTPUT-CHANNEL-P))))
 
@@ -73,13 +76,24 @@
          (w state))
   :hints (("Goal" :in-theory (enable write-string-tree-to-channel))))
 
+(defthm state-p-of-write-string-tree-to-channel
+  (implies (and (state-p state)
+                (symbolp channel)
+                (open-output-channel-p channel :character state))
+           (state-p (write-string-tree-to-channel string-tree channel state)))
+  :hints (("Goal" :in-theory (enable write-string-tree-to-channel))))
+
 ;(in-theory (disable OPEN-OUTPUT-CHANNEL-ANY-P1))
 
+;move
+;make local
 ;why?
 (defthm open-output-channel-p1-becomes-open-output-channel-p
   (equal (open-output-channel-p1 channel typ state)
          (open-output-channel-p channel typ state))
   :hints (("Goal" :in-theory (enable OPEN-OUTPUT-CHANNEL-P))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;can be called from a make-event or clause processor because open-output-channel! is used (but requires a trust-tag)
 ;returns (mv erp state)
@@ -106,3 +120,15 @@
                                                         update-file-clock
                                                         update-open-output-channels
                                                         update-written-files)))))
+
+(defthm state-p-of-mv-nth-1-of-write-string-tree!
+  (implies (state-p state)
+           (state-p (mv-nth 1 (write-string-tree! string-tree fname ctx state))))
+  :hints (("Goal" :in-theory (e/d (write-string-tree!)
+                                  (open-output-channels
+                                   update-file-clock
+                                   update-open-output-channels
+                                   update-written-files
+                                   written-files-p
+                                   file-clock-p
+                                   written-file)))))
