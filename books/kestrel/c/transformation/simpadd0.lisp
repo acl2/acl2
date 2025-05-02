@@ -985,7 +985,6 @@
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
                             :vartys vartys
                             :diffp nil)))
-  :prepwork ((local (in-theory (enable identity))))
   :hooks (:fix)
 
   ///
