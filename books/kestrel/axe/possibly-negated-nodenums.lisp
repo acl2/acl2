@@ -141,6 +141,11 @@
 ;;   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
 ;;                                      possibly-negated-nodenump))))
 
+(defthm possibly-negated-nodenumsp-of-reverse-list
+  (implies (possibly-negated-nodenumsp items)
+           (possibly-negated-nodenumsp (reverse-list items)))
+  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp reverse-list))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks whether ITEM is either a nodenum less than BOUND or a call of NOT on such a nodenum.
@@ -254,6 +259,11 @@
                   (consp (first items))))
   :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
                                      bounded-possibly-negated-nodenump))))
+
+(defthm bounded-possibly-negated-nodenumsp-of-reverse-list
+  (implies (bounded-possibly-negated-nodenumsp items bound)
+           (bounded-possibly-negated-nodenumsp (reverse-list items) bound))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp reverse-list))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
