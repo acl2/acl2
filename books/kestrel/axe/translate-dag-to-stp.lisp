@@ -141,7 +141,8 @@
                         consp-from-len-cheap
                         subseq
                         take
-                        w))))
+                        w
+                        state-p))))
 
 (defthm myquote-forward-to-equal-of-nth-0-and-quote
   (implies (myquotep expr)
@@ -1979,7 +1980,13 @@
   (defthm w-of-mv-nth-1-of-write-stp-query-to-file
     (equal (w (mv-nth 1 (write-stp-query-to-file translated-query-core dag-array-name dag-array dag-len nodenums-to-translate extra-asserts filename cut-nodenum-type-alist constant-array-info print state)))
            (w state))
-    :hints (("Goal" :in-theory (e/d (write-stp-query-to-file) (w))))))
+    :hints (("Goal" :in-theory (enable write-stp-query-to-file)))))
+
+(local
+  (defthm state-p-of-mv-nth-1-of-write-stp-query-to-file
+    (implies (state-p state)
+             (state-p (mv-nth 1 (write-stp-query-to-file translated-query-core dag-array-name dag-array dag-len nodenums-to-translate extra-asserts filename cut-nodenum-type-alist constant-array-info print state))))
+    :hints (("Goal" :in-theory (e/d (write-stp-query-to-file) ())))))
 
 ;; We use these constants instead of their corresponding keywords, so that we
 ;; don't accidentally mis-type the keywords:
@@ -2106,6 +2113,12 @@
   (defthm w-of-mv-nth-1-of-call-stp-on-file
     (equal (w (mv-nth 1 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state)))
            (w state))
+    :hints (("Goal" :in-theory (enable call-stp-on-file)))))
+
+(local
+  (defthm state-p-of-mv-nth-1-of-call-stp-on-file
+    (implies (state-p state)
+             (state-p (mv-nth 1 (call-stp-on-file input-filename output-filename print max-conflicts counterexamplep state))))
     :hints (("Goal" :in-theory (enable call-stp-on-file)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2302,7 +2315,13 @@
   (equal (w (mv-nth 1 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist
                                             print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state)))
          (w state))
-  :hints (("Goal" :in-theory (e/d (prove-query-with-stp) (w)))))
+  :hints (("Goal" :in-theory (enable prove-query-with-stp))))
+
+(defthm state-p-of-mv-nth-1-of-prove-query-with-stp
+  (implies (state-p state)
+           (state-p (mv-nth 1 (prove-query-with-stp translated-query-core extra-string dag-array-name dag-array dag-len nodenums-to-translate extra-asserts base-filename cut-nodenum-type-alist
+                                                    print max-conflicts constant-array-info counterexamplep print-cex-as-signedp state))))
+  :hints (("Goal" :in-theory (e/d (prove-query-with-stp) (state-p)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1981,6 +1981,12 @@
            (w state))
     :hints (("Goal" :in-theory (enable prove-disjunction-with-stp-at-depth)))))
 
+(local
+  (defthm state-p-of-mv-nth-1-of-prove-disjunction-with-stp-at-depth
+    (implies (state-p state)
+             (state-p (mv-nth 1 (prove-disjunction-with-stp-at-depth depth-limit disjuncts depth-array dag-array dag-len dag-parent-array known-nodenum-type-alist base-filename print max-conflicts counterexamplep print-cex-as-signedp state))))
+    :hints (("Goal" :in-theory (enable prove-disjunction-with-stp-at-depth)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;binary search the range [min-depth, max-depth] to try to find a cut depth at which STP says valid
