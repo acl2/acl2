@@ -1324,9 +1324,9 @@
              (decl-spec-list-unambp (param-declon->specs param)))
     :expand (param-declon-unambp param))
 
-  (defrule paramdeclor-unambp-of-param-declon->decl
+  (defrule paramdeclor-unambp-of-param-declon->declor
     (implies (param-declon-unambp param)
-             (paramdeclor-unambp (param-declon->decl param)))
+             (paramdeclor-unambp (param-declon->declor param)))
     :expand (param-declon-unambp param))
 
   (defrule declor-unambp-of-paramdeclor-declor->unwrap

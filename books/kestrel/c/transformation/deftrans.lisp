@@ -332,7 +332,7 @@
     (:linear c$::param-declon-list-count-of-cdr)
     (:linear c$::param-declon-list-count-of-dirabsdeclor-function->params)
     (:linear c$::param-declon-list-count-of-dirdeclor-function-params->params)
-    (:linear c$::paramdeclor-count-of-param-declon->decl)
+    (:linear c$::paramdeclor-count-of-param-declon->declor)
     (:linear c$::spec/qual-count-of-car)
     (:linear c$::spec/qual-list-count-of-cdr)
     (:linear c$::spec/qual-list-count-of-structdecl-member->specqual)
@@ -1313,7 +1313,7 @@
    extra-args
    `(b* (((param-declon paramdecl) paramdecl))
       (make-param-declon :specs (,(cdr (assoc-eq 'decl-spec-list names)) paramdecl.specs ,@extra-args-names)
-                      :decl (,(cdr (assoc-eq 'paramdeclor names)) paramdecl.decl ,@extra-args-names)))
+                      :declor (,(cdr (assoc-eq 'paramdeclor names)) paramdecl.declor ,@extra-args-names)))
    '(:returns (new-paramdecl param-declonp)
      :measure (param-declon-count paramdecl))))
 

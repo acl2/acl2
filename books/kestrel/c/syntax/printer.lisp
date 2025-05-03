@@ -2540,7 +2540,7 @@
           (raise "Misusage error: no declaration specifiers.")
           (pristate-fix pstate))
          (pstate (print-decl-spec-list param.specs pstate))
-         (pstate (print-paramdeclor param.decl pstate)))
+         (pstate (print-paramdeclor param.declor pstate)))
       pstate)
     :measure (two-nats-measure (param-declon-count param) 0))
 

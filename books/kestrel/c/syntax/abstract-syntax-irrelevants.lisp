@@ -304,7 +304,7 @@
 (defirrelevant irr-param-declon
   :short "An irrelevant parameter declaration."
   :type param-declonp
-  :body (make-param-declon :specs nil :decl (paramdeclor-none)))
+  :body (make-param-declon :specs nil :declor (paramdeclor-none)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

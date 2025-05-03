@@ -1074,7 +1074,7 @@
      :parents nil
      (b* (((when (endp params)) (mv t nil))
           (param (car params))
-          ((unless (paramdeclor-case (param-declon->decl param) :none))
+          ((unless (paramdeclor-case (param-declon->declor param) :none))
            (mv nil nil))
           (declspecs (param-declon->specs param))
           ((unless (and (consp declspecs) (endp (cdr declspecs))))
@@ -2220,8 +2220,8 @@
          ((erp new-specs & table)
           (dimb-decl-spec-list param.specs (dimb-kind-objfun) table))
          ((erp new-decl table)
-          (dimb-paramdeclor param.decl table)))
-      (retok (make-param-declon :specs new-specs :decl new-decl) table))
+          (dimb-paramdeclor param.declor table)))
+      (retok (make-param-declon :specs new-specs :declor new-decl) table))
     :measure (param-declon-count param))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

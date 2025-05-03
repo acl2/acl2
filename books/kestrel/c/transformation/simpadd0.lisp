@@ -3354,8 +3354,8 @@
                              (gin (simpadd0-gin-update gin gout-decl))
                              ((mv new-params (simpadd0-gout gout-params))
                               (simpadd0-param-declon-list dirdeclor.params
-                                                       gin
-                                                       state)))
+                                                          gin
+                                                          state)))
                           (mv (make-dirdeclor-function-params
                                :declor new-decl
                                :params new-params
@@ -3584,17 +3584,17 @@
          ((mv new-specs (simpadd0-gout gout-specs))
           (simpadd0-decl-spec-list paramdecl.specs gin state))
          (gin (simpadd0-gin-update gin gout-specs))
-         ((mv new-decl (simpadd0-gout gout-decl))
-          (simpadd0-paramdeclor paramdecl.decl gin state)))
+         ((mv new-declor (simpadd0-gout gout-declor))
+          (simpadd0-paramdeclor paramdecl.declor gin state)))
       (mv (make-param-declon :specs new-specs
-                             :decl new-decl)
+                             :declor new-declor)
           (make-simpadd0-gout
-           :events (append gout-specs.events gout-decl.events)
+           :events (append gout-specs.events gout-declor.events)
            :thm-name nil
-           :thm-index gout-decl.thm-index
-           :names-to-avoid gout-decl.names-to-avoid
-           :vartys (omap::update* gout-specs.vartys gout-decl.vartys)
-           :diffp (or gout-specs.diffp gout-decl.diffp))))
+           :thm-index gout-declor.thm-index
+           :names-to-avoid gout-declor.names-to-avoid
+           :vartys (omap::update* gout-specs.vartys gout-declor.vartys)
+           :diffp (or gout-specs.diffp gout-declor.diffp))))
     :measure (param-declon-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
