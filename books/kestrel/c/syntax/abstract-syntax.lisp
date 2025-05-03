@@ -2310,7 +2310,7 @@
        see @(tsee paramdeclor) for a description and motivation
        for this notion of parameter declarator."))
     ((specs decl-spec-list)
-     (decl paramdeclor))
+     (declor paramdeclor))
     :pred param-declonp
     :measure (two-nats-measure (acl2-count x) 1))
 

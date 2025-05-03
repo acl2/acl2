@@ -3904,7 +3904,7 @@
              (if (equal dirdeclor.params
                         (list (make-param-declon
                                :specs (list (decl-spec-typespec (type-spec-void)))
-                               :decl (paramdeclor-none))))
+                               :declor (paramdeclor-none))))
                  (retok dirdeclor.params nil table)
                (valid-param-declon-list
                 dirdeclor.params fundef-params-p table ienv)))
@@ -4141,7 +4141,7 @@
              (if (equal dirabsdeclor.params
                         (list (make-param-declon
                                :specs (list (decl-spec-typespec (type-spec-void)))
-                               :decl (paramdeclor-none))))
+                               :declor (paramdeclor-none))))
                  (retok dirabsdeclor.params nil table)
                (valid-param-declon-list dirabsdeclor.params nil table ienv)))
             (table (valid-pop-scope table)))
@@ -4233,7 +4233,7 @@
                        (param-declon-fix paramdecl)
                        (stor-spec-list-fix storspecs))))
          ((erp new-decl type ident? more-types table)
-          (valid-paramdeclor paramdecl.decl type table ienv))
+          (valid-paramdeclor paramdecl.declor type table ienv))
          ((when (and fundef-params-p
                      (not ident?)))
           (reterr (msg "The parameter declaration ~x0 ~
@@ -4246,7 +4246,7 @@
                    (type-pointer)
                  type))
          ((when (not ident?))
-          (retok (make-param-declon :specs new-specs :decl new-decl)
+          (retok (make-param-declon :specs new-specs :declor new-decl)
                  (set::union types more-types)
                  table))
          (ord-info (make-valid-ord-info-objfun
@@ -4260,7 +4260,7 @@
                         with associated information ~x1."
                        (param-declon-fix paramdecl) info?)))
          (table (valid-add-ord ident? ord-info table)))
-      (retok (make-param-declon :specs new-specs :decl new-decl)
+      (retok (make-param-declon :specs new-specs :declor new-decl)
              (set::union types more-types)
              table))
     :measure (param-declon-count paramdecl))
