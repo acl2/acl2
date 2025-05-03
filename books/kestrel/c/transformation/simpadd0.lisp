@@ -719,7 +719,7 @@
     "The @('args'), @('parargs'), and @('arg-types') inputs
      are the corresponding outputs of @(tsee simpadd0-gen-from-params).")
    (xdoc::p
-    "The theorem says that, given @('int') values for the arguments,
+    "The theorem says that, given values of certain types for the arguments,
      @(tsee c::init-scope) applied to the list of parameter declarations
      and to the list of parameter values
      yields an omap (which we express it directly as an alist)
@@ -833,9 +833,9 @@
      we generate a theorem saying that,
      in the computation state resulting from
      pushing the initial scope to the frame stack,
-     if the value corresponding to the parameter is an @('int') value,
+     if the value corresponding to the parameter has a certain type,
      then reading the parameter from the computation state
-     succeeds and yields an @('int') value."))
+     succeeds and yields a value of that type."))
   (b* (((when (endp args)) (mv nil nil))
        (arg (car args))
        (formula
