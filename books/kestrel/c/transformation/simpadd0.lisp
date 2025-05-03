@@ -945,17 +945,17 @@
      Thus, the output expression consists of
      the identifier and validation information passed as inputs.")
    (xdoc::p
-    "If the variable has type @('int'),
+    "If the variable has a type supported in our C formalization,
      which we check in the validation information,
      then we generate a theorem saying that the expression,
-     when executed, yields a value of type @('int').
+     when executed, yields a value of the appropriate type.
      The generated theorem is proved via a general supporting lemma,
      which is proved below."))
   (b* ((ident (ident-fix ident))
        ((var-info info) (var-info-fix info))
        ((simpadd0-gin gin) gin)
        (expr (make-expr-ident :ident ident :info info))
-       ((unless (type-case info.type :sint))
+       ((unless (c$::type-formalp info.type))
         (mv expr
             (make-simpadd0-gout :events nil
                                 :thm-name nil
@@ -963,14 +963,15 @@
                                 :names-to-avoid gin.names-to-avoid
                                 :vartys nil
                                 :diffp nil)))
-       (vartys (omap::update ident (type-sint) nil))
+       (vartys (omap::update ident info.type nil))
        (hints `(("Goal"
                  :in-theory '((:e expr-ident)
                               (:e expr-pure-formalp)
                               (:e ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
                                  (ident ',ident)
-                                 (info ',info)))))
+                                 (info ',info)
+                                 (kind ',(type-to-value-kind info.type))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr
@@ -1002,8 +1003,8 @@
                          (val (c::read-object objdes compst)))
                       (and objdes
                            (c::valuep val)
-                           (c::value-case val :sint))))
-               (equal (c::value-kind value) :sint)))
+                           (equal (c::value-kind val) kind))))
+               (equal (c::value-kind value) kind)))
     :enable (c::exec-expr-pure
              c::exec-ident
              ldm-expr
@@ -1173,6 +1174,7 @@
        (expr (make-expr-unary :op op :arg arg :info info))
        (expr-new (make-expr-unary :op op :arg arg-new :info info))
        ((unless (and arg-thm-name
+                     (type-case (expr-type arg) :sint)
                      (member-eq (unop-kind op)
                                 '(:plus :minus :bitnot :lognot))))
         (mv expr-new
@@ -1392,6 +1394,8 @@
        (diffp (or arg1-diffp arg2-diffp simpp))
        ((unless (and arg1-thm-name
                      arg2-thm-name
+                     (type-case (expr-type arg1) :sint)
+                     (type-case (expr-type arg2) :sint)
                      (member-eq (binop-kind op)
                                 '(:mul :div :rem :add :sub :shl :shr
                                   :lt :gt :le :ge :eq :ne
@@ -1811,6 +1815,7 @@
        (stmt (stmt-return expr?))
        (stmt-new (stmt-return expr?-new))
        ((unless (and expr?
+                     (type-case (expr-type expr?) :sint)
                      expr?-thm-name))
         (mv stmt-new
             (make-simpadd0-gout
