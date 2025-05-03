@@ -22,6 +22,10 @@ int nonint_param(int a, unsigned long b) {
   return a + 0;
 }
 
+long nonint_return(long x) {
+  return x;
+}
+
 int decl() {
   int x = 5;
   return x + 0;
