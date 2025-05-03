@@ -1024,17 +1024,28 @@
      into a much more general transformation.
      Thus, the output expression consists of the constant passed as input.")
    (xdoc::p
-    "If the constant is an integer one and has type @('int'),
-     and under the additional condition described shortly,
+    "If the constant is an integer one,
+     and under the additional conditions described shortly,
      we generate a theorem saying that the exprssion,
-     when executed, yields a value of type @('int').
-     The additional condition is that
-     the value of the constant fits in 32 bits.
-     The reason is that
-     our current dynamic semantics assumes that @('int') has 32 bits,
+     when executed, yields a value of the appropriate integer type.
+     The additional conditions are that:")
+   (xdoc::ul
+    (xdoc::li
+     "If the constant has type (@('signed') or @('unsigned')) @('int'),
+      it fits in 32 bits.")
+    (xdoc::li
+     "If the constant has type (@('signed') or @('unsigned')) @('long'),
+      it fits in 64 bits.")
+    (xdoc::li
+     "If the constant has type (@('signed') or @('unsigned')) @('long long'),
+      it fits in 64 bits."))
+   (xdoc::p
+    "The reason is that
+     our current dynamic semantics assumes that
+     those types have those sizes,
      while our validator is more general
      (@(tsee c$::valid-iconst) takes an implementation environment as input,
-     which specifies, among other things, the size of @('int')).
+     which specifies, among other things, the size of those types).
      Until we extend our dynamic semantics to be more general,
      we need this additional condition for proof generation."))
   (b* (((simpadd0-gin gin) gin)
@@ -1048,8 +1059,18 @@
        ((unless (const-case const :int)) (mv expr no-thm-gout))
        ((iconst iconst) (const-int->unwrap const))
        ((iconst-info info) (coerce-iconst-info iconst.info))
-       ((unless (and (type-case info.type :sint)
-                     (<= info.value (c::sint-max))))
+       ((unless (or (and (type-case info.type :sint)
+                         (<= info.value (c::sint-max)))
+                    (and (type-case info.type :uint)
+                         (<= info.value (c::uint-max)))
+                    (and (type-case info.type :slong)
+                         (<= info.value (c::slong-max)))
+                    (and (type-case info.type :ulong)
+                         (<= info.value (c::ulong-max)))
+                    (and (type-case info.type :sllong)
+                         (<= info.value (c::sllong-max)))
+                    (and (type-case info.type :ullong)
+                         (<= info.value (c::ullong-max)))))
         (mv expr no-thm-gout))
        (expr (expr-const const))
        (hints `(("Goal" :in-theory '(c::exec-expr-pure
