@@ -1,1 +1,18 @@
+(include-book "acl2s/portcullis" :dir :system)
+(include-book "acl2s/base-theory" :dir :system :ttags :all)
+(include-book "acl2s/ccg/ccg" :dir :system :ttags :all)
+(include-book "acl2s/custom" :dir :system :ttags :all)
+(acl2::acl2s-common-settings)
+
+#+acl2-par
+(set-waterfall-parallelism nil)
+
+#+acl2-par
+(set-parallel-execution nil)
+
+(in-package "ACL2S")
+(acl2s-defaults :set testing-enabled nil)
+(set-acl2s-property-table-proof-timeout 100000)
+(set-defunc-timeout 100000)
+
 ; cert-flags: ? t :ttags :all
