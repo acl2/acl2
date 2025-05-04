@@ -955,7 +955,7 @@
        ((var-info info) (var-info-fix info))
        ((simpadd0-gin gin) gin)
        (expr (make-expr-ident :ident ident :info info))
-       ((unless (c$::type-formalp info.type))
+       ((unless (type-formalp info.type))
         (mv expr
             (make-simpadd0-gout :events nil
                                 :thm-name nil
