@@ -794,7 +794,10 @@
      while the ones in @(tsee c::type) include information about
      the referenced type and element type.
      Struct types without tag are not supported,
-     because they always have a tag in @(tsee c::type)."))
+     because they always have a tag in @(tsee c::type).")
+   (xdoc::p
+    "This predicates can be regarded as an extension of
+     the collection of @('-formalp') predicates in @(see formalized-subset)."))
   (or (and (member-eq (type-kind type)
                       '(:void
                         :char :uchar :schar
