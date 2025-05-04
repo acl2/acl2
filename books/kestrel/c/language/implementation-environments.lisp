@@ -549,6 +549,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define uinteger-bit-roles-value-count ((roles uinteger-bit-role-listp))
+  :returns (n natp)
+  :short "Number of value bit roles in
+          a list of roles of unsigned integer bits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the list of bit roles is well-formed
+     (see @(tsee uinteger-bit-roles-wfp)),
+     this is the number @('N') of value bits [C17:6.2.6.2/1],
+     whose associated exponents go from @('0') to @('N-1')."))
+  (cond ((endp roles) 0)
+        ((uinteger-bit-role-case (car roles) :value)
+         (1+ (uinteger-bit-roles-value-count (cdr roles))))
+        (t (uinteger-bit-roles-value-count (cdr roles))))
+  :hooks (:fix)
+
+  ///
+
+  (defruled uinteger-bit-roles-value-count-alt-def
+    (equal (uinteger-bit-roles-value-count roles)
+           (len (uinteger-bit-roles-exponents roles)))
+    :induct t
+    :enable (uinteger-bit-roles-exponents len))
+
+  (defruled uinteger-bit-roles-value-count-of-append
+    (equal (uinteger-bit-roles-value-count (append roles1 roles2))
+           (+ (uinteger-bit-roles-value-count roles1)
+              (uinteger-bit-roles-value-count roles2)))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sinteger-bit-roles-value-count ((roles sinteger-bit-role-listp))
+  :returns (m natp)
+  :short "Number of value bit roles in
+          a list of roles of signed integer bits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the list of bit roles is well-formed
+     (see @(tsee sinteger-bit-roles-wfp)),
+     this is the number @('M') of value bits [C17:6.2.6.2/2],
+     whose associated exponents go from @('0') to @('M-1')."))
+  (cond ((endp roles) 0)
+        ((sinteger-bit-role-case (car roles) :value)
+         (1+ (sinteger-bit-roles-value-count (cdr roles))))
+        (t (sinteger-bit-roles-value-count (cdr roles))))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-value-count-alt-def
+    (equal (sinteger-bit-roles-value-count roles)
+           (len (sinteger-bit-roles-exponents roles)))
+    :induct t
+    :enable (sinteger-bit-roles-exponents len))
+
+  (defruled sinteger-bit-roles-value-count-of-append
+    (equal (sinteger-bit-roles-value-count (append roles1 roles2))
+           (+ (sinteger-bit-roles-value-count roles1)
+              (sinteger-bit-roles-value-count roles2)))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define sinteger-bit-roles-sign-count ((roles sinteger-bit-role-listp))
   :returns (count natp)
   :short "Number of sign bit roles in a list of roles of signed integer bits."
@@ -597,7 +663,16 @@
                        (integers-from-to 0 (1- n))))
         nil))
     t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled posp-of-uinteger-bit-roles-value-count-when-wfp
+    (implies (uinteger-bit-roles-wfp roles)
+             (posp (uinteger-bit-roles-value-count roles)))
+    :rule-classes (:rewrite :type-prescription)
+    :enable (uinteger-bit-roles-wfp
+             uinteger-bit-roles-value-count-alt-def)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -629,91 +704,16 @@
         nil)
        ((unless (= (sinteger-bit-roles-sign-count roles) 1)) nil))
     t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uinteger-bit-roles-value-count ((roles uinteger-bit-role-listp))
-  :returns (n natp)
-  :short "Number of value bit roles in
-          a list of roles of unsigned integer bits."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the list of bit roles is well-formed
-     (see @(tsee uinteger-bit-roles-wfp)),
-     this is the number @('N') of value bits [C17:6.2.6.2/1],
-     whose associated exponents go from @('0') to @('N-1')."))
-  (cond ((endp roles) 0)
-        ((uinteger-bit-role-case (car roles) :value)
-         (1+ (uinteger-bit-roles-value-count (cdr roles))))
-        (t (uinteger-bit-roles-value-count (cdr roles))))
   :hooks (:fix)
 
   ///
 
-  (defruled uinteger-bit-roles-value-count-alt-def
-    (equal (uinteger-bit-roles-value-count roles)
-           (len (uinteger-bit-roles-exponents roles)))
-    :induct t
-    :enable (uinteger-bit-roles-exponents len))
-
-  (more-returns
-   (n posp
-      :hyp (uinteger-bit-roles-wfp roles)
-      :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal"
-               :in-theory (e/d (uinteger-bit-roles-wfp
-                                uinteger-bit-roles-value-count-alt-def)
-                               (uinteger-bit-roles-value-count))))))
-
-  (defruled uinteger-bit-roles-value-count-of-append
-    (equal (uinteger-bit-roles-value-count (append roles1 roles2))
-           (+ (uinteger-bit-roles-value-count roles1)
-              (uinteger-bit-roles-value-count roles2)))
-    :induct t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sinteger-bit-roles-value-count ((roles sinteger-bit-role-listp))
-  :returns (m natp)
-  :short "Number of value bit roles in
-          a list of roles of signed integer bits."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the list of bit roles is well-formed
-     (see @(tsee sinteger-bit-roles-wfp)),
-     this is the number @('M') of value bits [C17:6.2.6.2/2],
-     whose associated exponents go from @('0') to @('M-1')."))
-  (cond ((endp roles) 0)
-        ((sinteger-bit-role-case (car roles) :value)
-         (1+ (sinteger-bit-roles-value-count (cdr roles))))
-        (t (sinteger-bit-roles-value-count (cdr roles))))
-  :hooks (:fix)
-
-  ///
-
-  (defruled sinteger-bit-roles-value-count-alt-def
-    (equal (sinteger-bit-roles-value-count roles)
-           (len (sinteger-bit-roles-exponents roles)))
-    :induct t
-    :enable (sinteger-bit-roles-exponents len))
-
-  (more-returns
-   (m posp
-      :hyp (sinteger-bit-roles-wfp roles)
-      :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal"
-               :in-theory (e/d (sinteger-bit-roles-wfp
-                                sinteger-bit-roles-value-count-alt-def)
-                               (sinteger-bit-roles-value-count))))))
-
-  (defruled sinteger-bit-roles-value-count-of-append
-    (equal (sinteger-bit-roles-value-count (append roles1 roles2))
-           (+ (sinteger-bit-roles-value-count roles1)
-              (sinteger-bit-roles-value-count roles2)))
-    :induct t))
+  (defruled posp-of-sinteger-bit-roles-value-count-when-wfp
+    (implies (sinteger-bit-roles-wfp roles)
+             (posp (sinteger-bit-roles-value-count roles)))
+    :rule-classes (:rewrite :type-prescription)
+    :enable (sinteger-bit-roles-wfp
+             sinteger-bit-roles-value-count-alt-def)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
