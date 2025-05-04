@@ -538,6 +538,8 @@
     ident-type-mapp
     ident-type-map-fix
 
+    type-formalp
+
     type-to-value-kind
 
     iconst-info
