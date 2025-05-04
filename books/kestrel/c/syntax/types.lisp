@@ -777,18 +777,35 @@
 
 (define type-formalp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type corresponds to a kind of value
-          in the subset of C for which we have formal semantics."
-  (and (member-eq (type-kind type)
-                  '(:uchar :schar
-                    :ushort :sshort
-                    :uint :sint
-                    :ulong :slong
-                    :ullong :sllong
-                    :pointer
-                    :array
-                    :struct))
-       t)
+  :short "Check if a type is supported in our formal semantics of C."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By `supported' we mean that the type corresponds to
+     one in the fixtype @(tsee c::type) of types in our formal semantics.
+     This consists of @('void'),
+     plain @('char'),
+     the standard integer types except @('_Bool'),
+     and struct types with tags.")
+   (xdoc::p
+    "The pointer and array types are not supported because
+     they are too coarse compared to their @(tsee c::type) counterparts:
+     they currently include no information other than being pointer or array,
+     while the ones in @(tsee c::type) include information about
+     the referenced type and element type.
+     Struct types without tag are not supported,
+     because they always have a tag in @(tsee c::type)."))
+  (or (and (member-eq (type-kind type)
+                      '(:void
+                        :char :uchar :schar
+                        :ushort :sshort
+                        :uint :sint
+                        :ulong :slong
+                        :ullong :sllong))
+           t)
+      (and (type-case type :struct)
+           (type-struct->tag? type)
+           t))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
