@@ -791,11 +791,28 @@
                         (endint (if* c
                                      (and (intcar! x) (intcar! y))
                                      (or (intcar! x) (intcar! y))))
-                      (+carry (if* c
-                                   (or (intcar! x) (intcar! y))
-                                   (and (intcar! x) (intcar! y)))
-                              (intcdr x)
-                              (intcdr y)))))
+                      (b* ((carry (if* c
+                                       (or (intcar! x) (intcar! y))
+                                       (and (intcar! x) (intcar! y))))
+                           (cdrx (intcdr x))
+                           (cdry (intcdr y))
+                           (cdrx-is-logcdr (syntax-bind
+                                            cdrx-is-logcdr
+                                            (fgl::fgl-object-case cdrx
+                                              :g-apply (and (eq cdrx.fn 'intcdr)
+                                                            (equal (car cdrx.args) x))
+                                              :otherwise nil)))
+                           ((when cdrx-is-logcdr)
+                            (abort-rewrite (+carry carry cdrx cdry)))
+                           (cdry-is-logcdr (syntax-bind
+                                            cdry-is-logcdr
+                                            (fgl::fgl-object-case cdry
+                                              :g-apply (and (eq cdry.fn 'intcdr)
+                                                            (equal (car cdry.args) y))
+                                              :otherwise nil)))
+                           ((when cdry-is-logcdr)
+                            (abort-rewrite (+carry carry cdrx cdry))))
+                        (+carry carry cdrx cdry)))))
     :hints(("Goal" :in-theory (enable +carry int-endp if*
                                       bitops::equal-logcons-strong
                                       bitops::logxor** b-not))))

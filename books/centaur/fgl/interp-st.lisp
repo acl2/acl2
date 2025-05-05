@@ -443,6 +443,15 @@
              (stack-nth-scratch n stack)
              obj))
 
+(define interp-st-nth-scratch-kind ((n natp) interp-st)
+  :enabled t :hooks nil
+  :inline t
+  :guard (< n (interp-st-full-scratch-len interp-st))
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (obj)
+             (stack-nth-scratch-kind n stack)
+             obj))
+
 
 (defsection interp-st-push/pop-scratch-kinds
   (local (include-book "scratchobj"))
