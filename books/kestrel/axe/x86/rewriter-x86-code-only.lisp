@@ -12,6 +12,10 @@
 
 (include-book "tools/with-supporters" :dir :system)
 
+(include-book "centaur/misc/tshell" :dir :system) ; needs to be non-local since it has Raw Lisp code
+
+(defttag :rewriter-x86-code-only)
+
 ;; todo: also need to include all the calls of add-known-boolean (making sure
 ;; the functions are defined).  Or use the :tables option to get the
 ;; :known-booleans-table.
