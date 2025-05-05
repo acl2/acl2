@@ -12,6 +12,7 @@
 
 (include-book "features")
 (include-book "instructions")
+(include-book "encoding")
 (include-book "decoding")
 (include-book "states")
 (include-book "semantics")
