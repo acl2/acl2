@@ -234,11 +234,11 @@
      the @('vartys') component of @(tsee simpadd0-gout).
      For each such variable, we add a hypothesis about it saying that
      the variable can be read from the computation state
-     and it contains a value of the appropriate type.
-     Only types with corresponding values in the formal semantics
-     are supported, as in @(tsee type-to-value-kind)."))
+     and it contains a value of the appropriate type."))
   (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
+       ((unless (type-formalp type))
+        (raise "Internal error: variable ~x0 has type ~x1." var type))
        (value-kind (type-to-value-kind type))
        (hyp `(b* ((var (mv-nth 1 (ldm-ident (ident ,(ident->unwrap var)))))
                   (objdes (c::objdesign-of-var var compst))
