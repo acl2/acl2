@@ -13,10 +13,16 @@
 ;; STATUS: IN-PROGRESS
 
 ;; TODO: Finish adding instructions.
-;; TODO: Check existing instructions wrt the latest version of the Yellow Paper.
+;; TODO: Check existing instructions wrt the latest version of the Yellow Paper (however, it is out-of-date).
 ;; TODO: Add documentation.
 ;; TODO: Add tests.
 ;; TODO: Some notions defined here, like wordp and transactionp, are also defined in the ETHEREUM package.
+
+;; References:
+;; - The Yellow Paper (currently out-of-date):
+;;   - https://ethereum.github.io/yellowpaper/paper.pdf
+;; - A reference implementation in Python:
+;;   - https://github.com/ethereum/execution-specs/
 
 (include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
@@ -611,7 +617,8 @@
 ;; alpha is the number of items added to the stack.
 ;todo: check all of these!
 (defconst *instructions*
-  '((#x00 :STOP 0 0)
+  '(;; Stop and Arithmetic Operations:
+    (#x00 :STOP 0 0)
     (#x01 :ADD 2 1)
     (#x02 :MUL 2 1)
     (#x03 :SUB 2 1)
@@ -623,6 +630,7 @@
     (#x09 :MULMOD 3 1)
     (#x0a :EXP 2 1)
     (#x0b :SIGNEXTEND 2 1)
+    ;; Comparison and Bitwise Logic Operations:
     (#x10 :LT 2 1)
     (#x11 :GT 2 1)
     (#x12 :SLT 2 1)
@@ -634,7 +642,12 @@
     (#x18 :XOR 2 1)
     (#x19 :NOT 1 1)
     (#x1a :BYTE 2 1)
-    (#x20 :SHA3 2 1)
+    (#x1b :SHL 2 1)
+    (#x1c :SHR 2 1)
+    (#x1d :SAR 2 1)
+    ;; KECCAK256:
+    (#x20 :KECCAK256 2 1) ; was called :SHA3 until https://github.com/ethereum/yellowpaper/pull/825
+    ;; Environmental Information:
     (#x30 :ADDRESS 0 1)
     (#x31 :BALANCE 1 1)
     (#x32 :ORIGIN 0 1)
@@ -650,12 +663,21 @@
     (#x3c :EXTCODECOPY 4 0)
     (#x3d :RETURNDATASIZE 0 1)
     (#x3e :RETURNDATACOPY 3 0)
+    (#x3f :EXTCODEHASH 1 1)
+    ;; Block Information:
     (#x40 :BLOCKHASH 1 1)
     (#x41 :COINBASE 0 1)
     (#x42 :TIMESTAMP 0 1)
     (#x43 :NUMBER 0 1)
-    (#x44 :DIFFICULTY 0 1)
+    (#x44 :DIFFICULTY 0 1) ; todo: This has been changed to PREVRANDAO in later EVM versions
     (#x45 :GASLIMIT 0 1)
+    (#x46 :CHAINID 0 1)
+    (#x47 :SELFBALANCE 0 1)
+    (#x48 :BASEFEE 0 1)
+    ;; todo #x49 :BLOBHASH
+    ;; todo #x4a :BLOBBASEFEE
+
+    ;; Stack, Memory, Storage, and Flow Operations:
     (#x50 :POP 1 0)
     (#x51 :MLOAD 1 1)
     (#x52 :MSTORE 2 0)
@@ -668,6 +690,12 @@
     (#x59 :MSIZE 0 1)
     (#x5a :GAS 0 1)
     (#x5b :JUMPDEST 0 0)
+    ;; todo #x5c :TLOAD
+    ;; todo #x5d :TSTORE
+    ;; todo #x5e :MCOPY
+
+    ;; Push Operations
+    (#x5f :PUSH0 0 1)
     (#x60 :PUSH1 0 1)
     (#x61 :PUSH2 0 1)
     (#x62 :PUSH3 0 1)
@@ -700,6 +728,7 @@
     (#x7d :PUSH30 0 1)
     (#x7e :PUSH31 0 1)
     (#x7f :PUSH32 0 1)
+    ;; Duplication Operations:
     (#x80 :DUP1 1 2)
     (#x81 :DUP2 2 3)
     (#x82 :DUP3 3 4)
@@ -716,6 +745,7 @@
     (#x8d :DUP14 14 15)
     (#x8e :DUP15 15 16)
     (#x8f :DUP16 16 17)
+    ;; Exchange Operations:
     (#x90 :SWAP1 2 2)
     (#x91 :SWAP2 3 3)
     (#x92 :SWAP3 4 4)
@@ -732,21 +762,31 @@
     (#x9d :SWAP14 15 15)
     (#x9e :SWAP15 16 16)
     (#x9f :SWAP16 17 17)
+    ;; Logging Operations:
     (#xa0 :LOG0 2 0)
     (#xa1 :LOG1 3 0)
     (#xa2 :LOG2 4 0)
     (#xa3 :LOG3 5 0)
     (#xa4 :LOG4 6 0)
+    ;; System Operations:
     (#xf0 :CREATE 3 1)
     (#xf1 :CALL 7 1)
     (#xf2 :CALLCODE 7 1)
     (#xf3 :RETURN 2 0)
     (#xf4 :DELEGATECALL 6 1)
+    (#xf5 :CREATE2 4 1)
+    ;; gap in the numbering
     (#xfa :STATICCALL 6 1)
     (#xfd :REVERT 2 0)
     (#xfe :INVALID :empty-set :empty-set)
     (#xff :SELFDESTRUCT 1 0)
     ))
+
+;; some sanity checks:
+(thm (nat-listp (strip-cars *instructions*)))
+(thm (no-duplicatesp-equal (strip-cars *instructions*)))
+(thm (acl2::keyword-listp (strip-cadrs *instructions*)))
+(thm (no-duplicatesp-equal (strip-cadrs *instructions*)))
 
 (defconst *mnemonics*
   (strip-cadrs *instructions*))
@@ -1470,7 +1510,7 @@
       (#x08 (execute-ADDMOD sigma mu a i))
       (#x09 (execute-MULMOD sigma mu a i))
       (#x0a (execute-EXP sigma mu a i))
-      ;; (#x0b (execute-SIGNEXTEND sigma mu a i))
+      ;; (#x0b (execute-SIGNEXTEND sigma mu a i)) ; todo: uncomment
       (#x10 (execute-LT sigma mu a i))
       (#x11 (execute-GT sigma mu a i))
       (#x12 (execute-SLT sigma mu a i))
