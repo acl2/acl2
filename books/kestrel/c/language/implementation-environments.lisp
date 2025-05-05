@@ -495,6 +495,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sinteger-bit-roles-sign-count ((roles sinteger-bit-role-listp))
+  :returns (count natp)
+  :short "Number of sign bit roles in a list of roles of signed integer bits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We count the number of sign bit roles.
+     Note that the sign bit roles in a list are all the same."))
+  (cond ((endp roles) 0)
+        ((sinteger-bit-role-case (car roles) :sign)
+         (1+ (sinteger-bit-roles-sign-count (cdr roles))))
+        (t (sinteger-bit-roles-sign-count (cdr roles))))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-sign-count-of-append
+    (equal (sinteger-bit-roles-sign-count (append roles1 roles2))
+           (+ (sinteger-bit-roles-sign-count roles1)
+              (sinteger-bit-roles-sign-count roles2)))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define uinteger-bit-roles-exponents ((roles uinteger-bit-role-listp))
   :returns (exponents nat-listp)
   :short "Exponents of a list of roles of unsigned integer bits."
@@ -549,90 +573,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sinteger-bit-roles-sign-count ((roles sinteger-bit-role-listp))
-  :returns (count natp)
-  :short "Number of sign bit roles in a list of roles of signed integer bits."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We count the number of sign bit roles.
-     Note that the sign bit roles in a list are all the same."))
-  (cond ((endp roles) 0)
-        ((sinteger-bit-role-case (car roles) :sign)
-         (1+ (sinteger-bit-roles-sign-count (cdr roles))))
-        (t (sinteger-bit-roles-sign-count (cdr roles))))
-  :hooks (:fix)
-
-  ///
-
-  (defruled sinteger-bit-roles-sign-count-of-append
-    (equal (sinteger-bit-roles-sign-count (append roles1 roles2))
-           (+ (sinteger-bit-roles-sign-count roles1)
-              (sinteger-bit-roles-sign-count roles2)))
-    :induct t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uinteger-bit-roles-wfp ((roles uinteger-bit-role-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of roles of unsigned integer bits is well-formed."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to [C17:6.2.6.2/1],
-     there must be exactly one value bit for each exponent
-     in a range from 0 to @('N-1') for some @('N').
-     We express that by saying that,
-     after collecting the exponents and sorting them,
-     we must have the list @('(0 1 ... N-1)'),
-     where @('N') is the number of collected exponents.
-     Note that this prohibits duplicates.
-     We also require @('N') to be non-zero,
-     although this is not explicated in [C17]."))
-  (b* ((exponents (uinteger-bit-roles-exponents roles))
-       (n (len exponents))
-       ((when (= n 0)) nil)
-       (sorted-exponents (insertion-sort exponents))
-       ((unless (equal sorted-exponents
-                       (integers-from-to 0 (1- n))))
-        nil))
-    t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sinteger-bit-roles-wfp ((roles sinteger-bit-role-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of roles of signed integer bits is well-formed."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "According to [C17:6.2.6.2/2],
-     there must be exactly one value bit for each exponent
-     in a range from 0 to @('M-1') for some @('M').
-     We express that by saying that,
-     after collecting the exponents and sorting them,
-     we must have the list @('(0 1 ... M-1)'),
-     where @('M') is the number of collected exponents.
-     Note that this prohibits duplicates.
-     We also require @('M') to be non-zero,
-     although this is not explicated in [C17].")
-   (xdoc::p
-    "[C17:6.2.6.2/2] also says that there must be exactly one sign bit,
-     i.e. the number of sign bits must be 1."))
-  (b* ((exponents (sinteger-bit-roles-exponents roles))
-       (m (len exponents))
-       ((when (= m 0)) nil)
-       (sorted-exponents (insertion-sort exponents))
-       ((unless (equal sorted-exponents
-                       (integers-from-to 0 (1- m))))
-        nil)
-       ((unless (= (sinteger-bit-roles-sign-count roles) 1)) nil))
-    t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define uinteger-bit-roles-value-count ((roles uinteger-bit-role-listp))
   :returns (n natp)
   :short "Number of value bit roles in
@@ -657,15 +597,6 @@
            (len (uinteger-bit-roles-exponents roles)))
     :induct t
     :enable (uinteger-bit-roles-exponents len))
-
-  (more-returns
-   (n posp
-      :hyp (uinteger-bit-roles-wfp roles)
-      :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal"
-               :in-theory (e/d (uinteger-bit-roles-wfp
-                                uinteger-bit-roles-value-count-alt-def)
-                               (uinteger-bit-roles-value-count))))))
 
   (defruled uinteger-bit-roles-value-count-of-append
     (equal (uinteger-bit-roles-value-count (append roles1 roles2))
@@ -700,20 +631,89 @@
     :induct t
     :enable (sinteger-bit-roles-exponents len))
 
-  (more-returns
-   (m posp
-      :hyp (sinteger-bit-roles-wfp roles)
-      :rule-classes (:rewrite :type-prescription)
-      :hints (("Goal"
-               :in-theory (e/d (sinteger-bit-roles-wfp
-                                sinteger-bit-roles-value-count-alt-def)
-                               (sinteger-bit-roles-value-count))))))
-
   (defruled sinteger-bit-roles-value-count-of-append
     (equal (sinteger-bit-roles-value-count (append roles1 roles2))
            (+ (sinteger-bit-roles-value-count roles1)
               (sinteger-bit-roles-value-count roles2)))
     :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define uinteger-bit-roles-wfp ((roles uinteger-bit-role-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of roles of unsigned integer bits is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to [C17:6.2.6.2/1],
+     there must be exactly one value bit for each exponent
+     in a range from 0 to @('N-1') for some @('N').
+     We express that by saying that,
+     after collecting the exponents and sorting them,
+     we must have the list @('(0 1 ... N-1)'),
+     where @('N') is the number of collected exponents.
+     Note that this prohibits duplicates.
+     We also require @('N') to be non-zero,
+     although this is not explicated in [C17]."))
+  (b* ((exponents (uinteger-bit-roles-exponents roles))
+       (n (len exponents))
+       ((when (= n 0)) nil)
+       (sorted-exponents (insertion-sort exponents))
+       ((unless (equal sorted-exponents
+                       (integers-from-to 0 (1- n))))
+        nil))
+    t)
+  :hooks (:fix)
+
+  ///
+
+  (defruled posp-of-uinteger-bit-roles-value-count-when-wfp
+    (implies (uinteger-bit-roles-wfp roles)
+             (posp (uinteger-bit-roles-value-count roles)))
+    :rule-classes (:rewrite :type-prescription)
+    :enable (uinteger-bit-roles-wfp
+             uinteger-bit-roles-value-count-alt-def)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define sinteger-bit-roles-wfp ((roles sinteger-bit-role-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of roles of signed integer bits is well-formed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "According to [C17:6.2.6.2/2],
+     there must be exactly one value bit for each exponent
+     in a range from 0 to @('M-1') for some @('M').
+     We express that by saying that,
+     after collecting the exponents and sorting them,
+     we must have the list @('(0 1 ... M-1)'),
+     where @('M') is the number of collected exponents.
+     Note that this prohibits duplicates.
+     We also require @('M') to be non-zero,
+     although this is not explicated in [C17].")
+   (xdoc::p
+    "[C17:6.2.6.2/2] also says that there must be exactly one sign bit,
+     i.e. the number of sign bits must be 1."))
+  (b* ((exponents (sinteger-bit-roles-exponents roles))
+       (m (len exponents))
+       ((when (= m 0)) nil)
+       (sorted-exponents (insertion-sort exponents))
+       ((unless (equal sorted-exponents
+                       (integers-from-to 0 (1- m))))
+        nil)
+       ((unless (= (sinteger-bit-roles-sign-count roles) 1)) nil))
+    t)
+  :hooks (:fix)
+
+  ///
+
+  (defruled posp-of-sinteger-bit-roles-value-count-when-wfp
+    (implies (sinteger-bit-roles-wfp roles)
+             (posp (sinteger-bit-roles-value-count roles)))
+    :rule-classes (:rewrite :type-prescription)
+    :enable (sinteger-bit-roles-wfp
+             sinteger-bit-roles-value-count-alt-def)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
