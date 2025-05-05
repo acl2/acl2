@@ -205,15 +205,21 @@
       nil
     (let* ((term (first terms))
            ;; strip a NOT if present:
-           (term (if (and (consp term)
-                          (eq 'not (ffn-symb term))
-                          (= 1 (len (fargs term))))
-                     (farg1 term)
-                   term)))
-      (if (and (consp term)
-               (member-eq (ffn-symb term) fns-to-remove))
+           (core-term (if (and (consp term)
+                               (eq 'not (ffn-symb term))
+                               (= 1 (len (fargs term))))
+                          (farg1 term)
+                        term)))
+      (if (and (consp core-term)
+               (member-eq (ffn-symb core-term) fns-to-remove))
           (remove-assumptions-about fns-to-remove (rest terms))
         (cons term (remove-assumptions-about fns-to-remove (rest terms)))))))
+
+;; Sanity check:
+(thm
+  (subsetp-equal (remove-assumptions-about fns-to-remove terms)
+                 terms)
+  :hints (("Goal" :in-theory (enable remove-assumptions-about))))
 
 (local
   (defthm pseudo-term-listp-of-remove-assumptions-about
