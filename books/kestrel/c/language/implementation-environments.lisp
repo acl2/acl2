@@ -495,6 +495,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define sinteger-bit-roles-sign-count ((roles sinteger-bit-role-listp))
+  :returns (count natp)
+  :short "Number of sign bit roles in a list of roles of signed integer bits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We count the number of sign bit roles.
+     Note that the sign bit roles in a list are all the same."))
+  (cond ((endp roles) 0)
+        ((sinteger-bit-role-case (car roles) :sign)
+         (1+ (sinteger-bit-roles-sign-count (cdr roles))))
+        (t (sinteger-bit-roles-sign-count (cdr roles))))
+  :hooks (:fix)
+
+  ///
+
+  (defruled sinteger-bit-roles-sign-count-of-append
+    (equal (sinteger-bit-roles-sign-count (append roles1 roles2))
+           (+ (sinteger-bit-roles-sign-count roles1)
+              (sinteger-bit-roles-sign-count roles2)))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define uinteger-bit-roles-exponents ((roles uinteger-bit-role-listp))
   :returns (exponents nat-listp)
   :short "Exponents of a list of roles of unsigned integer bits."
@@ -611,30 +635,6 @@
     (equal (sinteger-bit-roles-value-count (append roles1 roles2))
            (+ (sinteger-bit-roles-value-count roles1)
               (sinteger-bit-roles-value-count roles2)))
-    :induct t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sinteger-bit-roles-sign-count ((roles sinteger-bit-role-listp))
-  :returns (count natp)
-  :short "Number of sign bit roles in a list of roles of signed integer bits."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We count the number of sign bit roles.
-     Note that the sign bit roles in a list are all the same."))
-  (cond ((endp roles) 0)
-        ((sinteger-bit-role-case (car roles) :sign)
-         (1+ (sinteger-bit-roles-sign-count (cdr roles))))
-        (t (sinteger-bit-roles-sign-count (cdr roles))))
-  :hooks (:fix)
-
-  ///
-
-  (defruled sinteger-bit-roles-sign-count-of-append
-    (equal (sinteger-bit-roles-sign-count (append roles1 roles2))
-           (+ (sinteger-bit-roles-sign-count roles1)
-              (sinteger-bit-roles-sign-count roles2)))
     :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
