@@ -11,6 +11,7 @@
 
 (in-package "X")
 
+(include-book "regions") ; since this book knows about disjoint-regionsp
 (include-book "assumptions") ; todo: for lifter-targetp
 (include-book "assumptions-for-inputs")
 (include-book "assumptions64")  ; reduce?
@@ -76,11 +77,15 @@
                 ;; TODO: Do this only for writable chunks?
                 (separate ':r ',(len bytes) ,first-addr-term
                           ':r '8 (rsp ,state-var))
+                (disjoint-regionsp ',(len bytes) ,first-addr-term
+                                   '8 (rsp ,state-var))
                 ;; Assert that the chunk is disjoint from the part of the stack that will be written:
                 ,@(if (posp stack-slots-needed)
                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
                       `((separate ':r ',(len bytes) ,first-addr-term
-                                  ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                                  ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))
+                        (disjoint-regionsp ',(len bytes) ,first-addr-term
+                                           ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
                     ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                     nil))))
       ;; Absolute addresses are just numbers:
@@ -100,11 +105,15 @@
                 ;; TODO: Do this only for writable chunks?
                 (separate ':r ',(len bytes) ,first-addr-term
                           ':r '8 (rsp ,state-var))
+                (disjoint-regionsp ',(len bytes) ,first-addr-term
+                                   '8 (rsp ,state-var))
                 ;; Assert that the chunk is disjoint from the part of the stack that will be written:
                 ,@(if (posp stack-slots-needed)
                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
                       `((separate ':r ',(len bytes) ,first-addr-term
-                                  ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                                  ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))
+                        (disjoint-regionsp ',(len bytes) ,first-addr-term
+                                           ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
                     ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                     nil))))))))
 
