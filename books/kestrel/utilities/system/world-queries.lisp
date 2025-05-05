@@ -17,7 +17,6 @@
 (include-book "xdoc/constructors" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
-(include-book "system/kestrel" :dir :system)
 (include-book "system/pseudo-good-worldp" :dir :system)
 
 (include-book "std/system/arity-plus" :dir :system)
