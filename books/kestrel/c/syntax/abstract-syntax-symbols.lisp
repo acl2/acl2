@@ -539,7 +539,7 @@
     ident-type-map-fix
 
     type-formalp
-
+    ldm-type
     type-to-value-kind
 
     iconst-info
