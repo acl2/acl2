@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -93,3 +93,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-theory (disable loghead logext))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun logappn-fn (args)
+  (cond ((endp args) 0)
+        ((endp (cdr args)) 0)
+        (t `(logapp ,(car args) ,(cadr args) ,(logappn-fn (cddr args))))))
+
+(defmacro logappn (&rest args)
+  (logappn-fn args))

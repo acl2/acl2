@@ -12,6 +12,7 @@
 (in-package "X")
 
 (include-book "portcullis")
+(include-book "regions") ; since this book knows about disjoint-regionsp
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/map-symbol-name" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
@@ -31,6 +32,7 @@
 ;; Makes assumptions to introduce a variable for each element of the array, from INDEX up to ELEMENT-COUNT - 1.
 ;; TODO: Support expressing bytes in terms of single bit-vars
 ;; TODO: Support expressing the whole array as a single value (a byte-list)
+;; todo: rename because this now also puts in non-null assumptions
 (defund var-intro-assumptions-for-array-input (index element-count bytes-per-element pointer-name var-name-base assumptions-acc vars-acc)
   (declare (xargs :guard (and (natp index)
                               (natp element-count)
@@ -44,16 +46,23 @@
                          (natp index))))
           (<= element-count index))
       (mv assumptions-acc vars-acc) ; will be reversed later
-    (let ((var (acl2::pack-in-package "X" var-name-base index)))
+    (let ((var (acl2::pack-in-package "X" var-name-base index))
+          (element-offset (* index bytes-per-element))
+          )
       (var-intro-assumptions-for-array-input (+ 1 index) element-count bytes-per-element pointer-name var-name-base
                                              (cons `(equal (read ,bytes-per-element
                                                                  ,(if (= 0 index)
                                                                       pointer-name ; special case (offset of 0)
-                                                                    `(+ ,(* index bytes-per-element) ,pointer-name) ; todo: option to use bvplus here?
+                                                                    `(+ ,element-offset ,pointer-name) ; todo: option to use bvplus here?
                                                                     )
                                                                  x86)
                                                            ,var)
-                                                   assumptions-acc)
+                                                   (cons (if (= 0 index)
+                                                             ;; or should the size here be 48?
+                                                             `(not (equal '0 (bvchop '64 ,pointer-name)))
+                                                           `(not (equal '0 (bvplus '64 ',element-offset ,pointer-name))) ; may get simplified later
+                                                           )
+                                                         assumptions-acc))
                                              (cons var vars-acc)))))
 
 (local
@@ -85,7 +94,9 @@
            (this-len (cdr pair)))
       (cons `(separate :r ,len ,address
                        :r ,this-len ,this-address)
-            (make-separate-claims address len (rest addresses-and-lens))))))
+            (cons `(disjoint-regionsp ,len ,address
+                                      ,this-len ,this-address)
+                  (make-separate-claims address len (rest addresses-and-lens)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; todo: think about signed (i) vs unsigned (u)
@@ -228,12 +239,17 @@
                         (separate :r ,numbytes ,pointer-name
                                   :r ,stack-byte-count
                                   (+ ,(- stack-byte-count) (rsp x86)))
+                        (disjoint-regionsp ,numbytes ,pointer-name
+                                           ,stack-byte-count
+                                           (+ ,(- stack-byte-count) (rsp x86)))
                         ;; The input is disjoint from the code:
                         ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                         ;; The input is disjoint from the saved return address:
                         ;; todo: reorder args?
                         (separate :r 8 (rsp x86)
-                                  :r ,numbytes ,pointer-name))
+                                  :r ,numbytes ,pointer-name)
+                        (disjoint-regionsp 8 (rsp x86)
+                                           ,numbytes ,pointer-name))
                       ;; will be reversed later:
                       (list input-name pointer-name))))
             (if (and (call-of :array type) ; (:array <base-type> <element-count>)
@@ -258,12 +274,17 @@
                                 (separate :r ,numbytes ,pointer-name
                                           :r ,stack-byte-count
                                           (+ ,(- stack-byte-count) (rsp x86)))
+                                (disjoint-regionsp ,numbytes ,pointer-name
+                                                   ,stack-byte-count
+                                                   (+ ,(- stack-byte-count) (rsp x86)))
                                 ;; The input is disjoint from the code:
                                 ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                                 ;; The input is disjoint from the saved return address:
                                 ;; todo: reorder args?
                                 (separate :r 8 (rsp x86)
-                                          :r ,numbytes ,pointer-name)))
+                                          :r ,numbytes ,pointer-name)
+                                (disjoint-regionsp 8 (rsp x86)
+                                                   ,numbytes ,pointer-name)))
                       ;; will be reversed later:
                       (append input-assumption-vars-rev (list pointer-name))))
               (prog2$ (er hard? 'assumptions-for-input "Bad type: ~x0." type)

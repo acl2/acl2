@@ -1430,6 +1430,7 @@
     defconst-computed2 ;drop?
     defconst-computed3
     def-simplified-basic
+    basic ; name of the basic rewriter (may be printed by "The ~x0 rewriter lacks SMT support ...")
 
     ;; Axe stuff (TODO: Maybe remove these since they are just functions we call):
     simp-dag
@@ -1455,6 +1456,7 @@
     axe-syntaxp
     axe-bind-free
     axe-binding-hyp
+    axe-smt
     work-hard ; may not be needed
     axe-rewrite-objective ; may not be needed
     dag-array ; for calls of axe-syntaxp functions
@@ -1487,6 +1489,7 @@
     list-rules
     core-rules-bv
     amazing-rules-bv
+    trim-rules
     set-axe-rule-priority
     unroll-spec-basic
     unroll-spec

@@ -58,6 +58,17 @@
                   (consp item)))
   :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
 
+(defthm possibly-negated-nodenump-of-cons-of-not
+  (equal (possibly-negated-nodenump (list 'not x))
+         (natp x))
+  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
+
+(defthm possibly-negated-nodenump-when-not-consp
+  (implies (not (consp item))
+           (equal (possibly-negated-nodenump item)
+                  (natp item)))
+  :hints (("Goal" :in-theory (enable possibly-negated-nodenump))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognizes a true-list of possibly-negated-nodenums.
@@ -140,6 +151,11 @@
 ;;   :rule-classes ((:rewrite :backchain-limit-lst (nil 0 nil)))
 ;;   :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp
 ;;                                      possibly-negated-nodenump))))
+
+(defthm possibly-negated-nodenumsp-of-reverse-list
+  (implies (possibly-negated-nodenumsp items)
+           (possibly-negated-nodenumsp (reverse-list items)))
+  :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp reverse-list))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -255,6 +271,11 @@
   :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp
                                      bounded-possibly-negated-nodenump))))
 
+(defthm bounded-possibly-negated-nodenumsp-of-reverse-list
+  (implies (bounded-possibly-negated-nodenumsp items bound)
+           (bounded-possibly-negated-nodenumsp (reverse-list items) bound))
+  :hints (("Goal" :in-theory (enable bounded-possibly-negated-nodenumsp reverse-list))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund strip-not-from-possibly-negated-nodenum (item)
@@ -333,3 +354,41 @@
            (all-< (strip-nots-from-possibly-negated-nodenums items) bound))
   :hints (("Goal" :in-theory (enable strip-nots-from-possibly-negated-nodenums
                                      bounded-possibly-negated-nodenumsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund negate-possibly-negated-nodenums-and-append (items acc)
+  (declare (xargs :guard (and (possibly-negated-nodenumsp items)
+                              (possibly-negated-nodenumsp acc))
+                  :guard-hints (("Goal" :expand (possibly-negated-nodenumsp items)
+                                 :in-theory (e/d (possibly-negated-nodenumsp
+                                                  possibly-negated-nodenump)
+                                                 (natp))))))
+  (if (endp items)
+      acc
+    (let ((item (first items)))
+      (negate-possibly-negated-nodenums-and-append (rest items)
+                                                   (cons (if (call-of 'not item)
+                                                             (farg1 item)
+                                                           `(not ,item))
+                                                         acc)))))
+
+(defthm possibly-negated-nodenumsp-of-negate-possibly-negated-nodenums-and-append
+  (implies (and (possibly-negated-nodenumsp items)
+                (possibly-negated-nodenumsp acc))
+           (possibly-negated-nodenumsp (negate-possibly-negated-nodenums-and-append items acc)))
+  :hints (("Goal" :expand (possibly-negated-nodenumsp items)
+           :in-theory (e/d (negate-possibly-negated-nodenums-and-append
+                            possibly-negated-nodenumsp
+                            possibly-negated-nodenump)
+                           (natp)))))
+
+(defthm bounded-possibly-negated-nodenumsp-of-negate-possibly-negated-nodenums-and-append
+  (implies (and (bounded-possibly-negated-nodenumsp items bound)
+                (bounded-possibly-negated-nodenumsp acc bound))
+           (bounded-possibly-negated-nodenumsp (negate-possibly-negated-nodenums-and-append items acc) bound))
+  :hints (("Goal" :expand (possibly-negated-nodenumsp items)
+           :in-theory (e/d (negate-possibly-negated-nodenums-and-append
+                            bounded-possibly-negated-nodenumsp
+                            bounded-possibly-negated-nodenump)
+                           (natp)))))

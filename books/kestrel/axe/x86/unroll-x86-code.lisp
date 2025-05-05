@@ -205,15 +205,21 @@
       nil
     (let* ((term (first terms))
            ;; strip a NOT if present:
-           (term (if (and (consp term)
-                          (eq 'not (ffn-symb term))
-                          (= 1 (len (fargs term))))
-                     (farg1 term)
-                   term)))
-      (if (and (consp term)
-               (member-eq (ffn-symb term) fns-to-remove))
+           (core-term (if (and (consp term)
+                               (eq 'not (ffn-symb term))
+                               (= 1 (len (fargs term))))
+                          (farg1 term)
+                        term)))
+      (if (and (consp core-term)
+               (member-eq (ffn-symb core-term) fns-to-remove))
           (remove-assumptions-about fns-to-remove (rest terms))
         (cons term (remove-assumptions-about fns-to-remove (rest terms)))))))
+
+;; Sanity check:
+(thm
+  (subsetp-equal (remove-assumptions-about fns-to-remove terms)
+                 terms)
+  :hints (("Goal" :in-theory (enable remove-assumptions-about))))
 
 (local
   (defthm pseudo-term-listp-of-remove-assumptions-about
@@ -345,7 +351,7 @@
                                               (step-opener-rules32))
                                             steps-for-this-iteration
                                             limits)) ; don't recompute for each small run?
-         ((mv erp dag-or-quote limits)
+         ((mv erp dag-or-constant limits state)
           ;; (if (eq :legacy rewriter)
           ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
           ;;                     :exhaustivep t
@@ -372,7 +378,7 @@
                                   print
                                   rules-to-monitor
                                   '(program-at) ; fns-to-elide
-                                  )
+                                  state)
             ;)
           )
          ((when erp) (mv erp nil state))
@@ -388,28 +394,28 @@
             (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
             (cw "s.)"))
          (- (cw ")~%")) ; matches "(Running"
-         ((when (quotep dag-or-quote))
+         ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-quote state))
-         (dag dag-or-quote) ; it wasn't a quotep
+          (mv (erp-nil) dag-or-constant state))
+         (dag dag-or-constant) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
-         ((mv erp dag-or-quotep state) (acl2::maybe-prune-dag-approximately prune-approx
+         ((mv erp dag-or-constant state) (acl2::maybe-prune-dag-approximately prune-approx
                                                                             dag
                                                                             (remove-assumptions-about *non-stp-assumption-functions* assumptions)
                                                                             print
                                                                             60000 ; todo: pass in
                                                                             state))
          ((when erp) (mv erp nil state))
-         ((when (quotep dag-or-quotep))
+         ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-quotep state))
-         (dag dag-or-quotep) ; it wasn't a quotep
+          (mv (erp-nil) dag-or-constant state))
+         (dag dag-or-constant) ; it wasn't a quotep
          ;; (- (and print (progn$ (cw "(DAG after first pruning:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          ;; Prune precisely if feasible:
          ;; TODO: Maybe don't prune if the run has completed (but do simplify in that case)?
-         ((mv erp dag-or-quotep state)
+         ((mv erp dag-or-constant state)
           (acl2::maybe-prune-dag-precisely prune-precise ; if a natp, can help prevent explosion.
                                            dag
                                            ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
@@ -424,13 +430,13 @@
                                            print
                                            state))
          ((when erp) (mv erp nil state))
-         ((when (quotep dag-or-quotep))
+         ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
-          (mv (erp-nil) dag-or-quotep state))
-         (dag dag-or-quotep) ; it wasn't a quotep
+          (mv (erp-nil) dag-or-constant state))
+         (dag dag-or-constant) ; it wasn't a quotep
          (- (and print ;(acl2::print-level-at-least-tp print)
                  (progn$ (cw "(DAG after this limited run:~%")
-                         (cw "~X01" dag-or-quote nil)
+                         (cw "~X01" dag nil)
                          (cw ")~%"))))
          ;; TODO: Error if dag too big (must be able to add it to old dag, or make a version of equivalent-dagsp that signals an error):
          ;; (- (and print (progn$ (cw "(DAG after second pruning:~%")
@@ -454,7 +460,7 @@
       (if run-completedp
           ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
           (b* ((- (cw "(Doing final simplification:~%"))
-               ((mv erp dag-or-quote state)
+               ((mv erp dag-or-constant state) ; todo: check if it is a constant?
                 ;; (if (eq :legacy rewriter)
                 ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
                 ;;                     :exhaustivep t
@@ -468,7 +474,7 @@
                 ;;                     :limits limits
                 ;;                     :memoizep memoizep
                 ;;                     :check-inputs nil)
-                  (mv-let (erp result limits)
+                  (mv-let (erp result limits state)
                     (acl2::simplify-dag-x86 dag
                                             assumptions
                                             rule-alist
@@ -481,20 +487,21 @@
                                             print
                                             rules-to-monitor
                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
-                                            )
+                                            state)
                     (declare (ignore limits)) ; todo: use the limits?
                     (mv erp result state))
                   ;)
                   )
+               ((when erp) (mv erp nil state))
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
-               ((when erp) (mv erp nil state)))
-            (mv (erp-nil) dag-or-quote state))
+               )
+            (mv (erp-nil) dag-or-constant state))
         ;; Continue the symbolic execution:
         (b* ((steps-done (+ steps-for-this-iteration steps-done))
              (- (cw "(Steps so far: ~x0.)~%" steps-done))
              (state ;; Print as a term unless it would be huge:
                (if (acl2::print-level-at-least-tp print)
-                   (if (acl2::dag-or-quotep-size-less-than dag 1000)
+                   (if (acl2::dag-or-quotep-size-less-than dag 1000) ; todo: drop the "-or-constant"
                        (b* ((- (cw "(Term after ~x0 steps:~%" steps-done))
                             (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
                                        (set-print-base-radix print-base state)

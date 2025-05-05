@@ -190,24 +190,24 @@
 ;; todo: don't return state
 ;reorder params
 ;drop this wrapper?
-(defun acl2::simplify-term-to-term-to-term (term assumptions rule-alist monitor wrld)
+(defun acl2::simplify-term-to-term (term assumptions rule-alist monitor wrld)
   (declare (xargs :guard (and (pseudo-termp term)
                               (acl2::rule-alistp rule-alist)
                               (pseudo-term-listp assumptions)
                               (symbol-listp monitor)
                               (acl2::ilks-plist-worldp wrld))))
-  (acl2::simplify-term-to-term-x86 term
-                       assumptions
-                       rule-alist
-                       nil
-                       (acl2::known-booleans wrld)
-                       nil
-                       nil ; limits
-                       t ; memoizep
-                       nil
-                       t ;:brief  ;nil
-                       monitor
-                       nil))
+  (acl2::simplify-term-to-term-basic term
+                                     assumptions
+                                     rule-alist
+                                     nil
+                                     (acl2::known-booleans wrld)
+                                     nil
+                                     nil ; limits
+                                     t ; memoizep
+                                     nil
+                                     t ;:brief  ;nil
+                                     monitor
+                                     nil))
 
 ;; Test whether the stack height of X86 is less than it was when the stack pointer was OLD-RSP.
 ;; Since the stack grows from high to low, the stack height is less when the RSP is greater.
@@ -373,7 +373,7 @@
        ((when (quotep dag))
         (er hard? 'extract-rsp-dag "Unexpected constant RSP extraction term: ~x0.")
         (mv :unexpected-term nil nil)))
-    (acl2::simplify-dag-x86 dag
+    (acl2::simplify-dag-basic dag
                             assumptions
                             *loop-lifter-state-component-extraction-rule-alist*
                             ;; (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
@@ -402,7 +402,7 @@
        ((when (quotep dag))
         (er hard? 'extract-rbp-dag "Unexpected constant RBP extraction term: ~x0.")
         (mv :unexpected-term nil nil)))
-    (acl2::simplify-dag-x86 dag
+    (acl2::simplify-dag-basic dag
                             assumptions
                             *loop-lifter-state-component-extraction-rule-alist*
                             ;; (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
@@ -431,7 +431,7 @@
        ((when (quotep dag))
         (er hard? 'extract-pc-dag "Unexpected constant PC extraction term: ~x0.")
         (mv :unexpected-term nil nil)))
-    (acl2::simplify-dag-x86 dag
+    (acl2::simplify-dag-basic dag
                             assumptions ;need to know that text offset is reasonable
                             *loop-lifter-pc-extraction-rule-alist*
                             ;; :rules (set-difference-eq (append '(;xr-of-if
@@ -508,7 +508,8 @@
                                   proved-assumptions-acc
                                   failed-assumptions-acc
                                   print
-                                  known-booleans)
+                                  known-booleans
+                                  state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (acl2::rule-alistp rule-alist)
                               (symbol-listp rules-to-monitor)
@@ -520,22 +521,24 @@
                               (pseudo-term-listp proved-assumptions-acc)
                               (pseudo-term-listp failed-assumptions-acc)
                               (acl2::print-levelp print)
-                              (symbol-listp known-booleans))))
+                              (symbol-listp known-booleans))
+                  :Stobjs state))
   (if (endp assumptions)
       (mv (erp-nil)
           (reverse proved-assumptions-acc)
-          (reverse failed-assumptions-acc))
+          (reverse failed-assumptions-acc)
+          state)
     (b* ((assumption (first assumptions))
          (updated-assumption (acl2::sublis-var-simple (map-all-to-val previous-state-vars state-var) assumption))
          (- (cw "(Attempting to prove assumption ~x0.~%" updated-assumption))
          ((mv erp dag-to-prove) (acl2::wrap-term-around-dag updated-assumption state-var state-dag))
-         ((when erp) (mv erp nil nil))
+         ((when erp) (mv erp nil nil state))
          ;; (- (and (acl2::print-level-at-least-tp print) (cw "(DAG to prove: ~x0.)~%" dag-to-prove)))
          (- (cw "(Using ~x0 assumptions.)~%" (len all-assumptions)))
          ;; prove that the original assumptions imply that the updated assumption holds over state-dag
-         ((mv erp res &)
+         ((mv erp res & state)
           (if (quotep dag-to-prove)
-              (mv nil dag-to-prove nil) ; todo: bool-fix it?
+              (mv nil dag-to-prove nil state) ; todo: bool-fix it?
             (acl2::simplify-dag-x86 dag-to-prove
                                     all-assumptions
                                     rule-alist
@@ -543,8 +546,9 @@
                                     (append '( ;xr-wb-in-app-view
                                               )
                                             rules-to-monitor)
-                                    nil)))
-         ((when erp) (mv erp nil nil)))
+                                    nil
+                                    state)))
+         ((when erp) (mv erp nil nil state)))
       (if (equal res *t*) ;todo: allow other non-nil constants?
           (prog2$ (cw "Success.)~%")
                   (try-to-update-assumptions (rest assumptions)
@@ -554,7 +558,8 @@
                                              (cons updated-assumption proved-assumptions-acc)
                                              failed-assumptions-acc
                                              print
-                                             known-booleans))
+                                             known-booleans
+                                             state))
         (prog2$ (cw "Failed.  Candidate assumption rewrote to ~x0.)~%" (dag-to-term res)) ;todo: think about blowup
                 (try-to-update-assumptions (rest assumptions)
                                            rule-alist
@@ -563,7 +568,8 @@
                                            proved-assumptions-acc
                                            (cons updated-assumption failed-assumptions-acc)
                                            print
-                                           known-booleans))))))
+                                           known-booleans
+                                           state))))))
 
 (defun get-added-offset (term base-var)
   (if (eq term base-var)
@@ -619,8 +625,9 @@
             `(,if-variant ,test ,exit-test-term1 ,exit-test-term2) ;gets simplified in the wrapper
             state))
     ;; loop-body-term should be an x86 state.  Test whether it has exited the loop:
-    (b* (((mv erp exitp)
-          (acl2::simplify-term-to-term-to-term ;; `(if (stack-height-decreased-wrt ,loop-body-term ,loop-top-rsp-term)
+    (b* (((mv erp exitp state)
+          (acl2::simplify-term-to-term-x86
+            ;; `(if (stack-height-decreased-wrt ,loop-body-term ,loop-top-rsp-term)
            ;;     't
            ;;   (if (stack-height-increased-wrt ,loop-body-term ,loop-top-rsp-term)
            ;;       'nil
@@ -640,7 +647,16 @@
                          x86isa::xr-of-if))
                remove-rules)
              (w state))
-            nil (w state)))
+           nil ; ifns
+           (acl2::known-booleans (w state))
+           nil ; normalize-xors
+           nil ; limits
+           nil ; memoizep
+           nil ; count-hits
+           :brief ; print
+           nil ; monitored-symbols
+           nil ; fns-to-elide
+           state))
          ((when erp) (mv erp nil nil nil state)))
       (if (not (quotep exitp))
           (prog2$ (er hard 'analyze-loop-body-aux "Failed to decide whether branch has exited the loop.  Result: ~X01." exitp nil)
@@ -668,7 +684,7 @@
             (prog2$ (er hard 'analyze-loop-body "There appear to be no branches that exit the loop.")
                     (mv (erp-t) nil nil nil state))
           (b* (((mv erp exit-test-term)
-                (acl2::simplify-term-to-term-to-term exit-test-term
+                (acl2::simplify-term-to-term exit-test-term
                                          nil
                                          (acl2::make-rule-alist!
                                            (append lifter-rules
@@ -807,8 +823,8 @@
        (base-addr2 (second write-pair2))
        (- (cw "(Proving that there is no overlap between ~x0 bytes starting at ~x1 and ~x2 bytes starting at ~x3.~%" (unquote num-bytes1) base-addr1 (unquote num-bytes2) base-addr2))
        (separation-term `(separate ':r ,num-bytes1 ,base-addr1 ':r ,num-bytes2 ,base-addr2))
-       ((mv erp result)
-        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
+       ((mv erp result state)
+        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil state))
        ((when erp) (mv erp nil state)))
     (if (equal result *t*)
         (progn$ (cw "Proved that there is not overlap.)~%")
@@ -880,9 +896,9 @@
     (b* ((address-term (first address-terms))
          (address-unchanged-term
           `(equal ,address-term ,(acl2::sublis-var-simple (acons state-var one-rep-term nil) address-term)))
-         ((mv erp result)
+         ((mv erp result state)
           (acl2::simplify-term-to-term-x86 address-unchanged-term nil ; assumptions
-                               rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
+                                           rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil state))
          ((when erp) (mv erp nil state)))
       (if (equal result *t*)
           (prog2$ (cw "(Proved that address ~x0 is unchanged.)~%" address-term)
@@ -1122,11 +1138,11 @@
          (- (and (acl2::print-level-at-least-tp print) (cw "(Term to prove: ~x0.)~%" term-to-prove)))
          (- (and (acl2::print-level-at-least-tp print) (cw "(Assumptions to use: ~x0.)~%" assumptions)))
          ;; Try to prove the invariant by rewriting:
-         ((mv erp simplified-invariant)
+         ((mv erp simplified-invariant state)
           (acl2::simplify-term-to-term-x86 term-to-prove assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil
                                nil nil
                                '(x86isa::xr-of-xw-diff) ; rules-to-monitor
-                               nil))
+                               nil state))
          ((when erp) (mv erp nil nil state)))
       (if (equal *t* simplified-invariant)
           (prog2$ (cw "Proved it!)~%")
@@ -1437,7 +1453,7 @@
         (- (cw "(Candidate assumptions: ~x0)~%" candidate-assumptions)) ;these are still over the old state-var?
 
         ;; The assumption about the RIP almost certainly won't still hold.
-        ((mv erp loop-top-assumptions failed-loop-top-assumptions)
+        ((mv erp loop-top-assumptions failed-loop-top-assumptions state)
          (try-to-update-assumptions candidate-assumptions
                                     (acl2::make-rule-alist! (set-difference-eq
                                                         (append (loop-lifter-invariant-preservation-rules)
@@ -1448,7 +1464,8 @@
                                     rules-to-monitor loop-top-state-dag state-var previous-state-vars
                                     assumptions
                                     nil nil print
-                                    (acl2::known-booleans (w state))))
+                                    (acl2::known-booleans (w state))
+                                    state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "Done determining which assumptions hold before the loop)~%"))
         (- (cw "(~x0 assumptions hold before the loop: ~x1.)~%" (len loop-top-assumptions) loop-top-assumptions))
@@ -1711,12 +1728,12 @@
         ;(initial-params-term (make-cons-nest initial-params-terms))
         (loop-function-call-term `(,loop-fn ,@initial-params-terms))
         ;; Simplify it (applies read over write rules):
-        ((mv erp loop-function-call-dag)
+        ((mv erp loop-function-call-dag state)
          ;;(acl2::simplify-term-to-term loop-function-call-term :rules (append (extra-loop-lifter-rules) lifter-rules))
          (acl2::simplify-term-x86 loop-function-call-term
                                   nil ; assumptions
                                   (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
-                                  nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
+                                  nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil state))
         ((when erp) (mv erp nil nil nil state))
         ;; Write the values computed by the loop back into the state:
         ((mv erp new-state-dag) (acl2::wrap-term-around-dag updated-state-term :loop-function-result loop-function-call-dag))
@@ -1728,7 +1745,7 @@
         ((mv erp new-state-dag) (compose-dags new-state-dag :initial-loop-top-state loop-top-state-dag t))
         ((when erp) (mv erp nil nil nil state))
         ;; Simplify again:
-        ((mv erp new-state-dag &)
+        ((mv erp new-state-dag & state)
          (acl2::simplify-dag-x86 new-state-dag
                                  nil
                                  (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
@@ -1739,7 +1756,8 @@
                                    ;;x86p-of-write
                                    ;;x86isa::x86p-xw
                                    )
-                                 nil))
+                                 nil
+                                 state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "Done Splicing in the loop function)~%"))
         (generated-events (append generated-events
@@ -1945,7 +1963,7 @@
         ;; Perform the symbolic execution:
         ;; TODO: Suppress printing of result here?:
         ;; TODO: Add support for printing a combined summary at the end of all rewrite phases...
-        ((mv erp state-dag &)
+        ((mv erp state-dag & state)
          (acl2::simplify-dag-x86 dag-to-run
                                  assumptions
                                  ;; todo: can we do more of this just once?
@@ -1961,7 +1979,8 @@
                                            x86-fetch-decode-execute-opener-safe-64
                                            )
                                          rules-to-monitor)
-                                 nil))
+                                 nil
+                                 state))
         ((when erp) (mv erp nil nil nil state))
         ;; Check for problems:
         ((when (member-eq 'run-until-exit-segment-or-hit-loop-header
@@ -2231,7 +2250,7 @@
        ((mv erp output-dag) (acl2::wrap-term-around-dag '(xr ':rgf '0 :dag) :dag dag))
        ((when erp) (mv erp nil state))
        (- (cw "(output-dag: ~x0)~%" output-dag))
-       ((mv erp output-dag &)
+       ((mv erp output-dag & state)
         (acl2::simplify-dag-x86 output-dag
                                 assumptions
                                 (acl2::make-rule-alist! (set-difference-eq
@@ -2241,7 +2260,7 @@
                                                                   extra-rules)
                                                           remove-rules)
                                                         (w state))
-                                nil (acl2::known-booleans (w state)) nil nil nil nil print rules-to-monitor nil))
+                                nil (acl2::known-booleans (w state)) nil nil nil nil print rules-to-monitor nil state))
        ((when erp) (mv erp nil state))
        (output-term (dag-to-term output-dag))
        ;; TODO: Generalize:

@@ -2302,23 +2302,37 @@
 ;;   :hints (("Goal" :expand (write 4 addr val x86)
 ;;            :in-theory (enable read write))))
 
+(local
+  (defthm read-of-write-irrel-gen-helper
+    (implies (and (<= n2 (bvminus 48 addr1 addr2)) ; use bvle instead of <= ?
+                  (<= n1 (bvminus 48 addr2 addr1))
+                  ;; (natp n1)
+                  ;; (natp n2)
+                  (integerp addr2)
+                  (integerp addr1)
+                  )
+             (equal (read n1 addr1 (write n2 addr2 val x86))
+                    (read n1 addr1 x86)))
+    :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
+            ("Goal" :do-not '(generalize eliminate-destructors)
+             :induct t
+             :in-theory (e/d (read write bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus)
+                             (acl2::bvminus-becomes-bvplus-of-bvuminus
+                              acl2::bvcat-of-+-high
+                              ;; for speed:
+                              acl2::bvchop-identity))))))
+
 (defthm read-of-write-irrel-gen
   (implies (and (<= n2 (bvminus 48 addr1 addr2)) ; use bvle instead of <= ?
                 (<= n1 (bvminus 48 addr2 addr1))
-                ;;(natp n1)
-                ;; (natp n2)
-                (integerp addr2)
-                (integerp addr1))
+                )
            (equal (read n1 addr1 (write n2 addr2 val x86))
                   (read n1 addr1 x86)))
-  :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
-          ("Goal" :do-not '(generalize eliminate-destructors)
-           :induct t
-           :in-theory (e/d (read write bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus)
-                           (acl2::bvminus-becomes-bvplus-of-bvuminus
-                            acl2::bvcat-of-+-high
-                            ;; for speed:
-                            acl2::bvchop-identity)))))
+  :hints (("Goal" :use (:instance read-of-write-irrel-gen-helper
+                                  (addr1 (ifix addr1))
+                                  (addr2 (ifix addr2)))
+           :in-theory (e/d (ifix) (read-of-write-irrel-gen-helper)))))
+
 
 ;; (EQUAL 0 (BVCHOP 48 (+ 1 AD2)))
 
@@ -3282,18 +3296,12 @@
                                write-of-bvchop-arg3 ; todo: just keep the gen one?
                                )))))
 
-
-
 ;move
 (defthm read-of-write-irrel-bv
   (implies (and (bvle 48 n2 (bvminus 48 addr1 addr2))
                 (bvle 48 n1 (bvminus 48 addr2 addr1))
                 (unsigned-byte-p 48 n1)
-                (unsigned-byte-p 48 n2)
-                ;;(natp n1)
-                ;; (natp n2)
-                (integerp addr2)
-                (integerp addr1))
+                (unsigned-byte-p 48 n2))
            (equal (read n1 addr1 (write n2 addr2 val x86))
                   (read n1 addr1 x86)))
   :hints (("Goal" :use (:instance read-of-write-irrel-gen)
