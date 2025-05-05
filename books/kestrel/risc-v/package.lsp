@@ -24,6 +24,7 @@
                           impossible
                           lifix
                           lnfix
+                          logapp
                           logext
                           loghead
                           nat
