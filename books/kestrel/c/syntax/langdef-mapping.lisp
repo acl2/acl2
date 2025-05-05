@@ -1105,7 +1105,7 @@
                                   (c::obj-declor-ident
                                    (c::ident "irrelevant"))))
        (declspecs (param-declon->specs paramdecl))
-       (declor (param-declon->decl paramdecl))
+       (declor (param-declon->declor paramdecl))
        ((mv okp tyspecs) (check-decl-spec-list-all-typespec declspecs))
        ((unless okp)
         (reterr (msg "Unsupported declaration specifier list ~

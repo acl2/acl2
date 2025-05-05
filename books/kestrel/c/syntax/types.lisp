@@ -12,6 +12,10 @@
 
 (include-book "abstract-syntax")
 (include-book "implementation-environments")
+(include-book "formalized")
+(include-book "langdef-mapping")
+
+(include-book "../language/types")
 
 (include-book "std/util/defirrelevant" :dir :system)
 
@@ -777,19 +781,92 @@
 
 (define type-formalp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type corresponds to a kind of value
-          in the subset of C for which we have formal semantics."
-  (and (member-eq (type-kind type)
-                  '(:uchar :schar
-                    :ushort :sshort
-                    :uint :sint
-                    :ulong :slong
-                    :ullong :sllong
-                    :pointer
-                    :array
-                    :struct))
-       t)
+  :short "Check if a type is supported in our formal semantics of C."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "By `supported' we mean that the type corresponds to
+     one in the fixtype @(tsee c::type) of types in our formal semantics.
+     This consists of @('void'),
+     plain @('char'),
+     the standard integer types except @('_Bool'),
+     and struct types with tags.")
+   (xdoc::p
+    "The pointer and array types are not supported because
+     they are too coarse compared to their @(tsee c::type) counterparts:
+     they currently include no information other than being pointer or array,
+     while the ones in @(tsee c::type) include information about
+     the referenced type and element type.
+     Struct types without tag are not supported,
+     because they always have a tag in @(tsee c::type).")
+   (xdoc::p
+    "This predicate can be regarded as an extension of
+     the collection of @('-formalp') predicates in @(see formalized-subset)."))
+  (or (and (member-eq (type-kind type)
+                      '(:void
+                        :char :uchar :schar
+                        :ushort :sshort
+                        :uint :sint
+                        :ulong :slong
+                        :ullong :sllong))
+           t)
+      (and (type-case type :struct)
+           (type-struct->tag? type)
+           (ident-formalp (type-struct->tag? type))))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ldm-type ((type typep))
+  :returns (mv erp (type1 c::typep))
+  :short "Map a type to a type in the language definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function can be regarded as an extension of
+     the collection of @('ldm-') functions
+     in @(see mapping-to-language-definition).
+     The supported types are the same as discussed in @(tsee type-formalp)."))
+  (b* (((reterr) (c::type-void)))
+    (type-case
+     type
+     :void (retok (c::type-void))
+     :char (retok (c::type-char))
+     :schar (retok (c::type-schar))
+     :uchar (retok (c::type-uchar))
+     :sshort (retok (c::type-sshort))
+     :ushort (retok (c::type-ushort))
+     :sint (retok (c::type-sint))
+     :uint (retok (c::type-uint))
+     :slong (retok (c::type-slong))
+     :ulong (retok (c::type-ulong))
+     :sllong (retok (c::type-sllong))
+     :ullong (retok (c::type-ullong))
+     :float (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :double (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :ldouble (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :floatc (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :doublec (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :ldoublec (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :bool (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :struct (if type.tag?
+                 (b* (((erp tag) (ldm-ident type.tag?)))
+                   (retok (c::type-struct tag)))
+               (reterr (msg "Type ~x0 not supported." (type-fix type))))
+     :union (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :enum (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :array (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :pointer (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :function (reterr (msg "Type ~x0 not supported." (type-fix type)))
+     :unknown (reterr (msg "Type ~x0 not supported." (type-fix type)))))
+  :hooks (:fix)
+
+  ///
+
+  (defret ldm-type-when-type-formalp
+    (not erp)
+    :hyp (type-formalp type)
+    :hints (("Goal" :in-theory (enable type-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

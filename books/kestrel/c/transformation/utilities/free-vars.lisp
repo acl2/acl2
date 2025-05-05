@@ -524,7 +524,7 @@
     (b* (((param-declon paramdecl) paramdecl)
          (free-vars0 (free-vars-decl-spec-list paramdecl.specs bound-vars))
          ((mv free-vars1 bound-vars)
-          (free-vars-paramdeclor paramdecl.decl bound-vars)))
+          (free-vars-paramdeclor paramdecl.declor bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
     :measure (param-declon-count paramdecl))

@@ -1401,10 +1401,10 @@
          ((mv spec env)
           (const-prop-decl-spec-list paramdecl.specs env))
          ((mv decl env)
-          (const-prop-paramdeclor paramdecl.decl env)))
+          (const-prop-paramdeclor paramdecl.declor env)))
       (mv (make-param-declon
             :specs spec
-            :decl decl)
+            :declor decl)
           env))
     :measure (param-declon-count paramdecl))
 

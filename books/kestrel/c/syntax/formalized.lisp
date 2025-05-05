@@ -924,7 +924,7 @@
        ((mv okp tyspecs) (check-decl-spec-list-all-typespec param.specs)))
     (and okp
          (type-spec-list-formalp tyspecs)
-         (paramdeclor-formalp param.decl)))
+         (paramdeclor-formalp param.declor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

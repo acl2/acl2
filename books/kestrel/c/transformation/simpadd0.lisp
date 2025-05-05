@@ -234,11 +234,11 @@
      the @('vartys') component of @(tsee simpadd0-gout).
      For each such variable, we add a hypothesis about it saying that
      the variable can be read from the computation state
-     and it contains a value of the appropriate type.
-     Only types with corresponding values in the formal semantics
-     are supported, as in @(tsee type-to-value-kind)."))
+     and it contains a value of the appropriate type."))
   (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
+       ((unless (type-formalp type))
+        (raise "Internal error: variable ~x0 has type ~x1." var type))
        (value-kind (type-to-value-kind type))
        (hyp `(b* ((var (mv-nth 1 (ldm-ident (ident ,(ident->unwrap var)))))
                   (objdes (c::objdesign-of-var var compst))
@@ -719,7 +719,7 @@
     "The @('args'), @('parargs'), and @('arg-types') inputs
      are the corresponding outputs of @(tsee simpadd0-gen-from-params).")
    (xdoc::p
-    "The theorem says that, given @('int') values for the arguments,
+    "The theorem says that, given values of certain types for the arguments,
      @(tsee c::init-scope) applied to the list of parameter declarations
      and to the list of parameter values
      yields an omap (which we express it directly as an alist)
@@ -833,9 +833,9 @@
      we generate a theorem saying that,
      in the computation state resulting from
      pushing the initial scope to the frame stack,
-     if the value corresponding to the parameter is an @('int') value,
+     if the value corresponding to the parameter has a certain type,
      then reading the parameter from the computation state
-     succeeds and yields an @('int') value."))
+     succeeds and yields a value of that type."))
   (b* (((when (endp args)) (mv nil nil))
        (arg (car args))
        (formula
@@ -945,17 +945,19 @@
      Thus, the output expression consists of
      the identifier and validation information passed as inputs.")
    (xdoc::p
-    "If the variable has type @('int'),
+    "If the variable has a type supported in our C formalization,
      which we check in the validation information,
      then we generate a theorem saying that the expression,
-     when executed, yields a value of type @('int').
+     when executed, yields a value of the appropriate type.
      The generated theorem is proved via a general supporting lemma,
      which is proved below."))
   (b* ((ident (ident-fix ident))
        ((var-info info) (var-info-fix info))
        ((simpadd0-gin gin) gin)
        (expr (make-expr-ident :ident ident :info info))
-       ((unless (type-case info.type :sint))
+       ((unless (and (type-formalp info.type)
+                     (not (type-case info.type :void))
+                     (not (type-case info.type :char))))
         (mv expr
             (make-simpadd0-gout :events nil
                                 :thm-name nil
@@ -963,14 +965,15 @@
                                 :names-to-avoid gin.names-to-avoid
                                 :vartys nil
                                 :diffp nil)))
-       (vartys (omap::update ident (type-sint) nil))
+       (vartys (omap::update ident info.type nil))
        (hints `(("Goal"
                  :in-theory '((:e expr-ident)
                               (:e expr-pure-formalp)
                               (:e ident))
                  :use (:instance simpadd0-expr-ident-support-lemma
                                  (ident ',ident)
-                                 (info ',info)))))
+                                 (info ',info)
+                                 (kind ',(type-to-value-kind info.type))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr
@@ -985,7 +988,6 @@
                             :names-to-avoid (cons thm-name gin.names-to-avoid)
                             :vartys vartys
                             :diffp nil)))
-  :prepwork ((local (in-theory (enable identity))))
   :hooks (:fix)
 
   ///
@@ -1003,8 +1005,8 @@
                          (val (c::read-object objdes compst)))
                       (and objdes
                            (c::valuep val)
-                           (c::value-case val :sint))))
-               (equal (c::value-kind value) :sint)))
+                           (equal (c::value-kind val) kind))))
+               (equal (c::value-kind value) kind)))
     :enable (c::exec-expr-pure
              c::exec-ident
              ldm-expr
@@ -1024,17 +1026,28 @@
      into a much more general transformation.
      Thus, the output expression consists of the constant passed as input.")
    (xdoc::p
-    "If the constant is an integer one and has type @('int'),
-     and under the additional condition described shortly,
+    "If the constant is an integer one,
+     and under the additional conditions described shortly,
      we generate a theorem saying that the exprssion,
-     when executed, yields a value of type @('int').
-     The additional condition is that
-     the value of the constant fits in 32 bits.
-     The reason is that
-     our current dynamic semantics assumes that @('int') has 32 bits,
+     when executed, yields a value of the appropriate integer type.
+     The additional conditions are that:")
+   (xdoc::ul
+    (xdoc::li
+     "If the constant has type (@('signed') or @('unsigned')) @('int'),
+      it fits in 32 bits.")
+    (xdoc::li
+     "If the constant has type (@('signed') or @('unsigned')) @('long'),
+      it fits in 64 bits.")
+    (xdoc::li
+     "If the constant has type (@('signed') or @('unsigned')) @('long long'),
+      it fits in 64 bits."))
+   (xdoc::p
+    "The reason is that
+     our current dynamic semantics assumes that
+     those types have those sizes,
      while our validator is more general
      (@(tsee c$::valid-iconst) takes an implementation environment as input,
-     which specifies, among other things, the size of @('int')).
+     which specifies, among other things, the size of those types).
      Until we extend our dynamic semantics to be more general,
      we need this additional condition for proof generation."))
   (b* (((simpadd0-gin gin) gin)
@@ -1048,8 +1061,18 @@
        ((unless (const-case const :int)) (mv expr no-thm-gout))
        ((iconst iconst) (const-int->unwrap const))
        ((iconst-info info) (coerce-iconst-info iconst.info))
-       ((unless (and (type-case info.type :sint)
-                     (<= info.value (c::sint-max))))
+       ((unless (or (and (type-case info.type :sint)
+                         (<= info.value (c::sint-max)))
+                    (and (type-case info.type :uint)
+                         (<= info.value (c::uint-max)))
+                    (and (type-case info.type :slong)
+                         (<= info.value (c::slong-max)))
+                    (and (type-case info.type :ulong)
+                         (<= info.value (c::ulong-max)))
+                    (and (type-case info.type :sllong)
+                         (<= info.value (c::sllong-max)))
+                    (and (type-case info.type :ullong)
+                         (<= info.value (c::ullong-max)))))
         (mv expr no-thm-gout))
        (expr (expr-const const))
        (hints `(("Goal" :in-theory '(c::exec-expr-pure
@@ -1174,6 +1197,7 @@
        (expr (make-expr-unary :op op :arg arg :info info))
        (expr-new (make-expr-unary :op op :arg arg-new :info info))
        ((unless (and arg-thm-name
+                     (type-case (expr-type arg) :sint)
                      (member-eq (unop-kind op)
                                 '(:plus :minus :bitnot :lognot))))
         (mv expr-new
@@ -1393,6 +1417,8 @@
        (diffp (or arg1-diffp arg2-diffp simpp))
        ((unless (and arg1-thm-name
                      arg2-thm-name
+                     (type-case (expr-type arg1) :sint)
+                     (type-case (expr-type arg2) :sint)
                      (member-eq (binop-kind op)
                                 '(:mul :div :rem :add :sub :shl :shr
                                   :lt :gt :le :ge :eq :ne
@@ -1812,6 +1838,7 @@
        (stmt (stmt-return expr?))
        (stmt-new (stmt-return expr?-new))
        ((unless (and expr?
+                     (type-case (expr-type expr?) :sint)
                      expr?-thm-name))
         (mv stmt-new
             (make-simpadd0-gout
@@ -3329,8 +3356,8 @@
                              (gin (simpadd0-gin-update gin gout-decl))
                              ((mv new-params (simpadd0-gout gout-params))
                               (simpadd0-param-declon-list dirdeclor.params
-                                                       gin
-                                                       state)))
+                                                          gin
+                                                          state)))
                           (mv (make-dirdeclor-function-params
                                :declor new-decl
                                :params new-params
@@ -3559,17 +3586,17 @@
          ((mv new-specs (simpadd0-gout gout-specs))
           (simpadd0-decl-spec-list paramdecl.specs gin state))
          (gin (simpadd0-gin-update gin gout-specs))
-         ((mv new-decl (simpadd0-gout gout-decl))
-          (simpadd0-paramdeclor paramdecl.decl gin state)))
+         ((mv new-declor (simpadd0-gout gout-declor))
+          (simpadd0-paramdeclor paramdecl.declor gin state)))
       (mv (make-param-declon :specs new-specs
-                             :decl new-decl)
+                             :declor new-declor)
           (make-simpadd0-gout
-           :events (append gout-specs.events gout-decl.events)
+           :events (append gout-specs.events gout-declor.events)
            :thm-name nil
-           :thm-index gout-decl.thm-index
-           :names-to-avoid gout-decl.names-to-avoid
-           :vartys (omap::update* gout-specs.vartys gout-decl.vartys)
-           :diffp (or gout-specs.diffp gout-decl.diffp))))
+           :thm-index gout-declor.thm-index
+           :names-to-avoid gout-declor.names-to-avoid
+           :vartys (omap::update* gout-specs.vartys gout-declor.vartys)
+           :diffp (or gout-specs.diffp gout-declor.diffp))))
     :measure (param-declon-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
