@@ -2258,8 +2258,11 @@
                  (implies (double-rewrite (scratchobj-case x :<kind>))
                           (equal (<prefix>-bfrlist (scratchobj-<kind>->val x))
                                  (scratchobj->bfrlist x))))
-              (scratchobj-tmplsubsts (acl2::remove-assoc
-                                      :bfr (acl2::remove-assoc :bfrlist *scratchobj-types*)))))))
+              (scratchobj-tmplsubsts (set-difference-equal
+                                      *scratchobj-types*
+                                      (acl2::fal-extract
+                                       '(:bfr :bfrlist :fnsym :formals)
+                                       *scratchobj-types*)))))))
 
 
 
@@ -3647,23 +3650,28 @@
                  (interp-st (interp-st-pop-minor-frame interp-st)))
               (fgl-interp-value val))
             :fncall
-            (b* (((fgl-interp-recursive-call successp ans)
-                  (fgl-interp-fncall-special x.fn x.args interp-st state))
-                 ((when successp)
-                  (fgl-interp-value ans))
-                 ((when (fgl-binder-args-p x.args interp-st))
-                  (fgl-interp-binder x interp-st state))
+            (b* ((interp-st (interp-st-push-scratch-fnsym x.fn interp-st))
+                 ((mv val interp-st state)
+                  (b* (((fgl-interp-recursive-call successp ans)
+                        (fgl-interp-fncall-special x.fn x.args interp-st state))
+                       ((when successp)
+                        (fgl-interp-value ans))
+                       ((when (fgl-binder-args-p x.args interp-st))
+                        (fgl-interp-binder x interp-st state))
 
-                 (argcontexts (fgl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st)
-                                                                 x.fn (len x.args) (w state)))
+                       (argcontexts (fgl-interp-arglist-equiv-contexts (interp-st->equiv-contexts interp-st)
+                                                                       x.fn (len x.args) (w state)))
 
-                 ((fgl-interp-recursive-call args)
-                  (fgl-interp-arglist x.args argcontexts interp-st state))
+                       ((fgl-interp-recursive-call args)
+                        (fgl-interp-arglist x.args argcontexts interp-st state))
 
-                 ;; ((when err)
-                 ;;  (mv nil interp-st state))
+                       ;; ((when err)
+                       ;;  (mv nil interp-st state))
+                       )
+                    (fgl-interp-fncall-casesplit x.fn args interp-st state)))
+                 ((mv & interp-st) (interp-st-pop-scratch-fnsym interp-st))
                  )
-              (fgl-interp-fncall-casesplit x.fn args interp-st state)))))
+              (fgl-interp-value val)))))
 
       (define fgl-interp-fncall-special ((fn pseudo-fnsym-p)
                                         (args pseudo-term-listp)
@@ -3784,8 +3792,10 @@
         :returns (mv new-interp-st new-state)
         (b* (((when (atom bindings)) (fgl-interp-value))
              ((cmr::binding x1) (car bindings))
+             (interp-st (interp-st-push-scratch-formals x1.formals interp-st))
              ((fgl-interp-recursive-call args)
               (fgl-interp-lambda-arglist x1.args interp-st state))
+             ((mv & interp-st) (interp-st-pop-scratch-formals interp-st))
              ;; ((when err) (mv interp-st state))
              (interp-st (interp-st-add-minor-bindings (pairlis$ x1.formals args) interp-st)))
           (fgl-interp-bindinglist (cdr bindings) interp-st state)))

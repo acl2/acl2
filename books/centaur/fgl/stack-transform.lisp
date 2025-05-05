@@ -237,7 +237,9 @@
     :cinst (b* (((mv ans memo) (constraint-instance-map-bfrs x.val litarr memo)))
              (mv (scratchobj-cinst ans) memo))
     :cinstlist (b* (((mv ans memo) (constraint-instancelist-map-bfrs x.val litarr memo)))
-                 (mv (scratchobj-cinstlist ans) memo)))
+                 (mv (scratchobj-cinstlist ans) memo))
+    :otherwise (mv (scratchobj-fix x)
+                   (fgl-object-map-bfrs-memo-fix memo)))
   ///
   (defret bfr-listp-of-<fn>
     (implies (and (bfr-litarr-p (scratchobj->bfrlist x) litarr

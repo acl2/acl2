@@ -642,7 +642,8 @@ passed into a function or bound to a different variable in a lambda.</p>
     :bfr (list x.val)
     :bfrlist x.val
     :cinst (constraint-instance-bfrlist x.val)
-    :cinstlist (constraint-instancelist-bfrlist x.val))
+    :cinstlist (constraint-instancelist-bfrlist x.val)
+    :otherwise nil)
   ///
   (local (include-book "scratchobj"))
   (make-event
@@ -650,10 +651,15 @@ passed into a function or bound to a different variable in a lambda.</p>
       (and ,@(acl2::template-proj
               '(equal (scratchobj->bfrlist (scratchobj-<kind> x))
                       (<prefix>-bfrlist x))
-              (scratchobj-tmplsubsts (acl2::remove-assoc
-                                      :bfr (acl2::remove-assoc :bfrlist *scratchobj-types*))))
+              (scratchobj-tmplsubsts (set-difference-equal
+                                      *scratchobj-types*
+                                      (acl2::fal-extract
+                                       '(:bfr :bfrlist :fnsym :formals)
+                                       *scratchobj-types*))))
            (equal (scratchobj->bfrlist (scratchobj-bfr x)) (list x))
-           (equal (scratchobj->bfrlist (scratchobj-bfrlist x)) (true-list-fix x)))))
+           (equal (scratchobj->bfrlist (scratchobj-bfrlist x)) (true-list-fix x))
+           (equal (scratchobj->bfrlist (scratchobj-fnsym x)) nil)
+           (equal (scratchobj->bfrlist (scratchobj-formals x)) nil))))
 
   (deffixequiv scratchobj->bfrlist)
 
@@ -664,8 +670,11 @@ passed into a function or bound to a different variable in a lambda.</p>
              (implies (scratchobj-case x :<kind>)
                       (equal (<prefix>-bfrlist (scratchobj-<kind>->val x))
                              (scratchobj->bfrlist x))))
-          (scratchobj-tmplsubsts (acl2::remove-assoc
-                                  :bfr (acl2::remove-assoc :bfrlist *scratchobj-types*))))))
+          (scratchobj-tmplsubsts (set-difference-equal
+                                      *scratchobj-types*
+                                      (acl2::fal-extract
+                                       '(:bfr :bfrlist :fnsym :formals)
+                                       *scratchobj-types*))))))
 
   (defthm bfrlist-of-scratchobj-bfr->val
     (implies (and (not (member v (scratchobj->bfrlist x)))

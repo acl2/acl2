@@ -1065,15 +1065,6 @@
        (ec-call (stack$c-scratch-codeslots-ok stack$c))
        (ec-call (stack$c-scratch-welltyped stack$c))))
 
-(local (defthm scatchobj-code->kind-is-cinstlist-when-not-others
-         (implies (and (not (equal (nfix x) 0))
-                       (not (equal (nfix x) 1))
-                       (not (equal (nfix x) 2))
-                       (not (equal (nfix x) 3))
-                       (not (equal (nfix x) 4)))
-                  (equal (scratchobj-code->kind x) :cinstlist))
-         :hints(("Goal" :in-theory (enable scratchobj-code->kind)))))
-
 
 
 (local
