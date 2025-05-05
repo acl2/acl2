@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+; cert_param: (uses-stp)
+
 (include-book "rewriter-basic-smt")
 (include-book "kestrel/utilities/assert-with-stobjs" :dir :system)
 
