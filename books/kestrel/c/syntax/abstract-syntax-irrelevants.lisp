@@ -301,10 +301,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-paramdecl
+(defirrelevant irr-param-declon
   :short "An irrelevant parameter declaration."
-  :type paramdeclp
-  :body (make-paramdecl :specs nil :decl (paramdeclor-none)))
+  :type param-declonp
+  :body (make-param-declon :specs nil :decl (paramdeclor-none)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

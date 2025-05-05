@@ -60,18 +60,18 @@
 
 (define decl-find-first-field-name
   ((decl declp)
-   (struct-type identp))
+   (struct-tag identp))
   :returns (ident? ident-optionp)
   (decl-case
    decl
    :decl
-   (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
-        ((unless (and type-spec? (endp decl.init)))
+   (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
+        ((unless (and type-spec? (all-no-init decl.init)))
          nil))
      (type-spec-case
        type-spec?
        :struct (b* (((strunispec strunispec) type-spec?.spec))
-                 (if (equal strunispec.name struct-type)
+                 (if (equal strunispec.name struct-tag)
                      (structdecls-find-first-field-name strunispec.members)
                    nil))
        :otherwise nil))
@@ -79,34 +79,33 @@
 
 (define extdecl-find-first-field-name
   ((extdecl extdeclp)
-   (struct-type identp))
+   (struct-tag identp))
   :returns (ident? ident-optionp)
   (extdecl-case
    extdecl
-   :decl (decl-find-first-field-name extdecl.unwrap struct-type)
+   :decl (decl-find-first-field-name extdecl.unwrap struct-tag)
    :otherwise nil))
 
 (define extdecl-list-find-first-field-name
   ((extdecls extdecl-listp)
-   (struct-type identp))
+   (struct-tag identp))
   :returns (ident? ident-optionp)
   (b* (((when (endp extdecls))
         nil)
        (field-name?
-        (extdecl-find-first-field-name (first extdecls) struct-type)))
+        (extdecl-find-first-field-name (first extdecls) struct-tag)))
     (or field-name?
-        (extdecl-list-find-first-field-name (rest extdecls) struct-type))))
+        (extdecl-list-find-first-field-name (rest extdecls) struct-tag))))
 
 (define transunit-find-first-field-name
   ((tunit transunitp)
-   (struct-type identp))
+   (struct-tag identp))
   :returns (ident? ident-optionp)
   (b* (((transunit tunit) tunit))
-    (extdecl-list-find-first-field-name tunit.decls struct-type)))
+    (extdecl-list-find-first-field-name tunit.decls struct-tag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO match-simple-ident should use this
 (defines declor/dirdeclor-get-simple-ident
   :parents (split-all-gso-implementation)
   :short "Get the identifier of a simple (direct) declarator."
@@ -163,13 +162,14 @@
   (decl-case
    decl
    :decl
-   (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
+   (b* ((type-spec? (type-spec-from-decl-specs decl.specs))
         ((unless type-spec?)
          nil)
         (ident?
           (type-spec-case
             type-spec?
             :struct (initdeclor-list-find-gso-candidate decl.init)
+            :typedef (initdeclor-list-find-gso-candidate decl.init)
             :otherwise nil)))
      (if (and ident?
               (in ident? blacklist))
@@ -206,22 +206,46 @@
                (gso identp)
                (field-name identp)
                (internal booleanp :rule-classes :type-prescription))
-  (b* (((reterr) (c$::irr-ident) (c$::irr-ident) nil)
-       ((transunit tunit) tunit)
-       (gso (extdecl-list-find-gso-candidate tunit.decls blacklist))
-       ((unless gso)
-        (reterr t))
-       ((erp linkage)
-        (get-gso-linkage-from-valid-table
-          gso
-          (c$::transunit-info->table (c$::transunit->info tunit))))
-       ((erp struct-type)
-        (get-gso-type-name gso tunit))
-       (field-name (transunit-find-first-field-name tunit struct-type))
-       ((unless field-name)
-        (reterr t)))
-    (retok gso field-name (equal linkage (c$::linkage-internal))))
-  :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
+  (transunit-find-gso-candidate0
+   tunit
+   blacklist
+   (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
+
+  :prepwork
+  ((define transunit-find-gso-candidate0
+     ((tunit transunitp)
+      (blacklist ident-setp)
+      (steps :type #.acl2::*fixnat-type*))
+     :guard (c$::transunit-annop tunit)
+     :returns (mv erp
+                  (gso identp)
+                  (field-name identp)
+                  (internal booleanp :rule-classes :type-prescription))
+     (b* (((reterr) (c$::irr-ident) (c$::irr-ident) nil)
+          ((transunit tunit) tunit)
+          ((when (= 0 (mbe :logic (nfix steps)
+                           :exec (acl2::the-fixnat steps))))
+           (reterr t))
+          (gso (extdecl-list-find-gso-candidate tunit.decls blacklist))
+          ((unless gso)
+           (reterr t))
+          ((mv erp linkage tag?)
+           (get-gso-linkage-from-valid-table
+             gso
+             (c$::transunit-info->table (c$::transunit->info tunit))))
+          ((when erp)
+           (transunit-find-gso-candidate0 tunit
+                                          (insert gso blacklist)
+                                          (- steps 1)))
+          ((unless tag?)
+           (reterr t))
+          (field-name (transunit-find-first-field-name tunit tag?))
+          ((unless field-name)
+           (reterr t)))
+       (retok gso field-name (equal linkage (c$::linkage-internal))))
+     :measure (nfix steps)
+     :hints (("Goal" :in-theory (enable o< o-finp nfix)))
+     :guard-hints (("Goal" :in-theory (enable nfix c$::transunit-annop))))))
 
 (define filepath-transunit-map-find-gso-candidate
   ((map filepath-transunit-mapp)
@@ -280,8 +304,8 @@
                   (tunits$ transunit-ensemblep))
      (b* (((reterr) nil (c$::transunit-ensemble-fix tunits))
           (blacklist (ident-set-fix blacklist))
-          ((when (int= 0 (mbe :logic (nfix steps)
-                              :exec (acl2::the-fixnat steps))))
+          ((when (= 0 (mbe :logic (nfix steps)
+                           :exec (acl2::the-fixnat steps))))
            (reterr t))
           ((erp filepath? gso field-name)
            (transunit-ensemble-find-gso-candidate tunits blacklist))

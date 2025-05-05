@@ -109,7 +109,7 @@
      (xdoc::desc
        "@(':new-type1') &mdash; optional"
        (xdoc::p
-         "A string denoting the name of the first new struct type to be
+         "A string denoting the tag of the first new struct type to be
           created. This struct type will possess the fields which are "
          (xdoc::i "not")
          " split out (i.e. not listed in the @(':split-members') argument).")
@@ -120,7 +120,7 @@
      (xdoc::desc
        "@(':new-type2') &mdash; optional"
        (xdoc::p
-         "A string denoting the name of the second new struct type to be
+         "A string denoting the tag of the second new struct type to be
           created. This struct type will possess the fields which "
          (xdoc::i "are")
          " split out (i.e. listed in the @(':split-members') argument).")

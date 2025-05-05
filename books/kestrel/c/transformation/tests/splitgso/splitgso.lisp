@@ -385,6 +385,64 @@ struct S_1 s_1 = {.x = 0};
 
   :with-output-off nil)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("typedef1.c")
+                   :const *old*)
+
+  (splitgso *old*
+            *new*
+            :object-name "my"
+            :split-members ("baz"))
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  ;; No definitions of my_0 and my_1!
+  (assert-file-contents
+    :file "new/typedef1.c"
+    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+struct myStruct_0 { int foo; _Bool bar; };
+struct myStruct_1 { unsigned long int baz; };
+typedef struct myStruct myStruct_t;
+static struct myStruct_0 my_0;
+static struct myStruct_1 my_1;
+int main(void) {
+  return my_0.foo + (-my_1.baz);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("typedef2.c")
+                   :const *old*)
+
+  (splitgso *old*
+            *new*
+            :object-name "my"
+            :split-members ("baz"))
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  (assert-file-contents
+    :file "new/typedef2.c"
+    :content "typedef struct myStruct { int foo; _Bool bar; unsigned long int baz; } myStruct_t;
+struct myStruct_0 { int foo; _Bool bar; };
+struct myStruct_1 { unsigned long int baz; };
+static struct myStruct_0 my_0;
+static struct myStruct_1 my_1;
+int main(void) {
+  return my_0.foo + (-my_1.baz);
+}
+")
+
+  :with-output-off nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Failures

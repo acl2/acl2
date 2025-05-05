@@ -689,3 +689,39 @@
   :measure (stmt-count stmt)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define block-item-type ((item block-itemp))
+  :guard (block-item-unambp item)
+  :returns (type typep)
+  :short "Type of a block item, from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently very limited,
+     but adequate to our current purposes.
+     We only need to handle block item that are statements for now."))
+  (block-item-case
+   item
+   :decl (type-unknown)
+   :stmt (stmt-type item.unwrap)
+   :ambig (prog2$ (impossible) (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define block-item-list-type ((items block-item-listp))
+  :guard (block-item-list-unambp items)
+  :returns (type typep)
+  :short "Type of a list of block items, from the validation information."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently very limited,
+     but adequate to our current purposes.
+     We only need to handle singleton lists of block items."))
+  (cond ((endp items) (type-unknown))
+        ((endp (cdr items)) (block-item-type (car items)))
+        (t (type-unknown)))
+  :hooks (:fix))

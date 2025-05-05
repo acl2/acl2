@@ -2378,7 +2378,7 @@
           ;;          empty parameters.")
           ;;  pstate)
           (pstate (if dirdeclor.params
-                      (print-paramdecl-list dirdeclor.params pstate)
+                      (print-param-declon-list dirdeclor.params pstate)
                     pstate))
           (pstate (if dirdeclor.ellipsis
                       (print-astring ", ...)" pstate)
@@ -2514,7 +2514,7 @@
           (pstate (print-astring "(" pstate))
           (pstate (if dirabsdeclor.params
                       (b* ((pstate
-                            (print-paramdecl-list dirabsdeclor.params pstate))
+                            (print-param-declon-list dirabsdeclor.params pstate))
                            (pstate (if dirabsdeclor.ellipsis
                                        (print-astring ", ..." pstate)
                                      pstate)))
@@ -2526,8 +2526,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-paramdecl ((paramdecl paramdeclp) (pstate pristatep))
-    :guard (paramdecl-unambp paramdecl)
+  (define print-param-declon ((param param-declonp) (pstate pristatep))
+    :guard (param-declon-unambp param)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declaration."
@@ -2535,30 +2535,31 @@
     (xdoc::topstring
      (xdoc::p
       "We ensure that there are declaration specifiers."))
-    (b* (((paramdecl paramdecl) paramdecl)
-         ((unless paramdecl.specs)
+    (b* (((param-declon param) param)
+         ((unless param.specs)
           (raise "Misusage error: no declaration specifiers.")
           (pristate-fix pstate))
-         (pstate (print-decl-spec-list paramdecl.specs pstate))
-         (pstate (print-paramdeclor paramdecl.decl pstate)))
+         (pstate (print-decl-spec-list param.specs pstate))
+         (pstate (print-paramdeclor param.decl pstate)))
       pstate)
-    :measure (two-nats-measure (paramdecl-count paramdecl) 0))
+    :measure (two-nats-measure (param-declon-count param) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-paramdecl-list ((paramdecls paramdecl-listp) (pstate pristatep))
-    :guard (and (consp paramdecls)
-                (paramdecl-list-unambp paramdecls))
+  (define print-param-declon-list ((params param-declon-listp)
+                                   (pstate pristatep))
+    :guard (and (consp params)
+                (param-declon-list-unambp params))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more parameter declarations,
             separated by commas."
-    (b* (((unless (mbt (consp paramdecls))) (pristate-fix pstate))
-         (pstate (print-paramdecl (car paramdecls) pstate))
-         ((when (endp (cdr paramdecls))) pstate)
+    (b* (((unless (mbt (consp params))) (pristate-fix pstate))
+         (pstate (print-param-declon (car params) pstate))
+         ((when (endp (cdr params))) pstate)
          (pstate (print-astring ", " pstate)))
-      (print-paramdecl-list (cdr paramdecls) pstate))
-    :measure (two-nats-measure (paramdecl-list-count paramdecls) 0))
+      (print-param-declon-list (cdr params) pstate))
+    :measure (two-nats-measure (param-declon-list-count params) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

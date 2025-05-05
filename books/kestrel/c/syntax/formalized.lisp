@@ -910,8 +910,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define paramdecl-formalp ((paramdecl paramdeclp))
-  :guard (paramdecl-unambp paramdecl)
+(define param-declon-formalp ((param param-declonp))
+  :guard (param-declon-unambp param)
   :returns (yes/no booleanp)
   :short "Check if a parameter declaration has formal dynamic semantics."
   :long
@@ -920,23 +920,23 @@
     "The declaration specifiers must be all type specifiers,
      and must form a supported type.
      The parameter declarator must be a supported one."))
-  (b* (((paramdecl paramdecl) paramdecl)
-       ((mv okp tyspecs) (check-decl-spec-list-all-typespec paramdecl.specs)))
+  (b* (((param-declon param) param)
+       ((mv okp tyspecs) (check-decl-spec-list-all-typespec param.specs)))
     (and okp
          (type-spec-list-formalp tyspecs)
-         (paramdeclor-formalp paramdecl.decl)))
+         (paramdeclor-formalp param.decl)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define paramdecl-list-formalp ((paramdecls paramdecl-listp))
-  :guard (paramdecl-list-unambp paramdecls)
+(define param-declon-list-formalp ((params param-declon-listp))
+  :guard (param-declon-list-unambp params)
   :returns (yes/no booleanp)
   :short "Check if all the parameter declarations in a list
           have formal dynamic semantics."
-  (or (endp paramdecls)
-      (and (paramdecl-formalp (car paramdecls))
-           (paramdecl-list-formalp (cdr paramdecls))))
+  (or (endp params)
+      (and (param-declon-formalp (car params))
+           (param-declon-list-formalp (cdr params))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -958,7 +958,7 @@
    :function-params
    (and (dirdeclor-case dirdeclor.declor :ident)
         (ident-formalp (dirdeclor-ident->ident dirdeclor.declor))
-        (paramdecl-list-formalp dirdeclor.params))
+        (param-declon-list-formalp dirdeclor.params))
    :function-names
    (and (dirdeclor-case dirdeclor.declor :ident)
         (ident-formalp (dirdeclor-ident->ident dirdeclor.declor))

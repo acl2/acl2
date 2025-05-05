@@ -28,7 +28,7 @@
      a collection of supported types and their values.
      For the EVM dialect of Yul, which is our initial interest,
      the only supported type is @('u256'), i.e. unsigned 256-bit integers.
-     Based on discussions on Gitter,
+     Based on discussions with the Yul team,
      it is best to view this as a type of 256-bit words,
      rather than as a type of 256-bit unsigned integers,
      because the intent is to match the EVM notion of word,

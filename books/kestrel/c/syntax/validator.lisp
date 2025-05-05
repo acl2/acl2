@@ -3902,11 +3902,11 @@
             (table (valid-push-scope table))
             ((erp new-params more-types table)
              (if (equal dirdeclor.params
-                        (list (make-paramdecl
+                        (list (make-param-declon
                                :specs (list (decl-spec-typespec (type-spec-void)))
                                :decl (paramdeclor-none))))
                  (retok dirdeclor.params nil table)
-               (valid-paramdecl-list
+               (valid-param-declon-list
                 dirdeclor.params fundef-params-p table ienv)))
             (table (if fundef-params-p
                        table
@@ -4139,11 +4139,11 @@
             (table (valid-push-scope table))
             ((erp new-params more-types table)
              (if (equal dirabsdeclor.params
-                        (list (make-paramdecl
+                        (list (make-param-declon
                                :specs (list (decl-spec-typespec (type-spec-void)))
                                :decl (paramdeclor-none))))
                  (retok dirabsdeclor.params nil table)
-               (valid-paramdecl-list dirabsdeclor.params nil table ienv)))
+               (valid-param-declon-list dirabsdeclor.params nil table ienv)))
             (table (valid-pop-scope table)))
          (retok (make-dirabsdeclor-function :declor? new-declor?
                                             :params new-params
@@ -4185,13 +4185,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-paramdecl ((paramdecl paramdeclp)
-                           (fundef-params-p booleanp)
-                           (table valid-tablep)
-                           (ienv ienvp))
-    :guard (paramdecl-unambp paramdecl)
+  (define valid-param-declon ((paramdecl param-declonp)
+                              (fundef-params-p booleanp)
+                              (table valid-tablep)
+                              (ienv ienvp))
+    :guard (param-declon-unambp paramdecl)
     :returns (mv erp
-                 (new-paramdecl paramdeclp)
+                 (new-paramdecl param-declonp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4222,15 +4222,15 @@
        Parameters of function declarations have no linkage [C17:6.2.2/6].
        Since storage is allocated for them when the function is called,
        they are considered defined [C17:6.7/5]."))
-    (b* (((reterr) (irr-paramdecl) nil (irr-valid-table))
-         ((paramdecl paramdecl) paramdecl)
+    (b* (((reterr) (irr-param-declon) nil (irr-valid-table))
+         ((param-declon paramdecl) paramdecl)
          ((erp new-specs type storspecs types table)
           (valid-decl-spec-list paramdecl.specs nil nil nil table ienv))
          ((unless (or (endp storspecs)
                       (stor-spec-list-register-p storspecs)))
           (reterr (msg "The parameter declaration ~x0 ~
                         has storage class specifiers ~x1."
-                       (paramdecl-fix paramdecl)
+                       (param-declon-fix paramdecl)
                        (stor-spec-list-fix storspecs))))
          ((erp new-decl type ident? more-types table)
           (valid-paramdeclor paramdecl.decl type table ienv))
@@ -4238,7 +4238,7 @@
                      (not ident?)))
           (reterr (msg "The parameter declaration ~x0 ~
                         is for a function definition but has no identifier."
-                       (paramdecl-fix paramdecl))))
+                       (param-declon-fix paramdecl))))
          (type (if (type-case type :array)
                    (type-pointer)
                  type))
@@ -4246,7 +4246,7 @@
                    (type-pointer)
                  type))
          ((when (not ident?))
-          (retok (make-paramdecl :specs new-specs :decl new-decl)
+          (retok (make-param-declon :specs new-specs :decl new-decl)
                  (set::union types more-types)
                  table))
          (ord-info (make-valid-ord-info-objfun
@@ -4258,22 +4258,22 @@
           (reterr (msg "The parameter declared in ~x0 ~
                         in already declared in the current scope ~
                         with associated information ~x1."
-                       (paramdecl-fix paramdecl) info?)))
+                       (param-declon-fix paramdecl) info?)))
          (table (valid-add-ord ident? ord-info table)))
-      (retok (make-paramdecl :specs new-specs :decl new-decl)
+      (retok (make-param-declon :specs new-specs :decl new-decl)
              (set::union types more-types)
              table))
-    :measure (paramdecl-count paramdecl))
+    :measure (param-declon-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-paramdecl-list ((paramdecls paramdecl-listp)
-                                (fundef-params-p booleanp)
-                                (table valid-tablep)
-                                (ienv ienvp))
-    :guard (paramdecl-list-unambp paramdecls)
+  (define valid-param-declon-list ((paramdecls param-declon-listp)
+                                   (fundef-params-p booleanp)
+                                   (table valid-tablep)
+                                   (ienv ienvp))
+    :guard (param-declon-list-unambp paramdecls)
     :returns (mv erp
-                 (new-paramdecls paramdecl-listp)
+                 (new-paramdecls param-declon-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4287,13 +4287,13 @@
     (b* (((reterr) nil nil (irr-valid-table))
          ((when (endp paramdecls)) (retok nil nil (valid-table-fix table)))
          ((erp new-paramdecl types table)
-          (valid-paramdecl (car paramdecls) fundef-params-p table ienv))
+          (valid-param-declon (car paramdecls) fundef-params-p table ienv))
          ((erp new-paramdecls more-types table)
-          (valid-paramdecl-list (cdr paramdecls) fundef-params-p table ienv)))
+          (valid-param-declon-list (cdr paramdecls) fundef-params-p table ienv)))
       (retok (cons new-paramdecl new-paramdecls)
              (set::union types more-types)
              table))
-    :measure (paramdecl-list-count paramdecls))
+    :measure (param-declon-list-count paramdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5674,16 +5674,16 @@
                (dirabsdeclor-option-unambp new-dirabsdeclor?))
       :hyp (dirabsdeclor-option-unambp dirabsdeclor?)
       :fn valid-dirabsdeclor-option)
-    (defret paramdecl-unambp-of-valid-paramdecl
+    (defret param-declon-unambp-of-valid-param-declon
       (implies (not erp)
-               (paramdecl-unambp new-paramdecl))
-      :hyp (paramdecl-unambp paramdecl)
-      :fn valid-paramdecl)
-    (defret paramdecl-list-unambp-of-valid-paramdecl-list
+               (param-declon-unambp new-paramdecl))
+      :hyp (param-declon-unambp paramdecl)
+      :fn valid-param-declon)
+    (defret param-declon-list-unambp-of-valid-param-declon-list
       (implies (not erp)
-               (paramdecl-list-unambp new-paramdecls))
-      :hyp (paramdecl-list-unambp paramdecls)
-      :fn valid-paramdecl-list)
+               (param-declon-list-unambp new-paramdecls))
+      :hyp (param-declon-list-unambp paramdecls)
+      :fn valid-param-declon-list)
     (defret paramdeclor-unambp-of-valid-paramdeclor
       (implies (not erp)
                (paramdeclor-unambp new-paramdeclor))
