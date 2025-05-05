@@ -1270,7 +1270,7 @@
         (b* (((mv decl env)
               (const-prop-dirdeclor dirdeclor.declor env))
              ((mv params env)
-              (const-prop-paramdecl-list dirdeclor.params env)))
+              (const-prop-param-declon-list dirdeclor.params env)))
           (mv (make-dirdeclor-function-params
                 :declor decl
                 :params params
@@ -1369,7 +1369,7 @@
         (b* (((mv declor? env)
               (const-prop-dirabsdeclor-option dirabsdeclor.declor? env))
              ((mv params env)
-              (const-prop-paramdecl-list dirabsdeclor.params env)))
+              (const-prop-param-declon-list dirabsdeclor.params env)))
           (mv (make-dirabsdeclor-function
                 :declor? declor?
                 :params params
@@ -1390,40 +1390,40 @@
         :none (mv nil env)))
     :measure (dirabsdeclor-option-count dirabsdeclor?))
 
-  (define const-prop-paramdecl
-    ((paramdecl paramdeclp)
+  (define const-prop-param-declon
+    ((paramdecl param-declonp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::paramdecl)."
-    :returns (mv (new-paramdecl paramdeclp)
+    :short "Propagate a constant through a @(see c$::param-declon)."
+    :returns (mv (new-paramdecl param-declonp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((paramdecl paramdecl) paramdecl)
+         ((param-declon paramdecl) paramdecl)
          ((mv spec env)
-          (const-prop-decl-spec-list paramdecl.spec env))
+          (const-prop-decl-spec-list paramdecl.specs env))
          ((mv decl env)
-          (const-prop-paramdeclor paramdecl.decl env)))
-      (mv (make-paramdecl
-            :spec spec
-            :decl decl)
+          (const-prop-paramdeclor paramdecl.declor env)))
+      (mv (make-param-declon
+            :specs spec
+            :declor decl)
           env))
-    :measure (paramdecl-count paramdecl))
+    :measure (param-declon-count paramdecl))
 
-  (define const-prop-paramdecl-list
-    ((paramdecls paramdecl-listp)
+  (define const-prop-param-declon-list
+    ((paramdecls param-declon-listp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::paramdecl-list)."
-    :returns (mv (new-paramdecls paramdecl-listp)
+    :short "Propagate a constant through a @(see c$::param-declon-list)."
+    :returns (mv (new-paramdecls param-declon-listp)
                  (new-env envp))
     (b* ((env (env-fix env))
          ((when (endp paramdecls))
           (mv nil env))
          ((mv first env)
-          (const-prop-paramdecl (first paramdecls) env))
+          (const-prop-param-declon (first paramdecls) env))
          ((mv rest env)
-          (const-prop-paramdecl-list (rest paramdecls) env)))
+          (const-prop-param-declon-list (rest paramdecls) env)))
       (mv (cons first rest)
           env))
-    :measure (paramdecl-list-count paramdecls))
+    :measure (param-declon-list-count paramdecls))
 
   (define const-prop-paramdeclor
     ((paramdeclor paramdeclorp)

@@ -246,7 +246,7 @@
 
 ;; ;; Returns (mv erp result).
 ;; ;move
-;; ; TODO: Errors about program-only code
+;; ; TODO: Errors about program-only code, e.g., for (acl2::translate-terms-logic '((+ x y)) 'ctx (w state) state)
 ;; (defund acl2::translate-terms-logic (terms ctx wrld state)
 ;;   (declare (xargs :guard (and (true-listp terms) ; untranslated
 ;;                                     (plist-worldp wrld))

@@ -123,6 +123,26 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "aleo::aleo" "Aleo Library"))
+
+   (xdoc::p
+    "Formalizations and proofs about the "
+    (xdoc::ahref "https://aleo.org" "Aleo blockchain and ecosystem")
+    ".")
+
+   (xdoc::p
+    "The existing "
+    (xdoc::seetopic "aleobft::aleobft" "AleoBFT library")
+    " is now a sub-library of this broader Aleo library.")
+
+   (xdoc::p
+    "We have added an ABNF grammar of the "
+    (xdoc::ahref "https://www.leo-lang.org" "Leo language")
+    ", along with ACL2 code to parse the grammar into an ACL2 representation
+     and prove some properties of the grammar.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "HOL-ACL2 Link Support")
 
    (xdoc::p
@@ -141,6 +161,15 @@
      little endian memory access,
      fully readable and writable address space,
      and no alignment checks.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "zfc" "Set Theory Library"))
+
+   (xdoc::p
+    "This work in progress supports the use of ACL2 to reason both about
+     first-order set theory and about &ldquo;higher-order&rdquo;
+     notions (without involving @(tsee apply$)).")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,13 +278,18 @@
 
    (xdoc::p
     "The new directory @('demos/attach-stobj/') illustrates the use of @(tsee
-     attach-stobj).  See file @('README.txt') in that directory.")
+     attach-stobj).  See file @('README.txt') in that directory.  Additional
+     tests of @('attach-stobj') may be found in the directory
+     @('system/tests/attachable-stobjs/')")
 
    (xdoc::p
     "The new book @('demos/fp.lisp') (with associated files @('fp.acl2') and
      @('fp-raw.lsp') in the same directory) illustrates the power of @(tsee
      partial-encapsulate), showing how it is used in the implementation of
-     floating-point operations in ACL2.")
+     floating-point operations in ACL2.  Note that an extensive test suite for
+     floating-point operations may be found in
+     @('demos/floating-point-input.lsp'), with associated output file
+     @('demos/floating-point-log.txt'), with associated output file")
 
    ))
 

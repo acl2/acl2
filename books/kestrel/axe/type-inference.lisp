@@ -282,14 +282,13 @@
     (if (variablep expr)
         (if (assoc-eq expr var-type-alist) ;clear this up if nil is not a type...
             (lookup-eq expr var-type-alist)
-          (hard-error 'get-type-of-nodenum-during-cutting "can't find type of var: ~x0" (acons #\0 expr nil)))
+          (er hard? 'get-type-of-nodenum-during-cutting "can't find type of var: ~x0" expr))
       (let ((fn (ffn-symb expr)))
         (if (eq 'quote fn)
             (get-type-of-val-checked (unquote expr))
           ;;it's a regular function call:
           (or (maybe-get-type-of-function-call fn (dargs expr))
-              (hard-error 'get-type-of-nodenum-during-cutting "couldn't find size for expr ~x0 at nodenum ~x1"
-                          (acons #\0 expr (acons #\1 n nil)))))))))
+              (er hard? 'get-type-of-nodenum-during-cutting "couldn't find size for expr ~x0 at nodenum ~x1" expr n)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

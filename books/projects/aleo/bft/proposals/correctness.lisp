@@ -14,11 +14,13 @@
 (include-book "round-after-last")
 (include-book "last-blockchain-round")
 (include-book "ordered-blockchain")
+(include-book "active-committees-after-commit")
 (include-book "proposed-author-self")
 (include-book "proposal-to-other")
 (include-book "endorsement-from-other")
 (include-book "certificate-to-other")
 (include-book "proposed-endorser-other")
+(include-book "endorsed-author-other")
 (include-book "proposal-in-author")
 (include-book "endorsement-in-author")
 (include-book "endorsement-in-endorser")
@@ -30,8 +32,10 @@
 (include-book "endorsed-previous-closed")
 (include-book "dag-previous-closed")
 (include-book "signed-proposals")
-(include-book "author-round-pairs-in-validators")
 (include-book "signed-in-signer")
+(include-book "author-round-pairs-in-validators")
+(include-book "unequivocal-signed-proposals")
+(include-book "fault-tolerance")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,11 +53,13 @@
   :order-subtopics (round-after-last
                     last-blockchain-round
                     ordered-blockchain
+                    active-committees-after-commit
                     proposed-author-self
                     proposal-to-other
                     endorsement-from-other
                     certificate-to-other
                     proposed-endorser-other
+                    endorsed-author-other
                     proposal-in-author
                     endorsement-in-author
                     endorsement-in-endorser
@@ -65,7 +71,9 @@
                     endorsed-previous-closed
                     dag-previous-closed
                     signed-proposals
+                    signed-in-signer
                     author-round-pairs-in-validators
-                    signed-in-signer))
+                    unequivocal-signed-proposals
+                    fault-tolerance))
 
 ; TODO: continue

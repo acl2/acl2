@@ -278,6 +278,7 @@
                   (write-bytes addr2 (append vals2 vals1) x86)))
   :hints (("Goal" :in-theory (enable write-bytes))))
 
+;rename, since this doesn't use the function disjoint
 (defthm write-bytes-of-write-bytes-disjoint
   (implies (and (syntaxp (acl2::smaller-termp addr1 addr2))
                 (<= (len vals2) (bvminus 48 addr1 addr2))

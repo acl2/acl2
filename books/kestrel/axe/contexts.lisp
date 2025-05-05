@@ -1,7 +1,7 @@
 ; Computing contexts from overarching DAG nodes
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -108,7 +108,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bounded-contextp (context bound)
-  (declare (type rational bound))
+  (declare (xargs :guard (natp bound)
+                  :split-types t)
+           (type (integer 0 *) bound))
   (or (eq (false-context) context)
       (bounded-possibly-negated-nodenumsp context bound)))
 
@@ -749,7 +751,7 @@
   (let* ((parent-context (aref1 'context-array context-array parent-nodenum))
          (parent-expr (aref1 dag-array-name dag-array parent-nodenum)))
     (if (variablep parent-expr)
-        (hard-error 'get-context-via-parent "parent should not be a variable" nil)
+        (er hard? 'get-context-via-parent "parent should not be a variable")
       (let ((parent-fn (ffn-symb parent-expr)))
         (if (and (or (eq 'if parent-fn) ; (if/myif/boolif test thenpart elsepart)
                      (eq 'myif parent-fn)

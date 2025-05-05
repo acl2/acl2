@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -202,7 +202,7 @@
     "Each validator calculates its own active committee at each round,
      based on its own copy of the blockchain.
      This predicate checks whether a validator (represented by its state)
-     calculates committees that are fault tolerant,
+     calculates committees that are fault-tolerant,
      for all the rounds for which it can calculate a committee,
      given the validator's current blockchain.")
    (xdoc::p

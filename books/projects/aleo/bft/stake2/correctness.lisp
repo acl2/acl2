@@ -11,7 +11,6 @@
 
 (in-package "ALEOBFT-STAKE2")
 
-(include-book "fault-tolerance")
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
 (include-book "backward-closure")
@@ -22,6 +21,7 @@
 (include-book "no-self-endorsed")
 (include-book "signer-records")
 (include-book "unequivocal-signed-certificates")
+(include-book "fault-tolerance")
 (include-book "quorum-intersection")
 (include-book "unequivocal-dags-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
@@ -64,8 +64,7 @@
     "We formulate and prove a number of properties of the protocol,
      culminating in the main property that we are interested in,
      namely the non-forking of blockchains."))
-  :order-subtopics (fault-tolerance
-                    last-blockchain-round
+  :order-subtopics (last-blockchain-round
                     ordered-even-blocks
                     backward-closure
                     signer-quorum
@@ -75,6 +74,7 @@
                     no-self-endorsed
                     signer-records
                     unequivocal-signed-certificates
+                    fault-tolerance
                     quorum-intersection
                     unequivocal-dags-def-and-init
                     nonforking-blockchains-def-and-init

@@ -33,13 +33,9 @@
 (local (in-theory (e/d (integerp-when-natp
                         rationalp-when-natp
                         consp-of-cdr)
-                       (natp))))
+                       (natp nth min max))))
 
-(local
-  (defthm natp-of-+  ; move to natp.lisp
-    (implies (and (natp x)
-                  (natp y))
-             (natp (+ x y)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognizes the "signature" of a bitxor/bvxor node.  Different nodes usually
 ;; (but not always) have different signatures).
@@ -57,20 +53,24 @@
 
 (thm (xor-signature-p *default-xor-signature*)) ; sanity check
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A stobj that gathers the 5 components of the DAG and the xor-signature information.
 (defstobj+ rewrite-stobj2
-  (dag-array :type t :initially nil) ; todo: strengthen pred?
+  (dag-array :type t :initially nil) ; todo: strengthen pred? will always be named 'dag-array
   (dag-len :type (satisfies natp) ; using (integer 0 *) led to guards and theorems that didn't mention natp
            :initially 0)
   ;; we add "the-" to the names to avoid name clashes:
-  (the-dag-parent-array :type t :initially nil) ; todo: strengthen pred?
+  (the-dag-parent-array :type t :initially nil) ; todo: strengthen pred? will always be named 'dag-parent-array
   (the-dag-constant-alist :type (satisfies dag-constant-alistp) :initially nil)
   (the-dag-variable-alist :type (satisfies dag-variable-alistp) :initially nil)
-  ;; map from nodenums to xor-signatures
-  (nodenum-to-xor-signature-map :type (hash-table eql 1000 (satisfies xor-signature-p)) :initially ;;*default-xor-signature* ; todo: better way to specify the initial value?
-                     ((nodenum-leaf-count . 0)
-                      (min-nodenum-leaf . 0)
-                      (max-nodenum-leaf . 0)
-                      (combined-constant . 0))) ; the size of 1000 is just a hint
+  ;; map from nodenums to xor-signatures (the size of 1000 is just a hint):
+  (nodenum-to-xor-signature-map :type (hash-table eql 1000 (satisfies xor-signature-p))
+                                :initially ;;*default-xor-signature* ; todo: better way to specify the initial value?
+                                ((nodenum-leaf-count . 0)
+                                 (min-nodenum-leaf . 0)
+                                 (max-nodenum-leaf . 0)
+                                 (combined-constant . 0)))
   (xor-signature-to-nodenums-map :type (hash-table hons-equal 1000 (satisfies nat-listp))) ; the size of 1000 is just a hint
   :inline t
   :renaming ((dag-array get-dag-array)
@@ -185,14 +185,17 @@
          (xor-signature-to-nodenums-map-get k1 rewrite-stobj2))
   :hints (("Goal" :in-theory (enable xor-signature-to-nodenums-map-get nodenum-to-xor-signature-map-put))))
 
-
 ;; todo: defstobj+ should do this, and prove rules:
 (in-theory (disable nodenum-to-xor-signature-map-get
                     nodenum-to-xor-signature-map-put
                     xor-signature-to-nodenums-map-get
                     xor-signature-to-nodenums-map-put))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Recognizes a well-formed rewrite-stobj2.
 ;; todo: use this more?
+;; todo: check the xor-signature fields as well?
 (defund wf-rewrite-stobj2p (rewrite-stobj2)
   (declare (xargs :stobjs rewrite-stobj2))
   (wf-dagp 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 'dag-parent-array (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2)))
@@ -381,7 +384,7 @@
                                      (bitxor (xor-signature->combined-constant x-sig) (xor-signature->combined-constant y-sig))))))))))
     sig))
 
-(defthm nodenum-to-xor-signature-map-p-of-bitxor-signature
+(defthm xor-signature-p-of-bitxor-signature
   (implies (and (dargp-less-than x (get-dag-len rewrite-stobj2))
                 (dargp-less-than y (get-dag-len rewrite-stobj2))
                 (wf-rewrite-stobj2p rewrite-stobj2)
@@ -389,6 +392,8 @@
            (xor-signature-p (bitxor-signature x y rewrite-stobj2)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (bitxor-signature xor-signature-p) (aref1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Gets the signature for the bvxor nest that would result from bvxoring X and Y (using SIZE as the first arg to bvxor).
 ;; TODO: Consider cancelling duplicates between X and Y:
@@ -494,7 +499,9 @@
                                                          wf-dagp
                                                          ;; todo:
                                                          bvxor-signature
-                                                         bitxor-signature)
+                                                         bitxor-signature
+                                                         nth ; todo
+                                                         )
                                                         (wf-rewrite-stobj2p-conjuncts))))))
   (if (or (not (mbt (and (natp nodenum) ; for termination
                          (natp (get-dag-len rewrite-stobj2)))))
@@ -550,6 +557,9 @@
        (equal (get-dag-variable-alist (set-xor-signature-fields nodenum rewrite-stobj2)) (get-dag-variable-alist rewrite-stobj2)))
   :hints (("Goal" :in-theory (enable set-xor-signature-fields))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Loads a DAG (representing as the 5 standard components) into the rewrite-stobj2.
 (defund load-dag (dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rewrite-stobj2)
   (declare (xargs :guard (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                   :stobjs rewrite-stobj2))
@@ -562,17 +572,13 @@
 
 (defthm rewrite-stobj2p-of-load-dag
   (implies (and (rewrite-stobj2p rewrite-stobj2)
-                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                ;(natp dag-len)
-                )
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist))
            (rewrite-stobj2p (load-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rewrite-stobj2)))
   :hints (("Goal" :in-theory (enable load-dag))))
 
 (defthm wf-rewrite-stobj2p-of-load-dag
   (implies (and (rewrite-stobj2p rewrite-stobj2)
-                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
-                ;(natp dag-len)
-                )
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist))
            (wf-rewrite-stobj2p (load-dag dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist rewrite-stobj2)))
   :hints (("Goal" :in-theory (e/d (load-dag wf-rewrite-stobj2p) (wf-rewrite-stobj2p-conjuncts)))))
 

@@ -36,8 +36,8 @@
   (declare (xargs :guard t))
   (and (injective-funp f)
        (injective-funp g)
-       (subset (codomain f) (domain g))
-       (subset (codomain g) (domain f))
+       (subset (image f) (domain g))
+       (subset (image g) (domain f))
        (sbt-prop)))
 
 (defun f-fn (f g x)
@@ -115,15 +115,15 @@
   (exists fn
     (and (injective-funp fn)
          (equal (domain fn) s1)
-         (equal (codomain fn) s2))))
+         (equal (image fn) s2))))
 
 (defthmz schroeder-bernstein
   (implies (and (injective-funp f)
                 (injective-funp g)
                 (equal s1 (domain f))
                 (equal s2 (domain g))
-                (subset (codomain f) s2)
-                (subset (codomain g) s1))
+                (subset (image f) s2)
+                (subset (image g) s1))
            (exists-bijection s1 s2))
   :props (sbt-prop fun-bij$prop)
   :hints (("Goal" :restrict ((exists-bijection-suff

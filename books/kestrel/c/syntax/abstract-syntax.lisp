@@ -2205,7 +2205,7 @@
     (:array-star ((declor dirdeclor)
                   (qualspecs typequal/attribspec-list)))
     (:function-params ((declor dirdeclor)
-                       (params paramdecl-list)
+                       (params param-declon-list)
                        (ellipsis bool)))
     (:function-names ((declor dirdeclor)
                       (names ident-list)))
@@ -2278,7 +2278,7 @@
                      (size expr)))
     (:array-star ((declor? dirabsdeclor-option)))
     (:function ((declor? dirabsdeclor-option)
-                (params paramdecl-list)
+                (params param-declon-list)
                 (ellipsis bool)))
     :pred dirabsdeclorp
     :measure (two-nats-measure (acl2-count x) 0))
@@ -2298,7 +2298,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::defprod paramdecl
+  (fty::defprod param-declon
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of parameter declarations [C17:6.7.6] [C17:A.2.2]."
     :long
@@ -2309,26 +2309,26 @@
        declaration specifiers followed by a parameter declarator;
        see @(tsee paramdeclor) for a description and motivation
        for this notion of parameter declarator."))
-    ((spec decl-spec-list)
-     (decl paramdeclor))
-    :pred paramdeclp
+    ((specs decl-spec-list)
+     (declor paramdeclor))
+    :pred param-declonp
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist paramdecl-list
+  (fty::deflist param-declon-list
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of lists of parameter declarations."
     :long
     (xdoc::topstring
      (xdoc::p
-      "Parameter declarations are defined in @(tsee paramdecl).
+      "Parameter declarations are defined in @(tsee param-declon).
        This fixtype corresponds to <i>parameter-list</i>
        in the grammar in [C17]."))
-    :elt-type paramdecl
+    :elt-type param-declon
     :true-listp t
     :elementp-of-nil nil
-    :pred paramdecl-listp
+    :pred param-declon-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

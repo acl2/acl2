@@ -29,6 +29,7 @@
 ; confusion.
 
    '(apply omega union fn-equal map
+           tc ; transitive closure
            subsetp functionp
            )))
 

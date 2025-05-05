@@ -21,8 +21,11 @@
 
  <ul>
 
- <li>This is work in progress as of March 2025, so substantial changes are
- possible.</li>
+ <li>This remains work in progress as of April 2025, so substantial changes are
+ still possible.  Links to slides used in three 1.5 hour talks that month,
+ together with links to videos of those talks, may be found at <a
+ href='http://www.cs.utexas.edu/users/moore/acl2/seminar/index.html#04-11-25'>this
+ entry</a> of the ACL2 seminar website.</li>
 
  <li>This documentation is intended to be reasonably self-contained.  Basic
  familiarity with ZF set theory may be helpful but is probably not
@@ -284,10 +287,9 @@
  <p>ZF is typically formulated not only with axioms as discussed above, but
  also with two axiom schemes: Comprehension (or Subset), which asserts that
  every definable subcollection of a set is a set; and Replacement, which
- asserts that the range of a function is a set (or, is contained in a set,
- though these two formulations of Replacement are trivially equivalent by
- Comprehension).  These schemes are implemented with macros @('zsub') and
- @('zfn'), which we now discuss in turn.</p>
+ asserts that a definable function maps into a set.  Versions of these schemes
+ are implemented with macros @('zsub') and @('zfn'), which we now discuss in
+ turn.</p>
 
  <p>The macro @('zsub') implements the Comprehension scheme.  If @('name') is a
  new name, @('(v1..vn)') is a formal parameters list, @('x') is a variable, and
@@ -412,43 +414,44 @@
 
  <p>Let's see a use of @('zfn') in the book @('base.lisp'), to define a
  function (as an ACL2 object) with domain the set @('(omega)') of natural
- numbers, which maps each natural number @('x') to the value @('(v-n x)'),
+ numbers, which maps each natural number @('x') to the value @('(v-map x)'),
  as described further below.</p>
 
  @({
- (zfn v                           ; name
-      ()                          ; args
-      x                           ; x
-      y                           ; y
-      (omega)                     ; bound
-      (equal (equal y (v-n x)) t) ; u
+ (zfn v                             ; name
+      ()                            ; args
+      x                             ; x
+      y                             ; y
+      (omega)                       ; bound
+      (equal (equal y (v-map x)) t) ; u
       )
  })
 
- <p>The nature of @('v-n') isn't important here, but for those interested, we
- note that for a natural number @('n'), @('(v-n n)') is the result of iterating
- the powerset operation @('n') times on the empty set, @('0').  The definition
- of @('v-n') is a typical ACL2 recursive definition, which illustrates a cool
- benefit of combining ACL2 with ZF in this way: the richness of ZF is combined
- with ACL2 mechanization, including induction and recursion.</p>
+ <p>The nature of @('v-map') isn't important here, but for those interested, we
+ note that for a natural number @('n'), @('(v-map n)') is the result of
+ iterating the powerset operation @('n') times on the empty set, @('0').  The
+ definition of @('v-map') is a typical ACL2 recursive definition, which
+ illustrates a cool benefit of combining ACL2 with ZF in this way: the richness
+ of ZF is combined with ACL2 mechanization, including induction and
+ recursion.</p>
 
  @({
- (defun v-n (n)
+ (defun v-map (n)
    (declare (type (integer 0 *) n))
    (if (zp n)
        0
-     (powerset (v-n (1- n)))))
+     (powerset (v-map (1- n)))))
  })
 
  <p>Now that we have an ACL2 object, @('(v)'), that is a function mapping each
- natural number @('n') to @('(v-n n)'), we define the union of these @('(v-n
- n)') as follows.  See @('base.lisp') for the definition of the codomain (i.e.,
- image) of a function @('fn'), @('(codomain fn)').</p>
+ natural number @('n') to @('(v-map n)'), we define the union of these
+ @('(v-map n)') as follows.  See @('base.lisp') for the definition of the image
+ of a function @('fn'), @('(image fn)').</p>
 
  @({
  (defun v-omega nil
    (declare (xargs :guard t))
-   (union (codomain (v))))
+   (union (image (v))))
  })
 
  <p>Future work may introduce ordinal recursion to extend this sort of
@@ -522,8 +525,8 @@
 
  <p>Evaluation of the following macro creates a zero-ary function, @('zfib'),
  which agrees with @('fib') on the natural numbers.  The @(':dom') and
- @(':ran') arguments specify the natural numbers as the domain and range.  (For
- us, the <i>range</i> of a relation is any set that contains its codomain.)</p>
+ @(':ran') arguments specify the natural numbers as the domain and
+ codomain (i.e., range, i.e., a set containing the image).</p>
 
  @({
  (zify zfib fib :dom (omega) :ran (omega))
@@ -600,7 +603,7 @@
 
  ; A function from A to B is a set of ordered pairs <a,b> where a is in A
  ; and b is in B, hence a subset of A X B.  The domain is thus specified
- ; just below by the cartesian product of (acl2) with itself, where (acl2)
+ ; just below by the Cartesian product of (acl2) with itself, where (acl2)
  ; is the set of good ACL2 objects as described in the next section.
 
         :dom (prodn (acl2) (acl2))
@@ -723,7 +726,7 @@
 ; by Elliot Glazer, https://arxiv.org/abs/2312.11902.  But since our foundation
 ; is ZFC, that observation does not affect us; for ZFC, conservativity of
 ; global choice is proved in "Comparison of the axioms of local and universal
-; choice" by Urlich Felgner in Fundamenta Mathematicae (1971) Volume: 71,
+; choice" by Ulrich Felgner in Fundamenta Mathematicae (1971) Volume: 71,
 ; Issue: 1, page 43-62 (http://matwbn.icm.edu.pl/ksiazki/fm/fm71/fm7113.pdf).
 
   :parents (zfc)
@@ -824,7 +827,7 @@
  })
 
  <p>The @('encapsulate') event introducing @('zfc') exports many basic
- theorems.  Many of those are noted in the documentation topi, @(see zfc), but
+ theorems.  Many of those are noted in the documentation topic, @(see zfc), but
  not mentioned there are those exported theorems pertaining to the encoding of
  good ACL2 objects as sets.  A key property, alluded to above, is to interpret
  @('(cons x y)') as the set-theoretic ordered pair.  That is traditionally the
@@ -845,7 +848,7 @@
  <p>We encode the other atoms as sets of the form @('(zf::ztriple y z)') =
  @('{0,y,z}'), where @('y') is a positive natural number and @('z') is not a
  natural number &mdash; in fact @('z') will always be a cons.  Thus each such
- set is a three-element set, hence is not a cons.  It is also not not a natural
+ set is a three-element set, hence is not a cons.  It is also not a natural
  number (finite ordinal) since its element @('z') is not a natural number.  And
  finally, these are clearly distinct for different natural numbers @('y').  The
  interpretations are as follows, where @('make-listp0') creates a list

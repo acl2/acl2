@@ -38,7 +38,13 @@
      In some cases our abstract syntax may be broader than the concrete syntax,
      to keep the definition of the abstract syntax slightly simpler;
      the important thing is that all the concrete syntax
-     is representable in abstract syntax."))
+     is representable in abstract syntax.")
+   (xdoc::p
+    "We plan to formalize a syntax abstraction mapping
+     from the concrete syntax to the abstract syntax.
+     For the time being, our @(see parser) can be regarded as
+     proving a low-level version of that mapping,
+     since it generates abstract syntax directly."))
   :order-subtopics t
   :default-parent t)
 

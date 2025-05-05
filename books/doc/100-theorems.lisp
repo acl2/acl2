@@ -39,6 +39,8 @@
 (include-book "projects/schroeder-bernstein/schroeder-bernstein" :dir :system)
 (include-book "projects/linear/reduction" :dir :system)
 (include-book "workshops/2006/cowles-gamboa-euclid/Euclid/prime-fac" :dir :system)
+(include-book "projects/set-theory/cantor" :dir :system)
+(include-book "projects/set-theory/schroeder-bernstein" :dir :system)
 ;; (include-book "workshops/2018/kwan-greenstreet/cauchy-schwarz" :dir :system) ; needs ACL2r
 ;; (include-book "workshops/2020/kwan-peng-greenstreet/abstract-cs" :dir :system) ; needs ACL2r
 
@@ -231,6 +233,12 @@
 
      "<p>By Grant Jurgensen, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/schroeder-bernstein/schroeder-bernstein.lisp\">books/projects/schroeder-bernstein/schroeder-bernstein.lisp</a>.</p>"
 
+     "@(def zf::schroeder-bernstein)"
+
+     "<p>An alternate formulation in pure set theory by Matt Kaufmann, derived
+     from Grant Jurgensen's proof and statement, in <a
+     href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/schroeder-bernstein.lisp\">books/projects/set-theory/schroeder-bernstein.lisp</a>.</p>"
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
      ;; "<h3 id=\"26\">26. Leibniz's Series for Pi</h3>"
@@ -395,7 +403,17 @@
 
      ;; "<h3 id=\"61\">61. Theorem of Ceva</h3>"
      ;; "<h3 id=\"62\">62. Fair Games Theorem</h3>"
-     ;; "<h3 id=\"63\">63. Cantor's Theorem</h3>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     "<h3 id=\"63\">63. Cantor's Theorem</h3>"
+
+     "@(def zf::cantor)"
+
+     "<p>By Matt Kaufmann, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/set-theory/cantor.lisp\">books/projects/set-theory/cantor.lisp</a>.</p>"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"64\">64. L'Hopital's Rule</h3>"
      ;; "<h3 id=\"65\">65. Isosceles Triangle Theorem</h3>"
 

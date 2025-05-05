@@ -71,7 +71,7 @@
        ((when (equal cert.round 1)) t)
        (dag (validator-state->dag vstate))
        (all-previous-round-certs
-        (certificates-with-round (1- cert.round) dag))
+        (certs-with-round (1- cert.round) dag))
        (all-previous-round-authors
         (cert-set->author-set all-previous-round-certs))
        ((unless (set::subset cert.previous all-previous-round-authors)) nil))

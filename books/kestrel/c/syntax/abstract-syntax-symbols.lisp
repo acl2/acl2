@@ -12,7 +12,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; List of symbols that provide an API to the abstract syntax,
+; List of symbols that provide an API to
+; the abstract syntax and related concepts,
 ; importable in a package definition.
 ; The list does not contain all the symbols yet; it can be extended as needed.
 
@@ -52,10 +53,19 @@
 
     typequal/attribspec-list-listp
 
+    unopp
+    unop-case
+    unop-kind
+
+    binopp
+    binop-case
+    binop-kind
+
     exprp
     expr-fix
     expr-count
     expr-case
+    expr-ident
     make-expr-ident
     expr-ident->ident
     expr-const
@@ -80,7 +90,6 @@
     make-expr-offsetof
     make-expr-va-arg
     expr-extension
-    irr-expr
 
     expr-listp
     expr-list-fix
@@ -95,7 +104,6 @@
     const-expr-count
     const-expr
     const-expr->expr
-    irr-const-expr
 
     const-expr-optionp
     const-expr-option-fix
@@ -130,7 +138,6 @@
     type-spec-enum
     make-type-spec-typeof-expr
     make-type-spec-typeof-type
-    irr-type-spec
 
     type-spec-optionp
 
@@ -152,7 +159,6 @@
     align-spec-case
     align-spec-alignas-type
     align-spec-alignas-expr
-    irr-align-spec
 
     decl-specp
     decl-spec-fix
@@ -214,6 +220,7 @@
     dirdeclorp
     dirdeclor-fix
     dirdeclor-ident
+    dirdeclor-ident->ident
     dirdeclor-count
     dirdeclor-case
     dirdeclor-kind
@@ -225,6 +232,7 @@
     make-dirdeclor-array-star
     make-dirdeclor-function-params
     make-dirdeclor-function-names
+    dirdeclor-function-params->declor
     dirdeclor-function-params->params
     dirdeclor-function-names->names
 
@@ -233,7 +241,6 @@
     absdeclor-count
     absdeclor
     make-absdeclor
-    irr-absdeclor
 
     absdeclor-optionp
     absdeclor-option-fix
@@ -255,17 +262,16 @@
     dirabsdeclor-option-fix
     dirabsdeclor-option-count
     dirabsdeclor-option-case
-    irr-dirabsdeclor
 
-    paramdecl
-    paramdeclp
-    paramdecl-fix
-    paramdecl-count
-    make-paramdecl
+    param-declon
+    param-declonp
+    param-declon-fix
+    param-declon-count
+    make-param-declon
 
-    paramdecl-listp
-    paramdecl-list-fix
-    paramdecl-list-count
+    param-declon-listp
+    param-declon-list-fix
+    param-declon-list-count
 
     paramdeclorp
     paramdeclor-fix
@@ -274,7 +280,6 @@
     paramdeclor-declor
     paramdeclor-absdeclor
     paramdeclor-none
-    irr-paramdeclor
 
     tynamep
     tyname-fix
@@ -365,6 +370,7 @@
     stmt-case
     make-stmt-labeled
     stmt-compound
+    stmt-compound->items
     stmt-expr
     make-stmt-if
     make-stmt-ifelse
@@ -374,7 +380,6 @@
     make-stmt-for-expr
     make-stmt-for-decl
     stmt-return
-    irr-stmt
 
     block-itemp
     block-item-fix
@@ -382,7 +387,6 @@
     block-item-case
     block-item-decl
     block-item-stmt
-    irr-block-item
 
     block-item-listp
     block-item-list-fix
@@ -431,7 +435,23 @@
     fileset
     fileset->unwrap
 
-    ;; unambiguity predicates:
+    ;; irrelevants:
+
+    irr-expr
+    irr-const-expr
+    irr-type-spec
+    irr-align-spec
+    irr-absdeclor
+    irr-dirabsdeclor
+    irr-param-declon
+    irr-paramdeclor
+    irr-decl
+    irr-stmt
+    irr-block-item
+    irr-fundef
+    irr-transunit-ensemble
+
+    ;; unambiguity:
 
     expr-unambp
     expr-list-unambp
@@ -461,8 +481,8 @@
     absdeclor-option-unambp
     dirabsdeclor-unambp
     dirabsdeclor-option-unambp
-    paramdecl-unambp
-    paramdecl-list-unambp
+    param-declon-unambp
+    param-declon-list-unambp
     paramdeclor-unambp
     tyname-unambp
     strunispec-unambp
@@ -489,8 +509,62 @@
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
 
-    ;; validation information predicates:
+    ;; formalized:
+
+    expr-pure-formalp
+    stmt-formalp
+    block-item-formalp
+    block-item-list-formalp
+    fundef-formalp
+
+    ;; language mapping:
+
+    ldm-ident
+    ldm-binop
+    ldm-expr
+    ldm-stmt
+    ldm-block-item
+    ldm-block-item-list
+    ldm-param-declon-list
+    ldm-fundef
+
+    ;; validation information:
+
+    type-case
+    type-kind
+    type-sint
+
+    ident-type-map
+    ident-type-mapp
+    ident-type-map-fix
+
+    type-formalp
+    ldm-type
+    type-to-value-kind
+
+    iconst-info
+    coerce-iconst-info
+
+    var-info
+    var-infop
+    var-info-fix
+    coerce-var-info
+
+    unary-infop
+    coerce-unary-info
+
+    binary-infop
+    coerce-binary-info
+
+    expr-type
+    stmt-type
+    block-item-type
+    block-item-list-type
 
     transunit-ensemble-annop
+
+    ;; other operations:
+
+    expr-zerop
 
    ))

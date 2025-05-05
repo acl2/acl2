@@ -292,7 +292,8 @@
   (declare (xargs :guard (and (jvm::method-info-alistp method-info-alist)
                               (or (eq :auto methods-to-test)
                                   (string-listp methods-to-test)))
-                  :guard-hints (("Goal" :in-theory (enable jvm::method-info-alistp)))))
+                  :guard-hints (("Goal" :in-theory (enable jvm::method-info-alistp
+                                                           jvm::all-keys-bound-to-method-infosp)))))
   (if (endp method-info-alist)
       nil
     (let* ((entry (first method-info-alist))
@@ -379,10 +380,10 @@
           (er hard? 'convert-assert-branches-unguarded "Bad dag: ~x0." dag))
     (convert-assert-branches dag)))
 
-(defun assert-assumptions (class-name)
+(defund assert-assumptions (class-name)
   (declare (xargs :guard (jvm::class-namep class-name)))
   `( ;; assertion checking is on:
-    (equal 0
+    (equal '0
            (jvm::get-static-field ',class-name
                                   '("$assertionsDisabled" . :boolean)
                                   initial-static-field-map))
@@ -392,7 +393,11 @@
                                     initial-heapref-table)
                       '(:special-data . :class)
                       initial-heap)
-           "java.lang.Class")))
+           '"java.lang.Class")))
+
+(defthm pseudo-term-listp-of-assert-assumptions
+  (pseudo-term-listp (assert-assumptions class-name))
+  :hints (("Goal" :in-theory (enable assert-assumptions))))
 
 (defun method-should-failp (method-name methods-expected-to-fail)
   (declare (xargs :guard (and (stringp method-name)
@@ -419,10 +424,8 @@
                               (stringp root-of-class-hierarchy) ;a directory name
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              (or (booleanp prune-precise)
-                                  (natp prune-precise))
-                              (or (booleanp prune-approx)
-                                  (natp prune-approx))
+                              (prune-precise-optionp prune-precise)
+                              (prune-approx-optionp prune-approx)
                               (symbol-listp monitor))
                   :mode :program ;; for several reasons
                   ))
@@ -552,27 +555,25 @@
        (type-assumptions-for-fields (type-assumptions-for-get-field-nodes dag (top-nodenum dag) nil))
        ((mv result
             & ;info-acc
-            & ;actual-dag
-            & ;assumptions-given
             state)
         (apply-tactic-prover dag
-                             '(:rewrite :stp) ;todo: maybe prune? ;; tactics
                              (append param-var-assumptions
                                      type-assumptions-for-fields
                                      assumptions)
+                             nil ;interpreted-fns
+                             :bit ;type
+                             '(:rewrite :stp) ;todo: maybe prune? ;; tactics
+                             (append extra-rules
+                                     (set-difference-eq (formal-unit-testing-extra-simplification-rules)
+                                                        remove-rules))
                              nil ;simplify-assumptions
                              print
                              nil ;*default-stp-max-conflicts* ;max-conflicts ;a number of conflicts, or nil for no max
                              t   ;call-stp-when-pruning
                              t ; counterexamplep
                              t ; print counterexamples as signed
-                             (append extra-rules
-                                     (set-difference-eq (formal-unit-testing-extra-simplification-rules)
-                                                        remove-rules))
-                             nil ;interpreted-fns
                              nil  ;monitor
                              t ;normalize-xors (todo: try nil? or make an option?)
-                             :bit ;type
                              state))
        (- (cw ")~%"))
        ((when (eq *error* result)) (prog2$ (cw "An error occured when testing method ~x0.)~%" method-designator-string)
@@ -618,11 +619,9 @@
                    (or (eq :any methods-expected-to-fail)
                        (eq :auto methods-expected-to-fail)
                        (string-listp methods-expected-to-fail))
-                   (booleanp  error-on-unexpectedp)
-                   (or (booleanp prune-precise)
-                       (natp prune-precise))
-                   (or (booleanp prune-approx)
-                       (natp prune-approx)))
+                   (booleanp error-on-unexpectedp)
+                   (prune-precise-optionp prune-precise)
+                   (prune-approx-optionp prune-approx))
                   :stobjs state
                   :mode :program))
   (if (endp method-ids)
@@ -689,10 +688,8 @@
                                   (string-listp methods-expected-to-fail) ;these are just bare names, for now
                                   )
                               (booleanp error-on-unexpectedp)
-                              (or (booleanp prune-precise)
-                                  (natp prune-precise))
-                              (or (booleanp prune-approx)
-                                  (natp prune-approx)))))
+                              (prune-precise-optionp prune-precise)
+                              (prune-approx-optionp prune-approx))))
   (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
        ((when (not java-bootstrap-classes-root))
         (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")

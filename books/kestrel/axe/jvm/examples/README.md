@@ -19,7 +19,7 @@ The proofs in this directory need access to a specific old version of the Java
 libraries (specifically, the rt.jar file).  There is no need to install it or
 replace the version of Java on your system.
 
-To obtain it, go to:
+1. To obtain it, go to:
 
 https://www.oracle.com/java/technologies/javase/javase7-archive-downloads.html
 
@@ -36,18 +36,20 @@ and md5sum of jdk-7u80-linux-x64.tar.gz are:
 - 21e5e18c3511def01590994e926a4350c0509f01  jdk-7u80-linux-x64.tar.gz
 - 6152f8a7561acf795ca4701daa10a965  jdk-7u80-linux-x64.tar.gz
 
-Then, after ensuring that jdk-7u80-linux-x64.tar.gz is in this examples/ directory, do:
+2. Then, after ensuring that jdk-7u80-linux-x64.tar.gz is in this examples/ directory, do:
 
 tar xfz jdk-7u80-linux-x64.tar.gz
 
-This untarred files should include jdk1.7.0_80/jre/lib/rt.jar.  Unzip it like this:
+The untarred files should include jdk1.7.0_80/jre/lib/rt.jar .
+
+3. Then, unzip rt.jar like this:
 
 unzip ./jdk1.7.0_80/jre/lib/rt.jar -d ./jdk1.7.0_80/jre/lib/rt.jar.unzipped
 
-Then set the JAVA_BOOTSTRAP_CLASSES_ROOT environment variable to point
+4. Then, set the JAVA_BOOTSTRAP_CLASSES_ROOT environment variable to point
 to the unzipped directory.  For example, if you have ACL2_ROOT
 defined, you can do:
 
 export JAVA_BOOTSTRAP_CLASSES_ROOT=${ACL2_ROOT}/books/kestrel/axe/jvm/examples/jdk1.7.0_80/jre/lib/rt.jar.unzipped
 
-See also further setup instructions in crypto/README.md if you want to build those examples.
+5. See also further setup instructions in crypto/README.md if you want to build those examples.

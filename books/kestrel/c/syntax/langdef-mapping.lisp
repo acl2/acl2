@@ -1089,8 +1089,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-paramdecl ((paramdecl paramdeclp))
-  :guard (paramdecl-unambp paramdecl)
+(define ldm-param-declon ((paramdecl param-declonp))
+  :guard (param-declon-unambp paramdecl)
   :returns (mv erp (paramdecl1 c::param-declonp))
   :short "Map a parameter declaration to
           a parameter declaration in the language definition."
@@ -1104,13 +1104,13 @@
   (b* (((reterr) (c::param-declon (c::tyspecseq-void)
                                   (c::obj-declor-ident
                                    (c::ident "irrelevant"))))
-       (declspecs (paramdecl->spec paramdecl))
-       (declor (paramdecl->decl paramdecl))
+       (declspecs (param-declon->specs paramdecl))
+       (declor (param-declon->declor paramdecl))
        ((mv okp tyspecs) (check-decl-spec-list-all-typespec declspecs))
        ((unless okp)
         (reterr (msg "Unsupported declaration specifier list ~
                       in parameter declaration ~x0."
-                     (paramdecl-fix paramdecl))))
+                     (param-declon-fix paramdecl))))
        ((erp tyspecseq) (ldm-type-spec-list tyspecs))
        ((erp objdeclor) (ldm-paramdeclor declor)))
     (retok (c::make-param-declon :tyspec tyspecseq :declor objdeclor)))
@@ -1118,31 +1118,31 @@
 
   ///
 
-  (defret ldm-paramdecl-ok-when-paramdecl-formalp
+  (defret ldm-param-declon-ok-when-param-declon-formalp
     (not erp)
-    :hyp (paramdecl-formalp paramdecl)
-    :hints (("Goal" :in-theory (enable paramdecl-formalp)))))
+    :hyp (param-declon-formalp paramdecl)
+    :hints (("Goal" :in-theory (enable param-declon-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-paramdecl-list ((paramdecls paramdecl-listp))
-  :guard (paramdecl-list-unambp paramdecls)
+(define ldm-param-declon-list ((paramdecls param-declon-listp))
+  :guard (param-declon-list-unambp paramdecls)
   :returns (mv erp (paramdecls1 c::param-declon-listp))
   :short "Map a list of parameter declarations to
           a list of parameter declarations in the language definition."
   (b* (((reterr) nil)
        ((when (endp paramdecls)) (retok nil))
-       ((erp paramdecl1) (ldm-paramdecl (car paramdecls)))
-       ((erp paramdecls1) (ldm-paramdecl-list (cdr paramdecls))))
+       ((erp paramdecl1) (ldm-param-declon (car paramdecls)))
+       ((erp paramdecls1) (ldm-param-declon-list (cdr paramdecls))))
     (retok (cons paramdecl1 paramdecls1)))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-paramdecl-list-ok-when-paramdecl-list-formalp
+  (defret ldm-param-declon-list-ok-when-param-declon-list-formalp
     (not erp)
-    :hyp (paramdecl-list-formalp paramdecls)
-    :hints (("Goal" :in-theory (enable paramdecl-list-formalp)))))
+    :hyp (param-declon-list-formalp paramdecls)
+    :hints (("Goal" :in-theory (enable param-declon-list-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1184,7 +1184,7 @@
                      (dirdeclor-fix dirdeclor))))
        (ident (dirdeclor-ident->ident inner-dirdeclor))
        ((erp ident1) (ldm-ident ident))
-       ((erp params1) (ldm-paramdecl-list params)))
+       ((erp params1) (ldm-param-declon-list params)))
     (retok (c::make-fun-declor-base :name ident1 :params params1)))
   :hooks (:fix)
 

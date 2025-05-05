@@ -22,6 +22,7 @@
 (include-book "equality-pairs")
 ;(include-book "equality-assumptions")
 (include-book "refined-assumption-alists")
+(include-book "refined-assumption-alists3")
 (include-book "result-array-stobj")
 (include-book "equivalent-dags")
 (include-book "prover")

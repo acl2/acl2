@@ -20,6 +20,7 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/firstn" :dir :system))
 
 (defund bv-array-clear (element-size len index data)
   (declare (xargs :guard (and (natp len)

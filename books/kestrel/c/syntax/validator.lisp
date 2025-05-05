@@ -1276,28 +1276,23 @@
      an lvalue as left operand [C17:6.5.16/2],
      but currently we do not check that.
      In our currently approximate type system,
-     the requirements in [C17:6.5.16.1/1] reduce to the two operands having
-     both arithmetic types,
-     or both the structure type,
-     or both the union type,
-     or both pointer types,
-     or one pointer type and one integer type.
-     We do not perform array-to-pointer or function-to-pointer conversion
+     the requirements in [C17:6.5.16.1/1] reduce to the following four cases.")
+   (xdoc::ol
+    (xdoc::li
+     "Both operands have arithmetic types.")
+    (xdoc::li
+     "The left operand has a structure or union type, and the two operand types
+      are compatible.")
+    (xdoc::li
+     "The left operand has the pointer type and the right operand is either a
+      pointer or a null pointer constant (approximated as anything of an
+      integer type).")
+    (xdoc::li
+     "The left operand has the boolean type and the right operand has the
+      pointer type."))
+   (xdoc::p
+    "We do not perform array-to-pointer or function-to-pointer conversion
      on the left operand, because the result would not be an lvalue.
-     In order to allow a pointer type on the left
-     and a null pointer constant [C17:6.3.2.3/3] without @('void *') cast
-     on the right,
-     since we do not have code to recognize such null pointer constants yet,
-     we allow any integer expressions on the right
-     when the expression on the left has pointer type.
-     We also allow the left operand to be boolean
-     and the right operand to be a pointer;
-     although [C17:6.5.9/2] does not mention that,
-     we found it accepted by practical compiler with a strict C17 option,
-     and [C17:6.3.1.2/1] mentions a conversion
-     from scalars (which includes pointer) to booleans,
-     although it does not say that it happens
-     (it says ``When any scalar valu is converted to @('_Bool'), ...'').
      The type of the result is the type of the left operand [C17:6.5.16/3].")
    (xdoc::p
     "The @('*=') and @('/=') operators require arithmetic operands
@@ -1405,15 +1400,14 @@
                  (type2 (type-fpconvert (type-apconvert type-arg2)))
                  ((unless (or (and (type-arithmeticp type1)
                                    (type-arithmeticp type2))
-                              (and (type-case type1 :struct)
-                                   (type-case type2 :struct))
-                              (and (type-case type1 :union)
-                                   (type-case type2 :union))
-                              (and (type-case type1 :bool)
-                                   (type-case type2 :pointer))
+                              (and (or (type-case type1 :struct)
+                                       (type-case type1 :union))
+                                   (type-compatiblep type1 type2))
                               (and (type-case type1 :pointer)
                                    (or (type-case type2 :pointer)
-                                       (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))))
+                                       (expr-null-pointer-constp (expr-binary->arg2 expr) type2)))
+                              (and (type-case type1 :bool)
+                                   (type-case type2 :pointer))))
                   (reterr msg)))
               (retok (type-fix type-arg1))))
       ((:asg-mul :asg-div)
@@ -1529,17 +1523,14 @@
      In our currently approximate type system,
      the other two operands must have
      both arithmetic type,
-     or both the structure type,
+     or both the same structure type,
      or both the union type,
      or both the void type,
      or both the pointer type,
-     or one pointer type and one integer type
+     or one pointer type and the other operand a null pointer constant
      [C17:6.5.15/3].
-     The latter is more than [C17:6.5.15/3] allows,
-     but serves to accommodate the case of a pointer and
-     a null pointer constants [C17:6.3.2.3/3] without the @('void *') cast;
-     since we do not have code to recognize such null pointer constants yet,
-     for now we accept all integer expressions there.
+     Currently, null pointer constants [C17:6.3.2.3/3] are approximated as any
+     expression with an integer type.
      The type of the result is
      the one from the usual arithmetic converions
      in the first case,
@@ -1564,7 +1555,11 @@
         (retok (type-uaconvert type2 type3 ienv)))
        ((when (and (type-case type2 :struct)
                    (type-case type3 :struct)))
-        (retok (type-struct)))
+        (if (type-equiv type2 type3)
+            (retok type2)
+          (reterr (msg "Struct types ~x0 and ~x1 are incompatible."
+                       type2
+                       type3))))
        ((when (and (type-case type2 :union)
                    (type-case type3 :union)))
         (retok (type-union)))
@@ -2672,9 +2667,10 @@
                  (retok (type-spec-atomic new-type) type nil types table))
        :struct (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                     ((erp new-spec types table)
-                     (valid-strunispec tyspec.spec table ienv)))
+                     (valid-strunispec tyspec.spec table ienv))
+                    ((strunispec tyspec.spec) tyspec.spec))
                  (retok (type-spec-struct new-spec)
-                        (type-struct)
+                        (type-struct tyspec.spec.name)
                         nil
                         types
                         table))
@@ -2759,7 +2755,7 @@
                           (reterr msg-bad-preceding))
        :struct-empty (if (endp tyspecs)
                          (retok (type-spec-struct-empty tyspec.name?)
-                                (type-struct)
+                                (type-struct tyspec.name?)
                                 nil
                                 nil
                                 same-table)
@@ -3209,7 +3205,7 @@
       "If the target type is the structure or union type,
        the initializer is a single expression,
        and the object has automatic storage duration,
-       that expression must also have the structure or union type
+       that expression must also have a compatible structure or union type
        [C17:6.7.9/13].")
      (xdoc::p
       "If the target type is an array of characters (of various types),
@@ -3906,11 +3902,11 @@
             (table (valid-push-scope table))
             ((erp new-params more-types table)
              (if (equal dirdeclor.params
-                        (list (make-paramdecl
-                               :spec (list (decl-spec-typespec (type-spec-void)))
-                               :decl (paramdeclor-none))))
+                        (list (make-param-declon
+                               :specs (list (decl-spec-typespec (type-spec-void)))
+                               :declor (paramdeclor-none))))
                  (retok dirdeclor.params nil table)
-               (valid-paramdecl-list
+               (valid-param-declon-list
                 dirdeclor.params fundef-params-p table ienv)))
             (table (if fundef-params-p
                        table
@@ -4143,11 +4139,11 @@
             (table (valid-push-scope table))
             ((erp new-params more-types table)
              (if (equal dirabsdeclor.params
-                        (list (make-paramdecl
-                               :spec (list (decl-spec-typespec (type-spec-void)))
-                               :decl (paramdeclor-none))))
+                        (list (make-param-declon
+                               :specs (list (decl-spec-typespec (type-spec-void)))
+                               :declor (paramdeclor-none))))
                  (retok dirabsdeclor.params nil table)
-               (valid-paramdecl-list dirabsdeclor.params nil table ienv)))
+               (valid-param-declon-list dirabsdeclor.params nil table ienv)))
             (table (valid-pop-scope table)))
          (retok (make-dirabsdeclor-function :declor? new-declor?
                                             :params new-params
@@ -4189,13 +4185,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-paramdecl ((paramdecl paramdeclp)
-                           (fundef-params-p booleanp)
-                           (table valid-tablep)
-                           (ienv ienvp))
-    :guard (paramdecl-unambp paramdecl)
+  (define valid-param-declon ((paramdecl param-declonp)
+                              (fundef-params-p booleanp)
+                              (table valid-tablep)
+                              (ienv ienvp))
+    :guard (param-declon-unambp paramdecl)
     :returns (mv erp
-                 (new-paramdecl paramdeclp)
+                 (new-paramdecl param-declonp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4226,23 +4222,23 @@
        Parameters of function declarations have no linkage [C17:6.2.2/6].
        Since storage is allocated for them when the function is called,
        they are considered defined [C17:6.7/5]."))
-    (b* (((reterr) (irr-paramdecl) nil (irr-valid-table))
-         ((paramdecl paramdecl) paramdecl)
-         ((erp new-spec type storspecs types table)
-          (valid-decl-spec-list paramdecl.spec nil nil nil table ienv))
+    (b* (((reterr) (irr-param-declon) nil (irr-valid-table))
+         ((param-declon paramdecl) paramdecl)
+         ((erp new-specs type storspecs types table)
+          (valid-decl-spec-list paramdecl.specs nil nil nil table ienv))
          ((unless (or (endp storspecs)
                       (stor-spec-list-register-p storspecs)))
           (reterr (msg "The parameter declaration ~x0 ~
                         has storage class specifiers ~x1."
-                       (paramdecl-fix paramdecl)
+                       (param-declon-fix paramdecl)
                        (stor-spec-list-fix storspecs))))
          ((erp new-decl type ident? more-types table)
-          (valid-paramdeclor paramdecl.decl type table ienv))
+          (valid-paramdeclor paramdecl.declor type table ienv))
          ((when (and fundef-params-p
                      (not ident?)))
           (reterr (msg "The parameter declaration ~x0 ~
                         is for a function definition but has no identifier."
-                       (paramdecl-fix paramdecl))))
+                       (param-declon-fix paramdecl))))
          (type (if (type-case type :array)
                    (type-pointer)
                  type))
@@ -4250,7 +4246,7 @@
                    (type-pointer)
                  type))
          ((when (not ident?))
-          (retok (make-paramdecl :spec new-spec :decl new-decl)
+          (retok (make-param-declon :specs new-specs :declor new-decl)
                  (set::union types more-types)
                  table))
          (ord-info (make-valid-ord-info-objfun
@@ -4262,22 +4258,22 @@
           (reterr (msg "The parameter declared in ~x0 ~
                         in already declared in the current scope ~
                         with associated information ~x1."
-                       (paramdecl-fix paramdecl) info?)))
+                       (param-declon-fix paramdecl) info?)))
          (table (valid-add-ord ident? ord-info table)))
-      (retok (make-paramdecl :spec new-spec :decl new-decl)
+      (retok (make-param-declon :specs new-specs :declor new-decl)
              (set::union types more-types)
              table))
-    :measure (paramdecl-count paramdecl))
+    :measure (param-declon-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-paramdecl-list ((paramdecls paramdecl-listp)
-                                (fundef-params-p booleanp)
-                                (table valid-tablep)
-                                (ienv ienvp))
-    :guard (paramdecl-list-unambp paramdecls)
+  (define valid-param-declon-list ((paramdecls param-declon-listp)
+                                   (fundef-params-p booleanp)
+                                   (table valid-tablep)
+                                   (ienv ienvp))
+    :guard (param-declon-list-unambp paramdecls)
     :returns (mv erp
-                 (new-paramdecls paramdecl-listp)
+                 (new-paramdecls param-declon-listp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4291,13 +4287,13 @@
     (b* (((reterr) nil nil (irr-valid-table))
          ((when (endp paramdecls)) (retok nil nil (valid-table-fix table)))
          ((erp new-paramdecl types table)
-          (valid-paramdecl (car paramdecls) fundef-params-p table ienv))
+          (valid-param-declon (car paramdecls) fundef-params-p table ienv))
          ((erp new-paramdecls more-types table)
-          (valid-paramdecl-list (cdr paramdecls) fundef-params-p table ienv)))
+          (valid-param-declon-list (cdr paramdecls) fundef-params-p table ienv)))
       (retok (cons new-paramdecl new-paramdecls)
              (set::union types more-types)
              table))
-    :measure (paramdecl-list-count paramdecls))
+    :measure (param-declon-list-count paramdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5678,16 +5674,16 @@
                (dirabsdeclor-option-unambp new-dirabsdeclor?))
       :hyp (dirabsdeclor-option-unambp dirabsdeclor?)
       :fn valid-dirabsdeclor-option)
-    (defret paramdecl-unambp-of-valid-paramdecl
+    (defret param-declon-unambp-of-valid-param-declon
       (implies (not erp)
-               (paramdecl-unambp new-paramdecl))
-      :hyp (paramdecl-unambp paramdecl)
-      :fn valid-paramdecl)
-    (defret paramdecl-list-unambp-of-valid-paramdecl-list
+               (param-declon-unambp new-paramdecl))
+      :hyp (param-declon-unambp paramdecl)
+      :fn valid-param-declon)
+    (defret param-declon-list-unambp-of-valid-param-declon-list
       (implies (not erp)
-               (paramdecl-list-unambp new-paramdecls))
-      :hyp (paramdecl-list-unambp paramdecls)
-      :fn valid-paramdecl-list)
+               (param-declon-list-unambp new-paramdecls))
+      :hyp (param-declon-list-unambp paramdecls)
+      :fn valid-param-declon-list)
     (defret paramdeclor-unambp-of-valid-paramdeclor
       (implies (not erp)
                (paramdeclor-unambp new-paramdeclor))

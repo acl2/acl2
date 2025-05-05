@@ -99,7 +99,23 @@
      we form a block, and we add it to the blockchain.
      The round of the block is the one of the anchor.
      We also update the set of committed certificates,
-     and return it along with the blockchain."))
+     and return it along with the blockchain.")
+   (xdoc::p
+    "We show that if the initial blockchain has
+     strictly increasing rounds (right to left),
+     and the anchors have even, strictly increasing rounds (right to left),
+     and the newest block of the original blockchain
+     has a round below the last anchor in the list
+     (unless the original blockchain is empty),
+     then the new blockchain has strictly increasing rounds as well.
+     This theorem expresses an important property,
+     which serves to show the preservation of
+     the invariant that blockchains always have strictly increasing rounds.
+     Note that the hypothesis about
+     the @(tsee car) of @(tsee last) having round above
+     the newest block of the original blockchain
+     matches a property we proved of @(tsee collect-anchors),
+     i.e. @('collect-anchors-above-last-committed-round')."))
   (b* (((when (endp anchors))
         (mv (block-list-fix blockchain)
             (certificate-set-fix committed-certs)))
@@ -126,6 +142,17 @@
     :hints (("Goal" :induct t)))
   (in-theory (disable consp-of-extend-blockchain))
 
+  (defruled extend-blockchain-as-append
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (equal new-blockchain
+             (append (take (- (len new-blockchain)
+                              (len blockchain))
+                           new-blockchain)
+                     (block-list-fix blockchain))))
+    :induct t
+    :enable (len fix))
+
   (defret blocks-last-round-of-extend-blockchain
     (equal (blocks-last-round new-blockchain)
            (certificate->round (car anchors)))
@@ -148,4 +175,25 @@
                                 blocks-last-round
                                 cert-list-orderedp
                                 last))))
-  (in-theory (disable blocks-orderedp-of-extend-blockchain)))
+  (in-theory (disable blocks-orderedp-of-extend-blockchain))
+
+  (defruled active-committee-at-round-of-extend-blockchain-no-change
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (implies (and (block-listp blockchain)
+                    (blocks-orderedp new-blockchain)
+                    (active-committee-at-round round blockchain))
+               (equal (active-committee-at-round round new-blockchain)
+                      (active-committee-at-round round blockchain))))
+    :disable extend-blockchain
+    :use (extend-blockchain-as-append
+          (:instance active-committee-at-round-of-append-no-change
+                     (blocks1 (b* (((mv new-blockchain &)
+                                    (extend-blockchain anchors
+                                                       dag
+                                                       blockchain
+                                                       committed-certs)))
+                                (take (- (len new-blockchain)
+                                         (len blockchain))
+                                      new-blockchain)))
+                     (blocks blockchain)))))

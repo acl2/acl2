@@ -38,39 +38,55 @@ Extended Abstract: Partial-encapsulate and Its Support for Floating-point Operat
 Ankit Kumar and Panagiotis Manolios
 A Formalization of the Correctness of the Floodsub Protocol
 
+kumar-manolios
+
 ------------------------------
 
 Carl Kwan
 RV32I in ACL2
+
+kwan/
 
 ------------------------------
 
 Mayank Manjrekar
 [Extended Abstract] On Automating Proofs of Multiplier Adder Trees using the RTL Books
 
+manjrekar/
+
 ------------------------------
 
 Zeke Medley and Panagiotis Manolios
 Cellular Automata Surviving k Steps
+
+medley-manolios/
 
 ------------------------------
 
 David Russinoff
 A Formalization of Elementary Linear Algebra: Part I
 
+[books]/projects/linear/
+
 ------------------------------
 
 David Russinoff
 A Formalization of Elementary Linear Algebra: Part II
+
+[books]/projects/linear/
 
 ------------------------------
 
 Andrew T. Walter and Panagiotis Manolios
 An ACL2s Interface to Z3
 
+walter-manolios/
+
 ------------------------------
 
 Samuel Xifaras, Panagiotis Manolios, Andrew Walter and William Robertson
 An Enumerative Embedding of the Python Type System into ACL2s
+
+[books]/projects/python/embedding/
 
 ------------------------------
