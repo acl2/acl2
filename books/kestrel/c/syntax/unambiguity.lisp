@@ -545,7 +545,7 @@
   (defrule dirdeclor-unambp-of-dirdeclor-function-params
     (equal (dirdeclor-unambp (dirdeclor-function-params decl params ellipses))
            (and (dirdeclor-unambp decl)
-                (paramdecl-list-unambp params)))
+                (param-declon-list-unambp params)))
     :expand (dirdeclor-unambp (dirdeclor-function-params decl params ellipses)))
 
   (defrule dirdeclor-unambp-of-dirdeclor-function-names
@@ -599,14 +599,14 @@
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-function
     (equal (dirabsdeclor-unambp (dirabsdeclor-function declor? params ellipses))
            (and (dirabsdeclor-option-unambp declor?)
-                (paramdecl-list-unambp params)))
+                (param-declon-list-unambp params)))
     :expand (dirabsdeclor-unambp (dirabsdeclor-function declor? params ellipses)))
 
-  (defrule paramdecl-unambp-of-paramdecl
-    (equal (paramdecl-unambp (paramdecl specs decl))
+  (defrule param-declon-unambp-of-param-declon
+    (equal (param-declon-unambp (param-declon specs decl))
            (and (decl-spec-list-unambp specs)
                 (paramdeclor-unambp decl)))
-    :expand (paramdecl-unambp (paramdecl specs decl)))
+    :expand (param-declon-unambp (param-declon specs decl)))
 
   (defrule paramdeclor-unambp-of-paramdeclor-declor
     (equal (paramdeclor-unambp (paramdeclor-declor declor))
@@ -1235,10 +1235,10 @@
              (dirdeclor-unambp (dirdeclor-function-params->declor dirdeclor)))
     :expand (dirdeclor-unambp dirdeclor))
 
-  (defrule paramdecl-list-unambp-of-dirdeclor-function-params->params
+  (defrule param-declon-list-unambp-of-dirdeclor-function-params->params
     (implies (and (dirdeclor-unambp dirdeclor)
                   (dirdeclor-case dirdeclor :function-params))
-             (paramdecl-list-unambp
+             (param-declon-list-unambp
               (dirdeclor-function-params->params dirdeclor)))
     :expand (dirdeclor-unambp dirdeclor))
 
@@ -1312,22 +1312,22 @@
               (dirabsdeclor-function->declor? dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
-  (defrule paramdecl-list-unambp-of-dirabsdeclor-function->params
+  (defrule param-declon-list-unambp-of-dirabsdeclor-function->params
     (implies (and (dirabsdeclor-unambp dirabsdeclor)
                   (dirabsdeclor-case dirabsdeclor :function))
-             (paramdecl-list-unambp
+             (param-declon-list-unambp
               (dirabsdeclor-function->params dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
-  (defrule decl-spec-list-unambp-of-paramdecl->specs
-    (implies (paramdecl-unambp paramdecl)
-             (decl-spec-list-unambp (paramdecl->specs paramdecl)))
-    :expand (paramdecl-unambp paramdecl))
+  (defrule decl-spec-list-unambp-of-param-declon->specs
+    (implies (param-declon-unambp param)
+             (decl-spec-list-unambp (param-declon->specs param)))
+    :expand (param-declon-unambp param))
 
-  (defrule paramdeclor-unambp-of-paramdecl->decl
-    (implies (paramdecl-unambp paramdecl)
-             (paramdeclor-unambp (paramdecl->decl paramdecl)))
-    :expand (paramdecl-unambp paramdecl))
+  (defrule paramdeclor-unambp-of-param-declon->decl
+    (implies (param-declon-unambp param)
+             (paramdeclor-unambp (param-declon->decl param)))
+    :expand (param-declon-unambp param))
 
   (defrule declor-unambp-of-paramdeclor-declor->unwrap
     (implies (and (paramdeclor-unambp paramdeclor)

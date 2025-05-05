@@ -923,7 +923,7 @@
 
      not-bvlt-of-max-arg2-constant-version
      bvlt-of-max-when-bvlt-constant-version
-     bvlt-of-max-arg3-constant-version-axe ; has a rewrite-objective
+     ;bvlt-of-max-arg3-constant-version-axe ; has a rewrite-objective
      bvlt-of-max-minus-1-arg2-constant-version
 
      not-equal-max-int-when-<=      ;new, rename

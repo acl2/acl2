@@ -1001,7 +1001,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-params-to-names ((params paramdecl-listp)
+(define dimb-params-to-names ((params param-declon-listp)
                               (fundefp booleanp)
                               (table dimb-tablep))
   :returns (mv (yes/no booleanp) (names ident-listp))
@@ -1068,15 +1068,15 @@
   :hooks (:fix)
 
   :prepwork
-  ((define dimb-params-to-names-loop ((params paramdecl-listp)
+  ((define dimb-params-to-names-loop ((params param-declon-listp)
                                       (table dimb-tablep))
      :returns (mv (yes/no booleanp) (names ident-listp))
      :parents nil
      (b* (((when (endp params)) (mv t nil))
           (param (car params))
-          ((unless (paramdeclor-case (paramdecl->decl param) :none))
+          ((unless (paramdeclor-case (param-declon->decl param) :none))
            (mv nil nil))
-          (declspecs (paramdecl->specs param))
+          (declspecs (param-declon->specs param))
           ((unless (and (consp declspecs) (endp (cdr declspecs))))
            (mv nil nil))
           (declspec (car declspecs))
@@ -2053,7 +2053,7 @@
                       table)))
             (table (dimb-push-scope table))
             ((erp new-params table)
-             (dimb-paramdecl-list dirdeclor.params table))
+             (dimb-param-declon-list dirdeclor.params table))
             (table (if fundefp
                        table
                      (dimb-pop-scope table))))
@@ -2171,7 +2171,7 @@
              (dimb-dirabsdeclor-option dirabsdeclor.declor? table))
             (table (dimb-push-scope table))
             ((erp new-params table)
-             (dimb-paramdecl-list dirabsdeclor.params table))
+             (dimb-param-declon-list dirabsdeclor.params table))
             (table (dimb-pop-scope table)))
          (retok (make-dirabsdeclor-function :declor? new-declor?
                                             :params new-params
@@ -2197,8 +2197,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-paramdecl ((paramdecl paramdeclp) (table dimb-tablep))
-    :returns (mv erp (new-paramdecl paramdeclp) (new-table dimb-tablep))
+  (define dimb-param-declon ((param param-declonp) (table dimb-tablep))
+    :returns (mv erp (new-param param-declonp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a parameter declaration."
     :long
@@ -2215,19 +2215,19 @@
        Then we call a separate function to disambiguate the parameter declarator
        (which is a notion in our abstract syntax, not in [C17]);
        see @(tsee paramdeclor))."))
-    (b* (((reterr) (irr-paramdecl) (irr-dimb-table))
-         ((paramdecl paramdecl) paramdecl)
+    (b* (((reterr) (irr-param-declon) (irr-dimb-table))
+         ((param-declon param) param)
          ((erp new-specs & table)
-          (dimb-decl-spec-list paramdecl.specs (dimb-kind-objfun) table))
+          (dimb-decl-spec-list param.specs (dimb-kind-objfun) table))
          ((erp new-decl table)
-          (dimb-paramdeclor paramdecl.decl table)))
-      (retok (make-paramdecl :specs new-specs :decl new-decl) table))
-    :measure (paramdecl-count paramdecl))
+          (dimb-paramdeclor param.decl table)))
+      (retok (make-param-declon :specs new-specs :decl new-decl) table))
+    :measure (param-declon-count param))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-paramdecl-list ((paramdecls paramdecl-listp) (table dimb-tablep))
-    :returns (mv erp (new-paramdecls paramdecl-listp) (new-table dimb-tablep))
+  (define dimb-param-declon-list ((params param-declon-listp) (table dimb-tablep))
+    :returns (mv erp (new-params param-declon-listp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a list of parameter declarations."
     :long
@@ -2235,13 +2235,13 @@
      (xdoc::p
       "We process each one, threading through the table."))
     (b* (((reterr) nil (irr-dimb-table))
-         ((when (endp paramdecls)) (retok nil (dimb-table-fix table)))
-         ((erp new-paramdecl table)
-          (dimb-paramdecl (car paramdecls) table))
-         ((erp new-paramdecls table)
-          (dimb-paramdecl-list (cdr paramdecls) table)))
-      (retok (cons new-paramdecl new-paramdecls) table))
-    :measure (paramdecl-list-count paramdecls))
+         ((when (endp params)) (retok nil (dimb-table-fix table)))
+         ((erp new-param table)
+          (dimb-param-declon (car params) table))
+         ((erp new-params table)
+          (dimb-param-declon-list (cdr params) table)))
+      (retok (cons new-param new-params) table))
+    :measure (param-declon-list-count params))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3159,14 +3159,14 @@
       (implies (not erp)
                (dirabsdeclor-option-unambp new-dirabsdeclor?))
       :fn dimb-dirabsdeclor-option)
-    (defret paramdecl-unambp-of-dimb-paramdecl
+    (defret param-declon-unambp-of-dimb-param-declon
       (implies (not erp)
-               (paramdecl-unambp new-paramdecl))
-      :fn dimb-paramdecl)
-    (defret paramdecl-list-unambp-of-dimb-paramdecl-list
+               (param-declon-unambp new-param))
+      :fn dimb-param-declon)
+    (defret param-declon-list-unambp-of-dimb-param-declon-list
       (implies (not erp)
-               (paramdecl-list-unambp new-paramdecls))
-      :fn dimb-paramdecl-list)
+               (param-declon-list-unambp new-params))
+      :fn dimb-param-declon-list)
     (defret paramdeclor-unambp-of-dimb-paramdeclor
       (implies (not erp)
                (paramdeclor-unambp new-paramdeclor))

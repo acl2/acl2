@@ -243,7 +243,7 @@
     (:linear c$::decl-spec-count-of-car)
     (:linear c$::decl-spec-list-count-of-cdr)
     (:linear c$::decl-spec-list-count-of-decl-decl->specs)
-    (:linear c$::decl-spec-list-count-of-paramdecl->specs)
+    (:linear c$::decl-spec-list-count-of-param-declon->specs)
     (:linear c$::designor-count-of-car)
     (:linear c$::designor-list-count-of-cdr)
     (:linear c$::designor-list-count-of-desiniter->designors)
@@ -328,11 +328,11 @@
     (:linear c$::member-designor-count-of-expr-offsetof->member)
     (:linear c$::member-designor-count-of-member-designor-dot->member)
     (:linear c$::member-designor-count-of-member-designor-sub->member)
-    (:linear c$::paramdecl-count-of-car)
-    (:linear c$::paramdecl-list-count-of-cdr)
-    (:linear c$::paramdecl-list-count-of-dirabsdeclor-function->params)
-    (:linear c$::paramdecl-list-count-of-dirdeclor-function-params->params)
-    (:linear c$::paramdeclor-count-of-paramdecl->decl)
+    (:linear c$::param-declon-count-of-car)
+    (:linear c$::param-declon-list-count-of-cdr)
+    (:linear c$::param-declon-list-count-of-dirabsdeclor-function->params)
+    (:linear c$::param-declon-list-count-of-dirdeclor-function-params->params)
+    (:linear c$::paramdeclor-count-of-param-declon->decl)
     (:linear c$::spec/qual-count-of-car)
     (:linear c$::spec/qual-list-count-of-cdr)
     (:linear c$::spec/qual-list-count-of-structdecl-member->specqual)
@@ -458,8 +458,8 @@
     (:type-prescription c$::return-type-of-initer-option-count.count)
     (:type-prescription c$::return-type-of-label-count.count)
     (:type-prescription c$::return-type-of-member-designor-count.count)
-    (:type-prescription c$::return-type-of-paramdecl-count.count)
-    (:type-prescription c$::return-type-of-paramdecl-list-count.count)
+    (:type-prescription c$::return-type-of-param-declon-count.count)
+    (:type-prescription c$::return-type-of-param-declon-list-count.count)
     (:type-prescription c$::return-type-of-paramdeclor-count.count)
     (:type-prescription c$::return-type-of-spec/qual-count.count)
     (:type-prescription c$::return-type-of-spec/qual-list-count.count)
@@ -525,9 +525,9 @@
     (:type-prescription initer-option-count)
     (:type-prescription initer-single)
     (:type-prescription initdeclor-count)
-    (:type-prescription paramdecl)
-    (:type-prescription paramdecl-count)
-    (:type-prescription paramdecl-list-count)
+    (:type-prescription param-declon)
+    (:type-prescription param-declon-count)
+    (:type-prescription param-declon-list-count)
     (:type-prescription paramdeclor-absdeclor)
     (:type-prescription paramdeclor-count)
     (:type-prescription paramdeclor-declor)
@@ -1200,7 +1200,7 @@
                     :qualspecs dirdeclor.qualspecs)
       :function-params (make-dirdeclor-function-params
                          :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
-                         :params (,(cdr (assoc-eq 'paramdecl-list names)) dirdeclor.params ,@extra-args-names)
+                         :params (,(cdr (assoc-eq 'param-declon-list names)) dirdeclor.params ,@extra-args-names)
                          :ellipsis dirdeclor.ellipsis)
       :function-names (make-dirdeclor-function-names
                         :declor (,(cdr (assoc-eq 'dirdeclor names)) dirdeclor.declor ,@extra-args-names)
@@ -1277,7 +1277,7 @@
                     (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names))
       :function (make-dirabsdeclor-function
                   :declor? (,(cdr (assoc-eq 'dirabsdeclor-option names)) dirabsdeclor.declor? ,@extra-args-names)
-                  :params (,(cdr (assoc-eq 'paramdecl-list names)) dirabsdeclor.params ,@extra-args-names)
+                  :params (,(cdr (assoc-eq 'param-declon-list names)) dirabsdeclor.params ,@extra-args-names)
                   :ellipsis dirabsdeclor.ellipsis))
    '(:returns (new-dirabsdeclor dirabsdeclorp)
      :measure (dirabsdeclor-count dirabsdeclor))))
@@ -1300,40 +1300,40 @@
    '(:returns (new-dirabsdeclor? dirabsdeclor-optionp)
      :measure (dirabsdeclor-option-count dirabsdeclor?))))
 
-(define deftrans-defn-paramdecl
+(define deftrans-defn-param-declon
   ((names alistp)
    (bodies alistp)
    (extra-args true-listp)
    (extra-args-names true-listp))
   (deftrans-defn
-   'paramdecl
+   'param-declon
    names
    bodies
-   '((paramdecl paramdeclp))
+   '((paramdecl param-declonp))
    extra-args
-   `(b* (((paramdecl paramdecl) paramdecl))
-      (make-paramdecl :specs (,(cdr (assoc-eq 'decl-spec-list names)) paramdecl.specs ,@extra-args-names)
+   `(b* (((param-declon paramdecl) paramdecl))
+      (make-param-declon :specs (,(cdr (assoc-eq 'decl-spec-list names)) paramdecl.specs ,@extra-args-names)
                       :decl (,(cdr (assoc-eq 'paramdeclor names)) paramdecl.decl ,@extra-args-names)))
-   '(:returns (new-paramdecl paramdeclp)
-     :measure (paramdecl-count paramdecl))))
+   '(:returns (new-paramdecl param-declonp)
+     :measure (param-declon-count paramdecl))))
 
-(define deftrans-defn-paramdecl-list
+(define deftrans-defn-param-declon-list
   ((names alistp)
    (bodies alistp)
    (extra-args true-listp)
    (extra-args-names true-listp))
   (deftrans-defn
-   'paramdecl-list
+   'param-declon-list
    names
    bodies
-   '((paramdecls paramdecl-listp))
+   '((paramdecls param-declon-listp))
    extra-args
    `(if (endp paramdecls)
         nil
-      (cons (,(cdr (assoc-eq 'paramdecl names)) (car paramdecls) ,@extra-args-names)
-            (,(cdr (assoc-eq 'paramdecl-list names)) (cdr paramdecls) ,@extra-args-names)))
-   '(:returns (new-paramdecls paramdecl-listp)
-     :measure (paramdecl-list-count paramdecls))))
+      (cons (,(cdr (assoc-eq 'param-declon names)) (car paramdecls) ,@extra-args-names)
+            (,(cdr (assoc-eq 'param-declon-list names)) (cdr paramdecls) ,@extra-args-names)))
+   '(:returns (new-paramdecls param-declon-listp)
+     :measure (param-declon-list-count paramdecls))))
 
 (define deftrans-defn-paramdeclor
   ((names alistp)
@@ -1849,8 +1849,8 @@
     absdeclor-option
     dirabsdeclor
     dirabsdeclor-option
-    paramdecl
-    paramdecl-list
+    param-declon
+    param-declon-list
     paramdeclor
     tyname
     strunispec
@@ -1953,8 +1953,8 @@
          ,(deftrans-defn-absdeclor-option    names bodies extra-args extra-args-names)
          ,(deftrans-defn-dirabsdeclor        names bodies extra-args extra-args-names)
          ,(deftrans-defn-dirabsdeclor-option names bodies extra-args extra-args-names)
-         ,(deftrans-defn-paramdecl           names bodies extra-args extra-args-names)
-         ,(deftrans-defn-paramdecl-list      names bodies extra-args extra-args-names)
+         ,(deftrans-defn-param-declon        names bodies extra-args extra-args-names)
+         ,(deftrans-defn-param-declon-list   names bodies extra-args extra-args-names)
          ,(deftrans-defn-paramdeclor         names bodies extra-args extra-args-names)
          ,(deftrans-defn-tyname              names bodies extra-args extra-args-names)
          ,(deftrans-defn-strunispec          names bodies extra-args extra-args-names)

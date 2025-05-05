@@ -1972,7 +1972,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ienv->char-size ((ienv ienvp))
-  :returns (bits posp)
+  :returns (size posp)
   :short "The ACL2 integer value of @('CHAR_BIT') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
@@ -1986,12 +1986,12 @@
   ///
 
   (defret ienv->char-size-type-prescription
-    (and (posp bits)
-         (> bits 1))
+    (and (posp size)
+         (> size 1))
     :rule-classes :type-prescription)
 
   (defret ienv->char-size-lower-bound
-    (>= bits 8)
+    (>= size 8)
     :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

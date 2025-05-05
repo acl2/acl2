@@ -447,7 +447,7 @@
      (b* (((mv free-vars0 bound-vars)
            (free-vars-dirdeclor dirdeclor.declor bound-vars))
           ((mv free-vars1 -)
-            (free-vars-paramdecl-list dirdeclor.params bound-vars)))
+            (free-vars-param-declon-list dirdeclor.params bound-vars)))
        (mv (union free-vars0 free-vars1)
            bound-vars))
      :function-names (free-vars-dirdeclor dirdeclor.declor bound-vars))
@@ -498,7 +498,7 @@
      :array-star (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
      :function
      (b* (((mv free-vars -)
-           (free-vars-paramdecl-list dirabsdeclor.params bound-vars)))
+           (free-vars-param-declon-list dirabsdeclor.params bound-vars)))
        (union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
               free-vars)))
     :measure (dirabsdeclor-count dirabsdeclor))
@@ -515,22 +515,22 @@
      :none nil)
     :measure (dirabsdeclor-option-count dirabsdeclor?))
 
-  (define free-vars-paramdecl
-    ((paramdecl paramdeclp)
+  (define free-vars-param-declon
+    ((paramdecl param-declonp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a parameter declaration."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
-    (b* (((paramdecl paramdecl) paramdecl)
+    (b* (((param-declon paramdecl) paramdecl)
          (free-vars0 (free-vars-decl-spec-list paramdecl.specs bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-paramdeclor paramdecl.decl bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (paramdecl-count paramdecl))
+    :measure (param-declon-count paramdecl))
 
-  (define free-vars-paramdecl-list
-    ((paramdecls paramdecl-listp)
+  (define free-vars-param-declon-list
+    ((paramdecls param-declon-listp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a list of parameter
             declarations."
@@ -539,12 +539,12 @@
     (b* (((when (endp paramdecls))
           (mv nil (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
-          (free-vars-paramdecl (first paramdecls) bound-vars))
+          (free-vars-param-declon (first paramdecls) bound-vars))
          ((mv free-vars1 bound-vars)
-          (free-vars-paramdecl-list (rest paramdecls) bound-vars)))
+          (free-vars-param-declon-list (rest paramdecls) bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
-    :measure (paramdecl-list-count paramdecls))
+    :measure (param-declon-list-count paramdecls))
 
   (define free-vars-paramdeclor
     ((paramdeclor paramdeclorp)
