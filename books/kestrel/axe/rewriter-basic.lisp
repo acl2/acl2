@@ -31,7 +31,9 @@
 (make-rewriter-simple basic
                       axe-evaluator-basic
                       basic
-                      basic)
+                      basic
+                      nil ; don't use SMT (but see rewriter-basic-smt.lisp)
+                      )
 
 ;dup
 (local

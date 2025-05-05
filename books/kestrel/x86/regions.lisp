@@ -13,7 +13,9 @@
 ;; See also the function SEPARATE, but this machinery is intended to be more amenable to SMT solving.
 
 ;(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; reduce?  and get rid of ttags
-(include-book "kestrel/bv/bvlt" :dir :system)
+(include-book "kestrel/bv/bvlt-def" :dir :system)
+(include-book "kestrel/bv/bvminus" :dir :system) ; todo: reduce
+(local (include-book "kestrel/bv/bvlt" :dir :system))
 
 ;; Defines what it means for AD to be in the region of size LEN starting at
 ;; START-AD.  Note that the region may wrap around the end of the address
@@ -283,24 +285,26 @@
            :in-theory (e/d (subregionp-spec)
                            (in-regionp-when-in-regionp-and-subregionp)))))
 
-(defthm subregionp-spec-same-ads-forward
-  (implies (and (unsigned-byte-p 48 len1)
-                (unsigned-byte-p 48 len2))
-           (implies (subregionp-spec len1 ad len2 ad)
-                    (<= len1 len2)))
-  :hints (("Goal" :use (:instance not-subregionp-spec-when-in-regionp-and-not-in-regionp
-                                  (ad (bvplus 48 ad len2))
-                                  (ad1 ad)
-                                  (ad2 ad))
-           :in-theory (e/d (in-regionp bvlt)
-                           (not-subregionp-spec-when-in-regionp-and-not-in-regionp)))))
+(local
+  (defthm subregionp-spec-same-ads-forward
+    (implies (and (unsigned-byte-p 48 len1)
+                  (unsigned-byte-p 48 len2))
+             (implies (subregionp-spec len1 ad len2 ad)
+                      (<= len1 len2)))
+    :hints (("Goal" :use (:instance not-subregionp-spec-when-in-regionp-and-not-in-regionp
+                                    (ad (bvplus 48 ad len2))
+                                    (ad1 ad)
+                                    (ad2 ad))
+             :in-theory (e/d (in-regionp bvlt)
+                             (not-subregionp-spec-when-in-regionp-and-not-in-regionp))))))
 
-(defthm subregionp-spec-same-ads-backward
-  (implies (and (unsigned-byte-p 48 len1)
-                (unsigned-byte-p 48 len2))
-           (implies (<= len1 len2)
-                    (subregionp-spec len1 ad len2 ad)))
-  :hints (("Goal" :in-theory (enable SUBREGIONP-SPEC))))
+(local
+  (defthm subregionp-spec-same-ads-backward
+    (implies (and (unsigned-byte-p 48 len1)
+                  (unsigned-byte-p 48 len2))
+             (implies (<= len1 len2)
+                      (subregionp-spec len1 ad len2 ad)))
+    :hints (("Goal" :in-theory (enable SUBREGIONP-SPEC)))))
 
 (defthm subregionp-spec-same-ads
   (implies (and (unsigned-byte-p 48 len1)

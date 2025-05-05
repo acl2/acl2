@@ -1134,6 +1134,23 @@
                            ))))
   :hints (("Goal" :in-theory (e/d (make-node-replacement-array-and-extend-dag) (symbol-listp)))))
 
+;; generalizes the bound
+(defthm make-node-replacement-array-and-extend-dag-return-type-gen
+  (implies (and (pseudo-term-listp assumptions)
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (symbol-listp known-booleans))
+           (mv-let (erp node-replacement-array node-replacement-count dag-array new-dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (make-node-replacement-array-and-extend-dag assumptions
+                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                         known-booleans)
+             (declare (ignore node-replacement-count dag-array dag-parent-array dag-constant-alist dag-variable-alist))
+             (implies (and (not erp)
+                           (natp bound)
+                           (<= new-dag-len bound))
+                      (bounded-node-replacement-arrayp 'node-replacement-array node-replacement-array bound))))
+  :hints (("Goal" :use make-node-replacement-array-and-extend-dag-return-type
+           :in-theory (disable make-node-replacement-array-and-extend-dag-return-type))))
+
 (defthm make-node-replacement-array-and-extend-dag-return-type-corollary
   (implies (and (pseudo-term-listp assumptions)
                 (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
