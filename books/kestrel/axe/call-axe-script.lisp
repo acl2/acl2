@@ -1,6 +1,6 @@
 ; A tool to call Axe-related scripts
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -77,3 +77,8 @@
   (equal (w (mv-nth 1 (call-axe-script script-name script-args state)))
          (w state))
   :hints (("Goal" :in-theory (e/d (call-axe-script) (w)))))
+
+(defthm state-p-of-mv-nth-1-of-call-axe-script
+  (implies (state-p state)
+           (state-p (mv-nth 1 (call-axe-script script-name script-args state))))
+  :hints (("Goal" :in-theory (e/d (call-axe-script) ()))))

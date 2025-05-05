@@ -76,3 +76,8 @@
 ;; of "free" is with respect to bindings done by relieving previous hypotheses
 ;; in the rule.
 (defun axe-binding-hyp (x) x)
+
+;; A wrapper indicating that an SMT solver should be used to try to resolve the hyp if rewriting can't.
+;; We leavie this enabled, so that it vanishes during proofs.
+;; TODO: Allow passing arguments, such as the timeout:
+(defun axe-smt (x) x)

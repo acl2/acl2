@@ -1,6 +1,6 @@
 ; Getting the time elapsed since some past time
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -35,4 +35,9 @@
 (defthm w-of-mv-nth-1-of-real-time-since
   (equal (w (mv-nth 1 (real-time-since past-time state)))
          (w state))
+  :hints (("Goal" :in-theory (e/d (real-time-since) (w)))))
+
+(defthm state-p-of-mv-nth-1-of-real-time-since
+  (implies (state-p state)
+           (state-p (mv-nth 1 (real-time-since past-time state))))
   :hints (("Goal" :in-theory (e/d (real-time-since) (w)))))
