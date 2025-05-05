@@ -833,3 +833,15 @@
            (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :use equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm read-of-write-irrel-bv-axe
+  (implies (and (axe-smt (bvle 48 n2 (bvminus 48 addr1 addr2)))
+                (axe-smt (bvle 48 n1 (bvminus 48 addr2 addr1)))
+                (unsigned-byte-p 48 n1)
+                (unsigned-byte-p 48 n2))
+           (equal (read n1 addr1 (write n2 addr2 val x86))
+                  (read n1 addr1 x86)))
+  :hints (("Goal" :use (:instance read-of-write-irrel-gen)
+           :in-theory (e/d (bvlt) (read-of-write-irrel-gen)))))
