@@ -750,6 +750,12 @@ bool TypingAction::VisitAssignment(Assignment *s) {
           .report();
       return error();
     }
+  } else if (auto ar = dynamic_cast<ArrayRef *>(s->lval)) {
+    if (!isa<const ArrayType *>(ar->array->get_type())) {
+      ar->set_type(new IntType(Location::dummy(),
+                               Integer::one_v(Location::dummy()),
+                               Boolean::false_v(Location::dummy())));
+    }
   }
 
   if (!strcmp(s->op, "set_slc")) {
