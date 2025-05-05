@@ -31,6 +31,7 @@
 ;; Makes assumptions to introduce a variable for each element of the array, from INDEX up to ELEMENT-COUNT - 1.
 ;; TODO: Support expressing bytes in terms of single bit-vars
 ;; TODO: Support expressing the whole array as a single value (a byte-list)
+;; todo: rename because this now also puts in non-null assumptions
 (defund var-intro-assumptions-for-array-input (index element-count bytes-per-element pointer-name var-name-base assumptions-acc vars-acc)
   (declare (xargs :guard (and (natp index)
                               (natp element-count)
@@ -44,16 +45,23 @@
                          (natp index))))
           (<= element-count index))
       (mv assumptions-acc vars-acc) ; will be reversed later
-    (let ((var (acl2::pack-in-package "X" var-name-base index)))
+    (let ((var (acl2::pack-in-package "X" var-name-base index))
+          (element-offset (* index bytes-per-element))
+          )
       (var-intro-assumptions-for-array-input (+ 1 index) element-count bytes-per-element pointer-name var-name-base
                                              (cons `(equal (read ,bytes-per-element
                                                                  ,(if (= 0 index)
                                                                       pointer-name ; special case (offset of 0)
-                                                                    `(+ ,(* index bytes-per-element) ,pointer-name) ; todo: option to use bvplus here?
+                                                                    `(+ ,element-offset ,pointer-name) ; todo: option to use bvplus here?
                                                                     )
                                                                  x86)
                                                            ,var)
-                                                   assumptions-acc)
+                                                   (cons (if (= 0 index)
+                                                             ;; or should the size here be 48?
+                                                             `(not (equal '0 (bvchop '64 ,pointer-name)))
+                                                           `(not (equal '0 (bvplus '64 ',element-offset ,pointer-name))) ; may get simplified later
+                                                           )
+                                                         assumptions-acc))
                                              (cons var vars-acc)))))
 
 (local
