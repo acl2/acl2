@@ -25,6 +25,7 @@
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (include-book "unify-tree-and-dag")
 (include-book "dag-array-printing")
+(include-book "dag-array-printing2") ; for print-dag-node-nicely
 (include-book "worklists")
 (include-book "merge-sort-less-than")
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
@@ -2311,35 +2312,51 @@
           (mv (erp-nil) :false state)))
        (nodenum darg) ; darg is a nodenum
        (- (and (print-level-at-least-tp print) (cw "(Attempting to resolve test with STP using ~x0 assumptions.~%" (len assumptions))))
+       (bothp nil) ; whether to always try both true and false ; set to t for debugging
        ;; TODO: Consider trying to be smart about whether to try the true proof or the false proof first (e.g., by running a test).
+       ;; Try to prove the test true:
        (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test true with STP:~%")))
        ((mv true-result state)
         (prove-implication-with-stp assumptions
                                     nodenum
                                     dag-array dag-len dag-parent-array
-                                    base-filename print max-conflicts
+                                    (concatenate 'string base-filename "-TRUE")
+                                    print max-conflicts
                                     nil      ; counterexamplep
                                     nil      ; print-cex-as-signedp
                                     state))
        ((when (eq *error* true-result))
         (prog2$ (er hard? 'try-to-resolve-darg-with-stp "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
-       ((when (eq *valid* true-result)) ;; STP proved the test
+       ;; early exit if (not bothp):
+       ((when (and (not bothp) (eq *valid* true-result))) ;; STP proved the test
         (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test true.))~%"))
                 (mv (erp-nil) :true state)))
        (- (and (print-level-at-least-tp print) (cw "STP failed to prove the test true (~x0).)~%" true-result)))
+       ;; Try to prove the test false:
        (- (and (print-level-at-least-tp print) (cw "(Attempting to prove test false with STP:~%")))
        ((mv false-result state)
         (prove-implication-with-stp assumptions
                                     `(not ,nodenum)
                                     dag-array dag-len dag-parent-array
-                                    base-filename print max-conflicts
+                                    (concatenate 'string base-filename "-FALSE")
+                                    print max-conflicts
                                     nil      ;counterexamplep
                                     nil      ; print-cex-as-signedp
                                     state))
        ((when (eq *error* false-result))
         (prog2$ (er hard? 'try-to-resolve-darg-with-stp "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
+       (- (and (eq *valid* true-result)
+               (eq *valid* false-result)
+               (progn$ ;; todo: print using something like print-dag-array-node-and-supporters-lst but for PNNs
+                 (cw "Dag node:~%")
+                 (print-dag-node-nicely nodenum 'dag-array dag-array dag-len 200)
+                 (cw "Assumptions: ~X01." assumptions nil)
+                 (cw "WARNING: Test for ~x0 is both true and false!  Assumptions must contradict (see above)." nodenum))))
+       ((when (eq *valid* true-result)) ;; STP proved the test
+        (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test true.))~%"))
+                (mv (erp-nil) :true state)))
        ((when (eq *valid* false-result)) ;; STP proved the negation of the test
         (prog2$ (and (print-level-at-least-tp print) (cw "STP proved the test false (~x0).))~%" false-result))
                 (mv (erp-nil) :false state)))
