@@ -25,6 +25,7 @@
                           lifix
                           lnfix
                           logapp
+                          logbit
                           logext
                           loghead
                           nat
