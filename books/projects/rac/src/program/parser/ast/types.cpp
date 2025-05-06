@@ -103,10 +103,7 @@ Sexpression *PrimType::cast(Expression *rval) const {
   // If the destination is a bool, we should ensure that the result if
   // always_cast zero or one. TODO
   if (rank_ == PrimType::Rank::Bool) {
-    return sexpr;
-    //  return new Plist(
-    //  { &s_if1, sexpr, new Plist({ &s_true }), new Plist({ &s_false })
-    //  });
+    return new Plist({ &s_logneq, sexpr, Integer::zero_v(rval->loc())->ACL2Expr() });
   }
 
   Location loc = get_original_location();

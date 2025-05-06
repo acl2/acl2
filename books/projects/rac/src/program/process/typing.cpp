@@ -243,7 +243,8 @@ bool TypingAction::VisitArrayRef(ArrayRef *e) {
     }
 
   } else {
-    e->set_type(boolType);
+    // AC register
+    e->set_type(new IntType(e->loc(), Integer::one_v(e->loc()), Boolean::false_v(e->loc())));
   }
   return true;
 }
