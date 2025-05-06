@@ -712,13 +712,14 @@
   (implies (and (axe-syntaxp (and (syntactic-call-of 'write x86 dag-array) ; avoid loops and undesired patterns
                                   (not (and (acl2::dargs-equalp n1 n2 dag-array)
                                             (acl2::dargs-equalp ad1 ad2 dag-array)))))
-                (integerp ad1)
+                ;(integerp ad1)
                 (unsigned-byte-p 48 n1)
                 ;(integerp ad2)
                 (unsigned-byte-p 48 n2))
            (equal (clear-extend n1 ad1 (write n2 ad2 val x86))
                   (clear-extend n1 ad1 (write n2 ad2 val (clear-extend n1 ad1 x86)))))
-  :hints (("Goal" :in-theory (enable clear-extend))))
+  :hints (("Goal" :cases ((integerp ad1)) ; todo: generalize write-of-write-of-write-same
+           :in-theory (enable clear-extend))))
 
 ;; We've found the write to be cleared
 (defthmd clear-extend-of-write-finish
@@ -729,13 +730,14 @@
   :hints (("Goal" :in-theory (enable clear-extend clear-retract))))
 
 (defthmd clear-extend-of-write-of-clear-retract
-  (implies (and (integerp ad1)
+  (implies (and; (integerp ad1)
                 (unsigned-byte-p 48 n1)
                 ;(integerp ad2)
                 (unsigned-byte-p 48 n2))
            (equal (clear-extend n1 ad1 (write n2 ad2 val (clear-retract n1 ad1 x86)))
                   (clear-retract n1 ad1 (write n2 ad2 val x86))))
-  :hints (("Goal" :in-theory (enable clear-retract clear-extend))))
+  :hints (("Goal" :cases ((integerp ad1))
+           :in-theory (enable clear-retract clear-extend))))
 
 (defthmd write-of-clear-retract ; add -same to name
   (implies (and ;(integerp ad)
@@ -836,7 +838,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm read-of-write-irrel-bv-axe
+(defthmd read-of-write-irrel-bv-axe
   (implies (and (axe-smt (bvle 48 n2 (bvminus 48 addr1 addr2)))
                 (axe-smt (bvle 48 n1 (bvminus 48 addr2 addr1)))
                 (unsigned-byte-p 48 n1)
@@ -845,3 +847,11 @@
                   (read n1 addr1 x86)))
   :hints (("Goal" :use (:instance read-of-write-irrel-gen)
            :in-theory (e/d (bvlt) (read-of-write-irrel-gen)))))
+
+(defthmd canonical-address-p-when-bvlt-of-bvplus-axe
+  (implies (and (signed-byte-p 64 x)
+                (axe-smt (bvlt 64 (bvplus 64 140737488355328 x) 281474976710656)))
+           (canonical-address-p x))
+  :hints (("Goal" :cases ((< x 0))
+           :in-theory (enable canonical-address-p bvlt signed-byte-p
+                              acl2::bvchop-when-negative-lemma))))
