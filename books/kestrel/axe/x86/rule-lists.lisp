@@ -410,7 +410,7 @@
 
     ;; Non-SMT rules:
     read-of-write-irrel
-    read-of-write-irrel2 ;; todo: rename to have separate in the name
+    read-of-write-when-separate ;; todo: rename to have separate in the name
 
     ;; SMT-amendable read-of-write rules:
     ;; read-of-write-when-disjoint-regionsp-gen
@@ -4695,7 +4695,7 @@
 ;; ;;             ;;read-when-equal-of-read
 ;; ;;             ;;read-when-equal-of-read-alt
 ;; ;;             ;read-when-program-at
-;; ;;             ;read-of-write-irrel2
+;; ;;             ;read-of-write-when-separate
 ;; ;;             ;read-of-write-irrel
 ;; ;; ;acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
 ;; ;; ;            read-byte-from-segment-when-code-segment-assumptions32
@@ -4733,7 +4733,7 @@
           '(x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
             x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
-            ;; READ-OF-WRITE-IRREL2
+            ;; READ-OF-WRITE-WHEN-SEPARATE
             )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5074,7 +5074,7 @@
      ;; mv-nth-1-of-rb-becomes-read
      ;mv-nth-1-of-wb-becomes-write-when-app-view
      read-of-set-flag ; drop
-     read-of-write-irrel2 ; drop
+     read-of-write-when-separate ; drop
      write-of-write-same ; drop
      ;; read-when-program-at-1-byte ; this is for resolving reads of the program.
      ;; read-when-program-at-4-bytes ; this is for resolving reads of the program.

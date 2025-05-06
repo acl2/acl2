@@ -1053,6 +1053,7 @@
                 (integerp addr2))
            ;;todo: gen the 1:
            (equal (read 1 addr x86)
+                  ;; or go to bv-array-read, in case the indexing can't be resolved?
                   (acl2::slice (+ 7 (* 8 (- addr addr2))) (* 8 (- addr addr2)) freeval)))
   :hints (("Goal" :in-theory (disable read
                                       distributivity
@@ -2145,7 +2146,7 @@
 
 
 ;todo: improve
-(defthm read-of-write-irrel2
+(defthm read-of-write-when-separate
   (implies (and (separate :r n1 addr1 :r n2 addr2) ;we always turn the r-w-x params of separate into :r
                 (canonical-address-p addr1)
                 (implies (posp n1) (canonical-address-p (+ -1 n1 addr1)))
