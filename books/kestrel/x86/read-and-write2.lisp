@@ -39,7 +39,7 @@
                 )
            (equal (read-byte ad1 (write n2 ad2 val x86))
                   (read-byte ad1 x86)))
-  :hints (("Goal" :in-theory (enable write disjoint-regionsp bvlt))))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp bvlt))))
 
 (defthm read-byte-of-write-when-disjoint-alt
   (implies (and (disjoint-regionsp n2 ad2 1 ad1)
