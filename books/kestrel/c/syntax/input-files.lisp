@@ -85,23 +85,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-strings-to-filepaths ((strings string-listp))
-  :returns (filepaths filepath-setp)
-  :short "Turn a list of strings into a set of file paths."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Wrap each string into a file path.")
-   (xdoc::p
-    "This is more general than @(tsee input-files),
-     and should be moved to a more central place."))
-  (cond ((endp strings) nil)
-        (t (set::insert (filepath (car strings))
-                        (input-files-strings-to-filepaths (cdr strings)))))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define input-files-preprocess-inputp (x)
   :returns (yes/no booleanp)
   :short "Recognize valid values of the @(':preprocess') input."
