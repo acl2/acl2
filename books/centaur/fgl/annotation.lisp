@@ -39,7 +39,7 @@
   (declare (ignore arg))
   :enabled t
   :parents (fgl-rewrite-rules)
-  :short "Wrapper to mark a function call with some data for use by the rewriter"
+  :short "Wrapper to mark a function call with some data for use by the FGL rewriter"
   :long "<p>Annotate is just a two-argument function that returns its second argument.
 It is intended to be used to temporarily associate the data in its first
 argument with the subterm in its second argument, such that rewrite rules can
@@ -64,16 +64,39 @@ the hypotheses of this rule check that there is no annotation wrapped around
 the call, so when trying this rule on the LHS occurrence in the RHS, it will
 fail instead of looping.</p>
 
-<p>The associated utility @(see bind-fn-annotation) retrieves the annotation
-data from the annotation wrapped around the most recent call of the given
-function, or NIL if there was no annotation.</p>
-       
-"
+<p>The associated utility @(see bind-fn-annotation) binds to a variable the
+annotation data from the annotation wrapped around the most recent (innermost)
+call of the given function, or NIL if there was no annotation.</p>
+
+<p>Another utility, @(see bind-nth-fn-annotation), similarly binds the
+annotation from the nth-innermost call of the function. The following example
+implements a simple way of tracing the rewriting of a function -- we check that
+the current call of the function is not yet annotated, so that the rule doesn't
+loop; then we look for a prior call of the function and get its annotation to
+find the nesting depth to use for the tracing:</p>
+
+@({
+ (defun next-printed-annotation-index (old-annot)
+   (case-match old-annot
+     ((':printed n) (if (natp n) (+ 1 n) 0))
+     (& 0)))
+
+ (fgl::def-fgl-rewrite trace-my-fn
+   (implies (and (fgl::bind-fn-annotation annot 'my-fn)
+                 (not annot)
+                 (fgl::bind-nth-fn-annotation old-annot 1 'my-fn)
+                 (equal index (next-printed-annotation-index old-annot)))
+            (equal (my-fn a b)
+                   (fgl::fgl-prog2
+                    (fgl::syntax-interp (cw \"~t0~x0> my-fn ~x1~%\" index a))
+                    (let ((res (fgl::annotate `(:printed ,index) (my-fn a b))))
+                      (fgl::fgl-prog2
+                       (fgl::syntax-interp (cw \"~t0<~x0 my-fn ~x1~%\" index a))
+                       res))))))
+ })"
   x)
 
-           
-
-(define interp-st-scan-scratch-for-fnsym ((n natp) (fn pseudo-fnsym-p) interp-st)
+(define interp-st-scan-for-fnsym ((n natp) (fn pseudo-fnsym-p) interp-st)
   :guard (<= n (interp-st-full-scratch-len interp-st))
   :measure (nfix (- (interp-st-full-scratch-len interp-st) (nfix n)))
   :returns (maybe-index acl2::maybe-natp :rule-classes :type-prescription)
@@ -85,7 +108,28 @@ function, or NIL if there was no annotation.</p>
     (if (and (eq (interp-st-nth-scratch-kind n interp-st) :fnsym)
              (eq (interp-st-nth-scratch-fnsym n interp-st) (pseudo-fnsym-fix fn)))
         (lnfix n)
-      (interp-st-scan-scratch-for-fnsym (1+ (lnfix n)) fn interp-st))))
+      (interp-st-scan-for-fnsym (1+ (lnfix n)) fn interp-st)))
+  ///
+  (defret <fn>-bound
+    (implies maybe-index
+             (< maybe-index (interp-st-full-scratch-len interp-st)))
+    :rule-classes :linear))
+
+(define interp-st-scan-for-nth-fnsym-occ ((idx natp) (n natp) (fn pseudo-fnsym-p) interp-st)
+  :guard (<= idx (interp-st-full-scratch-len interp-st))
+  :measure (nfix n)
+  :returns (maybe-index acl2::maybe-natp :rule-classes :type-prescription)
+  :guard-hints (("goal" :in-theory (enable stack$a-nth-scratch-kind
+                                           stack$a-nth-scratch)))
+  (b* ((next (interp-st-scan-for-fnsym idx fn interp-st))
+       ((unless next) nil)
+       ((when (zp n)) next))
+    (interp-st-scan-for-nth-fnsym-occ (1+ next) (1- n) fn interp-st))
+  ///
+  (defret <fn>-bound
+    (implies maybe-index
+             (< maybe-index (interp-st-full-scratch-len interp-st)))
+    :rule-classes :linear))
 
 (define interp-st-find-next-scratch-fnsym ((n natp) interp-st)
   :guard (<= n (interp-st-full-scratch-len interp-st))
@@ -102,10 +146,28 @@ function, or NIL if there was no annotation.</p>
 
 (define interp-st-fn-annotation ((fn pseudo-fnsym-p)
                                  interp-st)
+  :short "Finds the annotation, if any, of the innermost nesting of fn on the stack."
   :returns (annotation fgl-object-p)
   :guard-hints (("goal" :in-theory (enable stack$a-nth-scratch-kind
                                            stack$a-nth-scratch)))
-  (b* ((idx (interp-st-scan-scratch-for-fnsym 0 fn interp-st))
+  (b* ((idx (interp-st-scan-for-fnsym 0 fn interp-st))
+       ((unless idx) nil)
+       ((when (<= (- (interp-st-full-scratch-len interp-st) 2) idx))
+        nil))
+    (and (eq (interp-st-nth-scratch-kind (+ 2 idx) interp-st) :fnsym)
+         (eq (interp-st-nth-scratch-fnsym (+ 2 idx) interp-st) 'annotate)
+         (eq (interp-st-nth-scratch-kind (+ 1 idx) interp-st) :fgl-obj)
+         (interp-st-nth-scratch-fgl-obj (+ 1 idx) interp-st))))
+
+(define interp-st-nth-fn-annotation ((n natp)
+                                     (fn pseudo-fnsym-p)
+                                     interp-st)
+  :parents (annotate)
+  :short "Finds the annotation, if any, of the nth-innermost nesting of fn on the stack."
+  :returns (annotation fgl-object-p)
+  :guard-hints (("goal" :in-theory (enable stack$a-nth-scratch-kind
+                                           stack$a-nth-scratch)))
+  (b* ((idx (interp-st-scan-for-nth-fnsym-occ 0 n fn interp-st))
        ((unless idx) nil)
        ((when (<= (- (interp-st-full-scratch-len interp-st) 2) idx))
         nil))
@@ -115,15 +177,22 @@ function, or NIL if there was no annotation.</p>
          (interp-st-nth-scratch-fgl-obj (+ 1 idx) interp-st))))
 
 (fancy-ev-add-primitive interp-st-fn-annotation (acl2::pseudo-fnsym-p fn))
+(fancy-ev-add-primitive interp-st-nth-fn-annotation (and (natp n) (acl2::pseudo-fnsym-p fn)))
 (fancy-ev-add-primitive interp-st-find-next-scratch-fnsym
                         (and (natp n) (<= n (interp-st-full-scratch-len interp-st))))
-(fancy-ev-add-primitive interp-st-scan-scratch-for-fnsym
+(fancy-ev-add-primitive interp-st-scan-for-fnsym
                         (and (natp n) (pseudo-fnsym-p fn)
                              (<= n (interp-st-full-scratch-len interp-st))))
+(fancy-ev-add-primitive interp-st-scan-for-nth-fnsym-occ
+                        (and (natp idx) (natp n) (pseudo-fnsym-p fn)
+                             (<= idx (interp-st-full-scratch-len interp-st))))
 
 
 (defmacro bind-fn-annotation (varname fn)
   `(fgl-prog2 (bind-var ,varname (syntax-interp (interp-st-fn-annotation ,fn 'interp-st))) t))
+
+(defmacro bind-nth-fn-annotation (varname n fn)
+  `(fgl-prog2 (bind-var ,varname (syntax-interp (interp-st-nth-fn-annotation ,n ,fn 'interp-st))) t))
 
 (defxdoc bind-fn-annotation
   :parents (annotate)
@@ -139,4 +208,22 @@ stack, and checks whether there was a call of @(see annotate) wrapped
 immediately around it. If so, it binds the given free variable to the first
 argument of that call of annotate; otherwise, it binds it to NIL. The
 @('bind-fn-annotation') form always returns T, so it can be used as a
-hypothesis in a rewrite rule.</p>")
+hypothesis in a rewrite rule.</p>
+
+<p>A related utility is @(see bind-nth-fn-annotation) which gets the annotation
+associated with the nth-innermost call of the function, rather than the
+innermost.</p>")
+
+(defxdoc bind-nth-fn-annotation
+  :parents (annotate)
+  :short "Get the annotation associated with the nth-innermost call of the given function being rewritten"
+  :long "<p>Usage:</p>
+
+@({
+ (bind-fn-annotation free-var 3 'my-fn)
+ })
+
+<p>finds the record of the 3rd-innermost call of @('my-fn') in the FGL rewriter's
+stack, and binds free-var to its annotation, or NIL if none.</p>
+
+<p>See also @(see bind-fn-annotation).</p>")
