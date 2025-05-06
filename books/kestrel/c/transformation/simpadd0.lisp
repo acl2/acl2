@@ -627,7 +627,6 @@
   :returns (mv (okp booleanp)
                (args symbol-listp)
                (parargs true-listp)
-               (arg-kinds true-listp)
                (arg-types true-listp)
                (arg-types-compst true-listp))
   :short "Generate certain pieces of information
@@ -650,20 +649,24 @@
       Each @(tsee cons) pair consists of the name of the parameter
       and the variable for the corresponding argument.")
     (xdoc::li
-     "A list @('arg-kinds') of terms that assert that
-      each variable in @('args') is a value of the appropriate kind.")
-    (xdoc::li
      "A list @('arg-types') of terms that assert that
-      each variable in @('args') is a value of the appropriate type.")
+      each variable in @('args') is a value of the appropriate type and kind.
+      The `appropriate type' and `appropriate kind' are
+      two slightly different ways to say the same thing.
+      We will eventually remove the `appropriate kind' part,
+      once all our generated proofs are in terms of
+      @(tsee c::type-of-value) instead of @(tsee c::value-kind).")
     (xdoc::li
      "A list @('arg-types-compst') of terms that assert that
       each parameter in @('params') can be read from a computation state
-      and its reading yields a value of the appropriate type."))
+      and its reading yields a value of the appropriate type and kind."))
    (xdoc::p
-    "The lists @('arg-kinds') and @('arg-types')
-     contain essentially the same information.
-     We will eventually eliminate @('arg-kinds'),
-     once we migrate our generated proofs to use only @('arg-types').")
+    "In @('arg-types') and @('arg-types-compst'),
+     the `appropriate type' and `appropriate kind' are
+     two slightly different ways to say the same thing.
+     We will eventually remove the `appropriate kind' part,
+     once all our generated proofs are in terms of
+     @(tsee c::type-of-value) instead of @(tsee c::value-kind).")
    (xdoc::p
     "These results are generated only if
      all the parameters have certain types
@@ -671,20 +674,19 @@
      which we check as we go through the parameters.
      The @('okp') result says whether this is the case;
      if it is @('nil'), the other results are @('nil') too."))
-  (b* (((when (endp params)) (mv t nil nil nil nil nil))
+  (b* (((when (endp params)) (mv t nil nil nil nil))
        ((c::param-declon param) (car params))
        ((mv okp type value-kind)
         (simpadd0-tyspecseq-to-type-and-value-kind param.tyspec))
-       ((unless okp) (mv nil nil nil nil nil nil))
+       ((unless okp) (mv nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
-        (mv nil nil nil nil nil nil))
+        (mv nil nil nil nil nil))
        (ident (c::obj-declor-ident->get param.declor))
        (par (c::ident->name ident))
        (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
        (pararg `(cons (c::ident ,par) ,arg))
        (arg-type `(and (c::valuep ,arg)
-                       (equal (c::type-of-value ,arg) ',type)))
-       (arg-kind `(and (c::valuep ,arg)
+                       (equal (c::type-of-value ,arg) ',type)
                        (equal (c::value-kind ,arg) ,value-kind)))
        (arg-type-compst
         `(b* ((var (mv-nth 1 (ldm-ident (ident ,par))))
@@ -696,15 +698,13 @@
        ((mv okp
             more-args
             more-parargs
-            more-arg-kinds
             more-arg-types
             more-arg-types-compst)
         (simpadd0-gen-from-params (cdr params) gin))
-       ((unless okp) (mv nil nil nil nil nil nil)))
+       ((unless okp) (mv nil nil nil nil nil)))
     (mv t
         (cons arg more-args)
         (cons pararg more-parargs)
-        (cons arg-kind more-arg-kinds)
         (cons arg-type more-arg-types)
         (cons arg-type-compst more-arg-types-compst)))
 
@@ -712,11 +712,6 @@
 
   (defret len-of-simpadd0-gen-from-params.parargs
     (equal (len parargs)
-           (len args))
-    :hints (("Goal" :induct t :in-theory (enable len))))
-
-  (defret len-of-simpadd0-gen-from-params.arg-kinds
-    (equal (len arg-kinds)
            (len args))
     :hints (("Goal" :induct t :in-theory (enable len))))
 
@@ -735,7 +730,6 @@
 (define simpadd0-gen-init-scope-thm ((params c::param-declon-listp)
                                      (args symbol-listp)
                                      (parargs true-listp)
-                                     (arg-kinds true-listp)
                                      (arg-types true-listp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp))
@@ -755,8 +749,7 @@
     "The name of the theorem is used locally to another theorem,
      so it does not have to be particularly distinguished.
      But we should check and disambiguate this more thoroughly."))
-  (b* ((formula `(implies (and ,@arg-kinds
-                               ,@arg-types)
+  (b* ((formula `(implies (and ,@arg-types)
                           (equal (c::init-scope ',params (list ,@args))
                                  (list ,@parargs))))
        (hints
@@ -834,7 +827,6 @@
 
 (define simpadd0-gen-param-thms ((args symbol-listp)
                                  (arg-types-compst true-listp)
-                                 (all-arg-kinds true-listp)
                                  (all-arg-types true-listp)
                                  (all-params c::param-declon-listp)
                                  (all-args symbol-listp))
@@ -848,9 +840,8 @@
     "The @('args') and @('arg-types-compst') inputs are
      the corresponding outputs of @(tsee simpadd0-gen-from-params);
      these are @(tsee cdr)ed in the recursion.
-     The @('all-arg-kinds') and @('all-arg-types') inputs are
-     the @('arg-kinds') and @('arg-types') outputs
-     of @(tsee simpadd0-gen-from-params);
+     The @('all-arg-types') input is
+     the @('arg-types') output of @(tsee simpadd0-gen-from-params);
      it stays the same during the recursion.")
    (xdoc::p
     "We return the theorem events, along with the theorem names.")
@@ -875,8 +866,7 @@
                           (list
                            (c::init-scope ',all-params (list ,@all-args))))
                 compst0)))
-           (implies (and ,@all-arg-kinds
-                         ,@all-arg-types)
+           (implies (and ,@all-arg-types)
                     ,(car arg-types-compst))))
        (hints
         '(("Goal" :in-theory '(init-scope-thm
@@ -934,7 +924,6 @@
        ((mv more-thm-events more-thm-names)
         (simpadd0-gen-param-thms (cdr args)
                                  (cdr arg-types-compst)
-                                 all-arg-kinds
                                  all-arg-types
                                  all-params
                                  all-args)))
@@ -4823,15 +4812,14 @@
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
-       ((mv okp args parargs arg-kinds arg-types arg-types-compst)
+       ((mv okp args parargs arg-types arg-types-compst)
         (simpadd0-gen-from-params ldm-params gin))
        ((unless okp) (mv new-fundef gout-no-thm))
        ((mv init-scope-thm-event init-scope-thm-name)
-        (simpadd0-gen-init-scope-thm
-         ldm-params args parargs arg-kinds arg-types))
+        (simpadd0-gen-init-scope-thm ldm-params args parargs arg-types))
        ((mv param-thm-events param-thm-names)
         (simpadd0-gen-param-thms
-         args arg-types-compst arg-kinds arg-types ldm-params args))
+         args arg-types-compst arg-types ldm-params args))
        (thm-name (packn-pos (list gin.const-new '-thm- gin.thm-index)
                             gin.const-new))
        (thm-index (1+ gin.thm-index))
@@ -4843,8 +4831,7 @@
                (c::exec-fun fun (list ,@args) compst old-fenv limit))
               ((mv new-result new-compst)
                (c::exec-fun fun (list ,@args) compst new-fenv limit)))
-           (implies (and ,@arg-kinds
-                         ,@arg-types
+           (implies (and ,@arg-types
                          (equal (c::fun-env-lookup fun old-fenv)
                                 (c::fun-info-from-fundef
                                  (mv-nth 1 (ldm-fundef old))))
