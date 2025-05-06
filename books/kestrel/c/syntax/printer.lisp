@@ -2540,7 +2540,7 @@
           (raise "Misusage error: no declaration specifiers.")
           (pristate-fix pstate))
          (pstate (print-decl-spec-list param.specs pstate))
-         (pstate (print-paramdeclor param.declor pstate)))
+         (pstate (print-param-declor param.declor pstate)))
       pstate)
     :measure (two-nats-measure (param-declon-count param) 0))
 
@@ -2563,8 +2563,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-paramdeclor ((paramdeclor paramdeclorp) (pstate pristatep))
-    :guard (paramdeclor-unambp paramdeclor)
+  (define print-param-declor ((paramdeclor param-declorp) (pstate pristatep))
+    :guard (param-declor-unambp paramdeclor)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declarator."
@@ -2576,7 +2576,7 @@
        Thus, if the parameter declarator is present,
        we print a space to separate the declaration specifiers
        from the declarator or abstract declarator."))
-    (paramdeclor-case
+    (param-declor-case
      paramdeclor
      :declor (b* ((pstate (print-astring " " pstate))
                   (pstate (print-declor paramdeclor.unwrap pstate)))
@@ -2586,7 +2586,7 @@
                   pstate)
      :none (pristate-fix pstate)
      :ambig (prog2$ (impossible) (pristate-fix pstate)))
-    :measure (two-nats-measure (paramdeclor-count paramdeclor) 0))
+    :measure (two-nats-measure (param-declor-count paramdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

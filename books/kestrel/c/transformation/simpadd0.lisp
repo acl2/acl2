@@ -3587,7 +3587,7 @@
           (simpadd0-decl-spec-list paramdecl.specs gin state))
          (gin (simpadd0-gin-update gin gout-specs))
          ((mv new-declor (simpadd0-gout gout-declor))
-          (simpadd0-paramdeclor paramdecl.declor gin state)))
+          (simpadd0-param-declor paramdecl.declor gin state)))
       (mv (make-param-declon :specs new-specs
                              :declor new-declor)
           (make-simpadd0-gout
@@ -3636,20 +3636,20 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-paramdeclor ((paramdeclor paramdeclorp)
-                                (gin simpadd0-ginp)
-                                state)
-    :guard (paramdeclor-unambp paramdeclor)
-    :returns (mv (new-paramdeclor paramdeclorp)
+  (define simpadd0-param-declor ((paramdeclor param-declorp)
+                                 (gin simpadd0-ginp)
+                                 state)
+    :guard (param-declor-unambp paramdeclor)
+    :returns (mv (new-paramdeclor param-declorp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a parameter declarator."
     (b* (((simpadd0-gin gin) gin))
-      (paramdeclor-case
+      (param-declor-case
        paramdeclor
        :declor (b* (((mv new-declor (simpadd0-gout gout-declor))
                      (simpadd0-declor paramdeclor.unwrap gin state)))
-                 (mv (paramdeclor-declor new-declor)
+                 (mv (param-declor-declor new-declor)
                      (make-simpadd0-gout
                       :events gout-declor.events
                       :thm-name nil
@@ -3659,7 +3659,7 @@
                       :diffp gout-declor.diffp)))
        :absdeclor (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
                         (simpadd0-absdeclor paramdeclor.unwrap gin state)))
-                    (mv (paramdeclor-absdeclor new-absdeclor)
+                    (mv (param-declor-absdeclor new-absdeclor)
                         (make-simpadd0-gout
                          :events gout-absdeclor.events
                          :thm-name nil
@@ -3667,7 +3667,7 @@
                          :names-to-avoid gout-absdeclor.names-to-avoid
                          :vartys gout-absdeclor.vartys
                          :diffp gout-absdeclor.diffp)))
-       :none (mv (paramdeclor-none)
+       :none (mv (param-declor-none)
                  (make-simpadd0-gout
                   :events nil
                   :thm-name nil
@@ -3675,8 +3675,8 @@
                   :names-to-avoid gin.names-to-avoid
                   :vartys nil
                   :diffp nil))
-       :ambig (prog2$ (impossible) (mv (irr-paramdeclor) (irr-simpadd0-gout)))))
-    :measure (paramdeclor-count paramdeclor))
+       :ambig (prog2$ (impossible) (mv (irr-param-declor) (irr-simpadd0-gout)))))
+    :measure (param-declor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4591,9 +4591,9 @@
     (defret param-declon-list-unambp-of-simpadd0-param-declon-list
       (param-declon-list-unambp new-paramdecls)
       :fn simpadd0-param-declon-list)
-    (defret paramdeclor-unambp-of-simpadd0-paramdeclor
-      (paramdeclor-unambp new-paramdeclor)
-      :fn simpadd0-paramdeclor)
+    (defret param-declor-unambp-of-simpadd0-param-declor
+      (param-declor-unambp new-paramdeclor)
+      :fn simpadd0-param-declor)
     (defret tyname-unambp-of-simpadd0-tyname
       (tyname-unambp new-tyname)
       :fn simpadd0-tyname)
@@ -4676,7 +4676,7 @@
                                        simpadd0-dirabsdeclor-option
                                        simpadd0-param-declon
                                        simpadd0-param-declon-list
-                                       simpadd0-paramdeclor
+                                       simpadd0-param-declor
                                        simpadd0-tyname
                                        simpadd0-strunispec
                                        simpadd0-structdecl
@@ -4699,7 +4699,7 @@
                                        irr-const-expr
                                        irr-align-spec
                                        irr-dirabsdeclor
-                                       irr-paramdeclor
+                                       irr-param-declor
                                        irr-type-spec
                                        irr-stmt
                                        irr-block-item))))

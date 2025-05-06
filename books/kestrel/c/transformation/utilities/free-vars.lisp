@@ -524,7 +524,7 @@
     (b* (((param-declon paramdecl) paramdecl)
          (free-vars0 (free-vars-decl-spec-list paramdecl.specs bound-vars))
          ((mv free-vars1 bound-vars)
-          (free-vars-paramdeclor paramdecl.declor bound-vars)))
+          (free-vars-param-declor paramdecl.declor bound-vars)))
       (mv (union free-vars0 free-vars1)
           bound-vars))
     :measure (param-declon-count paramdecl))
@@ -546,14 +546,14 @@
           bound-vars))
     :measure (param-declon-list-count paramdecls))
 
-  (define free-vars-paramdeclor
-    ((paramdeclor paramdeclorp)
+  (define free-vars-param-declor
+    ((paramdeclor param-declorp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a list of parameter
             declarations."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
-    (paramdeclor-case
+    (param-declor-case
      paramdeclor
      :declor (free-vars-declor paramdeclor.unwrap bound-vars)
      :absdeclor (mv (free-vars-absdeclor paramdeclor.unwrap bound-vars)
@@ -561,7 +561,7 @@
      :none (mv nil (ident-set-fix bound-vars))
      :ambig (mv (raise "Unexpected ambiguous expression")
                 (ident-set-fix bound-vars)))
-    :measure (paramdeclor-count paramdeclor))
+    :measure (param-declor-count paramdeclor))
 
   (define free-vars-tyname
     ((tyname tynamep)
