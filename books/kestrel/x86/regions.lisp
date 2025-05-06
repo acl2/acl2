@@ -97,6 +97,16 @@
                   (in-regionp ad len (bvplus 48 x y))))
   :hints (("Goal" :in-theory (enable in-regionp bvplus))))
 
+(defthm in-regionp-of-bvplus-and-bvplus-cancel-1-2
+  (equal (in-regionp (bvplus 48 x y) len (bvplus 48 z x))
+         (in-regionp y len z))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+(defthm in-regionp-of-bvplus-and-bvplus-cancel-1-1
+  (equal (in-regionp (bvplus 48 x y) len (bvplus 48 x z))
+         (in-regionp y len z))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Defines what it means for 2 memory regions to be disjoint.
@@ -163,6 +173,55 @@
            (or (in-regionp start1 len2 start2)
                (in-regionp start2 len1 start1)))
   :hints (("Goal" :in-theory (enable in-regionp disjoint-regionsp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
+
+(defthm disjoint-regionsp-of-+-arg2
+  (implies (and (integerp ad1)
+                (integerp x))
+           (equal (disjoint-regionsp len1 (+ x ad1) len2 ad2)
+                  (disjoint-regionsp len1 (bvplus 48 x ad1) len2 ad2)))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp
+                                     acl2::bvminus-of-+-arg2
+                                     acl2::bvminus-of-+-arg3))))
+
+(defthm disjoint-regionsp-of-+-arg4
+  (implies (and (integerp ad2)
+                (integerp x))
+           (equal (disjoint-regionsp len1 ad1 len2 (+ x ad2))
+                  (disjoint-regionsp len1 ad1 len2 (bvplus 48 x ad2))))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp
+                                     acl2::bvminus-of-+-arg2
+                                     acl2::bvminus-of-+-arg3))))
+
+;more
+(defthm disjoint-regionsp-cancel-1-2
+  (equal (disjoint-regionsp len1 x len2 (bvplus 48 y x))
+         (disjoint-regionsp len1 0 len2 y))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+(defthm disjoint-regionsp-cancel-1-1+
+  (equal (disjoint-regionsp len1 x len2 (bvplus 48 x y))
+         (disjoint-regionsp len1 0 len2 y))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+(defthm disjoint-regionsp-cancel-1+-1+
+  (equal (disjoint-regionsp len1 (bvplus 48 x z) len2 (bvplus 48 x y))
+         (disjoint-regionsp len1 z len2 y))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+(defthm disjoint-regionsp-cancel-1+-2
+  (equal (disjoint-regionsp len1 (bvplus 48 x z) len2 (bvplus 48 y x))
+         (disjoint-regionsp len1 z len2 y))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+(defthm disjoint-regionsp-cancel-2-1+
+  (equal (disjoint-regionsp len1 (bvplus 48 z x) len2 (bvplus 48 x y))
+         (disjoint-regionsp len1 z len2 y))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+(defthm disjoint-regionsp-cancel-2-2
+  (equal (disjoint-regionsp len1 (bvplus 48 z x) len2 (bvplus 48 y x))
+         (disjoint-regionsp len1 z len2 y))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp))))
 
 ;; todo: show that this reduces to a more familiar notion in the non-wrap-around case
 ;; todo: use defun-sk to show correctness
@@ -234,6 +293,11 @@
 (defthm subregionp-of-bvplus-and-bvplus-cancel-2-2
   (equal (subregionp len1 (bvplus '48 y x) len2 (bvplus '48 z x))
          (subregionp len1 y len2 z))
+  :hints (("Goal" :in-theory (enable subregionp in-regionp))))
+
+(defthm subregionp-of-bvplus-and-bvplus-cancel-2-1
+  (equal (subregionp len1 (bvplus '48 y x) len2 x)
+         (subregionp len1 y len2 0))
   :hints (("Goal" :in-theory (enable subregionp in-regionp))))
 
 (defthm subregionp-of-+-arg2
