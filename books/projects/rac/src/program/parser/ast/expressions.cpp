@@ -673,7 +673,7 @@ Sexpression *PrefixExpr::ACL2Expr() {
   if (op == Op::UnaryPlus) {
     return s;
   } else if (op == Op::UnaryMinus) {
-    Sexpression *s_val = expr->get_type()->eval(s);
+    Sexpression *s_val = s;
     Sexpression *sexpr = new Plist({&s_minus, s_val});
 
     // if (auto pt = dynamic_cast<const IntType *>(get_type())) {
@@ -824,10 +824,6 @@ Sexpression *BinaryExpr::ACL2Expr() {
   Sexpression *sexpr1 = expr1->ACL2Expr();
   Sexpression *sexpr2 = expr2->ACL2Expr();
 
-  // MM: hopefully a noop:
-  Sexpression *sexpr1_val = expr1->get_type()->eval(expr1->ACL2Expr());
-  Sexpression *sexpr2_val = expr2->get_type()->eval(expr2->ACL2Expr());
-
   bool need_narrowing = true;
 
   switch (op) {
@@ -848,7 +844,7 @@ Sexpression *BinaryExpr::ACL2Expr() {
     break;
   case Op::Divide: {
     Sexpression *val =
-        new Plist({&s_truncate, new Plist({&s_slash, sexpr1_val, sexpr2_val}),
+        new Plist({&s_truncate, new Plist({&s_slash, sexpr1, sexpr2}),
                    Integer::one_v(loc_)->ACL2Expr()});
     if (auto pt = dynamic_cast<const PrimType *>(get_type())) {
       (void)pt;
@@ -875,7 +871,7 @@ Sexpression *BinaryExpr::ACL2Expr() {
     break;
   case Op::RShift:
     ptr = &s_ash;
-    sexpr2_val = new Plist({&s_minus, sexpr2_val});
+    sexpr2 = new Plist({&s_minus, sexpr2});
     break;
   case Op::BitAnd:
     ptr = &s_logand;
@@ -943,11 +939,7 @@ Sexpression *BinaryExpr::ACL2Expr() {
   //    assert(!"missing type");
   //  }
   Sexpression *val = nullptr;
-  if (isOpBitwise(op)) {
-    val = new Plist({ptr, sexpr1, sexpr2});
-  } else {
-    val = new Plist({ptr, sexpr1_val, sexpr2_val});
-  }
+  val = new Plist({ptr, sexpr1, sexpr2});
 
   const Type *t = get_type();
 

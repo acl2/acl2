@@ -350,7 +350,7 @@ Sexpression *IntType::cast(Expression *rval) const {
 
   Location loc = get_original_location();
 
-  Sexpression *sexpr = rval_type->eval(rval->ACL2Expr());
+  Sexpression *sexpr = rval->ACL2Expr();
 
   Sexpression *upper_bound = nullptr;
   upper_bound =
@@ -362,24 +362,6 @@ Sexpression *IntType::cast(Expression *rval) const {
       {&s_bits, sexpr, upper_bound, Integer::zero_v(loc)->ACL2Expr()});
 
   return res;
-}
-
-Sexpression *IntType::eval(Sexpression *sexpr) const {
-
-  return sexpr;
-  // if (isSigned_->isStaticallyEvaluable()) {
-  //   if (isSigned_->evalConst()) {
-  //     auto w = width_->isStaticallyEvaluable()
-  //                  ? new Integer(get_original_location(), width_->evalConst())
-  //                  : width_;
-  //     return new Plist({&s_si, sexpr, w->ACL2Expr()});
-  //   } else {
-  //     return sexpr;
-  //   }
-  // }
-
-  // return new Plist({&s_if1, isSigned_->ACL2Expr(),
-  //                   new Plist({&s_si, sexpr, width_->ACL2Expr()}), sexpr});
 }
 
 bool IntType::isEqual(const Type *other) const {
