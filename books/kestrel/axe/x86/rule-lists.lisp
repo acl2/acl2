@@ -401,14 +401,31 @@
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
-    read-of-write-irrel
-    read-of-write-irrel2 ; rename to have separate in the name
     ;; todo: more variants of these:
     ;; todo: uncomment:
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
     ;;read-of-write-of-write-of-set-flag
     ;;read-of-write-of-write-of-write-of-set-flag
-    read-1-of-write-within-new))
+    read-1-of-write-within-new
+
+    ;; Non-SMT rules:
+    read-of-write-irrel
+    read-of-write-irrel2 ; rename to have separate in the name
+
+    ;; SMT-amendable read-of-write rules:
+    ;; read-of-write-when-disjoint-regionsp-gen
+    ;; read-of-write-when-disjoint-regionsp-gen-alt
+    ;; read-of-write-when-disjoint-regionsp ; or different regions with the same base address?
+    ;; subregionp-of-+-arg2
+    ;; subregionp-of-+-arg4
+    ;; disjoint-regionsp-of-+-arg2
+    ;;disjoint-regionsp-of-+-arg4
+
+    ;; Seems ok to always have these on: ; todo: add more
+    disjoint-regionsp-cancel-1-2
+    disjoint-regionsp-cancel-2-2
+    subregionp-of-bvplus-and-bvplus-cancel-2-2
+    subregionp-of-bvplus-and-bvplus-cancel-2-1))
 
 ;; For both 32-bit and 64-bit
 (defund new-normal-form-rules-common ()
@@ -1408,7 +1425,12 @@
     x86isa::two-byte-opcode-modr/m-p$inline-constant-opener
 
     acl2::logmask$inline-constant-opener ; add to evaluator?
-    ;acl2::binary-logand-constant-opener
+    ;;acl2::binary-logand-constant-opener
+
+    subregionp-constant-opener
+    in-regionp-constant-opener
+    disjoint-regionsp-constant-opener
+
     ))
 
 (defun get-prefixes-openers ()
@@ -3397,7 +3419,7 @@
     integerp-of-r13
     integerp-of-r14
     integerp-of-r15
-    integerp-of-rsp
+    integerp-of-rsp-gen ; integerp-of-rsp
     integerp-of-rbp
 
     fix-of-rax

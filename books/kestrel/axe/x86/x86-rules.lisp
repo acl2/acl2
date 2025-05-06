@@ -24,6 +24,7 @@
 (include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
+(include-book "kestrel/x86/regions" :dir :system)
 (include-book "../axe-syntax")
 (include-book "../known-booleans")
 (include-book "../axe-syntax-functions-bv") ; for term-should-be-trimmed-axe
@@ -72,6 +73,10 @@
 (add-known-boolean is-nan)
 (add-known-boolean infp)
 (add-known-boolean nanp)
+
+(add-known-boolean in-regionp)
+(add-known-boolean subregionp)
+(add-known-boolean disjoint-regionsp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -342,9 +347,6 @@
 (def-constant-opener x86isa::vex-opcode-modr/m-p$inline)
 (def-constant-opener x86isa::vex-prefixes-map-p$inline)
 
-
-
-
 (def-constant-opener vex->vvvv$inline)
 (def-constant-opener vex->l$inline)
 (def-constant-opener vex->pp$inline)
@@ -388,6 +390,10 @@
 ;(def-constant-opener feature-flag) ; keep feature-flag disabled, for clarity
 ;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
 (def-constant-opener rtl::set-flag) ; drop?
+
+(def-constant-opener in-regionp)
+(def-constant-opener subregionp)
+(def-constant-opener disjoint-regionsp)
 
 (defopeners acl2::get-symbol-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)
@@ -855,3 +861,10 @@
   :hints (("Goal" :cases ((< x 0))
            :in-theory (enable canonical-address-p bvlt signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: replace.  same for other registers?
+(defthm integerp-of-rsp-gen
+  (integerp (rsp x86))
+  :hints (("Goal" :in-theory (enable rsp))))
