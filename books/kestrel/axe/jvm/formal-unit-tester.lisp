@@ -1,7 +1,7 @@
 ; The formal unit testing tool
 ;
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -129,7 +129,7 @@
 
 ;; TODO: Add more cases?
 ;; TODO: Can this blow-up?
-;; This could be more generally usefull, especially when trying to get STP to
+;; This could be more generally useful, especially when trying to get STP to
 ;; prove a claim of the form (equal (get-field ..) ..).
 (defun type-assumptions-for-get-field-nodes (dag current-nodenum acc)
   (declare (xargs :guard (and (integerp current-nodenum)
