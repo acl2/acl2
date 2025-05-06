@@ -120,7 +120,7 @@
          (disjoint-regionsp len2 ad2 len1 ad1))
   :hints (("Goal" :in-theory (enable disjoint-regionsp))))
 
-;; Addresses in dijoint regions cannot be equal.
+;; Addresses in disjoint regions cannot be equal.
 (defthm not-equal-of-bvchop-and-bvchop-when-in-disjoint-regions
   (implies (and (disjoint-regionsp len1 start1 len2 start2)
                 (in-regionp ad1 len1 start1)
@@ -128,7 +128,7 @@
            (not (equal (bvchop 48 ad1) (bvchop 48 ad2))))
   :hints (("Goal" :in-theory (enable in-regionp disjoint-regionsp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
-;; Addresses in dijoint regions cannot be equal.
+;; Addresses in disjoint regions cannot be equal.
 (defthm not-equal-when-in-disjoint-regions
   (implies (and (disjoint-regionsp len1 start1 len2 start2)
                 (in-regionp ad1 len1 start1)
