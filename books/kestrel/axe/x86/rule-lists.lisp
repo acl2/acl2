@@ -1868,6 +1868,10 @@
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
             x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
+            acl2::integerp-when-signed-byte-p
+
+            ;; acl2::acl2-numberp-when-signed-byte-p
+
 ;            x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
             acl2::ash-negative-becomes-slice-axe ; move?
@@ -5219,6 +5223,10 @@
 (set-axe-rule-priority read-of-set-rsp -2)
 (set-axe-rule-priority read-of-write-same -1)
 (set-axe-rule-priority read-of-write-irrel -1)
+(set-axe-rule-priority read-of-write-irrel-bv-axe 1) ; try late, as this uses SMT, todo: add smt to name
+
+;; Try last
+(set-axe-rule-priority canonical-address-p-when-bvlt-of-bvplus-axe 1) ; todo: add smt to name
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority ms-of-write -4)
