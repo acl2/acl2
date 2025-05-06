@@ -694,6 +694,7 @@
               (val (c::read-object objdes compst)))
            (and objdes
                 (c::valuep val)
+                (equal (c::type-of-value val) ',type)
                 (c::value-case val ,value-kind))))
        ((mv okp
             more-args
