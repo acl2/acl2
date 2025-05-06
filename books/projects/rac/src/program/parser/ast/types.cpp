@@ -479,7 +479,7 @@ bool ArrayType::isEqual(const Type *other) const {
 Sexpression *ArrayType::cast(Expression *rval) const {
 
   if (auto init = dynamic_cast<Initializer *>(rval)) {
-    return init->ACL2ArrayExpr(this, isConst());
+    return init->ACL2ArrayExpr(this, false);
   } else {
     return rval->ACL2Expr();
   }

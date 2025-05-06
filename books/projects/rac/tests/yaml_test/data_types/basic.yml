@@ -150,6 +150,8 @@
 
 - name: const-arrays
 
+- name: const-arrays-2
+
 - name: array-in-struct
   env: {RAC_BYPASS_ERROR: 'true'} # Bypass pedantic error
   disabled-checks:

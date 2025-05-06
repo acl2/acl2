@@ -282,6 +282,12 @@ void Initializer::display(std::ostream &os) const {
   os << '}';
 }
 
+// In ACL2 arrays, structs accessor returns 0 is no elements are found. We can
+// use this behavior for cheap initializer of int/...
+bool default_value_can_be_ignored(const Type *t) {
+  return isa<const PrimType *>(t) || isa<const IntType *>(t);
+}
+
 Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t,
                                         bool output_optmized_const) {
 
@@ -309,6 +315,10 @@ Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t,
         res->add(
             new Cons(Integer(loc_, i).ACL2Expr(), t->baseType->cast(vals[i])));
       } else {
+
+        if (default_value_can_be_ignored(t)) {
+          break;
+        }
 
         res->add(new Cons(Integer(t->get_original_location(), i).ACL2Expr(),
                           t->baseType->default_initializer_value()));
@@ -345,6 +355,11 @@ Sexpression *Initializer::ACL2StructExpr(const StructType *t) {
           new Plist({&s_as, new Plist({&s_quote, f->get_sym()}),
                      f->get_type()->cast(*f->get_default_value()), result});
     } else {
+
+      if (default_value_can_be_ignored(f->get_type())) {
+        continue;
+      }
+
       result = new Plist({&s_as, new Plist({&s_quote, f->get_sym()}),
                           f->get_type()->default_initializer_value(), result});
     }
