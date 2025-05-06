@@ -410,7 +410,7 @@
 
     ;; Non-SMT rules:
     read-of-write-irrel
-    read-of-write-irrel2 ; rename to have separate in the name
+    read-of-write-irrel2 ;; todo: rename to have separate in the name
 
     ;; SMT-amendable read-of-write rules:
     ;; read-of-write-when-disjoint-regionsp-gen
@@ -419,7 +419,9 @@
     ;; subregionp-of-+-arg2
     ;; subregionp-of-+-arg4
     ;; disjoint-regionsp-of-+-arg2
-    ;;disjoint-regionsp-of-+-arg4
+    ;; disjoint-regionsp-of-+-arg4
+    ;; read-of-+-arg2
+    ;; write-of-+-arg2
 
     ;; Seems ok to always have these on: ; todo: add more
     disjoint-regionsp-cancel-1-2
