@@ -425,6 +425,10 @@ void ArrayType::display(std::ostream &os) const {
   os << "[";
   dim->display(os);
   os << "]";
+
+  if (fast_repr_) {
+    os << " (fast representation)";
+  }
 }
 
 void ArrayType::displayVarType(std::ostream &os) const {
@@ -461,13 +465,15 @@ void ArrayType::makeDef(const char *name, std::ostream &os) const {
 }
 
 bool ArrayType::isEqual(const Type *other) const {
+
   if (auto o = dynamic_cast<const DefinedType *>(other)) {
     other = o->derefType();
   }
 
   if (auto o = dynamic_cast<const ArrayType *>(other)) {
     return dim->evalConst() == o->dim->evalConst() &&
-           baseType->isEqual(o->baseType);
+           baseType->isEqual(o->baseType) &&
+           fast_repr_ == o->fast_repr_;
   } else {
     return false;
   }
@@ -476,7 +482,7 @@ bool ArrayType::isEqual(const Type *other) const {
 Sexpression *ArrayType::cast(Expression *rval) const {
 
   if (auto init = dynamic_cast<Initializer *>(rval)) {
-    return init->ACL2ArrayExpr(this, false);
+    return init->ACL2ArrayExpr(this);
   } else {
     return rval->ACL2Expr();
   }

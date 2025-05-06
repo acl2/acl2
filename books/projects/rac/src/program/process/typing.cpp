@@ -822,6 +822,18 @@ bool TypingAction::VisitSymDec(SymDec *s) {
   return true;
 }
 
+bool TypingAction::VisitArrayType(const ArrayType *t) {
+
+  if (t->fast_repr()) {
+    if (!t->isConst()) {
+      diag_.new_error(t->get_original_location(), "Fast array must be const")
+        .report();
+      return error();
+    }
+  }
+  return true;
+}
+
 bool TypingAction::check_assignement(const Location &where, const Type *left,
                                      const Type *right) {
 

@@ -172,3 +172,10 @@
 - name: static-invalid
   should_report_error: true
 
+- name: fast-arrays
+
+- name: fast-arrays-non-const
+  should_report_error: true
+
+- name: fast-arrays-mixed
+  should_report_error: true

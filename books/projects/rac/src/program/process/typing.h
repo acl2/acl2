@@ -78,6 +78,9 @@ public:
   // Dereference the type.
   bool VisitSymDec(SymDec *s);
 
+  // Check if all "fast arrray" are const.
+  bool VisitArrayType(const ArrayType *t);
+
 private:
   using base_t = RecursiveASTVisitor<TypingAction>;
 

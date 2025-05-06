@@ -223,7 +223,7 @@ public:
   // actual type.
   Sexpression *ACL2Expr() override { UNREACHABLE(); }
 
-  Sexpression *ACL2ArrayExpr(const ArrayType *t, bool output_optmized_const);
+  Sexpression *ACL2ArrayExpr(const ArrayType *t);
   Sexpression *ACL2TupleExpr(const MvType *t);
   Sexpression *ACL2StructExpr(const StructType *t);
 };

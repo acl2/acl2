@@ -288,12 +288,11 @@ bool default_value_can_be_ignored(const Type *t) {
   return isa<const PrimType *>(t) || isa<const IntType *>(t);
 }
 
-Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t,
-                                        bool output_optmized_const) {
+Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t) {
 
   Plist *res = new Plist();
 
-  if (output_optmized_const) {
+  if (t->fast_repr()) {
 
     res->add(&s_list);
     for (auto c : vals) {
@@ -389,14 +388,20 @@ void ArrayRef::display(std::ostream &os) const {
 }
 
 Sexpression *ArrayRef::ACL2Expr() {
-  if (isa<const ArrayType *>(array->get_type())) {
+  if (auto array_t = dynamic_cast<const ArrayType *>(array->get_type())) {
     Sexpression *s = nullptr;
 
     SymRef *ref = dynamic_cast<SymRef *>(array);
     if (ref && ref->symDec->get_type()->isConst() && ref->symDec->isGlobal()) {
-      s = new Plist({&s_nth, index->ACL2Expr(), new Plist({ref->symDec->sym})});
+      s = new Plist({ref->symDec->sym});
     } else {
-      s = new Plist({&s_ag, index->ACL2Expr(), array->ACL2Expr()});
+      s = array->ACL2Expr();
+    }
+
+    if (array_t->fast_repr()) {
+      s = new Plist({&s_nth, index->ACL2Expr(), s});
+    } else {
+      s = new Plist({&s_ag, index->ACL2Expr(), s});
     }
     return s;
   } else {
@@ -409,6 +414,10 @@ Sexpression *ArrayRef::ACL2Expr() {
 }
 
 Sexpression *ArrayRef::ACL2Assign(Sexpression *rval) {
+
+  // Array must not be "fast_repr" (this representation is only for const
+  // array).
+
   if (isa<const ArrayType *>(array->get_type())) {
     return array->ACL2Assign(
         new Plist({&s_as, index->ACL2Expr(), rval, array->ACL2Expr()}));
