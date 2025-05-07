@@ -144,19 +144,7 @@ Sexpression *PrimType::cast(Expression *rval) const {
   // First, we need to get the value begin the type: if it is a PrimType or an
   // unsigned register, we have nothing to do since they already have their
   // value. We only need to add a `si` for the signed registers.
-  Sexpression *value = nullptr;
-
-  // Known at compile time.
-  if (s_src_val) {
-    if (isa<const IntType *>(rval_type) && *s_src_val) {
-      value = new Plist({&s_si, sexpr, w_src->ACL2Expr()});
-    } else {
-      value = sexpr;
-    }
-  } else {
-    value = new Plist({&s_if, s_src->ACL2Expr(),
-                       new Plist({&s_si, sexpr, w_src->ACL2Expr()}), sexpr});
-  }
+  Sexpression *value = sexpr;
 
   // Check if we need to do some conversion to fit the source into the
   // destination (sign and width).

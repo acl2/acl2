@@ -131,6 +131,47 @@ Sexpression *Boolean::ACL2Expr() {
   return new Plist({value_ ? &s_true : &s_false});
 }
 
+// Utility functions
+Sexpression *getSignedValue(Sexpression *s, const Type *rtype) {
+  const IntType * ty = nullptr;
+  if (auto dty = dynamic_cast<const DefinedType *>(rtype)) {
+    if (auto deref_ty = dynamic_cast<const IntType *>(dty->derefType())) {
+      ty = deref_ty;
+    }
+  } else if (auto ity = dynamic_cast<const IntType *>(rtype)) {
+    ty = ity;
+  }
+  if (ty) {
+    if (ty->isSigned()->isStaticallyEvaluable()) {
+      if (ty->isSigned()->evalConst()) {
+        s = new Plist({&s_si, s, ty->width()->ACL2Expr()});
+      }
+    } else {
+      s = new Plist({&s_if1, ty->isSigned()->ACL2Expr(),
+          new Plist({&s_si, s, ty->width()->ACL2Expr()}),
+          s});
+    }
+  }
+  return s;
+}
+
+Sexpression *getLVal(Expression *e) {
+  if (auto sym = dynamic_cast<SymRef *>(e)) {
+    return sym->symDec->ACL2SymExpr();
+  } else if (auto ar = dynamic_cast<ArrayRef *>(e)) {
+    if (isa<const ArrayType *>(ar->array->get_type()))
+      return new Plist({&s_ag, ar->index->ACL2Expr(), getLVal(ar->array)});
+    else if (auto sym = dynamic_cast<SymRef *>(ar->array))
+      return sym->symDec->ACL2SymExpr();
+  } else if (auto sr = dynamic_cast<StructRef *>(e)) {
+    Symbol *sym = always_cast<const StructType *>(sr->base->get_type())
+      ->getField(sr->field)
+      ->get_sym();
+    return new Plist({&s_ag, new Plist({&s_quote, sym}), getLVal(sr->base)});
+  }
+  UNREACHABLE();
+}
+
 // class SymRef : public Expression
 // ---------------------------------------------------------------
 
@@ -161,24 +202,8 @@ void SymRef::display(std::ostream &os) const { symDec->sym->display(os); }
 
 Sexpression *SymRef::ACL2Expr() {
   Sexpression *s = symDec->ACL2SymExpr();
-  Sexpression *res = s;
   
-  if (auto ty = dynamic_cast<const IntType *>(symDec->get_type())) {
-    if (ty->isSigned()->isStaticallyEvaluable()) {
-      if(ty->isSigned()->evalConst()) {
-        auto w = ty->width()->isStaticallyEvaluable()
-          ? new Integer(ty->get_original_location(), ty->width()->evalConst())
-          : ty->width();
-        res = new Plist({&s_si, s, w->ACL2Expr()});
-      } else {
-        res = s;
-      }
-    } else {
-      res = new Plist({&s_if1, ty->isSigned()->ACL2Expr(),
-          new Plist({&s_si, s, ty->width()->ACL2Expr()}), s});
-    }
-  }
-  return res;
+  return getSignedValue(s, get_type());
 }
 
 Sexpression *SymRef::ACL2Assign(Sexpression *rval) {
@@ -221,28 +246,7 @@ Sexpression *FunCall::ACL2Expr() {
     ++it;
   }
 
-  const IntType * ty = nullptr;
-  if (auto dty = dynamic_cast<const DefinedType *>(func->returnType())) {
-    if (auto deref_ty = dynamic_cast<const IntType *>(dty->derefType())) {
-        ty = deref_ty;
-    }
-  } else if (auto ity = dynamic_cast<const IntType *>(func->returnType())) {
-    ty = ity;
-  }
-  
-  if (ty) {
-    if (ty->isSigned()->isStaticallyEvaluable()) {
-      if (ty->isSigned()->evalConst()) {
-        result = new Plist({&s_si, result, ty->width()->ACL2Expr()});
-      }
-    } else {
-      result = new Plist({&s_if1, ty->isSigned()->ACL2Expr(),
-          new Plist({&s_si, result, ty->width()->ACL2Expr()}),
-          result});
-    }
-  }
-
-  return result;
+  return getSignedValue(result, get_type());
 }
 
 // class TempCall : public Expression (function template Data)
@@ -298,7 +302,7 @@ Sexpression *TempCall::ACL2Expr() {
 
   dynamic_cast<Template *>(func)->resetParams();
 
-  return result;
+  return getSignedValue(result, get_type());
 }
 
 // class Initializer : public Expression (array initializer)
@@ -431,9 +435,7 @@ Sexpression *ArrayRef::ACL2Expr() {
 
     SymRef *ref = dynamic_cast<SymRef *>(array);
     if (ref && ref->symDec->get_type()->isConst() && ref->symDec->isGlobal()) {
-      s = new Plist({&s_nth, index->ACL2Expr(), new Plist({ref->symDec->sym})});
-    } else if (ref) {
-      s = new Plist({&s_ag, index->ACL2Expr(), ref->symDec->ACL2SymExpr()});
+      s = new Plist({ref->symDec->sym});
     } else {
       s = array->ACL2Expr();
     }
@@ -443,7 +445,8 @@ Sexpression *ArrayRef::ACL2Expr() {
     } else {
       s = new Plist({&s_ag, index->ACL2Expr(), s});
     }
-    return s;
+
+    return getSignedValue(s, get_type());
   } else {
 
     Sexpression *i = index->ACL2Expr();
@@ -464,19 +467,14 @@ Sexpression *ArrayRef::ACL2Assign(Sexpression *rval) {
 
   if (isa<const ArrayType *>(array->get_type())) {
     return array->ACL2Assign(
-        new Plist({&s_as, index->ACL2Expr(), rval, array->ACL2Expr()}));
+      new Plist({&s_as, index->ACL2Expr(), rval, getLVal(array)}));
   } else {
-    Sexpression *b = nullptr;
+    Sexpression *b = getLVal(array);
     
     Sexpression *i = index->ACL2Expr();
 
     // TODO 2
     const IntType *t = always_cast<const IntType *>(array->get_type());
-    if (auto ref = dynamic_cast<const SymRef *>(array)) {
-      b = ref->symDec->ACL2SymExpr();
-    } else {
-      b = array->ACL2Expr();
-    }
     unsigned n = t->width()->evalConst();
 
     Sexpression *s = Integer(loc_, n).ACL2Expr();
@@ -506,13 +504,13 @@ void StructRef::display(std::ostream &os) const {
 
 Sexpression *StructRef::ACL2Expr() {
   Symbol *sym = always_cast<const StructType *>(base->get_type())
-                    ->getField(field)
-                    ->get_sym();
+    ->getField(field)
+    ->get_sym();
 
   Sexpression *s =
-      new Plist({&s_ag, new Plist({&s_quote, sym}), base->ACL2Expr()});
+    new Plist({&s_ag, new Plist({&s_quote, sym}), base->ACL2Expr()});
 
-  return s;
+  return getSignedValue(s, get_type());
 }
 
 Sexpression *StructRef::ACL2Assign(Sexpression *rval) {
@@ -521,7 +519,7 @@ Sexpression *StructRef::ACL2Assign(Sexpression *rval) {
                     ->get_sym();
 
   return base->ACL2Assign(
-      new Plist({&s_as, new Plist({&s_quote, sym}), rval, base->ACL2Expr()}));
+     new Plist({&s_as, new Plist({&s_quote, sym}), rval, getLVal(base)}));
 }
 
 // class Subrange : public Expression
@@ -584,11 +582,11 @@ Sexpression *Subrange::ACL2Expr() {
 
 Sexpression *Subrange::ACL2Assign(Sexpression *rval) {
 
-  Sexpression *b = base->ACL2Expr();
   Sexpression *hi = high->ACL2Expr();
   Sexpression *lo = low->ACL2Expr();
 
   const IntType *t = always_cast<const IntType *>(base->get_type());
+  Sexpression *b = getLVal(base);
 
   Sexpression *s = t->width()->ACL2Expr();
   Sexpression *val = new Plist({&s_setbits, b, s, hi, lo, rval});
@@ -717,7 +715,7 @@ Sexpression *PrefixExpr::ACL2Expr() {
 
 // Data members: Expression *expr; Type *type;
 
-Sexpression *CastExpr::ACL2Expr() { return type->cast(expr); }
+Sexpression *CastExpr::ACL2Expr() { return getSignedValue(type->cast(expr), type); }
 
 // class BinaryExpr : public Expression
 // ------------------------------------
