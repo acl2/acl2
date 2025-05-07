@@ -1364,7 +1364,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define integer-format->size ((format integer-formatp))
+(define integer-format->bit-size ((format integer-formatp))
   :returns (size posp :hints (("Goal" :in-theory (enable posp))))
   :short "Number of bits of an integer format."
   :long
@@ -1380,9 +1380,9 @@
 
   ///
 
-  (defruled integer-format->size-alt-def
+  (defruled integer-format->bit-size-alt-def
     (implies (integer-formatp format)
-             (equal (integer-format->size format)
+             (equal (integer-format->bit-size format)
                     (len (sinteger-format->bits
                           (uinteger+sinteger-format->signed
                            (integer-format->pair format))))))
@@ -1394,13 +1394,13 @@
                              (uinteger+sinteger-format->unsigned
                               (integer-format->pair format))))))
 
-  (defret integer-format->size-type-prescription
+  (defret integer-format->bit-size-type-prescription
     (and (posp size)
          (> size 1))
     :hyp (integer-formatp format)
     :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (e/d (integer-format->size-alt-def)
-                                    (integer-format->size))))))
+    :hints (("Goal" :in-theory (e/d (integer-format->bit-size-alt-def)
+                                    (integer-format->bit-size))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1445,12 +1445,12 @@
        uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
        posp))))
 
-  (defruled integer-format->size-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (integer-format->size (integer-format-inc-sign-tcnpnt size))
+             (equal (integer-format->bit-size (integer-format-inc-sign-tcnpnt size))
                     size))
-    :enable (integer-format->size
+    :enable (integer-format->bit-size
              uinteger-format-inc-npnt
              sinteger-format-inc-sign-tcnpnt
              uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
@@ -1521,7 +1521,7 @@
      and the possible unsigned values must at least include
      those of @('unsigned char')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size short-format))
+  (b* ((size (integer-format->bit-size short-format))
        (signed-short-min (sinteger-format->min
                           (uinteger+sinteger-format->signed
                            (integer-format->pair short-format))))
@@ -1566,7 +1566,7 @@
      and the possible unsigned values must at least include
      those of @('unsigned short')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size int-format))
+  (b* ((size (integer-format->bit-size int-format))
        (signed-int-min (sinteger-format->min
                         (uinteger+sinteger-format->signed
                          (integer-format->pair int-format))))
@@ -1618,7 +1618,7 @@
      and the possible unsigned values must at least include
      those of @('unsigned int')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size long-format))
+  (b* ((size (integer-format->bit-size long-format))
        (signed-long-min (sinteger-format->min
                          (uinteger+sinteger-format->signed
                           (integer-format->pair long-format))))
@@ -1671,7 +1671,7 @@
      and the possible unsigned values must at least include
      those of @('unsigned long')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size llong-format))
+  (b* ((size (integer-format->bit-size llong-format))
        (signed-llong-min (sinteger-format->min
                           (uinteger+sinteger-format->signed
                            (integer-format->pair llong-format))))
@@ -1728,8 +1728,8 @@
                               (uchar-format-8)
                               (schar-format-8tcnt)))
 
-  (defruled integer-format->size-of-short-format-16tcnt
-    (equal (integer-format->size (short-format-16tcnt))
+  (defruled integer-format->bit-size-of-short-format-16tcnt
+    (equal (integer-format->bit-size (short-format-16tcnt))
            16))
 
   (defruled uinteger-format->max-of-short-format-16tcnt
@@ -1782,8 +1782,8 @@
                             (uchar-format-8)
                             (short-format-16tcnt)))
 
-  (defruled integer-format->size-of-int-format-16tcnt
-    (equal (integer-format->size (int-format-16tcnt))
+  (defruled integer-format->bit-size-of-int-format-16tcnt
+    (equal (integer-format->bit-size (int-format-16tcnt))
            16))
 
   (defruled uinteger-format->max-of-int-format-16tcnt
@@ -1836,8 +1836,8 @@
                              (uchar-format-8)
                              (int-format-16tcnt)))
 
-  (defruled integer-format->size-of-long-format-32tcnt
-    (equal (integer-format->size (long-format-32tcnt))
+  (defruled integer-format->bit-size-of-long-format-32tcnt
+    (equal (integer-format->bit-size (long-format-32tcnt))
            32))
 
   (defruled uinteger-format->max-of-long-format-32tcnt
@@ -1890,8 +1890,8 @@
                               (uchar-format-8)
                               (long-format-32tcnt)))
 
-  (defruled integer-format->size-of-llong-format-64tcnt
-    (equal (integer-format->size (llong-format-64tcnt))
+  (defruled integer-format->bit-size-of-llong-format-64tcnt
+    (equal (integer-format->bit-size (llong-format-64tcnt))
            64))
 
   (defruled uinteger-format->max-of-llong-format-64tcnt
