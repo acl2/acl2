@@ -451,9 +451,23 @@ Sexpression *ArrayRef::ACL2Expr() {
 
     Sexpression *i = index->ACL2Expr();
     Sexpression *b = nullptr;
-    if (auto ref = dynamic_cast<SymRef *>(array)) {
-      b = ref->symDec->sym;
+    // b should be array->ACL2Expr() in the signed case, but we
+    // perform an optimization when the sampling from an register
+    // types, and when the width is smaller than the index:
+    if (auto ty = dynamic_cast<const IntType*>(array->get_type())) {
+      if (ty->isSigned()->isStaticallyEvaluable()
+          && (!ty->isSigned()->evalConst() ||
+              (ty->width()->isStaticallyEvaluable()
+               && index->isStaticallyEvaluable()
+               && ty->width()->evalConst() > index->evalConst()))
+          && (isa<SymRef *>(array) || isa<ArrayRef *>(array)
+              || isa<StructRef *>(array))) {
+        b = getLVal(array);
+      } else {
+        b = array->ACL2Expr();
+      }
     } else {
+      // TODO: Do we need something similar for Primitive types?
       b = array->ACL2Expr();
     }
     return new Plist({&s_bitn, b, i});
