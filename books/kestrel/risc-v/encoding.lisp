@@ -210,7 +210,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define encode-load-funct ((funct load-funct-p))
+(define encode-load-funct ((funct load-funct-p) (feat featp))
+  :guard (implies (or (load-funct-case funct :lwu)
+                      (load-funct-case funct :ld))
+                  (feat-64p feat))
   :returns (funct3 ubyte3p)
   :short "Encode the name of
           an instruction with the @('LOAD') opcode
@@ -223,13 +226,19 @@
    :lh  #b001
    :lhu #b101
    :lw  #b010
-   :lwu #b110
-   :ld  #b011)
+   :lwu (assert$
+         (feat-64p feat)
+         #b110)
+   :ld  (assert$
+         (feat-64p feat)
+         #b011))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define encode-store-funct ((funct store-funct-p))
+(define encode-store-funct ((funct store-funct-p) (feat featp))
+  :guard (implies (store-funct-case funct :sd)
+                  (feat-64p feat))
   :returns (funct3 ubyte3p)
   :short "Encode the name of
           an instruction with the @('STORE') opcode
@@ -240,7 +249,9 @@
    :sb #b000
    :sh #b001
    :sw #b010
-   :sd #b011)
+   :sd (assert$
+        (feat-64p feat)
+        #b011))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -378,14 +389,14 @@
                       6 imm-10-5
                       1 imm-12))
    :load (b* ((opcode #b0000011)
-              (funct3 (encode-load-funct instr.funct)))
+              (funct3 (encode-load-funct instr.funct feat)))
            (logappn 7 opcode
                     5 instr.rs1
                     3 funct3
                     5 instr.rs1
                     12 instr.imm))
    :store (b* ((opcode #b0100011)
-               (funct3 (encode-store-funct instr.funct))
+               (funct3 (encode-store-funct instr.funct feat))
                (imm-4-0 (part-select instr.imm :low 0 :high 4))
                (imm-11-5 (part-select instr.imm :low 5 :high 11)))
             (logappn 7 opcode
