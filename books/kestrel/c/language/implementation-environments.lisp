@@ -2185,3 +2185,71 @@
                   -127)
               0))
     :rule-classes ((:linear :trigger-terms ((ienv->char-min ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->short-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('short') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->short
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->short-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->int-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('int') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->int
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->int-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->long-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('long') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->long
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->long-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->llong-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('long long') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->llong
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->llong-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
