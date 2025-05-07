@@ -139,8 +139,8 @@
      which, when joined, form the bits @('imm[11:0]') of the immediate."))
   (b* ((imm[4.0] (part-select enc :low 7 :high 11))
        (imm[11.5] (part-select enc :low 25 :high 31)))
-    (+ imm[4.0]
-       (ash imm[11.5] 5))))
+    (logappn 5 imm[4.0]
+             7 imm[11.5])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -158,10 +158,10 @@
        (imm[10.5] (part-select enc :low 25 :width 6))
        (imm[11] (part-select enc :low 7 :width 1))
        (imm[12] (part-select enc :low 31 :width 1)))
-    (+ imm[4.1]
-       (ash imm[10.5] 4)
-       (ash imm[11] 10)
-       (ash imm[12] 11))))
+    (logappn 4 imm[4.1]
+             6 imm[10.5]
+             1 imm[11]
+             1 imm[12])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -193,10 +193,10 @@
        (imm[11] (part-select enc :low 20 :width 1))
        (imm[19.12] (part-select enc :low 12 :width 8))
        (imm[20] (part-select enc :low 31 :width 1)))
-    (+ imm[10.1]
-       (ash imm[11] 10)
-       (ash imm[19.12] 11)
-       (ash imm[20] 19))))
+    (logappn 10 imm[10.1]
+             1 imm[11]
+             8 imm[19.12]
+             1 imm[20])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
