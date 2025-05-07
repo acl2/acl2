@@ -1056,8 +1056,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ldm-paramdeclor ((paramdeclor paramdeclorp))
-  :guard (paramdeclor-unambp paramdeclor)
+(define ldm-param-declor ((paramdeclor param-declorp))
+  :guard (param-declor-unambp paramdeclor)
   :returns (mv erp (objdeclor c::obj-declorp))
   :short "Map a parameter declarator to
           an object declarator in the language definition."
@@ -1068,24 +1068,24 @@
      The declarator must be for an object,
      which we map to an object declarator."))
   (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
-       ((when (paramdeclor-case paramdeclor :absdeclor))
+       ((when (param-declor-case paramdeclor :absdeclor))
         (reterr (msg "Unsupported parameter declarator ~x0 ~
                       with abstract declarator."
-                     (paramdeclor-fix paramdeclor))))
-       ((when (paramdeclor-case paramdeclor :none))
+                     (param-declor-fix paramdeclor))))
+       ((when (param-declor-case paramdeclor :none))
         (reterr (msg "Unsupported absent parameter declarator ~x0.")))
-       ((when (paramdeclor-case paramdeclor :ambig))
+       ((when (param-declor-case paramdeclor :ambig))
         (prog2$ (impossible) (reterr t)))
-       (declor (paramdeclor-declor->unwrap paramdeclor)))
+       (declor (param-declor-declor->unwrap paramdeclor)))
     (ldm-declor-obj declor))
   :hooks (:fix)
 
   ///
 
-  (defret ldm-paramdeclor-ok-when-paramdeclor-formalp
+  (defret ldm-param-declor-ok-when-param-declor-formalp
     (not erp)
-    :hyp (paramdeclor-formalp paramdeclor)
-    :hints (("Goal" :in-theory (enable paramdeclor-formalp)))))
+    :hyp (param-declor-formalp paramdeclor)
+    :hints (("Goal" :in-theory (enable param-declor-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1112,7 +1112,7 @@
                       in parameter declaration ~x0."
                      (param-declon-fix paramdecl))))
        ((erp tyspecseq) (ldm-type-spec-list tyspecs))
-       ((erp objdeclor) (ldm-paramdeclor declor)))
+       ((erp objdeclor) (ldm-param-declor declor)))
     (retok (c::make-param-declon :tyspec tyspecseq :declor objdeclor)))
   :hooks (:fix)
 

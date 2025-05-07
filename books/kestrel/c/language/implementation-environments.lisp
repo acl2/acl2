@@ -602,6 +602,12 @@
     (equal (uinteger-bit-roles-value-count (append roles1 roles2))
            (+ (uinteger-bit-roles-value-count roles1)
               (uinteger-bit-roles-value-count roles2)))
+    :induct t)
+
+  (defruled uinteger-bit-roles-value-count-upper-bound
+    (<= (uinteger-bit-roles-value-count roles)
+        (len roles))
+    :rule-classes :linear
     :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -635,7 +641,15 @@
     (equal (sinteger-bit-roles-value-count (append roles1 roles2))
            (+ (sinteger-bit-roles-value-count roles1)
               (sinteger-bit-roles-value-count roles2)))
-    :induct t))
+    :induct t)
+
+  (defruled sinteger-bit-roles-value/sign-count-upper-bound
+    (<= (+ (sinteger-bit-roles-value-count roles)
+           (sinteger-bit-roles-sign-count roles))
+        (len roles))
+    :rule-classes :linear
+    :induct t
+    :enable sinteger-bit-roles-sign-count))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -672,7 +686,15 @@
              (posp (uinteger-bit-roles-value-count roles)))
     :rule-classes (:rewrite :type-prescription)
     :enable (uinteger-bit-roles-wfp
-             uinteger-bit-roles-value-count-alt-def)))
+             uinteger-bit-roles-value-count-alt-def))
+
+  (defruled len-gt-0-when-uinteger-bit-roles-wfp
+    (implies (uinteger-bit-roles-wfp roles)
+             (> (len roles) 0))
+    :enable (uinteger-bit-roles-wfp
+             uinteger-bit-roles-value-count-alt-def
+             uinteger-bit-roles-value-count-upper-bound)
+    :disable (acl2::|(< 0 (len x))|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -713,7 +735,14 @@
              (posp (sinteger-bit-roles-value-count roles)))
     :rule-classes (:rewrite :type-prescription)
     :enable (sinteger-bit-roles-wfp
-             sinteger-bit-roles-value-count-alt-def)))
+             sinteger-bit-roles-value-count-alt-def))
+
+  (defruled len-gt-1-when-sinteger-bit-roles-wfp
+    (implies (sinteger-bit-roles-wfp roles)
+             (> (len roles) 1))
+    :enable (sinteger-bit-roles-wfp
+             sinteger-bit-roles-value-count-alt-def
+             sinteger-bit-roles-value/sign-count-upper-bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1335,7 +1364,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define integer-format->size ((format integer-formatp))
+(define integer-format->bit-size ((format integer-formatp))
   :returns (size posp :hints (("Goal" :in-theory (enable posp))))
   :short "Number of bits of an integer format."
   :long
@@ -1351,9 +1380,9 @@
 
   ///
 
-  (defruled integer-format->size-alt-def
+  (defruled integer-format->bit-size-alt-def
     (implies (integer-formatp format)
-             (equal (integer-format->size format)
+             (equal (integer-format->bit-size format)
                     (len (sinteger-format->bits
                           (uinteger+sinteger-format->signed
                            (integer-format->pair format))))))
@@ -1363,7 +1392,15 @@
                               (integer-format->pair format))))
                     (uroles (uinteger-format->bits
                              (uinteger+sinteger-format->unsigned
-                              (integer-format->pair format)))))))
+                              (integer-format->pair format))))))
+
+  (defret integer-format->bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :hyp (integer-formatp format)
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (e/d (integer-format->bit-size-alt-def)
+                                    (integer-format->bit-size))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1408,12 +1445,12 @@
        uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
        posp))))
 
-  (defruled integer-format->size-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (integer-format->size (integer-format-inc-sign-tcnpnt size))
+             (equal (integer-format->bit-size (integer-format-inc-sign-tcnpnt size))
                     size))
-    :enable (integer-format->size
+    :enable (integer-format->bit-size
              uinteger-format-inc-npnt
              sinteger-format-inc-sign-tcnpnt
              uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
@@ -1484,7 +1521,7 @@
      and the possible unsigned values must at least include
      those of @('unsigned char')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size short-format))
+  (b* ((bit-size (integer-format->bit-size short-format))
        (signed-short-min (sinteger-format->min
                           (uinteger+sinteger-format->signed
                            (integer-format->pair short-format))))
@@ -1497,7 +1534,7 @@
        (signed-char-min (schar-format->min schar-format uchar-format))
        (signed-char-max (schar-format->max schar-format uchar-format))
        (unsigned-char-max (uchar-format->max uchar-format)))
-    (and (integerp (/ size (uchar-format->size uchar-format)))
+    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-short-min -32767)
          (<= +32767 signed-short-max)
          (<= 65535 unsigned-short-max)
@@ -1529,7 +1566,7 @@
      and the possible unsigned values must at least include
      those of @('unsigned short')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size int-format))
+  (b* ((bit-size (integer-format->bit-size int-format))
        (signed-int-min (sinteger-format->min
                         (uinteger+sinteger-format->signed
                          (integer-format->pair int-format))))
@@ -1548,7 +1585,7 @@
        (unsigned-short-max (uinteger-format->max
                             (uinteger+sinteger-format->unsigned
                              (integer-format->pair short-format)))))
-    (and (integerp (/ size (uchar-format->size uchar-format)))
+    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-int-min -32767)
          (<= +32767 signed-int-max)
          (<= 65535 unsigned-int-max)
@@ -1581,7 +1618,7 @@
      and the possible unsigned values must at least include
      those of @('unsigned int')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size long-format))
+  (b* ((bit-size (integer-format->bit-size long-format))
        (signed-long-min (sinteger-format->min
                          (uinteger+sinteger-format->signed
                           (integer-format->pair long-format))))
@@ -1600,7 +1637,7 @@
        (unsigned-int-max (uinteger-format->max
                           (uinteger+sinteger-format->unsigned
                            (integer-format->pair int-format)))))
-    (and (integerp (/ size (uchar-format->size uchar-format)))
+    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-long-min -2147483647)
          (<= +2147483647 signed-long-max)
          (<= 4294967295 unsigned-long-max)
@@ -1634,7 +1671,7 @@
      and the possible unsigned values must at least include
      those of @('unsigned long')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size llong-format))
+  (b* ((bit-size (integer-format->bit-size llong-format))
        (signed-llong-min (sinteger-format->min
                           (uinteger+sinteger-format->signed
                            (integer-format->pair llong-format))))
@@ -1653,7 +1690,7 @@
        (unsigned-long-max (uinteger-format->max
                            (uinteger+sinteger-format->unsigned
                             (integer-format->pair long-format)))))
-    (and (integerp (/ size (uchar-format->size uchar-format)))
+    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-llong-min -9223372036854775807)
          (<= +9223372036854775807 signed-llong-max)
          (<= 18446744073709551615 unsigned-llong-max)
@@ -1691,8 +1728,8 @@
                               (uchar-format-8)
                               (schar-format-8tcnt)))
 
-  (defruled integer-format->size-of-short-format-16tcnt
-    (equal (integer-format->size (short-format-16tcnt))
+  (defruled integer-format->bit-size-of-short-format-16tcnt
+    (equal (integer-format->bit-size (short-format-16tcnt))
            16))
 
   (defruled uinteger-format->max-of-short-format-16tcnt
@@ -1745,8 +1782,8 @@
                             (uchar-format-8)
                             (short-format-16tcnt)))
 
-  (defruled integer-format->size-of-int-format-16tcnt
-    (equal (integer-format->size (int-format-16tcnt))
+  (defruled integer-format->bit-size-of-int-format-16tcnt
+    (equal (integer-format->bit-size (int-format-16tcnt))
            16))
 
   (defruled uinteger-format->max-of-int-format-16tcnt
@@ -1799,8 +1836,8 @@
                              (uchar-format-8)
                              (int-format-16tcnt)))
 
-  (defruled integer-format->size-of-long-format-32tcnt
-    (equal (integer-format->size (long-format-32tcnt))
+  (defruled integer-format->bit-size-of-long-format-32tcnt
+    (equal (integer-format->bit-size (long-format-32tcnt))
            32))
 
   (defruled uinteger-format->max-of-long-format-32tcnt
@@ -1853,8 +1890,8 @@
                               (uchar-format-8)
                               (long-format-32tcnt)))
 
-  (defruled integer-format->size-of-llong-format-64tcnt
-    (equal (integer-format->size (llong-format-64tcnt))
+  (defruled integer-format->bit-size-of-llong-format-64tcnt
+    (equal (integer-format->bit-size (llong-format-64tcnt))
            64))
 
   (defruled uinteger-format->max-of-llong-format-64tcnt
@@ -2148,3 +2185,71 @@
                   -127)
               0))
     :rule-classes ((:linear :trigger-terms ((ienv->char-min ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->short-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('short') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->short
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->short-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->int-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('int') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->int
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->int-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->long-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('long') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->long
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->long-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->llong-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('long long') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->llong
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->llong-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))

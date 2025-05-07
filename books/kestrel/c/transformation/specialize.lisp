@@ -78,7 +78,7 @@
      "This may return @('nil') when the parameter declaration is unnamed."))
   :returns (ident ident-optionp)
   (b* (((param-declon paramdecl) paramdecl))
-    (paramdeclor-case
+    (param-declor-case
       paramdecl.declor
       :declor (declor->ident paramdecl.declor.unwrap)
       :otherwise nil)))
@@ -90,7 +90,7 @@
   :returns (mv (success booleanp)
                (decl declp))
   (b* (((param-declon paramdecl) paramdecl))
-    (paramdeclor-case
+    (param-declor-case
       paramdecl.declor
       :declor (mv t
                   (make-decl-decl

@@ -105,7 +105,7 @@
       disambiguated, the empty map is returned instead."))
   :returns (map ident-paramdeclon-mapp)
   (b* (((param-declon paramdecl) paramdecl))
-    (paramdeclor-case
+    (param-declor-case
       paramdecl.declor
       :declor (omap::update (declor->ident paramdecl.declor.unwrap)
                             (param-declon-fix paramdecl)
@@ -165,7 +165,7 @@
          ident
          (make-param-declon
            :specs declspecs
-           :declor (paramdeclor-declor initdeclor.declor))
+           :declor (param-declor-declor initdeclor.declor))
          (decl-to-ident-paramdeclon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 

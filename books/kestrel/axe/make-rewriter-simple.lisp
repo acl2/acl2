@@ -1004,7 +1004,7 @@
                                                                            (get-dag-array rewrite-stobj2)
                                                                            (get-dag-len rewrite-stobj2)
                                                                            (get-dag-parent-array rewrite-stobj2)
-                                                                           "hyp" ; todo: add rule name
+                                                                           (concatenate 'string "axe-smt-" (symbol-name rule-symbol) "-hyp-" (nat-to-string hyp-num) "-node-" (nat-to-string new-nodenum))
                                                                            :brief
                                                                            *default-stp-max-conflicts*
                                                                            nil ; counterexamplep ; todo: use this to avoid repeated queries that will fail?
@@ -5831,7 +5831,8 @@
                 ,@(and smtp '(;; Form the negated-assumptions for STP:
                               ;; todo: combine with the above assumption-processing steps, but note that this is conditional on smtp:
                               ((mv erp negated-assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                               (negate-assumptions-and-add-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil))
+                               (negate-assumptions-and-add-to-dag-array (keep-smt-assumptions assumptions)
+                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil))
                               ((when erp) (mv erp nil limits state)))))
              (with-local-stobjs
                (renumbering-stobj rewrite-stobj rewrite-stobj2)
@@ -6468,7 +6469,8 @@
                        '(;; Form the negated-assumptions for STP:
                          ;; todo: combine with the above assumption-processing steps, but note that this is conditional on smtp:
                          ((mv erp negated-assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                          (negate-assumptions-and-add-to-dag-array assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil))
+                          (negate-assumptions-and-add-to-dag-array (keep-smt-assumptions assumptions)
+                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil))
                          ((when erp) (mv erp nil state))))
                 ;; Call the core term simplification function:
                 ((mv erp new-nodenum-or-quotep
