@@ -28,6 +28,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define feat-rv64i ()
+  :returns (feat featp)
+  :short "Features for RV64I."
+  (make-feat :bits (feat-bits-64)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define step64 ((stat state64p))
   :returns (new-stat state64p)
   :short "Single-step execution."
@@ -44,7 +51,7 @@
   (b* (((when (error64p stat)) (state64-fix stat))
        (pc (read64-pc stat))
        (enc (read64-mem-ubyte32-lendian pc stat))
-       (instr? (decode enc t))
+       (instr? (decode enc (feat-rv64i)))
        ((unless instr?) (error64 stat)))
     (exec64-instr instr? pc stat))
   :hooks (:fix))

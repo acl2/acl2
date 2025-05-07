@@ -278,15 +278,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decode ((enc ubyte32p) (64p booleanp))
+(define decode ((enc ubyte32p) (feat featp))
   :returns (instr? instr-optionp)
   :short "Decode an instruction."
   :long
   (xdoc::topstring
    (xdoc::p
     "The first input is a 32-bit encoding of the instruction;
-     the second input is a flag distinguishing between
-     RV64I (if @('t')) and RV32I (if @('nil')).
+     the second input consists of the features, which affect decoding.
      If decoding is successful, we return the instruction.
      If decoding is unsuccessful, we return @('nil').")
    (xdoc::p
@@ -338,7 +337,7 @@
                    (#b110 (op-imm-funct-ori))
                    (#b111 (op-imm-funct-andi))))
           ((when funct) (instr-op-imm funct rd rs1 imm)))
-       (if 64p
+       (if (feat-64p feat)
            (b* ((loimm (part-select imm :low 0 :high 5))
                 (hiimm (part-select imm :low 6 :high 11))
                 ((when (= funct3 #b001))

@@ -28,6 +28,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define feat-rv32i ()
+  :returns (feat featp)
+  :short "Features for RV32I."
+  (make-feat :bits (feat-bits-32)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define step32 ((stat state32p))
   :returns (new-stat state32p)
   :short "Single-step execution."
@@ -44,7 +51,7 @@
   (b* (((when (error32p stat)) (state32-fix stat))
        (pc (read32-pc stat))
        (enc (read32-mem-ubyte32-lendian pc stat))
-       (instr? (decode enc t))
+       (instr? (decode enc (feat-rv32i)))
        ((unless instr?) (error32 stat)))
     (exec32-instr instr? pc stat))
   :hooks (:fix))
