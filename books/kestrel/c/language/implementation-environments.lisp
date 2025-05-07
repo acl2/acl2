@@ -602,6 +602,12 @@
     (equal (uinteger-bit-roles-value-count (append roles1 roles2))
            (+ (uinteger-bit-roles-value-count roles1)
               (uinteger-bit-roles-value-count roles2)))
+    :induct t)
+
+  (defruled uinteger-bit-roles-value-count-upper-bound
+    (<= (uinteger-bit-roles-value-count roles)
+        (len roles))
+    :rule-classes :linear
     :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -635,7 +641,15 @@
     (equal (sinteger-bit-roles-value-count (append roles1 roles2))
            (+ (sinteger-bit-roles-value-count roles1)
               (sinteger-bit-roles-value-count roles2)))
-    :induct t))
+    :induct t)
+
+  (defruled sinteger-bit-roles-value/sign-count-upper-bound
+    (<= (+ (sinteger-bit-roles-value-count roles)
+           (sinteger-bit-roles-sign-count roles))
+        (len roles))
+    :rule-classes :linear
+    :induct t
+    :enable sinteger-bit-roles-sign-count))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -672,7 +686,15 @@
              (posp (uinteger-bit-roles-value-count roles)))
     :rule-classes (:rewrite :type-prescription)
     :enable (uinteger-bit-roles-wfp
-             uinteger-bit-roles-value-count-alt-def)))
+             uinteger-bit-roles-value-count-alt-def))
+
+  (defruled len-gt-0-when-uinteger-bit-roles-wfp
+    (implies (uinteger-bit-roles-wfp roles)
+             (> (len roles) 0))
+    :enable (uinteger-bit-roles-wfp
+             uinteger-bit-roles-value-count-alt-def
+             uinteger-bit-roles-value-count-upper-bound)
+    :disable (acl2::|(< 0 (len x))|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -713,7 +735,14 @@
              (posp (sinteger-bit-roles-value-count roles)))
     :rule-classes (:rewrite :type-prescription)
     :enable (sinteger-bit-roles-wfp
-             sinteger-bit-roles-value-count-alt-def)))
+             sinteger-bit-roles-value-count-alt-def))
+
+  (defruled len-gt-1-when-sinteger-bit-roles-wfp
+    (implies (sinteger-bit-roles-wfp roles)
+             (> (len roles) 1))
+    :enable (sinteger-bit-roles-wfp
+             sinteger-bit-roles-value-count-alt-def
+             sinteger-bit-roles-value/sign-count-upper-bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1363,7 +1392,15 @@
                               (integer-format->pair format))))
                     (uroles (uinteger-format->bits
                              (uinteger+sinteger-format->unsigned
-                              (integer-format->pair format)))))))
+                              (integer-format->pair format))))))
+
+  (defret integer-format->size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :hyp (integer-formatp format)
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (e/d (integer-format->size-alt-def)
+                                    (integer-format->size))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
