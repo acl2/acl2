@@ -247,7 +247,6 @@
 
 (define encode ((instr instrp) (feat featp))
   :guard (instr-validp instr feat)
-  (declare (ignore feat))
   :returns (encoding ubyte32p
                      :hints (("Goal" :in-theory (enable ifix
                                                         ubyte32p
@@ -280,38 +279,46 @@
                       3 funct3
                       5 instr.rs1
                       12 instr.imm))
-   :op-imms32 (b* ((opcode #b0010011)
-                   ((mv funct3 hi7imm) (encode-op-imms32-funct instr.funct)))
-                (logappn 7 opcode
-                         5 instr.rd
-                         3 funct3
-                         5 instr.rs1
-                         5 instr.imm
-                         7 hi7imm))
-   :op-imms64 (b* ((opcode #b0010011)
-                   ((mv funct3 hi6imm) (encode-op-imms64-funct instr.funct)))
-                (logappn 7 opcode
-                         5 instr.rd
-                         3 funct3
-                         5 instr.rs1
-                         6 instr.imm
-                         6 hi6imm))
-   :op-imm-32 (b* ((opcode #b0011011)
-                   (funct3 (encode-op-imm-32-funct instr.funct)))
-                (logappn 7 opcode
-                         5 instr.rd
-                         3 funct3
-                         5 instr.rs1
-                         12 instr.imm))
-   :op-imms-32 (b* ((opcode #b0011011)
-                    ((mv funct3 hi6imm) (encode-op-imms-32-funct instr.funct)))
+   :op-imms32 (assert$
+               (feat-32p feat)
+               (b* ((opcode #b0010011)
+                    ((mv funct3 hi7imm) (encode-op-imms32-funct instr.funct)))
                  (logappn 7 opcode
                           5 instr.rd
                           3 funct3
                           5 instr.rs1
                           5 instr.imm
-                          1 0
-                          6 hi6imm))
+                          7 hi7imm)))
+   :op-imms64 (assert$
+               (feat-64p feat)
+               (b* ((opcode #b0010011)
+                    ((mv funct3 hi6imm) (encode-op-imms64-funct instr.funct)))
+                 (logappn 7 opcode
+                          5 instr.rd
+                          3 funct3
+                          5 instr.rs1
+                          6 instr.imm
+                          6 hi6imm)))
+   :op-imm-32 (assert$
+               (feat-64p feat)
+               (b* ((opcode #b0011011)
+                    (funct3 (encode-op-imm-32-funct instr.funct)))
+                 (logappn 7 opcode
+                          5 instr.rd
+                          3 funct3
+                          5 instr.rs1
+                          12 instr.imm)))
+   :op-imms-32 (assert$
+                (feat-64p feat)
+                (b* ((opcode #b0011011)
+                     ((mv funct3 hi6imm) (encode-op-imms-32-funct instr.funct)))
+                  (logappn 7 opcode
+                           5 instr.rd
+                           3 funct3
+                           5 instr.rs1
+                           5 instr.imm
+                           1 0
+                           6 hi6imm)))
    :lui (b* ((opcode #b0110111))
           (logappn 7 opcode
                    5 instr.rd
@@ -328,14 +335,16 @@
                   5 instr.rs1
                   5 instr.rs2
                   7 funct7))
-   :op-32 (b* ((opcode #b0111011)
-               ((mv funct3 funct7) (encode-op-32-funct instr.funct)))
-            (logappn 7 opcode
-                     5 instr.rd
-                     3 funct3
-                     5 instr.rs1
-                     5 instr.rs2
-                     7 funct7))
+   :op-32 (assert$
+           (feat-64p feat)
+           (b* ((opcode #b0111011)
+                ((mv funct3 funct7) (encode-op-32-funct instr.funct)))
+             (logappn 7 opcode
+                      5 instr.rd
+                      3 funct3
+                      5 instr.rs1
+                      5 instr.rs2
+                      7 funct7)))
    :jal (b* ((opcode #b1101111)
              (imm-10-1 (part-select instr.imm :low 0 :high 9))
              (imm-11 (logbit 10 instr.imm))
@@ -385,5 +394,5 @@
                      5 instr.rs1
                      5 instr.rs2
                      7 imm-11-5)))
-  :guard-hints (("Goal" :in-theory (enable fix ifix)))
+  :guard-hints (("Goal" :in-theory (enable fix ifix instr-validp)))
   :hooks (:fix))
