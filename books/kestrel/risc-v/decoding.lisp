@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -29,14 +29,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Instructions are encoded as specified in [ISA] and [ISAP].
+    "Instructions are encoded as specified in [ISA] and [ISAP],
+     and as formalized in @(see encoding).
      We define an executable decoder that maps the encodings of instructions
      to the corresponding instruction fixtypes
      defined in @(see instructions).")
    (xdoc::p
     "Currently we only cover the decoding of
-     the instructions defined in @(see instructions);
-     this is for both RV32I and RV64I.
+     the instructions defined in @(see instructions).
      We only handle the normal encodings,
      i.e. not the compressed ones in the C extension [ISA:26];
      thus, our decoder operates on 32-bit encodings."))
