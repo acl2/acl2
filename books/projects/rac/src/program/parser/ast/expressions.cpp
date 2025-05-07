@@ -674,17 +674,6 @@ Sexpression *PrefixExpr::ACL2Expr() {
     Sexpression *s_val = s;
     Sexpression *sexpr = new Plist({&s_minus, s_val});
 
-    // if (auto pt = dynamic_cast<const IntType *>(get_type())) {
-      // Sexpression *upper_bound = nullptr;
-      // upper_bound =
-      //     pt->width()->isStaticallyEvaluable()
-      //         ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
-      //         : new Plist({&s_minus, pt->width()->ACL2Expr(), new Symbol(1)});
-
-      // sexpr = new Plist({&s_bits, sexpr, upper_bound,
-      //                    Integer::zero_v(this->loc())->ACL2Expr()});
-    //}
-
     return sexpr;
 
   } else if (op == Op::Not) {
@@ -693,17 +682,6 @@ Sexpression *PrefixExpr::ACL2Expr() {
   } else if (op == Op::BitNot) {
 
     Plist *val = new Plist({&s_lognot, expr->ACL2Expr()});
-
-    // if (auto pt = dynamic_cast<const IntType *>(get_type())) {
-    //   Sexpression *upper_bound = nullptr;
-    //   upper_bound =
-    //       pt->width()->isStaticallyEvaluable()
-    //           ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
-    //           : new Plist({&s_minus, pt->width()->ACL2Expr(), new Symbol(1)});
-
-    //   val = new Plist({&s_bits, val, upper_bound,
-    //                    Integer::zero_v(this->loc())->ACL2Expr()});
-    // }
 
     return val;
   } else
