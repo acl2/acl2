@@ -234,17 +234,22 @@
      the @('vartys') component of @(tsee simpadd0-gout).
      For each such variable, we add a hypothesis about it saying that
      the variable can be read from the computation state
-     and it contains a value of the appropriate type."))
+     and it contains a value of the appropriate type.
+     Currently we express the type via
+     both @(tsee c::type-of-value) and @(tsee c::value-kind);
+     eventually we will eliminate the latter."))
   (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
        ((unless (type-formalp type))
         (raise "Internal error: variable ~x0 has type ~x1." var type))
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
        (value-kind (type-to-value-kind type))
        (hyp `(b* ((var (mv-nth 1 (ldm-ident (ident ,(ident->unwrap var)))))
                   (objdes (c::objdesign-of-var var compst))
                   (val (c::read-object objdes compst)))
                (and objdes
                     (c::valuep val)
+                    (equal (c::type-of-value val) ',ctype)
                     (c::value-case val ,value-kind))))
        (hyps (simpadd0-gen-var-hyps (omap::tail vartys))))
     (cons hyp hyps))
