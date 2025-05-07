@@ -471,34 +471,22 @@ Sexpression *ArrayType::cast(Expression *rval) const {
 
 Sexpression *ArrayType::default_initializer_value() const {
 
-  Sexpression *res = &s_nil;
-  bool explicit_init = false;
-  if (auto o = dynamic_cast<const DefinedType *>(baseType)) {
-    if (isa<const StructType *>(o->derefType())
-        || isa<const ArrayType *>(o->derefType())) {
-      explicit_init = true;
-    }
-  } else if (isa<const StructType *>(baseType)
-        || isa<const ArrayType *>(baseType)) {
-      explicit_init = true;
+  if (default_value_can_be_ignored(baseType)) {
+    return &s_nil;
+  }
+  Plist *result = new Plist({});
+  
+  //TODO do not support template
+  assert(dim->isStaticallyEvaluable());
+  
+  result->add(&s_list);
+  unsigned size = dim->evalConst();
+  for (unsigned i = 0; i < size; ++i) {
+    result->add(new Cons(Integer(get_original_location(), i).ACL2Expr(),
+                         baseType->default_initializer_value()));
   }
 
-  if (explicit_init) {
-    Plist *result = new Plist({});
-
-    //TODO do not support template
-    assert(dim->isStaticallyEvaluable());
-
-    result->add(&s_list);
-    unsigned size = dim->evalConst();
-    for (unsigned i = 0; i < size; ++i) {
-      result->add(new Cons(Integer(get_original_location(), i).ACL2Expr(),
-                           baseType->default_initializer_value()));
-    }
-
-    res = new Plist({&s_ainit, result});
-  }
-  return res;
+  return new Plist({&s_ainit, result});
 }
 
 // class StructField
