@@ -401,14 +401,33 @@
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
-    read-of-write-irrel
-    read-of-write-irrel2 ; rename to have separate in the name
     ;; todo: more variants of these:
     ;; todo: uncomment:
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
     ;;read-of-write-of-write-of-set-flag
     ;;read-of-write-of-write-of-write-of-set-flag
-    read-1-of-write-within-new))
+    read-1-of-write-within-new
+
+    ;; Non-SMT rules:
+    read-of-write-irrel
+    read-of-write-when-separate ;; todo: rename to have separate in the name
+
+    ;; SMT-amendable read-of-write rules:
+    ;; read-of-write-when-disjoint-regionsp-gen
+    ;; read-of-write-when-disjoint-regionsp-gen-alt
+    ;; read-of-write-when-disjoint-regionsp ; or different regions with the same base address?
+    ;; subregionp-of-+-arg2
+    ;; subregionp-of-+-arg4
+    ;; disjoint-regionsp-of-+-arg2
+    ;; disjoint-regionsp-of-+-arg4
+    ;; read-of-+-arg2
+    ;; write-of-+-arg2
+
+    ;; Seems ok to always have these on: ; todo: add more
+    disjoint-regionsp-cancel-1-2
+    disjoint-regionsp-cancel-2-2
+    subregionp-of-bvplus-and-bvplus-cancel-2-2
+    subregionp-of-bvplus-and-bvplus-cancel-2-1))
 
 ;; For both 32-bit and 64-bit
 (defund new-normal-form-rules-common ()
@@ -1408,7 +1427,12 @@
     x86isa::two-byte-opcode-modr/m-p$inline-constant-opener
 
     acl2::logmask$inline-constant-opener ; add to evaluator?
-    ;acl2::binary-logand-constant-opener
+    ;;acl2::binary-logand-constant-opener
+
+    subregionp-constant-opener
+    in-regionp-constant-opener
+    disjoint-regionsp-constant-opener
+
     ))
 
 (defun get-prefixes-openers ()
@@ -1868,6 +1892,10 @@
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
             x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
+            acl2::integerp-when-signed-byte-p
+
+            ;; acl2::acl2-numberp-when-signed-byte-p
+
 ;            x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
             acl2::ash-negative-becomes-slice-axe ; move?
@@ -3393,7 +3421,7 @@
     integerp-of-r13
     integerp-of-r14
     integerp-of-r15
-    integerp-of-rsp
+    integerp-of-rsp-gen ; integerp-of-rsp
     integerp-of-rbp
 
     fix-of-rax
@@ -4667,7 +4695,7 @@
 ;; ;;             ;;read-when-equal-of-read
 ;; ;;             ;;read-when-equal-of-read-alt
 ;; ;;             ;read-when-program-at
-;; ;;             ;read-of-write-irrel2
+;; ;;             ;read-of-write-when-separate
 ;; ;;             ;read-of-write-irrel
 ;; ;; ;acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
 ;; ;; ;            read-byte-from-segment-when-code-segment-assumptions32
@@ -4705,7 +4733,7 @@
           '(x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
             x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
-            ;; READ-OF-WRITE-IRREL2
+            ;; READ-OF-WRITE-WHEN-SEPARATE
             )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5046,7 +5074,7 @@
      ;; mv-nth-1-of-rb-becomes-read
      ;mv-nth-1-of-wb-becomes-write-when-app-view
      read-of-set-flag ; drop
-     read-of-write-irrel2 ; drop
+     read-of-write-when-separate ; drop
      write-of-write-same ; drop
      ;; read-when-program-at-1-byte ; this is for resolving reads of the program.
      ;; read-when-program-at-4-bytes ; this is for resolving reads of the program.
@@ -5219,6 +5247,10 @@
 (set-axe-rule-priority read-of-set-rsp -2)
 (set-axe-rule-priority read-of-write-same -1)
 (set-axe-rule-priority read-of-write-irrel -1)
+(set-axe-rule-priority read-of-write-irrel-bv-axe 1) ; try late, as this uses SMT, todo: add smt to name
+
+;; Try last
+(set-axe-rule-priority canonical-address-p-when-bvlt-of-bvplus-axe 1) ; todo: add smt to name
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority ms-of-write -4)

@@ -1461,6 +1461,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *smt-functions*
+  '(bitnot bitand bitor bitxor bvchop bvnot bvuminus getbit slice bvand bvor bvxor bvplus bvminus bvmult bvdiv bvmod sbvdiv sbvrem bvcat bvsx bvif leftrotate32 bv-array-read bv-array-write bv-array-if))
+
+(defund smt-function-callp (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (and (consp term)
+       (member-eq (ffn-symb term) *smt-functions*)))
+
+(defund smt-constantp (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (and (consp term)
+       (eq (ffn-symb term) 'quote)
+       (let ((val (unquote term)))
+         (or (natp val) ; possibly a constant BV
+             (nat-listp val) ; possibly a constant array
+             (booleanp val) ; a constant boolean
+             ))))
+
+;;todo: booland, boolor, boolif, xor?
+(defund smt-assumptionp (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (variablep term)
+      nil ; a naked variable as an assumption is not useful
+    (let ((fn (ffn-symb term)))
+      (case fn
+        (quote nil) ; a constant assumption is not useful
+        (not (and (= 1 (len (fargs term)))
+                  (smt-assumptionp (farg1 term))))
+        ((bvlt bvle sbvlt sbvle bvequal) t)
+        (equal (and (= 2 (len (fargs term)))
+                    (let ((arg1 (farg1 term))
+                          (arg2 (farg2 term)))
+                      (if (or (smt-function-callp arg1)
+                              (smt-function-callp arg2))
+                          t
+                        (if (smt-constantp arg1)
+                            (variablep arg2)
+                          (if (smt-constantp arg2)
+                              (variablep arg1)
+                            (and (variablep arg1)
+                                 (variablep arg2))))))))
+        (otherwise nil)))))
+
+;; Keep terms that may possibly be useful for SMT
+(defund keep-smt-assumptions (terms)
+  (declare (xargs :guard (pseudo-term-listp terms)))
+  (if (endp terms)
+      nil
+    (let ((term (first terms)))
+      (if (smt-assumptionp term)
+          (cons term (keep-smt-assumptions (rest terms)))
+        (keep-smt-assumptions (rest terms))))))
+
+(defthm pseudo-term-listp-of-keep-smt-assumptions
+  (implies (pseudo-term-listp terms)
+           (pseudo-term-listp (keep-smt-assumptions terms)))
+  :hints (("Goal" :in-theory (enable keep-smt-assumptions))))
+
+;; sanity check
+(thm
+ (subsetp-equal (pseudo-term-listp (keep-smt-assumptions terms))
+                (pseudo-term-listp terms))
+ :hints (("Goal" :in-theory (enable keep-smt-assumptions))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Select a type for NODENUM.  Returns (mv erp type).
 ;;note: this will only be called when its expr doesn't have an obvious type
 ;;nodenum must either have a known type or be used in at least one choppable context
