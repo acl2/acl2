@@ -4947,8 +4947,8 @@
                          (equal old-result new-result)
                          (equal old-compst new-compst)
                          old-result
-                         (equal (c::type-of-value old-result) (c::type-sint))
-                         (equal (c::value-kind old-result) :sint)))))
+                         (equal (c::type-of-value old-result)
+                                (c::type-sint))))))
        (hints
         `(("Goal"
            :expand ((c::exec-fun
