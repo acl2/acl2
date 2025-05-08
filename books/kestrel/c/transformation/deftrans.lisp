@@ -238,7 +238,7 @@
     (:linear c$::declor-count-of-declor-option-some->val)
     (:linear c$::declor-count-of-dirdeclor-paren->inner)
     (:linear c$::declor-count-of-initdeclor->declor)
-    (:linear c$::declor-count-of-param-declor-declor->unwrap)
+    (:linear c$::declor-count-of-param-declor-nonabstract->unwrap)
     (:linear c$::declor-option-count-of-structdeclor->declor?)
     (:linear c$::decl-spec-count-of-car)
     (:linear c$::decl-spec-list-count-of-cdr)
@@ -530,7 +530,7 @@
     (:type-prescription param-declon-list-count)
     (:type-prescription param-declor-absdeclor)
     (:type-prescription param-declor-count)
-    (:type-prescription param-declor-declor)
+    (:type-prescription param-declor-nonabstract)
     (:type-prescription param-declor-none)
     (:type-prescription spec/qual-align)
     (:type-prescription spec/qual-count)
@@ -1348,7 +1348,7 @@
    extra-args
    `(param-declor-case
       paramdeclor
-      :declor (param-declor-declor (,(cdr (assoc-eq 'declor names)) paramdeclor.unwrap ,@extra-args-names))
+      :nonabstract (param-declor-nonabstract (,(cdr (assoc-eq 'declor names)) paramdeclor.unwrap ,@extra-args-names))
       :absdeclor (param-declor-absdeclor (,(cdr (assoc-eq 'absdeclor names)) paramdeclor.unwrap ,@extra-args-names))
       :none (param-declor-none)
       :ambig (prog2$

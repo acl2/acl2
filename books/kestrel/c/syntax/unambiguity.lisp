@@ -609,9 +609,9 @@
     :expand (param-declon-unambp (param-declon specs decl)))
 
   (defrule param-declor-unambp-of-param-declor-declor
-    (equal (param-declor-unambp (param-declor-declor declor))
+    (equal (param-declor-unambp (param-declor-nonabstract declor))
            (declor-unambp declor))
-    :expand (param-declor-unambp (param-declor-declor declor)))
+    :expand (param-declor-unambp (param-declor-nonabstract declor)))
 
   (defrule param-declor-unambp-of-param-declor-absdeclor
     (equal (param-declor-unambp (param-declor-absdeclor absdeclor))
@@ -1329,10 +1329,10 @@
              (param-declor-unambp (param-declon->declor param)))
     :expand (param-declon-unambp param))
 
-  (defrule declor-unambp-of-param-declor-declor->unwrap
+  (defrule declor-unambp-of-param-declor-nonabstract->unwrap
     (implies (and (param-declor-unambp param-declor)
-                  (param-declor-case param-declor :declor))
-             (declor-unambp (param-declor-declor->unwrap param-declor)))
+                  (param-declor-case param-declor :nonabstract))
+             (declor-unambp (param-declor-nonabstract->unwrap param-declor)))
     :expand (param-declor-unambp param-declor))
 
   (defrule absdeclor-unambp-of-param-declor-absdeclor->unwrap

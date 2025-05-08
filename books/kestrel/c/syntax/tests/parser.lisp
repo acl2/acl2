@@ -1523,22 +1523,22 @@
 (test-parse
  parse-parameter-declaration
  "int x,"
- :cond (amb?-declor/absdeclor-case (param-declon->declor ast) :declor))
+ :cond (param-declor-case (param-declon->declor ast) :nonabstract))
 
 (test-parse
  parse-parameter-declaration
  "int *x,"
- :cond (amb?-declor/absdeclor-case (param-declon->declor ast) :declor))
+ :cond (param-declor-case (param-declon->declor ast) :nonabstract))
 
 (test-parse
  parse-parameter-declaration
  "int *,"
- :cond (amb?-declor/absdeclor-case (param-declon->declor ast) :absdeclor))
+ :cond (param-declor-case (param-declon->declor ast) :absdeclor))
 
 (test-parse
  parse-parameter-declaration
  "int (x)(y))"
- :cond (amb?-declor/absdeclor-case (param-declon->declor ast) :ambig))
+ :cond (param-declor-case (param-declon->declor ast) :ambig))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

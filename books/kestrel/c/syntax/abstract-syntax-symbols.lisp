@@ -277,7 +277,7 @@
     param-declor-fix
     param-declor-count
     param-declor-case
-    param-declor-declor
+    param-declor-nonabstract
     param-declor-absdeclor
     param-declor-none
 

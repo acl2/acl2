@@ -107,9 +107,9 @@
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
-      :declor (omap::update (declor->ident paramdecl.declor.unwrap)
-                            (param-declon-fix paramdecl)
-                            nil)
+      :nonabstract (omap::update (declor->ident paramdecl.declor.unwrap)
+                                 (param-declon-fix paramdecl)
+                                 nil)
       :otherwise nil)))
 
 (define param-declon-list-to-ident-paramdeclon-map
@@ -165,7 +165,7 @@
          ident
          (make-param-declon
            :specs declspecs
-           :declor (param-declor-declor initdeclor.declor))
+           :declor (param-declor-nonabstract initdeclor.declor))
          (decl-to-ident-paramdeclon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 

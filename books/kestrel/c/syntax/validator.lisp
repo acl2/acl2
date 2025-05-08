@@ -4330,10 +4330,10 @@
           (irr-param-declor) (irr-type) (irr-ident) nil (irr-valid-table)))
       (param-declor-case
        paramdeclor
-       :declor
+       :nonabstract
        (b* (((erp new-declor & type ident types table)
              (valid-declor paramdeclor.unwrap nil type table ienv)))
-         (retok (param-declor-declor new-declor)
+         (retok (param-declor-nonabstract new-declor)
                 type
                 ident
                 types

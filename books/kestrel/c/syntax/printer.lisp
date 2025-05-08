@@ -2578,9 +2578,9 @@
        from the declarator or abstract declarator."))
     (param-declor-case
      paramdeclor
-     :declor (b* ((pstate (print-astring " " pstate))
-                  (pstate (print-declor paramdeclor.unwrap pstate)))
-               pstate)
+     :nonabstract (b* ((pstate (print-astring " " pstate))
+                       (pstate (print-declor paramdeclor.unwrap pstate)))
+                    pstate)
      :absdeclor (b* ((pstate (print-astring " " pstate))
                      (pstate (print-absdeclor paramdeclor.unwrap pstate)))
                   pstate)

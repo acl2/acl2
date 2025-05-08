@@ -1076,7 +1076,7 @@
         (reterr (msg "Unsupported absent parameter declarator ~x0.")))
        ((when (param-declor-case paramdeclor :ambig))
         (prog2$ (impossible) (reterr t)))
-       (declor (param-declor-declor->unwrap paramdeclor)))
+       (declor (param-declor-nonabstract->unwrap paramdeclor)))
     (ldm-declor-obj declor))
   :hooks (:fix)
 

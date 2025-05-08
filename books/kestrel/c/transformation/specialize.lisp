@@ -80,7 +80,7 @@
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
-      :declor (declor->ident paramdecl.declor.unwrap)
+      :nonabstract (declor->ident paramdecl.declor.unwrap)
       :otherwise nil)))
 
 (define param-declon-to-decl
@@ -92,11 +92,11 @@
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
-      :declor (mv t
-                  (make-decl-decl
-                    :extension nil
-                    :specs paramdecl.specs
-                    :init (cons (initdeclor paramdecl.declor.unwrap nil nil init?) nil)))
+      :nonabstract (mv t
+                       (make-decl-decl
+                        :extension nil
+                        :specs paramdecl.specs
+                        :init (cons (initdeclor paramdecl.declor.unwrap nil nil init?) nil)))
       :otherwise (mv nil (irr-decl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

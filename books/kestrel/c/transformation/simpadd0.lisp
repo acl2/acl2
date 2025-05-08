@@ -3751,16 +3751,16 @@
     (b* (((simpadd0-gin gin) gin))
       (param-declor-case
        paramdeclor
-       :declor (b* (((mv new-declor (simpadd0-gout gout-declor))
-                     (simpadd0-declor paramdeclor.unwrap gin state)))
-                 (mv (param-declor-declor new-declor)
-                     (make-simpadd0-gout
-                      :events gout-declor.events
-                      :thm-name nil
-                      :thm-index gout-declor.thm-index
-                      :names-to-avoid gout-declor.names-to-avoid
-                      :vartys gout-declor.vartys
-                      :diffp gout-declor.diffp)))
+       :nonabstract (b* (((mv new-declor (simpadd0-gout gout-declor))
+                          (simpadd0-declor paramdeclor.unwrap gin state)))
+                      (mv (param-declor-nonabstract new-declor)
+                          (make-simpadd0-gout
+                           :events gout-declor.events
+                           :thm-name nil
+                           :thm-index gout-declor.thm-index
+                           :names-to-avoid gout-declor.names-to-avoid
+                           :vartys gout-declor.vartys
+                           :diffp gout-declor.diffp)))
        :absdeclor (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
                         (simpadd0-absdeclor paramdeclor.unwrap gin state)))
                     (mv (param-declor-absdeclor new-absdeclor)

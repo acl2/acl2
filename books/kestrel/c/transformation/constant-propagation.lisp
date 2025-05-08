@@ -1434,9 +1434,9 @@
     (b* ((env (env-fix env)))
       (param-declor-case
         paramdeclor
-        :declor (b* (((mv unwrap env)
-                      (const-prop-declor paramdeclor.unwrap env)))
-                  (mv (param-declor-declor unwrap) env))
+        :nonabstract (b* (((mv unwrap env)
+                           (const-prop-declor paramdeclor.unwrap env)))
+                       (mv (param-declor-nonabstract unwrap) env))
         :absdeclor (b* (((mv unwrap env)
                          (const-prop-absdeclor paramdeclor.unwrap env)))
                      (mv (param-declor-absdeclor unwrap) env))
