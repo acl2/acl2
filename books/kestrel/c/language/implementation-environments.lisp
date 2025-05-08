@@ -1232,11 +1232,8 @@
      the consistency between the unsigned and signed integer formats
      (i.e. @(tsee uinteger-sinteger-bit-roles-wfp)).
      But if we have two separate components,
-     we need separate fixers (in @(':reqfix') for the two components:
-     we plan to use @(tsee uinteger-bit-roles-for-sinteger-bit-roles)
-     and @(tsee sinteger-bit-roles-for-uinteger-bit-roles) for that,
-     but we still need to prove the needed properties of those functions,
-     since they take a little bit of work.
+     we need separate fixers (in @(':reqfix') for the two components,
+     which we plan to define later as they may take a bit of work.
      Once we have the proofs,
      we will eliminate the intermediate fixtype @(tsee uinteger+sinteger-format)
      and have two components and two fixers in this fixtype here."))
