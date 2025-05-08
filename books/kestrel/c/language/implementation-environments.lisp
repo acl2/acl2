@@ -2253,3 +2253,147 @@
     (and (posp size)
          (> size 1))
     :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->ushort-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('USHRT_MAX') [C17:5.2.4.2.1]."
+  (uinteger-format->max
+   (uinteger+sinteger-format->unsigned
+    (integer-format->pair
+     (char+short+int+long+llong-format->short
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sshort-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('SHRT_MAX') [C17:5.2.4.2.1]."
+  (sinteger-format->max
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->short
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sshort-min ((ienv ienvp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('SHRT_MIN') [C17:5.2.4.2.1]."
+  (sinteger-format->min
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->short
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->uint-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('UINT_MAX') [C17:5.2.4.2.1]."
+  (uinteger-format->max
+   (uinteger+sinteger-format->unsigned
+    (integer-format->pair
+     (char+short+int+long+llong-format->int
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sint-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('INT_MAX') [C17:5.2.4.2.1]."
+  (sinteger-format->max
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->int
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sint-min ((ienv ienvp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('INT_MIN') [C17:5.2.4.2.1]."
+  (sinteger-format->min
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->int
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->ulong-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('ULONG_MAX') [C17:5.2.4.2.1]."
+  (uinteger-format->max
+   (uinteger+sinteger-format->unsigned
+    (integer-format->pair
+     (char+short+int+long+llong-format->long
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->slong-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('LONG_MAX') [C17:5.2.4.2.1]."
+  (sinteger-format->max
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->long
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->slong-min ((ienv ienvp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('LONG_MIN') [C17:5.2.4.2.1]."
+  (sinteger-format->min
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->long
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->ullong-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('ULLONG_MAX') [C17:5.2.4.2.1]."
+  (uinteger-format->max
+   (uinteger+sinteger-format->unsigned
+    (integer-format->pair
+     (char+short+int+long+llong-format->llong
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sllong-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('LLONG_MAX') [C17:5.2.4.2.1]."
+  (sinteger-format->max
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->llong
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sllong-min ((ienv ienvp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('LLONG_MIN') [C17:5.2.4.2.1]."
+  (sinteger-format->min
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->llong
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
