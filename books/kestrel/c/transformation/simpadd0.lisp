@@ -4947,6 +4947,7 @@
                          (equal old-result new-result)
                          (equal old-compst new-compst)
                          old-result
+                         (equal (c::type-of-value old-result) (c::type-sint))
                          (equal (c::value-kind old-result) :sint)))))
        (hints
         `(("Goal"
@@ -4975,6 +4976,7 @@
                         (:e ldm-block-item-list)
                         (:e ldm-fundef)
                         (:e ldm-ident)
+                        (:e c::type-sint)
                         c::errorp-of-error))))
        (thm-event `(defruled ,thm-name
                      ,formula
