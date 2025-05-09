@@ -399,7 +399,6 @@
                 the type ~x2 of the old statement ~x3."
                (stmt-type new) new type old)
         (mv '(_) nil 1))
-       (value-kind (type-to-value-kind type))
        ((unless (type-formalp type))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -412,8 +411,7 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
-                             (equal (c::type-of-value result) ',ctype)
-                             (equal (c::value-kind result) ,value-kind))))
+                             (equal (c::type-of-value result) ',ctype))))
           `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
                 (new-stmt (mv-nth 1 (ldm-stmt ',new)))
                 ((mv old-result old-compst)
@@ -426,8 +424,7 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            old-result
-                           (equal (c::type-of-value old-result) ',ctype)
-                           (equal (c::value-kind old-result) ,value-kind))))))
+                           (equal (c::type-of-value old-result) ',ctype))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -2017,17 +2014,16 @@
                     (not (c::errorp old-result))
                     (not (c::errorp new-expr-result))
                     (equal old-expr-value new-expr-value)
-                    (equal (c::type-of-value old-expr-value) (c::type-sint))
-                    (equal (c::value-kind old-expr-value) :sint))
+                    (equal (c::type-of-value old-expr-value) (c::type-sint)))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     old-result
-                    (equal (c::type-of-value old-result) (c::type-sint))
-                    (equal (c::value-kind old-result) :sint))))
+                    (equal (c::type-of-value old-result) (c::type-sint)))))
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
     :enable (c::exec-expr-call-or-pure
+             c::type-of-value
              c::apconvert-expr-value-when-not-array))
 
   (defruled simpadd0-stmt-return-support-lemma-2
