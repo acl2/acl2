@@ -486,7 +486,6 @@
                 the type ~x2 of the old block item ~x3."
                (block-item-type new) new type old)
         (mv '(_) nil 1))
-       (value-kind (type-to-value-kind type))
        ((unless (type-formalp type))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -499,8 +498,7 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
-                             (equal (c::type-of-value result) ',ctype)
-                             (equal (c::value-kind result) ,value-kind))))
+                             (equal (c::type-of-value result) ',ctype))))
           `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
                 (new-item (mv-nth 1 (ldm-block-item ',new)))
                 ((mv old-result old-compst)
@@ -513,8 +511,7 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            old-result
-                           (equal (c::type-of-value old-result) ',ctype)
-                           (equal (c::value-kind old-result) ,value-kind))))))
+                           (equal (c::type-of-value old-result) ',ctype))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -2140,14 +2137,12 @@
                     (equal old-stmt-result new-stmt-result)
                     (equal old-stmt-compst new-stmt-compst)
                     old-stmt-result
-                    (equal (c::type-of-value old-stmt-result) (c::type-sint))
-                    (equal (c::value-kind old-stmt-result) :sint))
+                    (equal (c::type-of-value old-stmt-result) (c::type-sint)))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     old-result
-                    (equal (c::type-of-value old-result) (c::type-sint))
-                    (equal (c::value-kind old-result) :sint))))
+                    (equal (c::type-of-value old-result) (c::type-sint)))))
     :expand
     ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
      (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
