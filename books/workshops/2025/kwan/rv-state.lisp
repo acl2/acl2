@@ -1,3 +1,8 @@
+; Matt K. addition: Exclude from GCL runs because of the mem field of the rv32
+; stobj, which has size 2^32, which exceeds the array-dimension-limit of
+; 268435456 in GCL 2.7.2pre.
+; cert_param: (non-gcl)
+
 (in-package "ACL2")
 (include-book "misc-events")
 (include-book "operations")
