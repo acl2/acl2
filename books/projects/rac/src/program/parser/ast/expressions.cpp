@@ -137,15 +137,8 @@ Sexpression *Boolean::ACL2Expr() {
 // Wraps a call of "si" around an s-expression "s", if "rtype" is a
 // signed integer type.
 Sexpression *getSignedValue(Sexpression *s, const Type *rtype) {
-  const IntType * ty = nullptr;
-  if (auto dty = dynamic_cast<const DefinedType *>(rtype)) {
-    if (auto deref_ty = dynamic_cast<const IntType *>(dty->derefType())) {
-      ty = deref_ty;
-    }
-  } else if (auto ity = dynamic_cast<const IntType *>(rtype)) {
-    ty = ity;
-  }
-  if (ty) {
+
+  if (auto ty = dynamic_cast<const IntType *>(rtype)) {
     if (ty->isSigned()->isStaticallyEvaluable()) {
       if (ty->isSigned()->evalConst()) {
         s = new Plist({&s_si, s, ty->width()->ACL2Expr()});
@@ -558,12 +551,7 @@ Sexpression *Subrange::ACL2Expr() {
   Sexpression *hi = high->ACL2Expr();
   Sexpression *lo = low->ACL2Expr();
 
-  const IntType * bt = nullptr;
-  if (auto dbt = dynamic_cast<const DefinedType *>(base->get_type()))
-    bt = always_cast<const IntType *>(dbt->derefType());
-  else
-    bt = always_cast<const IntType *>(base->get_type());
-
+  const IntType * bt = always_cast<const IntType *>(base->get_type());
 
   Sexpression *val = new Plist({&s_bits, b, hi, lo});
 

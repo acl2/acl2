@@ -305,6 +305,8 @@ std::string to_string(PrefixExpr::Op op);
 class CastExpr final : public Expression {
 public:
   Expression *expr;
+  // TODO: is this field really necessary ? Could we use instead
+  // Expression::type_ instead ?
   const Type *type;
 
   CastExpr(Location loc, Expression *e, const Type *t)

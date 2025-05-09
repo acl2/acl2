@@ -347,6 +347,7 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
 bool TypingAction::VisitCastExpr(CastExpr *e) {
 
   const Type *t = deref(e->type);
+  e->type = t;
 
   bool source_depends_on_template_parameter = false;
 
