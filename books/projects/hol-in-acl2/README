@@ -1,0 +1,5 @@
+This directory contains a translator from HOL4 to ACL2 -- more
+specifically, to the integration of set theory with ACL2 supported by
+community books directory projects/set-theory/.
+
+See examples/ for examples.
