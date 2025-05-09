@@ -26,11 +26,12 @@ def run_parser(bin_path, working_dir, input, timeout, env):
     return sp.run(['../../../' / bin_path, input, '-acl2', '-pedantic'], capture_output=True, text=True,
         timeout=timeout, cwd=working_dir, env=env)
 
-def run_parser_raw(bin_path, working_dir, args, timeout):
+def run_parser_raw(bin_path, working_dir, args, timeout, env):
     return sp.run([bin_path, *args],
             capture_output=True, text=True,
             timeout=timeout,
-            cwd=working_dir)
+            cwd=working_dir,
+            env=env)
 
 
 def diff(ref, out):
@@ -70,7 +71,7 @@ def test(bin_path, dir_path, testcase, timeout):
         file_to_preprocess = testcase.get("preprocess")
         if file_to_preprocess:
             preprocess(dir_path, file_to_preprocess)
-        out = run_parser_raw(bin_path, dir_path, args, timeout)
+        out = run_parser_raw(bin_path, dir_path, args, timeout, env)
 
     disabled_checks = testcase.get("disabled-checks", [])
     if not "should_report_error" in disabled_checks:
