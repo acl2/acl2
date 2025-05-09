@@ -213,6 +213,8 @@ public:
   Sexpression *ACL2Expr() override;
 };
 
+bool default_value_can_be_ignored(const Type *t);
+
 class Initializer final : public Expression {
 public:
   std::vector<Expression *> vals;

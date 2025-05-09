@@ -65,7 +65,6 @@ public:
   // Convert rval to an S-expression to be assigned to an object of this
   virtual bool canBeImplicitlyCastTo(const Type *target) const = 0;
   virtual Sexpression *cast(Expression *rval) const;
-  virtual Sexpression *eval(Sexpression *sexpr) const { return sexpr; }
   virtual Sexpression *default_initializer_value() const = 0;
 
   // TODO refactore.
@@ -277,8 +276,6 @@ public:
 
   Expression *isSigned() const { return isSigned_; }
   Expression *width() const { return width_; }
-
-  Sexpression *eval(Sexpression *sexpr) const override;
 
   bool isEqual(const Type *other) const override;
   bool canBeImplicitlyCastTo(const Type *target) const override;
