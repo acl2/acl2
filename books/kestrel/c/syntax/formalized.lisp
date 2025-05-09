@@ -903,7 +903,7 @@
   (param-declor-case
    paramdeclor
    :nonabstract (declor-obj-formalp paramdeclor.unwrap)
-   :absdeclor nil
+   :abstract nil
    :none nil
    :ambig (impossible))
   :hooks (:fix))
