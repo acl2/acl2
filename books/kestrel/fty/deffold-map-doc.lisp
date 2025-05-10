@@ -21,7 +21,7 @@
 
   :parents (fold)
 
-  :short "Reducing folds for fixtypes."
+  :short "Mapping folds for fixtypes."
 
   :long
 
