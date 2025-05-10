@@ -530,7 +530,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: prove this preserves the kind function
+;; TODO: prove this preserves the kind function (when none of the cases
+;; overriden).
 (define deffold-map-gen-sum-map
   ((sum flexsum-p)
    (mutrecp booleanp)
@@ -594,7 +595,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: prove this respects iff
 (define deffold-map-gen-option-map
   ((sum flexsum-p)
    (mutrecp booleanp)
@@ -625,19 +625,42 @@
        (type-case (flexsum->case sum))
        ((mv base-type accessor)
         (components-of-flexoption-with-name type fty-table))
+       (base-flextype (flextype-with-name base-type fty-table))
+       ((unless base-flextype)
+        (raise "Internal error: malformed type ~x0." base-type)
+        '(_))
+       (base-type-fix (flextype->fix base-flextype))
        (base-type-suffix (deffold-map-gen-map-name base-type suffix))
        (extra-args-names (deffold-map-extra-args-to-names extra-args))
        (body `(,type-case ,type
-                          :some (,base-type-suffix (,accessor ,type)
-                                                   ,@extra-args-names)
-                          :none nil)))
+                          ;; We use the fixer here so that the
+                          ;; type-suffix-under-iff theorem can be proven before
+                          ;; the return theorems.
+                          :some (,base-type-fix
+                                  (,base-type-suffix (,accessor ,type)
+                                                     ,@extra-args-names))
+                          :none nil))
+       (type-suffix-under-iff
+         (acl2::packn-pos (list type-suffix '-under-iff) suffix))
+       (thm-events
+        `((defruled ,type-suffix-under-iff
+            (iff (,type-suffix ,type ,@extra-args-names)
+                 ,type)
+            :expand ((,type-suffix ,type ,@extra-args-names))
+            :cases ((equal ,type nil)))))
+       (ruleset-event
+        `(add-to-ruleset ,(deffold-map-gen-ruleset-name suffix)
+                         '(,type-suffix-under-iff))))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:verify-guards :after-returns))
-       ,@(and (not mutrecp) '(:hooks (:fix))))))
+       ,@(and (not mutrecp) '(:hooks (:fix)))
+       ///
+       ,@thm-events
+       ,ruleset-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -834,6 +857,7 @@
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
        (type-suffix (deffold-map-gen-map-name type suffix))
+       (type-fix (flexomap->fix omap))
        (type-count (flexomap->count omap))
        (recog (flexomap->pred omap))
        (recp (flexomap->recp omap))
@@ -856,16 +880,66 @@
                                            ,@extra-args-names)
                          (,type-suffix (omap::tail ,type)
                                        ,@extra-args-names))))
+       (type-suffix-type-prescription
+        (acl2::packn-pos (list type-suffix '-type-prescription) suffix))
        (type-suffix-when-emptyp
         (acl2::packn-pos (list type-suffix '-when-emptyp) suffix))
+       (emptyp-of-type-suffix
+        (acl2::packn-pos (list 'emptyp-of- type-suffix) suffix))
+       ;; (size-of-type-suffix
+       ;;  (acl2::packn-pos (list 'size-of- type-suffix) suffix))
+       (keys-of-type-suffix
+        (acl2::packn-pos (list 'keys-of- type-suffix) suffix))
+       (assoc-of-type-suffix
+        (acl2::packn-pos (list 'assoc-of- type-suffix) suffix))
        (thm-events
-        `((defruled ,type-suffix-when-emptyp
+        `((defruled ,type-suffix-type-prescription
+            (true-listp (,type-suffix ,type ,@extra-args-names))
+            :rule-classes :type-prescription
+            :hints (("Goal" :in-theory '(true-listp omap::update
+                                         omap::update-type-prescription)
+                            :expand ((,type-suffix ,type ,@extra-args-names))
+                            :induct (true-listp ,type))))
+          (defruled ,type-suffix-when-emptyp
             (implies (omap::emptyp ,type)
                      (equal (,type-suffix ,type ,@extra-args-names)
-                            nil)))))
+                            nil))
+            :hints (("Goal" :in-theory '(,type-suffix omap::emptyp))))
+          (defruled ,emptyp-of-type-suffix
+            (equal (omap::emptyp (,type-suffix ,type ,@extra-args-names))
+                   (omap::emptyp (,type-fix ,type)))
+            :expand ((,type-suffix ,type ,@extra-args-names)))
+          ;; TODO
+          ;; (defruled ,size-of-type-suffix
+          ;;   (equal (omap::size (,type-suffix ,type ,@extra-args-names))
+          ;;          (omap::size (,type-fix ,type)))
+          ;;   :enable ((:i omap::size) ,type-suffix)
+          ;;   :induct (omap::size ,type))
+          (defruled ,keys-of-type-suffix
+            (equal (omap::keys (,type-suffix ,type ,@extra-args-names))
+                   (omap::keys (,type-fix ,type)))
+            :enable ((:i omap::keys))
+            :expand ((,type-suffix ,type ,@extra-args-names))
+            :induct (omap::keys ,type))
+          (defruled ,assoc-of-type-suffix
+            (equal (omap::assoc key (,type-suffix ,type ,@extra-args-names))
+                   (if (omap::assoc key (,type-fix ,type))
+                       (cons key
+                             (,val-type-suffix
+                              (cdr (omap::assoc key (,type-fix ,type)))
+                              ,@extra-args-names))
+                     nil))
+            :enable ((:i omap::assoc))
+            :expand ((,type-suffix ,type ,@extra-args-names))
+            :induct (omap::assoc key ,type))))
        (ruleset-event
         `(add-to-ruleset ,(deffold-map-gen-ruleset-name suffix)
-                         '(,type-suffix-when-emptyp))))
+                         '(,type-suffix-type-prescription
+                           ,type-suffix-when-emptyp
+                           ,emptyp-of-type-suffix
+                           ;; ,size-of-type-suffix
+                           ,keys-of-type-suffix
+                           ,assoc-of-type-suffix))))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))

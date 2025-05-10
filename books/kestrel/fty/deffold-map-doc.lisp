@@ -294,6 +294,19 @@
        and added to the generated ruleset described below."))
 
     (xdoc::desc
+     "Accompanying option theorems."
+     (xdoc::p
+      "For each @(tsee defoption) type specified by the @(':types') input,
+       we generate the following theorems,
+       whose exact form can be inspected with @(tsee pe) or similar command:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-under-iff')"))
+     (xdoc::p
+      "These theorems are disabled,
+       and added to the generated ruleset described below."))
+
+    (xdoc::desc
      "Accompanying omap type theorems."
      (xdoc::p
       "For each @(tsee defomap) type specified by the @(':types') input,
@@ -301,7 +314,15 @@
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
       (xdoc::li
-       "@('<type>-<suffix>-when-emptyp')"))
+       "@('<type>-<suffix>-type-prescription')")
+      (xdoc::li
+       "@('<type>-<suffix>-when-emptyp')")
+      (xdoc::li
+       "@('emptyp-of-<type>-<suffix>')")
+      (xdoc::li
+       "@('keys-of-<type>-<suffix>')")
+      (xdoc::li
+       "@('assoc-of-<type>-<suffix>')"))
      (xdoc::p
       "These theorems are disabled,
        and added to the generated ruleset described below."))
