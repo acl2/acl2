@@ -330,6 +330,18 @@ Floating-point arithmetic specs formerly used at Intel
 
 \begin{frame}
 
+\newlibtitle
+
+\bookpath{kestrel/xml}: Add a simple XML parser
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Improvements to existing libraries start here
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
 \implibtitle
 
 \bookpath{demos}:
@@ -488,22 +500,21 @@ VL/SV hardware verification package
 
 \bookpath{kestrel}: Many improvements to basic libraries
 \begin{itemize}
-\item acl2-arrays (e.g., much longer arrays)
-\item arithmetic-light
-\item booleans
-\item bv-lists (also covers bv-arrays)
-\item clause-processors
-\item evaluators (e.g., \code{defevaluator+})
-\item file-io-light
-\item floats (rounding, connection to RTL)
-\item json-parser
-\item lists-light, typed-lists-light, alists-light
-\item prime-fields
-\item sequences
-\item strings-light
-\item unicode-light
-\item utilities
-\item world-light
+\item \code{acl2-arrays} (e.g., much longer arrays)
+\item \code{arithmetic-light}
+\item \code{booleans}
+\item \code{bv} and \code{bv-lists} (including bv-arrays)
+\item \code{clause-processors}
+\item \code{evaluators} (e.g., \code{defevaluator+})
+\item \code{file-io-light}
+\item \code{floats} (rounding, connection to RTL)
+\item \code{json-parser}
+\item \code{lists-light}, \code{typed-lists-light}, \code{alists-light}
+\item \code{prime-fields}
+\item \code{sequences}
+\item \code{strings-light} and \code{unicode-light}
+\item \code{utilities}
+\item \code{world-light}
 
 \end{itemize}
 
@@ -556,7 +567,51 @@ VL/SV hardware verification package
 
 \implibtitle
 
-\bookpath{kestrel/xml}: Add a simple XML parser
+\bookpath{kestrel/axe}: Major improvements to:
+\begin{itemize}
+\item Rewriters (e.g., binding hyps, SMT to relieve hyps, XOR nest handling)
+\item SMT connection
+\item Equivalence Checker
+\item Provers (Tactic Prover, R1CS Prover, etc)
+\item Clause Processors
+\item x86 Binary Lifter
+\item JVM (Java) Code Lifter
+\item Formal Unit Testers
+\item Supporting rules
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/x86}: Added/improved:
+\begin{itemize}
+\item Normal forms for x86 reasoning
+\item Equivalent alternate defs for certain instructions
+\item Many rules (including new rewriting strategies)
+\item Auto-generation of assumptions for proving/lifting
+\item Handling of memory reads, writes and disjointness
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/helpers}: Improvements to tools that
+\begin{itemize}
+\item Help find new proofs and fix broken proofs
+\item Suggest improvements to functions/theorems/books
+\item Find problems (Linter)
+\item Speed up proofs/books
+\end{itemize}
 
 \end{frame}
 
