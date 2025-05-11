@@ -152,6 +152,16 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "HOL4 to ACL2 Translator")
+
+   (xdoc::p
+    "The directory @('[books]/projects/hol-in-acl2/') contains a translator
+     from HOL4 to ACL2 &mdash; more specifically, a translator to the
+     integration of set theory with ACL2 supported by directory
+     @('[books]/projects/set-theory/').  Examples are included.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "riscv::riscv" "RISC-V ISA Model"))
 
    (xdoc::p
