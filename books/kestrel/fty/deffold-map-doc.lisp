@@ -262,7 +262,7 @@
           the function is defined to return
           the @(tsee omap::update) of the @(tsee head) key
           and the mapped value
-          to the recursively mapped @(omap::tail).")))))
+          to the recursively mapped @('omap::tail').")))))
 
     (xdoc::desc
      "Accompanying list theorems."
