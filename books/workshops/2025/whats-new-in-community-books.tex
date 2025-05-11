@@ -93,9 +93,10 @@
         Grant Jurgensen\inst{1},
         Matt Kaufmann\inst{4},\\
         Eric McCarthy\inst{1,3},
-        J Strother Moore\inst{4},
+        J Strother Moore\inst{4},\\
+        Eric Smith\inst{1,2},
         Yahya Sohail,\\
-        Sol Swords\inst{5}, 
+        Sol Swords\inst{5},
         \textit{add more authors}}
 
 \institute{\inst{1}Kestrel Institute,
@@ -382,6 +383,8 @@ Formal model of the x86 ISA:
 \item Added TTY and timer peripherals.
 \item Added Linux support with patched kernel.
 \item Added cosimulation validation tool.
+\item Sped up many books.
+\item New summary of instruction coverage (see \code{:doc sdm-instruction-set-summary}).
 \end{itemize}
 
 \end{frame}
@@ -431,8 +434,118 @@ VL/SV hardware verification package
 \begin{itemize}
 \item Improvements in reasoning about designs as FSMs (as opposed to unrolled pipeline functions)
 \item Add SRT4 divide tutorial example
-  
+
 \end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{doc/100-theorems}: More of the 100 Theorems now in ACL2
+\begin{itemize}
+\item Cramer's Rule
+\item Mathematical Induction.
+\item Schroder-Bernstein (2 versions)
+\item Cantor's Theorem
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{build}: New build options
+\begin{itemize}
+\item Add new \code{cert\_param} \code{non-acl2p}, to exclude books that don't work with ACL2(p)
+\item New \code{FAILURE\_LINES} var limits printing for failed/interrupted builds
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel}: Many improvements to basic libraries
+\begin{itemize}
+\item acl2-arrays (e.g., much longer arrays)
+\item arithmetic-light
+\item booleans
+\item bv-lists (also covers bv-arrays)
+\item clause-processors
+\item evaluators (e.g., \code{defevaluator+})
+\item file-io-light
+\item floats (rounding, connection to RTL)
+\item json-parser
+\item lists-light, typed-lists-light, alists-light
+\item prime-fields
+\item sequences
+\item strings-light
+\item unicode-light
+\item utilities
+\item world-light
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/crypto}: Add formalizations
+\begin{itemize}
+\item Add spec of the CHACHA20 stream cipher
+\item Add spec of the BLAKE2b hash function.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/ethereum}:
+\begin{itemize}
+\item Add partial formal specification of the Ethereum Virtual Machine.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/terms-light}: Add several verified term simplifiers
+\begin{itemize}
+\item Improve lambdas (subst constants, drop unused/trivial/unnecessary bindings)
+\item Simplify ors
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/xml}: Add a simple XML parser
 
 \end{frame}
 
