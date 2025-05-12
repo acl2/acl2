@@ -34,6 +34,11 @@
                   (read-byte addr x86)))
   :hints (("Goal" :in-theory (enable read-byte))))
 
+(defthm read-byte-of-set-flag
+  (equal (read-byte addr (set-flag flag val x86))
+         (read-byte addr x86))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm xr-of-write-byte-when-not-mem
@@ -1163,6 +1168,15 @@
          (segment-base-and-bounds proc-mode seg-reg x86))
   :hints (("Goal" :in-theory (enable set-rdi))))
 
+(defthm segment-base-and-bounds-of-set-r8 (equal (segment-base-and-bounds proc-mode seg-reg (set-r8 r8 x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-r8))))
+(defthm segment-base-and-bounds-of-set-r9 (equal (segment-base-and-bounds proc-mode seg-reg (set-r9 r9 x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-r9))))
+(defthm segment-base-and-bounds-of-set-r10 (equal (segment-base-and-bounds proc-mode seg-reg (set-r10 r10 x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-r10))))
+(defthm segment-base-and-bounds-of-set-r11 (equal (segment-base-and-bounds proc-mode seg-reg (set-r11 r11 x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-r11))))
+(defthm segment-base-and-bounds-of-set-r12 (equal (segment-base-and-bounds proc-mode seg-reg (set-r12 r12 x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-r12))))
+(defthm segment-base-and-bounds-of-set-r13 (equal (segment-base-and-bounds proc-mode seg-reg (set-r13 r13 x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-r13))))
+(defthm segment-base-and-bounds-of-set-r14 (equal (segment-base-and-bounds proc-mode seg-reg (set-r14 r14 x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-r14))))
+(defthm segment-base-and-bounds-of-set-r15 (equal (segment-base-and-bounds proc-mode seg-reg (set-r15 r15 x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-r15))))
+
 (defthm segment-base-and-bounds-of-write-byte
   (equal (segment-base-and-bounds proc-mode seg-reg (write-byte base-addr byte x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
@@ -1297,13 +1311,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm read-byte-of-set-flag
-  (equal (read-byte addr (set-flag flag val x86))
-         (read-byte addr x86))
-  :hints (("Goal" :in-theory (enable read-byte))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defthm read-of-set-flag
   (equal (read n addr (set-flag flag val x86))
          (read n addr x86))
@@ -1323,3 +1330,34 @@
   (equal (get-flag flg (write-bytes addr values x86))
          (get-flag flg x86))
   :hints (("Goal" :in-theory (enable write-bytes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm read-bytes-of-xw-irrel
+  (implies (not (equal fld :mem))
+           (equal (read-bytes addr x (xw fld index val x86))
+                  (read-bytes addr x x86)))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
+;; todo: add more for more state changers!
+(defthm read-bytes-of-set-flag
+  (equal (read-bytes addr x (set-flag flag val x86))
+         (read-bytes addr x x86))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
+(defthm read-bytes-of-set-undef
+  (equal (read-bytes addr x (set-undef undef x86))
+         (read-bytes addr x x86))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
+(defthm read-bytes-of-set-mxcsr
+  (equal (read-bytes addr x (set-mxcsr mxcsr x86))
+         (read-bytes addr x x86))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
+(defthm read-bytes-of-!rflags
+  (equal (read-bytes addr x (!rflags rflags x86))
+         (read-bytes addr x x86))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
