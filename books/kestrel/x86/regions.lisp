@@ -15,7 +15,13 @@
 ;(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; reduce?  and get rid of ttags
 (include-book "kestrel/bv/bvlt-def" :dir :system)
 (include-book "kestrel/bv/bvminus" :dir :system) ; todo: reduce
+;(include-book "kestrel/bv/sbvlt-def" :dir :system)
+;(local (include-book "kestrel/bv/sbvlt" :dir :system))
+;(local (include-book "kestrel/bv/sbvlt-rules" :dir :system)) ; for sbvlt-rewrite
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)) ; may be droppable with more bvminus rules
 (local (include-book "kestrel/bv/bvlt" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;; Defines what it means for AD to be in the region of size LEN starting at
 ;; START-AD.  Note that the region may wrap around the end of the address
@@ -83,6 +89,13 @@
                   (in-regionp ad len start-ad)))
   :hints (("Goal" :in-theory (enable in-regionp))))
 
+(defthm in-regionp-of-bvchop-arg3
+  (implies (and (<= 48 n)
+                (integerp n))
+           (equal (in-regionp ad len (bvchop n start-ad))
+                  (in-regionp ad len start-ad)))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
 (defthm in-regionp-of-+-arg1
   (implies (and (integerp x)
                 (integerp y))
@@ -97,14 +110,109 @@
                   (in-regionp ad len (bvplus 48 x y))))
   :hints (("Goal" :in-theory (enable in-regionp bvplus))))
 
-(defthm in-regionp-of-bvplus-and-bvplus-cancel-1-2
+(defthm in-regionp-cancel-1-1+
+  (equal (in-regionp x len (bvplus 48 x z))
+         (in-regionp 0 len z))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+(defthm in-regionp-cancel-1+-1
+  (equal (in-regionp (bvplus 48 x z) len x)
+         (in-regionp z len 0))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+(defthm in-regionp-cancel-1+-1+
+  (equal (in-regionp (bvplus 48 x y) len (bvplus 48 x z))
+         (in-regionp y len z))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+(defthm in-regionp-cancel-1-2
+  (equal (in-regionp x len2 (bvplus 48 y x))
+         (in-regionp 0 len2 y))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+(defthm in-regionp-cancel-2-1
+  (equal (in-regionp (bvplus 48 y x) len2 x)
+         (in-regionp y len2 0))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+(defthm in-regionp-cancel-2-1+
+  (equal (in-regionp (bvplus 48 y x) len2 (bvplus 48 x z))
+         (in-regionp y len2 z))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+(defthm in-regionp-cancel-1+-2
   (equal (in-regionp (bvplus 48 x y) len (bvplus 48 z x))
          (in-regionp y len z))
   :hints (("Goal" :in-theory (enable in-regionp))))
 
-(defthm in-regionp-of-bvplus-and-bvplus-cancel-1-1
-  (equal (in-regionp (bvplus 48 x y) len (bvplus 48 x z))
-         (in-regionp y len z))
+(defthm in-regionp-cancel-2-2
+  (equal (in-regionp (bvplus 48 y x) len2 (bvplus 48 z x))
+         (in-regionp y len2 z))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+(defthm in-regionp-cancel-3-1
+  (equal (in-regionp (bvplus 48 y (bvplus 48 z x)) len x)
+         (in-regionp (bvplus 48 y z) len 0))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+;; todo: hints
+(defthm in-regionp-cancel-1-3
+  (equal (in-regionp x len (bvplus 48 y (bvplus 48 z x)))
+         (in-regionp 0 len (bvplus 48 y z)))
+  :hints (("Goal" :in-theory (enable in-regionp bvminus bvlt ifix bvplus))))
+
+;; removes the negative part of the range
+(defthm in-regionp-when-non-negative-and-negative-range
+  (implies (and (syntaxp (quotep k))
+                (<= (expt 2 47) (bvchop 48 k)) ; (sbvlt 48 k 0) ; negative
+                (unsigned-byte-p 47 x) ; non-negative
+                (unsigned-byte-p 48 k) ; drop?
+                (unsigned-byte-p 47 len2) ; gen?
+                (<= (- (expt 2 48) k) len2) ;move to rhs?
+                )
+           (equal (in-regionp x len2 k)
+                  (in-regionp x (- len2 (- (expt 2 48) k)) 0)))
+  :hints (("Goal" :cases ((< (+ 281474976710656 (- k) x) len2))
+           :in-theory (enable in-regionp bvplus bvuminus bvlt acl2::bvchop-of-sum-cases unsigned-byte-p
+                              ;;acl2::sbvlt-rewrite
+                              ))))
+
+;; todo: more cancellation rules
+
+;; todo: more?
+(defthm in-regionp-cancel-constants-1+-1+
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (not (equal 0 k1)) ; prevent loops
+                )
+           (equal (in-regionp (bvplus 48 k1 x) len2 (bvplus 48 k2 y))
+                  (in-regionp x len2 (bvplus 48 (bvminus 48 k2 k1) y))))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+;; which arg do we prefer to make 0?
+(defthm in-regionp-cancel-constants-1-1+
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (not (equal 0 k1)) ; prevent loops
+                )
+           (equal (in-regionp k1 len2 (bvplus 48 k2 y))
+                  (in-regionp 0 len2 (bvplus 48 (bvminus 48 k2 k1) y))))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+;; how do we prefer to handle this?
+(defthm in-regionp-cancel-constants-1+-1
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (not (equal 0 k1)) ; prevent loops
+                )
+           (equal (in-regionp (bvplus 48 k1 x) len2 k2)
+                  (in-regionp x len2 (bvminus 48 k2 k1))))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
+;; disabled for the proofs below
+(defthmd in-regionp-of-0-arg3
+  (equal (in-regionp ad len 0)
+         (bvlt 48 ad len))
   :hints (("Goal" :in-theory (enable in-regionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -203,6 +311,11 @@
          (disjoint-regionsp len1 0 len2 y))
   :hints (("Goal" :in-theory (enable disjoint-regionsp))))
 
+(defthm disjoint-regionsp-cancel-1+-1
+  (equal (disjoint-regionsp len1 (bvplus 48 x z) len2 x)
+         (disjoint-regionsp len1 z len2 0))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
 (defthm disjoint-regionsp-cancel-1+-1+
   (equal (disjoint-regionsp len1 (bvplus 48 x z) len2 (bvplus 48 x y))
          (disjoint-regionsp len1 z len2 y))
@@ -225,6 +338,20 @@
 
 ;; todo: show that this reduces to a more familiar notion in the non-wrap-around case
 ;; todo: use defun-sk to show correctness
+
+(defthm disjoint-regionsp-of-bvchop-arg2
+  (implies (and (<= 48 size)
+                (integerp size))
+           (equal (disjoint-regionsp len1 (bvchop size ad1) len2 ad2)
+                  (disjoint-regionsp len1 ad1 len2 ad2)))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+(defthm disjoint-regionsp-of-bvchop-arg4
+  (implies (and (<= 48 size)
+                (integerp size))
+           (equal (disjoint-regionsp len1 ad1 len2 (bvchop size ad2))
+                  (disjoint-regionsp len1 ad1 len2 ad2)))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -289,16 +416,49 @@
                                      acl2::bvchop-of-sum-cases
                                      zp))))
 
-;todo: more
-(defthm subregionp-of-bvplus-and-bvplus-cancel-2-2
-  (equal (subregionp len1 (bvplus '48 y x) len2 (bvplus '48 z x))
-         (subregionp len1 y len2 z))
-  :hints (("Goal" :in-theory (enable subregionp in-regionp))))
+(defthm subregionp-cancel-1-1
+  (implies (syntaxp (not (quotep x)))
+           (equal (subregionp len1 x len2 x)
+                  (subregionp len1 0 len2 0) ; usually can be evaluated
+                  ))
+  :hints (("Goal" :in-theory (enable subregionp))))
 
-(defthm subregionp-of-bvplus-and-bvplus-cancel-2-1
-  (equal (subregionp len1 (bvplus '48 y x) len2 x)
+(defthm subregionp-cancel-1+-1
+  (equal (subregionp len1 (bvplus 48 x y) len2 x)
          (subregionp len1 y len2 0))
-  :hints (("Goal" :in-theory (enable subregionp in-regionp))))
+  :hints (("Goal" :in-theory (enable subregionp))))
+
+(defthm subregionp-cancel-1-1+
+  (equal (subregionp len1 x len2 (bvplus 48 x y))
+         (subregionp len1 0 len2 y))
+  :hints (("Goal" :in-theory (enable subregionp))))
+
+(defthm subregionp-cancel-2-1
+  (equal (subregionp len1 (bvplus 48 y x) len2 x)
+         (subregionp len1 y len2 0))
+  :hints (("Goal" :in-theory (enable subregionp))))
+
+(defthm subregionp-cancel-2-1+
+  (equal (subregionp len1 (bvplus 48 y x) len2 (bvplus 48 x z))
+         (subregionp len1 y len2 z))
+  :hints (("Goal" :in-theory (enable subregionp))))
+
+(defthm subregionp-cancel-1-2
+  (equal (subregionp len1 x len2 (bvplus 48 y x))
+         (subregionp len1 0 len2 y))
+  :hints (("Goal" :in-theory (enable subregionp))))
+
+(defthm subregionp-cancel-1+-2
+  (equal (subregionp len1 (bvplus 48 x z) len2 (bvplus 48 y x))
+         (subregionp len1 z len2 y))
+  :hints (("Goal" :in-theory (enable subregionp))))
+
+(defthm subregionp-cancel-2-2
+  (equal (subregionp len1 (bvplus 48 y x) len2 (bvplus 48 z x))
+         (subregionp len1 y len2 z))
+  :hints (("Goal" :in-theory (enable subregionp))))
+
+;; todo: more cancellation rules, or a general solution?
 
 (defthm subregionp-of-+-arg2
   (implies (and (integerp x)
@@ -315,6 +475,76 @@
                   (subregionp len1 ad1 len2 (bvplus 48 x y))))
   :hints (("Goal" :in-theory (enable subregionp
                                      acl2::bvminus-of-+-arg3))))
+
+(defthm subregionp-of-bvchop-arg2
+  (implies (and (<= 48 size)
+                (integerp size))
+           (equal (subregionp len1 (bvchop size ad1) len2 ad2)
+                  (subregionp len1 ad1 len2 ad2)))
+  :hints (("Goal" :in-theory (enable subregionp in-regionp))))
+
+(defthm subregionp-of-bvchop-arg4
+  (implies (and (<= 48 size)
+                (integerp size))
+           (equal (subregionp len1 ad1 len2 (bvchop size ad2))
+                  (subregionp len1 ad1 len2 ad2)))
+  :hints (("Goal" :in-theory (enable subregionp in-regionp))))
+
+(defthm subregionp-cancel-constants-1+-1
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (not (equal 0 k1)) ; prevent loops
+                )
+           (equal (subregionp len1 (bvplus 48 k1 x) len2 k2)
+                  (subregionp len1 x len2 (bvminus 48 k2 k1))))
+  :hints (("Goal" :in-theory (enable subregionp in-regionp))))
+
+(defthm subregionp-cancel-constants-1+-1+
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)))
+                (not (equal 0 k1)) ; prevent loops
+                )
+           (equal (subregionp len1 (bvplus 48 k1 x) len2 (bvplus 48 k2 y))
+                  (subregionp len1 x len2 (bvplus 48 (bvminus 48 k2 k1) y))))
+  :hints (("Goal" :in-theory (enable subregionp in-regionp))))
+
+;; (thm
+;;   (equal (sbvlt 48 x 0)
+;;          (<= (expt 2 47) (bvchop 48 x)))
+;;   :hints (("Goal" :in-theory (e/d (sbvlt) (logext)))))
+
+;; removes the negative part of the range
+(defthm subregionp-when-non-negative-and-negative-range
+  (implies (and (<= (expt 2 47) (bvchop 48 k)) ; (sbvlt 48 k 0)
+                (unsigned-byte-p 48 k) ; drop?
+                (unsigned-byte-p 47 x) ; non-negative
+                (unsigned-byte-p 47 len1)
+                (unsigned-byte-p 47 len2) ; gen?
+                (<= (- (expt 2 48) k) len2) ;move to rhs?
+                )
+           (equal (subregionp len1 x len2 k)
+                  (subregionp len1 x (- len2 (- (expt 2 48) k)) 0)))
+  :hints (("Goal" :in-theory (enable subregionp in-regionp bvplus bvuminus bvlt acl2::bvchop-of-sum-cases unsigned-byte-p
+                                     ;;acl2::sbvlt-rewrite
+                                     ))))
+
+;; decrementing both sizes doesn't change the answer, so we can decrement all the way down to 1
+(defthm subregionp-reduce-sizes
+  (implies (and (< 1 len1) ; prevent loops
+                (<= len1 len2)
+                (natp len1)
+                (natp len2)
+                ;(< len1 1000)
+                (unsigned-byte-p 48 len2)
+                )
+           (equal (subregionp len1 x len2 y)
+                  (subregionp 1 x (- len2 (- len1 1)) y)))
+  :hints (("Goal" :in-theory (enable subregionp in-regionp bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
+
+(defthm subregionp-of-1-arg1
+  (equal (subregionp 1 x len2 y)
+         (in-regionp x len2 y))
+  :hints (("Goal" :in-theory (enable subregionp in-regionp bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
