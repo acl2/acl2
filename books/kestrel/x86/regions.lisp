@@ -215,6 +215,14 @@
          (bvlt 48 ad len))
   :hints (("Goal" :in-theory (enable in-regionp))))
 
+(defthm in-regionp-subst-constant-arg1
+  (implies (and (equal k (bvchop 48 ad1))
+                (syntaxp (and (quotep k)
+                              (not (quotep ad1)))))
+           (equal (in-regionp ad1 n2 ad2)
+                  (in-regionp k n2 ad2)))
+  :hints (("Goal" :in-theory (enable in-regionp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Defines what it means for 2 memory regions to be disjoint.
@@ -381,9 +389,8 @@
 
 ;; A region is a subregion or some other region of size 0 only if it iself has size 0.
 (defthm subregionp-of-0-arg3
-  (implies (unsigned-byte-p 48 len1)
-           (equal (subregionp len1 ad1 0 ad2)
-                  (zp len1)))
+  (equal (subregionp len1 ad1 0 ad2)
+         (zp len1))
   :hints (("Goal" :in-theory (enable subregionp))))
 
 ;; todo: prove transitive, anti-symm
@@ -545,6 +552,14 @@
   (equal (subregionp 1 x len2 y)
          (in-regionp x len2 y))
   :hints (("Goal" :in-theory (enable subregionp in-regionp bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
+
+(defthm subregionp-subst-constant-arg4
+  (implies (and (equal k (bvchop 48 ad2))
+                (syntaxp (and (quotep k)
+                              (not (quotep ad2)))))
+           (equal (subregionp n1 ad1 n2 ad2)
+                  (subregionp n1 ad1 n2 k)))
+  :hints (("Goal" :in-theory (enable subregionp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
