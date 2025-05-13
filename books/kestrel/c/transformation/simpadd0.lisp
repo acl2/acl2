@@ -234,23 +234,18 @@
      the @('vartys') component of @(tsee simpadd0-gout).
      For each such variable, we add a hypothesis about it saying that
      the variable can be read from the computation state
-     and it contains a value of the appropriate type.
-     Currently we express the type via
-     both @(tsee c::type-of-value) and @(tsee c::value-kind);
-     eventually we will eliminate the latter."))
+     and it contains a value of the appropriate type."))
   (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
        ((unless (type-formalp type))
         (raise "Internal error: variable ~x0 has type ~x1." var type))
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
-       (value-kind (type-to-value-kind type))
        (hyp `(b* ((var (mv-nth 1 (ldm-ident (ident ,(ident->unwrap var)))))
                   (objdes (c::objdesign-of-var var compst))
                   (val (c::read-object objdes compst)))
                (and objdes
                     (c::valuep val)
-                    (equal (c::type-of-value val) ',ctype)
-                    (c::value-case val ,value-kind))))
+                    (equal (c::type-of-value val) ',ctype))))
        (hyps (simpadd0-gen-var-hyps (omap::tail vartys))))
     (cons hyp hyps))
   :hooks (:fix))
@@ -659,23 +654,11 @@
       and the variable for the corresponding argument.")
     (xdoc::li
      "A list @('arg-types') of terms that assert that
-      each variable in @('args') is a value of the appropriate type and kind.
-      The `appropriate type' and `appropriate kind' are
-      two slightly different ways to say the same thing.
-      We will eventually remove the `appropriate kind' part,
-      once all our generated proofs are in terms of
-      @(tsee c::type-of-value) instead of @(tsee c::value-kind).")
+      each variable in @('args') is a value of the appropriate type.")
     (xdoc::li
      "A list @('arg-types-compst') of terms that assert that
       each parameter in @('params') can be read from a computation state
-      and its reading yields a value of the appropriate type and kind."))
-   (xdoc::p
-    "In @('arg-types') and @('arg-types-compst'),
-     the `appropriate type' and `appropriate kind' are
-     two slightly different ways to say the same thing.
-     We will eventually remove the `appropriate kind' part,
-     once all our generated proofs are in terms of
-     @(tsee c::type-of-value) instead of @(tsee c::value-kind).")
+      and its reading yields a value of the appropriate type."))
    (xdoc::p
     "These results are generated only if
      all the parameters have certain types
@@ -685,7 +668,7 @@
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil))
        ((c::param-declon param) (car params))
-       ((mv okp type value-kind)
+       ((mv okp type &)
         (simpadd0-tyspecseq-to-type-and-value-kind param.tyspec))
        ((unless okp) (mv nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
@@ -695,16 +678,14 @@
        (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
        (pararg `(cons (c::ident ,par) ,arg))
        (arg-type `(and (c::valuep ,arg)
-                       (equal (c::type-of-value ,arg) ',type)
-                       (equal (c::value-kind ,arg) ,value-kind)))
+                       (equal (c::type-of-value ,arg) ',type)))
        (arg-type-compst
         `(b* ((var (mv-nth 1 (ldm-ident (ident ,par))))
               (objdes (c::objdesign-of-var var compst))
               (val (c::read-object objdes compst)))
            (and objdes
                 (c::valuep val)
-                (equal (c::type-of-value val) ',type)
-                (c::value-case val ,value-kind))))
+                (equal (c::type-of-value val) ',type))))
        ((mv okp
             more-args
             more-parargs
@@ -806,6 +787,10 @@
                                c::type-of-value-when-sllongp
                                c::value-fix-when-valuep
                                c::value-list-fix-of-cons
+                               c::type-of-value
+                               c::type-array
+                               c::type-pointer
+                               c::type-struct
                                (:e c::adjust-type)
                                (:e c::apconvert-type)
                                (:e c::ident)
