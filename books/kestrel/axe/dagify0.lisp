@@ -153,6 +153,8 @@
            (assoc-equal key alist))
   :rule-classes :forward-chaining)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Merge the DAG nodes in rev-dag-lst into the DAG-ARRAY, applying any substitution indicated by variable-replacement-alist to nodes that are vars.
 ;; Returns (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
 ;; When this is used to merge in an embedded dag, variable-replacement-alist must be used to replace the vars. - fixme generalize to something like rebuild-nodes?
@@ -1146,7 +1148,8 @@
                                     consp-of-cdr-of-nth-when-darg-listp
                                     <-of-nth-when-bounded-darg-listp
                                     true-listp-of-nth-1-of-nth-0-when-axe-treep
-                                    consp-when-true-listp-iff)
+                                    consp-when-true-listp-iff
+                                    len-of-nth-when-darg-listp)
                                    (axe-tree-listp
                                     axe-treep
                                     natp
@@ -1195,6 +1198,7 @@
                              dag-array-name dag-parent-array-name
                              interpreted-function-alist))
 
+;; uncomment, but need to be able to suppress type-of-make-term-into-dag-array-two, since there is no existing dag..
 ;; (def-dag-builder-theorems
 ;;   (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist)
 ;;   (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1325,11 +1329,11 @@
         :error
       dag)))
 
-;move
-(defthmd not-<-of-len-and-+-of-1-of-car-of-car-when-dagp
-  (implies (pseudo-dagp dag)
-           (not (< (len dag) (binary-+ '1 (car (car dag))))))
-  :hints (("Goal" :in-theory (enable len-when-pseudo-dagp))))
+;; ;move
+;; (defthmd not-<-of-len-and-+-of-1-of-car-of-car-when-dagp
+;;   (implies (pseudo-dagp dag)
+;;            (not (< (len dag) (+ 1 (car (car dag))))))
+;;   :hints (("Goal" :in-theory (enable len-when-pseudo-dagp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1355,7 +1359,9 @@
                                   (all-myquotep (strip-cdrs var-replacement-alist)) ; no nodenums to refer to
                                 (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag-or-quotep)))))
                   :guard-hints (("Goal" :in-theory (enable wf-dagp
-                                                           not-<-of-len-and-+-of-1-of-car-of-car-when-dagp)))))
+                                                           ;not-<-of-len-and-+-of-1-of-car-of-car-when-dagp
+                                                           car-of-car-when-pseudo-dagp-cheap
+                                                           )))))
   (let* ((dag (if (quotep dag-or-quotep) nil dag-or-quotep))
          (dag-len (+ 1 (top-nodenum dag))) ; may be 0
          (dag-array-name 'dag-array-for-merge-tree-into-dag)
@@ -1408,6 +1414,8 @@
       (mv (erp-nil)
           (get-subdag nodenum-or-quotep new-dag)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; fixme does all the stuff handle lambdas?
 
 ;; Returns (mv erp dag-or-quote), where dag-or-quote is equivalent to TERM with
@@ -1435,6 +1443,8 @@
 ;;(equal (compose-term-and-dag '(foo x) 'x (dagify-term '(bar (baz x)))) ((3 FOO 2) (2 BAR 1) (1 BAZ 0) (0 . X)))
 ;;(equal (compose-term-and-dag '(foo x) 'x ''2) ((0 FOO '2)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;fffixme use this more!  actually, use wrap-term-around-dag-safe instead.
 ;; TODO: Consider returning the dag-array, etc. if we are just going to turn the result of this into an array anyway.
 ;; Returns (mv erp dag-or-quote).
@@ -1457,6 +1467,8 @@
 ;; Returns (mv erp dag-or-quote).
 (defmacro compose-term-and-dag-safe (term var-to-replace dag &key (extra-vars 'nil))
   `(compose-term-and-dag-safe-fn ,term ,var-to-replace ,dag ,extra-vars))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;
 ;; compose-dags

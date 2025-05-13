@@ -961,7 +961,7 @@
 ;                (not (symbolp (aref1 dag-array-name dag-array nodenum))) ;excludes the whole node from being a variable
                 )
            (not (cddr (nth n (dargs (aref1 dag-array-name dag-array nodenum))))))
-  :hints (("Goal" ;:in-theory (enable not-cddr-when-bounded-darg-listp)
+  :hints (("Goal" :in-theory (enable len-of-nth-when-darg-listp)
            :use (:instance not-cddr-when-bounded-darg-listp
                            (item (NTH N (dargs (AREF1 DAG-ARRAY-NAME DAG-ARRAY NODENUM))))
                            (bound nodenum)
