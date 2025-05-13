@@ -728,7 +728,7 @@
        (elt-type-suffix (deffoldred-gen-fold-name elt-type suffix))
        (extra-args-names (deffoldred-extra-args-to-names extra-args))
        (body
-        `(cond ((endp ,type)
+        `(cond ((,(if (flexlist->true-listp list) 'endp 'atom) ,type)
                 ,default)
                (t (,combine (,elt-type-suffix (car ,type) ,@extra-args-names)
                             (,type-suffix (cdr ,type) ,@extra-args-names)))))

@@ -11,6 +11,7 @@
 (in-package "FTY")
 
 (include-book "deffold-reduce")
+(include-book "std/testing/must-succeed-star" :dir :system)
 
 (include-book "centaur/fty/top" :dir :system)
 
@@ -18,23 +19,77 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(deftypes exprs
-  (deftagsum aexpr
-    (:const ((value acl2::int)))
-    (:var ((name string)))
-    (:add ((left aexpr) (right aexpr)))
-    (:cond ((test bexpr) (left aexpr) (right aexpr)))
-    :pred aexprp)
-  (deftagsum bexpr
-    (:true ())
-    (:false ())
-    (:and ((left bexpr) (right bexpr)))
-    (:less ((left aexpr) (right aexpr)))
-    :pred bexprp))
+(acl2::must-succeed*
+  (deftypes exprs
+    (deftagsum aexpr
+      (:const ((value acl2::int)))
+      (:var ((name string)))
+      (:add ((left aexpr) (right aexpr)))
+      (:cond ((test bexpr) (left aexpr) (right aexpr)))
+      :pred aexprp)
+    (deftagsum bexpr
+      (:true ())
+      (:false ())
+      (:and ((left bexpr) (right bexpr)))
+      (:less ((left aexpr) (right aexpr)))
+      :pred bexprp))
 
-(deffold-reduce vars
-  :types (exprs)
-  :result string-listp
-  :default nil
-  :combine append
-  :override ((aexpr :var (list (aexpr-var->name aexpr)))))
+  (deffold-reduce vars
+    :types (exprs)
+    :result string-listp
+    :default nil
+    :combine append
+    :override ((aexpr :var (list (aexpr-var->name aexpr))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (deftypes foo+
+    (deftagsum foo
+      (:list ((list foo-list)))
+      (:omap ((omap foo-omap)))
+      (:bar ())
+      :pred foop)
+    (deflist foo-list
+      :elt-type foo
+      :true-listp t
+      :pred foo-listp)
+    (defomap foo-omap
+      :key-type acl2::int
+      :val-type foo
+      :pred foo-omapp))
+
+  (deffold-reduce count-bars
+    :types (foo+)
+    :result natp
+    :default 0
+    :combine binary-+
+    :override
+    ((foo :bar 1))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (deftypes foo+
+    (deftagsum foo
+      (:list ((list foo-list)))
+      (:omap ((omap foo-omap)))
+      (:bar ())
+      :pred foop)
+    ;; This time without :true-listp t
+    (deflist foo-list
+      :elt-type foo
+      :pred foo-listp)
+    (defomap foo-omap
+      :key-type acl2::int
+      :val-type foo
+      :pred foo-omapp))
+
+  (deffold-reduce count-bars
+    :types (foo+)
+    :result natp
+    :default 0
+    :combine binary-+
+    :override
+    ((foo :bar 1))))
