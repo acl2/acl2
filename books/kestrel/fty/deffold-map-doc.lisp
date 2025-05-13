@@ -4,7 +4,9 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+; Based on deffold-reduce-doc.lisp
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -15,11 +17,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc deffold-reduce
+(defxdoc deffold-map
 
   :parents (fold)
 
-  :short "Reducing folds for fixtypes."
+  :short "Mapping folds for fixtypes."
 
   :long
 
@@ -31,13 +33,11 @@
 
     (xdoc::p
      "This macro automates the creation of
-      the `reducing' class of folds on fixtypes
+      the `mapping' class of folds on fixtypes
       described in @(see fold).
-      The user specifies @('R'),
-      a default for the constant arguments,
-      the binary operation on @('R'),
-      and any number of overrides of the boilerplate code
-      for specific cases of the fixtypes.")
+      The user specifies any number of overrides of the boilerplate code
+      for specific cases of the fixtypes
+      in the same manner as @(see deffold-reduce).")
     (xdoc::p))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -45,16 +45,13 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(deffold-reduce suffix"
-     "                :types      ...  ; no default"
-     "                :extra-args ...  ; default nil"
-     "                :result     ...  ; no default"
-     "                :default    ...  ; no default"
-     "                :combine    ...  ; no default"
-     "                :override   ...  ; default nil"
-     "                :parents    ...  ; no default"
-     "                :short      ...  ; no default"
-     "                :long       ...  ; no default"
+     "(deffold-map suffix"
+     "             :types      ...  ; no default"
+     "             :extra-args ...  ; default nil"
+     "             :override   ...  ; default nil"
+     "             :parents    ...  ; no default"
+     "             :short      ...  ; no default"
+     "             :long       ...  ; no default"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -74,7 +71,7 @@
     (xdoc::desc
      "@(':types') &mdash; no default"
      (xdoc::p
-      "Fixtypes for which fold functions must be generated.")
+      "Fixtypes for which map functions must be generated.")
      (xdoc::p
       "This must be a list of symbols, which is not evaluated by the macro,
        where each symbols must be one of the following:")
@@ -121,32 +118,7 @@
      (xdoc::p
       "This must be a list of "
       (xdoc::seetopic "std::extended-formals" "extended formals")
-      " which @('deffold-reduce') puts into the generated @(tsee define)s."))
-
-    (xdoc::desc
-     "@(':result') &mdash; no default"
-     (xdoc::p
-      "Recognizer of the @('R') type of results.")
-     (xdoc::p
-      "It must be a symbol that names an existing unary predicate,
-       which is used for the results of the generated functions."))
-
-    (xdoc::desc
-     "@(':default') &mdash; no default"
-     (xdoc::p
-      "Default result of the generated functions,
-       used as described in the Section `Generated Events' below.")
-     (xdoc::p
-      "This must be a term."))
-
-    (xdoc::desc
-     "@(':combine') &mdash; no default"
-     (xdoc::p
-      "Binary operation to combine results.")
-     (xdoc::p
-      "It must be a symbol that names an existing binary function,
-       which is used to combine the results of the recursive calls
-       in the generated functions."))
+      " which @('deffold-map') puts into the generated @(tsee define)s."))
 
     (xdoc::desc
      "@(':override') &mdash; default @('nil')"
@@ -203,7 +175,7 @@
      "@('<type>-<suffix>')"
      (xdoc::p
       "For each type @('<type>') specified by the @(':types') input,
-       a fold function for that type, defined as follows:")
+       a map function for that type, defined as follows:")
      (xdoc::ul
       (xdoc::li
        "If @('<type>') is a @(tsee defprod):"
@@ -221,22 +193,12 @@
           "If @('<type>') has no components whose type
            is specified by the @(':types') input,
            the function is defined to return
-           the term specified by the @(':default') input.")
+           the fixed input.")
          (xdoc::li
-          "If @('<type>') has exactly one component whose type
-           is specified by the @(':types') input,
-           the function is defined to return
-           the result of applying the fold function for that type
-           to that component.")
-         (xdoc::li
-          "If @('<type>') has two or more components whose types
+          "If @('<type>') has one or more components whose types
            are specified by the @(':types') input,
            the function is defined to return
-           the result of combining,
-           via the function specified by the @(':combine') input,
-           the results of applying the corresponding fold functions
-           to the components, nested to the right
-           (i.e. @('(combine val1 ... (combine valN-1 valN))'))."))))
+           the map over the product fields."))))
       (xdoc::li
        "If @('<type>') is a @(tsee deftagsum):"
        (xdoc::ul
@@ -264,64 +226,43 @@
               the term specified by the @(':default') input.")
             (xdoc::li
              "If the summand corresponding to @('<kind>')
-              has one component whose type
-              is specified by the @(':types') input,
-              the case is defined to return
-              the result of applying the fold function for that type
-              to that component.")
-            (xdoc::li
-             "If the summand corresponding to @('<kind>')
-              has two or more components whose types
+              has one or more components whose types
               are specified by the @(':types') input,
               the case is defined to return
-              the result of combining,
-              via the function specified by the @(':combine') input,
-              the results of applying the corresponding fold functions
-              to the components, nested to the right
-              (i.e. @('(combine val1 ... (combine valN-1 valN))')).")))))))
+              the map over the product fields.")))))))
       (xdoc::li
        "If @('<type>') is a @(tsee deflist):"
        (xdoc::ul
         (xdoc::li
          "If the list is empty,
-          the function is defined to return
-          the term specified by the @(':default') input.")
+          the function is defined to return @('nil').")
         (xdoc::li
          "If the list is not empty,
           the function is defined to return
-          the result of combining,
-          via the function specified by the @(':combine') input,
-          the result of applying the element type's fold function
-          to the @(tsee car) of the list
-          with the result of applying to list type's fold function
-          to the @(tsee cdr) of the list.")))
+          the @(tsee cons) of the mapped @(tsee car)
+          to the recursively mapped @(tsee cdr).")))
       (xdoc::li
        "If @('<type>') is a @(tsee defoption):"
        (xdoc::ul
         (xdoc::li
          "If the option value is @('nil'),
-          the function is defined to return
-          the term specified by the @(':default') input.")
+          the function is defined to return @('nil').")
         (xdoc::li
          "If the option value is not @('nil'),
           the function is defined to return
-          the result of applying the fold for the base type on the value.")))
+          the map function of the base type applied to the value.")))
       (xdoc::li
        "If @('<type>') is a @(tsee defomap):"
        (xdoc::ul
         (xdoc::li
          "If the map is empty,
-          the function is defined to return
-          the term specified by the @(':default') input.")
+          the function is defined to return @('nil').")
         (xdoc::li
          "If the map is not empty,
           the function is defined to return
-          the result of combining,
-          via the function specified by the @(':combine') input,
-          the result of applying the map value type's fold function
-          to the head value of the map
-          with the result of applying to list type's fold function
-          to the tail of the map.")))))
+          the @(tsee omap::update) of the @(tsee head) key
+          and the mapped value
+          to the recursively mapped @('omap::tail').")))))
 
     (xdoc::desc
      "Accompanying list theorems."
@@ -331,9 +272,36 @@
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
       (xdoc::li
+       "@('<type>-<suffix>-type-prescription')")
+      (xdoc::li
        "@('<type>-<suffix>-when-atom')")
       (xdoc::li
-       "@('<type>-<suffix>-of-cons')"))
+       "@('<type>-<suffix>-of-cons')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-append')")
+      (xdoc::li
+       "@('consp-of-<type>-<suffix>')")
+      (xdoc::li
+       "@('len-of-<type>-<suffix>')")
+      (xdoc::li
+       "@('nth-of-<type>-<suffix>')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-revappend')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-reverse')"))
+     (xdoc::p
+      "These theorems are disabled,
+       and added to the generated ruleset described below."))
+
+    (xdoc::desc
+     "Accompanying option theorems."
+     (xdoc::p
+      "For each @(tsee defoption) type specified by the @(':types') input,
+       we generate the following theorems,
+       whose exact form can be inspected with @(tsee pe) or similar command:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-under-iff')"))
      (xdoc::p
       "These theorems are disabled,
        and added to the generated ruleset described below."))
@@ -346,7 +314,15 @@
        whose exact form can be inspected with @(tsee pe) or similar command:")
      (xdoc::ul
       (xdoc::li
-       "@('<type>-<suffix>-when-emptyp')"))
+       "@('<type>-<suffix>-type-prescription')")
+      (xdoc::li
+       "@('<type>-<suffix>-when-emptyp')")
+      (xdoc::li
+       "@('emptyp-of-<type>-<suffix>')")
+      (xdoc::li
+       "@('keys-of-<type>-<suffix>')")
+      (xdoc::li
+       "@('assoc-of-<type>-<suffix>')"))
      (xdoc::p
       "These theorems are disabled,
        and added to the generated ruleset described below."))

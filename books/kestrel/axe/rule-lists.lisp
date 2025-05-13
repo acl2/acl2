@@ -572,6 +572,7 @@
 
 ;fixme a few of these are -all rules...
 ;; todo: we shouldn't use these without the trim-helpers  - add them to this?
+;; add bvlt-trim rules?
 (defun trim-rules ()
   (declare (xargs :guard t))
   '(;; -all and -non-all versions?

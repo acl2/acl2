@@ -394,9 +394,81 @@
     write-of-bvchop-arg3-gen
     ))
 
+(defund region-rules ()
+  (declare (xargs :guard t))
+  '(in-regionp-cancel-constants-1-1+
+    in-regionp-cancel-constants-1+-1
+    in-regionp-cancel-constants-1+-1+
+    in-regionp-cancel-1-1+
+    in-regionp-cancel-1+-1
+    in-regionp-cancel-1+-1+
+    in-regionp-cancel-1-2
+    in-regionp-cancel-2-1
+    in-regionp-cancel-1+-2
+    in-regionp-cancel-2-1+
+    in-regionp-cancel-1-3
+    in-regionp-cancel-3-1
+    in-regionp-cancel-2-2
+    in-regionp-when-non-negative-and-negative-range
+    in-regionp-of-0-arg3 ; introduces bvlt
+    in-regionp-of-bvchop-arg1
+    in-regionp-of-bvchop-arg3
+    ;; Seems ok to always have these on: ; todo: add more
+    disjoint-regionsp-cancel-1-2
+    disjoint-regionsp-cancel-2-2
+    subregionp-cancel-1-1
+    subregionp-cancel-1+-1
+    subregionp-cancel-1-1+
+    subregionp-cancel-2-1
+    subregionp-cancel-2-1+
+    subregionp-cancel-1-2
+    subregionp-cancel-1+-2
+    subregionp-cancel-2-2
+    subregionp-cancel-constants-1+-1
+    subregionp-cancel-constants-1+-1+
+    subregionp-reduce-sizes
+    subregionp-when-non-negative-and-negative-range
+    subregionp-of-1-arg1 ; introduces in-regionp
+    acl2::bvminus-of-bvplus-and-bvplus-same-2-2 ; move?  open bvminus?
+    acl2::bvminus-of-bvplus-same
+    subregionp-of-bvchop-arg2
+    subregionp-of-bvchop-arg4
+    disjoint-regionsp-of-bvchop-arg2
+    disjoint-regionsp-of-bvchop-arg4
+    acl2::bvmult-tighten-when-power-of-2p-axe ; helps rules like in-regionp-when-non-negative-and-negative-range fire
+    ))
+
+;; Non-SMT-amendable read-of-write rules:
+(defund read-and-write-rules-non-bv ()
+  (declare (xargs :guard t))
+  '(read-of-write-irrel
+    read-of-write-when-separate ; todo: rename to have separate in the name
+    ))
+
+;; SMT-amendable read-of-write rules:
+(defund read-and-write-rules-bv ()
+  (declare (xargs :guard t))
+  '(read-of-write-when-disjoint-regionsp-gen
+    read-of-write-when-disjoint-regionsp-gen-alt
+    read-of-write-when-disjoint-regionsp ; or different regions with the same base address?
+    subregionp-of-+-arg2
+    subregionp-of-+-arg4
+    disjoint-regionsp-of-+-arg2
+    disjoint-regionsp-of-+-arg4
+    read-of-+-arg2
+    write-of-+-arg2
+    read-when-equal-of-read-and-subregionp ; for a program-at-like hyp
+    read-when-equal-of-read-bytes-and-subregionp ; for a program-at-like hyp todo: add alt version?
+    read-when-equal-of-read-and-subregionp
+    read-when-equal-of-read-and-subregionp-alt
+    acl2::bvchop-of-+-becomes-bvplus
+    acl2::bvplus-of-*-arg1
+    acl2::bvplus-of-*-arg2))
+
 ;; Rules about the actual functions READ and WRITE.
 (defund read-and-write-rules ()
   (declare (xargs :guard t))
+  (append
   '(read-1-of-write-1-diff
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
@@ -407,27 +479,8 @@
     ;;read-of-write-of-write-of-set-flag
     ;;read-of-write-of-write-of-write-of-set-flag
     read-1-of-write-within-new
-
-    ;; Non-SMT rules:
-    read-of-write-irrel
-    read-of-write-when-separate ;; todo: rename to have separate in the name
-
-    ;; SMT-amendable read-of-write rules:
-    ;; read-of-write-when-disjoint-regionsp-gen
-    ;; read-of-write-when-disjoint-regionsp-gen-alt
-    ;; read-of-write-when-disjoint-regionsp ; or different regions with the same base address?
-    ;; subregionp-of-+-arg2
-    ;; subregionp-of-+-arg4
-    ;; disjoint-regionsp-of-+-arg2
-    ;; disjoint-regionsp-of-+-arg4
-    ;; read-of-+-arg2
-    ;; write-of-+-arg2
-
-    ;; Seems ok to always have these on: ; todo: add more
-    disjoint-regionsp-cancel-1-2
-    disjoint-regionsp-cancel-2-2
-    subregionp-of-bvplus-and-bvplus-cancel-2-2
-    subregionp-of-bvplus-and-bvplus-cancel-2-1))
+    )
+  (region-rules)))
 
 ;; For both 32-bit and 64-bit
 (defund new-normal-form-rules-common ()
@@ -856,6 +909,7 @@
     x86isa::!prefixes->nxt$inline ; why are these needed?
     x86isa::!prefixes->num$inline
     x86isa::!prefixes->opr$inline
+    x86isa::!prefixes->lck$inline
     ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
     X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
     x86isa::!prefixes->seg$inline-constant-opener
@@ -1200,6 +1254,12 @@
     acl2::bvlt-of-bvplus-1-cancel
     acl2::bvlt-of-bvplus-1-cancel-alt
     acl2::bvsx-when-unsigned-byte-p ; without this, we'd need rules like bvsx-of-read (when the read is small)
+
+    acl2::bvlt-trim-arg1-axe-all
+    acl2::bvlt-trim-arg2-axe-all
+
+    acl2::bvlt-of-bvmult-of-expt-arg2-constant-version2
+    acl2::bvlt-of-bvmult-of-expt-arg3-constant-version
     ))
 
 ;; ;not used?
@@ -1466,6 +1526,7 @@
     segment-base-and-bounds-of-set-undef
     segment-base-and-bounds-of-set-mxcsr
     ;; segment-base-and-bounds-of-set-ms
+    integerp-of-mv-nth-0-of-segment-base-and-bounds-gen
     ))
 
 (defun segment-base-and-bounds-rules-64 ()
@@ -1479,6 +1540,15 @@
     segment-base-and-bounds-of-set-rdx
     segment-base-and-bounds-of-set-rsi
     segment-base-and-bounds-of-set-rdi
+    segment-base-and-bounds-of-set-r8
+    segment-base-and-bounds-of-set-r9
+    segment-base-and-bounds-of-set-r10
+    segment-base-and-bounds-of-set-r11
+    segment-base-and-bounds-of-set-r12
+    segment-base-and-bounds-of-set-r13
+    segment-base-and-bounds-of-set-r14
+    segment-base-and-bounds-of-set-r15
+
     segment-base-and-bounds-of-set-flag
 ;    segment-base-and-bounds-of-write-byte
     segment-base-and-bounds-of-write
@@ -1877,12 +1947,14 @@
             ;; x86isa::canonical-address-p-between-special4
             x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
 
+            ;; some of these can be needed for x86isa::canonical-address-p-between:
             acl2::<-of-+-cancel-1-2
             acl2::<-of-+-cancel-2-1
             acl2::<-of-+-cancel-2-2
             acl2::<-of-+-cancel-second-of-more-and-only ; more? rename
             acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
+            acl2::<-of-+-cancel-1-3
             acl2::<-of-+-cancel-3-1
 
             acl2::<-of-+-and-+-cancel-constants ; for array index calcs, and separateness ; todo: make these 3 names more similar?
@@ -2449,8 +2521,14 @@
      acl2::integerp-of-+-when-integerp-1-cheap
      x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
      acl2::fix-when-integerp
-     acl2::equal-same)
-   (acl2::lookup-rules)))
+     acl2::equal-same
+     acl2::if-of-nil
+     acl2::if-of-t)
+   (region-rules)
+   (acl2::lookup-rules)
+   ;; needed for BV-mode:
+   '(acl2::bvchop-of-+-becomes-bvplus
+     acl2::bvplus-trim-leading-constant)))
 
 ;move?
 ;todo: most of these are not myif rules
@@ -4572,6 +4650,7 @@
           (read-rules)
           (write-rules)
           (read-and-write-rules)
+          (read-and-write-rules-non-bv) ; todo: allow the bv version?
           '(rime08$inline
             rime16$inline
             rime32$inline
@@ -5069,7 +5148,14 @@
      acl2::bvchop-numeric-bound
      x86isa::xw-of-rip-and-if
      acl2::if-x-x-y-when-booleanp
-     read-of-xw-irrel ; drop
+     read-of-xw-irrel ; drop -- but is it elsewhere?
+     read-bytes-of-xw-irrel
+     read-bytes-of-set-flag ; todo: more like this, for other state changers
+     read-bytes-of-!rflags
+     read-bytes-of-set-undef
+     read-bytes-of-set-mxcsr
+     read-bytes-of-write-when-disjoint-regionsp
+     read-bytes-of-write-when-disjoint-regionsp-alt
      mod-of-plus-reduce-constants
      ;; mv-nth-1-of-rb-becomes-read
      ;mv-nth-1-of-wb-becomes-write-when-app-view
@@ -5113,7 +5199,11 @@
   (declare (xargs :guard t))
   (append (extra-loop-lifter-rules)
           '(;; mv-nth-1-of-rb-becomes-read
-            read-of-write-irrel
+            ;; read-of-write-irrel
+            read-of-write-when-disjoint-regionsp-gen
+            read-of-write-when-disjoint-regionsp-gen-alt
+            read-bytes-of-write-when-disjoint-regionsp-gen
+            read-bytes-of-write-when-disjoint-regionsp-gen-alt
             read-of-write-same
             )))
 
@@ -5312,3 +5402,8 @@
 
 ;; This may be the rule that is used the most
 (set-axe-rule-priority acl2::mv-nth-of-cons-safe -1)
+
+;; Delay under we've tried to resolve the read of write:
+(set-axe-rule-priority read-of-write-becomes-read-of-write-of-clear-flags-extend-axe 1)
+;; Remove the clear-flags-retract before we try to resolve the read-of-write
+(set-axe-rule-priority read-of-write-of-clear-flags-retract -1)

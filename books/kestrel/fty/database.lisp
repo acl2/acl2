@@ -99,6 +99,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define flextype->fix (flextype)
+  :returns (name symbolp)
+  :short "Name of the fix function for a sum, list, alist, transparent sum,
+          set, or omap type, given the information associated to the type."
+  (b* ((name (cond ((flexsum-p flextype) (flexsum->fix flextype))
+                   ((flexlist-p flextype) (flexlist->fix flextype))
+                   ((flexalist-p flextype) (flexalist->fix flextype))
+                   ((flextranssum-p flextype) (flextranssum->fix flextype))
+                   ((flexset-p flextype) (flexset->fix flextype))
+                   ((flexomap-p flextype) (flexomap->fix flextype))
+                   (t (raise "Internal error: malformed type ~x0." flextype))))
+       ((unless (symbolp name))
+        (raise "Internal error: malformed fix function name ~x0." name)))
+    name))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define flextype-with-name ((name symbolp) (fty-table alistp))
   :returns flextype?
   :short "Find, in the FTY table,

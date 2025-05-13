@@ -388,16 +388,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable read))))
 
-;; (defthm read-when-not-integerp-arg2-cheap
-;;   (implies (equal nil addr) ;(not (integerp addr))
-;;            (equal (read n addr x86)
-;;                   (read n 0 x86)))
-;;   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-;;   :hints (("Subgoal *1/3" :cases ((integerp (+ 1 addr))))
-;;           ("Goal" :in-theory (enable read))))
-
-;todo: gen!
-(defthm read-when-not-integerp-cheap
+(defthm read-when-not-integerp-arg2-cheap
   (implies (not (integerp addr))
            (equal (read n addr x86)
                   (read n 0 x86)))
@@ -1020,7 +1011,7 @@
                 ;;(equal 7 (mod high 8)) ; high bit of some byte
                 (integerp (/ (+ high 1) 8))
                 (< high (* 8 n))
-                (< low high)
+;                (<= low high)
                 (natp low)
                 (natp high)
                 (natp n)
