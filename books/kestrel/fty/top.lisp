@@ -34,6 +34,8 @@
 (include-book "deffixtype-alias")
 (include-book "defflatsum")
 (include-book "defflatsum-doc")
+(include-book "deffold-map")
+(include-book "deffold-map-doc")
 (include-book "deffold-reduce")
 (include-book "deffold-reduce-doc")
 (include-book "deflist-of-len")
