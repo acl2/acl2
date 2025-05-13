@@ -74,7 +74,7 @@
     (xdoc::desc
      "@(':types') &mdash; no default"
      (xdoc::p
-      "Fixtype for which fold functions must be generated.")
+      "Fixtypes for which fold functions must be generated.")
      (xdoc::p
       "This must be a list of symbols, which is not evaluated by the macro,
        where each symbols must be one of the following:")
@@ -117,7 +117,7 @@
      "@(':extra-args') &mdash; default @('nil')"
      (xdoc::p
       "Extra arguments of the functions,
-       which are passed unchanged to the recursively calls.")
+       which are passed unchanged to the recursive calls.")
      (xdoc::p
       "This must be a list of "
       (xdoc::seetopic "std::extended-formals" "extended formals")

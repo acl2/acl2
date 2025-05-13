@@ -1401,10 +1401,10 @@
          ((mv spec env)
           (const-prop-decl-spec-list paramdecl.specs env))
          ((mv decl env)
-          (const-prop-paramdeclor paramdecl.decl env)))
+          (const-prop-param-declor paramdecl.declor env)))
       (mv (make-param-declon
             :specs spec
-            :decl decl)
+            :declor decl)
           env))
     :measure (param-declon-count paramdecl))
 
@@ -1425,27 +1425,27 @@
           env))
     :measure (param-declon-list-count paramdecls))
 
-  (define const-prop-paramdeclor
-    ((paramdeclor paramdeclorp)
+  (define const-prop-param-declor
+    ((paramdeclor param-declorp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::paramdeclor)."
-    :returns (mv (new-paramdeclor paramdeclorp)
+    :short "Propagate a constant through a @(see c$::param-declor)."
+    :returns (mv (new-paramdeclor param-declorp)
                  (new-env envp))
     (b* ((env (env-fix env)))
-      (paramdeclor-case
+      (param-declor-case
         paramdeclor
-        :declor (b* (((mv unwrap env)
-                      (const-prop-declor paramdeclor.unwrap env)))
-                  (mv (paramdeclor-declor unwrap) env))
+        :nonabstract (b* (((mv unwrap env)
+                           (const-prop-declor paramdeclor.unwrap env)))
+                       (mv (param-declor-nonabstract unwrap) env))
         :absdeclor (b* (((mv unwrap env)
                          (const-prop-absdeclor paramdeclor.unwrap env)))
-                     (mv (paramdeclor-absdeclor unwrap) env))
-        :none (mv (paramdeclor-none) env)
+                     (mv (param-declor-absdeclor unwrap) env))
+        :none (mv (param-declor-none) env)
         :ambig (prog2$ (raise "Misusage error: ~x0."
-                              (paramdeclor-fix paramdeclor))
-                       (mv (paramdeclor-fix paramdeclor)
+                              (param-declor-fix paramdeclor))
+                       (mv (param-declor-fix paramdeclor)
                            env))))
-    :measure (paramdeclor-count paramdeclor))
+    :measure (param-declor-count paramdeclor))
 
   (define const-prop-tyname
     ((tyname tynamep)

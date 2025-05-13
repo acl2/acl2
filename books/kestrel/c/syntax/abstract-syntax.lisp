@@ -2307,10 +2307,10 @@
       "This corresponds to <i>parameter-declaration</i> in the grammar in [C17].
        In our abstract syntax, this is defined as consisting of
        declaration specifiers followed by a parameter declarator;
-       see @(tsee paramdeclor) for a description and motivation
+       see @(tsee param-declor) for a description and motivation
        for this notion of parameter declarator."))
     ((specs decl-spec-list)
-     (decl paramdeclor))
+     (declor param-declor))
     :pred param-declonp
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -2333,7 +2333,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum paramdeclor
+  (fty::deftagsum param-declor
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of parameter declarators [C17:6.7.6] [C17:A.2.2]."
     :long
@@ -2351,11 +2351,11 @@
        either a declarator or an abstract declarator or nothing.
        These are the three possibilities for what can follow
        the declaration specifiers in a parameter declaration."))
-    (:declor ((unwrap declor)))
+    (:nonabstract ((unwrap declor)))
     (:absdeclor ((unwrap absdeclor)))
     (:none ())
     (:ambig ((unwrap amb-declor/absdeclor)))
-    :pred paramdeclorp
+    :pred param-declorp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

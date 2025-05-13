@@ -326,22 +326,22 @@
                        (interp-st->logicman interp-st)))))
 
     (defret next-bvar-of-<fn>
-      (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
-             (next-bvar$a (interp-st->bvar-db interp-st))))
+      (equal (next-bvar$c (interp-st->bvar-db new-interp-st))
+             (next-bvar$c (interp-st->bvar-db interp-st))))
 
     (defret base-bvar-of-<fn>
-      (equal (base-bvar$a (interp-st->bvar-db new-interp-st))
-             (base-bvar$a (interp-st->bvar-db interp-st))))
+      (equal (base-bvar$c (interp-st->bvar-db new-interp-st))
+             (base-bvar$c (interp-st->bvar-db interp-st))))
 
     (defret get-bvar->term-eval-of-<fn>
       (b* ((bvar-db (interp-st->bvar-db interp-st)))
         (implies (and (interp-st-bfrs-ok interp-st)
-                      (<= (base-bvar$a bvar-db) (nfix n))
-                      (< (nfix n) (next-bvar$a bvar-db)))
-                 (iff (fgl-object-eval (get-bvar->term$a n (interp-st->bvar-db new-interp-st))
+                      (<= (base-bvar$c bvar-db) (nfix n))
+                      (< (nfix n) (next-bvar$c bvar-db)))
+                 (iff (fgl-object-eval (get-bvar->term$c n (interp-st->bvar-db new-interp-st))
                                        env
                                        (interp-st->logicman new-interp-st))
-                      (fgl-object-eval (get-bvar->term$a n bvar-db)
+                      (fgl-object-eval (get-bvar->term$c n bvar-db)
                                        env
                                        (interp-st->logicman interp-st))))))
 

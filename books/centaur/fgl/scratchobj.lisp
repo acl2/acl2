@@ -41,7 +41,9 @@
       (:bfr t nil bfr 2)
       (:bfrlist true-listp llist-fix bfrlist 3 :rule-classes :type-prescription)
       (:cinst constraint-instance-p constraint-instance-fix constraint-instance 4)
-      (:cinstlist constraint-instancelist-p constraint-instancelist-fix constraint-instancelist 5)))
+      (:cinstlist constraint-instancelist-p constraint-instancelist-fix constraint-instancelist 5)
+      (:fnsym pseudo-fnsym-p pseudo-fnsym-fix pseudo-fnsym 6)
+      (:formals pseudo-var-list-p pseudo-var-list-fix pseudo-var-list 7)))
 
 
   (defun scratchobj-tmplsubst (tuple lastp)

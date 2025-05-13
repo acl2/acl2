@@ -890,19 +890,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define paramdeclor-formalp ((paramdeclor paramdeclorp))
-  :guard (paramdeclor-unambp paramdeclor)
+(define param-declor-formalp ((paramdeclor param-declorp))
+  :guard (param-declor-unambp paramdeclor)
   :returns (yes/no booleanp)
   :short "Check if a parameter declarator has formal dynamic semantics."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Based on @(tsee ldm-paramdeclor),
+    "Based on @(tsee ldm-param-declor),
      the parameter declarator must be present and not abstract.
      The underlying declarator must be supported, for an object."))
-  (paramdeclor-case
+  (param-declor-case
    paramdeclor
-   :declor (declor-obj-formalp paramdeclor.unwrap)
+   :nonabstract (declor-obj-formalp paramdeclor.unwrap)
    :absdeclor nil
    :none nil
    :ambig (impossible))
@@ -924,7 +924,7 @@
        ((mv okp tyspecs) (check-decl-spec-list-all-typespec param.specs)))
     (and okp
          (type-spec-list-formalp tyspecs)
-         (paramdeclor-formalp param.decl)))
+         (param-declor-formalp param.declor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

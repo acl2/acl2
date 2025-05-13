@@ -549,7 +549,7 @@ keyword argument. Examples of usage:</p>
              void))
 
 (fancy-ev-add-primitive interp-st-print-aig-lit (aignet::litp lit))
-
+(fancy-ev-add-primitive hard-error t)
 
 (defmacro fgl-error! (&key msg debug-obj)
   `(syntax-interp
@@ -642,3 +642,38 @@ keyword argument. Examples of usage:</p>
        (?ign (syntax-interp (cw "Evaluation: ~x0~%" obj-val))))
     obj-val))
     
+(defmacro break-on-fgl-error ()
+  `(trace$ (interp-st-set-error
+            :cond (not (or (eq msg :abort-rewrite)
+                           (eq msg :intro-bvars-fail)
+                           (eq msg :unreachable)))
+            :hide nil
+            :entry (list 'interp-st-set-error msg)
+            :exit (break$))
+           (fgl-interp-store-debug-info
+            :cond (not (or (eq msg :abort-rewrite)
+                           (eq msg :intro-bvars-fail)
+                           (eq msg :unreachable)))
+            :hide nil
+            :entry (list 'fgl-interp-store-debug-info msg obj)
+            :exit (break$))))
+
+(defmacro stop-on-fgl-error ()
+  `(trace$ (interp-st-set-error
+            :cond (not (or (eq msg :abort-rewrite)
+                           (eq msg :intro-bvars-fail)
+                           (eq msg :unreachable)))
+            :hide nil
+            :entry (list 'interp-st-set-error msg)
+            :exit (er hard? 'interp-st-set-error
+                      "Stopping on error due to ~x0" 'stop-on-fgl-error))
+           (fgl-interp-store-debug-info
+            :cond (not (or (eq msg :abort-rewrite)
+                           (eq msg :intro-bvars-fail)
+                           (eq msg :unreachable)))
+            :hide nil
+            :entry (list 'fgl-interp-store-debug-info msg obj)
+            :exit (er hard? 'fgl-interp-store-debug-info
+                      "Stopping on error due to ~x0" 'stop-on-fgl-error))))
+
+

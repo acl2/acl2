@@ -2717,7 +2717,7 @@ registers are not used.</p>"
     
 
     equal not if iff int bool
-    concrete return-last synp cons car cdr
+    concrete match-assums return-last synp cons car cdr
     intcons intcons* endint intcar intcdr int-endp
     typespec-check implies fgl-sat-check))
 

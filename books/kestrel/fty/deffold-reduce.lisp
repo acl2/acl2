@@ -14,6 +14,7 @@
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/omaps/portcullis" :dir :system)
 (include-book "std/system/table-alist-plus" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 (include-book "system/pseudo-event-form-listp" :dir :system)
@@ -22,7 +23,6 @@
 (local (include-book "std/lists/true-listp" :dir :system))
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
 (local (include-book "std/system/pseudo-event-formp" :dir :system))
-(local (include-book "std/system/pseudo-event-form-listp" :dir :system))
 (local (include-book "std/system/w" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
@@ -289,7 +289,7 @@
                      result)))
        (default-option (assoc-eq :default options))
        ((unless default-option)
-        (reterr (msg "The :DEFAULT input must be supllied.")))
+        (reterr (msg "The :DEFAULT input must be supplied.")))
        (default (cdr default-option))
        (combine-option (assoc-eq :combine options))
        ((unless combine-option)
@@ -773,7 +773,7 @@
                                   (fty-table alistp))
   :returns (event acl2::pseudo-event-formp)
   :short "Generate a fold function for an omap type,
-          with accompanying theorems.."
+          with accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p

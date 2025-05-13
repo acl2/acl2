@@ -93,14 +93,17 @@
         Grant Jurgensen\inst{1},
         Matt Kaufmann\inst{4},\\
         Eric McCarthy\inst{1,3},
-        J Strother Moore\inst{4},
+        J Strother Moore\inst{4},\\
+        Eric Smith\inst{1,2},
         Yahya Sohail,\\
+        Sol Swords\inst{5},
         \textit{add more authors}}
 
 \institute{\inst{1}Kestrel Institute,
            \inst{2}Kestrel Technology LLC,
            \inst{3}Provable Inc.,\\
            \inst{4}University of Texas at Austin (retired),\\
+           \inst{5}Arm Inc.,
            \textit{add more affiliations}}
 
 \date{ACL2-2025 Workshop}
@@ -128,6 +131,21 @@
 \item These slides provide succinct summaries of major items,
       ordered by book path within each of the new and improved library parts.
       See the book release notes for more details.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{intel/ifp}:
+Floating-point arithmetic specs formerly used at Intel
+\begin{itemize}
+\item Specs for core arithmetic operations and rounding
+\item Some theorems about rounding and error bounds
 \end{itemize}
 
 \end{frame}
@@ -228,6 +246,27 @@ Ordered finite sets represented as treaps:
 
 \newlibtitle
 
+\bookpath{kestrel/xml}: Add a simple XML parser
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{projects/acl2-in-hol}:
+Support for much of the ACL2 side of the dormant link from ACL2 into HOL.
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
 \bookpath{projects/aleo}:
 Formal specifications and proofs about the Aleo blockchain and ecosystem:
 \begin{itemize}
@@ -245,8 +284,8 @@ Formal specifications and proofs about the Aleo blockchain and ecosystem:
 
 \newlibtitle
 
-\bookpath{projects/hol-acl2}:
-Support for much of the ACL2 side of the dormant HOL-ACL2 link.
+\bookpath{projects/hol-in-acl2}:
+A translator from HOL4 to ACL2, with examples.
 
 \end{frame}
 
@@ -298,6 +337,71 @@ Set theory:
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Improvements to existing libraries start here
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{build}: New build options
+\begin{itemize}
+\item Add new \code{cert\_param} \code{non-acl2p}, to exclude books that don't work with ACL2(p)
+\item New \code{FAILURE\_LINES} var limits printing for failed/interrupted builds
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{centaur/fgl}:
+Bit-blasting rewriter.
+\begin{itemize}
+\item Added/improved some debugging utilities
+\item Added feature to match a hyp containing free variables against assumptions
+\item Added documentation about binder functions/rules
+\item Added some utilities to help support rewriting of FTY sum/product types
+\item Improved integration with AIG library to make it more feasible
+  to programmatically configure AIG transformations
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{centaur/fty}:
+Fixtype library (the part under centaur/):
+\begin{itemize}
+\item Added 'multicase' macro for matching against multiple sum types at once
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{centaur/sv}:
+VL/SV hardware verification package
+\begin{itemize}
+\item Improvements in reasoning about designs as FSMs (as opposed to unrolled pipeline functions)
+\item Add SRT4 divide tutorial example
+
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}
 
@@ -338,6 +442,70 @@ Demos:
 
 \implibtitle
 
+\bookpath{doc/100-theorems}: More of the 100 Theorems now in ACL2
+\begin{itemize}
+\item Cramer's Rule
+\item Mathematical Induction.
+\item Schroder-Bernstein (2 versions)
+\item Cantor's Theorem
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/axe}: Major improvements to:
+\begin{itemize}
+\item Rewriters (e.g., binding hyps, SMT to relieve hyps, XOR nest handling)
+\item SMT connection
+\item Equivalence Checker
+\item Provers (Tactic Prover, R1CS Prover, etc)
+\item Clause Processors
+\item x86 Binary Lifter
+\item JVM (Java) Code Lifter
+\item Formal Unit Testers
+\item Supporting rules
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/crypto}: Add formalizations
+\begin{itemize}
+\item Add spec of the CHACHA20 stream cipher
+\item Add spec of the BLAKE2b hash function.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/ethereum}:
+\begin{itemize}
+\item Add partial formal specification of the Ethereum Virtual Machine.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
 \bookpath{kestrel/fty}:
 Fixtype library (the part under the Kestrel Books):
 \begin{itemize}
@@ -346,6 +514,81 @@ Fixtype library (the part under the Kestrel Books):
 \item Added some utilities to query the fixtype database,
       extending the ones under \code{centaur/fty}.
 \item Made \code{defset} and \code{defomap} more robust.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/helpers}: Improvements to tools that
+\begin{itemize}
+\item Help find new proofs and fix broken proofs
+\item Suggest improvements to functions/theorems/books
+\item Find problems (Linter)
+\item Speed up proofs/books
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/terms-light}: Add several verified term simplifiers
+\begin{itemize}
+\item Improve lambdas (subst constants, drop unused/trivial/unnecessary bindings)
+\item Simplify ors
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel/x86}: Added/improved:
+\begin{itemize}
+\item Normal forms for x86 reasoning
+\item Equivalent alternate defs for certain instructions
+\item Many rules (including new rewriting strategies)
+\item Auto-generation of assumptions for proving/lifting
+\item Handling of memory reads, writes and disjointness
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\implibtitle
+
+\bookpath{kestrel}: Many improvements to basic libraries
+\begin{itemize}
+\item \code{acl2-arrays} (e.g., much longer arrays)
+\item \code{arithmetic-light}
+\item \code{booleans}
+\item \code{bv} and \code{bv-lists} (including bv-arrays)
+\item \code{clause-processors}
+\item \code{evaluators} (e.g., \code{defevaluator+})
+\item \code{file-io-light}
+\item \code{floats} (rounding, connection to RTL)
+\item \code{json-parser}
+\item \code{lists-light}, \code{typed-lists-light}, \code{alists-light}
+\item \code{prime-fields}
+\item \code{sequences}
+\item \code{strings-light} and \code{unicode-light}
+\item \code{utilities}
+\item \code{world-light}
+
 \end{itemize}
 
 \end{frame}
@@ -365,6 +608,8 @@ Formal model of the x86 ISA:
 \item Added TTY and timer peripherals.
 \item Added Linux support with patched kernel.
 \item Added cosimulation validation tool.
+\item Sped up many books.
+\item New summary of instruction coverage (see \code{:doc sdm-instruction-set-summary}).
 \end{itemize}
 
 \end{frame}

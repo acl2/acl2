@@ -321,10 +321,11 @@
     :field-fix
     :field-equiv
     :get
-    :pred))
+    :pred
+    :non-exec-logic))
 
 (defconst *nicestobj-keys*
-  (append '(:name :fields :raw-fields :template :rename-pred) *nicestobj-userkeys*))
+  (append '(:name :fields :raw-fields :template :rename-pred :non-exec-logic) *nicestobj-userkeys*))
 
 (make-event
  (std::da-make-binder-gen
@@ -384,7 +385,8 @@
                             (<stobjpred> . ,x.pred))
                    :strs `(("<STOBJNAME>" . ,(symbol-name stobjname))
                            ("<STOBJPRED>" . ,(symbol-name x.pred)))
-                   :features (if x.rename-pred '(:rename-pred) '(:no-rename-pred))
+                   :features (append (if x.rename-pred '(:rename-pred) '(:no-rename-pred))
+                                     (and x.non-exec-logic '(:non-exec)))
                    :pkg-sym stobjname))
        (field-templates (acl2::combine-each-tmplsubst-with-default field-templates template1))
        (template (acl2::change-tmplsubst template1
@@ -418,11 +420,13 @@
                    (<pred> (nth i x)))
           :hints(("Goal" :in-theory (enable <recognizer> nth)))))
        (define <access> ((:@ :arrayp (i natp)) <stobjname>)
-         (:@ :arrayp :guard (< i (<stobjname>-><field>-length <stobjname>)))
+         (:@ :arrayp :guard (< i (<length> <stobjname>)))
          :inline t
          :returns (<field> (<pred> <field>) :rule-classes <rule-classes>)
          (the <elt-type>
-              (mbe :logic (non-exec (<fix> (<base-access> (:@ :arrayp i) <stobjname>)))
+              (mbe :logic ((:@ :non-exec non-exec)
+                           (:@ (not :non-exec) progn$)
+                           (<fix> (<base-access> (:@ :arrayp i) <stobjname>)))
                    :exec (<base-access> (:@ :arrayp i) <stobjname>)))
          ///
          (acl2::add-to-ruleset! <stobjname>-defs <access>))
@@ -430,7 +434,7 @@
         (define <update> ((:@ :arrayp (i natp))
                           (<field> (<pred> <field>) :type <elt-type>)
                           <stobjname>)
-          (:@ :arrayp :guard (< i (<stobjname>-><field>-length <stobjname>)))
+          (:@ :arrayp :guard (< i (<length> <stobjname>)))
           :inline t
           :split-types t
           ;; :returns (new-<stobjname> <stobjpred> :hyp (<stobjpred> <stobjname>))

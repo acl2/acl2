@@ -78,9 +78,9 @@
      "This may return @('nil') when the parameter declaration is unnamed."))
   :returns (ident ident-optionp)
   (b* (((param-declon paramdecl) paramdecl))
-    (paramdeclor-case
-      paramdecl.decl
-      :declor (declor->ident paramdecl.decl.unwrap)
+    (param-declor-case
+      paramdecl.declor
+      :nonabstract (declor->ident paramdecl.declor.unwrap)
       :otherwise nil)))
 
 (define param-declon-to-decl
@@ -90,13 +90,13 @@
   :returns (mv (success booleanp)
                (decl declp))
   (b* (((param-declon paramdecl) paramdecl))
-    (paramdeclor-case
-      paramdecl.decl
-      :declor (mv t
-                  (make-decl-decl
-                    :extension nil
-                    :specs paramdecl.specs
-                    :init (cons (initdeclor paramdecl.decl.unwrap nil nil init?) nil)))
+    (param-declor-case
+      paramdecl.declor
+      :nonabstract (mv t
+                       (make-decl-decl
+                        :extension nil
+                        :specs paramdecl.specs
+                        :init (cons (initdeclor paramdecl.declor.unwrap nil nil init?) nil)))
       :otherwise (mv nil (irr-decl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -239,7 +239,8 @@
     :bfr (b* ((bitarr (bfr-mark x.val bitarr))) (mv bitarr seen))
     :bfrlist (b* ((bitarr (bfrlist-mark x.val bitarr))) (mv bitarr seen))
     :cinst (constraint-instance-mark-bfrs x.val bitarr seen)
-    :cinstlist (constraint-instancelist-mark-bfrs x.val bitarr seen))
+    :cinstlist (constraint-instancelist-mark-bfrs x.val bitarr seen)
+    :otherwise (mv bitarr seen))
   ///
   
   (defret length-of-<fn>

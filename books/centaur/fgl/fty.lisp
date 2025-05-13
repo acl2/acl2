@@ -150,6 +150,101 @@ removing definitions and adding supporting rewrite rules."
 <p>where @('sumname') is the name of the sum or product type.</p>")
 
 
+(define fgl-cons-rule-def (fn tag pkg)
+  (b* ((form `(,fn (cons ,(or tag 'x) y)))
+       (name (intern-in-package-of-symbol
+              (concatenate 'string (symbol-name fn) "-OF-CONS")
+              pkg)))
+    `(acl2::defopen ,name
+       ,form
+       :hint (:expand (,form :lambdas)))))
+
+(define fgl-cons-rule-defs-for-fields (fields tag pkg)
+  (if (atom fields)
+      nil
+    (cons (fgl-cons-rule-def (flexprod-field->acc-name (car fields)) tag pkg)
+          (fgl-cons-rule-defs-for-fields (cdr fields) tag pkg))))
+
+(define fgl-cons-rule-defs-for-product (prod)
+  (b* (((flexprod prod))
+       (tag (case-match prod.ctor-body
+              ((cons-or-hons kind . &)
+               (and (or (eq cons-or-hons 'cons)
+                        (eq cons-or-hons 'hons))
+                    (or (keywordp kind)
+                        (quotep kind))
+                    kind))
+              (& nil))))
+    (fgl-cons-rule-defs-for-fields prod.fields tag prod.type-name)))
+
+(define fgl-cons-rule-defs-for-products (products)
+  (if (atom products)
+      nil
+    (append (fgl-cons-rule-defs-for-product (car products))
+            (fgl-cons-rule-defs-for-products (cdr products)))))
+     
+
+(define fgl-cons-rule-ctor-of-field-rules (products)
+  (if (atom products)
+      nil
+    (cons (b* (((flexprod prod) (car products)))
+            (intern-in-package-of-symbol
+             (concatenate 'string (symbol-name prod.ctor-name) "-OF-FIELDS")
+             prod.ctor-name))
+          (fgl-cons-rule-ctor-of-field-rules (cdr products)))))
+
+(define fgl-cons-rule-defs-for-sum (sum)
+  (b* (((flexsum sum))
+       (prod-events (fgl-cons-rule-defs-for-products sum.prods))
+       (defopen-events
+         (append (and sum.kind (list (fgl-cons-rule-def sum.kind nil sum.name)))
+                 (list (fgl-cons-rule-def sum.fix nil sum.name)
+                       (fgl-cons-rule-def sum.pred nil sum.name))
+                 prod-events))
+       (names (acl2::strip-cadrs defopen-events)))
+    (append `(;; (local (defthm equal-of-if-for-fgl-cons-rule-defs
+              ;;          (equal (equal (if test x y) z)
+              ;;                 (if test (equal x z) (equal y z)))))
+              (local (in-theory (disable . ,(fgl-cons-rule-ctor-of-field-rules sum.prods)))))
+            defopen-events
+            `((in-theory (disable . ,names))
+              (fgl::add-fgl-rewrites . ,names)))))
+       
+
+(define def-fgl-cons-rules-for-fty-sum-fn (sumname wrld)
+  (b* (((mv & sum) (search-deftypes-table sumname (get-flextypes wrld)))
+       (events (fgl-cons-rule-defs-for-sum sum)))
+    (list* 'encapsulate nil events)))
+
+(defmacro def-fgl-cons-rules-for-fty-sum (sumname)
+  `(make-event (def-fgl-cons-rules-for-fty-sum-fn ',sumname (w state))))
+
+
+(defxdoc def-fgl-cons-rules-for-fty-sum
+  :parents (fgl-fty-support)
+  :short "Utility that provides an FGL rewriting theory supporting FTY sum or product type accessors on cons structures."
+  :long "<p>Usage:</p>
+@({
+ (fty::def-fgl-cons-rules-for-fty-sum sum-name)
+ })
+
+<p>Note: The ambient theory can affect what rules are produced! It is
+advisable to check that the rules you get are what you expect to see.</p>
+
+<p>An occasional problem in supporting FTY types in FGL is that constant
+objects get IF-merged into a non-constant cons structure.  E.g., suppose
+@('(foo)') and @('(bar)') each produce elements of a product type containing
+two Booleands, and FGL encounters a term @('(if test (foo) (bar))').  FGL might
+execute @('(foo)') and @('(bar)') producing the constant values @('(:my-prod t
+nil)') and @('(:my-prod nil nil)'). We can deal with accessors applied to such
+constants by just concretely executing them.  But due to the IF, these
+constants then get merged into some symbolic object,
+e.g. @('(:my-prod (:g-boolean 39) nil)').  Now concrete execution can't work,
+nor can the idiomatic automatically generated accessor-of-constructor
+rules. This utility deals with this by generating rewrite rules to open FTY
+accessors applied to cons structures.</p>")
+
+
 (define fty-prods-find-by-kind (kind prods)
   (if (atom prods)
       nil

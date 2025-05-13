@@ -1,7 +1,7 @@
 ; Basic Axe rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -178,3 +178,10 @@
 (defthmd not-of-cons
   (equal (not (cons x y))
          nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Probably only needed for Axe
+(defthmd acl2-numberp-when-signed-byte-p
+  (implies (signed-byte-p size x) ; size is a free var
+           (acl2-numberp x)))

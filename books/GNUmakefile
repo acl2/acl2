@@ -278,9 +278,8 @@ endif # ifneq ($(EXCLUDED_PREFIXES), )
 $(info Scanning for books...)
 REBUILD_MAKEFILE_BOOKS := $(shell \
   rm -f $(BUILD_DIR)/Makefile-books; \
-  time find . -name "*.lisp" \
+  time find . -name "*.lisp" -not -name '.*'\
     | egrep -v '^(\./)?(interface|centaur/satlink/solvers|projects/milawa/ACL2|clause-processors/SULFA|kestrel/axe/jvm/examples|workshops/2003/kaufmann/support/input|workshops/2003/kaufmann/support/rtl|build/test-ifdef-define$(EGREP_EXTRA_EXCLUDE_STRING))' \
-    | fgrep -v '.\#' \
   > $(BUILD_DIR)/Makefile-books; \
   ls -l $(BUILD_DIR)/Makefile-books)
 #$(info $(REBUILD_MAKEFILE_BOOKS))

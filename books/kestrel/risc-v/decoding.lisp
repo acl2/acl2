@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -29,14 +29,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Instructions are encoded as specified in [ISA] and [ISAP].
+    "Instructions are encoded as specified in [ISA] and [ISAP],
+     and as formalized in @(see encoding).
      We define an executable decoder that maps the encodings of instructions
      to the corresponding instruction fixtypes
      defined in @(see instructions).")
    (xdoc::p
     "Currently we only cover the decoding of
-     the instructions defined in @(see instructions);
-     this is for both RV32I and RV64I.
+     the instructions defined in @(see instructions).
      We only handle the normal encodings,
      i.e. not the compressed ones in the C extension [ISA:26];
      thus, our decoder operates on 32-bit encodings."))
@@ -139,8 +139,8 @@
      which, when joined, form the bits @('imm[11:0]') of the immediate."))
   (b* ((imm[4.0] (part-select enc :low 7 :high 11))
        (imm[11.5] (part-select enc :low 25 :high 31)))
-    (+ imm[4.0]
-       (ash imm[11.5] 5))))
+    (logappn 5 imm[4.0]
+             7 imm[11.5])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -158,10 +158,10 @@
        (imm[10.5] (part-select enc :low 25 :width 6))
        (imm[11] (part-select enc :low 7 :width 1))
        (imm[12] (part-select enc :low 31 :width 1)))
-    (+ imm[4.1]
-       (ash imm[10.5] 4)
-       (ash imm[11] 10)
-       (ash imm[12] 11))))
+    (logappn 4 imm[4.1]
+             6 imm[10.5]
+             1 imm[11]
+             1 imm[12])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -193,10 +193,10 @@
        (imm[11] (part-select enc :low 20 :width 1))
        (imm[19.12] (part-select enc :low 12 :width 8))
        (imm[20] (part-select enc :low 31 :width 1)))
-    (+ imm[10.1]
-       (ash imm[11] 10)
-       (ash imm[19.12] 11)
-       (ash imm[20] 19))))
+    (logappn 10 imm[10.1]
+             1 imm[11]
+             8 imm[19.12]
+             1 imm[20])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -278,15 +278,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decode ((enc ubyte32p) (64p booleanp))
+(define decode ((enc ubyte32p) (feat featp))
   :returns (instr? instr-optionp)
   :short "Decode an instruction."
   :long
   (xdoc::topstring
    (xdoc::p
     "The first input is a 32-bit encoding of the instruction;
-     the second input is a flag distinguishing between
-     RV64I (if @('t')) and RV32I (if @('nil')).
+     the second input consists of the features, which affect decoding.
      If decoding is successful, we return the instruction.
      If decoding is unsuccessful, we return @('nil').")
    (xdoc::p
@@ -305,7 +304,7 @@
      Whether the immediate is split into 5 low bits and 7 high bits,
      or into 6 low bits and 6 high bits,
      depends on whether we are in RV32I or RV64I mode,
-     so we use the flag passed as input to this function.
+     so we use the features passed as input to this function.
      We generate slightly different shift instructions, in the two cases.")
    (xdoc::p
     "With the @('OP-IMM-32') opcode,
@@ -319,10 +318,14 @@
                    (#b000 (load-funct-lb))
                    (#b001 (load-funct-lh))
                    (#b010 (load-funct-lw))
-                   (#b011 (load-funct-ld))
+                   (#b011 (if (feat-64p feat)
+                              (load-funct-ld)
+                            nil))
                    (#b100 (load-funct-lbu))
                    (#b101 (load-funct-lhu))
-                   (#b110 (load-funct-lwu))
+                   (#b110 (if (feat-64p feat)
+                              (load-funct-lwu)
+                            nil))
                    (#b111 nil)))
           ((unless funct) nil))
        (instr-load funct rd rs1 imm)))
@@ -338,32 +341,45 @@
                    (#b110 (op-imm-funct-ori))
                    (#b111 (op-imm-funct-andi))))
           ((when funct) (instr-op-imm funct rd rs1 imm)))
-       (if 64p
+       (if (feat-64p feat)
            (b* ((loimm (part-select imm :low 0 :high 5))
                 (hiimm (part-select imm :low 6 :high 11))
                 ((when (= funct3 #b001))
                  (if (= hiimm #b000000)
-                     (instr-op-imms64 (op-imms-funct-slli) rd rs1 loimm)
+                     (if (feat-64p feat)
+                         (instr-op-imms64 (op-imms-funct-slli) rd rs1 loimm)
+                       nil)
                    nil)))
              (case hiimm
-               (#b000000 (instr-op-imms64 (op-imms-funct-srli) rd rs1 loimm))
-               (#b010000 (instr-op-imms64 (op-imms-funct-srai) rd rs1 loimm))
+               (#b000000 (if (feat-64p feat)
+                             (instr-op-imms64 (op-imms-funct-srli) rd rs1 loimm)
+                           nil))
+               (#b010000 (if (feat-64p feat)
+                             (instr-op-imms64 (op-imms-funct-srai) rd rs1 loimm)
+                           nil))
                (t nil)))
          (b* ((loimm (part-select imm :low 0 :high 4))
               (hiimm (part-select imm :low 5 :high 11))
               ((when (= funct3 #b001))
                (if (= hiimm #b000000)
-                   (instr-op-imms32 (op-imms-funct-slli) rd rs1 loimm)
+                   (if (feat-32p feat)
+                       (instr-op-imms32 (op-imms-funct-slli) rd rs1 loimm)
+                     nil)
                  nil)))
            (case hiimm
-             (#b000000 (instr-op-imms32 (op-imms-funct-srli) rd rs1 loimm))
-             (#b010000 (instr-op-imms32 (op-imms-funct-srai) rd rs1 loimm))
+             (#b000000 (if (feat-32p feat)
+                           (instr-op-imms32 (op-imms-funct-srli) rd rs1 loimm)
+                         nil))
+             (#b010000 (if (feat-32p feat)
+                           (instr-op-imms32 (op-imms-funct-srai) rd rs1 loimm)
+                         nil))
              (t nil))))))
     (#b0010111 ; AUIPC [ISA:2.4.1]
      (b* (((mv rd imm) (decode-utype enc)))
        (instr-auipc rd imm)))
     (#b0011011 ; OP-IMM-32 [ISA:4.2.1]
-     (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
+     (b* (((unless (feat-64p feat)) nil)
+          ((mv funct3 rd rs1 imm) (decode-itype enc))
           ((when (= funct3 #b000))
            (instr-op-imm-32 (op-imm-32-funct-addiw) rd rs1 imm))
           (loimm (part-select imm :low 0 :high 4))
@@ -386,7 +402,9 @@
                    (#b000 (store-funct-sb))
                    (#b001 (store-funct-sh))
                    (#b010 (store-funct-sw))
-                   (#b011 (store-funct-sd))
+                   (#b011 (if (feat-64p feat)
+                              (store-funct-sd)
+                            nil))
                    (t nil)))
           ((unless funct) nil))
        (instr-store funct rs1 rs2 imm)))
@@ -433,7 +451,8 @@
      (b* (((mv rd imm) (decode-utype enc)))
        (instr-lui rd imm)))
     (#b0111011 ; OP-32 [ISA:4.2.2]
-     (b* (((mv funct3 funct7 rd rs1 rs2) (decode-rtype enc))
+     (b* (((unless (feat-64p feat)) nil)
+          ((mv funct3 funct7 rd rs1 rs2) (decode-rtype enc))
           (funct (case funct3
                    (#b000 (case funct7
                             (#b0000000 (op-32-funct-addw))

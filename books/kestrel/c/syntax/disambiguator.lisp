@@ -1074,7 +1074,7 @@
      :parents nil
      (b* (((when (endp params)) (mv t nil))
           (param (car params))
-          ((unless (paramdeclor-case (param-declon->decl param) :none))
+          ((unless (param-declor-case (param-declon->declor param) :none))
            (mv nil nil))
           (declspecs (param-declon->specs param))
           ((unless (and (consp declspecs) (endp (cdr declspecs))))
@@ -2214,14 +2214,14 @@
        and if the code is valid that will be also the returned kind.
        Then we call a separate function to disambiguate the parameter declarator
        (which is a notion in our abstract syntax, not in [C17]);
-       see @(tsee paramdeclor))."))
+       see @(tsee param-declor))."))
     (b* (((reterr) (irr-param-declon) (irr-dimb-table))
          ((param-declon param) param)
          ((erp new-specs & table)
           (dimb-decl-spec-list param.specs (dimb-kind-objfun) table))
          ((erp new-decl table)
-          (dimb-paramdeclor param.decl table)))
-      (retok (make-param-declon :specs new-specs :decl new-decl) table))
+          (dimb-param-declor param.declor table)))
+      (retok (make-param-declon :specs new-specs :declor new-decl) table))
     :measure (param-declon-count param))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2245,8 +2245,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-paramdeclor ((paramdeclor paramdeclorp) (table dimb-tablep))
-    :returns (mv erp (new-paramdeclor paramdeclorp) (new-table dimb-tablep))
+  (define dimb-param-declor ((paramdeclor param-declorp) (table dimb-tablep))
+    :returns (mv erp (new-paramdeclor param-declorp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a parameter declarator."
     :long
@@ -2273,20 +2273,20 @@
        with @('nil') as the @('fundefp') flag,
        because the declarator passed to that function
        is for a parameter, not for a defined function."))
-    (b* (((reterr) (irr-paramdeclor) (irr-dimb-table)))
-      (paramdeclor-case
+    (b* (((reterr) (irr-param-declor) (irr-dimb-table)))
+      (param-declor-case
        paramdeclor
-       :declor
+       :nonabstract
        (b* (((erp new-declor ident table)
              (dimb-declor paramdeclor.unwrap nil table))
             (table (dimb-add-ident ident (dimb-kind-objfun) table)))
-         (retok (paramdeclor-declor new-declor) table))
+         (retok (param-declor-nonabstract new-declor) table))
        :absdeclor
        (b* (((erp new-absdeclor table)
              (dimb-absdeclor paramdeclor.unwrap table)))
-         (retok (paramdeclor-absdeclor new-absdeclor) (dimb-table-fix table)))
+         (retok (param-declor-absdeclor new-absdeclor) (dimb-table-fix table)))
        :none
-       (retok (paramdeclor-none) (dimb-table-fix table))
+       (retok (param-declor-none) (dimb-table-fix table))
        :ambig
        (b* (((erp declor/absdeclor ident? table)
              (dimb-amb-declor/absdeclor paramdeclor.unwrap table)))
@@ -2297,11 +2297,11 @@
                 (raise "Internal error: declarator without identifier.")
                 (reterr t))
                (table (dimb-add-ident ident? (dimb-kind-objfun) table)))
-            (retok (paramdeclor-declor declor/absdeclor.unwrap) table))
+            (retok (param-declor-nonabstract declor/absdeclor.unwrap) table))
           :absdeclor
-          (retok (paramdeclor-absdeclor declor/absdeclor.unwrap)
+          (retok (param-declor-absdeclor declor/absdeclor.unwrap)
                  (dimb-table-fix table))))))
-    :measure (paramdeclor-count paramdeclor))
+    :measure (param-declor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3167,10 +3167,10 @@
       (implies (not erp)
                (param-declon-list-unambp new-params))
       :fn dimb-param-declon-list)
-    (defret paramdeclor-unambp-of-dimb-paramdeclor
+    (defret param-declor-unambp-of-dimb-param-declor
       (implies (not erp)
-               (paramdeclor-unambp new-paramdeclor))
-      :fn dimb-paramdeclor)
+               (param-declor-unambp new-paramdeclor))
+      :fn dimb-param-declor)
     (defret tyname-unambp-of-dimb-tyname
       (implies (not erp)
                (tyname-unambp new-tyname))

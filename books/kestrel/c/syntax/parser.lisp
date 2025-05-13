@@ -12168,7 +12168,7 @@
             (token-punctuatorp token ",")) ; declspecs ,
         (b* ((parstate (unread-token parstate))) ; declspecs
           (retok (make-param-declon :specs declspecs
-                                    :decl (paramdeclor-none))
+                                    :declor (param-declor-none))
                  span
                  parstate)))
        ;; Otherwise, we parse
@@ -12187,7 +12187,7 @@
            :declor
            (retok (make-param-declon
                    :specs declspecs
-                   :decl (paramdeclor-declor declor/absdeclor.unwrap))
+                   :declor (param-declor-nonabstract declor/absdeclor.unwrap))
                   (span-join span last-span)
                   parstate)
            ;; If we parsed an unambiguous abstract declarator,
@@ -12195,7 +12195,7 @@
            :absdeclor
            (retok (make-param-declon
                    :specs declspecs
-                   :decl (paramdeclor-absdeclor declor/absdeclor.unwrap))
+                   :declor (param-declor-absdeclor declor/absdeclor.unwrap))
                   (span-join span last-span)
                   parstate)
            ;; If we parsed an ambiguous declarator or abstract declarator,
@@ -12203,7 +12203,7 @@
            :ambig
            (retok (make-param-declon
                    :specs declspecs
-                   :decl (paramdeclor-ambig declor/absdeclor.unwrap))
+                   :declor (param-declor-ambig declor/absdeclor.unwrap))
                   (span-join span last-span)
                   parstate))))))
     :measure (two-nats-measure (parsize parstate) 2))

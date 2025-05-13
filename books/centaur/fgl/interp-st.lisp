@@ -131,11 +131,27 @@
     (debug-info :type t)
     (debug-stack :type (satisfies major-stack-p) :initially ,(list (make-major-frame)) :fix major-stack-fix)))
 
+#!fgl
+(define interp-st-show-ctrex-env (interp-st)
+  (stobj-let ((env$ (interp-st->ctrex-env interp-st)))
+             (val)
+             (progn$ (cw "alist:     ~x0~%" (env$->alist env$))
+                     (cw "obj-alist: ~x0~%" (env$->obj-alist env$))
+                     nil)
+             val))
+
 
 (define interp-st-init (interp-st)
   :guard-hints (("goal" :in-theory (e/d* (interp-st-defs
                                            update-nth
-                                           equal-of-len)
+                                           equal-of-len
+                                           (init-bvar-db$c)
+                                           ;; update-term-bvars$c
+                                           ;; update-bvar-fn-indices$c
+                                           ;; update-term-equivs$c
+                                           ;; update-next-bvar1$c
+                                           ;; update-base-bvar$c
+                                           )
                                          (default-car default-cdr cons-equal
                                            (:t update-nth) (:t true-listp)
                                            (:t true-listp-update-nth)
@@ -738,16 +754,24 @@
 
 
 (local
- (defthm subsetp-of-bvar-db-bfrlist-when-get-term->bvar$a
-   (implies (get-term->bvar$a x bvar-db)
+ (defthm subsetp-of-bvar-db-bfrlist-when-get-term->bvar$c
+   (implies (get-term->bvar$c x bvar-db)
             (subsetp (fgl-object-bfrlist x) (bvar-db-bfrlist bvar-db)))
    :hints (("goal" :use ((:instance subsetp-bfrlist-of-bvar-db-bfrlist
-                          (m (get-term->bvar$a x bvar-db))))
+                          (m (get-term->bvar$c x bvar-db))))
             :in-theory (disable subsetp-bfrlist-of-bvar-db-bfrlist)))))
+
+(define interp-st-get-term->bvar ((x fgl-object-p) interp-st)
+  :returns (bvar acl2::maybe-natp :rule-classes :type-prescription)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
+             (bvar)
+             (get-term->bvar x bvar-db)
+             bvar))
 
 (define interp-st-add-term-bvar ((x fgl-object-p) interp-st state)
   :returns (mv bfr new-interp-st)
   :guard (interp-st-nvars-ok interp-st)
+  :guard-hints (("goal" :in-theory (enable interp-st-get-term->bvar)))
   :prepwork ((local (in-theory (enable interp-st-nvars-ok))))
   (stobj-let ((bvar-db (interp-st->bvar-db interp-st))
               (logicman (interp-st->logicman interp-st)))
@@ -780,9 +804,9 @@
              (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
 
   (defret nvars-ok-of-<fn>
-    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+    (implies (equal (next-bvar$c (interp-st->bvar-db interp-st))
                     (bfr-nvars (interp-st->logicman interp-st)))
-             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+             (equal (next-bvar$c (interp-st->bvar-db new-interp-st))
                     (bfr-nvars (interp-st->logicman new-interp-st)))))
 
   (defret bvar-db-bfrlist-of-<fn>
@@ -834,9 +858,9 @@
              (logicman-extension-p (interp-st->logicman new-interp-st) old-logicman)))
 
   (defret nvars-ok-of-<fn>
-    (implies (equal (next-bvar$a (interp-st->bvar-db interp-st))
+    (implies (equal (next-bvar$c (interp-st->bvar-db interp-st))
                     (bfr-nvars (interp-st->logicman interp-st)))
-             (equal (next-bvar$a (interp-st->bvar-db new-interp-st))
+             (equal (next-bvar$c (interp-st->bvar-db new-interp-st))
                     (bfr-nvars (interp-st->logicman new-interp-st)))))
 
   (defret bvar-db-bfrlist-of-<fn>
@@ -1019,6 +1043,17 @@
              (bvar-db-debug bvar-db)
              alist))
 
+(define interp-st-bvar-fn-term-indices ((fn pseudo-fnsym-p) interp-st)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
+             (alist)
+             (bvar-fn-term-indices fn bvar-db)
+             alist))
+
+(define interp-st-bvar-list-okp ((indices nat-listp) interp-st)
+  (stobj-let ((bvar-db (interp-st->bvar-db interp-st)))
+             (alist)
+             (bvar-list-okp indices bvar-db)
+             alist))
 
 
 (defines fgl-minor-frame-subterm-count

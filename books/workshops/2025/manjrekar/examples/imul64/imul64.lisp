@@ -1,5 +1,9 @@
 (IN-PACKAGE "RTL")
 
+; Matt K. addition: Exclude from GCL runs due to stack overflow from
+; compilation in GCL 2.7.2pre.
+; cert_param: (non-gcl)
+
 (INCLUDE-BOOK "rtl/rel11/lib/rac" :DIR :SYSTEM)
 
 (SET-IGNORE-OK T)
