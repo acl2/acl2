@@ -87,6 +87,7 @@
                                                                ',parsed-executable
                                                                ',stack-slots-needed
                                                                text-offset
+                                                               nil ; bvp
                                                                x86)
                               assumptions)
                       ;; TODO: Support :pe-32
@@ -95,6 +96,7 @@
                                                              ',parsed-executable
                                                              ',stack-slots-needed
                                                              text-offset
+                                                             nil ; bvp
                                                              x86)
                                 assumptions)
                         (if (eq :elf-64 executable-type)
@@ -102,6 +104,7 @@
                                                                 ',parsed-executable
                                                                 ',stack-slots-needed
                                                                 text-offset
+                                                                nil ; bvp
                                                                 x86)
                                   assumptions)
                           assumptions))))
