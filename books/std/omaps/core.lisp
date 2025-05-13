@@ -378,6 +378,13 @@
                             (update key val (tail map))))))))
   ///
 
+  (in-theory (disable (:type-prescription update)))
+
+  (defrule update-type-prescription
+    (and (consp (update x y z))
+         (true-listp (update x y z)))
+    :rule-classes :type-prescription)
+
   (defrule update-of-head-and-tail
     (implies (not (emptyp map))
              (equal (update (mv-nth 0 (head map))
