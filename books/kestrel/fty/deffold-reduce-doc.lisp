@@ -74,7 +74,7 @@
     (xdoc::desc
      "@(':types') &mdash; no default"
      (xdoc::p
-      "Fixtype for which fold functions must be generated.")
+      "Fixtypes for which fold functions must be generated.")
      (xdoc::p
       "This must be a list of symbols, which is not evaluated by the macro,
        where each symbols must be one of the following:")
