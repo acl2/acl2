@@ -1038,7 +1038,7 @@
                 (bounded-axe-treep tree dag-len)
                 (not (mv-nth 0 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (symbol-alistp var-replacement-alist)
-                (interpreted-function-alistp interpreted-function-alist)
+                ;; (interpreted-function-alistp interpreted-function-alist)
                 )
            (and (dargp (mv-nth 1 (merge-tree-into-dag-array
                                              tree
@@ -1062,7 +1062,8 @@
                 (bounded-axe-tree-listp trees dag-len)
                 (not (mv-nth 0 (merge-trees-into-dag-array trees var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (symbol-alistp var-replacement-alist)
-                (interpreted-function-alistp interpreted-function-alist))
+                ;; (interpreted-function-alistp interpreted-function-alist)
+                )
            (and
             (darg-listp (mv-nth 1 (merge-trees-into-dag-array
                                              trees
@@ -1085,7 +1086,8 @@
                 (bounded-axe-treep tree dag-len)
                 (not (mv-nth 0 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (symbol-alistp var-replacement-alist)
-                (interpreted-function-alistp interpreted-function-alist))
+                ;; (interpreted-function-alistp interpreted-function-alist)
+                )
            (dargp-less-than (mv-nth 1 (merge-tree-into-dag-array
                                                   tree
                                                   var-replacement-alist
@@ -1103,7 +1105,8 @@
                 (bounded-axe-treep tree dag-len)
                 (not (mv-nth 0 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (symbol-alistp var-replacement-alist)
-                (interpreted-function-alistp interpreted-function-alist))
+                ;; (interpreted-function-alistp interpreted-function-alist)
+                )
            (equal (integerp (mv-nth 1 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                   (not (consp (mv-nth 1 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))))
   :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-1-of-merge-tree-into-dag-array)
@@ -1118,7 +1121,8 @@
                 (bounded-axe-treep tree dag-len)
                 (not (mv-nth 0 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (symbol-alistp var-replacement-alist)
-                (interpreted-function-alistp interpreted-function-alist))
+                ;; (interpreted-function-alistp interpreted-function-alist)
+                )
            (<= 0 (mv-nth 1 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))))
   :hints (("Goal" :use (:instance dargp-less-than-of-mv-nth-1-of-merge-tree-into-dag-array)
            :in-theory (disable dargp-less-than-of-mv-nth-1-of-merge-tree-into-dag-array
@@ -1132,7 +1136,8 @@
                 (bounded-axe-treep tree dag-len)
                 (not (mv-nth 0 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
                 (symbol-alistp var-replacement-alist)
-                (interpreted-function-alistp interpreted-function-alist))
+                ;; (interpreted-function-alistp interpreted-function-alist)
+                )
            (<= (mv-nth 1 (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))
                *max-1d-array-index*))
   :hints (("Goal" :use (integerp-of-mv-nth-1-of-merge-tree-into-dag-array
@@ -1198,7 +1203,7 @@
                              dag-array-name dag-parent-array-name
                              interpreted-function-alist))
 
-;; uncomment, but need to be able to suppress type-of-make-term-into-dag-array-two, since there is no existing dag..
+;; could uncomment, but need to be able to suppress type-of-make-term-into-dag-array-two, since there is no existing dag..
 ;; (def-dag-builder-theorems
 ;;   (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist)
 ;;   (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1212,44 +1217,24 @@
 ;;   :dag-array-name dag-array-name)
 
 ;edited from what def-dag-builder-theorems produces
-(DEFTHM TYPE-OF-MAKE-TERM-INTO-DAG-ARRAY
-  (IMPLIES (AND (NOT (MV-NTH 0 (MAKE-TERM-INTO-DAG-ARRAY TERM DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME INTERPRETED-FUNCTION-ALIST))) ; no error
-                (PSEUDO-TERMP TERM)
-                (SYMBOLP DAG-ARRAY-NAME)
-                (SYMBOLP DAG-PARENT-ARRAY-NAME)
-                ;;(INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
+(defthm type-of-make-term-into-dag-array
+  (implies (and (not (mv-nth 0 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))) ; no error
+                (pseudo-termp term)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                ;;(interpreted-function-alistp interpreted-function-alist)
                 )
-           (AND
-            (WF-DAGP
-             DAG-ARRAY-NAME
-             (MV-NTH 2
-                     (MAKE-TERM-INTO-DAG-ARRAY TERM
-                                               DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                               INTERPRETED-FUNCTION-ALIST))
-             (MV-NTH 3
-                     (MAKE-TERM-INTO-DAG-ARRAY TERM
-                                               DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                               INTERPRETED-FUNCTION-ALIST))
-             DAG-PARENT-ARRAY-NAME
-             (MV-NTH 4
-                     (MAKE-TERM-INTO-DAG-ARRAY TERM
-                                               DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                               INTERPRETED-FUNCTION-ALIST))
-             (MV-NTH 5
-                     (MAKE-TERM-INTO-DAG-ARRAY TERM
-                                               DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                               INTERPRETED-FUNCTION-ALIST))
-             (MV-NTH 6
-                     (MAKE-TERM-INTO-DAG-ARRAY TERM
-                                               DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                               INTERPRETED-FUNCTION-ALIST)))
-            (<=
-             (MV-NTH 3
-                     (MAKE-TERM-INTO-DAG-ARRAY TERM
-                                               DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                               INTERPRETED-FUNCTION-ALIST))
-             *max-1d-array-length*)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE MAKE-TERM-INTO-DAG-ARRAY))))
+           (and (wf-dagp dag-array-name
+                         (mv-nth 2 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))
+                         (mv-nth 3 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))
+                         dag-parent-array-name
+                         (mv-nth 4 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))
+                         (mv-nth 5 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))
+                         (mv-nth 6 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist)))
+                ;; (< 0 (mv-nth 3 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))) ; todo
+                (<= (mv-nth 3 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))
+                    *max-1d-array-length*)))
+  :hints (("Goal" :in-theory (enable make-term-into-dag-array))))
 
 ;;do we need this?
 (defthm pseudo-dag-arrayp-of-mv-nth-2-of-make-term-into-dag-array
@@ -1258,12 +1243,21 @@
                 (symbolp dag-array-name)
                 (symbolp dag-parent-array-name))
            (pseudo-dag-arrayp dag-array-name
-                              (mv-nth 2
-                                      (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))
-                              (mv-nth 3
-                                      (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))))
-  :hints (("Goal" :use (:instance TYPE-OF-MAKE-TERM-INTO-DAG-ARRAY)
-           :in-theory (disable TYPE-OF-MAKE-TERM-INTO-DAG-ARRAY))))
+                              (mv-nth 2 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))
+                              (mv-nth 3 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))))
+  :hints (("Goal" :use (:instance type-of-make-term-into-dag-array)
+           :in-theory (disable type-of-make-term-into-dag-array))))
+
+(defthm type-of-make-term-into-dag-array-corollary
+  (implies (and (not (mv-nth 0 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))) ; no error
+                (pseudo-termp term)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                ;;(interpreted-function-alistp interpreted-function-alist)
+                )
+           (natp (mv-nth 3 (make-term-into-dag-array term dag-array-name dag-parent-array-name interpreted-function-alist))))
+  :hints (("Goal" :use type-of-make-term-into-dag-array
+           :in-theory (disable type-of-make-term-into-dag-array))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1282,6 +1276,25 @@
                               (empty-dag-variable-alist)
                               dag-array-name dag-parent-array-name
                               interpreted-function-alist))
+
+(defthm make-terms-into-dag-array-return-type
+  (implies (and (pseudo-term-listp terms)
+                (symbolp dag-array-name)
+                (symbolp dag-parent-array-name)
+                ;; (interpreted-function-alistp interpreted-function-alist)
+                )
+           (mv-let (erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (make-terms-into-dag-array terms dag-array-name dag-parent-array-name interpreted-function-alist)
+             (implies (not erp)
+                      (and (wf-dagp dag-array-name
+                                    dag-array
+                                    dag-len
+                                    dag-parent-array-name
+                                    dag-parent-array
+                                    dag-constant-alist
+                                    dag-variable-alist)
+                           (bounded-darg-listp nodenums-or-quoteps dag-len)))))
+  :hints (("Goal" :in-theory (enable make-terms-into-dag-array))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1302,6 +1315,16 @@
       (if (consp nodenum-or-quotep)
           (mv (erp-nil) nodenum-or-quotep)
         (mv (erp-nil) (array-to-alist 'make-term-into-dag-array dag-array dag-len))))))
+
+;; (thm
+;;   (implies (and (pseudo-termp term)
+;;                 (interpreted-function-alistp interpreted-function-alist))
+;;            (mv-let (erp dag-or-quotep)
+;;              (make-term-into-dag term interpreted-function-alist)
+;;              (implies (not erp)
+;;                       (or (myquotep dag-or-quotep)
+;;                           (pseudo-dagp dag-or-quotep)))))
+;;   :hints (("Goal" :in-theory (e/d (make-term-into-dag) (natp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
