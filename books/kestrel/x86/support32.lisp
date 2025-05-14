@@ -1577,6 +1577,11 @@
            (integerp (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86))))
   :hints (("Goal" :in-theory (enable segment-base-and-bounds))))
 
+(defthm unsigned-byte-p-64-of-mv-nth-0-of-segment-base-and-bounds
+  (implies (x86p x86)
+           (unsigned-byte-p 64 (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86))))
+  :hints (("Goal" :in-theory (enable segment-base-and-bounds))))
+
 ;same seg-reg
 (defthm read-byte-from-segment-of-write-byte-to-segment-both
   (implies (and (integerp eff-addr1)
@@ -2731,7 +2736,7 @@
                               write-to-segment-of-write-byte-to-segment))))
 
 (defthm integerp-of-mv-nth-0-of-segment-base-and-bounds-gen
-  (integerp (mv-nth 0 (segment-base-and-bounds 1 seg-reg x86)))
+  (integerp (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86)))
   :hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
                                   (;; x86isa::seg-hidden-limiti-is-n32p
                                    ;; x86isa::seg-hidden-attri-is-n16p
