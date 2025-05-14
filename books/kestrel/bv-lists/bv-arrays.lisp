@@ -706,7 +706,7 @@
                   ;(bvchop element-size (car data))
                   ))
   :hints (("Goal"
-           :in-theory (enable bv-array-read)))))
+           :in-theory (enable bv-array-read nth-when-all-equal$)))))
 
 ;; This could loop when INDEX is the constant 0, except that then the whole
 ;; bv-array-read should be evaluated because all the args would be constants.
@@ -729,7 +729,7 @@
                   (bv-array-read element-size len 0 data)))
   :hints (("Goal" :use (:instance bv-array-read-when-all-same-helper (data (true-list-fix data)))
            :in-theory (e/d (;all-equal$-when-true-listp
-                            BV-ARRAY-READ)
+                            BV-ARRAY-READ nth-when-all-equal$)
                            (bv-array-read-when-all-same-helper ;car-becomes-nth-of-0
                             )))))
 
