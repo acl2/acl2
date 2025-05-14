@@ -30,19 +30,21 @@
 (include-book "kestrel/bv/sbvdivdown" :dir :system)
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
-(include-book "rules1") ;drop? for BV-ARRAY-WRITE-EQUAL-REWRITE-ALT, to prove EQUAL-OF-BV-ARRAY-WRITE-SAME
-;(include-book "bv-array-rules") ; drop?
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrays" :dir :system); reduce?
 ;(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
-(local (include-book "list-rules"))
+;(local (include-book "list-rules"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 ;(local (include-book "arithmetic/equalities" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -703,8 +705,7 @@
                   (if (EQUAL (BVCHOP 32 X) *MINUS-1*)
                       t
                     (bvlt 32 x 2147483647))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvlt) (
-                                                                      )))))
+  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases bvlt) ()))))
 
 ;; (thm
 ;;  (implies (integerp x)
@@ -2993,8 +2994,6 @@
 
 (in-theory (disable BVCHOP-EQUAL-CONSTANT-REDUCE-WHEN-TOP-BIT-3-2-4)) ;if it's a hyp we don't want to reduce it..
 
-(in-theory (disable NTH-WHEN-all-equal$))
-
 ;sometimes we don't want these, e.g. (equal 0 (bvchop 2 x)) when we also know (equal 0 (getbit 1 x))
 (in-theory (disable BVCHOP-CONTRACT-HACK-GEN SLICE-TIGHTEN-WHEN-TOP-BIT-0))
 
@@ -4019,7 +4018,7 @@
                     BVLT-TIGHTEN-STRONG-ARG3
                     BVLT-OF-SLICE-TOP-GEN))
 
-(in-theory (disable bv-array-read-of-bv-array-write-both-better
+(in-theory (disable ;bv-array-read-of-bv-array-write-both-better
                     bvle-tighten-32-31
                     bvlt-add-to-both-sides-constant-lemma
                     bvlt-add-to-both-sides-constant-lemma-alt
@@ -5121,8 +5120,7 @@
            (equal (bvplus size arg1 (nth n data))
                   (bvplus size arg1 (bv-array-read size (len data) n data))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener)
-                                  (
-                                   ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
+                                  (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
                                    )))))
 
 ;move
@@ -8470,6 +8468,7 @@
            :in-theory (disable bvlt-of-bvplus-same))))
 
 ;gen!
+;move
 (defthm equal-of-constant-and-bv-array-read-of-bv-array-write-of-constant
   (implies (and (syntaxp (and (quotep k1) (quotep k2)))
                 (not (equal k2 k1))
@@ -11555,12 +11554,11 @@
                   (and (true-listp k)
                        (equal val (nth 16 k))
                        (equal (firstn 16 k) (firstn 16 data)))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 bvplus bv-array-read equal-of-append)
+  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 bvplus bv-array-read equal-of-append equal-of-update-nth-new)
                                   (update-nth-becomes-update-nth2-extend-gen
                                    LEN-OF-CDR
                                    CDR-OF-TAKE
-                                   ;
-                                   )))))
+                                   true-listp)))))
 
 ;fixme gen the 0 (may not be true becuase of the clear)
 (defthm equal-of-repeat-of-0-and-bv-array-write
@@ -11576,8 +11574,9 @@
                                    bv-array-clear
                                    bv-array-write-opener
                                    update-nth2
-                                   equal-of-update-nth)
-                                  (bv-array-write-equal-rewrite-alt bv-array-write-equal-rewrite
+                                   equal-of-update-nth-new
+                                   )
+                                  (;bv-array-write-equal-rewrite-alt bv-array-write-equal-rewrite
                                    update-nth-becomes-update-nth2-extend-gen)))))
 
 (defthm equal-of-repeat-and-bv-array-write-hack
@@ -11589,7 +11588,7 @@
                 )
            (equal (equal (repeat (bvplus 5 1 x) '0) (bv-array-write 32 (bvplus 5 1 x) x '0 data))
                   (equal (repeat x '0) (firstn x data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write UPDATE-NTH2 bvplus ceiling-of-lg equal-of-append)
+  :hints (("Goal" :in-theory (e/d (bv-array-write UPDATE-NTH2 bvplus ceiling-of-lg equal-of-append equal-of-update-nth-new)
                                   (UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                                    equal-of-cons)))))
 
@@ -13322,6 +13321,7 @@
                               (bvchop-list 8 (take index data2))))))
   :hints (("Goal" :in-theory (e/d (bv-array-write-opener
                                    update-nth2
+                                   equal-of-update-nth-new
                                    bvplus)
                                   (update-nth-becomes-update-nth2-extend-gen)))))
 
