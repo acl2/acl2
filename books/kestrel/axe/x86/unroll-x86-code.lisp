@@ -98,6 +98,8 @@
 
 (acl2::ensure-rules-known (unroller-rules32))
 (acl2::ensure-rules-known (unroller-rules64))
+(acl2::ensure-rules-known (read-and-write-rules-bv))
+(acl2::ensure-rules-known (read-and-write-rules-non-bv))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 (acl2::ensure-rules-known (step-opener-rules32))
 (acl2::ensure-rules-known (step-opener-rules64))
@@ -613,6 +615,7 @@
                              print
                              print-base
                              untranslatep
+                             bvp ; whether to use new-style assumptions
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable
@@ -644,7 +647,8 @@
                               (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
-                              (booleanp untranslatep))
+                              (booleanp untranslatep)
+                              (booleanp bvp))
                   :stobjs state
                   :mode :program ; todo: need a magic wrapper for translate-terms (must translate at least the user-supplied assumptions)
                   ))
@@ -727,6 +731,7 @@
                                            base-var
                                            inputs
                                            disjoint-chunk-addresses-and-lens
+                                           bvp
                                            parsed-executable)))
                  ((when erp) (mv erp nil nil nil nil state))
 
@@ -790,18 +795,21 @@
                                                          ',parsed-executable
                                                          ',stack-slots
                                                          ,text-offset
+                                                         ',bvp
                                                          x86))
                      (if (eq :pe-64 executable-type)
                          `((standard-assumptions-pe-64 ',target
                                                        ',parsed-executable
                                                        ',stack-slots
                                                        text-offset
+                                                       ',bvp
                                                        x86))
                        (if (eq :elf-64 executable-type)
                            `((standard-assumptions-elf-64 ',target
                                                           ',parsed-executable
                                                           ',stack-slots
                                                           ,text-offset
+                                                          ',bvp
                                                           x86))
                          (if (eq :mach-o-32 executable-type)
                              (gen-standard-assumptions-mach-o-32 target parsed-executable stack-slots)
@@ -830,9 +838,9 @@
                (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
                (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
                                                                      (print-terms-elided assumptions
-                                                                                         '((standard-assumptions-elf-64 t nil t t t)
-                                                                                           (standard-assumptions-mach-o-64 t nil t t t)
-                                                                                           (standard-assumptions-pe-64 t nil t t t)
+                                                                                         '((standard-assumptions-elf-64 t nil t t t t)
+                                                                                           (standard-assumptions-mach-o-64 t nil t t t t)
+                                                                                           (standard-assumptions-pe-64 t nil t t t t)
                                                                                            )) ; todo: more?
                                                                      (cw ")~%"))))
                ;; Next, we simplify the assumptions.  This allows us to state the
@@ -871,6 +879,10 @@
         (mv :unexpected-quotep nil nil nil nil nil state))
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
+       (lifter-rules (append (if bvp
+                                 (read-and-write-rules-bv)
+                               (read-and-write-rules-non-bv))
+                             lifter-rules))
        (lifter-rules (if stop-pcs
                          (append (symbolic-execution-rules-with-stop-pcs) lifter-rules)
                        lifter-rules))
@@ -943,6 +955,7 @@
                         produce-theorem
                         prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
                         restrict-theory
+                        bvp
                         whole-form
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
@@ -981,7 +994,8 @@
                               (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
                               (booleanp prove-theorem)
-                              (booleanp restrict-theory))
+                              (booleanp restrict-theory)
+                              (booleanp bvp))
                   :stobjs state
                   :mode :program ; todo
                   ))
@@ -1005,7 +1019,7 @@
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
           inputs output use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
-          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep state))
+          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep bvp state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -1174,6 +1188,7 @@
                                   (produce-theorem 'nil)
                                   (prove-theorem 'nil)
                                   (restrict-theory 't)       ;todo: deprecate
+                                  (bvp 'nil)
                                   )
   `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
     (def-unrolled-fn
@@ -1209,6 +1224,7 @@
       ',produce-theorem
       ',prove-theorem
       ',restrict-theory
+      ',bvp
       ',whole-form
       state))
   :parents (lifters)
@@ -1228,7 +1244,7 @@
          (prune-precise "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
          (prune-approx "Whether to prune DAGs using approximate contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning should not blow up but doesn't use fully precise contextual information.")
          ;; todo: how do these affect assumption simp:
-         (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64).")
+         (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64) plus a few others.")
          (remove-rules "Rules to turn off.")
          (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
          (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
@@ -1246,7 +1262,9 @@
          (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
          (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
          (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
-         (restrict-theory "To be deprecated..."))
+         (restrict-theory "To be deprecated...")
+         (bvp "Whether to use new-style, BV-friendly assumptions.")
+         )
   :description ("Given an x86 binary function, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
                 "This event creates a @(see defconst) whose name is derived from the @('lifted-name') argument."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
