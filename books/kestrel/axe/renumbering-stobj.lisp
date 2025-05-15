@@ -46,7 +46,8 @@
 (defstobj+ renumbering-stobj
   (renumbering :type (array (satisfies maybe-dargp) (10000)) :resizable t :initially nil)
   ;; :inline t ;; TODO: Try this
-  :renaming ((renumberingp renumbering-entriesp)))
+  :renaming ((renumberingp renumbering-entriesp))
+  :inline t)
 
 ;better guard than UPDATE-RENUMBERINGi (requires dargp, not maybe-dargp) -- use this one instead
 (defund-inline update-renumbering (i darg renumbering-stobj)
