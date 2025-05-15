@@ -68,6 +68,7 @@
 
 (include-book "relnotes")
 (include-book "practices")
+(include-book "publications")
 
 (include-book "100-theorems")
 
