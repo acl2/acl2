@@ -76,7 +76,7 @@
                   0))
   :hints (("Goal" :in-theory (enable bvchop))))
 
-(defthm bvchop-size-0-better
+(defthm bvchop-of-0-arg2
   (equal (bvchop size 0)
          0)
   :hints (("Goal" :in-theory (enable bvchop))))
@@ -158,11 +158,10 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable bvchop))))
 
-;rename
-(defthm bvchop-+-bvchop-better
-  (implies (integerp j) ; rename j
-           (equal (bvchop size (+ i (bvchop size j)))
-                  (bvchop size (+ i j))))
+(defthm bvchop-of-+-of--bvchop-arg2
+  (implies (integerp y)
+           (equal (bvchop size (+ x (bvchop size y)))
+                  (bvchop size (+ x y))))
   :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm <=-of-bvchop-same-linear
@@ -794,10 +793,10 @@
   (implies (integerp z)
            (equal (bvchop size (+ x y (bvchop size z)))
                   (bvchop size (+ x y z))))
-  :hints (("Goal" :use (:instance bvchop-+-bvchop-better
-                                  (i (+ x y))
-                                  (j z))
-           :in-theory (disable bvchop-+-bvchop-better))))
+  :hints (("Goal" :use (:instance bvchop-of-+-of--bvchop-arg2
+                                  (x (+ x y))
+                                  (y z))
+           :in-theory (disable bvchop-of-+-of--bvchop-arg2))))
 
 (defthm bvchop-of-+-of-*-of-bvchop
   (implies (and (integerp x)
