@@ -30,19 +30,21 @@
 (include-book "kestrel/bv/sbvdivdown" :dir :system)
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
-(include-book "rules1") ;drop? for BV-ARRAY-WRITE-EQUAL-REWRITE-ALT, to prove EQUAL-OF-BV-ARRAY-WRITE-SAME
-;(include-book "bv-array-rules") ; drop?
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
+(include-book "kestrel/bv-lists/bv-arrays" :dir :system); reduce?
 ;(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
-(local (include-book "list-rules"))
+;(local (include-book "list-rules"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 ;(local (include-book "arithmetic/equalities" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -105,25 +107,25 @@
 ;todo: move these (and disable them)?
 
 ;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
-(defthm equal-of-myif-same-1
+(defthmd equal-of-myif-same-1
   (equal (equal x (myif test x y))
          (if test t (equal x y)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
-(defthm equal-of-myif-same-2
+(defthmd equal-of-myif-same-2
   (equal (equal x (myif test y x))
          (if test (equal x y) t))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;; may not be needed if we flip equalities to bring smaller terms first
-(defthm equal-of-myif-same-1-alt
+(defthmd equal-of-myif-same-1-alt
   (equal (equal (myif test x y) x)
          (if test t (equal x y)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;; may not be needed if we flip equalities to bring smaller terms first
-(defthm equal-of-myif-same-2-alt
+(defthmd equal-of-myif-same-2-alt
   (equal (equal (myif test y x) x)
          (if test (equal x y) t))
   :hints (("Goal" :in-theory (enable myif))))
@@ -2980,8 +2982,6 @@
 
 (in-theory (disable BVCHOP-EQUAL-CONSTANT-REDUCE-WHEN-TOP-BIT-3-2-4)) ;if it's a hyp we don't want to reduce it..
 
-(in-theory (disable NTH-WHEN-all-equal$))
-
 ;sometimes we don't want these, e.g. (equal 0 (bvchop 2 x)) when we also know (equal 0 (getbit 1 x))
 (in-theory (disable BVCHOP-CONTRACT-HACK-GEN SLICE-TIGHTEN-WHEN-TOP-BIT-0))
 
@@ -4003,7 +4003,7 @@
                     BVLT-TIGHTEN-STRONG-ARG3
                     BVLT-OF-SLICE-TOP-GEN))
 
-(in-theory (disable bv-array-read-of-bv-array-write-both-better
+(in-theory (disable ;bv-array-read-of-bv-array-write-both-better
                     bvle-tighten-32-31
                     bvlt-add-to-both-sides-constant-lemma
                     bvlt-add-to-both-sides-constant-lemma-alt
@@ -5593,7 +5593,8 @@
                      BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 ;yuck!
-(defthm car-when-equal-nthcdr
+;move
+(defthmd car-when-equal-nthcdr
   (implies (and (equal x (nthcdr free free2))
                 (natp free) ;drop?
                 )
@@ -5638,9 +5639,6 @@
                            (BVCAT-OF-SLICE-AND-X-ADJACENT
                             plus-1-and-bvchop-becomes-bvplus
                             bvminus-becomes-bvplus-of-bvuminus
-
-
-
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite)))))
 
@@ -5666,9 +5664,6 @@
            :in-theory (e/d (bvlt unsigned-byte-p bvplus bvchop-of-sum-cases posp)
                            (plus-1-and-bvchop-becomes-bvplus
                             bvminus-becomes-bvplus-of-bvuminus
-
-
-
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite)))))
 
@@ -5706,9 +5701,6 @@
                             PLUS-32-1-BVUMIUNS
                             +-OF-MINUS-1-AND-BV2
                             bvminus-becomes-bvplus-of-bvuminus
-
-
-
                             bvcat-equal-rewrite-alt
                             bvcat-equal-rewrite)))))
 
@@ -5875,7 +5867,7 @@
                   (bvplus (+ 1 size) 1 (BVPLUS SIZE X Y))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(defthm cdr-of-nthcdr-of-bvplus
+(defthmd cdr-of-nthcdr-of-bvplus
   (implies (natp size)
            (equal (CDR (NTHCDR (bvplus size x y) lst))
                   (NTHCDR (bvplus (+ 1 size) 1 (bvplus size x y)) lst)))
@@ -6631,9 +6623,7 @@
                                           bvuminus
                                           bvminus
                                           bvlt)
-                                  (
-
-                                   bvminus-becomes-bvplus-of-bvuminus
+                                  (bvminus-becomes-bvplus-of-bvuminus
                                    minus-becomes-bv
                                    PLUS-1-AND-BVCHOP-BECOMES-BVPLUS
                                    UNSIGNED-BYTE-P-WHEN-BVLT-3-31)))))
@@ -8388,6 +8378,7 @@
            :in-theory (disable bvlt-of-bvplus-same))))
 
 ;gen!
+;move
 (defthm equal-of-constant-and-bv-array-read-of-bv-array-write-of-constant
   (implies (and (syntaxp (and (quotep k1) (quotep k2)))
                 (not (equal k2 k1))
@@ -11446,7 +11437,7 @@
                   (and (true-listp k)
                        (equal val (nth 16 k))
                        (equal (firstn 16 k) (firstn 16 data)))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 bvplus bv-array-read equal-of-append)
+  :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 bvplus bv-array-read equal-of-append equal-of-update-nth-new)
                                   (update-nth-becomes-update-nth2-extend-gen
                                    LEN-OF-CDR
                                    CDR-OF-TAKE)))))
@@ -11465,8 +11456,9 @@
                                    bv-array-clear
                                    bv-array-write-opener
                                    update-nth2
-                                   equal-of-update-nth)
-                                  (bv-array-write-equal-rewrite-alt bv-array-write-equal-rewrite
+                                   equal-of-update-nth-new
+                                   )
+                                  (;bv-array-write-equal-rewrite-alt bv-array-write-equal-rewrite
                                    update-nth-becomes-update-nth2-extend-gen)))))
 
 (defthm equal-of-repeat-and-bv-array-write-hack
@@ -11478,7 +11470,7 @@
                 )
            (equal (equal (repeat (bvplus 5 1 x) '0) (bv-array-write 32 (bvplus 5 1 x) x '0 data))
                   (equal (repeat x '0) (firstn x data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-write UPDATE-NTH2 bvplus ceiling-of-lg equal-of-append)
+  :hints (("Goal" :in-theory (e/d (bv-array-write UPDATE-NTH2 bvplus ceiling-of-lg equal-of-append equal-of-update-nth-new)
                                   (UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                                    equal-of-cons)))))
 
@@ -13207,6 +13199,7 @@
                               (bvchop-list 8 (take index data2))))))
   :hints (("Goal" :in-theory (e/d (bv-array-write-opener
                                    update-nth2
+                                   equal-of-update-nth-new
                                    bvplus)
                                   (update-nth-becomes-update-nth2-extend-gen)))))
 
