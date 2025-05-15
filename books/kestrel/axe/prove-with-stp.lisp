@@ -1504,7 +1504,8 @@
                                  (variablep arg2))))))))
         (otherwise nil)))))
 
-;; Keep terms that may possibly be useful for SMT
+;; Keeps terms that may possibly be useful for SMT.
+;; Returns a list of pseudo-terms.
 (defund keep-smt-assumptions (terms)
   (declare (xargs :guard (pseudo-term-listp terms)))
   (if (endp terms)
