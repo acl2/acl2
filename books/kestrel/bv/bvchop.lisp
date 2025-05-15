@@ -160,8 +160,7 @@
 
 ;rename
 (defthm bvchop-+-bvchop-better
-  (implies (and (integerp i)
-                (integerp j))
+  (implies (integerp j) ; rename j
            (equal (bvchop size (+ i (bvchop size j)))
                   (bvchop size (+ i j))))
   :hints (("Goal" :in-theory (enable bvchop))))
@@ -792,12 +791,13 @@
                   (bvchop (+ -1 size) x))))
 
 (defthm bvchop-of-+-of-bvchop-arg3
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z))
+  (implies (integerp z)
            (equal (bvchop size (+ x y (bvchop size z)))
                   (bvchop size (+ x y z))))
-  :hints (("Goal" :in-theory (enable bvchop))))
+  :hints (("Goal" :use (:instance bvchop-+-bvchop-better
+                                  (i (+ x y))
+                                  (j z))
+           :in-theory (disable bvchop-+-bvchop-better))))
 
 (defthm bvchop-of-+-of-*-of-bvchop
   (implies (and (integerp x)
