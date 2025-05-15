@@ -1,6 +1,6 @@
 ; A drop-in replacement for defstobj that proves many helpful theorems
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -633,6 +633,7 @@
                                               state))))
 
 ;; Returns an event
+;; Args may include the field info, :inline, :renaming, etc.
 (defun defstobj+-fn (stobj-name args state)
   (declare (xargs :mode :program
                   :stobjs state))
