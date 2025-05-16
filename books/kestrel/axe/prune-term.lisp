@@ -308,13 +308,14 @@
                (cw "(Attempting to prove test true with STP:~%")))
        ((mv true-result state)
         (prove-term-implication-with-stp simplified-test-term
-                                    (append assumptions equality-assumptions)
-                                    nil         ;counterexamplep
-                                    nil ; print-cex-as-signedp
-                                    (if (natp call-stp) call-stp *default-stp-max-conflicts*)
-                                    nil                ;print
-                                    "PRUNE-PROVE-TRUE" ;todo: do better?
-                                    state))
+                                         (append (keep-smt-assumptions assumptions)
+                                                 (keep-smt-assumptions equality-assumptions))
+                                         nil         ;counterexamplep
+                                         nil ; print-cex-as-signedp
+                                         (if (natp call-stp) call-stp *default-stp-max-conflicts*)
+                                         nil                ;print
+                                         "PRUNE-PROVE-TRUE" ;todo: do better?
+                                         state))
        ((when (eq *error* true-result))
         (prog2$ (er hard? 'try-to-resolve-test "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
@@ -328,13 +329,14 @@
                (cw "(Attempting to prove test false with STP:~%")))
        ((mv false-result state)
         (prove-term-implication-with-stp `(not ,simplified-test-term)
-                                    assumptions ;todo: this caused problems with an rlp example: (append assumptions equality-assumptions)
-                                    nil         ;counterexamplep
-                                    nil ; print-cex-as-signedp
-                                    (if (natp call-stp) call-stp *default-stp-max-conflicts*)
-                                    nil                 ;print
-                                    "PRUNE-PROVE-FALSE" ;todo: do better?
-                                    state))
+                                         (append (keep-smt-assumptions assumptions)
+                                                 (keep-smt-assumptions equality-assumptions))
+                                         nil         ;counterexamplep
+                                         nil ; print-cex-as-signedp
+                                         (if (natp call-stp) call-stp *default-stp-max-conflicts*)
+                                         nil                 ;print
+                                         "PRUNE-PROVE-FALSE" ;todo: do better?
+                                         state))
        ((when (eq *error* false-result))
         (prog2$ (er hard? 'try-to-resolve-test "Error calling STP")
                 (mv :error-calling-stp :unknown state)))
