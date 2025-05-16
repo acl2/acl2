@@ -971,6 +971,7 @@
                   ;; A read with the BV normal form:
                   (mv-let (matchp alist)
                     ;; in general, the two state-vars here may not match (e.g., x86_0 and :initial-loop-top-state)
+                    ;; todo: generalize the 4 here?:
                     (acl2::unify-term expr '(read '4 (bvplus '48 :offset (XR ':RGF '4 :state-var)) :state-var2))
                     (if matchp
                         (if (and state-var
@@ -988,6 +989,7 @@
                 ;; Handle a non-bv read:
                 (mv-let (matchp alist)
                   ;; in general, the two state-vars here may not match (e.g., x86_0 and :initial-loop-top-state)
+                  ;; todo: generalize the 4 here?:
                   (acl2::unify-term expr '(read '4 (binary-+ :offset (XR ':RGF '4 :state-var)) :state-var2))
                   (if matchp
                       (if (and state-var
@@ -1919,7 +1921,7 @@
                (if (equal pc-term
                           ;; We've jumped to the return address of the main subroutine, so we've exited the segment:
                           ;; TODO: Check this:
-                          '(READ '8 (XR ':RGF '4 X86_0) X86_0))
+                          '(logext '64 (READ '8 (XR ':RGF '4 X86_0) X86_0)))
                    (mv (erp-nil) t state)
                  (let ((pc-offset (get-added-offset pc-term 'text-offset)))
                    (if (member pc-offset segment-offsets)
