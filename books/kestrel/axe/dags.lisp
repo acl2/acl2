@@ -1173,6 +1173,7 @@
            (bounded-darg-listp (dargs expr) limit))
   :hints (("Goal" :in-theory (enable bounded-dag-exprp))))
 
+;move
 ;; use consp as our normal form
 (defthm len-of-nth-when-bounded-darg-listp
   (implies (and (bounded-darg-listp items bound)
@@ -1183,7 +1184,8 @@
                     0)))
   :hints (("Goal" :in-theory (enable bounded-darg-listp nth))))
 
-(defthm len-of-nth-when-darg-listp
+;move
+(defthmd len-of-nth-when-darg-listp
   (implies (and (darg-listp items)
                 (< (nfix n) (len items)))
            (equal (len (nth n items))

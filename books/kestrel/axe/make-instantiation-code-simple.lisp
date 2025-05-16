@@ -32,6 +32,8 @@
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/utilities/pseudo-termp" :dir :system))
 
+       (local (in-theory (disable member-equal strip-cars quote-listp)))
+
        ;; TERM is from a hyp of a rule and so has quoteps and vars at the leaves.
        ;; ALIST binds vars to dargs (nodenums/ quoteps).
        (mutual-recursion
