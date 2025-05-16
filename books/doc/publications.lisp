@@ -65,7 +65,9 @@
  <li>See also <a
  href='http://www.cs.utexas.edu/users/moore/acl2/workshops.html'>the ACL2
  workshops page</a> for proceedings of ACL2 workshops, which contain numerous
- papers, many of them recent, that are not found below.</li>
+ papers, many of them recent, that are not found below.  Bibliographic
+ references (BibTeX format) for most or all ACL2 workshops may be found in
+ @(see community-books) directory @('books/workshops/references/').</li>
 
  <li>The ACL2 community is invited to add entries for missing publications.  If
  you add an entry, please try to conform to the existing style.  Each topic in
