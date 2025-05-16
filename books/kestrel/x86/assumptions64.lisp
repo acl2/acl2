@@ -105,7 +105,7 @@
 
      ;; The return address must be canonical because we will transfer
      ;; control to that address when doing the return:
-     (canonical-address-p (read 8 (rgfi *rsp* ,state-var) ,state-var))
+     (canonical-address-p (logext 64 (read 8 (rgfi *rsp* ,state-var) ,state-var)))
 
      ;; The stack slot contaning the return address must be canonical
      ;; because the stack pointer returns here when we pop the saved
