@@ -1,7 +1,7 @@
 ; Lifts and verifies an x86 factorial, without unrolling loops
 ;
 ; Copyright (C) 2017-2021 Kestrel Technology, LLC
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -52,7 +52,6 @@
                  ((20 . ;offset to loop header
                       (20 24 30 33 37 40 43 46 49) ;loop pc offsets
                       ))
-                 :assumptions '((canonical-address-p (read 8 (xr :rgf 4 x86_0) x86_0)))
                  :measures ((20 (bvchop 32 var20))))
 
 ;; Test the lifted code:
