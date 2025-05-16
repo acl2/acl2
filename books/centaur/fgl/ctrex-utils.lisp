@@ -2420,7 +2420,8 @@ compute a value for @('x').</p>
 
           ;; Anyway, if we were unable to derive a value for any of the match
           ;; terms, then fail.
-          (mv t cands new-assigns new-sts))
+          (mv t cands ;; new-assigns new-sts
+              assigns sts))
          (match-subst1 (append match-subst start-subst))
          (match-cond-subst (cgraph-match-cond-subst x.rule.match-conds match-subst1))
          (full-subst (append match-cond-subst match-subst1))

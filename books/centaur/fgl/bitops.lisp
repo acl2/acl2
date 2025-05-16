@@ -878,13 +878,27 @@
                  (b* ((less (and (intcar x) (not (intcar y)))))
                    (mv less
                        (and (not less) (or (intcar! x) (not (intcar y)))))))
-                ((unless (syntax-bind integers
-                                      (and (or (fgl-object-case x :g-integer)
-                                               (fgl-object-case x :g-concrete))
-                                           (or (fgl-object-case y :g-integer)
-                                               (fgl-object-case y :g-concrete)))))
+                (cdrx (intcdr x))
+                (cdry (intcdr y))
+                (cdrx-is-logcdr (syntax-bind
+                                 cdrx-is-logcdr
+                                 (fgl::fgl-object-case cdrx
+                                   :g-apply (and (eq cdrx.fn 'intcdr)
+                                                 (equal (car cdrx.args) x))
+                                   :otherwise nil)))
+                ((when cdrx-is-logcdr)
+                 ;; (fgl::fgl-prog2 (fgl::fgl-error! :msg "bad x in </=-impl2"
+                 ;;                                  :debug-obj (list x y))
                  (abort-rewrite (</= x y)))
-                ((mv rest< rest=) (</= (intcdr x) (intcdr y)))
+                (cdry-is-logcdr (syntax-bind
+                                 cdry-is-logcdr
+                                 (fgl::fgl-object-case cdry
+                                   :g-apply (and (eq cdry.fn 'intcdr)
+                                                 (equal (car cdry.args) y))
+                                   :otherwise nil)))
+                ((when cdry-is-logcdr)
+                 (abort-rewrite (</= x y)))
+                ((mv rest< rest=) (</= cdrx cdry))
                 ;; ((when (and (syntax-bind rest<-true (eq rest< t))
                 ;;             rest<))
                 ;;  (mv t nil))
@@ -893,7 +907,7 @@
                 ;;  (mv rest< nil))
                 ;; (head< (and (not (intcar x)) (intcar y)))
                 )
-             (mv (or rest<
+             (mv (or (and rest< t)
                      (and rest= (not (intcar x)) (intcar! y)))
                  (and rest= (iff (intcar x) (intcar y))
                       ;; (not (and (not (intcar x)) (intcar y)))
