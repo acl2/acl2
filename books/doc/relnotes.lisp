@@ -301,6 +301,10 @@
      @('demos/floating-point-input.lsp'), with associated output file
      @('demos/floating-point-log.txt'), with associated output file")
 
+   (xdoc::p
+    "The publications page available from the ACL2 home page has been replaced
+     by the :DOC topic, @(see publications).")
+
    ))
 
 (defxdoc note-8-6-books

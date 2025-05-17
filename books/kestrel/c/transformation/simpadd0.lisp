@@ -234,23 +234,18 @@
      the @('vartys') component of @(tsee simpadd0-gout).
      For each such variable, we add a hypothesis about it saying that
      the variable can be read from the computation state
-     and it contains a value of the appropriate type.
-     Currently we express the type via
-     both @(tsee c::type-of-value) and @(tsee c::value-kind);
-     eventually we will eliminate the latter."))
+     and it contains a value of the appropriate type."))
   (b* (((when (omap::emptyp (ident-type-map-fix vartys))) nil)
        ((mv var type) (omap::head vartys))
        ((unless (type-formalp type))
         (raise "Internal error: variable ~x0 has type ~x1." var type))
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
-       (value-kind (type-to-value-kind type))
        (hyp `(b* ((var (mv-nth 1 (ldm-ident (ident ,(ident->unwrap var)))))
                   (objdes (c::objdesign-of-var var compst))
                   (val (c::read-object objdes compst)))
                (and objdes
                     (c::valuep val)
-                    (equal (c::type-of-value val) ',ctype)
-                    (c::value-case val ,value-kind))))
+                    (equal (c::type-of-value val) ',ctype))))
        (hyps (simpadd0-gen-var-hyps (omap::tail vartys))))
     (cons hyp hyps))
   :hooks (:fix))
@@ -314,7 +309,6 @@
                 the type ~x2 of the old expression ~x3."
                (expr-type new) new type old)
         (mv '(_) nil 1))
-       (value-kind (type-to-value-kind type))
        (hyps (simpadd0-gen-var-hyps vartys))
        ((unless (type-formalp type))
         (raise "Internal error: expression ~x0 has type ~x1." old type)
@@ -327,8 +321,7 @@
                   (value (c::expr-value->value result)))
                (implies (and ,@hyps
                              (not (c::errorp result)))
-                        (and (equal (c::type-of-value value) ',ctype)
-                             (equal (c::value-kind value) ,value-kind))))
+                        (equal (c::type-of-value value) ',ctype)))
           `(b* ((old-expr (mv-nth 1 (ldm-expr ',old)))
                 (new-expr (mv-nth 1 (ldm-expr ',new)))
                 (old-result (c::exec-expr-pure old-expr compst))
@@ -339,8 +332,7 @@
                            (not (c::errorp old-result)))
                       (and (not (c::errorp new-result))
                            (equal old-value new-value)
-                           (equal (c::type-of-value old-value) ',ctype)
-                           (equal (c::value-kind old-value) ,value-kind))))))
+                           (equal (c::type-of-value old-value) ',ctype))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -399,7 +391,6 @@
                 the type ~x2 of the old statement ~x3."
                (stmt-type new) new type old)
         (mv '(_) nil 1))
-       (value-kind (type-to-value-kind type))
        ((unless (type-formalp type))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -412,8 +403,7 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
-                             (equal (c::type-of-value result) ',ctype)
-                             (equal (c::value-kind result) ,value-kind))))
+                             (equal (c::type-of-value result) ',ctype))))
           `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
                 (new-stmt (mv-nth 1 (ldm-stmt ',new)))
                 ((mv old-result old-compst)
@@ -426,8 +416,7 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            old-result
-                           (equal (c::type-of-value old-result) ',ctype)
-                           (equal (c::value-kind old-result) ,value-kind))))))
+                           (equal (c::type-of-value old-result) ',ctype))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -486,7 +475,6 @@
                 the type ~x2 of the old block item ~x3."
                (block-item-type new) new type old)
         (mv '(_) nil 1))
-       (value-kind (type-to-value-kind type))
        ((unless (type-formalp type))
         (raise "Internal error: statement ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -499,8 +487,7 @@
                (implies (and ,@hyps
                              (not (c::errorp result)))
                         (and result
-                             (equal (c::type-of-value result) ',ctype)
-                             (equal (c::value-kind result) ,value-kind))))
+                             (equal (c::type-of-value result) ',ctype))))
           `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
                 (new-item (mv-nth 1 (ldm-block-item ',new)))
                 ((mv old-result old-compst)
@@ -513,8 +500,7 @@
                            (equal old-result new-result)
                            (equal old-compst new-compst)
                            old-result
-                           (equal (c::type-of-value old-result) ',ctype)
-                           (equal (c::value-kind old-result) ,value-kind))))))
+                           (equal (c::type-of-value old-result) ',ctype))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -668,23 +654,11 @@
       and the variable for the corresponding argument.")
     (xdoc::li
      "A list @('arg-types') of terms that assert that
-      each variable in @('args') is a value of the appropriate type and kind.
-      The `appropriate type' and `appropriate kind' are
-      two slightly different ways to say the same thing.
-      We will eventually remove the `appropriate kind' part,
-      once all our generated proofs are in terms of
-      @(tsee c::type-of-value) instead of @(tsee c::value-kind).")
+      each variable in @('args') is a value of the appropriate type.")
     (xdoc::li
      "A list @('arg-types-compst') of terms that assert that
       each parameter in @('params') can be read from a computation state
-      and its reading yields a value of the appropriate type and kind."))
-   (xdoc::p
-    "In @('arg-types') and @('arg-types-compst'),
-     the `appropriate type' and `appropriate kind' are
-     two slightly different ways to say the same thing.
-     We will eventually remove the `appropriate kind' part,
-     once all our generated proofs are in terms of
-     @(tsee c::type-of-value) instead of @(tsee c::value-kind).")
+      and its reading yields a value of the appropriate type."))
    (xdoc::p
     "These results are generated only if
      all the parameters have certain types
@@ -694,7 +668,7 @@
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil))
        ((c::param-declon param) (car params))
-       ((mv okp type value-kind)
+       ((mv okp type &)
         (simpadd0-tyspecseq-to-type-and-value-kind param.tyspec))
        ((unless okp) (mv nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
@@ -704,16 +678,14 @@
        (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
        (pararg `(cons (c::ident ,par) ,arg))
        (arg-type `(and (c::valuep ,arg)
-                       (equal (c::type-of-value ,arg) ',type)
-                       (equal (c::value-kind ,arg) ,value-kind)))
+                       (equal (c::type-of-value ,arg) ',type)))
        (arg-type-compst
         `(b* ((var (mv-nth 1 (ldm-ident (ident ,par))))
               (objdes (c::objdesign-of-var var compst))
               (val (c::read-object objdes compst)))
            (and objdes
                 (c::valuep val)
-                (equal (c::type-of-value val) ',type)
-                (c::value-case val ,value-kind))))
+                (equal (c::type-of-value val) ',type))))
        ((mv okp
             more-args
             more-parargs
@@ -815,6 +787,10 @@
                                c::type-of-value-when-sllongp
                                c::value-fix-when-valuep
                                c::value-list-fix-of-cons
+                               c::type-of-value
+                               c::type-array
+                               c::type-pointer
+                               c::type-struct
                                (:e c::adjust-type)
                                (:e c::apconvert-type)
                                (:e c::ident)
@@ -1018,8 +994,7 @@
                  :use (:instance simpadd0-expr-ident-support-lemma
                                  (ident ',ident)
                                  (info ',info)
-                                 (type ',ctype)
-                                 (kind ',(type-to-value-kind info.type))))))
+                                 (type ',ctype)))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr
@@ -1051,10 +1026,8 @@
                          (val (c::read-object objdes compst)))
                       (and objdes
                            (c::valuep val)
-                           (equal (c::type-of-value val) type)
-                           (equal (c::value-kind val) kind))))
-               (and (equal (c::value-kind value) kind)
-                    (equal (c::type-of-value value) type))))
+                           (equal (c::type-of-value val) type))))
+               (equal (c::type-of-value value) type)))
     :enable (c::exec-expr-pure
              c::exec-ident
              ldm-expr
@@ -1131,8 +1104,7 @@
                                      (:e c::expr-const->get)
                                      (:e c::exec-const)
                                      (:e c::expr-value->value)
-                                     (:e c::type-of-value)
-                                     (:e c::value-kind)))))
+                                     (:e c::type-of-value)))))
        (vartys nil)
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
@@ -1307,8 +1279,7 @@
 
   (defruledl c::plus-value-lemma
     (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint))
-                  (equal (c::value-kind val0) :sint))
+                  (equal (c::type-of-value val0) (c::type-sint)))
              (b* ((val (c::plus-value val0)))
                (and (not (c::errorp val))
                     (equal (c::type-of-value val) (c::type-sint))
@@ -1318,12 +1289,12 @@
              c::plus-integer-value
              c::value-arithmeticp-when-sintp
              c::promote-value-when-sintp
-             c::sintp-alt-def))
+             c::sintp-alt-def
+             c::type-of-value))
 
   (defruledl c::bitnot-value-lemma
     (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint))
-                  (equal (c::value-kind val0) :sint))
+                  (equal (c::type-of-value val0) (c::type-sint)))
              (b* ((val (c::bitnot-value val0)))
                (and (not (c::errorp val))
                     (equal (c::type-of-value val) (c::type-sint))
@@ -1341,13 +1312,13 @@
              c::integer-type-min
              c::sint-max
              c::sint-min
+             c::type-of-value
              ifix
              lognot))
 
   (defruledl c::minus-value-lemma
     (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint))
-                  (equal (c::value-kind val0) :sint))
+                  (equal (c::type-of-value val0) (c::type-sint)))
              (b* ((val (c::minus-value val0)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1359,12 +1330,12 @@
              c::sintp-alt-def
              c::result-integer-value
              c::value-integerp
-             c::value-signed-integerp))
+             c::value-signed-integerp
+             c::type-of-value))
 
   (defruledl c::lognot-value-lemma
     (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint))
-                  (equal (c::value-kind val0) :sint))
+                  (equal (c::type-of-value val0) (c::type-sint)))
              (b* ((val (c::lognot-value val0)))
                (and (not (c::errorp val))
                     (equal (c::type-of-value val) (c::type-sint))
@@ -1376,7 +1347,8 @@
              c::value-arithmeticp
              c::value-realp
              c::value-integerp
-             c::value-signed-integerp))
+             c::value-signed-integerp
+             c::type-of-value))
 
   (defruled simpadd0-expr-unary-support-lemma-1
     (b* ((old (c::expr-unary op old-arg))
@@ -1393,14 +1365,13 @@
                     (not (c::errorp old-result))
                     (not (c::errorp new-arg-result))
                     (equal old-arg-value new-arg-value)
-                    (equal (c::type-of-value old-arg-value) (c::type-sint))
-                    (equal (c::value-kind old-arg-value) :sint))
+                    (equal (c::type-of-value old-arg-value) (c::type-sint)))
                (and (not (c::errorp new-result))
                     (equal old-value new-value)
-                    (equal (c::type-of-value old-value) (c::type-sint))
-                    (equal (c::value-kind old-value) :sint))))
+                    (equal (c::type-of-value old-value) (c::type-sint)))))
     :expand ((c::exec-expr-pure (c::expr-unary op old-arg) compst)
              (c::exec-expr-pure (c::expr-unary op new-arg) compst))
+    :disable ((:e c::type-sint))
     :enable (c::unop-nonpointerp
              c::exec-unary
              c::eval-unary
@@ -1548,9 +1519,7 @@
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::mul-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1561,15 +1530,13 @@
              c::uaconvert-values-when-sintp-and-sintp
              c::sintp-alt-def
              c::result-integer-value
-             c::type-of-value-when-sintp))
+             c::type-of-value))
 
   (defruledl c::div-values-lemma
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::div-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1580,15 +1547,13 @@
              c::uaconvert-values-when-sintp-and-sintp
              c::sintp-alt-def
              c::result-integer-value
-             c::type-of-value-when-sintp))
+             c::type-of-value))
 
   (defruledl c::rem-values-lemma
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::rem-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1599,15 +1564,13 @@
              c::uaconvert-values-when-sintp-and-sintp
              c::sintp-alt-def
              c::result-integer-value
-             c::type-of-value-when-sintp))
+             c::type-of-value))
 
   (defruledl c::add-values-lemma
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::add-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1618,15 +1581,13 @@
              c::uaconvert-values-when-sintp-and-sintp
              c::sintp-alt-def
              c::result-integer-value
-             c::type-of-value-when-sintp))
+             c::type-of-value))
 
   (defruledl c::sub-values-lemma
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::sub-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1637,15 +1598,13 @@
              c::uaconvert-values-when-sintp-and-sintp
              c::sintp-alt-def
              c::result-integer-value
-             c::type-of-value-when-sintp))
+             c::type-of-value))
 
   (defruledl c::shl-values-lemma
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::shl-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1655,15 +1614,13 @@
              c::promote-value-when-sintp
              c::sintp-alt-def
              c::result-integer-value
-             c::type-of-value-when-sintp))
+             c::type-of-value))
 
   (defruledl c::shr-values-lemma
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::shr-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1673,15 +1630,13 @@
              c::promote-value-when-sintp
              c::sintp-alt-def
              c::result-integer-value
-             c::type-of-value-when-sintp))
+             c::type-of-value))
 
   (defruledl c::lt-values-lemma
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::lt-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1694,9 +1649,7 @@
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::gt-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1709,9 +1662,7 @@
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::le-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1724,9 +1675,7 @@
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::ge-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1739,9 +1688,7 @@
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::eq-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1754,9 +1701,7 @@
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::ne-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1769,9 +1714,7 @@
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::bitand-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1781,15 +1724,13 @@
              c::uaconvert-values-when-sintp-and-sintp
              c::sintp-alt-def
              c::result-integer-value
-             c::type-of-value-when-sintp))
+             c::type-of-value))
 
   (defruledl c::bitxor-values-lemma
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::bitxor-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1799,15 +1740,13 @@
              c::uaconvert-values-when-sintp-and-sintp
              c::sintp-alt-def
              c::result-integer-value
-             c::type-of-value-when-sintp))
+             c::type-of-value))
 
   (defruledl c::bitior-values-lemma
     (implies (and (c::valuep val1)
                   (c::valuep val2)
                   (equal (c::type-of-value val1) (c::type-sint))
-                  (equal (c::type-of-value val2) (c::type-sint))
-                  (equal (c::value-kind val1) :sint)
-                  (equal (c::value-kind val2) :sint))
+                  (equal (c::type-of-value val2) (c::type-sint)))
              (b* ((val (c::bitior-values val1 val2)))
                (implies (not (c::errorp val))
                         (and (equal (c::type-of-value val) (c::type-sint))
@@ -1817,7 +1756,7 @@
              c::uaconvert-values-when-sintp-and-sintp
              c::sintp-alt-def
              c::result-integer-value
-             c::type-of-value-when-sintp))
+             c::type-of-value))
 
   (defruled simpadd0-expr-binary-support-lemma-1
     (b* ((old (c::expr-binary op old-arg1 old-arg2))
@@ -1842,15 +1781,13 @@
                     (equal old-arg1-value new-arg1-value)
                     (equal old-arg2-value new-arg2-value)
                     (equal (c::type-of-value old-arg1-value) (c::type-sint))
-                    (equal (c::type-of-value old-arg2-value) (c::type-sint))
-                    (equal (c::value-kind old-arg1-value) :sint)
-                    (equal (c::value-kind old-arg2-value) :sint))
+                    (equal (c::type-of-value old-arg2-value) (c::type-sint)))
                (and (not (c::errorp new-result))
                     (equal old-value new-value)
-                    (equal (c::type-of-value old-value) (c::type-sint))
-                    (equal (c::value-kind old-value) :sint))))
+                    (equal (c::type-of-value old-value) (c::type-sint)))))
     :expand ((c::exec-expr-pure (c::expr-binary op old-arg1 old-arg2) compst)
              (c::exec-expr-pure (c::expr-binary op new-arg1 new-arg2) compst))
+    :disable ((:e c::type-sint))
     :enable (c::binop-purep
              c::binop-strictp
              c::exec-binary-strict-pure
@@ -1915,14 +1852,14 @@
          (expr+zero-result (c::exec-expr-pure expr+zero compst))
          (expr+zero-value (c::expr-value->value expr+zero-result)))
       (implies (and (not (c::errorp expr-result))
-                    (equal (c::type-of-value expr-value) (c::type-sint))
-                    (equal (c::value-kind expr-value) :sint))
+                    (equal (c::type-of-value expr-value) (c::type-sint)))
                (equal expr+zero-value expr-value)))
     :enable (c::exec-expr-pure
              c::exec-binary-strict-pure
              c::eval-binary-strict-pure
              c::apconvert-expr-value-when-not-array
-             c::add-values-of-sint-and-sint0)))
+             c::add-values-of-sint-and-sint0
+             c::type-of-value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2020,17 +1957,16 @@
                     (not (c::errorp old-result))
                     (not (c::errorp new-expr-result))
                     (equal old-expr-value new-expr-value)
-                    (equal (c::type-of-value old-expr-value) (c::type-sint))
-                    (equal (c::value-kind old-expr-value) :sint))
+                    (equal (c::type-of-value old-expr-value) (c::type-sint)))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     old-result
-                    (equal (c::type-of-value old-result) (c::type-sint))
-                    (equal (c::value-kind old-result) :sint))))
+                    (equal (c::type-of-value old-result) (c::type-sint)))))
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
     :enable (c::exec-expr-call-or-pure
+             c::type-of-value
              c::apconvert-expr-value-when-not-array))
 
   (defruled simpadd0-stmt-return-support-lemma-2
@@ -2140,14 +2076,12 @@
                     (equal old-stmt-result new-stmt-result)
                     (equal old-stmt-compst new-stmt-compst)
                     old-stmt-result
-                    (equal (c::type-of-value old-stmt-result) (c::type-sint))
-                    (equal (c::value-kind old-stmt-result) :sint))
+                    (equal (c::type-of-value old-stmt-result) (c::type-sint)))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     old-result
-                    (equal (c::type-of-value old-result) (c::type-sint))
-                    (equal (c::value-kind old-result) :sint))))
+                    (equal (c::type-of-value old-result) (c::type-sint)))))
     :expand
     ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
      (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))

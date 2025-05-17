@@ -2523,7 +2523,11 @@
      acl2::fix-when-integerp
      acl2::equal-same
      acl2::if-of-nil
-     acl2::if-of-t)
+     acl2::if-of-t
+
+     acl2::bvplus-of-logext-arg2
+     acl2::bvplus-of-logext-arg3
+     acl2::signed-byte-p-logext)
    (region-rules)
    (acl2::lookup-rules)
    ;; needed for BV-mode:

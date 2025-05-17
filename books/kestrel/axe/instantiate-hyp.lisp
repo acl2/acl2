@@ -1,7 +1,7 @@
 ; A tool for instantiating a hyp of a rule
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,9 +19,8 @@
 (include-book "axe-trees")
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-;;;
-;;; instantiate-hyp
-;;;
+;; for speed:
+(local (in-theory (disable member-equal assoc-equal)))
 
 ;move
 ;FORM is a tree (from the hyp of a rule) with quoteps and vars at the leaves

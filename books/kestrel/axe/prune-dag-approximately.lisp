@@ -458,7 +458,7 @@
        ((mv erp assumption-nodenums-or-quoteps dag-array dag-len dag-parent-array
             & & ; dag-constant-alist dag-variable-alist
             )
-        (merge-terms-into-dag-array-simple assumptions
+        (merge-terms-into-dag-array-simple (keep-smt-assumptions assumptions) ; filter out non-SMT assumptions, which can be large, like (equal (read-bytes ..) ...manybytes...)
                                            nil ; var-replacement-alist
                                            dag-array original-dag-len dag-parent-array dag-constant-alist dag-variable-alist 'dag-array 'dag-parent-array))
        ((when erp) (mv erp dag state))

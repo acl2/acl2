@@ -59,7 +59,7 @@
   (thearray :type (array (satisfies result-alistp) (10)) :resizable t)
 ;  (extra-elements :type t) ;fixme implement this..
 ;  (default-array-value :type t :initially nil)
-  )
+  :inline t)
 
 (local
  (defthmd alistp-of-nth-when-thearrayp
