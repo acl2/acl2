@@ -6923,9 +6923,10 @@
                                 evaluator-base-name
                                 syntaxp-evaluator-suffix ;as given to make-axe-syntaxp-evaluator
                                 bind-free-evaluator-suffix ;as given to make-axe-bind-free-evaluator
-                                smtp)
+                                &key
+                                (smt 'nil))
   (make-rewriter-simple-fn suffix
                            evaluator-base-name
                            syntaxp-evaluator-suffix
                            bind-free-evaluator-suffix
-                           smtp))
+                           smt))
