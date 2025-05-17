@@ -602,26 +602,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-tyspecseq-to-type-and-value-kind ((tyspecseq c::tyspecseqp))
-  :returns (mv (okp booleanp) (type c::typep) (kind keywordp))
+  :returns (mv (okp booleanp) (type c::typep))
   :short "Map a type specifier sequence from the language formalization
-          to the corresponding type and kind of value."
+          to the corresponding type."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only allow certain types."))
   (c::tyspecseq-case
    tyspecseq
-   :uchar (mv t (c::type-uchar) :uchar)
-   :schar (mv t (c::type-schar) :schar)
-   :ushort (mv t (c::type-ushort) :ushort)
-   :sshort (mv t (c::type-sshort) :sshort)
-   :uint (mv t (c::type-uint) :uint)
-   :sint (mv t (c::type-sint) :sint)
-   :ulong (mv t (c::type-ulong) :ulong)
-   :slong (mv t (c::type-slong) :slong)
-   :ullong (mv t (c::type-ullong) :ullong)
-   :sllong (mv t (c::type-sllong) :sllong)
-   :otherwise (mv nil (c::type-void) :irrelevant))
+   :uchar (mv t (c::type-uchar))
+   :schar (mv t (c::type-schar))
+   :ushort (mv t (c::type-ushort))
+   :sshort (mv t (c::type-sshort))
+   :uint (mv t (c::type-uint))
+   :sint (mv t (c::type-sint))
+   :ulong (mv t (c::type-ulong))
+   :slong (mv t (c::type-slong))
+   :ullong (mv t (c::type-ullong))
+   :sllong (mv t (c::type-sllong))
+   :otherwise (mv nil (c::type-void)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -668,7 +668,7 @@
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil))
        ((c::param-declon param) (car params))
-       ((mv okp type &)
+       ((mv okp type)
         (simpadd0-tyspecseq-to-type-and-value-kind param.tyspec))
        ((unless okp) (mv nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
