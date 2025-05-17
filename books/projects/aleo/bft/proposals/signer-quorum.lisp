@@ -90,7 +90,7 @@
      @(see proposed-author-in-committee) and
      @(see proposed-endorser-in-committee).
      Another slight difference is that
-     @(tsee certify-possible) uses @(tsee committee-validators-stake),
+     @(tsee certify-possiblep) uses @(tsee committee-validators-stake),
      while the invariant uses @(tsee committee-members-stake);
      but since author and endorsers are in the committee,
      the two are equal, as proved in @(tsee committee-validators-stake).")
