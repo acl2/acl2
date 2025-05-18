@@ -278,7 +278,7 @@
     param-declor-count
     param-declor-case
     param-declor-nonabstract
-    param-declor-absdeclor
+    param-declor-abstract
     param-declor-none
 
     tynamep

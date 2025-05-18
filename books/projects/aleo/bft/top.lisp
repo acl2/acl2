@@ -15,7 +15,7 @@
 (include-book "static/top")
 (include-book "dynamic/top")
 (include-book "stake/top")
-(include-book "stake2/top")
+(include-book "arxiv/top")
 (include-book "proposals/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -98,8 +98,11 @@
       to certificate storing events,
       which makes certain aspects of the definitions and proofs simpler.")
     (xdoc::li
-     "The subdirectory @('stake2') contains a version that is
-      a slightly simplified variant of the version in @('stake').
+     "The subdirectory @('arxiv') contains a version that is
+      a slightly simplified variant of the version in @('stake'),
+      and that is described in "
+     (xdoc::ahref "https://arxiv.org/abs/2504.16853" "this arXiv paper")
+     " (hence the name of the subdirectory).
       It omits buffers from validator states,
       and combines certificate receiving and storing events
       into single certificate acceptance events;
@@ -122,7 +125,7 @@
       that are not needed to prove blockchain nonforking.")
     (xdoc::li
      "The subdirectory @('proposals') contains a version that
-      extends the @('stake2') version
+      extends the @('arxiv') version
       by explicitly modeling the exchange of proposals and signatures.
       Certificate creation is no longer an atomic event:
       there are separate events for
@@ -134,7 +137,7 @@
       certificate acceptance,
       round advancement, and
       anchor commitment,
-      are similar to the @('stake2') version."))
+      are similar to the @('arxiv') version."))
    (xdoc::p
     "We plan to add other subdirectories
      for versions that cover additional aspects of AleoBFT,
@@ -174,5 +177,5 @@
                     aleobft-static::aleobft-static
                     aleobft-dynamic::aleobft-dynamic
                     aleobft-stake::aleobft-stake
-                    aleobft-stake2::aleobft-stake2
+                    aleobft-arxiv::aleobft-arxiv
                     aleobft-proposals::aleobft-proposals))

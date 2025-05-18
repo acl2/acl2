@@ -613,10 +613,10 @@
            (declor-unambp declor))
     :expand (param-declor-unambp (param-declor-nonabstract declor)))
 
-  (defrule param-declor-unambp-of-param-declor-absdeclor
-    (equal (param-declor-unambp (param-declor-absdeclor absdeclor))
+  (defrule param-declor-unambp-of-param-declor-abstract
+    (equal (param-declor-unambp (param-declor-abstract absdeclor))
            (absdeclor-unambp absdeclor))
-    :expand (param-declor-unambp (param-declor-absdeclor absdeclor)))
+    :expand (param-declor-unambp (param-declor-abstract absdeclor)))
 
   (defrule tyname-unambp-of-tyname
     (equal (tyname-unambp (tyname specqual decl?))
@@ -1335,10 +1335,10 @@
              (declor-unambp (param-declor-nonabstract->unwrap param-declor)))
     :expand (param-declor-unambp param-declor))
 
-  (defrule absdeclor-unambp-of-param-declor-absdeclor->unwrap
+  (defrule absdeclor-unambp-of-param-declor-abstract->unwrap
     (implies (and (param-declor-unambp param-declor)
-                  (param-declor-case param-declor :absdeclor))
-             (absdeclor-unambp (param-declor-absdeclor->unwrap param-declor)))
+                  (param-declor-case param-declor :abstract))
+             (absdeclor-unambp (param-declor-abstract->unwrap param-declor)))
     :expand (param-declor-unambp param-declor))
 
   (defrule spec/qual-list-unambp-of-tyname->specqual

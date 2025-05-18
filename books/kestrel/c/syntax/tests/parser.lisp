@@ -1533,7 +1533,7 @@
 (test-parse
  parse-parameter-declaration
  "int *,"
- :cond (param-declor-case (param-declon->declor ast) :absdeclor))
+ :cond (param-declor-case (param-declon->declor ast) :abstract))
 
 (test-parse
  parse-parameter-declaration

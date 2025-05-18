@@ -2281,10 +2281,10 @@
              (dimb-declor paramdeclor.unwrap nil table))
             (table (dimb-add-ident ident (dimb-kind-objfun) table)))
          (retok (param-declor-nonabstract new-declor) table))
-       :absdeclor
+       :abstract
        (b* (((erp new-absdeclor table)
              (dimb-absdeclor paramdeclor.unwrap table)))
-         (retok (param-declor-absdeclor new-absdeclor) (dimb-table-fix table)))
+         (retok (param-declor-abstract new-absdeclor) (dimb-table-fix table)))
        :none
        (retok (param-declor-none) (dimb-table-fix table))
        :ambig
@@ -2299,7 +2299,7 @@
                (table (dimb-add-ident ident? (dimb-kind-objfun) table)))
             (retok (param-declor-nonabstract declor/absdeclor.unwrap) table))
           :absdeclor
-          (retok (param-declor-absdeclor declor/absdeclor.unwrap)
+          (retok (param-declor-abstract declor/absdeclor.unwrap)
                  (dimb-table-fix table))))))
     :measure (param-declor-count paramdeclor))
 
