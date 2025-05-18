@@ -1683,3 +1683,41 @@
  <li><a href='http://www.ora.on.ca/biblio/biblio-prover-welcome.html'>ORA Canada Bibliography of Automated Deduction</a></li>
 
  </ul>")
+
+(defxdoc pub-videos
+  :parents (publications)
+  :short "Videos about ACL2"
+  :long "
+ <h3>Videos For Learning ACL2</h3>
+
+ <ul>
+
+ <li>
+  The <a href='https://fm.csl.sri.com/SSFT21/'>Tenth Summer School on Formal Techniques</a> (2021) included a series of videos teaching ACL2:
+  <ul>
+   <li> <a href='https://youtu.be/xcXBOkp_w1s'>Welcome</a></li>
+   <li> <a href='https://youtu.be/912RcvJrlk0'>Video 0</a></li>
+   <li> <a href='https://youtu.be/pVRfeu8MbgE'>Video 1</a></li>
+   <li> <a href='https://youtu.be/dtS4MjaWtgs'>Video 2</a></li>
+   <li> <a href='https://youtu.be/81pr9bSVoy4'>Video 3</a></li>
+   <li> <a href='https://youtu.be/60PPqrARDLc'>Video 4</a></li>
+   <li> <a href='https://youtu.be/rqM7WRXx3qc'>Video 5</a></li>
+   <li> <a href='https://youtu.be/dE83qdc7cJc'>Video 6a</a></li>
+   <li> <a href='https://youtu.be/xFfZQPPPvjo'>Video 6b</a></li>
+   <li> <a href='https://youtu.be/19hdVOLtohA'>Video 7</a></li>
+  </ul>
+  The <a href='https://fm.csl.sri.com/SSFT21/'>Summer School webpage</a> includes additional supplementary materials.
+ </li>
+
+ </ul>
+
+ <h3>Videos About ACL2 and Its Applications</h3>
+<ul>
+<li><a href='https://www.youtube.com/watch?v=wOfHvPjqKaI'>What's New in ACL2, from the ACL2 2018 Workshop (Matt Kaufmann and Holly Bell, 2018)</a></li>
+<li><a href='https://www.youtube.com/watch?v=jtprDAfVtos'>Formal Verification of Cryptographic Code (Eric Smith, 2018)</a></li>
+<li><a href='https://www.youtube.com/watch?v=9JHZKR-gc4w'>Formal Verification of JubJub R1CS Gadgets (Alessandro Coglio, Eric McCarthy, Eric Smith, 2021)</a></li>
+<li><a href='https://www.youtube.com/watch?v=U-y8UNccnIw'>Protocol Analysis Using Real Analysis in ACL2 (Max von Hippel, 2023)</a></li>
+<li><a href='https://www.youtube.com/watch?v=PekrHpG1C_s'>An ACL2-based x86-ISA Specification (Warren Hunt, 2024)</a></li>
+</ul>
+
+")
