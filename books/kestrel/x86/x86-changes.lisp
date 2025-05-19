@@ -3211,3 +3211,54 @@
               (undefined-flags (!rflagsbits->af 1 0)))
            (mv result output-rflags undefined-flags)))
   :hints (("Goal" :in-theory (enable* gpr-xor-spec-8 rflag-rows-enables))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm gpr-sbb-spec-4-alt-def
+  (equal (x86isa::gpr-sbb-spec-4 dst src input-rflags)
+         (b* ((dst (mbe :logic (x86isa::n-size 32 dst) :exec dst))
+              (src (mbe :logic (x86isa::n-size 32 src)
+                        :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (x86isa::input-cf (the (unsigned-byte 1)
+                                  (rflagsbits->cf input-rflags)))
+              (x86isa::signed-raw-result (the (signed-byte 34)
+                                           (- (the (signed-byte 32)
+                                                (x86isa::n32-to-i32 dst))
+                                              (the (signed-byte 33)
+                                                (+ (the (signed-byte 32)
+                                                     (x86isa::n32-to-i32 src))
+                                                   ;; open the carry:
+                                                   (x::open-carry x86isa::input-cf))))))
+              (result (the (unsigned-byte 32)
+                        (x86isa::n-size 32 x86isa::signed-raw-result)))
+              (cf (sub-cf-spec8 dst (+ (x::open-carry x86isa::input-cf) src))
+                  ;; (the (unsigned-byte 1)
+                  ;;     (bool->bit (< dst
+                  ;;                   (the (unsigned-byte 33)
+                  ;;                     (+ x86isa::input-cf src)))))
+                  )
+              (pf (the (unsigned-byte 1)
+                    (pf-spec32 result)))
+              (af (the (unsigned-byte 1)
+                    ;; open the carry:
+                    (sbb-af-spec32 dst src (x::open-carry x86isa::input-cf))))
+              (zf (the (unsigned-byte 1)
+                    (zf-spec result)))
+              (sf (the (unsigned-byte 1)
+                    (sf-spec32 result)))
+              (of (the (unsigned-byte 1)
+                    (of-spec32 x86isa::signed-raw-result)))
+              ;; changed this:
+              (x86isa::output-rflags (!rflagsbits->cf cf
+                                                      (!rflagsbits->pf pf
+                                                                       (!rflagsbits->af af
+                                                                                        (!rflagsbits->zf zf
+                                                                                                         (!rflagsbits->sf sf
+                                                                                                                          (!rflagsbits->of of input-rflags)))))))
+              ;; (x86isa::output-rflags (mbe :logic (n32 x86isa::output-rflags)
+              ;;                             :exec x86isa::output-rflags))
+              (x86isa::undefined-flags 0))
+           (mv result x86isa::output-rflags x86isa::undefined-flags)))
+  :hints (("Goal" :in-theory (enable* x86isa::gpr-sbb-spec-4 x::open-carry rflag-rows-enables sub-cf-spec8))))
