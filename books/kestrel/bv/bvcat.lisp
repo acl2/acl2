@@ -684,7 +684,8 @@
 
 ;use trim?
 ;associated wrong
-(defthm bvcat-of-bvcat-trim-high-arg
+;rename
+(defthm bvcat-of-bvcat-tighten-arg2
   (implies (and (< size1 (+ highsize lowsize))
                 (natp size1)
                 (< 0 size1)
@@ -700,6 +701,24 @@
                                     lowsize lowval)
                              size2
                              x))))
+  :hints (("Goal" :in-theory (disable bvcat-associative))))
+
+; caused a loop (why?).  could restrict to constants
+(defthmd bvcat-of-bvcat-tighten-arg4
+  (implies (and (< size2 (+ highsize lowsize))
+                (posp size2)
+                (natp size1)
+                (natp lowsize)
+                (natp highsize))
+           (equal (bvcat size1 x size2 (bvcat highsize highval lowsize lowval))
+                  (if (<= size2 lowsize)
+                      (bvcat size1 x size2 (bvchop size2 lowval))
+                    (bvcat size1
+                           x
+                           size2
+                           (bvcat (+ size2 (- lowsize))
+                                  (bvchop (min size2 highsize) highval)
+                                  lowsize lowval)))))
   :hints (("Goal" :in-theory (disable bvcat-associative))))
 
 (defthm slice-of-bvcat-hack

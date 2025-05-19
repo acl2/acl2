@@ -1462,6 +1462,10 @@
     dag-array ; for calls of axe-syntaxp functions
     def-simplified-x86
     dag-val-with-axe-evaluator
+    defthm-axe
+    defthm-axe-basic
+    defthm-stp
+    prove-with-stp
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
     pseudo-dag-arrayp

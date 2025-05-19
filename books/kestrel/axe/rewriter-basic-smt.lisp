@@ -32,5 +32,5 @@
                       axe-evaluator-basic
                       basic
                       basic
-                      t ; do use SMT
+                      :smt t ; do use SMT
                       )
