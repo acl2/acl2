@@ -3434,7 +3434,9 @@
           (read-and-write-rules)
           (segment-base-and-bounds-rules-64)
           '(read-byte-becomes-read ; (read-byte-rules) ; read-byte can come from read-bytes
-            len-of-read-bytes nth-of-read-bytes) ; read-bytes can come from an output-extractor
+            len-of-read-bytes nth-of-read-bytes ; read-bytes can come from an output-extractor
+            acl2::integerp-of-+ ; helps with nth-of-read-bytes
+            )
           (get-prefixes-rules64)
           (step-opener-rules64)
           '(;; todo move these to the new-normal-form lists:
@@ -5156,6 +5158,7 @@
      read-bytes-of-xw-irrel
      read-bytes-of-set-flag ; todo: more like this, for other state changers
      read-bytes-of-!rflags
+     read-bytes-of-set-rip
      read-bytes-of-set-undef
      read-bytes-of-set-mxcsr
      read-bytes-of-write-when-disjoint-regionsp
