@@ -1731,6 +1731,13 @@
  <li><a href='http://www.cs.utexas.edu/users/kaufmann/demos/acl2-doc.mov'>Demo of
  the ACL2-Doc Emacs-based documentation browser</a> (also see <see
  topic='ACL2____ACL2-DOC'>its documentation</see>).</li>
+ <li>An Integration of Axiomatic Set Theory with ACL2 (Matt Kaufmann):
+ <a href='https://www.kestrel.edu/download/An-Integration-of-Axiomatic-Set-Theory-with-ACL2-Part-1.mp4'>Part 1</a>,
+ <a
+ href='https://www.kestrel.edu/download/An-Integration-of-Axiomatic-Set-Theory-with-ACL2-Part-2.mp4'>Part
+ 2</a>,
+ and <a href='https://www.kestrel.edu/download/An-Integration-of-Axiomatic-Set-Theory-with-ACL2-Part-3.mp4'>Part 3</a>.</li>
+
  </ul>
 
 ")
