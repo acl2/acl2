@@ -464,7 +464,8 @@
 (defthmd run-until-stack-shorter-than-or-reach-pc-base-axe
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
-                (stack-shorter-thanp old-rsp x86))
+                (or (stack-shorter-thanp old-rsp x86)
+                    (member-equal (rip x86) stop-pcs)))
            (equal (run-until-stack-shorter-than-or-reach-pc old-rsp stop-pcs x86)
                   x86))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-or-reach-pc-base))))

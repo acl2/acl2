@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-;; See tests in defthm-axe-tests.lisp
+;; See tests in defthm-axe-basic-tests.lisp
 
 (include-book "prover-basic") ; defines the clause processor function
 (include-book "register-and-wrap-clause-processor-simple")
