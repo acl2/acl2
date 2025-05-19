@@ -1688,9 +1688,18 @@
   :parents (publications)
   :short "Slides for talks about ACL2"
   :long"
- <p>See the <a href='http://www.cs.utexas.edu/users/moore/acl2/seminar/'>UT
- ACL2 Seminar page</a> for many abstracts and slides for talks pertaining to
- ACL2.</p>
+ <p>See @(see talks) as well as the following pages for many slides for talks
+ about ACL2:</p>
+
+ <ul>
+
+ <li>the <a href='http://www.cs.utexas.edu/users/moore/acl2/seminar/'>UT
+ ACL2 Seminar page</a>; and</li>
+
+ <li>the <a href='http://www.cs.utexas.edu/users/moore/acl2/workshops.html'>ACL2
+ workshops web pages</a>.</li>
+
+ </ul>
 
  <p>The rest of this topic is a stub.  Please feel free to extend it!</p>")
 
