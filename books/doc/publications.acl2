@@ -1,6 +1,6 @@
 (defpkg "PUBLICATIONS"
   (append '(defxdoc
 ; Include :DOC topics that we want to reference without package prefixes.
-             publications books parallelism stobj)
+             publications books parallelism stobj talks)
           (union-eq *acl2-exports*
                     *common-lisp-symbols-from-main-lisp-package*)))

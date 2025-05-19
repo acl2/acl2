@@ -23,5 +23,5 @@
                       axe-evaluator-jvm
                       jvm
                       jvm
-                      nil ; do not use SMT (todo: consider using it, but make a variant without it)
+                      :smt nil ; do not use SMT (todo: consider using it, but make a variant without it)
                       )

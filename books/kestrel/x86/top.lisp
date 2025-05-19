@@ -25,6 +25,7 @@
 (include-book "readers-and-writers64")
 (include-book "flags")
 (include-book "conditions")
+(include-book "zmm")
 
 (include-book "support-bv")
 (include-book "support-x86")

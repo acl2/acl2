@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (not based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,8 +24,8 @@
 ;; state assumptions (since they can mention X and Y).  We use the
 ;; second approach here for now.
 
-;; See also lifter-axe.lisp, for the Axe-based version of this lifter (which is
-;; what we mostly use).
+;; See also books/kestrel/axe/x86/unroll-x86-code.lisp, for the Axe-based
+;; version of this lifter (which is what we mostly use).
 
 (include-book "../support")
 (include-book "lifter-support")
