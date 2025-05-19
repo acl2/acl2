@@ -597,6 +597,7 @@
                              stack-slots
                              position-independent
                              inputs
+                             type-assumptions-for-array-varsp
                              output
                              use-internal-contextsp
                              prune-precise
@@ -625,6 +626,7 @@
                               (natp stack-slots)
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
+                              (booleanp type-assumptions-for-array-varsp)
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
@@ -730,6 +732,7 @@
                                            'x86
                                            base-var
                                            inputs
+                                           type-assumptions-for-array-varsp
                                            disjoint-chunk-addresses-and-lens
                                            bvp
                                            parsed-executable)))
@@ -830,6 +833,7 @@
                                                 '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                                 stack-slots
                                                 (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
+                                                type-assumptions-for-array-varsp
                                                 nil nil)
                   (mv nil nil)))
                (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
@@ -932,6 +936,7 @@
                         stack-slots
                         position-independent
                         inputs
+                        type-assumptions-for-array-varsp
                         output
                         use-internal-contextsp
                         prune-precise
@@ -967,6 +972,7 @@
                               (natp stack-slots)
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
+                              (booleanp type-assumptions-for-array-varsp)
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
@@ -1018,7 +1024,7 @@
        ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used state)
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
-          inputs output use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
+          inputs type-assumptions-for-array-varsp output use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
           step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep bvp state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
@@ -1165,6 +1171,7 @@
                                   (stack-slots '100)
                                   (position-independent ':auto)
                                   (inputs ':skip)
+                                  (type-assumptions-for-array-vars 't)
                                   (output ':all)
                                   (use-internal-contextsp 't)
                                   (prune-precise '1000)
@@ -1201,6 +1208,7 @@
       ',stack-slots
       ',position-independent
       ',inputs
+      ',type-assumptions-for-array-vars
       ',output
       ',use-internal-contextsp
       ',prune-precise
@@ -1238,6 +1246,7 @@
          (stack-slots "How much available stack space to assume exists.") ; 4 or 8 bytes each?
          (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
          (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
+         (type-assumptions-for-array-vars "Whether to put in type assumptions for the variables that represent elements of input arrays.")
          (output "An indication of which state component(s) will hold the result of the computation being lifted.  See output-indicatorp.")
          (use-internal-contextsp "Whether to use contextual information from ovararching conditionals when simplifying DAG nodes.")
          ;; todo: better name?  only for precise pruning:
