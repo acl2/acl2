@@ -40,6 +40,7 @@
 (include-book "unequivocal-signed-proposals")
 (include-book "fault-tolerance")
 (include-book "nonforking-blockchains-def-and-init")
+(include-book "same-committees-def-and-implied")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,6 +83,7 @@
                     author-round-pairs-in-validators
                     unequivocal-signed-proposals
                     fault-tolerance
-                    nonforking-blockchains-def-and-init))
+                    nonforking-blockchains-def-and-init
+                    same-committees-def-and-implied))
 
 ; TODO: continue
