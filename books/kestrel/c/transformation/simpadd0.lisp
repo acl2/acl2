@@ -1278,19 +1278,38 @@
     :hyp (expr-unambp arg-new))
 
   (defruledl c::plus-value-lemma
-    (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint)))
-             (b* ((val (c::plus-value val0)))
+    (b* ((type (c::type-of-value val0))
+         (val (c::plus-value val0)))
+      (implies (and (c::valuep val0)
+                    (member-eq (c::type-kind type)
+                               '(:uchar :schar
+                                 :ushort :sshort
+                                 :uint :sint
+                                 :ulong :slong
+                                 :ullong :sllong)))
                (and (not (c::errorp val))
-                    (equal (c::type-of-value val) (c::type-sint))
-                    (equal (c::value-kind val) :sint))))
+                    (equal (c::type-of-value val)
+                           (c::promote-type type)))))
     :enable (c::plus-value
              c::plus-arithmetic-value
              c::plus-integer-value
-             c::value-arithmeticp-when-sintp
+             c::type-of-value-of-promote-value
+             c::value-arithmeticp
+             c::value-realp
+             c::value-integerp
+             c::value-signed-integerp
+             c::value-unsigned-integerp))
+
+  (defruledl c::plus-value-lemma2
+    (implies (and (c::valuep val)
+                  (equal (c::value-kind val) :sint))
+             (equal (c::value-kind (c::plus-value val)) :sint))
+    :enable (c::plus-value
+             c::plus-arithmetic-value
+             c::plus-integer-value
              c::promote-value-when-sintp
-             c::sintp-alt-def
-             c::type-of-value))
+             c::value-arithmeticp-when-sintp
+             c::sintp-alt-def))
 
   (defruledl c::bitnot-value-lemma
     (implies (and (c::valuep val0)
@@ -1377,6 +1396,7 @@
              c::eval-unary
              c::apconvert-expr-value-when-not-array
              c::plus-value-lemma
+             c::plus-value-lemma2
              c::bitnot-value-lemma
              c::minus-value-lemma
              c::lognot-value-lemma))
