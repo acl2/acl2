@@ -1339,6 +1339,11 @@
                   (read-bytes addr x x86)))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
+(defthm read-bytes-of-set-rip
+  (equal (read-bytes addr x (set-rip rip x86))
+         (read-bytes addr x x86))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
 ;; todo: add more for more state changers!
 (defthm read-bytes-of-set-flag
   (equal (read-bytes addr x (set-flag flag val x86))

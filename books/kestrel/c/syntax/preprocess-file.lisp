@@ -104,9 +104,11 @@
     '"cpp")
    ((extra-args string-listp
                 "Arguments to pass to the C preprocessor, in addition to
-                 \"-E\". The default value is @('(list \"-P\")') (the flag
-                 @('\"-P\"') suppresses the generation of linemarkers).")
-    ''("-P"))
+                 \"-E\". The default value is @('(list \"-P\" \"-std=c17\")').
+                 (The flag @('\"-P\"') suppresses the generation of
+                 linemarkers and @('\"-std=c17\"') instructs the preprocessor
+                 to use the C17 standard.)")
+    ''("-P" "-std=c17"))
    (state 'state))
   :returns (mv (erp "@('nil') if successful, or the error @('msgp')
                      otherwise.")
@@ -226,9 +228,11 @@
     '"cpp")
    ((extra-args string-listp
                 "Arguments to pass to the C preprocessor, in addition to
-                 \"-E\". The default value is @('(list \"-P\")') (the flag
-                 @('\"-P\"') suppresses the generation of linemarkers).")
-    ''("-P"))
+                 \"-E\". The default value is @('(list \"-P\" \"-std=c17\")').
+                 (The flag @('\"-P\"') suppresses the generation of
+                 linemarkers and @('\"-std=c17\"') instructs the preprocessor
+                 to use the C17 standard.)")
+    ''("-P" "-std=c17"))
    (state 'state))
   :returns (mv (erp "@('nil') if successful, or the first error @('msgp')
                      otherwise.")

@@ -1568,13 +1568,12 @@
   :hints (("Goal" :in-theory (enable write-when-bvchops-agree))))
 
 (defthm write-of-logext
-  (implies (and (<= 48 n)
-                (integerp n)
-                (integerp addr))
-           (equal (write n (logext n addr) val x86)
+  (implies (and (<= 48 size)
+                (integerp size))
+           (equal (write n (logext size addr) val x86)
                   (write n addr val x86)))
   :hints (("Goal" :use (write-of-bvchop-48
-                         (:instance write-of-bvchop-48 (addr (logext n addr))))
+                         (:instance write-of-bvchop-48 (addr (logext size addr))))
            :in-theory (disable write-of-bvchop-48))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2166,9 +2165,9 @@
                   (bvchop 8 val))))
 
 (defthm read-1-of-write-1-diff
-  (implies (not (equal (bvchop 48 addr) (bvchop 48 addr2)))
-           (equal (read 1 addr (write 1 addr val x86))
-                  (bvchop 8 val)))
+  (implies (not (equal (bvchop 48 addr1) (bvchop 48 addr2)))
+           (equal (read 1 addr1 (write 1 addr2 val x86))
+                  (read 1 addr1 x86)))
   :hints (("Goal" :in-theory (enable read write))))
 
 ;drop?
