@@ -256,6 +256,7 @@
   (declare (xargs :guard t))
   '(;these should be safe, because each replaces an argument of a BV op with a
     ;strict subterm of that argument:
+    ;; bvcat rules:
     bvand-of-bvcat-low-arg2
     bvand-of-bvcat-low-arg3
     bvor-of-bvcat-low-arg2
@@ -277,6 +278,9 @@
     bvuminus-of-bvcat-low ; todo: also rules for bitnot and bvnot?
     bvif-of-bvcat-low-arg3
     bvif-of-bvcat-low-arg4
+    bvcat-of-bvcat-tighten-arg2
+    bvcat-of-bvcat-tighten-arg4
+    ;; bvsx rules:
     bitand-of-bvsx-low-arg1
     bitand-of-bvsx-low-arg2
     bitor-of-bvsx-low-arg1
@@ -1043,7 +1047,7 @@
      bvcat-of-bvcat-high-tighten ;bozo general rule?
      bvcat-of-getbit-high-tighten
      bvcat-of-bvchop-high-tighten-axe ;gen the bvchop to any bv term
-;            bvcat-of-bvcat-trim-high-arg ;use trim Mon Mar 14 18:54:23 2011
+;            bvcat-of-bvcat-tighten-arg2 ;use trim Mon Mar 14 18:54:23 2011
 ;    bvmult-27-bvcat-hack ;;trying without...
 ;            bvmult-8-27-blast-hack
 ;           bvmult-8-27-blast
