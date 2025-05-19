@@ -45,7 +45,9 @@
      whose preservation in turns relies on this invariant.
      Thus, here we just define the blockchain nonforking invariant
      and we prove that it is established in the initial states,
-     but we prove its preservation elsewhere."))
+     but we prove elsewhere that
+     it is preserved by transitions
+     and it holds in every reachable state."))
   :order-subtopics t
   :default-parent t)
 
