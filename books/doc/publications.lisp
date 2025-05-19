@@ -1684,6 +1684,25 @@
 
  </ul>")
 
+(defxdoc pub-slides
+  :parents (publications)
+  :short "Slides for talks about ACL2"
+  :long"
+ <p>See @(see talks) as well as the following pages for many slides for talks
+ about ACL2:</p>
+
+ <ul>
+
+ <li>the <a href='http://www.cs.utexas.edu/users/moore/acl2/seminar/'>UT
+ ACL2 Seminar page</a>; and</li>
+
+ <li>the <a href='http://www.cs.utexas.edu/users/moore/acl2/workshops.html'>ACL2
+ workshops web pages</a>.</li>
+
+ </ul>
+
+ <p>The rest of this topic is a stub.  Please feel free to extend it!</p>")
+
 (defxdoc pub-videos
   :parents (publications)
   :short "Videos about ACL2"
@@ -1712,12 +1731,22 @@
  </ul>
 
  <h3>Videos About ACL2 and Its Applications</h3>
-<ul>
-<li><a href='https://www.youtube.com/watch?v=wOfHvPjqKaI'>What's New in ACL2, from the ACL2 2018 Workshop (Matt Kaufmann and Holly Bell, 2018)</a></li>
-<li><a href='https://www.youtube.com/watch?v=jtprDAfVtos'>Formal Verification of Cryptographic Code (Eric Smith, 2018)</a></li>
-<li><a href='https://www.youtube.com/watch?v=9JHZKR-gc4w'>Formal Verification of JubJub R1CS Gadgets (Alessandro Coglio, Eric McCarthy, Eric Smith, 2021)</a></li>
-<li><a href='https://www.youtube.com/watch?v=U-y8UNccnIw'>Protocol Analysis Using Real Analysis in ACL2 (Max von Hippel, 2023)</a></li>
-<li><a href='https://www.youtube.com/watch?v=PekrHpG1C_s'>An ACL2-based x86-ISA Specification (Warren Hunt, 2024)</a></li>
-</ul>
+ <ul>
+ <li><a href='https://www.youtube.com/watch?v=wOfHvPjqKaI'>What's New in ACL2, from the ACL2 2018 Workshop (Matt Kaufmann and Holly Bell, 2018)</a></li>
+ <li><a href='https://www.youtube.com/watch?v=jtprDAfVtos'>Formal Verification of Cryptographic Code (Eric Smith, 2018)</a></li>
+ <li><a href='https://www.youtube.com/watch?v=9JHZKR-gc4w'>Formal Verification of JubJub R1CS Gadgets (Alessandro Coglio, Eric McCarthy, Eric Smith, 2021)</a></li>
+ <li><a href='https://www.youtube.com/watch?v=U-y8UNccnIw'>Protocol Analysis Using Real Analysis in ACL2 (Max von Hippel, 2023)</a></li>
+ <li><a href='https://www.youtube.com/watch?v=PekrHpG1C_s'>An ACL2-based x86-ISA Specification (Warren Hunt, 2024)</a></li>
+ <li><a href='http://www.cs.utexas.edu/users/kaufmann/demos/acl2-doc.mov'>Demo of
+ the ACL2-Doc Emacs-based documentation browser</a> (also see <see
+ topic='ACL2____ACL2-DOC'>its documentation</see>).</li>
+ <li>An Integration of Axiomatic Set Theory with ACL2 (Matt Kaufmann):
+ <a href='https://www.kestrel.edu/download/An-Integration-of-Axiomatic-Set-Theory-with-ACL2-Part-1.mp4'>Part 1</a>,
+ <a
+ href='https://www.kestrel.edu/download/An-Integration-of-Axiomatic-Set-Theory-with-ACL2-Part-2.mp4'>Part
+ 2</a>,
+ and <a href='https://www.kestrel.edu/download/An-Integration-of-Axiomatic-Set-Theory-with-ACL2-Part-3.mp4'>Part 3</a>.</li>
+
+ </ul>
 
 ")
