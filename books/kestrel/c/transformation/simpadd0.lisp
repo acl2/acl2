@@ -1289,12 +1289,9 @@
              c::sintp-alt-def))
 
   (defruledl c::bitnot-value-lemma
-    (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint)))
-             (b* ((val (c::bitnot-value val0)))
-               (and (not (c::errorp val))
-                    (equal (c::type-of-value val) (c::type-sint))
-                    (equal (c::value-kind val) :sint))))
+    (implies (and (c::valuep val)
+                  (equal (c::value-kind val) :sint))
+             (equal (c::value-kind (c::bitnot-value val)) :sint))
     :enable (c::bitnot-value
              c::bitnot-integer-value
              c::promote-value-when-sintp
@@ -1308,17 +1305,14 @@
              c::integer-type-min
              c::sint-max
              c::sint-min
-             c::type-of-value
              ifix
              lognot))
 
   (defruledl c::minus-value-lemma
-    (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint)))
-             (b* ((val (c::minus-value val0)))
-               (implies (not (c::errorp val))
-                        (and (equal (c::type-of-value val) (c::type-sint))
-                             (equal (c::value-kind val) :sint)))))
+    (implies (and (c::valuep val)
+                  (equal (c::value-kind val) :sint)
+                  (not (c::errorp (c::minus-value val))))
+             (equal (c::value-kind (c::minus-value val)) :sint))
     :enable (c::minus-value
              c::minus-arithmetic-value
              c::minus-integer-value
@@ -1326,16 +1320,12 @@
              c::sintp-alt-def
              c::result-integer-value
              c::value-integerp
-             c::value-signed-integerp
-             c::type-of-value))
+             c::value-signed-integerp))
 
   (defruledl c::lognot-value-lemma
-    (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint)))
-             (b* ((val (c::lognot-value val0)))
-               (and (not (c::errorp val))
-                    (equal (c::type-of-value val) (c::type-sint))
-                    (equal (c::value-kind val) :sint))))
+    (implies (and (c::valuep val)
+                  (equal (c::value-kind val) :sint))
+             (equal (c::value-kind (c::lognot-value val)) :sint))
     :enable (c::lognot-value
              c::lognot-scalar-value
              c::lognot-integer-value
@@ -1343,8 +1333,7 @@
              c::value-arithmeticp
              c::value-realp
              c::value-integerp
-             c::value-signed-integerp
-             c::type-of-value))
+             c::value-signed-integerp))
 
   (defruled simpadd0-expr-unary-support-lemma-1
     (b* ((old (c::expr-unary op old-arg))
