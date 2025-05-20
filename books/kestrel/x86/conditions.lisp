@@ -503,8 +503,8 @@
 ;; (defthm jnl-condition-rewrite-1
 ;;   (implies (and (signed-byte-p 64 x)
 ;;                 (signed-byte-p 64 y))
-;;            (equal (jnl-condition (sf-spec64$inline (acl2::bvplus '64 x (acl2::bvuminus '64 y)))
-;;                                  (of-spec64$inline (binary-+ x (unary-- y))))
+;;            (equal (jnl-condition (sf-spec64 (acl2::bvplus '64 x (acl2::bvuminus '64 y)))
+;;                                  (of-spec64 (binary-+ x (unary-- y))))
 ;;                   (sbvle 64 y x)))
 ;;   :otf-flg t
 ;;   :hints (("Goal"
@@ -551,8 +551,8 @@
 (defthmd jnl-condition-rewrite-1-32-helper
   (implies (and (signed-byte-p 32 x)
                 (signed-byte-p 32 y))
-           (equal (jnl-condition (x86isa::sf-spec32$inline (acl2::bvplus 32 x (acl2::bvuminus 32 y)))
-                                 (x86isa::of-spec32$inline (binary-+ (logext 32 x) (unary-- (logext 32 y)))))
+           (equal (jnl-condition (x86isa::sf-spec32 (acl2::bvplus 32 x (acl2::bvuminus 32 y)))
+                                 (x86isa::of-spec32 (binary-+ (logext 32 x) (unary-- (logext 32 y)))))
                   (acl2::sbvle 32 y x)))
   :hints (("Goal"
            :use ((:instance acl2::split-signed-bv-top
@@ -815,7 +815,7 @@
          (not test)))
 
 (defthm jnz-condition-rule-2
-  (equal (jnz-condition (zf-spec$inline (bvplus 32 x y)))
+  (equal (jnz-condition (zf-spec (bvplus 32 x y)))
          (not (equal (bvuminus 32 x) (bvchop 32 y))))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus bvplus acl2::bvchop-of-sum-cases)
                                   (acl2::bvminus-becomes-bvplus-of-bvuminus)))))
@@ -823,8 +823,8 @@
 ;odd rule
 ;todo gen
 (defthm jnbe-condition-rewrite-1
- (equal (jnbe-condition (bool->bit$inline (< (bvplus 8 24 x) 1))
-                                (zf-spec$inline (bvplus 8 23 x)))
+ (equal (jnbe-condition (bool->bit (< (bvplus 8 24 x) 1))
+                                (zf-spec (bvplus 8 23 x)))
         (and (not (equal (bvchop 8 -24)
                          (bvchop 8 x)))
              (not (equal (bvchop 8 -23)
@@ -1776,8 +1776,8 @@
 ;; ;todo: should not be needed if cf-spec is not being opened?
 ;; (defthm jnbe-condition-of-bool->bit-of-<-of-bvchop-and-zf-spec-of-bvplus-of-bvuminus
 ;;   (implies (unsigned-byte-p 32 x)
-;;            (equal (jnbe-condition (bool->bit$inline (< x (bvchop '32 y)))
-;;                                   (zf-spec$inline (bvplus '32 x (bvuminus '32 y))))
+;;            (equal (jnbe-condition (bool->bit (< x (bvchop '32 y)))
+;;                                   (zf-spec (bvplus '32 x (bvuminus '32 y))))
 ;;                   (bvlt 32 y x)))
 ;;   :hints (("Goal" :in-theory (enable jnbe-condition zf-spec bvlt))))
 
