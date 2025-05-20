@@ -37,7 +37,7 @@
 
 (define value-integer->get ((val valuep))
   :guard (value-integerp val)
-  :returns (int integerp)
+  :returns (mathint integerp)
   :short "Turn a C integer value into a mathematical (i.e. ACL2) integer."
   (value-case val
               :uchar val.get
