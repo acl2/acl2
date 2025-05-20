@@ -752,7 +752,19 @@
      We introduce this function mainly for uniformity with other operations,
      despite it being trivial in a way."))
   (value-fix val)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret not-errorp-of-plus-integer-value
+    (not (errorp resval)))
+
+  (defret valuep-of-plus-integer-value
+    (valuep resval))
+
+  (defret type-of-value-of-plus-integer-value
+    (equal (type-of-value resval)
+           (type-of-value val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

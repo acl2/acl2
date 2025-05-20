@@ -60,7 +60,22 @@
     (error (list :plus-mistype
                  :required :arithmetic
                  :supplied (value-fix val))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret not-errorp-of-plus-value
+    (not (errorp resval))
+    :hyp (value-arithmeticp val))
+
+  (defret valuep-of-plus-value
+    (valuep resval)
+    :hyp (value-arithmeticp val))
+
+  (defret type-of-value-of-plus-value
+    (equal (type-of-value resval)
+           (promote-type (type-of-value val)))
+    :hyp (value-arithmeticp val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
