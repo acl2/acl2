@@ -819,9 +819,9 @@
 ;; this puts the syntactically smaller op first
 (defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
   (implies (and (axe-syntaxp (acl2::lighter-dargp op2 op1))
-                (equal (mxcsrbits->daz$inline mxcsr) 0)
-                (equal (mxcsrbits->im$inline mxcsr) 1)
-                (equal (mxcsrbits->dm$inline mxcsr) 1))
+                (equal (mxcsrbits->daz mxcsr) 0)
+                (equal (mxcsrbits->im mxcsr) 1)
+                (equal (mxcsrbits->dm mxcsr) 1))
            (equal (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :use equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
@@ -829,9 +829,9 @@
 ;; this puts the syntactically smaller op first
 (defthmd equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
   (implies (and (axe-syntaxp (acl2::lighter-dargp op2 op1))
-                (equal (mxcsrbits->daz$inline mxcsr) 0)
-                (equal (mxcsrbits->im$inline mxcsr) 1)
-                (equal (mxcsrbits->dm$inline mxcsr) 1))
+                (equal (mxcsrbits->daz mxcsr) 0)
+                (equal (mxcsrbits->im mxcsr) 1)
+                (equal (mxcsrbits->dm mxcsr) 1))
            (equal (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :hints (("Goal" :use equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
