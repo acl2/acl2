@@ -151,4 +151,10 @@
   (if (value-pointer-nullp val)
       (value-sint 1)
     (value-sint 0))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-lognot-pointer-value
+    (equal (type-of-value resval)
+           (type-sint))))

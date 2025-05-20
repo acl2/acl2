@@ -601,27 +601,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-tyspecseq-to-type-and-value-kind ((tyspecseq c::tyspecseqp))
-  :returns (mv (okp booleanp) (type c::typep) (kind keywordp))
+(define simpadd0-tyspecseq-to-type ((tyspecseq c::tyspecseqp))
+  :returns (mv (okp booleanp) (type c::typep))
   :short "Map a type specifier sequence from the language formalization
-          to the corresponding type and kind of value."
+          to the corresponding type."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only allow certain types."))
   (c::tyspecseq-case
    tyspecseq
-   :uchar (mv t (c::type-uchar) :uchar)
-   :schar (mv t (c::type-schar) :schar)
-   :ushort (mv t (c::type-ushort) :ushort)
-   :sshort (mv t (c::type-sshort) :sshort)
-   :uint (mv t (c::type-uint) :uint)
-   :sint (mv t (c::type-sint) :sint)
-   :ulong (mv t (c::type-ulong) :ulong)
-   :slong (mv t (c::type-slong) :slong)
-   :ullong (mv t (c::type-ullong) :ullong)
-   :sllong (mv t (c::type-sllong) :sllong)
-   :otherwise (mv nil (c::type-void) :irrelevant))
+   :uchar (mv t (c::type-uchar))
+   :schar (mv t (c::type-schar))
+   :ushort (mv t (c::type-ushort))
+   :sshort (mv t (c::type-sshort))
+   :uint (mv t (c::type-uint))
+   :sint (mv t (c::type-sint))
+   :ulong (mv t (c::type-ulong))
+   :slong (mv t (c::type-slong))
+   :ullong (mv t (c::type-ullong))
+   :sllong (mv t (c::type-sllong))
+   :otherwise (mv nil (c::type-void)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -662,14 +662,14 @@
    (xdoc::p
     "These results are generated only if
      all the parameters have certain types
-     (see @(tsee simpadd0-tyspecseq-to-type-and-value-kind)),
+     (see @(tsee simpadd0-tyspecseq-to-type)),
      which we check as we go through the parameters.
      The @('okp') result says whether this is the case;
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil))
        ((c::param-declon param) (car params))
-       ((mv okp type &)
-        (simpadd0-tyspecseq-to-type-and-value-kind param.tyspec))
+       ((mv okp type)
+        (simpadd0-tyspecseq-to-type param.tyspec))
        ((unless okp) (mv nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
         (mv nil nil nil nil nil))
@@ -1218,7 +1218,6 @@
        (expr (make-expr-unary :op op :arg arg :info info))
        (expr-new (make-expr-unary :op op :arg arg-new :info info))
        ((unless (and arg-thm-name
-                     (type-case (expr-type arg) :sint)
                      (member-eq (unop-kind op)
                                 '(:plus :minus :bitnot :lognot))))
         (mv expr-new
@@ -1231,8 +1230,12 @@
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
                               (:e c::unop-nonpointerp)
+                              (:e c::unop-kind)
                               (:e c::expr-unary)
-                              (:e c::type-sint))
+                              (:e c::type-kind)
+                              (:e c::promote-type)
+                              (:e c::type-sint)
+                              (:e member-equal))
                  :use (,arg-thm-name
                        (:instance
                         simpadd0-expr-unary-support-lemma-1
@@ -1277,69 +1280,15 @@
     (expr-unambp expr)
     :hyp (expr-unambp arg-new))
 
-  (defruledl c::plus-value-lemma
-    (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint)))
-             (b* ((val (c::plus-value val0)))
-               (and (not (c::errorp val))
-                    (equal (c::type-of-value val) (c::type-sint))
-                    (equal (c::value-kind val) :sint))))
-    :enable (c::plus-value
-             c::plus-arithmetic-value
-             c::plus-integer-value
-             c::value-arithmeticp-when-sintp
-             c::promote-value-when-sintp
-             c::sintp-alt-def
-             c::type-of-value))
-
-  (defruledl c::bitnot-value-lemma
-    (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint)))
-             (b* ((val (c::bitnot-value val0)))
-               (and (not (c::errorp val))
-                    (equal (c::type-of-value val) (c::type-sint))
-                    (equal (c::value-kind val) :sint))))
-    :enable (c::bitnot-value
-             c::bitnot-integer-value
-             c::promote-value-when-sintp
-             c::sintp-alt-def
-             c::value-integer->get-when-sintp
-             c::result-integer-value
-             c::value-integerp
-             c::value-signed-integerp
-             c::integer-type-rangep
-             c::integer-type-max
-             c::integer-type-min
-             c::sint-max
-             c::sint-min
-             c::type-of-value
-             ifix
-             lognot))
-
-  (defruledl c::minus-value-lemma
-    (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint)))
-             (b* ((val (c::minus-value val0)))
-               (implies (not (c::errorp val))
-                        (and (equal (c::type-of-value val) (c::type-sint))
-                             (equal (c::value-kind val) :sint)))))
-    :enable (c::minus-value
-             c::minus-arithmetic-value
-             c::minus-integer-value
-             c::promote-value-when-sintp
-             c::sintp-alt-def
-             c::result-integer-value
-             c::value-integerp
-             c::value-signed-integerp
-             c::type-of-value))
-
   (defruledl c::lognot-value-lemma
-    (implies (and (c::valuep val0)
-                  (equal (c::type-of-value val0) (c::type-sint)))
-             (b* ((val (c::lognot-value val0)))
-               (and (not (c::errorp val))
-                    (equal (c::type-of-value val) (c::type-sint))
-                    (equal (c::value-kind val) :sint))))
+    (implies (and (c::valuep val)
+                  (member-equal (c::value-kind val)
+                                '(:uchar :schar
+                                  :ushort :sshort
+                                  :uint :sint
+                                  :ulong :slong
+                                  :ullong :sllong)))
+             (equal (c::value-kind (c::lognot-value val)) :sint))
     :enable (c::lognot-value
              c::lognot-scalar-value
              c::lognot-integer-value
@@ -1348,7 +1297,7 @@
              c::value-realp
              c::value-integerp
              c::value-signed-integerp
-             c::type-of-value))
+             c::value-unsigned-integerp))
 
   (defruled simpadd0-expr-unary-support-lemma-1
     (b* ((old (c::expr-unary op old-arg))
@@ -1360,15 +1309,24 @@
          (old-result (c::exec-expr-pure old compst))
          (new-result (c::exec-expr-pure new compst))
          (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result)))
+         (new-value (c::expr-value->value new-result))
+         (type (c::type-of-value old-arg-value)))
       (implies (and (c::unop-nonpointerp op)
                     (not (c::errorp old-result))
                     (not (c::errorp new-arg-result))
                     (equal old-arg-value new-arg-value)
-                    (equal (c::type-of-value old-arg-value) (c::type-sint)))
+                    (member-equal (c::type-kind type)
+                                  '(:uchar :schar
+                                    :ushort :sshort
+                                    :uint :sint
+                                    :ulong :slong
+                                    :ullong :sllong)))
                (and (not (c::errorp new-result))
                     (equal old-value new-value)
-                    (equal (c::type-of-value old-value) (c::type-sint)))))
+                    (equal (c::type-of-value old-value)
+                           (if (equal (c::unop-kind op) :lognot)
+                               (c::type-sint)
+                             (c::promote-type type))))))
     :expand ((c::exec-expr-pure (c::expr-unary op old-arg) compst)
              (c::exec-expr-pure (c::expr-unary op new-arg) compst))
     :disable ((:e c::type-sint))
@@ -1376,9 +1334,11 @@
              c::exec-unary
              c::eval-unary
              c::apconvert-expr-value-when-not-array
-             c::plus-value-lemma
-             c::bitnot-value-lemma
-             c::minus-value-lemma
+             c::value-arithmeticp
+             c::value-realp
+             c::value-integerp
+             c::value-signed-integerp
+             c::value-unsigned-integerp
              c::lognot-value-lemma))
 
   (defruled simpadd0-expr-unary-support-lemma-2

@@ -153,13 +153,13 @@
     (implies (and (accept-possiblep val cert systate)
                   (signer-quorum-p systate))
              (signer-quorum-p (accept-next val cert systate)))
-    :expand (signer-quorum-p (accept-next val cert systate))
     :use (:instance signer-quorum-p-necc
                     (val (mv-nth 0 (signer-quorum-p-witness
                                     (accept-next val cert systate))))
                     (cert (mv-nth 1 (signer-quorum-p-witness
                                      (accept-next val cert systate)))))
-    :enable (signer-quorum-p-necc
+    :enable (signer-quorum-p
+             signer-quorum-p-necc
              accept-possiblep
              validator-state->dag-of-accept-next
              certificate->round))
