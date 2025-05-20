@@ -601,7 +601,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-tyspecseq-to-type-and-value-kind ((tyspecseq c::tyspecseqp))
+(define simpadd0-tyspecseq-to-type ((tyspecseq c::tyspecseqp))
   :returns (mv (okp booleanp) (type c::typep))
   :short "Map a type specifier sequence from the language formalization
           to the corresponding type."
@@ -662,14 +662,14 @@
    (xdoc::p
     "These results are generated only if
      all the parameters have certain types
-     (see @(tsee simpadd0-tyspecseq-to-type-and-value-kind)),
+     (see @(tsee simpadd0-tyspecseq-to-type)),
      which we check as we go through the parameters.
      The @('okp') result says whether this is the case;
      if it is @('nil'), the other results are @('nil') too."))
   (b* (((when (endp params)) (mv t nil nil nil nil))
        ((c::param-declon param) (car params))
        ((mv okp type)
-        (simpadd0-tyspecseq-to-type-and-value-kind param.tyspec))
+        (simpadd0-tyspecseq-to-type param.tyspec))
        ((unless okp) (mv nil nil nil nil nil))
        ((unless (c::obj-declor-case param.declor :ident))
         (mv nil nil nil nil nil))
