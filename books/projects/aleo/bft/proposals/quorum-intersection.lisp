@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-ARXIV")
+(in-package "ALEOBFT-PROPOSALS")
 
 (include-book "fault-tolerance")
 
@@ -50,17 +50,21 @@
      but also for stake of validators,
      as we prove here.")
    (xdoc::p
-    "In AleoBFT quorum intersection applies to certificate non-equivocation.
+    "In AleoBFT, quorum intersection applies to certificate non-equivocation.
      By requiring a quorum of signatures,
      where each signature supports the certificate
      (in the sense of `supporting' mentioned above),
      we ensure that two incompatible certificates,
-     i.e. two different certificates with the same author and round,
+     i.e. two certificates with different proposals but equal author and round,
      cannot exist because they would have to be both signed by
      at least one correct validator in the intersection of the quora;
      the intersection consists of stake (not numbers of validators),
      but it still implies the existence of
-     at least one correct validator in both quora.")
+     at least one correct validator in both quora.
+     Note that non-equivocation is limited to the proposals,
+     not to the whole certificates,
+     because it is possible that two correct validator obtain certificates
+     certificates with identical proposals but slightly different signatures.")
    (xdoc::p
     "Here we introduce a function that picks a correct validator (if any)
      from the intersection of two sets of (addresses of) validators
@@ -89,10 +93,10 @@
      we want to intersect two quora
      (represented by @('vals1') and @('vals2') here),
      and pick a correct validator common to the two sets."))
-  (pick-correct-validator (set::intersect vals1 vals2) systate)
-  ///
-  (fty::deffixequiv pick-common-correct-validator
-    :args ((systate system-statep))))
+  (pick-correct-validator (set::intersect (address-set-fix vals1)
+                                          (address-set-fix vals2))
+                          systate)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -109,7 +113,7 @@
    (xdoc::p
     "The non-emptiness of the committee is a critical assumption.
      If the committee is empty, we have @($n = f = 0$),
-     and the intersection does not have a non-zero stake.")
+     and the intersection has zero stake.")
    (xdoc::p
     "Let @($A$) and @($B$) be the two sets of (addresses of) validators
      whose total stakes are @($S(A)$) and @($S(B)$).
