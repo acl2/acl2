@@ -278,8 +278,8 @@
                            parsed-executable
                            param-names ; todo: can we somehow get these from the executable?
                            assumptions ; untranslated terms
-                           extra-rules extra-lift-rules extra-proof-rules
-                           remove-rules remove-lift-rules remove-proof-rules
+                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                            normalize-xors count-hits print monitor
                            step-limit step-increment
                            prune-precise prune-approx tactics
@@ -291,9 +291,11 @@
                            state)
   (declare (xargs :guard (and (stringp function-name-string)
                               (symbol-listp extra-rules)
+                              (symbol-listp extra-assumption-rules)
                               (symbol-listp extra-lift-rules)
                               (symbol-listp extra-proof-rules)
                               (symbol-listp remove-rules)
+                              (symbol-listp remove-assumption-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
                               (or (eq :debug monitor)
@@ -401,9 +403,11 @@
                     elf64-section-loadedp ; todo:package
                     acl2::elf-section-presentp
                     fix-of-rsp
-                    integerp-of-rsp))
-          ;; remove-asumption-rules:
-          nil ; todo: use the remove-lift-rules?
+                    integerp-of-rsp)
+                  extra-assumption-rules
+                  ;; extra-rules ;todo
+                  )
+          remove-assumption-rules ; todo: also use the remove-rules?
           step-limit
           step-increment
           nil ; stop-pcs
@@ -509,8 +513,8 @@
                          executable ; a parsed-executable or a string (meaning read from that file)
                          param-names ; todo: can we somehoe get these from the executable?
                          assumptions
-                         extra-rules extra-lift-rules extra-proof-rules
-                         remove-rules remove-lift-rules remove-proof-rules
+                         extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                         remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                          normalize-xors count-hits print monitor
                          step-limit step-increment
                          prune-precise prune-approx tactics
@@ -521,9 +525,11 @@
                          state)
   (declare (xargs :guard (and (stringp function-name-string)
                               (symbol-listp extra-rules)
+                              (symbol-listp extra-assumption-rules)
                               (symbol-listp extra-lift-rules)
                               (symbol-listp extra-proof-rules)
                               (symbol-listp remove-rules)
+                              (symbol-listp remove-assumption-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
                               (acl2::normalize-xors-optionp normalize-xors)
@@ -570,8 +576,8 @@
           function-name-string))
        ((mv erp passedp elapsed state)
         (test-function-core function-name-string parsed-executable param-names assumptions
-                            extra-rules extra-lift-rules extra-proof-rules
-                            remove-rules remove-lift-rules remove-proof-rules
+                            extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                            remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                             normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots position-independentp bvp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
@@ -596,9 +602,11 @@
                          (param-names ':none)
                          (assumptions 'nil)
                          (extra-rules 'nil)
+                         (extra-assumption-rules 'nil)
                          (extra-lift-rules 'nil)
                          (extra-proof-rules 'nil)
                          (remove-rules 'nil)
+                         (remove-assumption-rules 'nil)
                          (remove-lift-rules 'nil)
                          (remove-proof-rules 'nil)
                          (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
@@ -621,9 +629,11 @@
                                              ,param-names  ; gets evaluated
                                              ,assumptions  ; gets evaluated
                                              ,extra-rules  ; gets evaluated
+                                             ,extra-assumption-rules ; gets evaluated
                                              ,extra-lift-rules ; gets evaluated
                                              ,extra-proof-rules ; gets evaluated
                                              ,remove-rules ; gets evaluated
+                                             ,remove-assumption-rules ; gets evaluated
                                              ,remove-lift-rules ; gets evaluated
                                              ,remove-proof-rules ; gets evaluated
                                              ',normalize-xors
@@ -638,8 +648,8 @@
 (defun test-functions-fn-aux (function-name-strings
                               parsed-executable
                               assumptions-alist
-                              extra-rules extra-lift-rules extra-proof-rules
-                              remove-rules remove-lift-rules remove-proof-rules
+                              extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                              remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                               normalize-xors count-hits
                               print monitor step-limit step-increment prune-precise prune-approx
                               tactics max-conflicts
@@ -655,9 +665,11 @@
                                    (string-listp (strip-cars assumptions-alist))
                                    (true-list-listp (strip-cdrs assumptions-alist)))
                               (symbol-listp extra-rules)
+                              (symbol-listp extra-assumption-rules)
                               (symbol-listp extra-lift-rules)
                               (symbol-listp extra-proof-rules)
                               (symbol-listp remove-rules)
+                              (symbol-listp remove-assumption-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
                               (acl2::normalize-xors-optionp normalize-xors)
@@ -691,8 +703,8 @@
           (test-function-core function-name parsed-executable
                               :none ; todo: some way to pass in param-names?
                               (acl2::lookup-equal function-name assumptions-alist)
-                              extra-rules extra-lift-rules extra-proof-rules
-                              remove-rules remove-lift-rules remove-proof-rules
+                              extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                              remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                               normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots position-independentp bvp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
@@ -702,8 +714,8 @@
          (- (cw "~%")) ; blank line as separator
          )
       (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
-                             extra-rules extra-lift-rules extra-proof-rules
-                             remove-rules remove-lift-rules remove-proof-rules
+                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                              tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
                              expected-failures
@@ -716,8 +728,8 @@
                           include-fns ; a list of strings (names of functions), or :all
                           exclude-fns ; a list of strings (names of functions)
                           assumptions
-                          extra-rules extra-lift-rules extra-proof-rules
-                          remove-rules remove-lift-rules remove-proof-rules
+                          extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                          remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                           normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                           tactics max-conflicts inputs-disjoint-from stack-slots position-independent
                           expected-failures
@@ -729,9 +741,11 @@
                           (string-listp exclude-fns)
                               ;; assumptions
                           (symbol-listp extra-rules)
+                          (symbol-listp extra-assumption-rules)
                           (symbol-listp extra-lift-rules)
                           (symbol-listp extra-proof-rules)
                           (symbol-listp remove-rules)
+                          (symbol-listp remove-assumption-rules)
                           (symbol-listp remove-lift-rules)
                           (symbol-listp remove-proof-rules)
                           (acl2::normalize-xors-optionp normalize-xors)
@@ -823,8 +837,8 @@
        ((mv erp result-alist state)
         (test-functions-fn-aux function-name-strings parsed-executable
                                assumption-alist
-                               extra-rules extra-lift-rules extra-proof-rules
-                               remove-rules remove-lift-rules remove-proof-rules
+                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                                normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                                tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
                                expected-failures
@@ -850,9 +864,11 @@
                           executable ; a string
                           &key
                           (extra-rules 'nil)
+                          (extra-assumption-rules 'nil)
                           (extra-lift-rules 'nil)
                           (extra-proof-rules 'nil)
                           (remove-rules 'nil)
+                          (remove-assumption-rules 'nil)
                           (remove-lift-rules 'nil)
                           (remove-proof-rules 'nil)
                           (normalize-xors 't)
@@ -876,9 +892,11 @@
                                               nil ; no need for excludes (just don't list the functions you don't want to test)
                                               ,assumptions  ; gets evaluated
                                               ,extra-rules  ; gets evaluated
+                                              ,extra-assumption-rules  ; gets evaluated
                                               ,extra-lift-rules ; gets evaluated
                                               ,extra-proof-rules ; gets evaluated
                                               ,remove-rules ; gets evaluated
+                                              ,remove-assumption-rules ; gets evaluated
                                               ,remove-lift-rules ; gets evaluated
                                               ,remove-proof-rules ; gets evaluated
                                               ',normalize-xors
@@ -901,9 +919,11 @@
                      (include ':all) ; names of functions (strings) to test, or can be :all
                      (exclude 'nil) ; names of functions (strings) to exclude from testing
                      (extra-rules 'nil)
+                     (extra-assumption-rules 'nil)
                      (extra-lift-rules 'nil)
                      (extra-proof-rules 'nil)
                      (remove-rules 'nil)
+                     (remove-assumption-rules 'nil)
                      (remove-lift-rules 'nil)
                      (remove-proof-rules 'nil)
                      (normalize-xors 't)
@@ -927,9 +947,11 @@
                                               ',exclude ; todo: evaluate?
                                               ,assumptions  ; gets evaluated
                                               ,extra-rules  ; gets evaluated
+                                              ,extra-assumption-rules  ; gets evaluated
                                               ,extra-lift-rules ; gets evaluated
                                               ,extra-proof-rules ; gets evaluated
                                               ,remove-rules ; gets evaluated
+                                              ,remove-assumption-rules ; gets evaluated
                                               ,remove-lift-rules ; gets evaluated
                                               ,remove-proof-rules ; gets evaluated
                                               ',normalize-xors
