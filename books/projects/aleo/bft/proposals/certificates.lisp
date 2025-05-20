@@ -827,3 +827,39 @@
         nil))
     (cert-list-orderedp (cdr certs)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk cert-sets-unequivp ((certs1 certificate-setp)
+                               (certs2 certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if two sets of certificates are unequivocal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check whether any two certificates from the two sets
+     (one from the first set, one from the second set)
+     have the same proposal if they have the same author and round.
+     This is a little weaker than requiring that
+     the two certificates are equal:
+     we allow the endorsers to differ.
+     The reason is that AleoBFT cannot prevent a faulty validator
+     from collecting more than a quorum of endorsements for a proposals
+     and then sending slightly different certificates to different validators,
+     where the certificates only differ in the endorsers.
+     AleoBFT achieves nonequivocation of proposals in certificates,
+     not of whole certificates."))
+  (forall (cert1 cert2)
+          (implies (and (set::in cert1 (certificate-set-fix certs2))
+                        (set::in cert2 (certificate-set-fix certs2))
+                        (equal (certificate->author cert1)
+                               (certificate->author cert2))
+                        (equal (certificate->round cert1)
+                               (certificate->round cert2)))
+                   (equal (certificate->proposal cert1)
+                          (certificate->proposal cert2))))
+
+  ///
+
+  (fty::deffixequiv-sk cert-sets-unequivp
+    :args ((certs1 certificate-setp) (certs2 certificate-setp))))
