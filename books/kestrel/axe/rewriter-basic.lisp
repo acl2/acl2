@@ -32,7 +32,7 @@
                       axe-evaluator-basic
                       basic
                       basic
-                      nil ; don't use SMT (but see rewriter-basic-smt.lisp)
+                      :smt nil ; don't use SMT (but see rewriter-basic-smt.lisp)
                       )
 
 ;dup

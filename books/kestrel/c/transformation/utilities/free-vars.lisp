@@ -556,8 +556,8 @@
     (param-declor-case
      paramdeclor
      :nonabstract (free-vars-declor paramdeclor.unwrap bound-vars)
-     :absdeclor (mv (free-vars-absdeclor paramdeclor.unwrap bound-vars)
-                    (ident-set-fix bound-vars))
+     :abstract (mv (free-vars-absdeclor paramdeclor.unwrap bound-vars)
+                   (ident-set-fix bound-vars))
      :none (mv nil (ident-set-fix bound-vars))
      :ambig (mv (raise "Unexpected ambiguous expression")
                 (ident-set-fix bound-vars)))

@@ -130,7 +130,8 @@
   (declare (xargs :guard t))
   (and (alistp options)
        (subsetp-eq (strip-cars options) '(;; :no-splitp ;whether to split into cases
-                                          :no-stp))))
+                                          :no-stp
+                                          :counterexample))))
 
 ;; Make a version of instantiate-hyp, etc that use the basic evaluator:
 ;; (make-instantiation-code-simple basic axe-evaluator-basic)
@@ -1777,9 +1778,9 @@
                        (mv :not-calling-stp state)
                      ;; Calling STP:
                      (prove-disjunction-with-stp literal-nodenums dag-array dag-len dag-parent-array case-designator print max-conflicts
-                                                      nil ;no counterexample (for now)
-                                                      nil ; don't print cex as signed
-                                                      state))
+                                                 (lookup-eq :counterexample options)
+                                                 nil ; don't print cex as signed
+                                                 state))
                    (if (eq *valid* result)
                        (prog2$ (cw "Proved case ~s0 with STP.~%" case-designator)
                                (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
@@ -2205,8 +2206,9 @@
                               (alistp hint))))
   (b* ((must-prove (lookup-eq :must-prove hint))
        (max-conflicts (if (assoc-eq :max-conflicts hint)
-                    (lookup-eq :max-conflicts hint)
-                  *default-stp-max-conflicts*))
+                          (lookup-eq :max-conflicts hint)
+                        *default-stp-max-conflicts*))
+       (counterexample (lookup-eq :counterexample hint))
        ;; Handle the :rules input:
        (rules (lookup-eq :rules hint))
        ((when (not (symbol-listp rules)))
@@ -2236,7 +2238,7 @@
                                       monitored-symbols
                                       nil ;interpreted-function-alist ;todo?
                                       print
-                                      nil ;; options
+                                      (acons :counterexample counterexample nil) ;; options
                                       state))
        ((when erp) (mv erp (list clause) state)) ; error (and no change to clause set)
        )

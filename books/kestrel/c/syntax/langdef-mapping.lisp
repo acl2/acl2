@@ -1068,7 +1068,7 @@
      The declarator must be for an object,
      which we map to an object declarator."))
   (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
-       ((when (param-declor-case paramdeclor :absdeclor))
+       ((when (param-declor-case paramdeclor :abstract))
         (reterr (msg "Unsupported parameter declarator ~x0 ~
                       with abstract declarator."
                      (param-declor-fix paramdeclor))))

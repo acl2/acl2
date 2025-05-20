@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function last.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,8 +27,8 @@
   :hints (("Goal" :in-theory (enable last))))
 
 (defthmd nth-of-len-minus-1-becomes-car-of-last
-  (equal (car (last lst))
-         (nth (+ -1 (len lst)) lst))
+  (equal (nth (+ -1 (len lst)) lst)
+         (car (last lst)))
   :hints (("Goal" :in-theory (enable last))))
 
 (theory-invariant (incompatible (:rewrite car-of-last-becomes-nth) (:rewrite nth-of-len-minus-1-becomes-car-of-last)))

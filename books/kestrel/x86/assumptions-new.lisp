@@ -282,6 +282,7 @@
                               state-var
                               base-var ; only used if relp
                               inputs
+                              type-assumptions-for-array-varsp
                               disjoint-chunk-addresses-and-lens
                               bvp
                               parsed-elf)
@@ -291,6 +292,7 @@
                               (symbolp state-var) ; todo: too strict?
                               (symbolp base-var)
                               (names-and-typesp inputs)
+                              (booleanp type-assumptions-for-array-varsp)
                               (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
                               (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
                               (booleanp bvp)
@@ -342,6 +344,7 @@
                                       '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                       stack-slots-needed
                                       disjoint-chunk-addresses-and-lens ; (acons text-offset (len (acl2::get-elf-code parsed-elf)) nil) ; todo: could there be extra zeros?
+                                      type-assumptions-for-array-varsp
                                       nil nil))))
     (mv nil
         (append ;; can't use this: not in normal form: (make-standard-state-assumptions-64-fn state-var) ; todo: put back, but these are untranslated!  should all the assumptions be generated untranslated (for presentation) and then translated?

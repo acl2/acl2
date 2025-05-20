@@ -59,5 +59,5 @@
                       axe-evaluator-x86
                       x86
                       x86
-                      t ; do use SMT
+                      :smt t ; do use SMT
                       )

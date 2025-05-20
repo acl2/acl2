@@ -215,7 +215,7 @@
 (defthy deftrans-theory-linear
   '((:linear c$::absdeclor-count-of-absdeclor-option-some->val)
     (:linear c$::absdeclor-count-of-dirabsdeclor-paren->inner)
-    (:linear c$::absdeclor-count-of-param-declor-absdeclor->unwrap)
+    (:linear c$::absdeclor-count-of-param-declor-abstract->unwrap)
     (:linear c$::absdeclor-option-count-of-tyname->decl?)
     (:linear c$::align-spec-count-of-decl-spec-align->spec)
     (:linear c$::align-spec-count-of-spec/qual-align->spec)
@@ -528,7 +528,7 @@
     (:type-prescription param-declon)
     (:type-prescription param-declon-count)
     (:type-prescription param-declon-list-count)
-    (:type-prescription param-declor-absdeclor)
+    (:type-prescription param-declor-abstract)
     (:type-prescription param-declor-count)
     (:type-prescription param-declor-nonabstract)
     (:type-prescription param-declor-none)
@@ -1349,7 +1349,7 @@
    `(param-declor-case
       paramdeclor
       :nonabstract (param-declor-nonabstract (,(cdr (assoc-eq 'declor names)) paramdeclor.unwrap ,@extra-args-names))
-      :absdeclor (param-declor-absdeclor (,(cdr (assoc-eq 'absdeclor names)) paramdeclor.unwrap ,@extra-args-names))
+      :abstract (param-declor-abstract (,(cdr (assoc-eq 'absdeclor names)) paramdeclor.unwrap ,@extra-args-names))
       :none (param-declor-none)
       :ambig (prog2$
                (raise "Misusage error: ~x0." (param-declor-fix paramdeclor))

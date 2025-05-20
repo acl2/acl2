@@ -3711,16 +3711,16 @@
                            :names-to-avoid gout-declor.names-to-avoid
                            :vartys gout-declor.vartys
                            :diffp gout-declor.diffp)))
-       :absdeclor (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
-                        (simpadd0-absdeclor paramdeclor.unwrap gin state)))
-                    (mv (param-declor-absdeclor new-absdeclor)
-                        (make-simpadd0-gout
-                         :events gout-absdeclor.events
-                         :thm-name nil
-                         :thm-index gout-absdeclor.thm-index
-                         :names-to-avoid gout-absdeclor.names-to-avoid
-                         :vartys gout-absdeclor.vartys
-                         :diffp gout-absdeclor.diffp)))
+       :abstract (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
+                       (simpadd0-absdeclor paramdeclor.unwrap gin state)))
+                   (mv (param-declor-abstract new-absdeclor)
+                       (make-simpadd0-gout
+                        :events gout-absdeclor.events
+                        :thm-name nil
+                        :thm-index gout-absdeclor.thm-index
+                        :names-to-avoid gout-absdeclor.names-to-avoid
+                        :vartys gout-absdeclor.vartys
+                        :diffp gout-absdeclor.diffp)))
        :none (mv (param-declor-none)
                  (make-simpadd0-gout
                   :events nil

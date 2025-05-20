@@ -2352,7 +2352,7 @@
        These are the three possibilities for what can follow
        the declaration specifiers in a parameter declaration."))
     (:nonabstract ((unwrap declor)))
-    (:absdeclor ((unwrap absdeclor)))
+    (:abstract ((unwrap absdeclor)))
     (:none ())
     (:ambig ((unwrap amb-declor/absdeclor)))
     :pred param-declorp

@@ -343,7 +343,15 @@
   (if (set::in (address-fix val) (committee-members commtt))
       (committee-member-stake val commtt)
     0)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled committee-validator-stake-to-committee-member-stake
+    (implies (set::in val (committee-members commtt))
+             (equal (committee-validator-stake val commtt)
+                    (committee-member-stake val commtt)))
+    :enable committee-member-stake))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -359,7 +367,19 @@
   (committee-members-stake (set::intersect (address-set-fix vals)
                                            (committee-members commtt))
                            commtt)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled committee-validators-stake-to-committee-members-stake
+    (implies (and (address-setp vals)
+                  (set::subset vals (committee-members commtt)))
+             (equal (committee-validators-stake vals commtt)
+                    (committee-members-stake vals commtt)))
+    :induct t
+    :enable (committee-members-stake
+             committee-validator-stake-to-committee-member-stake
+             set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
