@@ -64,10 +64,6 @@
 
   ///
 
-  (defret not-errorp-of-plus-value
-    (not (errorp resval))
-    :hyp (value-arithmeticp val))
-
   (defret valuep-of-plus-value
     (valuep resval)
     :hyp (value-arithmeticp val))
@@ -91,7 +87,15 @@
     (error (list :minus-mistype
                  :required :arithmetic
                  :supplied (value-fix val))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-minus-value
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (promote-type (type-of-value val))))
+    :hyp (value-arithmeticp val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -110,7 +114,15 @@
                  :supplied (value-fix val))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-bitnot-value
+    (equal (type-of-value resval)
+           (promote-type (type-of-value val)))
+    :hyp (value-integerp val)
+    :hints (("Goal" :in-theory (enable type-of-value-of-promote-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,7 +138,14 @@
     (error (list :lognot-mistype
                  :required :scalar
                  :supplied (value-fix val))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-lognot-value
+    (equal (type-of-value resval)
+           (type-sint))
+    :hyp (value-scalarp val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

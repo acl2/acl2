@@ -286,7 +286,6 @@
   (defruled valuep-of-convert-integer-value-from-schar-to-sint
     (implies (value-case val :schar)
              (valuep (convert-integer-value val (type-sint))))
-    :disable ((:e type-sint))
     :enable (integer-type-rangep
              integer-type-min
              integer-type-max
@@ -731,14 +730,22 @@
           ((integer-type-rangep mathint type) (value-integer mathint type))
           (t (error (list :out-of-range mathint (type-fix type))))))
   :guard-hints (("Goal" :in-theory (enable integer-type-rangep ifix)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-result-integer-value
+    (implies (not (errorp val))
+             (equal (type-of-value val)
+                    (type-fix type)))
+    :hyp (type-nonchar-integerp type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plus-integer-value ((val valuep))
   :guard (and (value-integerp val)
               (value-promoted-arithmeticp val))
-  :returns (resval value-resultp)
+  :returns (resval valuep)
   :short "Apply unary @('+') to an integer value [C17:6.5.3.3/2]."
   :long
   (xdoc::topstring
@@ -755,12 +762,6 @@
   :hooks (:fix)
 
   ///
-
-  (defret not-errorp-of-plus-integer-value
-    (not (errorp resval)))
-
-  (defret valuep-of-plus-integer-value
-    (valuep resval))
 
   (defret type-of-value-of-plus-integer-value
     (equal (type-of-value resval)
@@ -789,7 +790,15 @@
        (resval (result-integer-value result (type-of-value val)))
        ((when (errorp resval)) (error (list :undefined-minus (value-fix val)))))
     resval)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-minus-integer-value
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-of-value val)))
+    :hyp (value-integerp val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -841,8 +850,8 @@
     "Because the result of the signed operation is always in range,
      and the unsigned operation never causes errors in general,
      this operation never causes errors.
-     So we prove an additional theorem saying that
-     this operation always returns a value.
+     So we prove an additional theorems saying that
+     this operation always returns a value (never an error).
      But we need a hypothesis implied by the guard for this to hold.
      We keep the @(':returns') type broader (i.e. @(tsee value-resultp))
      but unconditional, for consistency with other operations."))
@@ -851,10 +860,36 @@
        (resval (result-integer-value result (type-of-value val))))
     resval)
   :hooks (:fix)
+
   ///
 
   (defret valuep-of-bitnot-integer-value
     (valuep resval)
+    :hyp (value-integerp val)
+    :hints (("Goal" :in-theory (enable result-integer-value
+                                       integer-type-rangep
+                                       integer-type-max
+                                       integer-type-min
+                                       lognot
+                                       value-integerp
+                                       value-unsigned-integerp
+                                       value-signed-integerp
+                                       value-integer->get
+                                       (:e schar-min)
+                                       (:e schar-max)
+                                       (:e sshort-min)
+                                       (:e sshort-max)
+                                       (:e sint-min)
+                                       (:e sint-max)
+                                       (:e slong-min)
+                                       (:e slong-max)
+                                       (:e sllong-min)
+                                       (:e sllong-max)
+                                       ifix))))
+
+  (defret type-of-value-of-bitnot-integer-value
+    (equal (type-of-value resval)
+           (type-of-value val))
     :hyp (value-integerp val)
     :hints (("Goal" :in-theory (enable result-integer-value
                                        integer-type-rangep
@@ -893,7 +928,13 @@
   (if (equal (value-integer->get val) 0)
       (value-sint 1)
     (value-sint 0))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-lognot-integer-value
+    (equal (type-of-value resval)
+           (type-sint))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

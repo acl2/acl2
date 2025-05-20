@@ -30,7 +30,7 @@
 
 (define plus-arithmetic-value ((val valuep))
   :guard (value-arithmeticp val)
-  :returns (resval value-resultp)
+  :returns (resval valuep)
   :short "Apply unary @('+') to an arithmetic value [C17:6.5.3.3/2]."
   :long
   (xdoc::topstring
@@ -48,12 +48,6 @@
   :hooks (:fix)
 
   ///
-
-  (defret not-errorp-of-plus-arithmetic-value
-    (not (errorp resval)))
-
-  (defret valuep-of-plus-arithmetic-value
-    (valuep resval))
 
   (defret type-of-value-of-plus-arithmetic-value
     (equal (type-of-value resval)
@@ -79,7 +73,18 @@
     (minus-integer-value val))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-minus-arithmetic-value
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (promote-type (type-of-value val))))
+    :hyp (value-arithmeticp val)
+    :hints (("Goal" :in-theory (enable value-arithmeticp
+                                       value-realp
+                                       type-of-value-of-promote-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
