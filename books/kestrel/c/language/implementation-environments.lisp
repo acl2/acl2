@@ -295,12 +295,7 @@
     :disable acl2::expt-is-weakly-increasing-for-base->-1)
 
   (defret schar-format->min-upper-bound
-    (<= min (if (and (equal (signed-format-kind
-                             (schar-format->signed schar-format))
-                            :twos-complement)
-                     (not (schar-format->trap schar-format)))
-                -128
-              -127))
+    (<= min -127)
     :rule-classes
     ((:linear
       :trigger-terms ((schar-format->min schar-format uchar-format))))))
@@ -393,14 +388,7 @@
     :rule-classes :type-prescription)
 
   (defret char-format->min-upper-bound
-    (<= min (if (char-format->signedp char-format)
-                (if (and (equal (signed-format-kind
-                                 (schar-format->signed schar-format))
-                                :twos-complement)
-                         (not (schar-format->trap schar-format)))
-                    -128
-                  -127)
-              0))
+    (<= min 0)
     :rule-classes
     ((:linear
       :trigger-terms
@@ -2003,16 +1991,7 @@
     :rule-classes :type-prescription)
 
   (defret ienv->schar-min-upper-bound
-    (<= min (if (and (equal (signed-format-kind
-                             (schar-format->signed
-                              (char+short+int+long+llong-format->schar
-                               (ienv->char+short+int+long+llong-format ienv))))
-                            :twos-complement)
-                     (not (schar-format->trap
-                           (char+short+int+long+llong-format->schar
-                            (ienv->char+short+int+long+llong-format ienv)))))
-                -128
-              -127))
+    (<= min -127)
     :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2068,21 +2047,7 @@
     :rule-classes :type-prescription)
 
   (defret ienv->char-min-upper-bound
-    (<= min (if (char-format->signedp
-                 (char+short+int+long+llong-format->char
-                  (ienv->char+short+int+long+llong-format ienv)))
-                (if (and
-                     (equal (signed-format-kind
-                             (schar-format->signed
-                              (char+short+int+long+llong-format->schar
-                               (ienv->char+short+int+long+llong-format ienv))))
-                            :twos-complement)
-                     (not (schar-format->trap
-                           (char+short+int+long+llong-format->schar
-                            (ienv->char+short+int+long+llong-format ienv)))))
-                    -128
-                  -127)
-              0))
+    (<= min 0)
     :rule-classes ((:linear :trigger-terms ((ienv->char-min ienv))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
