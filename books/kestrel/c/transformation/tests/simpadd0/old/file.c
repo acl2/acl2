@@ -1,4 +1,4 @@
-int nosimp(int x) {
+int nosimp_int(int x) {
   int x1 = +x;
   int x2 = -x;
   int x3 = ~x;
