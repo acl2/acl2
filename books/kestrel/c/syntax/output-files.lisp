@@ -77,10 +77,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define output-files-process-tunits (tunits (desc msgp))
-  :returns erp
-  :short "Process the input translation unit ensemble."
-  (b* (((reterr))
+(define output-files-process-const/arg (arg
+                                        (options symbol-alistp)
+                                        (progp booleanp)
+                                        (wrld plist-worldp))
+  :returns (mv erp
+               (tunits transunit-ensemblep))
+  :short "Process the @(':const') or @('arg') input."
+  (b* (((reterr) (irr-transunit-ensemble))
+       (const-option (assoc-eq :const options))
+       ((erp tunits)
+        (if progp
+            (b* (((when const-option)
+                  (reterr (msg "The :CONST input must not be supplied ~
+                                to the programmatic interface."))))
+              (retok arg))
+          (b* (((unless const-option)
+                (reterr (msg "The :CONST input must be supplied, ~
+                              but it was not supplied.")))
+               (const (cdr const-option))
+               ((unless (symbolp const))
+                (reterr (msg "The :CONST input must be a symbol, ~
+                              but it is ~x0 instead."
+                             const)))
+               (tunits (acl2::constant-value const wrld)))
+            (retok tunits))))
+       (desc (if progp
+                 "the required (i.e. non-keyword-option) input"
+               (msg "the value of the ~x0 named constant, ~
+                       specified by the :CONST input,"
+                    (cdr const-option))))
        ((unless (transunit-ensemblep tunits))
         (reterr (msg "~@0 must be a translation unit ensemble, ~
                       but it is ~x1 instead."
@@ -89,7 +115,7 @@
         (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
                       is ambiguous."
                      tunits desc))))
-    (retok))
+    (retok tunits))
 
   ///
 
@@ -229,31 +255,7 @@
                      inputs-desc
                      extra)))
        ;; Process :CONST or ARG input.
-       (const-option (assoc-eq :const options))
-       ((erp tunits)
-        (b* (((reterr) (irr-transunit-ensemble)))
-          (if progp
-              (b* (((when const-option)
-                    (reterr (msg "The :CONST input must not be supplied ~
-                                  to the programmatic interface."))))
-                (retok arg))
-            (b* (((unless const-option)
-                  (reterr (msg "The :CONST input must be supplied, ~
-                                but it was not supplied.")))
-                 (const (cdr const-option))
-                 ((unless (symbolp const))
-                  (reterr (msg "The :CONST input must be a symbol, ~
-                                but it is ~x0 instead."
-                               const)))
-                 (tunits (acl2::constant-value const wrld)))
-              (retok tunits)))))
-       ((erp) (output-files-process-tunits
-               tunits
-               (if progp
-                   "the required (i.e. non-keyword-option) input"
-                 (msg "the value of the ~x0 named constant, ~
-                       specified by the :CONST input,"
-                      (cdr const-option)))))
+       ((erp tunits) (output-files-process-const/arg arg options progp wrld))
        ;; Process :PATH input.
        (path-option (assoc-eq :path options))
        (path (if path-option
