@@ -1234,6 +1234,7 @@
                               (:e c::expr-unary)
                               (:e c::type-kind)
                               (:e c::promote-type)
+                              (:e c::type-nonchar-integerp)
                               (:e c::type-sint)
                               (:e member-equal))
                  :use (,arg-thm-name
@@ -1315,12 +1316,7 @@
                     (not (c::errorp old-result))
                     (not (c::errorp new-arg-result))
                     (equal old-arg-value new-arg-value)
-                    (member-equal (c::type-kind type)
-                                  '(:uchar :schar
-                                    :ushort :sshort
-                                    :uint :sint
-                                    :ulong :slong
-                                    :ullong :sllong)))
+                    (c::type-nonchar-integerp type))
                (and (not (c::errorp new-result))
                     (equal old-value new-value)
                     (equal (c::type-of-value old-value)
@@ -1339,7 +1335,8 @@
              c::value-integerp
              c::value-signed-integerp
              c::value-unsigned-integerp
-             c::lognot-value-lemma))
+             c::lognot-value-lemma
+             c::value-kind-not-array-when-value-integerp))
 
   (defruled simpadd0-expr-unary-support-lemma-2
     (implies (c::errorp (c::exec-expr-pure arg compst))
@@ -1432,6 +1429,9 @@
                               (:e c::binop-purep)
                               (:e c::binop-strictp)
                               (:e c::expr-binary)
+                              (:e c::type-nonchar-integerp)
+                              (:e c::promote-type)
+                              (:e c::uaconvert-types)
                               (:e c::type-sint))
                  :use (,arg1-thm-name
                        ,arg2-thm-name
@@ -1489,7 +1489,9 @@
          (old-result (c::exec-expr-pure old compst))
          (new-result (c::exec-expr-pure new compst))
          (old-value (c::expr-value->value old-result))
-         (new-value (c::expr-value->value new-result)))
+         (new-value (c::expr-value->value new-result))
+         (type1 (c::type-of-value old-arg1-value))
+         (type2 (c::type-of-value old-arg2-value)))
       (implies (and (c::binop-purep op)
                     (c::binop-strictp op)
                     (not (c::errorp old-result))
@@ -1497,11 +1499,19 @@
                     (not (c::errorp new-arg2-result))
                     (equal old-arg1-value new-arg1-value)
                     (equal old-arg2-value new-arg2-value)
-                    (equal (c::type-of-value old-arg1-value) (c::type-sint))
-                    (equal (c::type-of-value old-arg2-value) (c::type-sint)))
+                    (c::type-nonchar-integerp type1)
+                    (c::type-nonchar-integerp type2))
                (and (not (c::errorp new-result))
                     (equal old-value new-value)
-                    (equal (c::type-of-value old-value) (c::type-sint)))))
+                    (equal (c::type-of-value old-value)
+                           (cond ((member-equal (c::binop-kind op)
+                                                '(:mul :div :rem :add :sub
+                                                  :bitand :bitxor :bitior))
+                                  (c::uaconvert-types type1 type2))
+                                 ((member-equal (c::binop-kind op)
+                                                '(:shl :shr))
+                                  (c::promote-type type1))
+                                 (t (c::type-sint)))))))
     :expand ((c::exec-expr-pure (c::expr-binary op old-arg1 old-arg2) compst)
              (c::exec-expr-pure (c::expr-binary op new-arg1 new-arg2) compst))
     :disable ((:e c::type-sint))
@@ -1510,8 +1520,7 @@
              c::exec-binary-strict-pure
              c::eval-binary-strict-pure
              c::apconvert-expr-value-when-not-array
-             c::uaconvert-types
-             c::promote-type))
+             c::value-kind-not-array-when-value-integerp))
 
   (defruled simpadd0-expr-binary-support-lemma-2
     (implies (and (c::binop-strictp op)
