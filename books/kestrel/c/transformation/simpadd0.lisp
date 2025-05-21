@@ -1405,8 +1405,6 @@
        (diffp (or arg1-diffp arg2-diffp simpp))
        ((unless (and arg1-thm-name
                      arg2-thm-name
-                     (type-case (expr-type arg1) :sint)
-                     (type-case (expr-type arg2) :sint)
                      (member-eq (binop-kind op)
                                 '(:mul :div :rem :add :sub :shl :shr
                                   :lt :gt :le :ge :eq :ne
@@ -1425,6 +1423,7 @@
                               (:e c::iconst)
                               (:e c::const-int)
                               (:e c::expr-const)
+                              (:e c::binop-kind)
                               (:e c::binop-add)
                               (:e c::binop-purep)
                               (:e c::binop-strictp)
@@ -1432,7 +1431,8 @@
                               (:e c::type-nonchar-integerp)
                               (:e c::promote-type)
                               (:e c::uaconvert-types)
-                              (:e c::type-sint))
+                              (:e c::type-sint)
+                              (:e member-equal))
                  :use (,arg1-thm-name
                        ,arg2-thm-name
                        (:instance
