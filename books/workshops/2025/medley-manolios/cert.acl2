@@ -15,4 +15,6 @@
 (set-acl2s-property-table-proof-timeout 100000)
 (set-defunc-timeout 100000)
 
-; cert-flags: ? t :ttags :all
+;; The book automata.lisp has a rewrite stack overflow if
+;; useless-runes are excluded:
+; cert-flags: ? t :ttags :all :useless-runes nil
