@@ -1600,7 +1600,6 @@
        (stmt (stmt-return expr?))
        (stmt-new (stmt-return expr?-new))
        ((unless (and expr?
-                     (type-case (expr-type expr?) :sint)
                      expr?-thm-name))
         (mv stmt-new
             (make-simpadd0-gout
@@ -1725,7 +1724,8 @@
   (b* (((simpadd0-gin gin) gin)
        (item (block-item-stmt stmt))
        (item-new (block-item-stmt stmt-new))
-       ((unless stmt-thm-name)
+       ((unless (and stmt-thm-name
+                     (type-case (block-item-type item) :sint)))
         (mv item-new
             (make-simpadd0-gout :events stmt-events
                                 :thm-name nil
