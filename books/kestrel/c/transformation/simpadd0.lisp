@@ -1836,8 +1836,7 @@
   (b* (((simpadd0-gin gin) gin)
        (items (list (block-item-fix item)))
        (items-new (list (block-item-fix item-new)))
-       ((unless (and item-thm-name
-                     (type-case (block-item-type item) :sint)))
+       ((unless item-thm-name)
         (mv items-new
             (make-simpadd0-gout :events item-events
                                 :thm-name nil
@@ -4543,7 +4542,8 @@
                     gout-declor.diffp
                     gout-decls.diffp
                     gout-body.diffp)))
-       ((unless gout-body.thm-name)
+       ((unless (and gout-body.thm-name
+                     (type-case (block-item-list-type items) :sint)))
         (mv new-fundef gout-no-thm))
        ((unless (fundef-formalp fundef))
         (mv new-fundef gout-no-thm))
