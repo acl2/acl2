@@ -106,7 +106,7 @@
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
-      :nonabstract (omap::update (declor->ident paramdecl.declor.unwrap)
+      :nonabstract (omap::update (declor->ident paramdecl.declor.declor)
                                  (param-declon-fix paramdecl)
                                  nil)
       :otherwise nil)))

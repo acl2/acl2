@@ -3414,7 +3414,7 @@
       (param-declor-case
        paramdeclor
        :nonabstract (b* (((mv new-declor (simpadd0-gout gout-declor))
-                          (simpadd0-declor paramdeclor.unwrap gin state)))
+                          (simpadd0-declor paramdeclor.declor gin state)))
                       (mv (param-declor-nonabstract new-declor)
                           (make-simpadd0-gout
                            :events gout-declor.events
