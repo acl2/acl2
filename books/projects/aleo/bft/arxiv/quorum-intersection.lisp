@@ -119,7 +119,7 @@
    (xdoc::@[]
     "S(B) \\geq n - f")
    (xdoc::p
-    "Furthermore, since both @($a$) and @($b$) are subsets of the committee,
+    "Furthermore, since both @($A$) and @($B$) are subsets of the committee,
      their union is also a subset of the committe,
      and thus the stake of the union is bounded by
      the committee's total stake,
@@ -130,7 +130,7 @@
     "This fact is proved as a local lemma,
      which fires as a rewrite rule in the proof of the main theorem.")
    (xdoc::p
-    "We start from the previously proved (in @(tsee committee-member-stake))
+    "We start from the previously proved (in @(tsee committee-members-stake))
      fact that")
    (xdoc::@[]
     "S(A \\cup B) = S(A) + S(B) - S(A \\cap B)")

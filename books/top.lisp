@@ -368,6 +368,9 @@ book that depends on Glucose being installed.</p>")
 
 (include-book "std/util/defretgen" :dir :system)
 
+(include-book "demos/divp-by-casting" :dir :system)
+(include-book "demos/majority-vote" :dir :system)
+
 (include-book "system/top" :dir :system)
 ; Books from books/system/ that are not included by including books/system/top
 ; (see comments near the top of books/system/top.lisp):

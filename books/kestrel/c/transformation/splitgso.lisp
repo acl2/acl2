@@ -13,12 +13,12 @@
 
 (include-book "std/system/constant-value" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
+(include-book "kestrel/fty/deffold-map" :dir :system)
 (include-book "kestrel/fty/string-option" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
 (include-book "../syntax/validation-information")
-(include-book "deftrans")
 (include-book "utilities/collect-idents")
 (include-book "utilities/fresh-ident")
 
@@ -869,354 +869,88 @@
 ;;   expressions are currently considered illegal. In the future, we should try
 ;;   to extract/resolve the left expression of the member access and handle it
 ;;   appropriately.
-(encapsulate ()
-  (local (xdoc::set-default-parents splitgso-implementation))
-
-  (deftrans replace-field-access
-    :parents (splitgso-implementation)
-    :extra-args
-    ((original identp)
-     (linkage c$::linkagep)
-     (new1 identp)
-     (new2 identp)
-     (split-members ident-listp))
-    :expr
-    (lambda (expr original linkage new1 new2 split-members)
-      (expr-case
-        expr
-        :ident (b* (((unless (equal expr.ident original))
-                     (expr-fix expr))
-                    (ident-linkage
-                      (c$::var-info->linkage
-                        (c$::coerce-var-info expr.info)))
-                    (- (and (equal linkage ident-linkage)
-                            (raise "Global struct object ~x0 occurs in illegal
-                                    expression."
-                                   original))))
-                 (expr-fix expr))
-        :const (expr-fix expr)
-        :string (expr-fix expr)
-        :paren (expr-paren (replace-field-access-expr
-                             expr.inner
-                             original
-                             linkage
-                             new1
-                             new2
-                             split-members))
-        :gensel (make-expr-gensel
-                  :control (replace-field-access-expr
-                             expr.control
-                             original
-                             linkage
-                             new1
-                             new2
-                             split-members)
-                  :assocs (replace-field-access-genassoc-list
-                            expr.assocs
-                            original
-                            linkage
-                            new1
-                            new2
-                            split-members))
-        :arrsub (make-expr-arrsub
-                  :arg1 (replace-field-access-expr
-                          expr.arg1
-                          original
-                          linkage
-                          new1
-                          new2
-                          split-members)
-                  :arg2 (replace-field-access-expr
-                          expr.arg2
-                          original
-                          linkage
-                          new1
-                          new2
-                          split-members))
-        :funcall (make-expr-funcall
-                   :fun (replace-field-access-expr
-                          expr.fun
-                          original
-                          linkage
-                          new1
-                          new2
-                          split-members)
-                   :args (replace-field-access-expr-list
-                           expr.args
-                           original
-                           linkage
-                           new1
-                           new2
-                           split-members))
-        :member (b* ((match
-                       (expr-case
-                         expr.arg
-                         :ident (b* (((unless (equal expr.arg.ident original))
-                                      nil)
-                                     (ident-linkage
-                                       (c$::var-info->linkage
-                                         (c$::coerce-var-info expr.arg.info))))
-                                  (equal linkage ident-linkage))
-                         :otherwise nil))
-                     ((unless match)
-                      (make-expr-member
-                        :arg (replace-field-access-expr
-                               expr.arg
-                               original
-                               linkage
-                               new1
-                               new2
-                               split-members)
-                        :name expr.name)))
-                  (make-expr-member
-                    :arg (c$::make-expr-ident
-                           :ident (if (member-equal expr.name split-members)
-                                      new2
-                                    new1)
-                           :info nil)
-                    :name expr.name))
-        :memberp (make-expr-memberp
-                   :arg (replace-field-access-expr
-                          expr.arg
-                          original
-                          linkage
-                          new1
-                          new2
-                          split-members)
-                   :name expr.name)
-        :complit (make-expr-complit
-                   :type (replace-field-access-tyname
-                           expr.type
-                           original
-                           linkage
-                           new1
-                           new2
-                           split-members)
-                   :elems (replace-field-access-desiniter-list
-                            expr.elems
-                            original
-                            linkage
-                            new1
-                            new2
-                            split-members)
-                   :final-comma expr.final-comma)
-        ;; TODO: factor out member expr matching
-        :unary (if (and (or (equal expr.op (c$::unop-address))
-                            (equal expr.op (c$::unop-sizeof)))
-                        (expr-case
-                          expr.arg
-                          :member (expr-case
-                                    expr.arg
-                                    :ident (b* (((unless (equal expr.arg.ident original))
-                                                 nil)
-                                                (ident-linkage
-                                                  (c$::var-info->linkage
-                                                    (c$::coerce-var-info expr.arg.info))))
-                                             (equal linkage ident-linkage))
-                                    :otherwise nil)
-                          :otherwise nil))
-                   (raise "Global struct object ~x0 occurs in illegal
-                           expression."
-                          original)
-                 (make-expr-unary
-                   :op expr.op
-                   :arg (replace-field-access-expr
-                          expr.arg
-                          original
-                          linkage
-                          new1
-                          new2
-                          split-members)
-                   :info nil))
-        :sizeof (expr-sizeof (replace-field-access-tyname
-                               expr.type
-                               original
-                               linkage
-                               new1
-                               new2
-                               split-members))
-        :sizeof-ambig (prog2$
-                        (raise "Misusage error: ~x0." (expr-fix expr))
-                        (expr-fix expr))
-        :alignof (make-expr-alignof :type (replace-field-access-tyname
-                                            expr.type
-                                            original
-                                            linkage
-                                            new1
-                                            new2
-                                            split-members)
-                                    :uscores expr.uscores)
-        :cast (make-expr-cast
-                :type (replace-field-access-tyname
-                        expr.type
-                        original
-                        linkage
-                        new1
-                        new2
-                        split-members)
-                :arg (replace-field-access-expr
-                       expr.arg
-                       original
-                       linkage
-                       new1
-                       new2
-                       split-members))
-        :binary (make-expr-binary
-                  :op expr.op
-                  :arg1 (replace-field-access-expr
-                          expr.arg1
-                          original
-                          linkage
-                          new1
-                          new2
-                          split-members)
-                  :arg2 (replace-field-access-expr
-                          expr.arg2
-                          original
-                          linkage
-                          new1
-                          new2
-                          split-members)
-                  :info expr.info)
-        :cond (make-expr-cond
-                :test (replace-field-access-expr
-                        expr.test
-                        original
-                        linkage
-                        new1
-                        new2
-                        split-members)
-                :then (replace-field-access-expr-option
-                        expr.then
-                        original
-                        linkage
-                        new1
-                        new2
-                        split-members)
-                :else (replace-field-access-expr
-                        expr.else
-                        original
-                        linkage
-                        new1
-                        new2
-                        split-members))
-        :comma (make-expr-comma
-                 :first (replace-field-access-expr
-                          expr.first
-                          original
-                          linkage
-                          new1
-                          new2
-                          split-members)
-                 :next (replace-field-access-expr
-                         expr.next
-                         original
-                         linkage
-                         new1
-                         new2
-                         split-members))
-        :cast/call-ambig (prog2$
-                           (raise "Misusage error: ~x0." (expr-fix expr))
-                           (expr-fix expr))
-        :cast/mul-ambig (prog2$
-                          (raise "Misusage error: ~x0." (expr-fix expr))
-                          (expr-fix expr))
-        :cast/add-ambig (prog2$
-                          (raise "Misusage error: ~x0." (expr-fix expr))
-                          (expr-fix expr))
-        :cast/sub-ambig (prog2$
-                          (raise "Misusage error: ~x0." (expr-fix expr))
-                          (expr-fix expr))
-        :cast/and-ambig (prog2$
-                          (raise "Misusage error: ~x0." (expr-fix expr))
-                          (expr-fix expr))
-        :stmt (expr-stmt (replace-field-access-block-item-list
-                           expr.items
-                           original
-                           linkage
-                           new1
-                           new2
-                           split-members))
-        :tycompat (make-expr-tycompat
-                    :type1 (replace-field-access-tyname
-                             expr.type1
-                             original
-                             linkage
-                             new1
-                             new2
-                             split-members)
-                    :type2 (replace-field-access-tyname
-                             expr.type2
-                             original
-                             linkage
-                             new1
-                             new2
-                             split-members))
-        :offsetof (make-expr-offsetof
-                    :type (replace-field-access-tyname
-                            expr.type
-                            original
-                            linkage
-                            new1
-                            new2
-                            split-members)
-                    :member (replace-field-access-member-designor
-                              expr.member
-                              original
-                              linkage
-                              new1
-                              new2
-                              split-members))
-        :va-arg (make-expr-va-arg
-                  :list (replace-field-access-expr
-                          expr.list
-                          original
-                          linkage
-                          new1
-                          new2
-                          split-members)
-                  :type (replace-field-access-tyname
-                          expr.type
-                          original
-                          linkage
-                          new1
-                          new2
-                          split-members))
-        :extension (expr-extension (replace-field-access-expr
-                                     expr.expr
-                                     original
-                                     linkage
-                                     new1
-                                     new2
-                                     split-members))))))
-
-(define replace-field-access-map
-  ((map filepath-transunit-mapp)
-   (original identp)
+(fty::deffold-map replace-field-access
+  :types #!c$(exprs/decls/stmts
+              fundef
+              extdecl
+              extdecl-list
+              transunit
+              filepath-transunit-map)
+  :extra-args
+  ((original identp)
    (linkage c$::linkagep)
    (new1 identp)
    (new2 identp)
    (split-members ident-listp))
-  :returns (map$ filepath-transunit-mapp)
-  (if (omap::emptyp map)
-      nil
-    (omap::update
-      (c$::filepath-fix (omap::head-key map))
-      (replace-field-access-transunit
-        (omap::head-val map)
-        original
-        linkage
-        new1
-        new2
-        split-members)
-      (replace-field-access-map
-        (omap::tail map)
-        original
-        linkage
-        new1
-        new2
-        split-members)))
-  :verify-guards :after-returns)
+  :parents (splitgso-implementation)
+  :override
+  ((c$::expr
+     :ident
+     (b* ((original (ident-fix original))
+          (linkage (c$::linkage-fix linkage))
+          ((unless (equal expr.ident original))
+           (expr-fix c$::expr))
+          (ident-linkage
+            (c$::var-info->linkage
+              (c$::coerce-var-info expr.info)))
+          (- (and (equal linkage ident-linkage)
+                  (raise "Global struct object ~x0 occurs in illegal
+                          expression."
+                         original))))
+       (expr-fix c$::expr)))
+   (c$::expr
+     :member
+     (b* ((original (ident-fix original))
+          (linkage (c$::linkage-fix linkage))
+          (split-members (c$::ident-list-fix split-members))
+          (match
+            (expr-case
+              expr.arg
+              :ident (b* (((unless (equal expr.arg.ident original))
+                           nil)
+                          (ident-linkage
+                            (c$::var-info->linkage
+                              (c$::coerce-var-info expr.arg.info))))
+                       (equal linkage ident-linkage))
+              :otherwise nil))
+          ((unless match)
+           (make-expr-member
+             :arg (expr-replace-field-access
+                    expr.arg original linkage new1 new2 split-members)
+             :name expr.name)))
+       (make-expr-member
+         :arg (c$::make-expr-ident
+                :ident (if (member-equal expr.name split-members)
+                           new2
+                         new1)
+                :info nil)
+         :name expr.name)))
+   (c$::expr
+     ;; TODO: factor out member expr matching
+     :unary
+     (if (and (or (equal expr.op (c$::unop-address))
+                  (equal expr.op (c$::unop-sizeof)))
+              (expr-case
+                expr.arg
+                :member (expr-case
+                          expr.arg
+                          :ident (b* ((original (ident-fix original))
+                                      (linkage (c$::linkage-fix linkage))
+                                      ((unless (equal expr.arg.ident original))
+                                       nil)
+                                      (ident-linkage
+                                        (c$::var-info->linkage
+                                          (c$::coerce-var-info expr.arg.info))))
+                                   (equal linkage ident-linkage))
+                          :otherwise nil)
+                :otherwise nil))
+         (raise "Global struct object ~x0 occurs in illegal expression."
+                original)
+       (make-expr-unary
+         :op expr.op
+         :arg (expr-replace-field-access
+                expr.arg original linkage new1 new2 split-members)
+         :info nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1284,7 +1018,7 @@
                 split-members
                 map))
              (map
-               (replace-field-access-map
+               (filepath-transunit-map-replace-field-access
                  map
                  orig-struct
                  linkage
@@ -1323,7 +1057,7 @@
           split-members
           tunit))
        (tunit
-         (replace-field-access-transunit
+         (transunit-replace-field-access
            tunit
            orig-struct
            linkage

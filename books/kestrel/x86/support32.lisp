@@ -2053,8 +2053,8 @@
   :hints (("Goal" :in-theory (enable ea-to-la))))
 
 (defthm fix-of-mv-nth-1-of-ea-to-la
-  (equal (fix (mv-nth '1 (ea-to-la$inline proc-mode eff-addr seg-reg nbytes x86)))
-         (mv-nth '1 (ea-to-la$inline proc-mode eff-addr seg-reg nbytes x86)))
+  (equal (fix (mv-nth '1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86)))
+         (mv-nth '1 (ea-to-la proc-mode eff-addr seg-reg nbytes x86)))
   :hints (("Goal" :in-theory (enable ea-to-la))))
 
 ;; (defthm read-of-ea-to-la-becomes-read-byte-from-segment
@@ -3149,7 +3149,7 @@
                 (app-view x86))
            (equal (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (xw fld index val x86) mem-ptr?))
                   (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la$inline
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la
                                                       x86isa::rml-size$inline
                                                       x86isa::ea-to-la-is-i48p-when-no-error)))))
 
@@ -3202,7 +3202,7 @@
                                                            segment-min-eff-addr32
                                                            segment-max-eff-addr32
                                                            rb)
-                                  (X86ISA::SEGMENT-BASE-AND-BOUNDS$INLINE)))))
+                                  (x86isa::segment-base-and-bounds)))))
 
 (defthm eff-addr-okp-of-xw-irrel
   (implies (and (not (equal :seg-hidden-attr fld))
@@ -3217,11 +3217,11 @@
 
 ;gen
 
-(defthm canonical-address-p$inline-of-n-minus-2 ;gen
+(defthm canonical-address-p-of-n-minus-2 ;gen
   (implies (and (natp n)
                 (< n (expt 2 32)))
-           (canonical-address-p$inline (+ -2 n)))
-  :hints (("Goal" :in-theory (enable canonical-address-p$inline signed-byte-p))))
+           (canonical-address-p (+ -2 n)))
+  :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p))))
 
 
 
@@ -3321,7 +3321,7 @@
                             n48
                             acl2::slice-too-high-is-0-new
                             x86isa::rml-size-becomes-rb
-                            canonical-address-p$inline
+                            canonical-address-p
                             signed-byte-p
                             (:e expt)
                             ifix
@@ -3366,7 +3366,7 @@
                                    rvm08
                                    n48
                                    acl2::slice-too-high-is-0-new
-                                   canonical-address-p$inline
+                                   canonical-address-p
                                    signed-byte-p
                                    (:e expt)
                                    ifix
@@ -3433,7 +3433,7 @@
                             rvm08
                             n48
                             acl2::slice-too-high-is-0-new
-                            canonical-address-p$inline
+                            canonical-address-p
                             signed-byte-p
                             (:e expt)
                             ifix
@@ -3641,7 +3641,7 @@
                   x86))
   :hints (("Goal" :in-theory (e/d (x86isa::rime-size$inline
                                    rb)
-                                  (x86isa::segment-base-and-bounds$inline)))))
+                                  (x86isa::segment-base-and-bounds)))))
 
 
 
@@ -3743,7 +3743,7 @@
                             n48
                             acl2::slice-too-high-is-0-new
                             x86isa::rml-size-becomes-rb
-                            canonical-address-p$inline
+                            canonical-address-p
                             signed-byte-p
                             (:e expt)
                             acl2::ash-0 ; why?
@@ -3802,7 +3802,7 @@
                             n48
                             acl2::slice-too-high-is-0-new
                             x86isa::rml-size-becomes-rb
-                            canonical-address-p$inline
+                            canonical-address-p
                             ;signed-byte-p
                             (:e expt)
                             ea-to-la
@@ -3859,7 +3859,7 @@
                             n48
                             ACL2::SLICE-TOO-HIGH-IS-0-NEW
                             x86isa::rml-size-becomes-rb
-                            CANONICAL-ADDRESS-P$INLINE
+                            CANONICAL-ADDRESS-P
                             ;SIGNED-BYTE-P
                             (:e expt)
                             ea-to-la
@@ -3914,7 +3914,7 @@
                             n48
                             ACL2::SLICE-TOO-HIGH-IS-0-NEW
                             x86isa::rml-size-becomes-rb
-                            CANONICAL-ADDRESS-P$INLINE
+                            CANONICAL-ADDRESS-P
                             ;SIGNED-BYTE-P
                             (:e expt)
                             ea-to-la
@@ -3991,7 +3991,7 @@
                                      32-bit-segment-start-and-size
                                      n48
                                      acl2::slice-too-high-is-0-new
-                                     canonical-address-p$inline
+                                     canonical-address-p
                                      signed-byte-p
                                      (:e expt)
                                      ifix
@@ -4025,7 +4025,7 @@
                                      32-bit-segment-start-and-size
                                      n48
                                      acl2::slice-too-high-is-0-new
-                                     canonical-address-p$inline
+                                     canonical-address-p
                                      signed-byte-p
                                      (:e expt)
                                      ifix
@@ -4059,7 +4059,7 @@
                                      32-bit-segment-start-and-size
                                      n48
                                      acl2::slice-too-high-is-0-new
-                                     canonical-address-p$inline
+                                     canonical-address-p
                                      signed-byte-p
                                      (:e expt)
                                      ifix
@@ -4093,7 +4093,7 @@
                                      32-bit-segment-start-and-size
                                      n48
                                      acl2::slice-too-high-is-0-new
-                                     canonical-address-p$inline
+                                     canonical-address-p
                                      signed-byte-p
                                      (:e expt)
                                      ifix
@@ -4127,7 +4127,7 @@
                                      32-bit-segment-start-and-size
                                      n48
                                      acl2::slice-too-high-is-0-new
-                                     canonical-address-p$inline
+                                     canonical-address-p
                                      signed-byte-p
                                      (:e expt)
                                      ifix
@@ -4161,7 +4161,7 @@
                                    32-bit-segment-start-and-size
                                    n48
                                    acl2::slice-too-high-is-0-new
-                                   canonical-address-p$inline
+                                   canonical-address-p
                                    signed-byte-p
                                    (:e expt)
                                    ifix
@@ -4197,7 +4197,7 @@
                                    32-bit-segment-start-and-size
                                    n48
                                    acl2::slice-too-high-is-0-new
-                                   canonical-address-p$inline
+                                   canonical-address-p
                                    signed-byte-p
                                    (:e expt)
                                    ifix
@@ -4233,7 +4233,7 @@
                                    32-bit-segment-start-and-size
                                    n48
                                    acl2::slice-too-high-is-0-new
-                                   canonical-address-p$inline
+                                   canonical-address-p
                                    signed-byte-p
                                    (:e expt)
                                    ifix
@@ -4270,7 +4270,7 @@
                         32-bit-segment-start-and-size
                         n48
                         acl2::slice-too-high-is-0-new
-                        canonical-address-p$inline
+                        canonical-address-p
                         signed-byte-p
                         (:e expt)
                         ifix
@@ -4287,7 +4287,7 @@
             (+ -1 nbytes
                (mv-nth 1
                        (ea-to-la 1 eff-addr seg-reg nbytes x86)))))
-  :hints (("Goal" :in-theory (enable canonical-address-p$inline
+  :hints (("Goal" :in-theory (enable canonical-address-p
                                      signed-byte-p
                                      (:e expt)
                                      ifix
@@ -4365,7 +4365,7 @@
                             n48
                             acl2::slice-too-high-is-0-new
 ;wml-size-becomes-wb
-                            canonical-address-p$inline
+                            canonical-address-p
                             signed-byte-p
                             (:e expt)
                             ifix

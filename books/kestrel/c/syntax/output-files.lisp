@@ -77,10 +77,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define output-files-process-tunits (tunits (desc msgp))
-  :returns erp
-  :short "Process the input translation unit ensemble."
-  (b* (((reterr))
+(define output-files-process-const/arg (arg
+                                        (options symbol-alistp)
+                                        (progp booleanp)
+                                        (wrld plist-worldp))
+  :returns (mv erp (tunits transunit-ensemblep))
+  :short "Process the @(':const') or @('arg') input."
+  (b* (((reterr) (irr-transunit-ensemble))
+       (const-option (assoc-eq :const options))
+       ((erp tunits)
+        (if progp
+            (b* (((when const-option)
+                  (reterr (msg "The :CONST input must not be supplied ~
+                                to the programmatic interface."))))
+              (retok arg))
+          (b* (((unless const-option)
+                (reterr (msg "The :CONST input must be supplied, ~
+                              but it was not supplied.")))
+               (const (cdr const-option))
+               ((unless (symbolp const))
+                (reterr (msg "The :CONST input must be a symbol, ~
+                              but it is ~x0 instead."
+                             const)))
+               (tunits (acl2::constant-value const wrld)))
+            (retok tunits))))
+       (desc (if progp
+                 "the required (i.e. non-keyword-option) input"
+               (msg "the value of the ~x0 named constant, ~
+                       specified by the :CONST input,"
+                    (cdr const-option))))
        ((unless (transunit-ensemblep tunits))
         (reterr (msg "~@0 must be a translation unit ensemble, ~
                       but it is ~x1 instead."
@@ -89,7 +114,7 @@
         (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
                       is ambiguous."
                      tunits desc))))
-    (retok))
+    (retok tunits))
 
   ///
 
@@ -104,6 +129,90 @@
   (in-theory
    (disable transunit-ensemblep-when-output-files-process-tunits
             transunit-ensemble-unambp-when-output-files-process-tunits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define output-files-process-path ((options symbol-alistp))
+  :returns (mv erp (path stringp))
+  :short "Process the @(':path') input."
+  (b* (((reterr) "")
+       (path-option (assoc-eq :path options))
+       (path (if path-option
+                 (cdr path-option)
+               "."))
+       ((unless (stringp path))
+        (reterr (msg "The :PATH input must be a string, ~
+                      but it is ~x0 instead."
+                     path)))
+       (path-chars (str::explode path))
+       ((unless (consp path-chars))
+        (reterr (msg "The :PATH input must be not empty, ~
+                      but it is the empty string instead.")))
+       (path-chars (if (and (consp (cdr path-chars))
+                            (eql (car (last path-chars)) #\/))
+                       (butlast path-chars 1)
+                     path-chars))
+       (path (str::implode path-chars)))
+    (retok path)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define output-files-process-printer-options ((options symbol-alistp))
+  :returns (mv erp
+               (indent-size posp)
+               (paren-nested-conds booleanp))
+  :short "Process the @(':printer-options') input."
+  (b* (((reterr) 1 nil)
+       (printer-options-option (assoc-eq :printer-options options))
+       (printer-options (if printer-options-option
+                            (cdr printer-options-option)
+                          nil))
+       ((unless (keyword-value-listp printer-options))
+        (reterr (msg "The :PRINTER-OPTIONS input must be ~
+                      a value-keyword list, ~
+                      but it is ~x0 instead."
+                     printer-options)))
+       (printer-options-alist (keyword-value-list-to-alist printer-options))
+       (printer-options-keywords (strip-cars printer-options-alist))
+       ((unless (no-duplicatesp-eq printer-options-keywords))
+        (reterr (msg "The list of keywords in the :PRINTER-OPTIONS input ~
+                      must have no duplicates, ~
+                      but the supplied :PRINTER-OPTIONS input ~x0 ~
+                      violates that requirement."
+                     printer-options)))
+       ((unless (subsetp-eq printer-options-keywords
+                            *output-files-printer-options*))
+        (reterr (msg "The list of keywords in the :PRINTER-OPTIONS input ~
+                      must be among ~&0, ~
+                      but the supplied :PRINTER-OPTIONS input ~x0 ~
+                      violates that requirement."
+                     *output-files-printer-options*
+                     printer-options)))
+       ;; Process :INDENTATION-SIZE sub-input.
+       (indent-size-option (assoc-eq :indentation-size
+                                     printer-options-alist))
+       (indent-size (if indent-size-option
+                        (cdr indent-size-option)
+                      2))
+       ((unless (posp indent-size))
+        (reterr (msg "The :INDENTATION-LEVEL option ~
+                      of the :PRINTER-OPTIONS input ~
+                      must be a positive integer, ~
+                      but it is ~x0 instead."
+                     indent-size)))
+       ;; Process :PARENTHESIZE-NESTED-CONDITIONALS input.
+       (paren-nested-conds-option (assoc-eq :parenthesize-nested-conditional
+                                            printer-options-alist))
+       (paren-nested-conds (if paren-nested-conds-option
+                               (cdr paren-nested-conds-option)
+                             nil))
+       ((unless (booleanp paren-nested-conds))
+        (reterr (msg "The :PARENTHESIZE-NESTED-CONDITIONALS option ~
+                      of the :PRINTER-OPTIONS input ~
+                      must be a boolean, ~
+                      but it is ~x0 instead."
+                     paren-nested-conds))))
+    (retok indent-size paren-nested-conds)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -169,100 +278,11 @@
                       but instead the extra inputs ~x1 were supplied."
                      inputs-desc
                      extra)))
-       ;; Process :CONST or ARG input.
-       (const-option (assoc-eq :const options))
-       ((erp tunits)
-        (b* (((reterr) (irr-transunit-ensemble)))
-          (if progp
-              (b* (((when const-option)
-                    (reterr (msg "The :CONST input must not be supplied ~
-                                  to the programmatic interface."))))
-                (retok arg))
-            (b* (((unless const-option)
-                  (reterr (msg "The :CONST input must be supplied, ~
-                                but it was not supplied.")))
-                 (const (cdr const-option))
-                 ((unless (symbolp const))
-                  (reterr (msg "The :CONST input must be a symbol, ~
-                                but it is ~x0 instead."
-                               const)))
-                 (tunits (acl2::constant-value const wrld)))
-              (retok tunits)))))
-       ((erp) (output-files-process-tunits
-               tunits
-               (if progp
-                   "the required (i.e. non-keyword-option) input"
-                 (msg "the value of the ~x0 named constant, ~
-                       specified by the :CONST input,"
-                      (cdr const-option)))))
-       ;; Process :PATH input.
-       (path-option (assoc-eq :path options))
-       (path (if path-option
-                 (cdr path-option)
-               "."))
-       ((unless (stringp path))
-        (reterr (msg "The :PATH input must be a string, ~
-                      but it is ~x0 instead."
-                     path)))
-       (path-chars (str::explode path))
-       ((unless (consp path-chars))
-        (reterr (msg "The :PATH input must be not empty, ~
-                      but it is the empty string instead.")))
-       (path-chars (if (and (consp (cdr path-chars))
-                            (eql (car (last path-chars)) #\/))
-                       (butlast path-chars 1)
-                     path-chars))
-       (path (str::implode path-chars))
-       ;; Process :PRINTER-OPTIONS input.
-       (printer-options-option (assoc-eq :printer-options options))
-       (printer-options (if printer-options-option
-                            (cdr printer-options-option)
-                          nil))
-       ((unless (keyword-value-listp printer-options))
-        (reterr (msg "The :PRINTER-OPTIONS input must be ~
-                      a value-keyword list, ~
-                      but it is ~x0 instead."
-                     printer-options)))
-       (printer-options-alist (keyword-value-list-to-alist printer-options))
-       (printer-options-keywords (strip-cars printer-options-alist))
-       ((unless (no-duplicatesp-eq printer-options-keywords))
-        (reterr (msg "The list of keywords in the :PRINTER-OPTIONS input ~
-                      must have no duplicates, ~
-                      but the supplied :PRINTER-OPTIONS input ~x0 ~
-                      violates that requirement."
-                     printer-options)))
-       ((unless (subsetp-eq printer-options-keywords
-                            *output-files-printer-options*))
-        (reterr (msg "The list of keywords in the :PRINTER-OPTIONS input ~
-                      must be among ~&0, ~
-                      but the supplied :PRINTER-OPTIONS input ~x0 ~
-                      violates that requirement."
-                     *output-files-printer-options*
-                     printer-options)))
-       ;; Process :INDENTATION-SIZE sub-input.
-       (indent-size-option (assoc-eq :indentation-size
-                                     printer-options-alist))
-       (indent-size (if indent-size-option
-                        (cdr indent-size-option)
-                      2))
-       ((unless (posp indent-size))
-        (reterr (msg "The :INDENTATION-LEVEL option ~
-                      of the :PRINTER-OPTIONS input ~
-                      must be a positive integer, ~
-                      but it is ~x0 instead."
-                     indent-size)))
-       ;; Process :PARENTHESIZE-NESTED-CONDITIONALS input.
-       (paren-nested-conds-option (assoc-eq :parenthesize-nested-conditional
-                                            printer-options-alist))
-       (paren-nested-conds (if paren-nested-conds-option
-                               (cdr paren-nested-conds-option)
-                             nil))
-       ((unless (booleanp paren-nested-conds))
-        (reterr (msg "The :PARENTHESIZE-NESTED-CONDITIONALS option ~
-                      of the :PRINTER-OPTIONS input ~
-                      must be a boolean, ~
-                      but it is ~x0 instead."
-                     paren-nested-conds))))
+       ;; Process the inputs.
+       ((erp tunits) (output-files-process-const/arg arg options progp wrld))
+       ((erp path) (output-files-process-path options))
+       ((erp indent-size paren-nested-conds)
+        (output-files-process-printer-options options)))
     (retok tunits
            path
            indent-size

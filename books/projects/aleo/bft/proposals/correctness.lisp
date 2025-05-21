@@ -39,6 +39,9 @@
 (include-book "author-round-pairs-in-validators")
 (include-book "unequivocal-signed-proposals")
 (include-book "fault-tolerance")
+(include-book "quorum-intersection")
+(include-book "nonforking-blockchains-def-and-init")
+(include-book "same-committees-def-and-implied")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,6 +83,9 @@
                     signed-in-signer
                     author-round-pairs-in-validators
                     unequivocal-signed-proposals
-                    fault-tolerance))
+                    fault-tolerance
+                    quorum-intersection
+                    nonforking-blockchains-def-and-init
+                    same-committees-def-and-implied))
 
 ; TODO: continue
