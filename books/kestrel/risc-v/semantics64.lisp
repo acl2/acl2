@@ -1017,7 +1017,7 @@
                      (rs2 ubyte5p)
                      (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('SLLW') instruction."
+  :short "Semantics of the @('SLLW') instruction [ISA:4.2.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1043,7 +1043,7 @@
                      (rs2 ubyte5p)
                      (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('SRLW') instruction."
+  :short "Semantics of the @('SRLW') instruction [ISA:4.2.2]."
   :long
   (xdoc::topstring
    (xdoc::p
