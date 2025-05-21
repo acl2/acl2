@@ -518,9 +518,10 @@
               (raise "Internal error: non-singleton product ~x0." prods))
              (prod (car prods)))
           (deffold-map-gen-sum-case
-            type fix prod suffix targets extra-args fty-table))))
+            type fix prod suffix targets extra-args fty-table)))
+       (extra-args-names (deffold-map-extra-args-to-names extra-args)))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
-       (declare (ignorable ,type))
+       (declare (ignorable ,type ,@extra-args-names))
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body
@@ -583,9 +584,10 @@
              (cases (deffold-map-gen-sum-cases
                       type fix prods suffix
                       targets extra-args overrides fty-table)))
-          `(,type-case ,type ,@cases))))
+          `(,type-case ,type ,@cases)))
+       (extra-args-names (deffold-map-extra-args-to-names extra-args)))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
-       (declare (ignorable ,type))
+       (declare (ignorable ,type ,@extra-args-names))
        :returns (result ,recog)
        :parents (,(deffold-map-gen-topic-name suffix))
        ,body

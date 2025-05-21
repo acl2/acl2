@@ -22,7 +22,6 @@
 (include-book "../language/values")
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/langdef-mapping")
-(include-book "deftrans")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -562,6 +561,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: rewrite as a map?
 (defines const-prop-exprs/decls/stmts
   (define const-prop-expr
     ((expr exprp)
@@ -1889,7 +1889,7 @@
           env))
     :measure (block-item-list-count items))
 
-  :hints (("Goal" :in-theory '(deftrans-measure-theory)))
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

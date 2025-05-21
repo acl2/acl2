@@ -27,7 +27,7 @@
   ;; TODO: transformation should define the const
   ;; TODO: transformation should take strings, not idents
   (defconst *new*
-    (rename-transunit-ensemble *old*
+    (transunit-ensemble-rename *old*
                                (acons (c$::ident "main") (c$::ident "entry")
                                       (acons (c$::ident "x") (c$::ident "y")
                                              nil))))

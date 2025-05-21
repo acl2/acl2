@@ -16,8 +16,9 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "kestrel/fty/deffold-map" :dir :system)
+
 (include-book "../syntax/abstract-syntax-operations")
-(include-book "deftrans")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -68,115 +69,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines rename-fn-funcall-fun
-  (define rename-fn-funcall-fun
-    ((expr exprp)
-     (old-fn identp)
-     (new-fn identp))
-    :short "Rename a function within a @('funcall') function expression."
-    :returns (new-expr exprp)
-    (expr-case
-     expr
-     :ident (if (equal expr.ident old-fn)
-                (make-expr-ident :ident new-fn :info nil)
-              (expr-fix expr))
-     :paren (expr-paren (rename-fn-funcall-fun expr.inner old-fn new-fn))
-     :gensel
-     (make-expr-gensel
-       :control expr.control
-       :assocs (rename-fn-funcall-fun-genassoc-list expr.assocs old-fn new-fn))
-     :cast (make-expr-cast :type expr.type
-                           :arg (rename-fn-funcall-fun expr.arg old-fn new-fn))
-     :otherwise (expr-fix expr))
-    :measure (expr-count expr))
-
-  (define rename-fn-funcall-fun-genassoc
-    ((genassoc genassocp)
-     (old-fn identp)
-     (new-fn identp))
-    :returns (new-genassoc genassocp)
-    (genassoc-case
-     genassoc
-     :type (make-genassoc-type :type genassoc.type
-                               :expr (rename-fn-funcall-fun genassoc.expr old-fn new-fn))
-     :default (genassoc-default (rename-fn-funcall-fun genassoc.expr old-fn new-fn)))
-    :measure (genassoc-count genassoc))
-
-  (define rename-fn-funcall-fun-genassoc-list
-    ((genassocs genassoc-listp)
-     (old-fn identp)
-     (new-fn identp))
-    :returns (new-genassocs genassoc-listp)
-    (if (endp genassocs)
-        nil
-      (cons (rename-fn-funcall-fun-genassoc (first genassocs) old-fn new-fn)
-            (rename-fn-funcall-fun-genassoc-list (rest genassocs) old-fn new-fn)))
-    :measure (genassoc-list-count genassocs))
-
-  :hints (("Goal" :in-theory '(deftrans-measure-theory)))
-  :verify-guards :after-returns)
+;; This takes longer than one would hope. One issue is printing, which may be
+;; solved easily by deffold-map wrapping its events in a with-output.
+;; Another issue is that many "useless" maps are generated for types in the
+;; clique we do not care about (i.e. those whose maps are not actually mutually
+;; recursive with those we explicitly care about). Perhaps the :types argument
+;; could take members of a type clique instead of generating maps for an entire
+;; clique. E.g., the list here could be (c$::expr c$::genassoc
+;; c$::genassoc-list).
+(fty::deffold-map funcall-fun-rename-fn
+  :types (c$::exprs/decls/stmts)
+  :extra-args ((old-fn identp) (new-fn identp))
+  :short "Rename a function within a @('funcall') function expression."
+  :override
+  ((c$::expr
+     (b* ((old-fn (ident-fix old-fn))
+          (new-fn (ident-fix new-fn)))
+       (expr-case
+         c$::expr
+         :ident (if (equal expr.ident old-fn)
+                    (make-expr-ident :ident new-fn :info nil)
+                  (expr-fix c$::expr))
+         :paren (expr-paren
+                  (expr-funcall-fun-rename-fn expr.inner old-fn new-fn))
+         :gensel
+         (make-expr-gensel
+           :control expr.control
+           :assocs (genassoc-list-funcall-fun-rename-fn
+                     expr.assocs old-fn new-fn))
+         :cast (make-expr-cast :type expr.type
+                               :arg (expr-funcall-fun-rename-fn
+                                      expr.arg old-fn new-fn))
+         :otherwise (expr-fix c$::expr))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(deftrans rename-fn
+(fty::deffold-map rename-fn
+  :types (c$::exprs/decls/stmts)
   :extra-args ((old-fn identp) (new-fn identp))
-  :expr
-  (lambda (expr old-fn new-fn)
-    (expr-case
-      expr
-      :paren (expr-paren (rename-fn-expr expr.inner old-fn new-fn))
-      :gensel
-      (make-expr-gensel :control (rename-fn-expr expr.control old-fn new-fn)
-                        :assocs (rename-fn-genassoc-list expr.assocs old-fn new-fn))
-      :arrsub (make-expr-arrsub :arg1 (rename-fn-expr expr.arg1 old-fn new-fn)
-                                :arg2 (rename-fn-expr expr.arg2 old-fn new-fn))
-      ;; This is the interesting case
-      :funcall (make-expr-funcall :fun (rename-fn-funcall-fun expr.fun old-fn new-fn)
-                                  :args (rename-fn-expr-list expr.args old-fn new-fn))
-      :member (make-expr-member :arg (rename-fn-expr expr.arg old-fn new-fn)
-                                :name expr.name)
-      :memberp (make-expr-memberp :arg (rename-fn-expr expr.arg old-fn new-fn)
-                                  :name expr.name)
-      :complit
-      (make-expr-complit :type expr.type
-                         :elems (rename-fn-desiniter-list expr.elems old-fn new-fn)
-                         :final-comma expr.final-comma)
-      :unary (make-expr-unary :op expr.op
-                              :arg (rename-fn-expr expr.arg old-fn new-fn)
-                              :info expr.info)
-      :sizeof (expr-sizeof (rename-fn-tyname expr.type old-fn new-fn))
-      :alignof (make-expr-alignof :type (rename-fn-tyname expr.type old-fn new-fn)
-                                  :uscores expr.uscores)
-      :cast (make-expr-cast :type (rename-fn-tyname expr.type old-fn new-fn)
-                            :arg (rename-fn-expr expr.arg old-fn new-fn))
-      :binary (make-expr-binary :op expr.op
-                                :arg1 (rename-fn-expr expr.arg1 old-fn new-fn)
-                                :arg2 (rename-fn-expr expr.arg2 old-fn new-fn))
-      :cond (make-expr-cond :test (rename-fn-expr expr.test old-fn new-fn)
-                            :then (rename-fn-expr-option expr.then old-fn new-fn)
-                            :else (rename-fn-expr expr.else old-fn new-fn))
-      :comma (make-expr-comma :first (rename-fn-expr expr.first old-fn new-fn)
-                              :next (rename-fn-expr expr.next old-fn new-fn))
-      :stmt (expr-stmt (rename-fn-block-item-list expr.items old-fn new-fn))
-      :tycompat (make-expr-tycompat :type1 (rename-fn-tyname expr.type1 old-fn new-fn)
-                                    :type2 (rename-fn-tyname expr.type2 old-fn new-fn))
-      :offsetof
-      (make-expr-offsetof :type (rename-fn-tyname expr.type old-fn new-fn)
-                          :member (rename-fn-member-designor expr.member old-fn
-                                                             new-fn))
-      :sizeof-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                            (expr-fix expr))
-      :cast/call-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                               (expr-fix expr))
-      :cast/mul-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                              (expr-fix expr))
-      :cast/add-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                              (expr-fix expr))
-      :cast/sub-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                              (expr-fix expr))
-      :cast/and-ambig (prog2$ (raise "Misusage error: ~x0." (expr-fix expr))
-                              (expr-fix expr))
-      :otherwise (expr-fix expr))))
+  :override
+  ((c$::expr
+     :funcall
+     (make-expr-funcall
+       :fun (expr-funcall-fun-rename-fn expr.fun old-fn new-fn)
+       :args (expr-list-rename-fn expr.args old-fn new-fn)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -204,7 +140,7 @@
                                :params fundef.declor.direct.params
                                :ellipsis fundef.declor.direct.ellipsis))
             :decls fundef.decls
-            :body (rename-fn-stmt fundef.body target-fn new-fn))
+            :body (stmt-rename-fn fundef.body target-fn new-fn))
         nil)
       :otherwise nil)))
 
