@@ -278,11 +278,9 @@
                       but instead the extra inputs ~x1 were supplied."
                      inputs-desc
                      extra)))
-       ;; Process :CONST or ARG input.
+       ;; Process the inputs.
        ((erp tunits) (output-files-process-const/arg arg options progp wrld))
-       ;; Process :PATH input.
        ((erp path) (output-files-process-path options))
-       ;; Process :PRINTER-OPTIONS input.
        ((erp indent-size paren-nested-conds)
         (output-files-process-printer-options options)))
     (retok tunits
