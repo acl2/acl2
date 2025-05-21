@@ -555,7 +555,7 @@
                  (bound-vars ident-setp))
     (param-declor-case
      paramdeclor
-     :nonabstract (free-vars-declor paramdeclor.unwrap bound-vars)
+     :nonabstract (free-vars-declor paramdeclor.declor bound-vars)
      :abstract (mv (free-vars-absdeclor paramdeclor.unwrap bound-vars)
                    (ident-set-fix bound-vars))
      :none (mv nil (ident-set-fix bound-vars))
