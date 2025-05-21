@@ -1724,8 +1724,7 @@
   (b* (((simpadd0-gin gin) gin)
        (item (block-item-stmt stmt))
        (item-new (block-item-stmt stmt-new))
-       ((unless (and stmt-thm-name
-                     (type-case (block-item-type item) :sint)))
+       ((unless stmt-thm-name)
         (mv item-new
             (make-simpadd0-gout :events stmt-events
                                 :thm-name nil
@@ -1837,7 +1836,8 @@
   (b* (((simpadd0-gin gin) gin)
        (items (list (block-item-fix item)))
        (items-new (list (block-item-fix item-new)))
-       ((unless item-thm-name)
+       ((unless (and item-thm-name
+                     (type-case (block-item-type item) :sint)))
         (mv items-new
             (make-simpadd0-gout :events item-events
                                 :thm-name nil
