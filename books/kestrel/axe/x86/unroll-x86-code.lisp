@@ -604,7 +604,7 @@
                              prune-approx
                              extra-rules
                              remove-rules
-                             extra-assumption-rules
+                             extra-assumption-rules ; todo: why "extra"?
                              remove-assumption-rules
                              step-limit
                              step-increment
