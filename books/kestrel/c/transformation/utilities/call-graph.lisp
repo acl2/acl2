@@ -725,7 +725,9 @@
       (call-graph-transunit
         (omap::head-key map)
         (omap::head-val map)
-        call-graph))))
+        call-graph)))
+  :guard-hints
+  (("Goal" :in-theory (acl2::enable* c$::abstract-syntax-annop-rules))))
 
 (define call-graph-transunit-ensemble
   ((ensemble transunit-ensemblep))
