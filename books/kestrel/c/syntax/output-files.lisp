@@ -81,8 +81,7 @@
                                         (options symbol-alistp)
                                         (progp booleanp)
                                         (wrld plist-worldp))
-  :returns (mv erp
-               (tunits transunit-ensemblep))
+  :returns (mv erp (tunits transunit-ensemblep))
   :short "Process the @(':const') or @('arg') input."
   (b* (((reterr) (irr-transunit-ensemble))
        (const-option (assoc-eq :const options))
@@ -130,6 +129,31 @@
   (in-theory
    (disable transunit-ensemblep-when-output-files-process-tunits
             transunit-ensemble-unambp-when-output-files-process-tunits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define output-files-process-path ((options symbol-alistp))
+  :returns (mv erp (path stringp))
+  :short "Process the @(':path') input."
+  (b* (((reterr) "")
+       (path-option (assoc-eq :path options))
+       (path (if path-option
+                 (cdr path-option)
+               "."))
+       ((unless (stringp path))
+        (reterr (msg "The :PATH input must be a string, ~
+                      but it is ~x0 instead."
+                     path)))
+       (path-chars (str::explode path))
+       ((unless (consp path-chars))
+        (reterr (msg "The :PATH input must be not empty, ~
+                      but it is the empty string instead.")))
+       (path-chars (if (and (consp (cdr path-chars))
+                            (eql (car (last path-chars)) #\/))
+                       (butlast path-chars 1)
+                     path-chars))
+       (path (str::implode path-chars)))
+    (retok path)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -257,23 +281,7 @@
        ;; Process :CONST or ARG input.
        ((erp tunits) (output-files-process-const/arg arg options progp wrld))
        ;; Process :PATH input.
-       (path-option (assoc-eq :path options))
-       (path (if path-option
-                 (cdr path-option)
-               "."))
-       ((unless (stringp path))
-        (reterr (msg "The :PATH input must be a string, ~
-                      but it is ~x0 instead."
-                     path)))
-       (path-chars (str::explode path))
-       ((unless (consp path-chars))
-        (reterr (msg "The :PATH input must be not empty, ~
-                      but it is the empty string instead.")))
-       (path-chars (if (and (consp (cdr path-chars))
-                            (eql (car (last path-chars)) #\/))
-                       (butlast path-chars 1)
-                     path-chars))
-       (path (str::implode path-chars))
+       ((erp path) (output-files-process-path options))
        ;; Process :PRINTER-OPTIONS input.
        ((erp indent-size paren-nested-conds)
         (output-files-process-printer-options options)))
