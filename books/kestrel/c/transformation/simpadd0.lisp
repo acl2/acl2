@@ -1739,7 +1739,8 @@
                               (:e ldm-ident)
                               (:e ident)
                               (:e c::block-item-stmt)
-                              (:e c::type-sint))
+                              (:e c::type-sint)
+                              (:e c::type-nonchar-integerp))
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-stmt-support-lemma-1
@@ -1785,18 +1786,19 @@
          ((mv old-result old-compst)
           (c::exec-block-item old compst old-fenv limit))
          ((mv new-result new-compst)
-          (c::exec-block-item new compst new-fenv limit)))
+          (c::exec-block-item new compst new-fenv limit))
+         (type (c::type-of-value old-stmt-result)))
       (implies (and (not (c::errorp old-result))
                     (not (c::errorp new-stmt-result))
                     (equal old-stmt-result new-stmt-result)
                     (equal old-stmt-compst new-stmt-compst)
                     old-stmt-result
-                    (equal (c::type-of-value old-stmt-result) (c::type-sint)))
+                    (c::type-nonchar-integerp type))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     old-result
-                    (equal (c::type-of-value old-result) (c::type-sint)))))
+                    (equal (c::type-of-value old-result) type))))
     :expand
     ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
      (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
