@@ -17,9 +17,9 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "centaur/fty/deftypes" :dir :system)
+(include-book "kestrel/fty/deffold-map" :dir :system)
 
 (include-book "../syntax/abstract-syntax")
-(include-book "deftrans")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -77,6 +77,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(deftrans rename
+(fty::deffold-map rename
+  :types #!c$(ident
+              ident-list
+              ident-option
+              iconst
+              iconst-option
+              const
+              const-option
+              attrib-name
+              exprs/decls/stmts
+              fundef
+              extdecl
+              extdecl-list
+              transunit
+              filepath-transunit-map
+              transunit-ensemble)
   :extra-args ((subst ident-ident-alistp))
-  :ident ident-ident-subst)
+  :override ((ident (ident-ident-subst ident subst))))

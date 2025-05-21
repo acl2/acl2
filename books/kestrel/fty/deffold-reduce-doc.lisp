@@ -37,8 +37,7 @@
       a default for the constant arguments,
       the binary operation on @('R'),
       and any number of overrides of the boilerplate code
-      for specific cases of the fixtypes.")
-    (xdoc::p))
+      for specific cases of the fixtypes."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

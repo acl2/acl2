@@ -473,7 +473,7 @@
      the high bits of an unsigned 32-bit integer,
      whose low bits are 0.
      We extend the unsigned 32-bit integer to 64 bits,
-     obtaining an unsigned 64-bit address.
+     obtaining an unsigned 64-bit integer.
      We add the latter to the address of the instruction,
      which is passed as the @('pc') input to this function.
      We write the result to @('rd').

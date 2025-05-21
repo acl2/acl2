@@ -555,7 +555,15 @@
   :short "Check if a value is an integer [C17:6.2.5/17]."
   (or (value-signed-integerp val)
       (value-unsigned-integerp val))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled value-kind-not-array-when-value-integerp
+    (implies (value-integerp val)
+             (not (equal (value-kind val) :array)))
+    :enable (value-signed-integerp
+             value-unsigned-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

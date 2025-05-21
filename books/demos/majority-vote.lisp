@@ -61,6 +61,19 @@
 ; in 2025, we decided to include this file in the ACL2 regression suite.
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc majority-vote
+  :parents (miscellaneous)
+  :short "A Linear Time Majority Vote Algorithm"
+  :long "<p>In this book we prove the correctness of a linear time majority
+  vote algorithm: given a list of elements determine which element occurs a
+  majority of times in the list, assuming some such element occurs.  The
+  algorithm was invented by Bob Boyer and J Moore in 1980 and verified with
+  their Nqthm theorem prover.  However, the proof was not published until 1991.
+  This proof is done in ACL2.  For a detailed history of the algorithm, its
+  proof, and its publication, see the long comment at the top of the
+  majority-vote.lisp book.</p>")
 
 (defun majority (c i lst)
   (if (endp lst)
@@ -69,17 +82,19 @@
         (majority (car lst) 1 (cdr lst))
       (majority c (+ i (if (equal c (car lst)) +1 -1)) (cdr lst)))))
 
-(defun how-many (c lst)
-  (if (endp lst)
-      0
-    (if (equal c (car lst))
-        (+ 1 (how-many c (cdr lst)))
-      (how-many c (cdr lst)))))
+(defun how-many (e x)
+  (cond
+   ((endp x)
+    0)
+   ((equal e (car x))
+    (1+ (how-many e (cdr x))))
+   (t
+    (how-many e (cdr x)))))
 
 ; This is the generalized theorem that explains how majority works on any c and
 ; i instead of just on the initial c=nil and i=0.
 
-; The way to imagine (majority c i x) is that we started with 
+; The way to imagine (majority c i x) is that we started with
 ; a bigger x' that contains i occurrences of c follwed by x:
 ; x' = (c c ... c . x).  We "know" that (majority nil 0 x') finds
 ; the majority in x' IF THERE IS ONE.
@@ -98,7 +113,7 @@
            (equal (equal (majority c i x) e) t)))
 
 ; Main Theorem: If c is in a majority element of lst, then the majority
-; function returns c.  
+; function returns c.
 
 (defthm majority-is-correct
   (implies (< (* 1/2 (len lst)) (how-many c lst))
@@ -125,4 +140,4 @@
 
 
 
-      
+
