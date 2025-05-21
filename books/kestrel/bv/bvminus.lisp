@@ -264,3 +264,32 @@
          (bvminus size y1 y2))
   :hints (("Goal" :in-theory (enable bvplus bvminus)))  ;todo: better proof?
   )
+
+(defthm bvminus-of-constant-and-bvplus-of-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep size)))
+                (natp size))
+           (equal (bvminus size k1 (bvplus size k2 x))
+                  (bvminus size
+                           (bvminus size k1 k2) ;gets computed
+                           x)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus bvchop-of-sum-cases))))
+
+(defthm bvminus-of-bvplus-of-constant-and-constant
+  (implies (and (syntaxp (and (quotep k1)
+                              (quotep k2)
+                              (quotep size)))
+                (natp size))
+           (equal (bvminus size (bvplus size k1 x) k2)
+                  (bvminus size
+                           x
+                           (bvminus size k2 k1) ;gets computed
+                           )))
+  :hints (("Goal" :in-theory (enable bvminus bvplus bvchop-of-sum-cases))))
+
+(defthm bvminus-cancel-3-2
+  (implies (natp size)
+           (equal (bvminus size (bvplus size y (bvplus size z x)) (bvplus size w x))
+                  (bvminus size (bvplus size y z) w)))
+  :hints (("Goal" :in-theory (enable bvminus-becomes-bvplus-of-bvuminus))))

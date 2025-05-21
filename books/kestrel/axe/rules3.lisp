@@ -12010,17 +12010,6 @@
                            (k (- (expt 2 32) k))
                            (x (bvplus 32 k x))))))
 
-(defthm bvminus-of-constant-and-bvplus-of-constant
-  (implies (and (syntaxp (and (quotep k1)
-                         (quotep k2)
-                         (quotep size)))
-                (natp size))
-           (equal (bvminus size k1 (bvplus size k2 x))
-                  (bvminus size
-                           (bvminus size k1 k2) ;gets computed
-                           x)))
-  :hints (("Goal" :in-theory (enable bvminus bvplus bvchop-of-sum-cases))))
-
 (defthm bvlt-of-two-less-than-max-when-not-max
   (implies (not (equal 3 (bvchop 2 x)))
            (equal (bvlt 2 1 x)
