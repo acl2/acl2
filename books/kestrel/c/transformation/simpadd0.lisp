@@ -1617,7 +1617,8 @@
                               (:e ident)
                               (:e c::expr-kind)
                               (:e c::stmt-return)
-                              (:e c::type-sint))
+                              (:e c::type-sint)
+                              (:e c::type-nonchar-integerp))
                  :use (,expr?-thm-name
                        (:instance
                         simpadd0-stmt-return-support-lemma-1
@@ -1661,7 +1662,8 @@
          (old-expr-value (c::expr-value->value old-expr-result))
          (new-expr-value (c::expr-value->value new-expr-result))
          ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
-         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit))
+         (type (c::type-of-value old-expr-value)))
       (implies (and old-expr
                     new-expr
                     (not (equal (c::expr-kind old-expr) :call))
@@ -1669,17 +1671,18 @@
                     (not (c::errorp old-result))
                     (not (c::errorp new-expr-result))
                     (equal old-expr-value new-expr-value)
-                    (equal (c::type-of-value old-expr-value) (c::type-sint)))
+                    (c::type-nonchar-integerp type))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     old-result
-                    (equal (c::type-of-value old-result) (c::type-sint)))))
+                    (equal (c::type-of-value old-result) type))))
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
     :enable (c::exec-expr-call-or-pure
              c::type-of-value
-             c::apconvert-expr-value-when-not-array))
+             c::apconvert-expr-value-when-not-array
+             c::type-nonchar-integerp))
 
   (defruled simpadd0-stmt-return-support-lemma-2
     (implies (and expr
