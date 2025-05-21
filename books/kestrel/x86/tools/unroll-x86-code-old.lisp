@@ -63,7 +63,7 @@
                   :guard (and (symbolp lifted-name)
                               (stringp subroutine-name)
                               (natp stack-slots-needed)
-                              (output-indicatorp output)
+                              ;; (output-indicatorp output)
                               (booleanp non-executable))
                   :mode :program))
   (b* ( ;; Check whether this call to the lifter has already been made:
@@ -126,7 +126,7 @@
        ;; Do the symbolic simulation:
        (enables (append enables *standard-lifter-enables*))
        (term-to-simulate '(run-until-return x86))
-       (term-to-simulate (wrap-in-output-extractor output term-to-simulate))
+       (term-to-simulate (wrap-in-output-extractor output term-to-simulate (w state)))
        ((mv result runes state)
         (symsim$-fn term-to-simulate
                     assumptions

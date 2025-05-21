@@ -586,6 +586,7 @@
        (- (cw " Done simplifying assumptions)~%")))
     (mv nil assumptions assumption-rules state)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp result-dag-or-quotep assumptions input-assumption-vars lifter-rules-used assumption-rules-used state).
 ;; This is also called by the formal unit tester.
@@ -598,7 +599,7 @@
                              position-independent
                              inputs
                              type-assumptions-for-array-varsp
-                             output
+                             output-indicator
                              use-internal-contextsp
                              prune-precise
                              prune-approx
@@ -627,7 +628,7 @@
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
-                              (output-indicatorp output)
+                              ;; (output-indicatorp output-indicator)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
@@ -873,7 +874,7 @@
        (term-to-simulate (if stop-pcs
                              `(run-until-return-or-reach-pc ',stop-pcs x86)
                            '(run-until-return x86)))
-       (term-to-simulate (wrap-in-output-extractor output term-to-simulate)) ;TODO: delay this if lifting a loop?
+       (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (acl2::make-term-into-dag-basic term-to-simulate nil))
@@ -937,7 +938,7 @@
                         position-independent
                         inputs
                         type-assumptions-for-array-varsp
-                        output
+                        output-indicator
                         use-internal-contextsp
                         prune-precise
                         prune-approx
@@ -973,7 +974,7 @@
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
-                              (output-indicatorp output)
+                              ;; (output-indicatorp output-indicator)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
@@ -1024,7 +1025,7 @@
        ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used state)
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
-          inputs type-assumptions-for-array-varsp output use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
+          inputs type-assumptions-for-array-varsp output-indicator use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
           step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep bvp state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
@@ -1103,7 +1104,7 @@
                ;;use defun-nx by default because stobj updates are not all let-bound to x86
                (non-executable (if (eq :auto non-executable)
                                    (if (member-eq 'x86 fn-formals) ; there may be writes to the stobj (perhaps with unresolved reads around them), so we use defun-nx (todo: do a more precise check)
-                                       ;; (eq :all output) ; we use defun-nx since there is almost certainly a stobj update (and updates are not properly let-bound)
+                                       ;; (eq :all output-indicator) ; we use defun-nx since there is almost certainly a stobj update (and updates are not properly let-bound)
                                        t
                                      nil)
                                  non-executable))
