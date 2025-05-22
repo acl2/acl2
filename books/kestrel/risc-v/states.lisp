@@ -836,4 +836,11 @@
   :returns (new-stat statp)
   :short "Set the error flag in the state."
   (change-stat stat :error t)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret stat-validp-of-error
+    (stat-validp new-stat feat)
+    :hyp (stat-validp stat feat)
+    :hints (("Goal" :in-theory (enable stat-validp)))))
