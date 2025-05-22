@@ -172,55 +172,70 @@
 ;;   term that currently has an assignment, try to recover a value by applying
 ;;   counterexample translation rules, discussed below.
 
-;;   The "smarter" version: we create a "cgraph" with an edge A->B whenever
-;;   obtaining a value for B might help derive a value for A (via one of the
-;;   counterexample translation rules). Edges are labeled with the rule and
-;;   substitution that gives rise to that derivation.  Often A is an immediate
-;;   subterm of B, but this isn't always the case.  To get a variable-level
-;;   counterexample, we then traverse the cgraph depth-first starting from the
-;;   variables, trying to find a value for each term after finding values for
-;;   all of its descendants.
+;;   The "smarter" version: we create a "cgraph" with an "edge" B->{A0..AN}
+;;   whenever obtaining values for Ai might help derive a value for B (via one
+;;   of the counterexample translation rules). Edges are labeled with the rule
+;;   and substitution that gives rise to that derivation.  Often B is an
+;;   immediate subterm of the Ai (as in elimination rules, below), but this
+;;   isn't always the case.  To get a variable-level counterexample, we then
+;;   traverse the cgraph depth-first starting from the variables, trying to
+;;   find a value for each term after finding values for all of its
+;;   descendants.
 
 ;;   If there are any SCCs containing
 ;;   multiple terms in the graph, then we try to recover a value for each term
 ;;   in arbitrary order and check whether we get to a fixpoint.
+
+;; Cgraph representation
+
+;; The form of the graph is a bit idiosyncratic. We map nodes to a list of
+;; edges, but the edges might be better called multiedges since while they only
+;; point from one node, they may point to multiple nodes. Each such multiedge
+;; consists of a rule; a substitution where for each key/value pair in the substitution, the value is a destintaion of the edge;
 
 ;;   Rule types.
 
 ;;   We consider a few different types of rules for computing variable values
 ;;   from bit-level counterexamples.  Note that none of these require proof;
 ;;   all of this is a purely heuristic process.
+
+;;   The basic idea for any rule is that it should add certain nodes and
+;;   multiedges, or perhaps update existing multiedges, in the graph based on nodes that already exist (starting with a
+;;   node for each term bound in the bvar-db). For each multiedge B -> {Ai}, we
+;;   can either derive a complete value for B from the values for Ai, or an
+;;   update to the value of B. That means when we evaluate the counterexample,
+;;   we'll try to derive values for Ai and then use them to update/derive
+;;   B. Each node (FGL object) can be mapped to multiple multiedges; these can
+;;   either be compatible updates or conflicting derivations. Each multiedge
+;;   needs to say what its destination nodes are and how to assign a value to
+;;   the source object given some or all of those values.
+
 ;;
 ;;  - Elimination rules.  These are basically destructor elimination rules, of the form
 ;;      (implies (pred x) (equiv (ctor (acc1 x) ... (accn x)) x))
-;;    These produce edges (acci x) -> x as well as (pred x) -> x in the cgraph.
+;;    Whenever a node (acci y) is found in the graph, we add a multiedge y -> {(acci y)}, or
+;;    if there already exists such a multiedge based on the same rule with a compatible substitution, add the (acci y) destination
+;;    to that multiedge.
 ;;    Note we expect to sometimes see an incomplete set of such edges
-;;    (e.g. (acc1 x) exists but (acc2 x) doesn't, accessors exist but pred
-;;    doesn't) and we'll need to choose a default value for the missing terms.
-;;    Hypotheses in these rules will be ignored unless two or more rules seem
-;;    to apply to x (that is, there are two in-edges of x that are labeled with
-;;    different rules).  In that case, if the hyp (under the substitution) is a
-;;    term in the cgraph and it has an assigned value, then it is used to
-;;    choose which rule will be used.  E.g. suppose we have two elimination
-;;    rules
-;;      (implies (integerp x) (equal (intcons (intcar x) (intcdr x)) x))
-;;      (implies (consp x) (equal (cons (car x) (cdr x)) x))
-;;    both of which label in-edges of (foo y), and we also have
-;;    (integerp (foo y)) assigned to T, then we will use the integerp elim rule,
-;;    whereas if (integerp (foo y)) is assigned NIL then we'll use the consp rule.
+;;    (e.g. (acc1 x) exists but (acc2 x) doesn't) and we'll need to choose a default value for the missing terms.
+;;    Hypotheses in these rules are currently ignored.
 
-;;  - Property rules.  These are somewhat similar to elimination rules but allow
-;;    for constructs like maps, alists, etc.  For example:
-;;      (equal (s key (g key x) x) x)
-;;    Such a rule produces edges (g key x) -> x for every occurrence of (g key
-;;    x) in the cgraph.  Note it might sometimes make sense to add non-theorems
-;;    like:  (equal (cons (cons key (cdr (assoc key x))) x) x)
+;;  - Property rules.  These are somewhat similar to elimination rules but
+;;    allow for constructs like maps, alists, etc.  For example: (equal (s key
+;;    (g key x) x) x) Such a rule produces edges x -> {(g key x)} for every
+;;    occurrence of (g key x) in the cgraph.  Note it might sometimes make
+;;    sense to add non-theorems like: (equal (cons (cons key (cdr (assoc key
+;;    x))) x) x). It is expected that several property rule edges can be
+;;    applied in any order to update the value of their source node and still
+;;    yield a sensible value.
 
 ;;  - Equivalence rules (implicit): anytime we see an equivalence (equiv a b)
 ;;    we'll add two edges a->b and b->a.  Whichever of a or b we're able to
 ;;    resolve first will determine the value of the other, provided the
 ;;    equivalence is assigned T.
 
+;;  - Fixup rules: these are intended to patch the assigned value of some object after
+;;    it has been assigned something by other rules.
 
 ;; A counterexample rule has two functions: it is used to make the cgraph from
 ;; the bvar-db, without reference to any particular Boolean assignment, and
@@ -2140,7 +2155,8 @@ compute a value for @('x').</p>
     (b* (((candidate-assign cand) (candidate-assign-fix (car cands)))
          ((cgraph-edge cand.edge))
          ((ctrex-rule cand.edge.rule)))
-      (if (eq cand.edge.rule.ruletype :property)
+      (if (or (eq cand.edge.rule.ruletype :property)
+              (eq cand.edge.rule.ruletype :fixup))
           (candidate-assigns-fix (cdr cands))
         (cons-with-hint cand
                         (candidate-assigns-remove-property-assign (cdr cands))
@@ -2732,13 +2748,13 @@ compute a value for @('x').</p>
        ((unless (mbt (and (consp (car x))
                           (fgl-object-p (caar x)))))
         (cgraph-derivstates-summarize-errors (cdr x)))
-       (err1 (cgraph-derivstate->result-msg (cdar x)))
-       (rest (cgraph-derivstates-summarize-errors (cdr x))))
+       (err1 (cgraph-derivstate->result-msg (cdar x))))
     (if err1
-        (if rest
-            (msg "~x0: ~@1~%~@2" (caar x) err1 rest)
-          (msg "~x0: ~@1~%" (caar x) err1))
-      rest))
+        (let ((rest (cgraph-derivstates-summarize-errors (cdr x))))
+          (if rest
+              (msg "~x0: ~@1~%~@2" (caar x) err1 rest)
+            (msg "~x0: ~@1~%" (caar x) err1)))
+      (cgraph-derivstates-summarize-errors (cdr x))))
   ///
   (local (in-theory (enable cgraph-derivstates-fix))))
 
@@ -2958,8 +2974,8 @@ compute a value for @('x').</p>
   (if infer-errors
       (if eval-errors
           (msg "~@0~%~@1" infer-errors eval-errors)
-        infer-errors)
-    eval-errors))
+        (msg "~@0" infer-errors))
+    (msg "~@0" eval-errors)))
 
 
 (define interp-st-counterex-value ((x fgl-object-p)
@@ -3209,7 +3225,10 @@ compute a value for @('x').</p>
        ((mv ctrex-errmsg ctrex-bindings ?var-vals interp-st)
         (interp-st-counterex-bindings bindings interp-st state))
        (- (and ctrex-errmsg
-               (cw "Warnings/errors from deriving counterexample: ~@0~%" ctrex-errmsg)))
+               (fmt-to-comment-window
+                "Warnings/errors from deriving counterexample: ~@0~%"
+                (list (cons #\0 ctrex-errmsg))
+                0 '(nil 7 10 nil) 10)))
        ;; ((when ctrex-errmsg)
        ;;  (mv (msg "Error extending counterexample: ~@0~%" ctrex-errmsg) interp-st state))
        (- (cw "~%*** Counterexample assignment: ***~%~x0~%~%" ctrex-bindings))
