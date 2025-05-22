@@ -2278,7 +2278,7 @@
        paramdeclor
        :nonabstract
        (b* (((erp new-declor ident table)
-             (dimb-declor paramdeclor.unwrap nil table))
+             (dimb-declor paramdeclor.declor nil table))
             (table (dimb-add-ident ident (dimb-kind-objfun) table)))
          (retok (param-declor-nonabstract new-declor) table))
        :abstract
