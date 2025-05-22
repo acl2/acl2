@@ -207,4 +207,6 @@ of proofs.")
 
 <h3>The 100 Theorems page</h3>
 <p>We maintain a list of the theorems from the <a href=\"https://www.cs.ru.nl/~freek/100/\">Formalizing 100 Theorems</a> page that have been proved in ACL2.  See @(see 100-theorems).  Users are invited to attempt to prove additional theorems from the list, though this may be challenging!</p>
-")
+
+<h3>Stack Exchange</h3>
+<p>The <a href=\"https://proofassistants.stackexchange.com/questions/tagged/acl2\">Proof Assistants Stack Exchange</a> has some questions and answers about ACL2, but the ACL2 Zulip (see above) and @('acl2-help') mailing list (see above, under Mailing Lists) are more popular.</p>")
