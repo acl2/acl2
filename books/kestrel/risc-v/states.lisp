@@ -780,3 +780,23 @@
   (defret stat-validp-of-write-memory-unsigned64
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define errorp ((stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  (declare (ignore feat))
+  :returns (yes/no booleanp)
+  :short "Check if the error flag in the state is set."
+  (stat->error stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define error ((stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  (declare (ignore feat))
+  :returns (new-stat statp)
+  :short "Set the error flag in the state."
+  (change-stat stat :error t)
+  :hooks (:fix))
