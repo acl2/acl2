@@ -46,7 +46,7 @@
 (local
  (defthm state-p-and-open-output-channel-p-of-write-string-tree-to-channel
    (implies (and (open-output-channel-p channel :character state)
-                 (symbolp channel)
+                 ;; (symbolp channel)
                  (state-p state))
             (and (state-p (write-string-tree-to-channel string-tree channel state))
                  (open-output-channel-p channel :character (write-string-tree-to-channel string-tree channel state))))
@@ -54,14 +54,13 @@
 
 (defthm open-output-channel-p-of-write-string-tree-to-channel
   (implies (and (open-output-channel-p channel :character state)
-                (symbolp channel)
+                ;; (symbolp channel)
                 (state-p state))
-           (open-output-channel-p channel :character (write-string-tree-to-channel string-tree channel state)))
-  :hints (("Goal" :in-theory (enable))))
+           (open-output-channel-p channel :character (write-string-tree-to-channel string-tree channel state))))
 
 (defthm state-p-of-write-string-tree-to-channel
   (implies (and (open-output-channel-p channel :character state)
-                (symbolp channel)
+                ;; (symbolp channel)
                 (state-p state))
            (state-p (write-string-tree-to-channel string-tree channel state))))
 
@@ -97,19 +96,9 @@
 (defthm w-of-mv-nth-1-of-write-string-tree!
   (equal (w (mv-nth 1 (write-string-tree! string-tree fname ctx state)))
          (w state))
-  :hints (("Goal" :in-theory (e/d (write-string-tree!) (open-output-channels
-                                                        update-file-clock
-                                                        update-open-output-channels
-                                                        update-written-files)))))
+  :hints (("Goal" :in-theory (enable write-string-tree!))))
 
 (defthm state-p-of-mv-nth-1-of-write-string-tree!
   (implies (state-p state)
            (state-p (mv-nth 1 (write-string-tree! string-tree fname ctx state))))
-  :hints (("Goal" :in-theory (e/d (write-string-tree! open-output-channel-p1-becomes-open-output-channel-p)
-                                  (open-output-channels
-                                   update-file-clock
-                                   update-open-output-channels
-                                   update-written-files
-                                   written-files-p
-                                   file-clock-p
-                                   written-file)))))
+  :hints (("Goal" :in-theory (enable write-string-tree! open-output-channel-p1-becomes-open-output-channel-p))))
