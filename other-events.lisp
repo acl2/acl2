@@ -33930,8 +33930,9 @@
                    (er-let* ((expansion0/new-kpa/new-ttags-seen
                               (revert-world-on-error
                                (protected-eval (cadr form)
-                                               (cadr (assoc-eq :on-behalf-of
-                                                               (cddr form)))
+                                               (cadr (assoc-keyword
+                                                      :on-behalf-of
+                                                      (cddr form)))
                                                ctx state t))))
                      (value (car expansion0/new-kpa/new-ttags-seen))))
                   (macrop (macroexpand1 form ctx state))
