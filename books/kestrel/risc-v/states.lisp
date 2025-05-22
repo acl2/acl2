@@ -10,10 +10,12 @@
 
 (in-package "RISCV")
 
+(include-book "library-extensions")
 (include-book "features")
-(include-book "states32")
-(include-book "states64")
 
+(include-book "kestrel/fty/ubyte8-list" :dir :system)
+(include-book "kestrel/fty/ubyte32-list" :dir :system)
+(include-book "kestrel/fty/ubyte64-list" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
 
 (local (include-book "arithmetic-5/top" :dir :system))
@@ -40,9 +42,7 @@
      towards that end, we also provide
      a more generic definition of states here."))
   :default-parent t
-  :order-subtopics (states32
-                    states64
-                    t))
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

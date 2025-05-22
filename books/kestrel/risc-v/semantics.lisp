@@ -10,10 +10,10 @@
 
 (in-package "RISCV")
 
-(include-book "semantics32")
-(include-book "semantics64")
+(include-book "instructions")
 (include-book "states")
 
+(local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 
 ; cert_param: (non-acl2r)
@@ -32,9 +32,7 @@
      towards that end, we also provide
      a more generic semantics of instructions here."))
   :default-parent t
-  :order-subtopics (semantics32
-                    semantics64
-                    t))
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

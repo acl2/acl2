@@ -17,6 +17,8 @@
 (include-book "states")
 (include-book "semantics")
 (include-book "execution")
+(include-book "rv32im")
+(include-book "rv64im")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -66,9 +68,13 @@
    (xdoc::p
     "These square-bracketed references may be used
      as nouns or parenthentically."))
-  :order-subtopics (instructions
-                    decoding
+  :order-subtopics (features
+                    instructions
                     states
+                    encoding
+                    decoding
                     semantics
-                    execution)
+                    execution
+                    rv32im
+                    rv64im)
   :default-parent t)

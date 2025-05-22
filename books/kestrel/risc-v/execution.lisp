@@ -10,8 +10,8 @@
 
 (in-package "RISCV")
 
-(include-book "execution32")
-(include-book "execution64")
+(include-book "decoding")
+(include-book "semantics")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,9 +25,7 @@
      one for RV32I and one for RV64I.
      We plan to consolidate them into one model for both."))
   :default-parent t
-  :order-subtopics (execution32
-                    execution64
-                    t))
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

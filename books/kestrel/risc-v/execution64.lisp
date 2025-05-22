@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,13 +11,13 @@
 (in-package "RISCV")
 
 (include-book "decoding")
-(include-book "semantics")
+(include-book "semantics64")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ execution64
   :parents (execution)
-  :short "Model of execution for RV64I."
+  :short "Model of execution for RV64IM."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -28,9 +28,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define feat-rv64i ()
+(define feat-rv64im ()
   :returns (feat featp)
-  :short "Features for RV64I."
+  :short "Features for RV64IM."
   (make-feat :bits (feat-bits-64)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -51,7 +51,7 @@
   (b* (((when (error64p stat)) (state64-fix stat))
        (pc (read64-pc stat))
        (enc (read64-mem-ubyte32-lendian pc stat))
-       (instr? (decode enc (feat-rv64i)))
+       (instr? (decode enc (feat-rv64im)))
        ((unless instr?) (error64 stat)))
     (exec64-instr instr? pc stat))
   :hooks (:fix))
