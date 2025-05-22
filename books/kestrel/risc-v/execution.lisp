@@ -21,9 +21,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently we have two similar but slightly different models,
-     one for RV32I and one for RV64I.
-     We plan to consolidate them into one model for both."))
+    "We put together decoding and semantics
+     to obtain a step function that decodes and executes a single instruction,
+     and we also define a multi-step function."))
   :default-parent t
   :order-subtopics t)
 

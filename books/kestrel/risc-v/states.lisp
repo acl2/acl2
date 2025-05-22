@@ -36,11 +36,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently we have two similar but slightly different models,
-     one for RV32I and one for RV64I.
-     We are in the process of consolidating them into one model for both;
-     towards that end, we also provide
-     a more generic definition of states here."))
+    "We introduce a model of states,
+     along with operations on those states.
+     We capture all possible states for all possible RISC-V features,
+     but we also introduce a predicate saying when a state
+     is valid with respect to given features."))
   :default-parent t
   :order-subtopics t)
 

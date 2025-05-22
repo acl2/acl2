@@ -26,11 +26,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently we have two similar but slightly different semantics,
-     one for RV32I and one for RV64I.
-     We are in the process of consolidating them into one model for both;
-     towards that end, we also provide
-     a more generic semantics of instructions here."))
+    "We introduce functions that say how
+     each instruction operates on the state.
+     We restrict this to valid instructions in valid states
+     with respect to the RISC-V features."))
   :default-parent t
   :order-subtopics t)
 

@@ -43,6 +43,13 @@
      no alignment checks.
      We plan to extend and improve this library.")
    (xdoc::p
+    "We have a generic model of RISC-V,
+     parameterized over a growing set of features,
+     and we have two specialized models tailored to RV32IM and RV64IM.
+     We plan to have the general model cover more features,
+     and we plan to re-obtain the specialized models via
+     transformation and specialization of the general model.")
+   (xdoc::p
     "This library is based on the following sources:")
    (xdoc::ul
     (xdoc::li
