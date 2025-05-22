@@ -12,6 +12,7 @@
 
 ;(include-book "xdoc/top" :dir :system)
 (include-book "jvm/doc")
+(include-book "x86/doc")
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 (include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
 (include-book "equivalence-checker")

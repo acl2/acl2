@@ -1238,7 +1238,7 @@
       state))
   :parents (lifters)
   :short "Lift an x86 binary function to create a DAG, unrolling loops as needed."
-  :args ((lifted-name "The name to use for the generated function and constant (the latter surrounded by stars).")
+  :args ((lifted-name "A symbol, the name to use for the generated function.  The name of the generated constant is created by adding stars to the front and back of this symbol.")
          (executable "The x86 binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.")
          (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
          (extra-assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
@@ -1275,6 +1275,6 @@
          (restrict-theory "To be deprecated...")
          (bvp "Whether to use new-style, BV-friendly assumptions.")
          )
-  :description ("Given an x86 binary function, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
-                "This event creates a @(see defconst) whose name is derived from the @('lifted-name') argument."
+  :description ("Lift some x86 binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
+                "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(see defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
