@@ -37,8 +37,7 @@
       described in @(see fold).
       The user specifies any number of overrides of the boilerplate code
       for specific cases of the fixtypes
-      in the same manner as @(see deffold-reduce).")
-    (xdoc::p))
+      in the same manner as @(see deffold-reduce)."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

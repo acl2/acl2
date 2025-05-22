@@ -20,7 +20,6 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
-(include-book "deftrans")
 (include-book "utilities/free-vars")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

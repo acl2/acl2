@@ -162,7 +162,15 @@
     (error (list :mul-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-mul-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -179,7 +187,15 @@
     (error (list :div-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-div-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,7 +213,15 @@
     (error (list :rem-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-rem-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,7 +238,15 @@
     (error (list :add-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-add-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -231,7 +263,15 @@
     (error (list :sub-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-sub-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -253,7 +293,15 @@
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-shl-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (promote-type (type-of-value val1))))
+    :hints (("Goal" :in-theory (enable type-of-value-of-promote-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,7 +323,15 @@
                  :supplied (value-fix val1) (value-fix val2))))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-shr-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (promote-type (type-of-value val1))))
+    :hints (("Goal" :in-theory (enable type-of-value-of-promote-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -293,7 +349,14 @@
     (error (list :lt-mistype
                  :required :real :real
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-lt-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,7 +374,14 @@
     (error (list :gt-mistype
                  :required :real :real
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-gt-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -329,7 +399,14 @@
     (error (list :le-mistype
                  :required :real :real
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-le-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -347,7 +424,14 @@
     (error (list :ge-mistype
                  :required :real :real
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-ge-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -364,7 +448,14 @@
     (error (list :eq-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-eq-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,7 +472,14 @@
     (error (list :ne-mistype
                  :required :arithmetic :arithmetic
                  :supplied (value-fix val1) (value-fix val2))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-ne-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-sint)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -404,7 +502,18 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-bitand-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))
+    :hints (("Goal" :in-theory (enable type-of-value-of-uaconvert-values
+                                       value-arithmeticp
+                                       value-realp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -427,7 +536,18 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-bitxor-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))
+    :hints (("Goal" :in-theory (enable type-of-value-of-uaconvert-values
+                                       value-arithmeticp
+                                       value-realp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -450,4 +570,15 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-bitior-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))
+    :hints (("Goal" :in-theory (enable type-of-value-of-uaconvert-values
+                                       value-arithmeticp
+                                       value-realp)))))

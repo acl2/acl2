@@ -473,7 +473,7 @@
      the high bits of an unsigned 32-bit integer,
      whose low bits are 0.
      We extend the unsigned 32-bit integer to 64 bits,
-     obtaining an unsigned 64-bit address.
+     obtaining an unsigned 64-bit integer.
      We add the latter to the address of the instruction,
      which is passed as the @('pc') input to this function.
      We write the result to @('rd').
@@ -738,7 +738,7 @@
   (xdoc::topstring
    (xdoc::p
     "We read two unsigned 64-bit integers from @('rs1') and @('rs2').
-     We add them, and write the result to @('rd').
+     We multiply them, and write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-unsigned rs1 stat))
        (rs2-operand (read64-xreg-unsigned rs2 stat))
@@ -1017,7 +1017,7 @@
                      (rs2 ubyte5p)
                      (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('SLLW') instruction."
+  :short "Semantics of the @('SLLW') instruction [ISA:4.2.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1043,7 +1043,7 @@
                      (rs2 ubyte5p)
                      (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('SRLW') instruction."
+  :short "Semantics of the @('SRLW') instruction [ISA:4.2.2]."
   :long
   (xdoc::topstring
    (xdoc::p

@@ -17,7 +17,6 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
-(include-book "deftrans")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

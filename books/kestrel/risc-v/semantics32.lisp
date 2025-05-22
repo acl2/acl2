@@ -607,7 +607,7 @@
   (xdoc::topstring
    (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
-     We add them, and write the result to @('rd').
+     We multiply them, and write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read32-xreg-unsigned rs1 stat))
        (rs2-operand (read32-xreg-unsigned rs2 stat))
