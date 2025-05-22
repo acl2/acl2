@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,13 +11,13 @@
 (in-package "RISCV")
 
 (include-book "decoding")
-(include-book "semantics")
+(include-book "semantics32")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ execution32
-  :parents (execution)
-  :short "Model of execution for RV32I."
+  :parents (rv32im)
+  :short "Model of execution for RV32IM."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -28,9 +28,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define feat-rv32i ()
+(define feat-rv32im ()
   :returns (feat featp)
-  :short "Features for RV32I."
+  :short "Features for RV32IM."
   (make-feat :bits (feat-bits-32)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -43,7 +43,7 @@
    (xdoc::p
     "We make no change if the error flag is set.
      Otherwise, we read the program counter,
-     we read the 32-bit of the instruction from there
+     we read the 32-bit encoding of the instruction from there
      (which is always little endian [ISA:1.5.1]),
      we decode it, and, if we obtain an instruction,
      we run the semantic function of the instruction;
@@ -51,7 +51,7 @@
   (b* (((when (error32p stat)) (state32-fix stat))
        (pc (read32-pc stat))
        (enc (read32-mem-ubyte32-lendian pc stat))
-       (instr? (decode enc (feat-rv32i)))
+       (instr? (decode enc (feat-rv32im)))
        ((unless instr?) (error32 stat)))
     (exec32-instr instr? pc stat))
   :hooks (:fix))
