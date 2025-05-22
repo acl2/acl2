@@ -1534,6 +1534,7 @@
     extend-progn
     get-vars-from-term
     doublets-to-alist
+    translate-term
     translate-terms
     myquotep
     variablep

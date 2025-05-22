@@ -2579,7 +2579,7 @@
     (param-declor-case
      paramdeclor
      :nonabstract (b* ((pstate (print-astring " " pstate))
-                       (pstate (print-declor paramdeclor.unwrap pstate)))
+                       (pstate (print-declor paramdeclor.declor pstate)))
                     pstate)
      :abstract (b* ((pstate (print-astring " " pstate))
                     (pstate (print-absdeclor paramdeclor.unwrap pstate)))

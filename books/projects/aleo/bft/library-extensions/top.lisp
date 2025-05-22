@@ -36,6 +36,6 @@
   :order-subtopics (arithmetic-theorems
                     oset-theorems
                     omap-theorems
-                    oset-nonemptyp
+                    set::nonemptyp
                     lists-noforkp)
   :default-parent t)

@@ -1600,7 +1600,6 @@
        (stmt (stmt-return expr?))
        (stmt-new (stmt-return expr?-new))
        ((unless (and expr?
-                     (type-case (expr-type expr?) :sint)
                      expr?-thm-name))
         (mv stmt-new
             (make-simpadd0-gout
@@ -1617,7 +1616,8 @@
                               (:e ident)
                               (:e c::expr-kind)
                               (:e c::stmt-return)
-                              (:e c::type-sint))
+                              (:e c::type-sint)
+                              (:e c::type-nonchar-integerp))
                  :use (,expr?-thm-name
                        (:instance
                         simpadd0-stmt-return-support-lemma-1
@@ -1661,7 +1661,8 @@
          (old-expr-value (c::expr-value->value old-expr-result))
          (new-expr-value (c::expr-value->value new-expr-result))
          ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
-         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit))
+         (type (c::type-of-value old-expr-value)))
       (implies (and old-expr
                     new-expr
                     (not (equal (c::expr-kind old-expr) :call))
@@ -1669,17 +1670,18 @@
                     (not (c::errorp old-result))
                     (not (c::errorp new-expr-result))
                     (equal old-expr-value new-expr-value)
-                    (equal (c::type-of-value old-expr-value) (c::type-sint)))
+                    (c::type-nonchar-integerp type))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     old-result
-                    (equal (c::type-of-value old-result) (c::type-sint)))))
+                    (equal (c::type-of-value old-result) type))))
     :expand ((c::exec-stmt (c::stmt-return old-expr) compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) compst new-fenv limit))
     :enable (c::exec-expr-call-or-pure
              c::type-of-value
-             c::apconvert-expr-value-when-not-array))
+             c::apconvert-expr-value-when-not-array
+             c::type-nonchar-integerp))
 
   (defruled simpadd0-stmt-return-support-lemma-2
     (implies (and expr
@@ -1736,7 +1738,8 @@
                               (:e ldm-ident)
                               (:e ident)
                               (:e c::block-item-stmt)
-                              (:e c::type-sint))
+                              (:e c::type-sint)
+                              (:e c::type-nonchar-integerp))
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-stmt-support-lemma-1
@@ -1782,18 +1785,19 @@
          ((mv old-result old-compst)
           (c::exec-block-item old compst old-fenv limit))
          ((mv new-result new-compst)
-          (c::exec-block-item new compst new-fenv limit)))
+          (c::exec-block-item new compst new-fenv limit))
+         (type (c::type-of-value old-stmt-result)))
       (implies (and (not (c::errorp old-result))
                     (not (c::errorp new-stmt-result))
                     (equal old-stmt-result new-stmt-result)
                     (equal old-stmt-compst new-stmt-compst)
                     old-stmt-result
-                    (equal (c::type-of-value old-stmt-result) (c::type-sint)))
+                    (c::type-nonchar-integerp type))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     old-result
-                    (equal (c::type-of-value old-result) (c::type-sint)))))
+                    (equal (c::type-of-value old-result) type))))
     :expand
     ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
      (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
@@ -1845,7 +1849,8 @@
                               (:e ldm-block-item)
                               (:e ldm-ident)
                               (:e ident)
-                              (:e c::type-sint))
+                              (:e c::type-sint)
+                              (:e c::type-nonchar-integerp))
                  :use ((:instance ,item-thm-name (limit (1- limit)))
                        (:instance
                         simpadd0-block-item-list-support-lemma-1
@@ -1891,18 +1896,19 @@
          ((mv old-result old-compst)
           (c::exec-block-item-list old compst old-fenv limit))
          ((mv new-result new-compst)
-          (c::exec-block-item-list new compst new-fenv limit)))
+          (c::exec-block-item-list new compst new-fenv limit))
+         (type (c::type-of-value old-item-result)))
       (implies (and (not (c::errorp old-result))
                     (not (c::errorp new-item-result))
                     (equal old-item-result new-item-result)
                     (equal old-item-compst new-item-compst)
                     old-item-result
-                    (equal (c::type-of-value old-item-result) (c::type-sint)))
+                    (c::type-nonchar-integerp type))
                (and (not (c::errorp new-result))
                     (equal old-result new-result)
                     (equal old-compst new-compst)
                     old-result
-                    (equal (c::type-of-value old-result) (c::type-sint)))))
+                    (equal (c::type-of-value old-result) type))))
     :expand ((c::exec-block-item-list (list old-item) compst old-fenv limit)
              (c::exec-block-item-list (list new-item) compst new-fenv limit))
     :enable (c::exec-block-item-list
@@ -3414,7 +3420,7 @@
       (param-declor-case
        paramdeclor
        :nonabstract (b* (((mv new-declor (simpadd0-gout gout-declor))
-                          (simpadd0-declor paramdeclor.unwrap gin state)))
+                          (simpadd0-declor paramdeclor.declor gin state)))
                       (mv (param-declor-nonabstract new-declor)
                           (make-simpadd0-gout
                            :events gout-declor.events
@@ -4536,7 +4542,8 @@
                     gout-declor.diffp
                     gout-decls.diffp
                     gout-body.diffp)))
-       ((unless gout-body.thm-name)
+       ((unless (and gout-body.thm-name
+                     (type-case (block-item-list-type items) :sint)))
         (mv new-fundef gout-no-thm))
        ((unless (fundef-formalp fundef))
         (mv new-fundef gout-no-thm))

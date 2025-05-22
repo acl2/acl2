@@ -28,15 +28,18 @@
                                       inputs2
                                       output2
                                       extra-rules ; a form to be evaluated
-                                      )
+                                      count-hits
+                                      print)
   (declare (xargs :guard (and (stringp executable1)
                               (stringp function1)
                               (names-and-typesp inputs1)
-                              (output-indicatorp output1)
+                              ;; (output-indicatorp output1)
                               (stringp executable2)
                               (stringp function2)
                               (names-and-typesp inputs2)
-                              (output-indicatorp output2))))
+                              ;; (output-indicatorp output2)
+                              (or (eq :auto count-hits) (acl2::count-hits-argp count-hits))
+                              (or (eq :auto count-hits) (acl2::print-levelp print)))))
   (b* (((when (and (equal executable1 executable2)
                    (equal function1 function2)
                    (equal output1 output2)))
@@ -53,12 +56,19 @@
        (def-unrolled ,name1 ,executable1 ; no replacement of register with fresh vars (for now), so that the functions each just take a single param, x86
          :target ,function1
          :inputs ,inputs1
-         :output ,output1)
+         :output ,output1
+         ;; For the :auto values, we insert nothing into the calls of
+         ;; def-unrolled, thus arranging to get whatever that tool uses by
+         ;; default for those options:
+         ,@(if (eq :auto count-hits) nil `(:count-hits ,count-hits))
+         ,@(if (eq :auto print) nil `(:print ,print)))
        ;; Lift the second function:
        (def-unrolled ,name2 ,executable2
          :target ,function2
          :inputs ,inputs2
-         :output ,output2)
+         :output ,output2
+         ,@(if (eq :auto count-hits) nil `(:count-hits ,count-hits))
+         ,@(if (eq :auto print) nil `(:print ,print)))
        ;; TODO: Check for mismatch in the inputs
        ;; TODO: Check for output indicators that mean the proof will fail (e.g., checking a scalar against a state)
        ;; Prove that the 2 lifted representations are equivalent:
@@ -84,7 +94,9 @@
                                       inputs2
                                       output2
                                       &key
-                                      (extra-rules 'nil))
+                                      (extra-rules 'nil)
+                                      (count-hits ':auto)
+                                      (print ':auto))
   (prove-functions-equivalent-fn executable1
                                  function1
                                  inputs1
@@ -93,4 +105,6 @@
                                  function2
                                  inputs2
                                  output2
-                                 extra-rules))
+                                 extra-rules
+                                 count-hits
+                                 print))

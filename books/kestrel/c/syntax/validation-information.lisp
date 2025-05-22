@@ -570,28 +570,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled transunit-annop-of-head-when-filepath-transunit-map-annop
+(defruled filepath-transunit-map-annop-when-not-emptyp
   (implies (and (filepath-transunit-mapp map)
-                (filepath-transunit-map-annop map)
                 (not (omap::emptyp map)))
-           (transunit-annop (mv-nth 1 (omap::head map))))
-  :induct t
+           (equal (filepath-transunit-map-annop map)
+                  (and (transunit-annop (omap::head-val map))
+                       (filepath-transunit-map-annop (omap::tail map)))))
   :enable filepath-transunit-map-annop)
 
 (add-to-ruleset abstract-syntax-annop-rules
-                '(transunit-annop-of-head-when-filepath-transunit-map-annop))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled filepath-transunit-map-annop-of-tail
-  (implies (and (filepath-transunit-mapp map)
-                (filepath-transunit-map-annop map))
-           (filepath-transunit-map-annop (omap::tail map)))
-  :induct t
-  :enable filepath-transunit-map-annop)
-
-(add-to-ruleset abstract-syntax-annop-rules
-                '(filepath-transunit-map-annop-of-tail))
+                '(filepath-transunit-map-annop-when-not-emptyp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
