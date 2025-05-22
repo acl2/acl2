@@ -783,6 +783,43 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define read-instruction ((addr integerp) (stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (val ubyte32p
+                :hints (("Goal" :in-theory (enable ubyte32p
+                                                   unsigned-byte-p
+                                                   integer-range-p))))
+  :short "Read the 32-bit encoding of an instruction from memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Instructions are always stored in little endian [ISA:1.5.1],
+     so the memory address is the one of the first byte;
+     we read that, and the subsequent bytes.")
+   (xdoc::p
+    "As in @(tsee read-memory-unsigned8),
+     we let the address be any integer.
+     We use @(tsee read-memory-unsigned8) four times.
+     Note that if @('addr') is close to @('2^XLEN - 1'),
+     then the subsequent addresses may wrap around to addres 0."))
+  (b* ((addr (lifix addr))
+       (b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ addr 3) stat feat)))
+    (+ b0
+       (ash b1 8)
+       (ash b2 16)
+       (ash b3 24)))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (val natp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define errorp ((stat statp) (feat featp))
   :guard (stat-validp stat feat)
   (declare (ignore feat))
