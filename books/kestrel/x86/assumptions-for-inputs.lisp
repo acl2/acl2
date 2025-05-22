@@ -195,7 +195,7 @@
          (and (symbol-listp names)
               ;; Can't use the same name as a register (would make the output-indicator ambiguous):
               ;; todo: print a message when this check fails:
-              (not (intersection-equal (acl2::map-symbol-name names) '("RAX" "EAX" "ZMM0" "YMM0" "XMM0"))) ; todo: keep in sync with normal-output-indicatorp
+              (not (intersection-equal (acl2::map-symbol-name names) '("RAX" "EAX" "ZMM0" "YMM0" "XMM0"))) ; todo: keep in sync with wrap-in-normal-output-extractor
               ;; Types are symbols, e.g., u8[64]:
               (symbol-listp types)))))
 
