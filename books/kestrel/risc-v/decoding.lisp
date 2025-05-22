@@ -500,4 +500,13 @@
     (#b1101111 ; JAL [ISA:2.5.1]
      (b* (((mv rd imm) (decode-jtype enc)))
        (instr-jal rd imm)))
-    (t nil)))
+    (t nil))
+
+  ///
+
+  (defret instr-validp-of-decode
+    (implies instr?
+             (instr-validp instr? feat))
+    :hints (("Goal"
+             :do-not '(preprocess) ; for speed
+             :in-theory (enable instr-validp)))))
