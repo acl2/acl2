@@ -31,8 +31,10 @@
      We are in the process of consolidating them into one model for both;
      towards that end, we also provide
      a more generic semantics of instructions here."))
+  :default-parent t
   :order-subtopics (semantics32
-                    semantics64))
+                    semantics64
+                    t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
