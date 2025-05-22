@@ -1,7 +1,7 @@
 ; Supporting rules about bit-vectors
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -71,11 +71,11 @@
 
 ;move
 (defthm slice-of-logapp-case-1
-  (implies (and (natp high)
+  (implies (and (<= lowsize low) ; this case
+                (unsigned-byte-p lowsize lowval)
+                (natp high)
                 (natp low)
                 ;; (natp lowsize)
-                (<= lowsize low) ; this case
-                (unsigned-byte-p lowsize lowval)
                 (integerp highval))
            (equal (slice high low (logapp lowsize lowval highval))
                   (slice (+ (- lowsize) high) (+ (- lowsize) low) highval)))
@@ -88,11 +88,10 @@
                            (i lowval)
                            (j (BVCHOP (+ LOW (- LOWSIZE)) HIGHVAL))))))
 
-
 (defthm plus-of-minus1-and-bvcat-of-0
   (implies (and (posp lowsize)
                 (integerp highval)
-                (natp HIGHSIZE))
+                (natp highsize))
            (equal (+ -1 (bvcat highsize highval lowsize 0))
                   (if (equal (bvchop highsize highval) 0)
                       -1
@@ -108,7 +107,8 @@
 ;;                   (+ -1 (expt 2 size))))
 ;;   :hints (("Goal" :in-theory (enable bvcat))))
 
-(defthm bvshr-of-logand-becomes-bvshr-of-bvand
+;drop?  we now have bvshr-convert-arg2-to-bv-axe
+(defthmd bvshr-of-logand-becomes-bvshr-of-bvand
   (implies (and (natp amt)
                 (< amt 32))
            (equal (bvshr 32 (logand x y) amt)
@@ -123,12 +123,14 @@
                                    BVAND-LOGTAIL-ARG1 ;looped
                                    )))))
 
+;gen
 (defthm bvchop-of-+-of-*-of-256
   (implies (and (integerp x)
                 (integerp y))
            (equal (bvchop 8 (+ x (* 256 y)))
                   (bvchop 8 x))))
 
+;go to bvmult first?
 (defthm bvplus-of-*-of-256
   (implies (and (natp size)
                 (<= 8 size)
