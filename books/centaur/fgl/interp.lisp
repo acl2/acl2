@@ -7250,14 +7250,14 @@
                            (car args)))
     :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
 
-  (defthm fgl-ev-equiv-of-assume-call
-    (implies (member (pseudo-fnsym-fix fn) '(assume syntax-interp-fn fgl-interp-obj))
+  (defthm fgl-ev-equiv-of-syntax-interp-call
+    (implies (member (pseudo-fnsym-fix fn) '(syntax-interp-fn fgl-interp-obj))
              (fgl-ev-equiv (pseudo-term-fncall fn args)
                            nil))
     :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
 
   (defthm fgl-ev-equiv-of-narrow-equiv-call
-    (implies (member (pseudo-fnsym-fix fn) '(narrow-equiv fgl-time-fn))
+    (implies (member (pseudo-fnsym-fix fn) '(assume narrow-equiv fgl-time-fn))
              (fgl-ev-equiv (pseudo-term-fncall fn args)
                            (second args)))
     :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
@@ -10001,8 +10001,14 @@
                    (fgl-object-eval xobj env new-logicman)
                    `(if ,x 't 'nil) eval-alist)))
 
-                ((or (:fnname fgl-interp-assume)
-                     (:fnname fgl-interp-fgl-interp-obj))
+                ((:fnname fgl-interp-assume)
+                 (:add-concl
+                  (fgl-ev-context-equiv-forall-extensions
+                   (interp-st->equiv-contexts interp-st)
+                   (fgl-object-eval ans env new-logicman)
+                   x eval-alist)))
+                
+                ((:fnname fgl-interp-fgl-interp-obj)
                  (:add-concl
                   (fgl-ev-context-equiv-forall-extensions
                    (interp-st->equiv-contexts interp-st)

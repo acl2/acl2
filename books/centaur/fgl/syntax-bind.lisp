@@ -140,12 +140,12 @@ state.</p>")
   :enabled t
   :parents (fgl-rewrite-rules)
   :short "FGL testbench function to assume some condition while interpreting a term."
-  :long "<p>Logically, @('(assume test val)') just returns NIL.  When it is
+  :long "<p>Logically, @('(assume test val)') just returns VAL.  When it is
 encountered by the FGL interpreter under an @('unequiv') congruence, it
 causes the interpreter to assume that @('test') is true while interpreting
 @('val'), returning the symbolic result from @('val').</p>
 "
-  nil)
+  val)
 
 (define narrow-equiv (equiv val)
   :ignore-ok t
