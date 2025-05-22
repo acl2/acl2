@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ unequivocal-dag
+(defxdoc+ unequivocal-dags
   :parents (correctness)
   :short "Invariant that DAGs are unequivocal:
           proof that it holds in every reachable state."
