@@ -10,7 +10,6 @@
 
 (in-package "RISCV")
 
-(include-book "library-extensions")
 (include-book "instructions")
 (include-book "states64")
 
@@ -31,8 +30,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semantics64
-  :parents (semantics)
-  :short "Semantics of instructions for RV64I."
+  :parents (rv64im)
+  :short "Semantics of instructions for RV64IM."
   :long
   (xdoc::topstring
    (xdoc::p

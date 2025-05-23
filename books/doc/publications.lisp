@@ -1736,6 +1736,7 @@
  <li><a href='https://www.youtube.com/watch?v=jtprDAfVtos'>Formal Verification of Cryptographic Code (Eric Smith, 2018)</a></li>
  <li><a href='https://www.youtube.com/watch?v=9JHZKR-gc4w'>Formal Verification of JubJub R1CS Gadgets (Alessandro Coglio, Eric McCarthy, Eric Smith, 2021)</a></li>
  <li><a href='https://www.youtube.com/watch?v=U-y8UNccnIw'>Protocol Analysis Using Real Analysis in ACL2 (Max von Hippel, 2023)</a></li>
+ <li><a href='https://youtu.be/43rJSPqDeSM&amp;t=30m30s'>Compositional Formal Verification of Zero-Knowledge Circuits</a> from <a href='https://cbr.stanford.edu/sbc23/'>SBC 2023</a> (Alessandro Coglio, Eric McCarthy, Eric Smith, Collin Chin, Pranav Gaddamadugu, Michel Dellepere)</li>
  <li><a href='https://www.youtube.com/watch?v=PekrHpG1C_s'>An ACL2-based x86-ISA Specification (Warren Hunt, 2024)</a></li>
  <li><a href='http://www.cs.utexas.edu/users/kaufmann/demos/acl2-doc.mov'>Demo of
  the ACL2-Doc Emacs-based documentation browser</a> (also see <see

@@ -2351,7 +2351,7 @@
        either a declarator or an abstract declarator or nothing.
        These are the three possibilities for what can follow
        the declaration specifiers in a parameter declaration."))
-    (:nonabstract ((unwrap declor)))
+    (:nonabstract ((declor declor)))
     (:abstract ((unwrap absdeclor)))
     (:none ())
     (:ambig ((unwrap amb-declor/absdeclor)))

@@ -10,10 +10,12 @@
 
 (in-package "RISCV")
 
+(include-book "library-extensions")
 (include-book "features")
-(include-book "states32")
-(include-book "states64")
 
+(include-book "kestrel/fty/ubyte8-list" :dir :system)
+(include-book "kestrel/fty/ubyte32-list" :dir :system)
+(include-book "kestrel/fty/ubyte64-list" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
 
 (local (include-book "arithmetic-5/top" :dir :system))
@@ -34,15 +36,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently we have two similar but slightly different models,
-     one for RV32I and one for RV64I.
-     We are in the process of consolidating them into one model for both;
-     towards that end, we also provide
-     a more generic definition of states here."))
+    "We introduce a model of states,
+     along with operations on those states.
+     We capture all possible states for all possible RISC-V features,
+     but we also introduce a predicate saying when a state
+     is valid with respect to given features."))
   :default-parent t
-  :order-subtopics (states32
-                    states64
-                    t))
+  :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -125,24 +125,24 @@
        (xlen (feat->xlen feat))
        (xnum (feat->xnum feat)))
     (and (unsigned-byte-listp xlen stat.xregs)
-         (equal (len stat.xregs) xnum)
+         (equal (len stat.xregs) (1- xnum))
          (unsigned-byte-p xlen stat.pc)
          (equal (len stat.memory) (expt 2 xlen))))
   :hooks (:fix)
 
   ///
 
-  (defrule unsigned-byte-listp-of-stat->xregs
-    (implies (stat-validp stat feat)
-             (unsigned-byte-listp (feat->xlen feat)
-                                  (stat->xregs stat))))
-
   (defrule true-listp-of-stat->xregs
     (implies (stat-validp stat feat)
              (true-listp (stat->xregs stat)))
     :rule-classes :type-prescription)
 
-  (defrule ubyte32-listp-of-stat->xregs
+  (defrule unsigned-byte-listp-of-stat->xregs
+    (implies (stat-validp stat feat)
+             (unsigned-byte-listp (feat->xlen feat)
+                                  (stat->xregs stat))))
+
+  (defrule ubyte32-listp-of-stat->xregs-when-32p
     (implies (and (stat-validp stat feat)
                   (feat-32p feat))
              (ubyte32-listp (stat->xregs stat)))
@@ -150,7 +150,7 @@
     (("Goal"
       :in-theory (enable acl2::ubyte32-listp-rewrite-unsigned-byte-listp))))
 
-  (defrule ubyte64-listp-of-stat->xregs
+  (defrule ubyte64-listp-of-stat->xregs-when-64p
     (implies (and (stat-validp stat feat)
                   (feat-64p feat))
              (ubyte64-listp (stat->xregs stat)))
@@ -161,7 +161,7 @@
   (defrule len-of-stat->xregs
     (implies (stat-validp stat feat)
              (equal (len (stat->xregs stat))
-                    (feat->xnum feat)))
+                    (1- (feat->xnum feat))))
     :hints (("Goal" :in-theory (enable feat->xnum))))
 
   (defrule unsigned-byte-p-of-stat->pc
@@ -169,13 +169,13 @@
              (unsigned-byte-p (feat->xlen feat)
                               (stat->pc stat))))
 
-  (defrule ubyte32p-of-stat->pc
+  (defrule ubyte32p-of-stat->pc-when-32p
     (implies (and (stat-validp stat feat)
                   (feat-32p feat))
              (ubyte32p (stat->pc stat)))
     :hints (("Goal" :in-theory (enable ubyte32p))))
 
-  (defrule ubyte64p-of-stat->pc
+  (defrule ubyte64p-of-stat->pc-when-64p
     (implies (and (stat-validp stat feat)
                   (feat-64p feat))
              (ubyte64p (stat->pc stat)))
@@ -780,3 +780,67 @@
   (defret stat-validp-of-write-memory-unsigned64
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-instruction ((addr integerp) (stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  :returns (val ubyte32p
+                :hints (("Goal" :in-theory (enable ubyte32p
+                                                   unsigned-byte-p
+                                                   integer-range-p))))
+  :short "Read the 32-bit encoding of an instruction from memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Instructions are always stored in little endian [ISA:1.5.1],
+     so the memory address is the one of the first byte;
+     we read that, and the subsequent bytes.")
+   (xdoc::p
+    "As in @(tsee read-memory-unsigned8),
+     we let the address be any integer.
+     We use @(tsee read-memory-unsigned8) four times.
+     Note that if @('addr') is close to @('2^XLEN - 1'),
+     then the subsequent addresses may wrap around to addres 0."))
+  (b* ((addr (lifix addr))
+       (b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ addr 3) stat feat)))
+    (+ b0
+       (ash b1 8)
+       (ash b2 16)
+       (ash b3 24)))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (val natp :rule-classes :type-prescription)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define errorp ((stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  (declare (ignore feat))
+  :returns (yes/no booleanp)
+  :short "Check if the error flag in the state is set."
+  (stat->error stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define error ((stat statp) (feat featp))
+  :guard (stat-validp stat feat)
+  (declare (ignore feat))
+  :returns (new-stat statp)
+  :short "Set the error flag in the state."
+  (change-stat stat :error t)
+  :hooks (:fix)
+
+  ///
+
+  (defret stat-validp-of-error
+    (stat-validp new-stat feat)
+    :hyp (stat-validp stat feat)
+    :hints (("Goal" :in-theory (enable stat-validp)))))

@@ -79,7 +79,7 @@
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
-      :nonabstract (declor->ident paramdecl.declor.unwrap)
+      :nonabstract (declor->ident paramdecl.declor.declor)
       :otherwise nil)))
 
 (define param-declon-to-decl
@@ -95,7 +95,7 @@
                        (make-decl-decl
                         :extension nil
                         :specs paramdecl.specs
-                        :init (cons (initdeclor paramdecl.declor.unwrap nil nil init?) nil)))
+                        :init (cons (initdeclor paramdecl.declor.declor nil nil init?) nil)))
       :otherwise (mv nil (irr-decl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

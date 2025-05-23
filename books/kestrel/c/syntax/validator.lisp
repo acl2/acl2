@@ -4332,7 +4332,7 @@
        paramdeclor
        :nonabstract
        (b* (((erp new-declor & type ident types table)
-             (valid-declor paramdeclor.unwrap nil type table ienv)))
+             (valid-declor paramdeclor.declor nil type table ienv)))
          (retok (param-declor-nonabstract new-declor)
                 type
                 ident

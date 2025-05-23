@@ -16,10 +16,14 @@
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/ubyte3" :dir :system)
 (include-book "kestrel/fty/ubyte7" :dir :system)
-(include-book "kestrel/fty/ubyte32" :dir :system)
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,7 +134,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-imm-stype ((enc ubyte32p))
-  :returns (imm ubyte12p :hints (("Goal" :in-theory (enable ubyte12p))))
+  :returns (imm ubyte12p :hints (("Goal" :in-theory (enable ubyte12p
+                                                            unsigned-byte-p
+                                                            ifix
+                                                            integer-range-p))))
   :short "Retrieve the immediate field of an S-type instruction."
   :long
   (xdoc::topstring
@@ -145,7 +152,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-imm-btype ((enc ubyte32p))
-  :returns (imm ubyte12p :hints (("Goal" :in-theory (enable ubyte12p))))
+  :returns (imm ubyte12p :hints (("Goal" :in-theory (enable ubyte12p
+                                                            unsigned-byte-p
+                                                            ifix
+                                                            integer-range-p))))
   :short "Retrieve the immediate field of a B-type instruction."
   :long
   (xdoc::topstring
@@ -180,7 +190,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-imm-jtype ((enc ubyte32p))
-  :returns (imm ubyte20p :hints (("Goal" :in-theory (enable ubyte20p))))
+  :returns (imm ubyte20p :hints (("Goal" :in-theory (enable ubyte20p
+                                                            unsigned-byte-p
+                                                            ifix
+                                                            integer-range-p))))
   :short "Retrieve the immediate field of a J-type instruction."
   :long
   (xdoc::topstring
@@ -311,193 +324,204 @@
      shift instructions are encoded in a specialization of the I-type format,
      where the low 5 bits of the immediate are the shift amount,
      while the high 7 bits need to have specific values."))
-  (case (get-opcode enc)
-    (#b0000011 ; LOAD [ISA:2.6] [ISA:4.3]
-     (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
-          (funct (case funct3
-                   (#b000 (load-funct-lb))
-                   (#b001 (load-funct-lh))
-                   (#b010 (load-funct-lw))
-                   (#b011 (if (feat-64p feat)
-                              (load-funct-ld)
-                            nil))
-                   (#b100 (load-funct-lbu))
-                   (#b101 (load-funct-lhu))
-                   (#b110 (if (feat-64p feat)
-                              (load-funct-lwu)
-                            nil))
-                   (#b111 nil)))
-          ((unless funct) nil))
-       (instr-load funct rd rs1 imm)))
-    (#b0010011 ; OP-IMM [ISA:2.4.1]
-     (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
-          (funct (case funct3
-                   (#b000 (op-imm-funct-addi))
-                   (#b001 nil) ; could be SLLI, handled below
-                   (#b010 (op-imm-funct-slti))
-                   (#b011 (op-imm-funct-sltiu))
-                   (#b100 (op-imm-funct-xori))
-                   (#b101 nil) ; could be SRLI or SRAI, handled below
-                   (#b110 (op-imm-funct-ori))
-                   (#b111 (op-imm-funct-andi))))
-          ((when funct) (instr-op-imm funct rd rs1 imm)))
-       (if (feat-64p feat)
-           (b* ((loimm (part-select imm :low 0 :high 5))
-                (hiimm (part-select imm :low 6 :high 11))
+  (b* ((enc (ubyte32-fix enc)))
+    (case (get-opcode enc)
+      (#b0000011 ; LOAD [ISA:2.6] [ISA:4.3]
+       (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
+            (funct (case funct3
+                     (#b000 (load-funct-lb))
+                     (#b001 (load-funct-lh))
+                     (#b010 (load-funct-lw))
+                     (#b011 (if (feat-64p feat)
+                                (load-funct-ld)
+                              nil))
+                     (#b100 (load-funct-lbu))
+                     (#b101 (load-funct-lhu))
+                     (#b110 (if (feat-64p feat)
+                                (load-funct-lwu)
+                              nil))
+                     (#b111 nil)))
+            ((unless funct) nil))
+         (instr-load funct rd rs1 imm)))
+      (#b0010011 ; OP-IMM [ISA:2.4.1]
+       (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
+            (funct (case funct3
+                     (#b000 (op-imm-funct-addi))
+                     (#b001 nil) ; could be SLLI, handled below
+                     (#b010 (op-imm-funct-slti))
+                     (#b011 (op-imm-funct-sltiu))
+                     (#b100 (op-imm-funct-xori))
+                     (#b101 nil) ; could be SRLI or SRAI, handled below
+                     (#b110 (op-imm-funct-ori))
+                     (#b111 (op-imm-funct-andi))))
+            ((when funct) (instr-op-imm funct rd rs1 imm)))
+         (if (feat-64p feat)
+             (b* ((loimm (part-select imm :low 0 :high 5))
+                  (hiimm (part-select imm :low 6 :high 11))
+                  ((when (= funct3 #b001))
+                   (if (= hiimm #b000000)
+                       (if (feat-64p feat)
+                           (instr-op-imms64 (op-imms-funct-slli) rd rs1 loimm)
+                         nil)
+                     nil)))
+               (case hiimm
+                 (#b000000 (if (feat-64p feat)
+                               (instr-op-imms64 (op-imms-funct-srli) rd rs1 loimm)
+                             nil))
+                 (#b010000 (if (feat-64p feat)
+                               (instr-op-imms64 (op-imms-funct-srai) rd rs1 loimm)
+                             nil))
+                 (t nil)))
+           (b* ((loimm (part-select imm :low 0 :high 4))
+                (hiimm (part-select imm :low 5 :high 11))
                 ((when (= funct3 #b001))
                  (if (= hiimm #b000000)
-                     (if (feat-64p feat)
-                         (instr-op-imms64 (op-imms-funct-slli) rd rs1 loimm)
+                     (if (feat-32p feat)
+                         (instr-op-imms32 (op-imms-funct-slli) rd rs1 loimm)
                        nil)
                    nil)))
              (case hiimm
-               (#b000000 (if (feat-64p feat)
-                             (instr-op-imms64 (op-imms-funct-srli) rd rs1 loimm)
+               (#b000000 (if (feat-32p feat)
+                             (instr-op-imms32 (op-imms-funct-srli) rd rs1 loimm)
                            nil))
-               (#b010000 (if (feat-64p feat)
-                             (instr-op-imms64 (op-imms-funct-srai) rd rs1 loimm)
+               (#b010000 (if (feat-32p feat)
+                             (instr-op-imms32 (op-imms-funct-srai) rd rs1 loimm)
                            nil))
-               (t nil)))
-         (b* ((loimm (part-select imm :low 0 :high 4))
-              (hiimm (part-select imm :low 5 :high 11))
-              ((when (= funct3 #b001))
-               (if (= hiimm #b000000)
-                   (if (feat-32p feat)
-                       (instr-op-imms32 (op-imms-funct-slli) rd rs1 loimm)
-                     nil)
-                 nil)))
-           (case hiimm
-             (#b000000 (if (feat-32p feat)
-                           (instr-op-imms32 (op-imms-funct-srli) rd rs1 loimm)
-                         nil))
-             (#b010000 (if (feat-32p feat)
-                           (instr-op-imms32 (op-imms-funct-srai) rd rs1 loimm)
-                         nil))
-             (t nil))))))
-    (#b0010111 ; AUIPC [ISA:2.4.1]
-     (b* (((mv rd imm) (decode-utype enc)))
-       (instr-auipc rd imm)))
-    (#b0011011 ; OP-IMM-32 [ISA:4.2.1]
-     (b* (((unless (feat-64p feat)) nil)
-          ((mv funct3 rd rs1 imm) (decode-itype enc))
-          ((when (= funct3 #b000))
-           (instr-op-imm-32 (op-imm-32-funct-addiw) rd rs1 imm))
-          (loimm (part-select imm :low 0 :high 4))
-          (hiimm (part-select imm :low 5 :high 11))
-          ((when (= funct3 #b001))
-           (if (= hiimm #b0000000)
-               (instr-op-imms-32 (op-imms-32-funct-slliw) rd rs1 loimm)
-             nil))
-          ((when (= funct3 #b101))
-           (case hiimm
-             (#b0000000 (instr-op-imms-32
-                         (op-imms-32-funct-srliw) rd rs1 loimm))
-             (#b0100000 (instr-op-imms-32
-                         (op-imms-32-funct-sraiw) rd rs1 loimm))
-             (t nil))))
-       nil))
-    (#b0100011 ; STORE [ISA:2.6] [ISA:4.3]
-     (b* (((mv funct3 rs1 rs2 imm) (decode-stype enc))
-          (funct (case funct3
-                   (#b000 (store-funct-sb))
-                   (#b001 (store-funct-sh))
-                   (#b010 (store-funct-sw))
-                   (#b011 (if (feat-64p feat)
-                              (store-funct-sd)
-                            nil))
-                   (t nil)))
-          ((unless funct) nil))
-       (instr-store funct rs1 rs2 imm)))
-    (#b0110011 ; OP [ISA:2.4.2] [ISA:13.1] [ISA:13.2]
-     (b* (((mv funct3 funct7 rd rs1 rs2) (decode-rtype enc))
-          (funct (case funct3
-                   (#b000 (case funct7
-                            (#b0000000 (op-funct-add))
-                            (#b0000001 (op-funct-mul))
-                            (#b0100000 (op-funct-sub))
-                            (t nil)))
-                   (#b001 (case funct7
-                            (#b0000000 (op-funct-sll))
-                            (#b0000001 (op-funct-mulh))
-                            (t nil)))
-                   (#b010 (case funct7
-                            (#b0000000 (op-funct-slt))
-                            (#b0000001 (op-funct-mulhsu))
-                            (t nil)))
-                   (#b011 (case funct7
-                            (#b0000000 (op-funct-sltu))
-                            (#b0000001 (op-funct-mulhu))
-                            (t nil)))
-                   (#b100 (case funct7
-                            (#b0000000 (op-funct-xor))
-                            (#b0000001 (op-funct-div))
-                            (t nil)))
-                   (#b101 (case funct7
-                            (#b0000000 (op-funct-srl))
-                            (#b0000001 (op-funct-divu))
-                            (#b0100000 (op-funct-sra))
-                            (t nil)))
-                   (#b110 (case funct7
-                            (#b0000000 (op-funct-or))
-                            (#b0000001 (op-funct-rem))
-                            (t nil)))
-                   (#b111 (case funct7
-                            (#b0000000 (op-funct-and))
-                            (#b0000001 (op-funct-remu))
-                            (t nil)))))
-          ((unless funct) nil))
-       (instr-op funct rd rs1 rs2)))
-    (#b0110111 ; LUI [ISA:2.4.1]
-     (b* (((mv rd imm) (decode-utype enc)))
-       (instr-lui rd imm)))
-    (#b0111011 ; OP-32 [ISA:4.2.2]
-     (b* (((unless (feat-64p feat)) nil)
-          ((mv funct3 funct7 rd rs1 rs2) (decode-rtype enc))
-          (funct (case funct3
-                   (#b000 (case funct7
-                            (#b0000000 (op-32-funct-addw))
-                            (#b0000001 (op-32-funct-mulw))
-                            (#b0100000 (op-32-funct-subw))
-                            (t nil)))
-                   (#b001 (case funct7
-                            (#b0000000 (op-32-funct-sllw))
-                            (t nil)))
-                   (#b010 nil)
-                   (#b011 nil)
-                   (#b100 (case funct7
-                            (#b0000001 (op-32-funct-divw))
-                            (t nil)))
-                   (#b101 (case funct7
-                            (#b0000000 (op-32-funct-srlw))
-                            (#b0000001 (op-32-funct-divuw))
-                            (#b0100000 (op-32-funct-sraw))
-                            (t nil)))
-                   (#b110 (case funct7
-                            (#b0000001 (op-32-funct-remw))
-                            (t nil)))
-                   (#b111 (case funct7
-                            (#b0000001 (op-32-funct-remuw))
-                            (t nil)))))
-          ((unless funct) nil))
-       (instr-op-32 funct rd rs1 rs2)))
-    (#b1100011 ; BRANCH [ISA:2.5.2]
-     (b* (((mv funct3 rs1 rs2 imm) (decode-btype enc))
-          (funct (case funct3
-                   (#b000 (branch-funct-beq))
-                   (#b001 (branch-funct-bne))
-                   (#b010 nil)
-                   (#b011 nil)
-                   (#b100 (branch-funct-blt))
-                   (#b101 (branch-funct-bge))
-                   (#b110 (branch-funct-bltu))
-                   (#b111 (branch-funct-bgeu))))
-          ((unless funct) nil))
-       (instr-branch funct rs1 rs2 imm)))
-    (#b1100111 ; JALR [ISA:2.5.1]
-     (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
-          ((unless (= funct3 0)) nil))
-       (instr-jalr rd rs1 imm)))
-    (#b1101111 ; JAL [ISA:2.5.1]
-     (b* (((mv rd imm) (decode-jtype enc)))
-       (instr-jal rd imm)))
-    (t nil)))
+               (t nil))))))
+      (#b0010111 ; AUIPC [ISA:2.4.1]
+       (b* (((mv rd imm) (decode-utype enc)))
+         (instr-auipc rd imm)))
+      (#b0011011 ; OP-IMM-32 [ISA:4.2.1]
+       (b* (((unless (feat-64p feat)) nil)
+            ((mv funct3 rd rs1 imm) (decode-itype enc))
+            ((when (= funct3 #b000))
+             (instr-op-imm-32 (op-imm-32-funct-addiw) rd rs1 imm))
+            (loimm (part-select imm :low 0 :high 4))
+            (hiimm (part-select imm :low 5 :high 11))
+            ((when (= funct3 #b001))
+             (if (= hiimm #b0000000)
+                 (instr-op-imms-32 (op-imms-32-funct-slliw) rd rs1 loimm)
+               nil))
+            ((when (= funct3 #b101))
+             (case hiimm
+               (#b0000000 (instr-op-imms-32
+                           (op-imms-32-funct-srliw) rd rs1 loimm))
+               (#b0100000 (instr-op-imms-32
+                           (op-imms-32-funct-sraiw) rd rs1 loimm))
+               (t nil))))
+         nil))
+      (#b0100011 ; STORE [ISA:2.6] [ISA:4.3]
+       (b* (((mv funct3 rs1 rs2 imm) (decode-stype enc))
+            (funct (case funct3
+                     (#b000 (store-funct-sb))
+                     (#b001 (store-funct-sh))
+                     (#b010 (store-funct-sw))
+                     (#b011 (if (feat-64p feat)
+                                (store-funct-sd)
+                              nil))
+                     (t nil)))
+            ((unless funct) nil))
+         (instr-store funct rs1 rs2 imm)))
+      (#b0110011 ; OP [ISA:2.4.2] [ISA:13.1] [ISA:13.2]
+       (b* (((mv funct3 funct7 rd rs1 rs2) (decode-rtype enc))
+            (funct (case funct3
+                     (#b000 (case funct7
+                              (#b0000000 (op-funct-add))
+                              (#b0000001 (op-funct-mul))
+                              (#b0100000 (op-funct-sub))
+                              (t nil)))
+                     (#b001 (case funct7
+                              (#b0000000 (op-funct-sll))
+                              (#b0000001 (op-funct-mulh))
+                              (t nil)))
+                     (#b010 (case funct7
+                              (#b0000000 (op-funct-slt))
+                              (#b0000001 (op-funct-mulhsu))
+                              (t nil)))
+                     (#b011 (case funct7
+                              (#b0000000 (op-funct-sltu))
+                              (#b0000001 (op-funct-mulhu))
+                              (t nil)))
+                     (#b100 (case funct7
+                              (#b0000000 (op-funct-xor))
+                              (#b0000001 (op-funct-div))
+                              (t nil)))
+                     (#b101 (case funct7
+                              (#b0000000 (op-funct-srl))
+                              (#b0000001 (op-funct-divu))
+                              (#b0100000 (op-funct-sra))
+                              (t nil)))
+                     (#b110 (case funct7
+                              (#b0000000 (op-funct-or))
+                              (#b0000001 (op-funct-rem))
+                              (t nil)))
+                     (#b111 (case funct7
+                              (#b0000000 (op-funct-and))
+                              (#b0000001 (op-funct-remu))
+                              (t nil)))))
+            ((unless funct) nil))
+         (instr-op funct rd rs1 rs2)))
+      (#b0110111 ; LUI [ISA:2.4.1]
+       (b* (((mv rd imm) (decode-utype enc)))
+         (instr-lui rd imm)))
+      (#b0111011 ; OP-32 [ISA:4.2.2]
+       (b* (((unless (feat-64p feat)) nil)
+            ((mv funct3 funct7 rd rs1 rs2) (decode-rtype enc))
+            (funct (case funct3
+                     (#b000 (case funct7
+                              (#b0000000 (op-32-funct-addw))
+                              (#b0000001 (op-32-funct-mulw))
+                              (#b0100000 (op-32-funct-subw))
+                              (t nil)))
+                     (#b001 (case funct7
+                              (#b0000000 (op-32-funct-sllw))
+                              (t nil)))
+                     (#b010 nil)
+                     (#b011 nil)
+                     (#b100 (case funct7
+                              (#b0000001 (op-32-funct-divw))
+                              (t nil)))
+                     (#b101 (case funct7
+                              (#b0000000 (op-32-funct-srlw))
+                              (#b0000001 (op-32-funct-divuw))
+                              (#b0100000 (op-32-funct-sraw))
+                              (t nil)))
+                     (#b110 (case funct7
+                              (#b0000001 (op-32-funct-remw))
+                              (t nil)))
+                     (#b111 (case funct7
+                              (#b0000001 (op-32-funct-remuw))
+                              (t nil)))))
+            ((unless funct) nil))
+         (instr-op-32 funct rd rs1 rs2)))
+      (#b1100011 ; BRANCH [ISA:2.5.2]
+       (b* (((mv funct3 rs1 rs2 imm) (decode-btype enc))
+            (funct (case funct3
+                     (#b000 (branch-funct-beq))
+                     (#b001 (branch-funct-bne))
+                     (#b010 nil)
+                     (#b011 nil)
+                     (#b100 (branch-funct-blt))
+                     (#b101 (branch-funct-bge))
+                     (#b110 (branch-funct-bltu))
+                     (#b111 (branch-funct-bgeu))))
+            ((unless funct) nil))
+         (instr-branch funct rs1 rs2 imm)))
+      (#b1100111 ; JALR [ISA:2.5.1]
+       (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
+            ((unless (= funct3 0)) nil))
+         (instr-jalr rd rs1 imm)))
+      (#b1101111 ; JAL [ISA:2.5.1]
+       (b* (((mv rd imm) (decode-jtype enc)))
+         (instr-jal rd imm)))
+      (t nil)))
+  :hooks (:fix)
+
+  ///
+
+  (defret instr-validp-of-decode
+    (implies instr?
+             (instr-validp instr? feat))
+    :hints (("Goal"
+             :do-not '(preprocess) ; for speed
+             :in-theory (enable instr-validp)))))

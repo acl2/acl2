@@ -902,7 +902,7 @@
      The underlying declarator must be supported, for an object."))
   (param-declor-case
    paramdeclor
-   :nonabstract (declor-obj-formalp paramdeclor.unwrap)
+   :nonabstract (declor-obj-formalp paramdeclor.declor)
    :abstract nil
    :none nil
    :ambig (impossible))
