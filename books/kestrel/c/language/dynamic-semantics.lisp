@@ -1515,3 +1515,99 @@
 
   (fty::deffixequiv-mutual exec
     :hints (("Goal" :in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-without-calls
+  :short "Execution not involving function calls is
+          independent from the function environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We express this by saying that
+     when the execution functions are applied to constructs
+     (expressions, statements, etc.)
+     that do not contain function calls,
+     they always yield the same results
+     given any two arbitrary function environments."))
+
+  (defthm-exec-flag
+    (defthm theorem-for-exec-expr-call
+      t
+      :rule-classes nil
+      :flag exec-expr-call)
+    (defthm theorem-for-exec-expr-call-or-pure
+      (implies (expr-nocallsp e)
+               (equal (exec-expr-call-or-pure e compst fenv limit)
+                      (exec-expr-call-or-pure e compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-expr-call-or-pure)
+    (defthm theorem-for-exec-expr-asg
+      (implies (expr-nocallsp e)
+               (equal (exec-expr-asg e compst fenv limit)
+                      (exec-expr-asg e compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-expr-asg)
+    (defthm theorem-for-exec-expr-call-or-asg
+      (implies (expr-nocallsp e)
+               (equal (exec-expr-call-or-asg e compst fenv limit)
+                      (exec-expr-call-or-asg e compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-expr-call-or-asg)
+    (defthm theorem-for-exec-fun
+      t
+      :rule-classes nil
+      :flag exec-fun)
+    (defthm theorem-for-exec-stmt
+      (implies (stmt-nocallsp s)
+               (equal (exec-stmt s compst fenv limit)
+                      (exec-stmt s compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-stmt)
+    (defthm theorem-for-exec-stmt-while
+      (implies (and (expr-nocallsp test)
+                    (stmt-nocallsp body))
+               (equal (exec-stmt-while test body compst fenv limit)
+                      (exec-stmt-while test body compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-stmt-while)
+    (defthm theorem-for-exec-initer
+      (implies (initer-nocallsp initer)
+               (equal (exec-initer initer compst fenv limit)
+                      (exec-initer initer compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-initer)
+    (defthm theorem-for-exec-block-item
+      (implies (block-item-nocallsp item)
+               (equal (exec-block-item item compst fenv limit)
+                      (exec-block-item item compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-block-item)
+    (defthm theorem-for-exec-block-item-list
+      (implies (block-item-list-nocallsp items)
+               (equal (exec-block-item-list items compst fenv limit)
+                      (exec-block-item-list items compst fenv1 limit)))
+      :rule-classes nil
+      :flag exec-block-item-list)
+    :hints (("Goal"
+             :in-theory (enable exec-expr-call
+                                exec-expr-call-or-pure
+                                exec-expr-asg
+                                exec-expr-call-or-asg
+                                exec-stmt
+                                exec-stmt-while
+                                exec-initer
+                                exec-block-item
+                                exec-block-item-list
+                                expr-nocallsp
+                                expr-list-nocallsp
+                                expr-option-nocallsp
+                                initer-nocallsp
+                                initer-option-nocallsp
+                                obj-declon-nocallsp
+                                stmt-nocallsp
+                                block-item-nocallsp
+                                block-item-list-nocallsp
+                                expr-option-some->val
+                                initer-option-some->val
+                                obj-declon-to-ident+scspec+tyname+init)))))
