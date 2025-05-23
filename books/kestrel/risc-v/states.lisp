@@ -217,13 +217,13 @@
   (more-returns
    (val natp :rule-classes :type-prescription))
 
-  (defret ubyte32p-of-read-xreg-unsigned
+  (defret ubyte32p-of-read-xreg-unsigned-when-32p
     (ubyte32p val)
     :hyp (and (stat-validp stat feat)
               (feat-32p feat)
               (< (lnfix reg) (feat->xnum feat))))
 
-  (defret ubyte64p-of-read-xreg-unsigned
+  (defret ubyte64p-of-read-xreg-unsigned-when-64p
     (ubyte64p val)
     :hyp (and (stat-validp stat feat)
               (feat-64p feat)
@@ -252,13 +252,13 @@
 
   ///
 
-  (defret sbyte32p-of-read-xreg-signed
+  (defret sbyte32p-of-read-xreg-signed-when-32p
     (sbyte32p val)
     :hyp (and (stat-validp stat feat)
               (feat-32p feat)
               (< (lnfix reg) (feat->xnum feat))))
 
-  (defret sbyte64p-of-read-xreg-signed
+  (defret sbyte64p-of-read-xreg-signed-when-64p
     (sbyte64p val)
     :hyp (and (stat-validp stat feat)
               (feat-64p feat)
@@ -397,12 +397,12 @@
   (more-returns
    (pc natp :rule-classes :type-prescription))
 
-  (defret ubyte32p-of-read-pc
+  (defret ubyte32p-of-read-pc-when-32p
     (ubyte32p pc)
     :hyp (and (stat-validp stat feat)
               (feat-32p feat)))
 
-  (defret ubyte64p-of-read-pc
+  (defret ubyte64p-of-read-pc-when-64p
     (ubyte64p pc)
     :hyp (and (stat-validp stat feat)
               (feat-64p feat))))
