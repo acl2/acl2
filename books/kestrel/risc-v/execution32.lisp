@@ -31,7 +31,7 @@
 (define feat-rv32im ()
   :returns (feat featp)
   :short "Features for RV32IM."
-  (make-feat :bits (feat-bits-32)))
+  (make-feat :base (feat-base-rv32i)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

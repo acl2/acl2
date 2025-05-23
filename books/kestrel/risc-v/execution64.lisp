@@ -31,7 +31,7 @@
 (define feat-rv64im ()
   :returns (feat featp)
   :short "Features for RV64IM."
-  (make-feat :bits (feat-bits-64)))
+  (make-feat :base (feat-base-rv64i)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

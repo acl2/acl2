@@ -125,24 +125,24 @@
        (xlen (feat->xlen feat))
        (xnum (feat->xnum feat)))
     (and (unsigned-byte-listp xlen stat.xregs)
-         (equal (len stat.xregs) xnum)
+         (equal (len stat.xregs) (1- xnum))
          (unsigned-byte-p xlen stat.pc)
          (equal (len stat.memory) (expt 2 xlen))))
   :hooks (:fix)
 
   ///
 
-  (defrule unsigned-byte-listp-of-stat->xregs
-    (implies (stat-validp stat feat)
-             (unsigned-byte-listp (feat->xlen feat)
-                                  (stat->xregs stat))))
-
   (defrule true-listp-of-stat->xregs
     (implies (stat-validp stat feat)
              (true-listp (stat->xregs stat)))
     :rule-classes :type-prescription)
 
-  (defrule ubyte32-listp-of-stat->xregs
+  (defrule unsigned-byte-listp-of-stat->xregs
+    (implies (stat-validp stat feat)
+             (unsigned-byte-listp (feat->xlen feat)
+                                  (stat->xregs stat))))
+
+  (defrule ubyte32-listp-of-stat->xregs-when-32p
     (implies (and (stat-validp stat feat)
                   (feat-32p feat))
              (ubyte32-listp (stat->xregs stat)))
@@ -150,7 +150,7 @@
     (("Goal"
       :in-theory (enable acl2::ubyte32-listp-rewrite-unsigned-byte-listp))))
 
-  (defrule ubyte64-listp-of-stat->xregs
+  (defrule ubyte64-listp-of-stat->xregs-when-64p
     (implies (and (stat-validp stat feat)
                   (feat-64p feat))
              (ubyte64-listp (stat->xregs stat)))
@@ -161,7 +161,7 @@
   (defrule len-of-stat->xregs
     (implies (stat-validp stat feat)
              (equal (len (stat->xregs stat))
-                    (feat->xnum feat)))
+                    (1- (feat->xnum feat))))
     :hints (("Goal" :in-theory (enable feat->xnum))))
 
   (defrule unsigned-byte-p-of-stat->pc
@@ -169,13 +169,13 @@
              (unsigned-byte-p (feat->xlen feat)
                               (stat->pc stat))))
 
-  (defrule ubyte32p-of-stat->pc
+  (defrule ubyte32p-of-stat->pc-when-32p
     (implies (and (stat-validp stat feat)
                   (feat-32p feat))
              (ubyte32p (stat->pc stat)))
     :hints (("Goal" :in-theory (enable ubyte32p))))
 
-  (defrule ubyte64p-of-stat->pc
+  (defrule ubyte64p-of-stat->pc-when-64p
     (implies (and (stat-validp stat feat)
                   (feat-64p feat))
              (ubyte64p (stat->pc stat)))

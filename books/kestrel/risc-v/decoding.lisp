@@ -20,6 +20,11 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ decoding
@@ -129,7 +134,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-imm-stype ((enc ubyte32p))
-  :returns (imm ubyte12p :hints (("Goal" :in-theory (enable ubyte12p))))
+  :returns (imm ubyte12p :hints (("Goal" :in-theory (enable ubyte12p
+                                                            unsigned-byte-p
+                                                            ifix
+                                                            integer-range-p))))
   :short "Retrieve the immediate field of an S-type instruction."
   :long
   (xdoc::topstring
@@ -144,7 +152,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-imm-btype ((enc ubyte32p))
-  :returns (imm ubyte12p :hints (("Goal" :in-theory (enable ubyte12p))))
+  :returns (imm ubyte12p :hints (("Goal" :in-theory (enable ubyte12p
+                                                            unsigned-byte-p
+                                                            ifix
+                                                            integer-range-p))))
   :short "Retrieve the immediate field of a B-type instruction."
   :long
   (xdoc::topstring
@@ -179,7 +190,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define get-imm-jtype ((enc ubyte32p))
-  :returns (imm ubyte20p :hints (("Goal" :in-theory (enable ubyte20p))))
+  :returns (imm ubyte20p :hints (("Goal" :in-theory (enable ubyte20p
+                                                            unsigned-byte-p
+                                                            ifix
+                                                            integer-range-p))))
   :short "Retrieve the immediate field of a J-type instruction."
   :long
   (xdoc::topstring

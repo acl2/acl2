@@ -15,6 +15,12 @@
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ; cert_param: (non-acl2r)
 
@@ -29,7 +35,10 @@
     "We introduce functions that say how
      each instruction operates on the state.
      We restrict this to valid instructions in valid states
-     with respect to the RISC-V features."))
+     with respect to the RISC-V features.")
+   (xdoc::p
+    "There is a fair amount of repetition in boilerplate in these functions.
+     We could consider shortening them via suitable macros."))
   :default-parent t
   :order-subtopics t)
 

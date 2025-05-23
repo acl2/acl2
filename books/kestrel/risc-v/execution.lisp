@@ -13,6 +13,11 @@
 (include-book "decoding")
 (include-book "semantics")
 
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ execution
@@ -72,10 +77,13 @@
   (cond ((zp n) (stat-fix stat))
         ((errorp stat feat) (stat-fix stat))
         (t (stepn (1- n) (step stat feat) feat)))
-  :hooks (:fix)
 
   ///
 
+  (fty::deffixequiv stepn
+    :hints (("Goal" :induct t :in-theory (enable nfix))))
+
   (defret stat-validp-of-stepn
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (stat-validp stat feat)
+    :hints (("Goal" :induct t))))
