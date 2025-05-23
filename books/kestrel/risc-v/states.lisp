@@ -125,7 +125,7 @@
        (xlen (feat->xlen feat))
        (xnum (feat->xnum feat)))
     (and (unsigned-byte-listp xlen stat.xregs)
-         (equal (len stat.xregs) xnum)
+         (equal (len stat.xregs) (1- xnum))
          (unsigned-byte-p xlen stat.pc)
          (equal (len stat.memory) (expt 2 xlen))))
   :hooks (:fix)
@@ -161,7 +161,7 @@
   (defrule len-of-stat->xregs
     (implies (stat-validp stat feat)
              (equal (len (stat->xregs stat))
-                    (feat->xnum feat)))
+                    (1- (feat->xnum feat))))
     :hints (("Goal" :in-theory (enable feat->xnum))))
 
   (defrule unsigned-byte-p-of-stat->pc
