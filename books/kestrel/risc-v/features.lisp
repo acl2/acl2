@@ -89,6 +89,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled feat-32p-or-64p
+  :parents (feat-32p feat-64p)
+  :short "One of @(tsee feat-32p) and @(feat-64p) always holds."
+  (or (feat-32p feat)
+      (feat-64p feat))
+  :enable (feat-32p feat-64p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define feat->xlen ((feat featp))
   :returns (xlen posp :rule-classes (:rewrite :type-prescription))
   :short "The @('XLEN') parameter [ISA:1.3]."
