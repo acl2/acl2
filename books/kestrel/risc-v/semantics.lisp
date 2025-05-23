@@ -29,7 +29,10 @@
     "We introduce functions that say how
      each instruction operates on the state.
      We restrict this to valid instructions in valid states
-     with respect to the RISC-V features."))
+     with respect to the RISC-V features.")
+   (xdoc::p
+    "There is a fair amount of repetition in boilerplate in these functions.
+     We could consider shortening them via suitable macros."))
   :default-parent t
   :order-subtopics t)
 
