@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,6 @@
 
 (in-package "RISCV")
 
-(include-book "library-extensions")
 (include-book "instructions")
 (include-book "states32")
 
@@ -31,8 +30,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semantics32
-  :parents (semantics)
-  :short "Semantics of instructions for RV32I."
+  :parents (rv32im)
+  :short "Semantics of instructions for RV32IM."
   :long
   (xdoc::topstring
    (xdoc::p

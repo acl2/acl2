@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,8 +26,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ states64
-  :parents (states)
-  :short "Model of states for RV64I."
+  :parents (rv64im)
+  :short "Model of states for RV64IM."
   :long
   (xdoc::topstring
    (xdoc::p
