@@ -132,15 +132,15 @@
 
   ///
 
-  (defrule unsigned-byte-listp-of-stat->xregs
-    (implies (stat-validp stat feat)
-             (unsigned-byte-listp (feat->xlen feat)
-                                  (stat->xregs stat))))
-
   (defrule true-listp-of-stat->xregs
     (implies (stat-validp stat feat)
              (true-listp (stat->xregs stat)))
     :rule-classes :type-prescription)
+
+  (defrule unsigned-byte-listp-of-stat->xregs
+    (implies (stat-validp stat feat)
+             (unsigned-byte-listp (feat->xlen feat)
+                                  (stat->xregs stat))))
 
   (defrule ubyte32-listp-of-stat->xregs
     (implies (and (stat-validp stat feat)
