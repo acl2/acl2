@@ -142,7 +142,7 @@
              (unsigned-byte-listp (feat->xlen feat)
                                   (stat->xregs stat))))
 
-  (defrule ubyte32-listp-of-stat->xregs
+  (defrule ubyte32-listp-of-stat->xregs-when-32p
     (implies (and (stat-validp stat feat)
                   (feat-32p feat))
              (ubyte32-listp (stat->xregs stat)))
@@ -150,7 +150,7 @@
     (("Goal"
       :in-theory (enable acl2::ubyte32-listp-rewrite-unsigned-byte-listp))))
 
-  (defrule ubyte64-listp-of-stat->xregs
+  (defrule ubyte64-listp-of-stat->xregs-when-64p
     (implies (and (stat-validp stat feat)
                   (feat-64p feat))
              (ubyte64-listp (stat->xregs stat)))
@@ -169,13 +169,13 @@
              (unsigned-byte-p (feat->xlen feat)
                               (stat->pc stat))))
 
-  (defrule ubyte32p-of-stat->pc
+  (defrule ubyte32p-of-stat->pc-when-32p
     (implies (and (stat-validp stat feat)
                   (feat-32p feat))
              (ubyte32p (stat->pc stat)))
     :hints (("Goal" :in-theory (enable ubyte32p))))
 
-  (defrule ubyte64p-of-stat->pc
+  (defrule ubyte64p-of-stat->pc-when-64p
     (implies (and (stat-validp stat feat)
                   (feat-64p feat))
              (ubyte64p (stat->pc stat)))
