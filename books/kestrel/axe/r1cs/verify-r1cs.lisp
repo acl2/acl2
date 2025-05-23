@@ -89,9 +89,9 @@
   (verify-r1cs-fn lifted-r1cs spec-term prime
                   bit-inputs tactic rule-lists global-rules use var-ordering interpreted-function-alist
                   no-splitp print-as-clausesp no-print-fns monitor print)
-  :parents (r1cs-verification-with-axe)
+  :parents (acl2::axe-r1cs)
   :short "A tool to verify an R1CS"
-  :description "See @(tsee r1cs-verification-with-axe)."
+  :description "See @(tsee acl2::axe-r1cs)."
   :args ((lifted-r1cs "A DAG representing the lifted R1CS")
          (spec-term "A term over the input and output vars (this input is not evaluated)")
          (prime "The prime for the R1CS")
