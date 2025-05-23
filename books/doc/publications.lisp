@@ -24,7 +24,7 @@
 ; Lamb&aacute;n => Lamban
 ; Jim&eacute;nez => Jimenez
 
-(in-package "PUBLICATIONS")
+(in-package "PUBS")
 (include-book "xdoc/top" :dir :system)
 
 (defun docpath (s)

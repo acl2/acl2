@@ -1,4 +1,4 @@
-(defpkg "PUBLICATIONS"
+(defpkg "PUBS"
   (append '(defxdoc
 ; Include :DOC topics that we want to reference without package prefixes.
              publications books parallelism stobj talks)
