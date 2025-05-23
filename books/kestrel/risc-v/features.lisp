@@ -26,7 +26,7 @@
   (xdoc::topstring
    (xdoc::p
     "The RISC-V ISA is really a family of ISAs:
-     there is a choice of base (RV32I, RV64I, RV32E, RV64E),
+     there is a choice of base (RV32I, RV64I, RV128I, RV32E, RV64E),
      and there are choices of extensions.
      There is also a choice of little or big endian memory access
      (for data; instruction access is always little endian [ISA:1.5.1]).
@@ -38,7 +38,7 @@
      Towards that goal, we introduce a notion of `features',
      which define these choices;
      we start with only some choices,
-     which we plan to extend it with more choices."))
+     which we plan to extend with more choices."))
   :order-subtopics t
   :default-parent t)
 

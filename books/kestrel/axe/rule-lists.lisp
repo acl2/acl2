@@ -730,6 +730,10 @@
      bvminus-of-0-arg1
      bvminus-of-0-arg2
      bvminus-of-0-arg3
+     bvminus-of-bvplus-and-bvplus-same
+     bvminus-of-constant-and-bvplus-of-constant
+     bvminus-of-bvplus-of-constant-and-constant
+     bvminus-cancel-3-2 ; todo: more!
 
      bvplus-of-0-arg2
 
