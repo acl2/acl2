@@ -15,6 +15,12 @@
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ; cert_param: (non-acl2r)
 
