@@ -774,10 +774,8 @@
          :off :all
          :on error
          :gag-mode nil (make-event ,form))))
-  :parents (lifters)
-  :short "Given a Java method, define a function that represents
-  the (unrolled) effect of the given method on the JVM state (under the given
-  assumptions).  This uses symbolic execution including unrolling all loops."
+  :parents (axe-jvm axe-lifters)
+  :short "A variant of unroll-java-code for compositional lifting."
   :args ((fn "The name of the function to create")
          (method-indicator "The Java method to unroll (a string like \"java.lang.Object.foo(IB)V\").  The descriptor (input and output type) can be omitted if only one method in the given class has the given name.")
          (array-length-alist "An alist pairing array parameters with their sizes")
@@ -800,8 +798,9 @@
          (param-names "Names to use for the parameters (e.g., if no debugging information is available), or :auto.")
          (steps "A number of steps to run.  A natural number (for debugging only), or :auto, meaning run until the method returns.")
          )
-  :description "<p>This uses lifting theorems for subroutine calls that have already been lifted.  Otherwise, it effectively inlines the subroutine call.</p>
-  <p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>"
+  :description ("Given a JVM/Java method, this defines a function that represents the (unrolled) effect of the given method on the JVM state (under the given assumptions).  This uses symbolic execution including unrolling all loops."
+                "Unlike, @(see unroll-java-code), this supports a compositional approach, using pre-existing lifting theorems for subroutine calls when possible.  Otherwise, it effectively inlines the subroutine call."
+                "To inspect the resulting form, you can use @('print-list') on the generated defconst.")
   )
 
 ;TODO: Add a wrapper that extracts just the indicated output, then replace the old unroll-java-code??

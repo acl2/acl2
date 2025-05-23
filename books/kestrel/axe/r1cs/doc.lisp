@@ -17,8 +17,8 @@
 
 (xdoc::defxdoc
  r1cs-verification-with-axe
- :short "Verifying an R1CS using the Axe toolkit."
  :parents (r1cs acl2::axe)
+ :short "Verifying an R1CS using the Axe toolkit."
  :long
  (xdoc::topstring
   (xdoc::topparas

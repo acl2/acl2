@@ -13,3 +13,9 @@
 ;; TODO: Add more doc for this variant
 
 (include-book "unroll-x86-code")
+
+;; todo: extend this
+(defxdoc axe-x86
+  :parents (axe)
+  :short "The x86 variant of Axe."
+)

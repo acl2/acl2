@@ -966,8 +966,8 @@
                    `(local ,form)
                  form)))
     form)
-  :parents (lifters)
-  :short "Lift a Java method to create a DAG, unrolling loops as needed."
+  :parents (axe-jvm axe-lifters)
+  :short "A tool to lift a Java/JVM method into a DAG, unrolling loops as needed."
   :args ((defconst-name
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
          (method-indicator

@@ -1,6 +1,6 @@
 ; Documentation for Axe
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -9,17 +9,128 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+; todo: (in-package "AXE") but fix refs
 
+(include-book "portcullis")
 ;(include-book "xdoc/top" :dir :system)
 (include-book "jvm/doc")
 (include-book "x86/doc")
 (include-book "kestrel/utilities/xdoc-paras" :dir :system)
 (include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
-(include-book "equivalence-checker")
+(include-book "equivalence-checker") ;todo: prove-equal-with-axe+, prove-with-axe
+
+(defxdoc axe
+  :parents (software-verification kestrel-books projects)
+  :short "A toolkit for software verification."
+  :long
+  (xdoc::topparas
+   "The Axe toolkit provides a variety of tools for software verification, including lifters-into-logic, rewriters, theorem provers, and equivalence checkers.
+
+Most of Axe is now available in the ACL2 Community books, under @('kestrel/axe/'), though much work remains to document it.
+
+See <a href=\"https://www.kestrel.edu/research/axe/\">the Axe webpage</a> for more information."))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc axe-core
+  :parents (axe)
+  :short "The core Axe tools."
+  :long (xdoc::topparas "Many of the core Axe tools are independent of which Axe variant is used."))
+
+(defxdoc axe-rewriters
+  :parents (axe)
+  :short "The Axe rewriter tools.")
+
+(defxdoc axe-provers
+  :parents (axe)
+  :short "The Axe prover tools.")
+
+(defxdoc axe-lifters
+  :parents (axe)
+  :short "Axe tools to lift code into logic."
+  :long
+  (xdoc::topparas
+   "The Axe toolkit provides several tools for lifting code into logic.  Currently, Axe can lift JVM bytecode, x86 binaries, and rank-1 constraint systems.
+
+   For lifting JVM bytecode, four lifters are available.  For code that is unrollable, use @(see unroll-java-code) (or try the more experimental @(see unroll-java-code2), for compositional lifting).  When loops cannot be unrolled and so must be lifted into recursive functions, use @('lift-java-code') (or try the more experimental @('lift-java-code2'), for compositional lifting).
+
+   For lifting x86 binaries, two lifters are available.  For code that is unrollable, use @('x::def-unrolled') (still experimental).  When loops cannot be unrolled and so must be lifted into recursive functions, try @('x::lift-subroutine') (very experimental).
+
+   For lifting rank-1 constraint systems, use @(see r1cs::lift-r1cs) or one of its variants."
+   ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc rewriter-basic
+  :parents (axe-core axe-rewriters)
+  :short "A basic, modern Axe rewriter."
+  :long "See @('rewriter-basic.lisp').")
+
+(defxdoc prover-basic
+  :parents (axe-core axe-provers)
+  :short "A basic, modern Axe prover."
+  :long "See @('prover-basic.lisp').")
+
+(defxdoc rewriter-legacy
+  :parents (axe-core axe-rewriters)
+  :short "The legacy Axe rewriter."
+  :long "See @('rewriter.lisp').")
+
+(defxdoc rewriter-alt
+  :parents (axe-core axe-rewriters)
+  :short "Another legacy Axe rewriter."
+  :long "See @('rewriter-alt.lisp').")
+
+(defxdoc prover-legacy
+  :parents (axe-core axe-provers)
+  :short "The legacy Axe prover."
+  :long "See @('prover.lisp').")
+
+(defxdoc make-rewriter-simple
+  :parents (axe-core axe-rewriters)
+  :short "A tool to create custom Axe rewriters."
+  :long "See @('make-rewriter-simple.lisp').")
+
+(defxdoc make-prover-simple
+  :parents (axe-core axe-provers)
+  :short "A tool to create custom Axe prover."
+  :long "See @('make-prover-simple.lisp').")
+
+;; TODO: Put back doc in def-simplified.
+(defxdoc def-simplified
+  :parents (axe-core axe-rewriters)
+  :short "A tool to simplify a term or DAG."
+  :long "See @('def-simplified.lisp').")
+
+(defxdoc defthm-axe-basic
+  :parents (axe-core axe-provers)
+  :short "A defthm-like tool that uses Axe."
+  :long "See @('defthm-axe-basic.lisp').")
+
+;; unroll-spec has its own doc.  ;; TODO: Update it.
+;; unroll-spec-basic has its own doc.
+
+(defxdoc defthm-stp
+  :parents (axe-core axe-provers)
+  :short "A defthm-like tool that uses the STP solver."
+  :long "See @('defthm-stp.lisp').")
+
+;; todo: defconst-computed2, etc.
+
+;; todo: prove-with-tactics, prove-equal-with-tactics, query
+
+;; todo: other macros?
+
+;; todo: the clause-processors
+
+;; todo: the equivalence-checker
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc stp
-  :short "An SMT solver used by the Axe toolkit"
-  :parents (axe)
+  :parents (axe-core)
+  :short "An SMT solver used by the Axe toolkit."
   :long (xdoc::topparas "STP is an SMT solver available <a href='https://github.com/stp/stp'>here</a>.
   It is used by several tools in the @(see Axe) toolkit.  See @(see build::cert_param) for
 information on suppressing attempts to use STP during builds.
@@ -32,22 +143,9 @@ To test whether STP is being called correctly in your environment, run the scrip
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc axe
-  :short "The Axe toolkit"
-  :parents (software-verification kestrel-books projects)
-  :long
-  (xdoc::topparas
-   "The Axe toolkit provides a variety of tools for software verification, including lifters-into-logic, rewriters, theorem provers, and equivalence checkers.
-
-Most of Axe is now available in the ACL2 Community books, under @('kestrel/axe/'), though much work remains to document it.
-
-See <a href=\"https://www.kestrel.edu/research/axe/\">the Axe webpage</a> for more information."))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc dags
-  :short "Axe's DAG data structure"
-  :parents (axe)
+  :parents (axe-core)
+  :short "Axe's DAG data structure."
   :long
   (xdoc::topstring
    (xdoc::topparas
@@ -107,17 +205,3 @@ and
 .")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc lifters
-  :short "Axe Lifters"
-  :parents (axe)
-  :long
-  (xdoc::topparas
-   "The Axe toolkit provides several tools for lifting code into logic.  Currently, Axe can lift JVM bytecode, x86 binaries, and rank-1 constraint systems.
-
-   For lifting JVM bytecode, four lifters are available.  For code that is unrollable, use @(see unroll-java-code) (or try the more experimental @(see unroll-java-code2), for compositional lifting).  When loops cannot be unrolled and so must be lifted into recursive functions, use @('lift-java-code') (or try the more experimental @('lift-java-code2'), for compositional lifting).
-
-   For lifting x86 binaries, two lifters are available.  For code that is unrollable, use @('x::def-unrolled') (still experimental).  When loops cannot be unrolled and so must be lifted into recursive functions, try @('x::lift-subroutine') (very experimental).
-
-   For lifting rank-1 constraint systems, use @(see r1cs::lift-r1cs) or one of its variants."
-   ))

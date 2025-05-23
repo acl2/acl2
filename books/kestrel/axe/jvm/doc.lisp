@@ -14,3 +14,9 @@
 (include-book "unroll-java-code2")
 
 ;; TODO: Include more docs
+
+;; todo: extend this
+(defxdoc axe-jvm
+  :parents (axe)
+  :short "The JVM variant of Axe."
+)
