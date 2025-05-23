@@ -83,5 +83,4 @@
                     semantics
                     execution
                     rv32im
-                    rv64im)
-  :default-parent t)
+                    rv64im))
