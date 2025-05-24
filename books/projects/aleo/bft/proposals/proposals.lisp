@@ -103,7 +103,9 @@
           (implies (set::in prop (proposal-set-fix props))
                    (equal (proposal->author prop)
                           (address-fix author))))
+
   ///
+
   (fty::deffixequiv-sk prop-set-all-author-p
     :args ((author addressp) (props proposal-setp))))
 
@@ -116,7 +118,9 @@
           (implies (set::in prop (proposal-set-fix props))
                    (not (equal (proposal->author prop)
                                (address-fix author)))))
+
   ///
+
   (fty::deffixequiv-sk prop-set-none-author-p
     :args ((author addressp) (props proposal-setp))))
 
