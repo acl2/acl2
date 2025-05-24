@@ -4504,7 +4504,7 @@
      which we can see from the @('diffp') component of @(tsee simpadd0-gout),
      the theorem generated for the body just talks about its type,
      but the theorem for the function always involves
-     an equality between @(tsee exec-fun).
+     an equality between @(tsee c::exec-fun).
      If @('diffp') is @('nil'),
      we make use of a theorem from the language formalization
      that says that execution without function calls
