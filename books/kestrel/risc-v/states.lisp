@@ -260,15 +260,21 @@
 
   (defret sbyte32p-of-read-xreg-signed-when-32p
     (sbyte32p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-32p feat)
-              (< (lnfix reg) (feat->xnum feat))))
+    :hyp (feat-32p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-signed
+             :in-theory (e/d (sbyte32p)
+                             (read-xreg-signed
+                              return-type-of-read-xreg-signed)))))
 
   (defret sbyte64p-of-read-xreg-signed-when-64p
     (sbyte64p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-64p feat)
-              (< (lnfix reg) (feat->xnum feat)))))
+    :hyp (feat-64p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-signed
+             :in-theory (e/d (sbyte64p)
+                             (read-xreg-signed
+                              return-type-of-read-xreg-signed))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
