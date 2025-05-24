@@ -340,8 +340,7 @@
     (if (= reg 0)
         (stat-fix stat)
       (change-stat stat :xregs (update-nth (1- reg)
-                                           (loghead (feat->xlen feat)
-                                                    (lifix val))
+                                           (loghead (feat->xlen feat) val)
                                            (stat->xregs stat)))))
   :hooks (:fix)
 
