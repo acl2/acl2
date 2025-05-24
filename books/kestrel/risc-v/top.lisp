@@ -14,6 +14,7 @@
 (include-book "instructions")
 (include-book "encoding")
 (include-book "decoding")
+(include-book "inverse-encoding-decoding")
 (include-book "states")
 (include-book "semantics")
 (include-book "execution")

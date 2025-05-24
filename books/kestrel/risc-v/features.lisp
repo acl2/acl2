@@ -139,3 +139,17 @@
   (declare (ignore feat))
   32
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv32im ()
+  :returns (feat featp)
+  :short "Features for RV32IM."
+  (make-feat :base (feat-base-rv32i)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv64im ()
+  :returns (feat featp)
+  :short "Features for RV64IM."
+  (make-feat :base (feat-base-rv64i)))
