@@ -15,10 +15,10 @@
 (include-book "last-blockchain-round")
 (include-book "ordered-blockchain")
 (include-book "active-committees-after-commit")
-(include-book "proposed-author-self")
 (include-book "proposal-to-other")
 (include-book "endorsement-from-other")
 (include-book "certificate-to-other")
+(include-book "proposed-author-self")
 (include-book "proposed-endorser-other")
 (include-book "endorsed-author-other")
 (include-book "proposal-in-author")
@@ -60,10 +60,10 @@
                     last-blockchain-round
                     ordered-blockchain
                     active-committees-after-commit
-                    proposed-author-self
                     proposal-to-other
                     endorsement-from-other
                     certificate-to-other
+                    proposed-author-self
                     proposed-endorser-other
                     endorsed-author-other
                     proposal-in-author
