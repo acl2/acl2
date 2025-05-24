@@ -47,7 +47,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk unequivocal-proposed-p ((systate system-statep))
+(define-sk unequiv-proposed-p ((systate system-statep))
   :returns (yes/no booleanp)
   :short "Definition of the invariant."
   (forall (val)
@@ -58,32 +58,32 @@
 
   ///
 
-  (fty::deffixequiv-sk unequivocal-proposed-p
+  (fty::deffixequiv-sk unequiv-proposed-p
     :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled unequivocal-proposed-p-when-init
+(defruled unequiv-proposed-p-when-init
   :short "Establishment of the invariant in the initial states."
   (implies (system-initp systate)
-           (unequivocal-proposed-p systate))
-  :enable (unequivocal-proposed-p
+           (unequiv-proposed-p systate))
+  :enable (unequiv-proposed-p
            system-initp
            system-validators-initp-necc
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection unequivocal-proposed-p-of-next
+(defsection unequiv-proposed-p-of-next
   :short "Preservation of the invariant by single transitions."
 
-  (defruled unequivocal-proposed-p-of-propose-next
+  (defruled unequiv-proposed-p-of-propose-next
     (implies (and (propose-possiblep prop dests systate)
                   (proposed-author-self-p systate)
-                  (unequivocal-proposed-p systate))
-             (unequivocal-proposed-p (propose-next prop dests systate)))
-    :enable (unequivocal-proposed-p
-             unequivocal-proposed-p-necc
+                  (unequiv-proposed-p systate))
+             (unequiv-proposed-p (propose-next prop dests systate)))
+    :enable (unequiv-proposed-p
+             unequiv-proposed-p-necc
              validator-state->proposed-of-propose-next
              prop-set-unequivp-of-insert
              proposal-setp-of-keys-when-proposal-address-set-mapp
@@ -91,90 +91,90 @@
              prop-set-all-author-p-when-proposed-author-self-p
              propose-possiblep))
 
-  (defruled unequivocal-proposed-p-of-endorse-next
-    (implies (unequivocal-proposed-p systate)
-             (unequivocal-proposed-p (endorse-next prop endor systate)))
-    :enable (unequivocal-proposed-p
-             unequivocal-proposed-p-necc))
+  (defruled unequiv-proposed-p-of-endorse-next
+    (implies (unequiv-proposed-p systate)
+             (unequiv-proposed-p (endorse-next prop endor systate)))
+    :enable (unequiv-proposed-p
+             unequiv-proposed-p-necc))
 
-  (defruled unequivocal-proposed-p-of-augment-next
+  (defruled unequiv-proposed-p-of-augment-next
     (implies (and (augment-possiblep prop endor systate)
-                  (unequivocal-proposed-p systate))
-             (unequivocal-proposed-p (augment-next prop endor systate)))
-    :enable (unequivocal-proposed-p
-             unequivocal-proposed-p-necc
+                  (unequiv-proposed-p systate))
+             (unequiv-proposed-p (augment-next prop endor systate)))
+    :enable (unequiv-proposed-p
+             unequiv-proposed-p-necc
              validator-state->proposed-of-augment-next
              augment-possiblep
              omap::assoc-to-in-of-keys))
 
-  (defruled unequivocal-proposed-p-of-certify-next
-    (implies (unequivocal-proposed-p systate)
-             (unequivocal-proposed-p (certify-next cert dests systate)))
-    :enable (unequivocal-proposed-p
-             unequivocal-proposed-p-necc
+  (defruled unequiv-proposed-p-of-certify-next
+    (implies (unequiv-proposed-p systate)
+             (unequiv-proposed-p (certify-next cert dests systate)))
+    :enable (unequiv-proposed-p
+             unequiv-proposed-p-necc
              validator-state->proposed-of-certify-next
              omap::keys-of-delete
              prop-set-unequivp-of-delete
              proposal-setp-of-keys-when-proposal-address-set-mapp))
 
-  (defruled unequivocal-proposed-p-of-accept-next
+  (defruled unequiv-proposed-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)
-                  (unequivocal-proposed-p systate))
-             (unequivocal-proposed-p (accept-next val cert systate)))
-    :enable (unequivocal-proposed-p
-             unequivocal-proposed-p-necc))
+                  (unequiv-proposed-p systate))
+             (unequiv-proposed-p (accept-next val cert systate)))
+    :enable (unequiv-proposed-p
+             unequiv-proposed-p-necc))
 
-  (defruled unequivocal-proposed-p-of-advance-next
+  (defruled unequiv-proposed-p-of-advance-next
     (implies (and (advance-possiblep val systate)
-                  (unequivocal-proposed-p systate))
-             (unequivocal-proposed-p (advance-next val systate)))
-    :enable (unequivocal-proposed-p
-             unequivocal-proposed-p-necc))
+                  (unequiv-proposed-p systate))
+             (unequiv-proposed-p (advance-next val systate)))
+    :enable (unequiv-proposed-p
+             unequiv-proposed-p-necc))
 
-  (defruled unequivocal-proposed-p-of-commit-next
+  (defruled unequiv-proposed-p-of-commit-next
     (implies (and (commit-possiblep val systate)
-                  (unequivocal-proposed-p systate))
-             (unequivocal-proposed-p (commit-next val systate)))
-    :enable (unequivocal-proposed-p
-             unequivocal-proposed-p-necc))
+                  (unequiv-proposed-p systate))
+             (unequiv-proposed-p (commit-next val systate)))
+    :enable (unequiv-proposed-p
+             unequiv-proposed-p-necc))
 
-  (defruled unequivocal-proposed-p-of-event-next
+  (defruled unequiv-proposed-p-of-event-next
     (implies (and (event-possiblep event systate)
                   (proposed-author-self-p systate)
-                  (unequivocal-proposed-p systate))
-             (unequivocal-proposed-p (event-next event systate)))
+                  (unequiv-proposed-p systate))
+             (unequiv-proposed-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled unequivocal-proposed-p-of-events-next
+(defruled unequiv-proposed-p-of-events-next
   :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
                 (proposed-author-self-p systate)
-                (unequivocal-proposed-p systate))
-           (unequivocal-proposed-p (events-next events systate)))
+                (unequiv-proposed-p systate))
+           (unequiv-proposed-p (events-next events systate)))
   :induct t
   :enable (events-possiblep
            events-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled unequivocal-proposed-p-when-reachable
+(defruled unequiv-proposed-p-when-reachable
   :short "The invariant holds in every reachable state."
   (implies (system-state-reachablep systate)
-           (unequivocal-proposed-p systate))
+           (unequiv-proposed-p systate))
   :enable (system-state-reachablep
-           unequivocal-proposed-p-when-init
+           unequiv-proposed-p-when-init
            proposed-author-self-p-when-init)
   :prep-lemmas
   ((defrule lemma
      (implies (and (system-state-reachable-from-p systate from)
                    (proposed-author-self-p from)
-                   (unequivocal-proposed-p from))
-              (unequivocal-proposed-p systate))
+                   (unequiv-proposed-p from))
+              (unequiv-proposed-p systate))
      :use (:instance
-           unequivocal-proposed-p-of-events-next
+           unequiv-proposed-p-of-events-next
            (events (system-state-reachable-from-p-witness systate from))
            (systate from))
      :enable system-state-reachable-from-p)))
