@@ -330,7 +330,7 @@
      and write those to the register.")
    (xdoc::p
     "The index must be less than the number @('n') of registers,
-     so that the registers @('x0') to @('x<n>') can be indexed.")
+     so that the registers @('x0') to @('x<n-1>') can be indexed.")
    (xdoc::p
     "As explained in @(tsee stat),
      @('x0') is not modeled explicitly, since it is hardwired to 0.
