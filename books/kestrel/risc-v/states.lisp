@@ -279,8 +279,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-xreg-unsigned32 ((reg natp) (stat statp) (feat featp))
-  :guard (and (stat-validp stat feat)
-              (feat-64p feat)
+  :guard (and (feat-64p feat)
+              (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
   :returns (val ubyte32p)
   :short "Read an unsigned 32-bit integer from a 64-bit @('x') register."
@@ -300,8 +300,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-xreg-signed32 ((reg natp) (stat statp) (feat featp))
-  :guard (and (stat-validp stat feat)
-              (feat-64p feat)
+  :guard (and (feat-64p feat)
+              (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
   :returns (val sbyte32p)
   :short "Read a signed 32-bit integer from a 64-bit @('x') register."
