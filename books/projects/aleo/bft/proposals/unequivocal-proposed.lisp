@@ -33,7 +33,8 @@
      The only events that modify the keys are @('propose') and @('certify').")
    (xdoc::p
     "A @('propose') event adds a pending proposal only if
-     there is not already one for the same round.
+     there is not already one for the same round:
+     this is checked explicitly by @(tsee propose-possiblep).
      Under the previously proved invariant @(see proposed-author-self),
      the pending proposals are all authored by the validator,
      and so is the new one being added.
