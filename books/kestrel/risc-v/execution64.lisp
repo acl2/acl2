@@ -28,13 +28,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define feat-rv64im ()
-  :returns (feat featp)
-  :short "Features for RV64IM."
-  (make-feat :base (feat-base-rv64i)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define step64 ((stat state64p))
   :returns (new-stat state64p)
   :short "Single-step execution."
