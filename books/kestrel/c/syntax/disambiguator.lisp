@@ -2283,7 +2283,7 @@
          (retok (param-declor-nonabstract new-declor) table))
        :abstract
        (b* (((erp new-absdeclor table)
-             (dimb-absdeclor paramdeclor.unwrap table)))
+             (dimb-absdeclor paramdeclor.declor table)))
          (retok (param-declor-abstract new-absdeclor) (dimb-table-fix table)))
        :none
        (retok (param-declor-none) (dimb-table-fix table))
