@@ -211,11 +211,9 @@
       (unsigned-byte-fix (feat->xlen feat)
                          (nth (1- reg) (stat->xregs stat)))))
   :hooks (:fix)
+  :type-prescription (natp (read-xreg-unsigned reg stat feat))
 
   ///
-
-  (more-returns
-   (val natp :rule-classes :type-prescription))
 
   (defret ubyte32p-of-read-xreg-unsigned-when-32p
     (ubyte32p val)
@@ -399,11 +397,9 @@
   (unsigned-byte-fix (feat->xlen feat)
                      (stat->pc stat))
   :hooks (:fix)
+  :type-prescription (natp (read-pc stat feat))
 
   ///
-
-  (more-returns
-   (pc natp :rule-classes :type-prescription))
 
   (defret ubyte32p-of-read-pc-when-32p
     (ubyte32p pc)
@@ -488,11 +484,9 @@
   :prepwork ((local (in-theory (enable loghead))))
   :guard-hints (("Goal" :in-theory (enable ifix stat-validp)))
   :hooks (:fix)
+  :type-prescription (natp (read-memory-unsigned8 addr stat feat))
 
   ///
-
-  (more-returns
-   (val natp :rule-classes :type-prescription))
 
   (defret read-memory-unsigned8-upper-bound
     (<= val 255)
