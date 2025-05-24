@@ -830,6 +830,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-sk cert-set-unequivp ((certs certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if a set of certificates is unequivocal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check whether the certificates in the set
+     have unique combinations of author and round.
+     We check that any two certificates in the set
+     with the same author and round
+     are in the same certificates.
+     This means that the certificates in the set
+     are uniquely identified by their author and round."))
+  (forall (cert1 cert2)
+          (implies (and (set::in cert1 (certificate-set-fix certs))
+                        (set::in cert2 (certificate-set-fix certs))
+                        (equal (certificate->author cert1)
+                               (certificate->author cert2))
+                        (equal (certificate->round cert1)
+                               (certificate->round cert2)))
+                   (equal cert1 cert2)))
+
+  ///
+
+  (fty::deffixequiv-sk cert-set-unequivp
+    :args ((certs certificate-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define-sk cert-sets-unequivp ((certs1 certificate-setp)
                                (certs2 certificate-setp))
   :returns (yes/no booleanp)
