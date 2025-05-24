@@ -342,4 +342,11 @@
                                (props-with-author+round (proposal->author prop)
                                                         (proposal->round prop)
                                                         props)))
-                       (props (set::insert prop props)))))))
+                       (props (set::insert prop props))))))
+
+  (defruled prop-set-unequivp-of-delete
+    (implies (and (proposal-setp props)
+                  (prop-set-unequivp props))
+             (prop-set-unequivp (set::delete prop props)))
+    :disable prop-set-unequivp
+    :enable prop-set-unequivp-when-subset))
