@@ -41,7 +41,12 @@
      implies that the author-round combinations are unique.")
    (xdoc::p
     "A @('certify') event removes a pending proposal,
-     which preserves nonequivocation for the remaining ones."))
+     which preserves nonequivocation for the remaining ones.")
+   (xdoc::p
+    "This invariant could also be proved as
+     a consequence of @(see unequivocal-signed-proposals),
+     because the pending proposal of a validator
+     are a subset of the ones signed by the validator."))
   :order-subtopics t
   :default-parent t)
 
