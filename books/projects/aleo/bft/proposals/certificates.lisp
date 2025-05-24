@@ -855,7 +855,10 @@
   ///
 
   (fty::deffixequiv-sk cert-set-unequivp
-    :args ((certs certificate-setp))))
+    :args ((certs certificate-setp)))
+
+  (defrule cert-set-unequivp-of-nil
+    (cert-set-unequivp nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
