@@ -39,6 +39,7 @@
 (include-book "author-round-pairs-in-validators")
 (include-book "unequivocal-signed-proposals")
 (include-book "unequivocal-proposed")
+(include-book "proposed-disjoint-dag")
 (include-book "fault-tolerance")
 (include-book "quorum-intersection")
 (include-book "nonforking-blockchains-def-and-init")
@@ -85,6 +86,7 @@
                     author-round-pairs-in-validators
                     unequivocal-signed-proposals
                     unequivocal-proposed
+                    proposed-disjoint-dag
                     fault-tolerance
                     quorum-intersection
                     nonforking-blockchains-def-and-init
