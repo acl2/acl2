@@ -355,8 +355,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define write-xreg-32 ((reg natp) (val integerp) (stat statp) (feat featp))
-  :guard (and (stat-validp stat feat)
-              (feat-64p feat)
+  :guard (and (feat-64p feat)
+              (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Write an integer to the low 32 bit of a 64-bit @('x') register,
@@ -373,10 +373,7 @@
      which takes an integer of any size,
      keeps the low 32 bits,
      and writes their sign extension to the register."))
-  (write-xreg reg
-              (logext 32 (lifix val))
-              stat
-              feat)
+  (write-xreg reg (logext 32 val) stat feat)
   :hooks (:fix)
 
   ///
