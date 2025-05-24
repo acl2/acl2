@@ -3430,7 +3430,7 @@
                            :vartys gout-declor.vartys
                            :diffp gout-declor.diffp)))
        :abstract (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
-                       (simpadd0-absdeclor paramdeclor.unwrap gin state)))
+                       (simpadd0-absdeclor paramdeclor.declor gin state)))
                    (mv (param-declor-abstract new-absdeclor)
                        (make-simpadd0-gout
                         :events gout-absdeclor.events

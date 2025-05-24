@@ -1335,10 +1335,10 @@
              (declor-unambp (param-declor-nonabstract->declor param-declor)))
     :expand (param-declor-unambp param-declor))
 
-  (defrule absdeclor-unambp-of-param-declor-abstract->unwrap
+  (defrule absdeclor-unambp-of-param-declor-abstract->declor
     (implies (and (param-declor-unambp param-declor)
                   (param-declor-case param-declor :abstract))
-             (absdeclor-unambp (param-declor-abstract->unwrap param-declor)))
+             (absdeclor-unambp (param-declor-abstract->declor param-declor)))
     :expand (param-declor-unambp param-declor))
 
   (defrule spec/qual-list-unambp-of-tyname->specqual

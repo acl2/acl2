@@ -2582,7 +2582,7 @@
                        (pstate (print-declor paramdeclor.declor pstate)))
                     pstate)
      :abstract (b* ((pstate (print-astring " " pstate))
-                    (pstate (print-absdeclor paramdeclor.unwrap pstate)))
+                    (pstate (print-absdeclor paramdeclor.declor pstate)))
                  pstate)
      :none (pristate-fix pstate)
      :ambig (prog2$ (impossible) (pristate-fix pstate)))
