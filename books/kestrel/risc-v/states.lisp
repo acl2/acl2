@@ -197,7 +197,7 @@
   (xdoc::topstring
    (xdoc::p
     "The index must be less than the number @('n') of registers,
-     so that the registers @('x0') to @('x<n>') can be indexed.
+     so that the registers @('x0') to @('x<n-1>') can be indexed.
      The result is a natural number in general;
      additionally, based on @('XLEN'), it consists of either 32 or 64 bits.")
    (xdoc::p
@@ -219,15 +219,21 @@
 
   (defret ubyte32p-of-read-xreg-unsigned-when-32p
     (ubyte32p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-32p feat)
-              (< (lnfix reg) (feat->xnum feat))))
+    :hyp (feat-32p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-unsigned
+             :in-theory (e/d (ubyte32p)
+                             (read-xreg-unsigned
+                              return-type-of-read-xreg-unsigned)))))
 
   (defret ubyte64p-of-read-xreg-unsigned-when-64p
     (ubyte64p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-64p feat)
-              (< (lnfix reg) (feat->xnum feat)))))
+    :hyp (feat-64p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-unsigned
+             :in-theory (e/d (ubyte64p)
+                             (read-xreg-unsigned
+                              return-type-of-read-xreg-unsigned))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
