@@ -188,9 +188,9 @@
 
   (defruled proposed-disjoint-dag-p-of-event-next
     (implies (and (event-possiblep event systate)
-                  (unequiv-proposed-p systate)
-                  (proposed-author-self-p systate)
                   (certificate-to-other-p systate)
+                  (proposed-author-self-p systate)
+                  (unequiv-proposed-p systate)
                   (proposed-disjoint-dag-p systate))
              (proposed-disjoint-dag-p (event-next event systate)))
     :enable (event-possiblep
@@ -201,9 +201,9 @@
 (defruled proposed-disjoint-dag-p-of-events-next
   :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
-                (unequiv-proposed-p systate)
-                (proposed-author-self-p systate)
                 (certificate-to-other-p systate)
+                (proposed-author-self-p systate)
+                (unequiv-proposed-p systate)
                 (proposed-disjoint-dag-p systate))
            (proposed-disjoint-dag-p (events-next events systate)))
   :induct t
@@ -218,15 +218,15 @@
            (proposed-disjoint-dag-p systate))
   :enable (system-state-reachablep
            proposed-disjoint-dag-p-when-init
-           unequiv-proposed-p-when-init
+           certificate-to-other-p-when-init
            proposed-author-self-p-when-init
-           certificate-to-other-p-when-init)
+           unequiv-proposed-p-when-init)
   :prep-lemmas
   ((defrule lemma
      (implies (and (system-state-reachable-from-p systate from)
-                   (unequiv-proposed-p from)
-                   (proposed-author-self-p from)
                    (certificate-to-other-p from)
+                   (proposed-author-self-p from)
+                   (unequiv-proposed-p from)
                    (proposed-disjoint-dag-p from))
               (proposed-disjoint-dag-p systate))
      :use (:instance
