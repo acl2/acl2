@@ -42,7 +42,10 @@
      under fault tolerance assumptions.")
    (xdoc::p
     "Here we define the notion of all the proposals,
-     in a system state, signed by a given validator."))
+     in a system state, signed by a given validator.
+     We also prove theorems saying
+     what this operation returns in initial states
+     and how the result of this operation changes under events."))
   :order-subtopics t
   :default-parent t)
 
