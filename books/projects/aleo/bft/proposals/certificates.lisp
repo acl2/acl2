@@ -534,6 +534,18 @@
 
   ///
 
+  (defret cert-with-author+round-element
+    (implies cert?
+             (set::in cert? certs))
+    :hyp (certificate-setp certs)
+    :hints (("Goal"
+             :in-theory (e/d* (set::expensive-rules)
+                              (set::in-head))
+             :use (:instance set::in-head
+                             (x (certs-with-author+round
+                                 author round certs))))))
+  (in-theory (disable cert-with-author+round-element))
+
   (defrule certificate->author-of-cert-with-author+round
     (implies (cert-with-author+round author round certs)
              (equal (certificate->author
