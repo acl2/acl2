@@ -40,6 +40,7 @@
 (include-book "unequivocal-signed-proposals")
 (include-book "unequivocal-proposed")
 (include-book "proposed-disjoint-dag")
+(include-book "unequivocal-dag")
 (include-book "fault-tolerance")
 (include-book "quorum-intersection")
 (include-book "nonforking-blockchains-def-and-init")
@@ -87,6 +88,7 @@
                     unequivocal-signed-proposals
                     unequivocal-proposed
                     proposed-disjoint-dag
+                    unequivocal-dag
                     fault-tolerance
                     quorum-intersection
                     nonforking-blockchains-def-and-init
