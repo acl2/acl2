@@ -514,7 +514,8 @@
 (define cert-with-author+round ((author addressp)
                                 (round posp)
                                 (certs certificate-setp))
-  :returns (cert? certificate-optionp)
+  :returns (cert? certificate-optionp
+                  :hints (("Goal" :in-theory (enable certificate-optionp))))
   :short "Retrieve, from a set of certificates,
           the certificate with a given author and round."
   :long
@@ -527,7 +528,7 @@
      the certificate is returned."))
   (b* ((certs-ar (certs-with-author+round author round certs))
        ((unless (= (set::cardinality certs-ar) 1)) nil))
-    (certificate-fix (set::head certs-ar)))
+    (set::head certs-ar))
   :guard-hints (("Goal" :in-theory (enable set::cardinality)))
   :hooks (:fix)
 
