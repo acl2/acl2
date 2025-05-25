@@ -452,6 +452,14 @@
                        (pos-fix round))))
     :induct t)
 
+  (defruled not-emptyp-of-certs-with-author+round
+    (implies (and (set::in cert certs)
+                  (certificate-setp certs)
+                  (equal (certificate->author cert) author)
+                  (equal (certificate->round cert) round))
+             (not (set::emptyp (certs-with-author+round author round certs))))
+    :induct t)
+
   (defruled certs-with-author+round-monotone
     (implies (set::subset (certificate-set-fix certs1)
                           (certificate-set-fix certs2))
@@ -856,6 +864,72 @@
 
   (fty::deffixequiv-sk cert-set-unequivp
     :args ((certs certificate-setp)))
+
+  (defruled cert-set-unequivp-when-subset
+    (implies (and (cert-set-unequivp certs)
+                  (set::subset (certificate-set-fix certs0)
+                               (certificate-set-fix certs)))
+             (cert-set-unequivp certs0))
+    :disable cert-set-unequivp-necc
+    :use (:instance cert-set-unequivp-necc
+                    (cert1 (mv-nth 0 (cert-set-unequivp-witness certs0)))
+                    (cert2 (mv-nth 1 (cert-set-unequivp-witness certs0))))
+    :enable set::expensive-rules)
+
+  (defruled cert-set-unequivp-of-insert
+    (implies (and (certificate-setp certs)
+                  (certificatep cert))
+             (equal (cert-set-unequivp (set::insert cert certs))
+                    (and (cert-set-unequivp certs)
+                         (or (set::in cert certs)
+                             (set::emptyp (certs-with-author+round
+                                           (certificate->author cert)
+                                           (certificate->round cert)
+                                           certs))))))
+    :use (if-part only-if-part)
+    :prep-lemmas
+    ((defruled if-part
+       (implies (and (certificate-setp certs)
+                     (certificatep cert)
+                     (cert-set-unequivp certs)
+                     (or (set::in cert certs)
+                         (set::emptyp (certs-with-author+round
+                                       (certificate->author cert)
+                                       (certificate->round cert)
+                                       certs))))
+                (cert-set-unequivp (set::insert cert certs)))
+       :use (:instance cert-set-unequivp-necc
+                       (cert1 (mv-nth 0 (cert-set-unequivp-witness
+                                         (set::insert cert certs))))
+                       (cert2 (mv-nth 1 (cert-set-unequivp-witness
+                                         (set::insert cert certs))))
+                       (certs certs))
+       :enable not-emptyp-of-certs-with-author+round
+       :disable cert-set-unequivp-necc)
+     (defruled only-if-part
+       (implies (and (certificate-setp certs)
+                     (certificatep cert)
+                     (cert-set-unequivp (set::insert cert certs)))
+                (and (cert-set-unequivp certs)
+                     (or (set::in cert certs)
+                         (set::emptyp (certs-with-author+round
+                                       (certificate->author cert)
+                                       (certificate->round cert)
+                                       certs)))))
+       :enable (cert-set-unequivp-when-subset
+                set::emptyp-to-not-nonemptyp
+                set::nonemptyp
+                in-of-certs-with-author+round)
+       :disable (cert-set-unequivp
+                 cert-set-unequivp-necc)
+       :use (:instance cert-set-unequivp-necc
+                       (cert1 cert)
+                       (cert2 (set::nonempty-witness
+                               (certs-with-author+round
+                                (certificate->author cert)
+                                (certificate->round cert)
+                                certs)))
+                       (certs (set::insert cert certs))))))
 
   (defrule cert-set-unequivp-of-empty
     (cert-set-unequivp nil)))
