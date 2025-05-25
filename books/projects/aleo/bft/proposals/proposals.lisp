@@ -150,7 +150,7 @@
     :hyp (proposal-setp props)
     :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
 
-  (defrule props-with-author+round-of-nil
+  (defrule props-with-author+round-of-empty
     (equal (props-with-author+round author round nil)
            nil))
 
