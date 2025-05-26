@@ -104,6 +104,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule logext-of-loghead-same-pos-size
+  (implies (posp size)
+           (equal (logext size (loghead size i))
+                  (logext size i)))
+  :enable (ifix
+           nfix
+           fix
+           logbitp
+           oddp
+           evenp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule logext-smaller-of-loghead-larger
+  (implies (and (posp size)
+                (posp size1)
+                (< size1 size))
+           (equal (logext size1 (loghead size i))
+                  (logext size1 i)))
+  :enable (logbitp
+           oddp
+           evenp
+           ifix
+           nfix
+           fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable loghead logext))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
