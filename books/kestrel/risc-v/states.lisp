@@ -531,7 +531,8 @@
   :returns (val ubyte16p
                 :hints (("Goal" :in-theory (enable ubyte16p
                                                    unsigned-byte-p
-                                                   integer-range-p))))
+                                                   integer-range-p
+                                                   ifix))))
   :short "Read an unsigned 16-bit integer from memory."
   :long
   (xdoc::topstring
@@ -548,14 +549,16 @@
      then @('addr + 1') wraps around to address 0."))
   (b* ((b0 (read-memory-unsigned8 addr stat feat))
        (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat)))
-    (+ b0
-       (ash b1 8)))
+    (logappn 8 b0
+             8 b1))
   :hooks (:fix)
 
   ///
 
   (more-returns
-   (val natp :rule-classes :type-prescription)))
+   (val natp
+        :rule-classes :type-prescription
+        :hints (("Goal" :in-theory (enable ifix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -564,7 +567,8 @@
   :returns (val ubyte32p
                 :hints (("Goal" :in-theory (enable ubyte32p
                                                    unsigned-byte-p
-                                                   integer-range-p))))
+                                                   integer-range-p
+                                                   ifix))))
   :short "Read an unsigned 32-bit integer from memory."
   :long
   (xdoc::topstring
@@ -583,16 +587,18 @@
        (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
        (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
        (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat)))
-    (+ b0
-       (ash b1 8)
-       (ash b2 16)
-       (ash b3 24)))
+    (logappn 8 b0
+             8 b1
+             8 b2
+             8 b3))
   :hooks (:fix)
 
   ///
 
   (more-returns
-   (val natp :rule-classes :type-prescription)))
+   (val natp
+        :rule-classes :type-prescription
+        :hints (("Goal" :in-theory (enable ifix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -601,7 +607,8 @@
   :returns (val ubyte64p
                 :hints (("Goal" :in-theory (enable ubyte64p
                                                    unsigned-byte-p
-                                                   integer-range-p))))
+                                                   integer-range-p
+                                                   ifix))))
   :short "Read an unsigned 64-bit integer from memory."
   :long
   (xdoc::topstring
@@ -624,20 +631,22 @@
        (b5 (read-memory-unsigned8 (+ (lifix addr) 5) stat feat))
        (b6 (read-memory-unsigned8 (+ (lifix addr) 6) stat feat))
        (b7 (read-memory-unsigned8 (+ (lifix addr) 7) stat feat)))
-    (+ b0
-       (ash b1 8)
-       (ash b2 16)
-       (ash b3 24)
-       (ash b4 32)
-       (ash b5 40)
-       (ash b6 48)
-       (ash b7 56)))
+    (logappn 8 b0
+             8 b1
+             8 b2
+             8 b3
+             8 b4
+             8 b5
+             8 b6
+             8 b7))
   :hooks (:fix)
 
   ///
 
   (more-returns
-   (val natp :rule-classes :type-prescription)))
+   (val natp
+        :rule-classes :type-prescription
+        :hints (("Goal" :in-theory (enable ifix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
