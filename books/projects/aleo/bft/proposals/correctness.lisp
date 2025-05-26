@@ -42,6 +42,7 @@
 (include-book "proposed-disjoint-dag")
 (include-book "unequivocal-dag")
 (include-book "last-anchor-def")
+(include-book "last-anchor-present")
 (include-book "fault-tolerance")
 (include-book "quorum-intersection")
 (include-book "nonforking-blockchains-def-and-init")
@@ -91,6 +92,7 @@
                     proposed-disjoint-dag
                     unequivocal-dag
                     last-anchor-def
+                    last-anchor-present
                     fault-tolerance
                     quorum-intersection
                     nonforking-blockchains-def-and-init
