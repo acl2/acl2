@@ -822,7 +822,8 @@
   :returns (val ubyte32p
                 :hints (("Goal" :in-theory (enable ubyte32p
                                                    unsigned-byte-p
-                                                   integer-range-p))))
+                                                   integer-range-p
+                                                   ifix))))
   :short "Read the 32-bit encoding of an instruction from memory."
   :long
   (xdoc::topstring
@@ -840,16 +841,18 @@
        (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
        (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
        (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat)))
-    (+ b0
-       (ash b1 8)
-       (ash b2 16)
-       (ash b3 24)))
+    (logappn 8 b0
+             8 b1
+             8 b2
+             8 b3))
   :hooks (:fix)
 
   ///
 
   (more-returns
-   (val natp :rule-classes :type-prescription)))
+   (val natp
+        :rule-classes :type-prescription
+        :hints (("Goal" :in-theory (enable ifix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
