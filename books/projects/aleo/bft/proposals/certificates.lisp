@@ -17,6 +17,8 @@
 
 (include-book "kestrel/fty/pos-set" :dir :system)
 
+(local (include-book "../library-extensions/oset-theorems"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -568,7 +570,45 @@
                      (cert (set::head
                             (certs-with-author+round author round certs)))
                      (certs (certs-with-author+round author round certs))))
-    :enable set::cardinality))
+    :enable set::cardinality)
+
+  (defruled cert-with-author+round-of-insert
+    (implies (and (certificate-setp certs)
+                  (certificatep cert)
+                  (cert-with-author+round author round certs))
+             (equal (cert-with-author+round
+                     author round (set::insert cert certs))
+                    (if (set::in cert certs)
+                        (cert-with-author+round author round certs)
+                      (if (and (equal (certificate->author cert)
+                                      (address-fix author))
+                               (equal (certificate->round cert)
+                                      (pos-fix round)))
+                          nil
+                        (cert-with-author+round author round certs)))))
+    :use (lemma1 lemma2)
+    :prep-lemmas
+    ((defruled lemma1
+       (implies (and (certificate-setp certs)
+                     (certificatep cert)
+                     (not (set::in cert certs))
+                     (cert-with-author+round author round certs))
+                (equal (cert-with-author+round
+                        author round (set::insert cert certs))
+                       (if (and (equal (certificate->author cert)
+                                       (address-fix author))
+                                (equal (certificate->round cert)
+                                       (pos-fix round)))
+                           nil
+                         (cert-with-author+round author round certs))))
+       :enable (cert-with-author+round
+                certs-with-author+round-of-insert
+                set::expensive-rules))
+     (defruled lemma2
+       (implies (set::in cert certs)
+                (equal (cert-with-author+round
+                        author round (set::insert cert certs))
+                       (cert-with-author+round author round certs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -982,3 +1022,61 @@
 
   (fty::deffixequiv-sk cert-sets-unequivp
     :args ((certs1 certificate-setp) (certs2 certificate-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection certs-with-author+round-of-unequiv
+  :short "Theorems about @(tsee certs-with-author+round)
+          on unequivocal sets of certificates."
+
+  (defruled certs-with-author+round-superset-when-unequiv
+    (implies (and (certificate-setp certs)
+                  (cert-set-unequivp certs)
+                  (certificate-setp certs0)
+                  (set::subset certs0 certs)
+                  (not (set::emptyp
+                        (certs-with-author+round author round certs0))))
+             (equal (certs-with-author+round author round certs)
+                    (certs-with-author+round author round certs0)))
+    :enable (set::double-containment-no-backchain-limit
+             certs-with-author+round-monotone)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (certificate-setp certs)
+                     (cert-set-unequivp certs)
+                     (certificate-setp certs0)
+                     (set::subset certs0 certs)
+                     (not (set::emptyp
+                           (certs-with-author+round author round certs0))))
+                (set::subset (certs-with-author+round author round certs)
+                             (certs-with-author+round author round certs0)))
+       :use ((:instance set::nonempty-witness-from-not-emptyp
+                        (set (certs-with-author+round author round certs0)))
+             (:instance cert-set-unequivp-necc
+                        (cert1 (set::nonempty-witness
+                                (certs-with-author+round author round certs0)))
+                        (cert2 (set::subset-witness
+                                (certs-with-author+round author round certs)
+                                (certs-with-author+round author round certs0)))
+                        (certs certs)))
+       :enable (set::subset-pick-a-point
+                set::expensive-rules
+                in-of-certs-with-author+round)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection cert-with-author+round-of-unequiv
+  :short "Theorems about @(tsee cert-with-author+round)
+          on unequivocal sets of certificates."
+
+  (defruled cert-with-author+round-superset-when-unequiv
+    (implies (and (certificate-setp certs)
+                  (cert-set-unequivp certs)
+                  (certificate-setp certs0)
+                  (set::subset certs0 certs)
+                  (cert-with-author+round author round certs0))
+             (equal (cert-with-author+round author round certs)
+                    (cert-with-author+round author round certs0)))
+    :enable (cert-with-author+round
+             certs-with-author+round-superset-when-unequiv)
+    :cases ((set::emptyp (certs-with-author+round author round certs0)))))
