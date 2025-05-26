@@ -507,7 +507,7 @@
    (xdoc::p
     "Since we read a single byte,
      there is no difference between little and big endian."))
-  (b* ((addr (loghead (feat->xlen feat) (lifix addr))))
+  (b* ((addr (loghead (feat->xlen feat) addr)))
     (ubyte8-fix (nth addr (stat->memory stat))))
   :prepwork ((local (in-theory (enable loghead))))
   :guard-hints (("Goal" :in-theory (enable ifix stat-validp)))
@@ -546,9 +546,8 @@
      We use @(tsee read-memory-unsigned8) twice.
      Note that if @('addr') is @('2^XLEN - 1'),
      then @('addr + 1') wraps around to address 0."))
-  (b* ((addr (lifix addr))
-       (b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ addr 1) stat feat)))
+  (b* ((b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat)))
     (+ b0
        (ash b1 8)))
   :hooks (:fix)
@@ -580,11 +579,10 @@
      We use @(tsee read-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to addres 0."))
-  (b* ((addr (lifix addr))
-       (b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ addr 3) stat feat)))
+  (b* ((b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat)))
     (+ b0
        (ash b1 8)
        (ash b2 16)
@@ -618,15 +616,14 @@
      We use @(tsee read-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
-  (b* ((addr (lifix addr))
-       (b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ addr 3) stat feat))
-       (b4 (read-memory-unsigned8 (+ addr 4) stat feat))
-       (b5 (read-memory-unsigned8 (+ addr 5) stat feat))
-       (b6 (read-memory-unsigned8 (+ addr 6) stat feat))
-       (b7 (read-memory-unsigned8 (+ addr 7) stat feat)))
+  (b* ((b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat))
+       (b4 (read-memory-unsigned8 (+ (lifix addr) 4) stat feat))
+       (b5 (read-memory-unsigned8 (+ (lifix addr) 5) stat feat))
+       (b6 (read-memory-unsigned8 (+ (lifix addr) 6) stat feat))
+       (b7 (read-memory-unsigned8 (+ (lifix addr) 7) stat feat)))
     (+ b0
        (ash b1 8)
        (ash b2 16)
@@ -662,7 +659,7 @@
    (xdoc::p
     "Since we write a single byte,
      there is no difference between little and big endian."))
-  (b* ((addr (loghead (feat->xlen feat) (lifix addr))))
+  (b* ((addr (loghead (feat->xlen feat) addr)))
     (change-stat stat :memory (update-nth addr
                                           (ubyte8-fix val)
                                           (stat->memory stat))))
@@ -697,12 +694,11 @@
      We use @(tsee write-memory-unsigned8) twice.
      Note that if @('addr') is @('2^XLEN - 1'),
      then @('addr + 1') wraps around to address 0."))
-  (b* ((addr (lifix addr))
-       (val (ubyte16-fix val))
+  (b* ((val (ubyte16-fix val))
        (b0 (logand val #xff))
        (b1 (ash val -8))
        (stat (write-memory-unsigned8 addr b0 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 1) b1 stat feat)))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 1) b1 stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -737,16 +733,15 @@
      We use @(tsee write-memory-unsigned8) twice.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
-  (b* ((addr (lifix addr))
-       (val (ubyte32-fix val))
+  (b* ((val (ubyte32-fix val))
        (b0 (logand val #xff))
        (b1 (logand (ash val -8) #xff))
        (b2 (logand (ash val -16) #xff))
        (b3 (ash val -24))
        (stat (write-memory-unsigned8 addr b0 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 1) b1 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 2) b2 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 3) b3 stat feat)))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 1) b1 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 2) b2 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 3) b3 stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -781,8 +776,7 @@
      We use @(tsee write-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
-  (b* ((addr (lifix addr))
-       (val (ubyte64-fix val))
+  (b* ((val (ubyte64-fix val))
        (b0 (logand val #xff))
        (b1 (logand (ash val -8) #xff))
        (b2 (logand (ash val -16) #xff))
@@ -792,13 +786,13 @@
        (b6 (logand (ash val -48) #xff))
        (b7 (ash val -56))
        (stat (write-memory-unsigned8 addr b0 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 1) b1 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 2) b2 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 3) b3 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 4) b4 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 5) b5 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 6) b6 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 7) b7 stat feat)))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 1) b1 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 2) b2 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 3) b3 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 4) b4 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 5) b5 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 6) b6 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 7) b7 stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -832,11 +826,10 @@
      We use @(tsee read-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to addres 0."))
-  (b* ((addr (lifix addr))
-       (b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ addr 3) stat feat)))
+  (b* ((b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat)))
     (+ b0
        (ash b1 8)
        (ash b2 16)
