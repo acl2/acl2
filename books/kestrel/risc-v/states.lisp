@@ -231,7 +231,11 @@
              :use return-type-of-read-xreg-unsigned
              :in-theory (e/d (ubyte64p)
                              (read-xreg-unsigned
-                              return-type-of-read-xreg-unsigned))))))
+                              return-type-of-read-xreg-unsigned)))))
+
+  (defrule read-xreg-unsigned-of-x0
+    (equal (read-xreg-unsigned 0 stat feat)
+           0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -272,7 +276,11 @@
              :use return-type-of-read-xreg-signed
              :in-theory (e/d (sbyte64p)
                              (read-xreg-signed
-                              return-type-of-read-xreg-signed))))))
+                              return-type-of-read-xreg-signed)))))
+
+  (defrule read-xreg-signed-of-x0
+    (equal (read-xreg-signed 0 stat feat)
+           0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -293,7 +301,13 @@
      which reads the whole integer and keeps the low 32 bits."))
   (loghead 32 (read-xreg-unsigned reg stat feat))
   :hooks (:fix)
-  :type-prescription (natp (read-xreg-unsigned32 reg stat feat)))
+  :type-prescription (natp (read-xreg-unsigned32 reg stat feat))
+
+  ///
+
+  (defrule read-xreg-unsigned32-of-x0
+    (equal (read-xreg-unsigned32 0 stat feat)
+           0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -311,7 +325,13 @@
      are treated as a signed integer instead of unsigned."))
   (logext 32 (read-xreg-unsigned reg stat feat))
   :hooks (:fix)
-  :type-prescription (integerp (read-xreg-signed32 reg stat feat)))
+  :type-prescription (integerp (read-xreg-signed32 reg stat feat))
+
+  ///
+
+  (defrule read-xreg-signed32-of-x0
+    (equal (read-xreg-signed32 0 stat feat)
+           0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -348,7 +368,11 @@
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
-    :hints (("Goal" :in-theory (enable stat-validp fix max)))))
+    :hints (("Goal" :in-theory (enable stat-validp fix max))))
+
+  (defrule write-xreg-of-x0
+    (equal (write-xreg 0 val stat feat)
+           (stat-fix stat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -379,7 +403,11 @@
   (defret stat-validp-of-write-xreg-32
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
-              (< (lnfix reg) (feat->xnum feat)))))
+              (< (lnfix reg) (feat->xnum feat))))
+
+  (defrule write-xreg-32-of-x0
+    (equal (write-xreg-32 0 val stat feat)
+           (stat-fix stat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
