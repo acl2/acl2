@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -93,7 +93,7 @@
      So the preservation of the two invariants
      must be proved at the same time by induction,
      because we need a sufficiently strong induction hypothesis,
-     with both invariants in the old state available,
+     with both invariants available in the old state,
      from which we can prove that both invariants
      also hold on the new state.")
    (xdoc::p
