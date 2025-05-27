@@ -379,6 +379,18 @@
     :induct t
     :enable (committee-members-stake
              committee-validator-stake-to-committee-member-stake
+             set::expensive-rules))
+
+  (defruled committee-validators-stake-monotone
+    (implies (and (address-setp vals1)
+                  (address-setp vals2)
+                  (set::subset vals1 vals2))
+             (<= (committee-validators-stake vals1 commtt)
+                 (committee-validators-stake vals2 commtt)))
+    :use (:instance committee-members-stake-monotone
+                    (members1 (set::intersect vals1 (committee-members commtt)))
+                    (members2 (set::intersect vals2 (committee-members commtt))))
+    :enable (set::intersect-mono-subset
              set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
