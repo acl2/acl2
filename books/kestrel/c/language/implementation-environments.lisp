@@ -1111,7 +1111,8 @@
   ///
 
   (defret sinteger-format->min-type-prescription
-    (< min 0)
+    (and (integerp min)
+         (< min 0))
     :rule-classes :type-prescription))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
