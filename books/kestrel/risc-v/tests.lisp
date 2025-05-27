@@ -11,8 +11,10 @@
 (in-package "RISCV")
 
 (include-book "execution")
+(include-book "encoding")
+(include-book "reads-over-writes")
 
-(local (include-book "ihs/logops-lemmas" :dir :system))
+;; (local (include-book "ihs/logops-lemmas" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -26,46 +28,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Register x0 always contains 0.
-
-(defruled read-xreg-unsigned-of-x0
-  (equal (read-xreg-unsigned 0 stat feat)
-         0)
-  :enable (read-xreg-unsigned))
-
-(defruled read-xreg-signed-of-x0
-  (equal (read-xreg-signed 0 stat feat)
-         0)
-  :enable (read-xreg-signed
-           read-xreg-unsigned-of-x0))
-
-(defruled read-xreg-unsigned32-of-x0
- (equal (read-xreg-unsigned32 0 stat feat)
-        0)
- :enable (read-xreg-unsigned32
-          read-xreg-unsigned-of-x0))
-
-(defruled read-xreg-signed32-of-x0
-  (equal (read-xreg-signed32 0 stat feat)
-         0)
-  :enable (read-xreg-signed32
-           read-xreg-unsigned-of-x0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Writing to register x0 has no effect.
-
-(defruled write-xreg-of-x0
-  (equal (write-xreg 0 val stat feat)
-         (stat-fix stat))
-  :enable write-xreg)
-
-(defruled write-xreg-32-of-x0
-  (equal (write-xreg-32 0 val stat feat)
-         (stat-fix stat))
-  :enable (write-xreg-32
-           write-xreg-of-x0))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defruled add-11-in-x1-and-22-in-x2-into-33-in-x3
+  (implies (and (not (errorp stat feat))
+                (equal (read-pc stat feat)
+                       pc)
+                (equal (read-instruction pc stat feat)
+                       (encode (instr-op (op-funct-add) 3 1 2) feat))
+                (equal (read-xreg-unsigned 1 stat feat)
+                       11)
+                (equal (read-xreg-unsigned 2 stat feat)
+                       22))
+           (b* ((stat1 (step stat feat)))
+             (and (not (errorp stat1 feat))
+                  (equal (read-xreg-unsigned 3 stat1 feat)
+                         33))))
+  :enable (step
+           encode
+           decode
+           exec-instr
+           exec-op
+           exec-add
+           read-xreg-of-write-xreg
+           read-xreg-signed
+           feat-32p
+           feat-64p)
+  :cases ((feat-32p feat)
+          (feat-64p feat)))
 
 ; TODO: add more

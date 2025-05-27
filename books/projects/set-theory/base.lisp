@@ -63,19 +63,12 @@
 
 (defmacro force? (form)
 
-; This macro makes it easy for users to specify which of their :props they want
-; forced and which they don't: calls of zfc and anything ending in "$PROP" are
-; forced, and others aren't.  So when making an abbreviation, such as
-; foldr-prop in foldr.lisp, one generally avoids ending the name with "$PROP"
-; since one wants the macro to expand without wrapping force around its call.
+; At one time this expanded to (force form) if form was a call of zfc or of a
+; function whose name ends in "$PROP"; otherwise it expanded to form.  Now we
+; expand to (force form) in all cases.  In the future we may eliminate this
+; macro and use force directly.
 
-  (cond ((and (consp form)
-              (symbolp (car form)) ; always true?
-              (string-suffixp "$PROP" (symbol-name (car form))))
-         `(force ,form))
-        ((equal form '(zfc))
-         `(force ,form))
-        (t form)))
+  `(force ,form))
 
 (defun force?-props (lst)
   (declare (xargs :guard (true-listp lst)))
@@ -716,16 +709,29 @@
 ;;; Zfc-table
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun all-keys-present-p1 (keys alist)
-  (declare (xargs :guard (symbol-listp keys)))
-  (cond ((endp keys) t)
-        (t (and (hons-assoc-equal (car keys) alist)
-                (all-keys-present-p1 (cdr keys) alist)))))
+(defun all-props-calls-present-p (props-calls alist)
+  (declare (xargs :guard (true-listp props-calls)))
+  (cond ((endp props-calls) t)
+        (t (let* ((prop-call (car props-calls))
+                  (prop (case-match prop-call
+                          ((prop) prop)
+                          (('force? (prop)) prop)
+                          (& nil))))
+             (and prop
+                  (hons-assoc-equal prop alist)
+                  (all-props-calls-present-p (cdr props-calls) alist))))))
 
-(defun all-keys-present-p (keys alist)
-  (declare (xargs :guard t))
-  (and (symbol-listp keys)
-       (all-keys-present-p1 keys alist)))
+(defun immediately-encapsulated-in-pass-2-p (fn wrld)
+  (declare (xargs :mode :program))
+  (let ((embedded-event-lst (acl2::global-val 'acl2::embedded-event-lst wrld)))
+    (and (eq (car (car embedded-event-lst)) 'acl2::encapsulate)
+         (assoc-eq fn (cadr (car embedded-event-lst)))
+
+; See encapsulate-pass-2 in the ACL2 sources, where a comment in the call of
+; process-embedded-events explains the following test to see whether the
+; immediately enclosing encapsulate event is in pass 2.
+
+         (cddr (car embedded-event-lst)))))
 
 (defun zfc-table-guard (val key world)
   (declare (xargs :mode :program ; because of get-event
@@ -738,6 +744,8 @@
 ; creating the table, this seems like a harmless check that perhaps supports
 ; the foundations of zfc integration with ACL2.
     nil)
+   ((immediately-encapsulated-in-pass-2-p key world)
+    t)
    (t (case-match val
         (('zsub name args x a u)
          (mv-let (form prop)
@@ -749,13 +757,14 @@
            (zfn-form-and-prop name args x y bound u)
            (and (eq key prop)
                 (equal form (get-event name world)))))
-        (('and . props)
+        (('and . props-calls)
          (let ((ev (get-event key world)))
            (case-match ev
-             (('defmacro !key () ('quote ('and . forced-props)))
-              (and (equal forced-props (force?-props props))
-                   (all-keys-present-p props
-                                       (table-alist 'zfc-table world))))
+             (('defun !key ()
+                ('declare ('xargs :guard t))
+                ('and . !props-calls))
+              (all-props-calls-present-p props-calls
+                                         (table-alist 'zfc-table world)))
              (& nil))))
         (& nil)))))
 
@@ -767,7 +776,7 @@
 ; just is an expression that is evaluated in the table guard so as to justify
 ; that claim; see zfc-table-guard.
 
-       :guard (zfc-table-guard val key world))
+       :guard (acl2::strict-table-guard (zfc-table-guard val key world)))
 
 (table zfc-table 'zfc t)
 
@@ -776,11 +785,14 @@
 ; Extend the zfc table by introducing prop as an abbreviation for the forced
 ; props.
 
-  `(progn (defmacro ,prop ()
-            '(and ,@(force?-props props)))
-          (table zfc-table
-                 ',prop
-                 '(and ,@props))))
+  (let ((props-calls (force?-props props)))
+    `(progn (defun ,prop ()
+              (declare (xargs :guard t))
+              (and ,@props-calls))
+            (in-theory (disable (:e ,prop)))
+            (table zfc-table
+                   ',prop
+                   '(and ,@props-calls)))))
 
 ; Test of zsub
 (local

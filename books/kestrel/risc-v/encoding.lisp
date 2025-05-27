@@ -388,7 +388,7 @@
    :load (b* ((opcode #b0000011)
               (funct3 (encode-load-funct instr.funct feat)))
            (logappn 7 opcode
-                    5 instr.rs1
+                    5 instr.rd
                     3 funct3
                     5 instr.rs1
                     12 instr.imm))
