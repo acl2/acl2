@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -36,7 +36,7 @@
      Furthermore, that anchor always has successors
      whose total stake is more than @($f$),
      where @($f$) is introduced in @(tsee max-faulty-for-total).
-     This total stake provodes the votes
+     This total stake provides the votes
      that are in fact necessary to commit that anchor.")
    (xdoc::p
     "Initially the last committed round is 0,

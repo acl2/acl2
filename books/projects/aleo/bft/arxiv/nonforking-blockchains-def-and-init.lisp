@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -68,7 +68,9 @@
                      (get-validator-state val1 systate))
                     (validator-state->blockchain
                      (get-validator-state val2 systate)))))
+
   ///
+
   (fty::deffixequiv-sk nonforking-blockchains-p
     :args ((systate system-statep))))
 
