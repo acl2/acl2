@@ -1532,58 +1532,58 @@
      given any two arbitrary function environments."))
 
   (defthm-exec-flag
-    (defthm theorem-for-exec-expr-call
+    (defthm exec-expr-call-without-calls
       t
       :rule-classes nil
       :flag exec-expr-call)
-    (defthm theorem-for-exec-expr-call-or-pure
+    (defthm exec-expr-call-or-pure-without-calls
       (implies (expr-nocallsp e)
                (equal (exec-expr-call-or-pure e compst fenv limit)
                       (exec-expr-call-or-pure e compst fenv1 limit)))
       :rule-classes nil
       :flag exec-expr-call-or-pure)
-    (defthm theorem-for-exec-expr-asg
+    (defthm exec-expr-asg-without-calls
       (implies (expr-nocallsp e)
                (equal (exec-expr-asg e compst fenv limit)
                       (exec-expr-asg e compst fenv1 limit)))
       :rule-classes nil
       :flag exec-expr-asg)
-    (defthm theorem-for-exec-expr-call-or-asg
+    (defthm exec-expr-call-or-asg-without-calls
       (implies (expr-nocallsp e)
                (equal (exec-expr-call-or-asg e compst fenv limit)
                       (exec-expr-call-or-asg e compst fenv1 limit)))
       :rule-classes nil
       :flag exec-expr-call-or-asg)
-    (defthm theorem-for-exec-fun
+    (defthm exec-fun-without-calls
       t
       :rule-classes nil
       :flag exec-fun)
-    (defthm theorem-for-exec-stmt
+    (defthm exec-stmt-without-calls
       (implies (stmt-nocallsp s)
                (equal (exec-stmt s compst fenv limit)
                       (exec-stmt s compst fenv1 limit)))
       :rule-classes nil
       :flag exec-stmt)
-    (defthm theorem-for-exec-stmt-while
+    (defthm exec-stmt-while-without-calls
       (implies (and (expr-nocallsp test)
                     (stmt-nocallsp body))
                (equal (exec-stmt-while test body compst fenv limit)
                       (exec-stmt-while test body compst fenv1 limit)))
       :rule-classes nil
       :flag exec-stmt-while)
-    (defthm theorem-for-exec-initer
+    (defthm exec-initer-without-calls
       (implies (initer-nocallsp initer)
                (equal (exec-initer initer compst fenv limit)
                       (exec-initer initer compst fenv1 limit)))
       :rule-classes nil
       :flag exec-initer)
-    (defthm theorem-for-exec-block-item
+    (defthm exec-block-item-without-calls
       (implies (block-item-nocallsp item)
                (equal (exec-block-item item compst fenv limit)
                       (exec-block-item item compst fenv1 limit)))
       :rule-classes nil
       :flag exec-block-item)
-    (defthm theorem-for-exec-block-item-list
+    (defthm exec-block-item-list-without-calls
       (implies (block-item-list-nocallsp items)
                (equal (exec-block-item-list items compst fenv limit)
                       (exec-block-item-list items compst fenv1 limit)))

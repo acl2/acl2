@@ -197,7 +197,7 @@
   (xdoc::topstring
    (xdoc::p
     "The index must be less than the number @('n') of registers,
-     so that the registers @('x0') to @('x<n>') can be indexed.
+     so that the registers @('x0') to @('x<n-1>') can be indexed.
      The result is a natural number in general;
      additionally, based on @('XLEN'), it consists of either 32 or 64 bits.")
    (xdoc::p
@@ -211,23 +211,27 @@
       (unsigned-byte-fix (feat->xlen feat)
                          (nth (1- reg) (stat->xregs stat)))))
   :hooks (:fix)
+  :type-prescription (natp (read-xreg-unsigned reg stat feat))
 
   ///
 
-  (more-returns
-   (val natp :rule-classes :type-prescription))
-
-  (defret ubyte32p-of-read-xreg-unsigned
+  (defret ubyte32p-of-read-xreg-unsigned-when-32p
     (ubyte32p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-32p feat)
-              (< (lnfix reg) (feat->xnum feat))))
+    :hyp (feat-32p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-unsigned
+             :in-theory (e/d (ubyte32p)
+                             (read-xreg-unsigned
+                              return-type-of-read-xreg-unsigned)))))
 
-  (defret ubyte64p-of-read-xreg-unsigned
+  (defret ubyte64p-of-read-xreg-unsigned-when-64p
     (ubyte64p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-64p feat)
-              (< (lnfix reg) (feat->xnum feat)))))
+    :hyp (feat-64p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-unsigned
+             :in-theory (e/d (ubyte64p)
+                             (read-xreg-unsigned
+                              return-type-of-read-xreg-unsigned))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -252,23 +256,29 @@
 
   ///
 
-  (defret sbyte32p-of-read-xreg-signed
+  (defret sbyte32p-of-read-xreg-signed-when-32p
     (sbyte32p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-32p feat)
-              (< (lnfix reg) (feat->xnum feat))))
+    :hyp (feat-32p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-signed
+             :in-theory (e/d (sbyte32p)
+                             (read-xreg-signed
+                              return-type-of-read-xreg-signed)))))
 
-  (defret sbyte64p-of-read-xreg-signed
+  (defret sbyte64p-of-read-xreg-signed-when-64p
     (sbyte64p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-64p feat)
-              (< (lnfix reg) (feat->xnum feat)))))
+    :hyp (feat-64p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-signed
+             :in-theory (e/d (sbyte64p)
+                             (read-xreg-signed
+                              return-type-of-read-xreg-signed))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-xreg-unsigned32 ((reg natp) (stat statp) (feat featp))
-  :guard (and (stat-validp stat feat)
-              (feat-64p feat)
+  :guard (and (feat-64p feat)
+              (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
   :returns (val ubyte32p)
   :short "Read an unsigned 32-bit integer from a 64-bit @('x') register."
@@ -288,8 +298,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-xreg-signed32 ((reg natp) (stat statp) (feat featp))
-  :guard (and (stat-validp stat feat)
-              (feat-64p feat)
+  :guard (and (feat-64p feat)
+              (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
   :returns (val sbyte32p)
   :short "Read a signed 32-bit integer from a 64-bit @('x') register."
@@ -318,7 +328,7 @@
      and write those to the register.")
    (xdoc::p
     "The index must be less than the number @('n') of registers,
-     so that the registers @('x0') to @('x<n>') can be indexed.")
+     so that the registers @('x0') to @('x<n-1>') can be indexed.")
    (xdoc::p
     "As explained in @(tsee stat),
      @('x0') is not modeled explicitly, since it is hardwired to 0.
@@ -328,8 +338,7 @@
     (if (= reg 0)
         (stat-fix stat)
       (change-stat stat :xregs (update-nth (1- reg)
-                                           (loghead (feat->xlen feat)
-                                                    (lifix val))
+                                           (loghead (feat->xlen feat) val)
                                            (stat->xregs stat)))))
   :hooks (:fix)
 
@@ -344,8 +353,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define write-xreg-32 ((reg natp) (val integerp) (stat statp) (feat featp))
-  :guard (and (stat-validp stat feat)
-              (feat-64p feat)
+  :guard (and (feat-64p feat)
+              (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Write an integer to the low 32 bit of a 64-bit @('x') register,
@@ -362,10 +371,7 @@
      which takes an integer of any size,
      keeps the low 32 bits,
      and writes their sign extension to the register."))
-  (write-xreg reg
-              (logext 32 (lifix val))
-              stat
-              feat)
+  (write-xreg reg (logext 32 val) stat feat)
   :hooks (:fix)
 
   ///
@@ -391,18 +397,16 @@
   (unsigned-byte-fix (feat->xlen feat)
                      (stat->pc stat))
   :hooks (:fix)
+  :type-prescription (natp (read-pc stat feat))
 
   ///
 
-  (more-returns
-   (pc natp :rule-classes :type-prescription))
-
-  (defret ubyte32p-of-read-pc
+  (defret ubyte32p-of-read-pc-when-32p
     (ubyte32p pc)
     :hyp (and (stat-validp stat feat)
               (feat-32p feat)))
 
-  (defret ubyte64p-of-read-pc
+  (defret ubyte64p-of-read-pc-when-64p
     (ubyte64p pc)
     :hyp (and (stat-validp stat feat)
               (feat-64p feat))))
@@ -480,11 +484,9 @@
   :prepwork ((local (in-theory (enable loghead))))
   :guard-hints (("Goal" :in-theory (enable ifix stat-validp)))
   :hooks (:fix)
+  :type-prescription (natp (read-memory-unsigned8 addr stat feat))
 
   ///
-
-  (more-returns
-   (val natp :rule-classes :type-prescription))
 
   (defret read-memory-unsigned8-upper-bound
     (<= val 255)

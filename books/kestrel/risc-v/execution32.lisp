@@ -28,13 +28,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define feat-rv32im ()
-  :returns (feat featp)
-  :short "Features for RV32IM."
-  (make-feat :base (feat-base-rv32i)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define step32 ((stat state32p))
   :returns (new-stat state32p)
   :short "Single-step execution."

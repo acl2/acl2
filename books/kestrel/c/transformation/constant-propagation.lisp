@@ -1438,7 +1438,7 @@
                            (const-prop-declor paramdeclor.declor env)))
                        (mv (param-declor-nonabstract declor) env))
         :abstract (b* (((mv unwrap env)
-                        (const-prop-absdeclor paramdeclor.unwrap env)))
+                        (const-prop-absdeclor paramdeclor.declor env)))
                     (mv (param-declor-abstract unwrap) env))
         :none (mv (param-declor-none) env)
         :ambig (prog2$ (raise "Misusage error: ~x0."
