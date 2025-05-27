@@ -1055,7 +1055,16 @@
      the maximum value is @('2^N - 1')."))
   (1- (expt 2 (uinteger-bit-roles-value-count
                (uinteger-format->bits format))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret uinteger-format->max-upper-bound
+    (<= max
+        (1- (expt 2 (len (uinteger-format->bits format)))))
+    :rule-classes :linear
+    :hints
+    (("Goal" :in-theory (enable uinteger-bit-roles-value-count-upper-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
