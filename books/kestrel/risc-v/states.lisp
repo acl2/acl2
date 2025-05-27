@@ -862,7 +862,31 @@
   :returns (yes/no booleanp)
   :short "Check if the error flag in the state is set."
   (stat->error stat)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule errorp-of-write-xreg
+    (equal (errorp (write-xreg reg val stat feat) feat)
+           (errorp stat feat))
+    :enable write-xreg)
+
+  (defrule errorp-of-write-xreg-32
+    (equal (errorp (write-xreg-32 reg val stat feat) feat)
+           (errorp stat feat))
+    :disable errorp
+    :enable write-xreg-32)
+
+  (defrule errorp-of-write-pc
+    (equal (errorp (write-pc pc stat feat) feat)
+           (errorp stat feat))
+    :enable write-pc)
+
+  (defrule errorp-of-inc4-pc
+    (equal (errorp (inc4-pc stat feat) feat)
+           (errorp stat feat))
+    :disable errorp
+    :enable inc4-pc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
