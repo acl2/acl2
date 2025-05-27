@@ -54,6 +54,7 @@
      "                :parents    ...  ; no default"
      "                :short      ...  ; no default"
      "                :long       ...  ; no default"
+     "                :print      ...  ; default :result"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -178,7 +179,16 @@
       "@(':long')")
      (xdoc::p
       "These, if present, are added to the generated XDOC topic
-       described in the Section `Generated Events' below.")))
+       described in the Section `Generated Events' below."))
+
+    (xdoc::desc
+     "@(':print')"
+     (xdoc::p
+      "Controls how much information is printed. This is a @(see
+       apt::print-specifier). On @('nil') or @(':error'), only error messages
+       are printed. On @(':result') (the default) or @(':info'), the events to
+       be submitted are printed, in addition to error messages. Finally, all
+       information is printed under @(':all').")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
