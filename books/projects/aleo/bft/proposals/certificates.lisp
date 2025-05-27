@@ -445,6 +445,13 @@
              set::expensive-rules)
     :disable certs-with-author)
 
+  (defruled emptyp-of-certs-with-author
+    (equal (set::emptyp (certs-with-author author certs))
+           (not (set::in (address-fix author)
+                         (cert-set->author-set certs))))
+    :induct t
+    :enable cert-set->author-set)
+
   (defruled certs-with-author-of-insert
     (implies (and (certificatep cert)
                   (certificate-setp certs))
@@ -508,6 +515,13 @@
     :enable (in-of-certs-with-round
              set::expensive-rules)
     :disable certs-with-round)
+
+  (defruled emptyp-of-certs-with-round
+    (equal (set::emptyp (certs-with-round round certs))
+           (not (set::in (pos-fix round)
+                         (cert-set->round-set certs))))
+    :induct t
+    :enable cert-set->round-set)
 
   (defruled certs-with-round-of-insert
     (implies (and (certificatep cert)
