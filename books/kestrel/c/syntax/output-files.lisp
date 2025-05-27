@@ -12,6 +12,7 @@
 
 (include-book "files")
 (include-book "printer")
+(include-book "ascii-identifiers")
 
 (include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
@@ -83,6 +84,16 @@
                                         (wrld plist-worldp))
   :returns (mv erp (tunits transunit-ensemblep))
   :short "Process the @(':const') or @('arg') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We set the @('gcc') flag to @('nil')
+     when we check for ASCII identifiers
+     since for now the purpose is just to ensure that
+     there are no non-all-ASCII identifiers:
+     if the code does not use GCC extensions,
+     it could be using GCC keywords as identifiers,
+     in which case we do not want the check to fail."))
   (b* (((reterr) (irr-transunit-ensemble))
        (const-option (assoc-eq :const options))
        ((erp tunits)
@@ -113,6 +124,10 @@
        ((unless (transunit-ensemble-unambp tunits))
         (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
                       is ambiguous."
+                     tunits desc)))
+       ((unless (transunit-ensemble-aidentp tunits nil)) ; GCC = NIL, see doc
+        (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
+                      contains non-all-ASCII identifiers."
                      tunits desc))))
     (retok tunits))
 

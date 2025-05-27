@@ -71,6 +71,9 @@
       " translation unit ensemble
        (i.e. a value of type @(tsee transunit-ensemble)
        that additionally satisfies @(tsee transunit-ensemble-unambp)).
+       The translation unit ensemble must also contain only "
+      (xdoc::seetopic "ascii-identifiers" "ASCII identifiers")
+      " (i.e. it must satisfy @(tsee transunit-ensemble-aidentp)).
        The translation unit is printed to a file set,
        whose files are written to the file system.
        The keys of the file set map are the same as
