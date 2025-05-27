@@ -54,6 +54,7 @@
      "(output-files :const           ...  ; required"
      "              :path            ...  ; default \".\""
      "              :printer-options ...  ; default nil"
+     "              :gcc             ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -134,7 +135,16 @@
         but the second one is more readable.
         If this option is @('t'), the printer adds the parentheses;
         if thie option is @('nil'), no extra parentheses are added.
-        If this option is not supplied, it defaults to @('nil')."))))
+        If this option is not supplied, it defaults to @('nil').")))
+
+    (xdoc::desc
+     "@(':gcc') &mdash; default @('nil')"
+     (xdoc::p
+      "Boolean flag saying whether certain GCC extensions
+       should be accepted or not.")
+     (xdoc::p
+      "This affects the aforementioned checks for ASCII identifiers:
+       GCC extensions turns some otherwise legal identifiers into keywords.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
