@@ -10,6 +10,10 @@
 
 (in-package "FTY")
 
+(include-book "kestrel/event-macros/cw-event" :dir :system)
+(include-book "kestrel/event-macros/make-event-terse" :dir :system)
+(include-book "kestrel/event-macros/restore-output" :dir :system)
+(include-book "kestrel/event-macros/screen-printing" :dir :system)
 (include-book "kestrel/fty/database" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/omaps/portcullis" :dir :system)
@@ -231,7 +235,8 @@
     :override
     :parents
     :short
-    :long))
+    :long
+    :print))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -250,9 +255,10 @@
                (short-presentp booleanp)
                short
                (long-presentp booleanp)
-               long)
+               long
+               (print acl2::evmac-input-print-p))
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil nil nil nil nil)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil nil nil nil nil nil)
        ((mv erp suffix options)
         (partition-rest-and-keyword-args args *deffoldred-allowed-options*))
        ((when (or erp
@@ -312,7 +318,16 @@
        (short (cdr short-option))
        (long-option (assoc-eq :long options))
        (long-presentp (consp long-option))
-       (long (cdr long-option)))
+       (long (cdr long-option))
+       (print-option (assoc-eq :print options))
+       ((unless (or (atom print-option)
+                    (acl2::evmac-input-print-p (cdr print-option))))
+        (reterr (msg "The :PRINT input must be one of: nil, :error, :result, ~
+                      :info, or :all, but it is ~x0 instead."
+                     print-option)))
+       (print (if (consp print-option)
+                  (cdr print-option)
+                :result)))
     (retok suffix
            types
            targets
@@ -326,7 +341,8 @@
            short-presentp
            short
            long-presentp
-           long))
+           long
+           print))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -943,7 +959,8 @@
        :flag-local nil
        :prepwork ((set-bogus-mutual-recursion-ok t))
        ///
-       (deffixequiv-mutual ,clique-name-suffix))))
+       (deffixequiv-mutual ,clique-name-suffix
+         :hints (("Goal" :in-theory (disable (tau-system))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -992,7 +1009,8 @@
                                    short
                                    (long-presentp booleanp)
                                    long
-                                   (fty-table alistp))
+                                   (fty-table alistp)
+                                   (print acl2::evmac-input-print-p))
   :returns (event acl2::pseudo-event-formp)
   :short "Generate all the events."
   (b* ((fold-events
@@ -1007,12 +1025,21 @@
            ,@(and long-presentp `(:long ,long))
            :order-subtopics t))
        (ruleset-event
-        `(def-ruleset! ,(deffoldred-gen-ruleset-name suffix) nil)))
-    `(encapsulate
-       ()
-       ,xdoc-event
-       ,ruleset-event
-       ,@fold-events)))
+         `(def-ruleset! ,(deffoldred-gen-ruleset-name suffix) nil))
+       (encapsulate
+         `(encapsulate
+            ()
+            ,xdoc-event
+            ,ruleset-event
+            ,@fold-events))
+       (encapsulate (acl2::restore-output? (eq print :all) encapsulate))
+       (print-result (if (member-eq print '(:result :info))
+                         `((acl2::cw-event "~x0~|" ',encapsulate))
+                       nil)))
+    `(progn
+       ,@print-result
+       ,encapsulate
+       (value-triple :invisible))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1036,7 +1063,8 @@
              short-presentp
              short
              long-presentp
-             long)
+             long
+             print)
         (deffoldred-process-inputs args fty-table)))
     (retok (deffoldred-gen-everything
              suffix
@@ -1053,7 +1081,8 @@
              short
              long-presentp
              long
-             fty-table))))
+             fty-table
+             print))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1072,4 +1101,4 @@
   :parents (deffold-reduce-implementation)
   :short "Definition of @(tsee deffold-reduce)."
   (defmacro deffold-reduce (&rest args)
-    `(make-event (deffoldred-fn ',args 'deffold-reduce state))))
+    `(acl2::make-event-terse (deffoldred-fn ',args 'deffold-reduce state))))
