@@ -15,10 +15,10 @@
 (include-book "last-blockchain-round")
 (include-book "ordered-blockchain")
 (include-book "active-committees-after-commit")
-(include-book "proposed-author-self")
 (include-book "proposal-to-other")
 (include-book "endorsement-from-other")
 (include-book "certificate-to-other")
+(include-book "proposed-author-self")
 (include-book "proposed-endorser-other")
 (include-book "endorsed-author-other")
 (include-book "proposal-in-author")
@@ -38,6 +38,12 @@
 (include-book "signed-in-signer")
 (include-book "author-round-pairs-in-validators")
 (include-book "unequivocal-signed-proposals")
+(include-book "unequivocal-proposed")
+(include-book "proposed-disjoint-dag")
+(include-book "unequivocal-dag")
+(include-book "last-anchor-def")
+(include-book "last-anchor-present")
+(include-book "last-anchor-init-and-next")
 (include-book "fault-tolerance")
 (include-book "quorum-intersection")
 (include-book "nonforking-blockchains-def-and-init")
@@ -60,10 +66,10 @@
                     last-blockchain-round
                     ordered-blockchain
                     active-committees-after-commit
-                    proposed-author-self
                     proposal-to-other
                     endorsement-from-other
                     certificate-to-other
+                    proposed-author-self
                     proposed-endorser-other
                     endorsed-author-other
                     proposal-in-author
@@ -83,6 +89,12 @@
                     signed-in-signer
                     author-round-pairs-in-validators
                     unequivocal-signed-proposals
+                    unequivocal-proposed
+                    proposed-disjoint-dag
+                    unequivocal-dag
+                    last-anchor-def
+                    last-anchor-present
+                    last-anchor-init-and-next
                     fault-tolerance
                     quorum-intersection
                     nonforking-blockchains-def-and-init

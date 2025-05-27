@@ -30526,3 +30526,7 @@ Lisp definition."
   (if (integerp x)
       (<= x 0)
     t))
+
+(defun strict-table-guard (x)
+  (declare (xargs :guard t))
+  x)

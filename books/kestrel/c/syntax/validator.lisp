@@ -4340,7 +4340,7 @@
                 table))
        :abstract
        (b* (((erp new-absdeclor type types table)
-             (valid-absdeclor paramdeclor.unwrap type table ienv)))
+             (valid-absdeclor paramdeclor.declor type table ienv)))
          (retok (param-declor-abstract new-absdeclor)
                 type
                 nil

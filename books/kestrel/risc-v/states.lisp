@@ -13,6 +13,7 @@
 (include-book "library-extensions")
 (include-book "features")
 
+(include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte32-list" :dir :system)
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
@@ -197,7 +198,7 @@
   (xdoc::topstring
    (xdoc::p
     "The index must be less than the number @('n') of registers,
-     so that the registers @('x0') to @('x<n>') can be indexed.
+     so that the registers @('x0') to @('x<n-1>') can be indexed.
      The result is a natural number in general;
      additionally, based on @('XLEN'), it consists of either 32 or 64 bits.")
    (xdoc::p
@@ -211,23 +212,31 @@
       (unsigned-byte-fix (feat->xlen feat)
                          (nth (1- reg) (stat->xregs stat)))))
   :hooks (:fix)
+  :type-prescription (natp (read-xreg-unsigned reg stat feat))
 
   ///
 
-  (more-returns
-   (val natp :rule-classes :type-prescription))
-
-  (defret ubyte32p-of-read-xreg-unsigned
+  (defret ubyte32p-of-read-xreg-unsigned-when-32p
     (ubyte32p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-32p feat)
-              (< (lnfix reg) (feat->xnum feat))))
+    :hyp (feat-32p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-unsigned
+             :in-theory (e/d (ubyte32p)
+                             (read-xreg-unsigned
+                              return-type-of-read-xreg-unsigned)))))
 
-  (defret ubyte64p-of-read-xreg-unsigned
+  (defret ubyte64p-of-read-xreg-unsigned-when-64p
     (ubyte64p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-64p feat)
-              (< (lnfix reg) (feat->xnum feat)))))
+    :hyp (feat-64p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-unsigned
+             :in-theory (e/d (ubyte64p)
+                             (read-xreg-unsigned
+                              return-type-of-read-xreg-unsigned)))))
+
+  (defrule read-xreg-unsigned-of-x0
+    (equal (read-xreg-unsigned 0 stat feat)
+           0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -252,23 +261,33 @@
 
   ///
 
-  (defret sbyte32p-of-read-xreg-signed
+  (defret sbyte32p-of-read-xreg-signed-when-32p
     (sbyte32p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-32p feat)
-              (< (lnfix reg) (feat->xnum feat))))
+    :hyp (feat-32p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-signed
+             :in-theory (e/d (sbyte32p)
+                             (read-xreg-signed
+                              return-type-of-read-xreg-signed)))))
 
-  (defret sbyte64p-of-read-xreg-signed
+  (defret sbyte64p-of-read-xreg-signed-when-64p
     (sbyte64p val)
-    :hyp (and (stat-validp stat feat)
-              (feat-64p feat)
-              (< (lnfix reg) (feat->xnum feat)))))
+    :hyp (feat-64p feat)
+    :hints (("Goal"
+             :use return-type-of-read-xreg-signed
+             :in-theory (e/d (sbyte64p)
+                             (read-xreg-signed
+                              return-type-of-read-xreg-signed)))))
+
+  (defrule read-xreg-signed-of-x0
+    (equal (read-xreg-signed 0 stat feat)
+           0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-xreg-unsigned32 ((reg natp) (stat statp) (feat featp))
-  :guard (and (stat-validp stat feat)
-              (feat-64p feat)
+  :guard (and (feat-64p feat)
+              (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
   :returns (val ubyte32p)
   :short "Read an unsigned 32-bit integer from a 64-bit @('x') register."
@@ -283,13 +302,19 @@
      which reads the whole integer and keeps the low 32 bits."))
   (loghead 32 (read-xreg-unsigned reg stat feat))
   :hooks (:fix)
-  :type-prescription (natp (read-xreg-unsigned32 reg stat feat)))
+  :type-prescription (natp (read-xreg-unsigned32 reg stat feat))
+
+  ///
+
+  (defrule read-xreg-unsigned32-of-x0
+    (equal (read-xreg-unsigned32 0 stat feat)
+           0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-xreg-signed32 ((reg natp) (stat statp) (feat featp))
-  :guard (and (stat-validp stat feat)
-              (feat-64p feat)
+  :guard (and (feat-64p feat)
+              (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
   :returns (val sbyte32p)
   :short "Read a signed 32-bit integer from a 64-bit @('x') register."
@@ -301,7 +326,13 @@
      are treated as a signed integer instead of unsigned."))
   (logext 32 (read-xreg-unsigned reg stat feat))
   :hooks (:fix)
-  :type-prescription (integerp (read-xreg-signed32 reg stat feat)))
+  :type-prescription (integerp (read-xreg-signed32 reg stat feat))
+
+  ///
+
+  (defrule read-xreg-signed32-of-x0
+    (equal (read-xreg-signed32 0 stat feat)
+           0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -318,7 +349,7 @@
      and write those to the register.")
    (xdoc::p
     "The index must be less than the number @('n') of registers,
-     so that the registers @('x0') to @('x<n>') can be indexed.")
+     so that the registers @('x0') to @('x<n-1>') can be indexed.")
    (xdoc::p
     "As explained in @(tsee stat),
      @('x0') is not modeled explicitly, since it is hardwired to 0.
@@ -328,8 +359,7 @@
     (if (= reg 0)
         (stat-fix stat)
       (change-stat stat :xregs (update-nth (1- reg)
-                                           (loghead (feat->xlen feat)
-                                                    (lifix val))
+                                           (loghead (feat->xlen feat) val)
                                            (stat->xregs stat)))))
   :hooks (:fix)
 
@@ -339,13 +369,17 @@
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
-    :hints (("Goal" :in-theory (enable stat-validp fix max)))))
+    :hints (("Goal" :in-theory (enable stat-validp fix max))))
+
+  (defrule write-xreg-of-x0
+    (equal (write-xreg 0 val stat feat)
+           (stat-fix stat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define write-xreg-32 ((reg natp) (val integerp) (stat statp) (feat featp))
-  :guard (and (stat-validp stat feat)
-              (feat-64p feat)
+  :guard (and (feat-64p feat)
+              (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Write an integer to the low 32 bit of a 64-bit @('x') register,
@@ -362,10 +396,7 @@
      which takes an integer of any size,
      keeps the low 32 bits,
      and writes their sign extension to the register."))
-  (write-xreg reg
-              (logext 32 (lifix val))
-              stat
-              feat)
+  (write-xreg reg (logext 32 val) stat feat)
   :hooks (:fix)
 
   ///
@@ -373,7 +404,11 @@
   (defret stat-validp-of-write-xreg-32
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
-              (< (lnfix reg) (feat->xnum feat)))))
+              (< (lnfix reg) (feat->xnum feat))))
+
+  (defrule write-xreg-32-of-x0
+    (equal (write-xreg-32 0 val stat feat)
+           (stat-fix stat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -391,18 +426,16 @@
   (unsigned-byte-fix (feat->xlen feat)
                      (stat->pc stat))
   :hooks (:fix)
+  :type-prescription (natp (read-pc stat feat))
 
   ///
 
-  (more-returns
-   (pc natp :rule-classes :type-prescription))
-
-  (defret ubyte32p-of-read-pc
+  (defret ubyte32p-of-read-pc-when-32p
     (ubyte32p pc)
     :hyp (and (stat-validp stat feat)
               (feat-32p feat)))
 
-  (defret ubyte64p-of-read-pc
+  (defret ubyte64p-of-read-pc-when-64p
     (ubyte64p pc)
     :hyp (and (stat-validp stat feat)
               (feat-64p feat))))
@@ -475,16 +508,14 @@
    (xdoc::p
     "Since we read a single byte,
      there is no difference between little and big endian."))
-  (b* ((addr (loghead (feat->xlen feat) (lifix addr))))
+  (b* ((addr (loghead (feat->xlen feat) addr)))
     (ubyte8-fix (nth addr (stat->memory stat))))
   :prepwork ((local (in-theory (enable loghead))))
   :guard-hints (("Goal" :in-theory (enable ifix stat-validp)))
   :hooks (:fix)
+  :type-prescription (natp (read-memory-unsigned8 addr stat feat))
 
   ///
-
-  (more-returns
-   (val natp :rule-classes :type-prescription))
 
   (defret read-memory-unsigned8-upper-bound
     (<= val 255)
@@ -501,7 +532,8 @@
   :returns (val ubyte16p
                 :hints (("Goal" :in-theory (enable ubyte16p
                                                    unsigned-byte-p
-                                                   integer-range-p))))
+                                                   integer-range-p
+                                                   ifix))))
   :short "Read an unsigned 16-bit integer from memory."
   :long
   (xdoc::topstring
@@ -516,17 +548,18 @@
      We use @(tsee read-memory-unsigned8) twice.
      Note that if @('addr') is @('2^XLEN - 1'),
      then @('addr + 1') wraps around to address 0."))
-  (b* ((addr (lifix addr))
-       (b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ addr 1) stat feat)))
-    (+ b0
-       (ash b1 8)))
+  (b* ((b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat)))
+    (logappn 8 b0
+             8 b1))
   :hooks (:fix)
 
   ///
 
   (more-returns
-   (val natp :rule-classes :type-prescription)))
+   (val natp
+        :rule-classes :type-prescription
+        :hints (("Goal" :in-theory (enable ifix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -535,7 +568,8 @@
   :returns (val ubyte32p
                 :hints (("Goal" :in-theory (enable ubyte32p
                                                    unsigned-byte-p
-                                                   integer-range-p))))
+                                                   integer-range-p
+                                                   ifix))))
   :short "Read an unsigned 32-bit integer from memory."
   :long
   (xdoc::topstring
@@ -550,21 +584,22 @@
      We use @(tsee read-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to addres 0."))
-  (b* ((addr (lifix addr))
-       (b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ addr 3) stat feat)))
-    (+ b0
-       (ash b1 8)
-       (ash b2 16)
-       (ash b3 24)))
+  (b* ((b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat)))
+    (logappn 8 b0
+             8 b1
+             8 b2
+             8 b3))
   :hooks (:fix)
 
   ///
 
   (more-returns
-   (val natp :rule-classes :type-prescription)))
+   (val natp
+        :rule-classes :type-prescription
+        :hints (("Goal" :in-theory (enable ifix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -573,7 +608,8 @@
   :returns (val ubyte64p
                 :hints (("Goal" :in-theory (enable ubyte64p
                                                    unsigned-byte-p
-                                                   integer-range-p))))
+                                                   integer-range-p
+                                                   ifix))))
   :short "Read an unsigned 64-bit integer from memory."
   :long
   (xdoc::topstring
@@ -588,29 +624,30 @@
      We use @(tsee read-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
-  (b* ((addr (lifix addr))
-       (b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ addr 3) stat feat))
-       (b4 (read-memory-unsigned8 (+ addr 4) stat feat))
-       (b5 (read-memory-unsigned8 (+ addr 5) stat feat))
-       (b6 (read-memory-unsigned8 (+ addr 6) stat feat))
-       (b7 (read-memory-unsigned8 (+ addr 7) stat feat)))
-    (+ b0
-       (ash b1 8)
-       (ash b2 16)
-       (ash b3 24)
-       (ash b4 32)
-       (ash b5 40)
-       (ash b6 48)
-       (ash b7 56)))
+  (b* ((b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat))
+       (b4 (read-memory-unsigned8 (+ (lifix addr) 4) stat feat))
+       (b5 (read-memory-unsigned8 (+ (lifix addr) 5) stat feat))
+       (b6 (read-memory-unsigned8 (+ (lifix addr) 6) stat feat))
+       (b7 (read-memory-unsigned8 (+ (lifix addr) 7) stat feat)))
+    (logappn 8 b0
+             8 b1
+             8 b2
+             8 b3
+             8 b4
+             8 b5
+             8 b6
+             8 b7))
   :hooks (:fix)
 
   ///
 
   (more-returns
-   (val natp :rule-classes :type-prescription)))
+   (val natp
+        :rule-classes :type-prescription
+        :hints (("Goal" :in-theory (enable ifix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -632,7 +669,7 @@
    (xdoc::p
     "Since we write a single byte,
      there is no difference between little and big endian."))
-  (b* ((addr (loghead (feat->xlen feat) (lifix addr))))
+  (b* ((addr (loghead (feat->xlen feat) addr)))
     (change-stat stat :memory (update-nth addr
                                           (ubyte8-fix val)
                                           (stat->memory stat))))
@@ -667,12 +704,11 @@
      We use @(tsee write-memory-unsigned8) twice.
      Note that if @('addr') is @('2^XLEN - 1'),
      then @('addr + 1') wraps around to address 0."))
-  (b* ((addr (lifix addr))
-       (val (ubyte16-fix val))
-       (b0 (logand val #xff))
-       (b1 (ash val -8))
+  (b* ((val (ubyte16-fix val))
+       (b0 (part-select val :low 0 :width 8))
+       (b1 (part-select val :low 8 :width 8))
        (stat (write-memory-unsigned8 addr b0 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 1) b1 stat feat)))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 1) b1 stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -707,16 +743,15 @@
      We use @(tsee write-memory-unsigned8) twice.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
-  (b* ((addr (lifix addr))
-       (val (ubyte32-fix val))
-       (b0 (logand val #xff))
-       (b1 (logand (ash val -8) #xff))
-       (b2 (logand (ash val -16) #xff))
-       (b3 (ash val -24))
+  (b* ((val (ubyte32-fix val))
+       (b0 (part-select val :low 0 :width 8))
+       (b1 (part-select val :low 8 :width 8))
+       (b2 (part-select val :low 16 :width 8))
+       (b3 (part-select val :low 24 :width 8))
        (stat (write-memory-unsigned8 addr b0 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 1) b1 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 2) b2 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 3) b3 stat feat)))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 1) b1 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 2) b2 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 3) b3 stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -751,24 +786,23 @@
      We use @(tsee write-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
-  (b* ((addr (lifix addr))
-       (val (ubyte64-fix val))
-       (b0 (logand val #xff))
-       (b1 (logand (ash val -8) #xff))
-       (b2 (logand (ash val -16) #xff))
-       (b3 (logand (ash val -24) #xff))
-       (b4 (logand (ash val -32) #xff))
-       (b5 (logand (ash val -40) #xff))
-       (b6 (logand (ash val -48) #xff))
-       (b7 (ash val -56))
+  (b* ((val (ubyte64-fix val))
+       (b0 (part-select val :low 0 :width 8))
+       (b1 (part-select val :low 8 :width 8))
+       (b2 (part-select val :low 16 :width 8))
+       (b3 (part-select val :low 24 :width 8))
+       (b4 (part-select val :low 32 :width 8))
+       (b5 (part-select val :low 40 :width 8))
+       (b6 (part-select val :low 48 :width 8))
+       (b7 (part-select val :low 56 :width 8))
        (stat (write-memory-unsigned8 addr b0 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 1) b1 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 2) b2 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 3) b3 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 4) b4 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 5) b5 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 6) b6 stat feat))
-       (stat (write-memory-unsigned8 (+ addr 7) b7 stat feat)))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 1) b1 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 2) b2 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 3) b3 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 4) b4 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 5) b5 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 6) b6 stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 7) b7 stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -788,7 +822,8 @@
   :returns (val ubyte32p
                 :hints (("Goal" :in-theory (enable ubyte32p
                                                    unsigned-byte-p
-                                                   integer-range-p))))
+                                                   integer-range-p
+                                                   ifix))))
   :short "Read the 32-bit encoding of an instruction from memory."
   :long
   (xdoc::topstring
@@ -802,21 +837,22 @@
      We use @(tsee read-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to addres 0."))
-  (b* ((addr (lifix addr))
-       (b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ addr 3) stat feat)))
-    (+ b0
-       (ash b1 8)
-       (ash b2 16)
-       (ash b3 24)))
+  (b* ((b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat)))
+    (logappn 8 b0
+             8 b1
+             8 b2
+             8 b3))
   :hooks (:fix)
 
   ///
 
   (more-returns
-   (val natp :rule-classes :type-prescription)))
+   (val natp
+        :rule-classes :type-prescription
+        :hints (("Goal" :in-theory (enable ifix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -826,7 +862,31 @@
   :returns (yes/no booleanp)
   :short "Check if the error flag in the state is set."
   (stat->error stat)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule errorp-of-write-xreg
+    (equal (errorp (write-xreg reg val stat feat) feat)
+           (errorp stat feat))
+    :enable write-xreg)
+
+  (defrule errorp-of-write-xreg-32
+    (equal (errorp (write-xreg-32 reg val stat feat) feat)
+           (errorp stat feat))
+    :disable errorp
+    :enable write-xreg-32)
+
+  (defrule errorp-of-write-pc
+    (equal (errorp (write-pc pc stat feat) feat)
+           (errorp stat feat))
+    :enable write-pc)
+
+  (defrule errorp-of-inc4-pc
+    (equal (errorp (inc4-pc stat feat) feat)
+           (errorp stat feat))
+    :disable errorp
+    :enable inc4-pc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

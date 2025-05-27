@@ -103,7 +103,9 @@
           (implies (set::in prop (proposal-set-fix props))
                    (equal (proposal->author prop)
                           (address-fix author))))
+
   ///
+
   (fty::deffixequiv-sk prop-set-all-author-p
     :args ((author addressp) (props proposal-setp))))
 
@@ -116,7 +118,9 @@
           (implies (set::in prop (proposal-set-fix props))
                    (not (equal (proposal->author prop)
                                (address-fix author)))))
+
   ///
+
   (fty::deffixequiv-sk prop-set-none-author-p
     :args ((author addressp) (props proposal-setp))))
 
@@ -146,7 +150,7 @@
     :hyp (proposal-setp props)
     :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
 
-  (defrule props-with-author+round-of-nil
+  (defrule props-with-author+round-of-empty
     (equal (props-with-author+round author round nil)
            nil))
 
@@ -342,4 +346,11 @@
                                (props-with-author+round (proposal->author prop)
                                                         (proposal->round prop)
                                                         props)))
-                       (props (set::insert prop props)))))))
+                       (props (set::insert prop props))))))
+
+  (defruled prop-set-unequivp-of-delete
+    (implies (and (proposal-setp props)
+                  (prop-set-unequivp props))
+             (prop-set-unequivp (set::delete prop props)))
+    :disable prop-set-unequivp
+    :enable prop-set-unequivp-when-subset))

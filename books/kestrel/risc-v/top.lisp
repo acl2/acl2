@@ -14,7 +14,9 @@
 (include-book "instructions")
 (include-book "encoding")
 (include-book "decoding")
+(include-book "inverse-encoding-decoding")
 (include-book "states")
+(include-book "reads-over-writes")
 (include-book "semantics")
 (include-book "execution")
 (include-book "rv32im")
@@ -78,6 +80,7 @@
   :order-subtopics (features
                     instructions
                     states
+                    reads-over-writes
                     encoding
                     decoding
                     semantics

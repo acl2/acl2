@@ -386,3 +386,43 @@
              (dag-closedp (set::insert cert dag)))
     :enable (cert-previous-in-dag-p-when-subset
              dag-closedp-necc)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define successors ((cert certificatep) (dag certificate-setp))
+  :guard (set::in cert dag)
+  :returns (certs certificate-setp)
+  :short "Set of the certificates in a DAG that
+          are successors of a certificate in a DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the source certificates of the edges in the DAG
+     that have the certificate @('cert') as destination.
+     These edges are the incoming edges of @('cert').")
+   (xdoc::p
+    "Here `successor' refers to the fact that
+     the returned certificates are
+     in the (immediately) successive round of @('cert'),
+     even though the directed edges point backwards.")
+   (xdoc::p
+    "We obtain all the certificates from the successive round,
+     and then we filter the ones that have an edge to @('cert'),
+     i.e. that have the author of @('cert') in the @('previous') component."))
+  (successors-loop (certs-with-round (1+ (certificate->round cert)) dag)
+                   (certificate->author cert))
+  :prepwork
+  ((define successors-loop ((certs certificate-setp) (prev addressp))
+     :returns (succ-certs certificate-setp)
+     :parents nil
+     (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
+          (cert (set::head certs)))
+       (if (set::in (address-fix prev)
+                    (certificate->previous cert))
+           (set::insert cert
+                        (successors-loop (set::tail certs) prev))
+         (successors-loop (set::tail certs) prev)))
+     :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
+     :verify-guards :after-returns
+     :hooks (:fix)))
+  :hooks (:fix))
