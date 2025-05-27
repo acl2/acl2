@@ -413,7 +413,7 @@
                    (certificate->author cert))
   :prepwork
   ((define successors-loop ((certs certificate-setp) (prev addressp))
-     :returns (certs1 certificate-setp)
+     :returns (succ-certs certificate-setp)
      :parents nil
      (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
           (cert (set::head certs)))
