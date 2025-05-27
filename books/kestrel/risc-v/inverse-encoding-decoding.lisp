@@ -145,3 +145,375 @@
              get-opcode
              ifix
              loghead)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-rd-of-encode-of-inst
+  :short "Theorems about @(tsee get-rd) applied to
+          the encoding of instructions."
+
+  (defruled get-rd-of-encode-instr-op-imm
+    (equal (get-rd (encode (instr-op-imm funct rd rs1 imm) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-op-imms32
+    (equal (get-rd (encode (instr-op-imms32 funct rd rs1 imm) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-op-imms64
+    (equal (get-rd (encode (instr-op-imms64 funct rd rs1 imm) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-op-imm-32
+    (equal (get-rd (encode (instr-op-imm-32 funct rd rs1 imm) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-op-imms-32
+    (equal (get-rd (encode (instr-op-imms-32 funct rd rs1 imm) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-lui
+    (equal (get-rd (encode (instr-lui rd imm) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-auipc
+    (equal (get-rd (encode (instr-auipc rd imm) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-op
+    (equal (get-rd (encode (instr-op funct rd rs1 rs2) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-op-32
+    (equal (get-rd (encode (instr-op-32 funct rd rs1 rs2) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-jal
+    (equal (get-rd (encode (instr-jal rd imm) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-jalr
+    (equal (get-rd (encode (instr-jalr rd rs1 imm) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rd-of-encode-instr-load
+    (equal (get-rd (encode (instr-load funct rd rs1 imm) feat))
+           (ubyte5-fix rd))
+    :enable (encode
+             get-rd
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-rs1-of-encode-of-inst
+  :short "Theorems about @(tsee get-rs1) applied to
+          the encoding of instructions."
+
+  (defruled get-rs1-of-encode-instr-op-imm
+    (equal (get-rs1 (encode (instr-op-imm funct rd rs1 imm) feat))
+           (ubyte5-fix rs1))
+    :enable (encode
+             get-rs1
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs1-of-encode-instr-op-imms32
+    (equal (get-rs1 (encode (instr-op-imms32 funct rd rs1 imm) feat))
+           (ubyte5-fix rs1))
+    :enable (encode
+             get-rs1
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs1-of-encode-instr-op-imms64
+    (equal (get-rs1 (encode (instr-op-imms64 funct rd rs1 imm) feat))
+           (ubyte5-fix rs1))
+    :enable (encode
+             get-rs1
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs1-of-encode-instr-op-imm-32
+    (equal (get-rs1 (encode (instr-op-imm-32 funct rd rs1 imm) feat))
+           (ubyte5-fix rs1))
+    :enable (encode
+             get-rs1
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs1-of-encode-instr-op-imms-32
+    (equal (get-rs1 (encode (instr-op-imms-32 funct rd rs1 imm) feat))
+           (ubyte5-fix rs1))
+    :enable (encode
+             get-rs1
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs1-of-encode-instr-op
+    (equal (get-rs1 (encode (instr-op funct rd rs1 rs2) feat))
+           (ubyte5-fix rs1))
+    :enable (encode
+             get-rs1
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs1-of-encode-instr-op-32
+    (equal (get-rs1 (encode (instr-op-32 funct rd rs1 rs2) feat))
+           (ubyte5-fix rs1))
+    :enable (encode
+             get-rs1
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs1-of-encode-instr-jalr
+    (equal (get-rs1 (encode (instr-jalr rd rs1 imm) feat))
+           (ubyte5-fix rs1))
+    :enable (encode
+             get-rs1
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs1-of-encode-instr-branch
+    (equal (get-rs1 (encode (instr-branch funct rs1 rs2 imm) feat))
+           (ubyte5-fix rs1))
+    :disable (bitops::part-select-low-high
+              logapp)
+    :enable (encode
+             get-rs1)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (ubyte5p rs1)
+                (equal (part-select (logappn 7 opcode
+                                             1 imm-11
+                                             4 imm-4-1
+                                             3 funct3
+                                             5 rs1
+                                             5 rs2
+                                             6 imm-10-5
+                                             1 imm-12)
+                                    :low 15
+                                    :high 19)
+                       rs1))
+       :enable (ifix
+                loghead
+                ubyte5p
+                unsigned-byte-p
+                integer-range-p))))
+
+  (defruled get-rs1-of-encode-instr-load
+    (equal (get-rs1 (encode (instr-load funct rd rs1 imm) feat))
+           (ubyte5-fix rs1))
+    :enable (encode
+             get-rs1
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs1-of-encode-instr-store
+    (equal (get-rs1 (encode (instr-store funct rs1 rs2 imm) feat))
+           (ubyte5-fix rs1))
+    :enable (encode
+             get-rs1
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-rs2-of-encode-of-inst
+  :short "Theorems about @(tsee get-rs2) applied to
+          the encoding of instructions."
+
+  (defruled get-rs2-of-encode-instr-op
+    (equal (get-rs2 (encode (instr-op funct rd rs1 rs2) feat))
+           (ubyte5-fix rs2))
+    :enable (encode
+             get-rs2
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs2-of-encode-instr-op-32
+    (equal (get-rs2 (encode (instr-op-32 funct rd rs1 rs2) feat))
+           (ubyte5-fix rs2))
+    :enable (encode
+             get-rs2
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead))
+
+  (defruled get-rs2-of-encode-instr-branch
+    (equal (get-rs2 (encode (instr-branch funct rs1 rs2 imm) feat))
+           (ubyte5-fix rs2))
+    :disable (bitops::part-select-low-high
+              logapp)
+    :enable (encode
+             get-rs2)
+    :prep-lemmas
+    ((defrule lemma
+       (implies (ubyte5p rs2)
+                (equal (part-select (logappn 7 opcode
+                                             1 imm-11
+                                             4 imm-4-1
+                                             3 funct3
+                                             5 rs1
+                                             5 rs2
+                                             6 imm-10-5
+                                             1 imm-12)
+                                    :low 20
+                                    :high 24)
+                       rs2))
+       :enable (ifix
+                loghead
+                ubyte5p
+                unsigned-byte-p
+                integer-range-p))))
+
+  (defruled get-rs2-of-encode-instr-store
+    (equal (get-rs2 (encode (instr-store funct rs1 rs2 imm) feat))
+           (ubyte5-fix rs2))
+    :enable (encode
+             get-rs2
+             ifix
+             ubyte5-fix
+             ubyte5p
+             unsigned-byte-p
+             integer-range-p
+             loghead)))
