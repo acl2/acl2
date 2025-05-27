@@ -45,8 +45,8 @@
      is @('commit'), whose preconditions establish the invariant.
      The only kinds of events that may change the successors
      are @('create') and @('accept'),
-     which may add certificates to the DAG:
-     this certificate may or may not be a successor,
+     which may add a certificate to the DAG:
+     the added certificate may or may not be a successor,
      but if it is, it can only increase the voting stake, never decrease it.")
    (xdoc::p
     "Here we define the invariant,
