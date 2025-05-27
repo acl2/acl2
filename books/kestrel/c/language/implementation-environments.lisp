@@ -1290,6 +1290,46 @@
     :hints (("Goal" :in-theory (e/d (integer-format->bit-size-alt-def)
                                     (integer-format->bit-size))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format->unsigned-max ((format integer-formatp))
+  :returns (max posp :rule-classes (:rewrite :type-prescription))
+  :short "The ACL2 integer value of
+          the maximum unsigned value representable in an integer format."
+  (uinteger-format->max
+   (uinteger+sinteger-format->unsigned
+    (integer-format->pair format)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format->signed-max ((format integer-formatp))
+  :returns (max posp :rule-classes (:rewrite :type-prescription))
+  :short "The ACL2 integer value of
+          the maximum signed value representable in an integer format."
+  (sinteger-format->max
+   (uinteger+sinteger-format->signed
+    (integer-format->pair format)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format->signed-min ((format integer-formatp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of
+          the minimum signed value representable in an integer format."
+  (sinteger-format->min
+   (uinteger+sinteger-format->signed
+    (integer-format->pair format)))
+  :hooks (:fix)
+
+  ///
+
+  (defret integer-format->signed-min-type-prescription
+    (and (integerp min)
+         (< min 0))
+    :rule-classes :type-prescription))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-format-inc-sign-tcnpnt ((size posp))
