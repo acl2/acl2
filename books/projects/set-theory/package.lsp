@@ -18,7 +18,7 @@
       fix-intern-in-pkg-of-sym formals fquotep get-event packn
       packn-pos pairlis-x1 pairlis-x2 strip-cadrs string-suffixp
       variablep
-; For table events:
+; For table events etc.:
       val key)
     (union-eq *acl2-exports*
               *common-lisp-symbols-from-main-lisp-package*))

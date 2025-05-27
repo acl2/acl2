@@ -956,6 +956,10 @@
  this section we sketch an argument for how to interpret an ACL2 theory in ZFG
  so that all hypothesis function calls are true.</p>
 
+ <p><b>NOTE</b>: This section provides just a sketch, and may be revised.  A
+ much more rigorous and technical development may be found in @(see
+ community-book) @('projects/set-theory/logic.txt').</p>
+
  <p>We start with the following definitions.</p>
 
  <blockquote>
