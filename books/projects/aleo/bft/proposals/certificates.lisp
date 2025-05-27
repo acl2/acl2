@@ -333,7 +333,7 @@
     :induct t
     :enable cert-set->prop-set)
 
-  (defrule certs-with-prop-of-nil
+  (defrule certs-with-prop-of-empty
     (equal (certs-with-prop prop nil)
            nil))
 
@@ -629,7 +629,7 @@
     :enable in-of-certs-with-author+round
     :disable certs-with-author+round)
 
-  (defrule certs-with-author+round-of-nil
+  (defrule certs-with-author+round-of-empty
     (equal (certs-with-author+round author round nil)
            nil))
 

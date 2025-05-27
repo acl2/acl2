@@ -375,7 +375,7 @@
 
   ///
 
-  (defrule dag-closedp-of-nil
+  (defrule dag-closedp-of-empty
     (dag-closedp nil))
 
   (defruled dag-closedp-of-insert
