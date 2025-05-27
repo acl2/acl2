@@ -929,6 +929,9 @@
                     (cert2 (mv-nth 1 (cert-set-unequivp-witness certs0))))
     :enable set::expensive-rules)
 
+  (defrule cert-set-unequivp-of-empty
+    (cert-set-unequivp nil))
+
   (defruled cert-set-unequivp-of-insert
     (implies (and (certificate-setp certs)
                   (certificatep cert))
@@ -982,10 +985,7 @@
                                 (certificate->author cert)
                                 (certificate->round cert)
                                 certs)))
-                       (certs (set::insert cert certs))))))
-
-  (defrule cert-set-unequivp-of-empty
-    (cert-set-unequivp nil)))
+                       (certs (set::insert cert certs)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
