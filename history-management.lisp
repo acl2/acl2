@@ -18753,6 +18753,13 @@
   (let* ((ctx (cons 'table name))
          (wrld (w state))
          (ens (ens state))
+         (strictp (ffn-symb-p (getpropc name 'table-guard *t* wrld)
+                              'strict-table-guard))
+         (alist (if (or (eq name 'acl2-defaults-table)
+                        strictp)
+                    nil
+                  (list (cons 'world wrld)
+                        (cons 'ens ens))))
          (event-form (or event-form
                          `(table ,name ,@args)))
          (n (length args))
@@ -18779,25 +18786,24 @@
      (er-let* ((key-pair
                 (simple-translate-and-eval
                  key-form
-                 (if (eq name 'acl2-defaults-table)
-                     nil
-                     (list (cons 'world wrld)))
+                 alist
                  nil
                  (if (eq name 'acl2-defaults-table)
                      "In (TABLE ACL2-DEFAULTS-TABLE key ...), key"
-                     "The second argument of TABLE")
+                   (if strictp
+                       "The second argument of TABLE when the :guard is strict"
+                     "The second argument of TABLE"))
                  ctx wrld state nil))
                (val-pair
                 (simple-translate-and-eval
                  val-form
-                 (if (eq name 'acl2-defaults-table)
-                     nil
-                     (list (cons 'world wrld)
-                           (cons 'ens ens)))
+                 alist
                  nil
                  (if (eq name 'acl2-defaults-table)
                      "In (TABLE ACL2-DEFAULTS-TABLE key val ...), val"
-                     "The third argument of TABLE")
+                   (if strictp
+                       "The third argument of TABLE when the :guard is strict"
+                     "The third argument of TABLE"))
                  ctx wrld state nil)))
               (table-fn1 name (cdr key-pair) (cdr val-pair) op term
                          ctx wrld ens state event-form)))))

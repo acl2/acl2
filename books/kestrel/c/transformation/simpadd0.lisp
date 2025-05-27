@@ -3430,7 +3430,7 @@
                            :vartys gout-declor.vartys
                            :diffp gout-declor.diffp)))
        :abstract (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
-                       (simpadd0-absdeclor paramdeclor.unwrap gin state)))
+                       (simpadd0-absdeclor paramdeclor.declor gin state)))
                    (mv (param-declor-abstract new-absdeclor)
                        (make-simpadd0-gout
                         :events gout-absdeclor.events
@@ -4490,14 +4490,27 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only generate a theorem if
-     the function has all @('int') parameters
-     and a theorem was generated for the functions's body.
-     The theorem contains local theorems that are used
-     in the proof of the main theorem.
+    "We generate a theorem for the function
+     only under certain conditions,
+     including the fact that a theorem for the body was generated.")
+   (xdoc::p
+    "The generated theorem contains local theorems
+     that are used in the proof of the main theorem.
      The local theorems are about the initial scope of the function,
      and about the parameters in the computation state
-     at the beginning of the execution of the function body."))
+     at the beginning of the execution of the function body.")
+   (xdoc::p
+    "If the body of the function underwent no transformation,
+     which we can see from the @('diffp') component of @(tsee simpadd0-gout),
+     the theorem generated for the body just talks about its type,
+     but the theorem for the function always involves
+     an equality between @(tsee c::exec-fun).
+     If @('diffp') is @('nil'),
+     we make use of a theorem from the language formalization
+     that says that execution without function calls
+     does not depend on the function environment:
+     we instantiate that theorem for the body,
+     using the old and new function environments."))
   (b* (((fundef fundef) fundef)
        ((mv new-spec (simpadd0-gout gout-spec))
         (simpadd0-decl-spec-list fundef.spec gin state))
@@ -4542,8 +4555,7 @@
                     gout-declor.diffp
                     gout-decls.diffp
                     gout-body.diffp)))
-       ((unless (and gout-body.thm-name
-                     (type-case (block-item-list-type items) :sint)))
+       ((unless gout-body.thm-name)
         (mv new-fundef gout-no-thm))
        ((unless (fundef-formalp fundef))
         (mv new-fundef gout-no-thm))
@@ -4564,6 +4576,12 @@
         (mv (irr-fundef) (irr-simpadd0-gout)))
        ((mv erp ldm-params) (ldm-param-declon-list params))
        ((when erp) (mv new-fundef gout-no-thm))
+       (type (block-item-list-type items))
+       ((unless (type-formalp type))
+        (raise "Internal error: function ~x0 returns ~x1."
+               (fundef-fix fundef) type)
+        (mv (irr-fundef) (irr-simpadd0-gout)))
+       ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
        ((mv okp args parargs arg-types arg-types-compst)
         (simpadd0-gen-from-params ldm-params gin))
        ((unless okp) (mv new-fundef gout-no-thm))
@@ -4595,15 +4613,30 @@
                          (equal old-result new-result)
                          (equal old-compst new-compst)
                          old-result
-                         (equal (c::type-of-value old-result)
-                                (c::type-sint))))))
+                         (equal (c::type-of-value old-result) ',ctype)))))
        (hints
         `(("Goal"
            :expand ((c::exec-fun
                      ',(c::ident fun) (list ,@args) compst old-fenv limit)
                     (c::exec-fun
                      ',(c::ident fun) (list ,@args) compst new-fenv limit))
-           :use (,init-scope-thm-name
+           :use (,@(and (not gout-body.diffp)
+                        `((:instance c::exec-block-item-list-without-calls
+                                     (items
+                                      (mv-nth 1 (ldm-block-item-list ',items)))
+                                     (compst
+                                      (c::push-frame
+                                       (c::frame (mv-nth 1 (ldm-ident
+                                                            (ident ,fun)))
+                                                 (list
+                                                  (c::init-scope
+                                                   ',ldm-params
+                                                   (list ,@args))))
+                                       compst))
+                                     (fenv old-fenv)
+                                     (fenv1 new-fenv)
+                                     (limit (1- limit)))))
+                 ,init-scope-thm-name
                  ,@(simpadd0-fundef-loop param-thm-names fun)
                  (:instance ,gout-body.thm-name
                             (compst
@@ -4615,6 +4648,8 @@
                                           ',ldm-params
                                           (list ,@args))))
                               compst))
+                            ,@(and (not gout-body.diffp)
+                                   '((fenv old-fenv)))
                             (limit (1- limit))))
            :in-theory '((:e c::fun-info->body$inline)
                         (:e c::fun-info->params$inline)
@@ -4624,7 +4659,11 @@
                         (:e ldm-block-item-list)
                         (:e ldm-fundef)
                         (:e ldm-ident)
+                        (:e ldm-type)
+                        (:e ldm-block-item-list)
+                        (:e c::tyname-to-type)
                         (:e c::type-sint)
+                        (:e c::block-item-list-nocallsp)
                         c::errorp-of-error))))
        (thm-event `(defruled ,thm-name
                      ,formula

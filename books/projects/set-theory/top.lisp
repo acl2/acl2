@@ -7,6 +7,7 @@
 ; Some of the following are redundant with others.
 (include-book "base")
 (include-book "cantor")
+(include-book "defthmz-plus")
 ; (include-book "change-pkg") ; not used and kind of a hack.
 (include-book "doc")
 (include-book "foldr")

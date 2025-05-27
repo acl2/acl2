@@ -28,7 +28,7 @@
 (defxdoc+ unequivocal-signed-proposals
   :parents (correctness)
   :short "Invariant that all the proposals signed by each correct validator
-          are unequivocal, i.e. have unique author and round."
+          are unequivocal, i.e. have unique author and round combinations."
   :long
   (xdoc::topstring
    (xdoc::p
