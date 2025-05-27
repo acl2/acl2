@@ -406,8 +406,7 @@
        (cert (set::head certs)))
     (if (equal (certificate->author cert)
                (address-fix author))
-        (set::insert (certificate-fix cert)
-                     (certs-with-author author (set::tail certs)))
+        (set::insert cert (certs-with-author author (set::tail certs)))
       (certs-with-author author (set::tail certs))))
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
@@ -477,8 +476,7 @@
        (cert (set::head certs)))
     (if (equal (certificate->round cert)
                (pos-fix round))
-        (set::insert (certificate-fix cert)
-                     (certs-with-round round (set::tail certs)))
+        (set::insert cert (certs-with-round round (set::tail certs)))
       (certs-with-round round (set::tail certs))))
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
@@ -552,8 +550,7 @@
                     (address-fix author))
              (equal (certificate->round cert)
                     (pos-fix round)))
-        (set::insert (certificate-fix cert)
-                     (certs-with-author+round author round (set::tail certs)))
+        (set::insert cert (certs-with-author+round author round (set::tail certs)))
       (certs-with-author+round author round (set::tail certs))))
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
@@ -767,10 +764,8 @@
                       (address-set-fix authors))
              (equal (certificate->round cert)
                     (pos-fix round)))
-        (set::insert (certificate-fix cert)
-                     (certs-with-authors+round authors
-                                               round
-                                               (set::tail certs)))
+        (set::insert cert
+                     (certs-with-authors+round authors round (set::tail certs)))
       (certs-with-authors+round authors
                                 round
                                 (set::tail certs))))
