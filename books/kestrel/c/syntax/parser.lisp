@@ -115,6 +115,8 @@
      both for lexing and for parsing proper.
      The parser is closely based on the ABNF grammar in @(see grammar),
      which should be consulted alongside the parser code.
+     The function names are mostly based on the names of the grammar rules;
+     we plan to make all of them based on the names of the grammar rules.
      Since that grammar is left-recursive,
      we perform the usual left recursion elimination.")
    (xdoc::p
