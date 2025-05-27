@@ -1,7 +1,7 @@
 ; BV Rules used by the Formal Unit Tester
 ;
 ; Copyright (C) 2016-2023 Kestrel Technology, LLC
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,8 +18,8 @@
 
 ;(include-book "kestrel/bv/rotate" :dir :system) ;for INTEGERP-OF-LEFTROTATE32
 ;(include-book "kestrel/bv/intro" :dir :system)
-;(include-book "kestrel/axe/rules1" :dir :system)
-;(include-book "kestrel/axe/axe-rules-mixed" :dir :system)
+;(include-book "../rules1")
+;(include-book "../axe-rules-mixed")
 (include-book "kestrel/bv/bvlt" :dir :system)
 (include-book "kestrel/bv/sbvlt" :dir :system)
 (include-book "kestrel/bv/bvdiv" :dir :system)
@@ -33,8 +33,8 @@
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
-;(local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ; drop?
-(local (include-book "kestrel/axe/rules3" :dir :system)) ;drop
+;(local (include-book "../axe-rules-mixed")) ; drop?
+(local (include-book "../rules3")) ;drop
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))

@@ -38,7 +38,7 @@
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "dag-info")
-(include-book "kestrel/axe/util2" :dir :system) ; not strictly needed but brings in symbolic-list
+(include-book "util2") ; not strictly needed but brings in symbolic-list
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 

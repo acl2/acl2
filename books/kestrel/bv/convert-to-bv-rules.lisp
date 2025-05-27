@@ -10,6 +10,7 @@
 
 (in-package "ACL2")
 
+(include-book "bv-syntax")
 (include-book "trim")
 (include-book "bvand")
 (include-book "bvor")
@@ -17,15 +18,15 @@
 (include-book "bvplus")
 (include-book "bvminus")
 (include-book "bvnot")
-(include-book "bv-syntax")
+(include-book "bvshr-def")
+(local (include-book "bvshr"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "logand-b"))
 
-;; These rules do step 1 of the conversion by inserting calls of trim.
-;; Axe will need to have its own version of the rules, since they use syntaxp.
-
-;; TODO: Add more of these
+;; Step 1: These rules do Step 1 of the conversion by inserting calls of trim.  (Axe has
+;; its own version of such rules, since they use complex syntaxp hyps.  See
+;; books/kestrel/axe/bv-rules-axe.lisp.)
 
 (defthmd bvplus-convert-arg2-to-bv
   (implies (syntaxp (and (consp x)
@@ -41,9 +42,20 @@
                   (bvplus size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
 
-;; These rules finish the job after other rules introduce trim.
+(defthmd bvshr-convert-arg2-to-bv
+  (implies (syntaxp (and (consp x)
+                         (member-eq (ffn-symb x) *functions-convertible-to-bv*)))
+           (equal (bvshr size x shift-amount)
+                  (bvshr size (trim size x) shift-amount)))
+  :hints (("Goal" :in-theory (enable trim))))
 
-;; TODO: Add more of these
+;; TODO: Add more of these, baseed on axe/bv-rules-axe.lisp.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Step 2: These rules finish the conversion after other rules introduce trim.
+
+;; WARNING: Keep these in sync with *functions-convertible-to-bv*.
 
 (defthmd trim-of-logand-becomes-bvand
   (equal (trim size (logand x y))
@@ -72,6 +84,12 @@
                   (bvplus size x y)))
   :hints (("Goal" :in-theory (enable trim bvplus))))
 
+(defthmd trim-of-unary---becomes-bvuminus
+  (implies (integerp x)
+           (equal (trim size (- x))
+                  (bvuminus size x)))
+  :hints (("Goal" :in-theory (enable trim bvuminus))))
+
 ;; not needed because (- x y) translates to a call of +
 ;; (defthmd trim-of---becomes-bvminus
 ;;   (implies (and (integerp x)
@@ -80,31 +98,4 @@
 ;;                   (bvminus size x y)))
 ;;   :hints (("Goal" :in-theory (enable trim bvminus))))
 
-(defthmd trim-of-unary---becomes-bvuminus
-  (implies (integerp x)
-           (equal (trim size (- x))
-                  (bvuminus size x)))
-  :hints (("Goal" :in-theory (enable trim bvuminus))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; ;; Use the trim scheme instead
-;; (defthm bvand-of-lognot-arg2
-;;   (equal (bvand size (lognot x) y)
-;;          (bvand size (bvnot size x) y))
-;;   :hints (("Goal" :in-theory (enable bvnot))))
-
-;; (defthm bvand-of-lognot-arg3
-;;   (equal (bvand size x (lognot y))
-;;          (bvand size x (bvnot size y)))
-;;   :hints (("Goal" :in-theory (enable bvnot))))
-
-;; (defthm bvxor-of-lognot-arg2
-;;   (equal (bvxor size (lognot x) y)
-;;          (bvxor size (bvnot size x) y))
-;;   :hints (("Goal" :in-theory (enable bvnot))))
-
-;; (defthm bvxor-of-lognot-arg3
-;;   (equal (bvxor size x (lognot y))
-;;          (bvxor size x (bvnot size y)))
-;;   :hints (("Goal" :in-theory (enable bvnot))))
