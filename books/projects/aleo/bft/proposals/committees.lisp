@@ -391,7 +391,21 @@
                     (members1 (set::intersect vals1 (committee-members commtt)))
                     (members2 (set::intersect vals2 (committee-members commtt))))
     :enable (set::intersect-mono-subset
-             set::expensive-rules)))
+             set::expensive-rules))
+
+  (defruled committee-validators-stake-of-insert
+    (implies (and (addressp val)
+                  (address-setp vals))
+             (equal (committee-validators-stake (set::insert val vals)
+                                                commtt)
+                    (if (set::in val vals)
+                        (committee-validators-stake vals commtt)
+                      (+ (committee-validator-stake val commtt)
+                         (committee-validators-stake vals commtt)))))
+    :enable (committee-validator-stake
+             committee-members-stake-of-insert
+             set::expensive-rules
+             set::intersect-of-insert-right)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
