@@ -111,15 +111,12 @@
      at the cost of more complicated parsing logic,
      but we prefer the cleaner separation of concerns.")
    (xdoc::p
-    "The current implementation of our parser
-     does not capture all ambiguous constructs yet.
-     It is possible that our parser may reject some valid C code.
-     However, we plan to cover all ambiguous constructs soon.")
-   (xdoc::p
     "Our parser uses recursive descent,
      both for lexing and for parsing proper.
      The parser is closely based on the ABNF grammar in @(see grammar),
      which should be consulted alongside the parser code.
+     The function names are mostly based on the names of the grammar rules;
+     we plan to make all of them based on the names of the grammar rules.
      Since that grammar is left-recursive,
      we perform the usual left recursion elimination.")
    (xdoc::p

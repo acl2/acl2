@@ -1094,6 +1094,44 @@
  :pos (position 1 1)
  :more-inputs (nil (position 1 0)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; lex-stringlit
+
+(test-lex
+ lex-stringlit
+ "\""
+ :pos (position 1 1)
+ :more-inputs (nil (position 1 0))
+ :cond (equal ast
+              (lexeme-token
+               (token-string
+                (stringlit nil nil)))))
+
+(test-lex
+ lex-stringlit
+ "helo\""
+ :pos (position 10 10)
+ :more-inputs ((eprefix-upcase-l) (position 10 9))
+ :cond (equal ast
+              (lexeme-token
+               (token-string
+                (stringlit (eprefix-upcase-l)
+                           (list (s-char-char (char-code #\h))
+                                 (s-char-char (char-code #\e))
+                                 (s-char-char (char-code #\l))
+                                 (s-char-char (char-code #\o))))))))
+
+(test-lex-fail
+ lex-stringlit
+ "wrong'"
+ :more-inputs (nil (position 1 0)))
+
+(test-lex-fail
+ lex-stringlit
+ (list 10 (char-code #\"))
+ :more-inputs (nil (position 1 0)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test parsing functions.

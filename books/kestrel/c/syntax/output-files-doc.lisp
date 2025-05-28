@@ -54,6 +54,7 @@
      "(output-files :const           ...  ; required"
      "              :path            ...  ; default \".\""
      "              :printer-options ...  ; default nil"
+     "              :gcc             ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -71,6 +72,9 @@
       " translation unit ensemble
        (i.e. a value of type @(tsee transunit-ensemble)
        that additionally satisfies @(tsee transunit-ensemble-unambp)).
+       The translation unit ensemble must also contain only "
+      (xdoc::seetopic "ascii-identifiers" "ASCII identifiers")
+      " (i.e. it must satisfy @(tsee transunit-ensemble-aidentp)).
        The translation unit is printed to a file set,
        whose files are written to the file system.
        The keys of the file set map are the same as
@@ -131,7 +135,16 @@
         but the second one is more readable.
         If this option is @('t'), the printer adds the parentheses;
         if thie option is @('nil'), no extra parentheses are added.
-        If this option is not supplied, it defaults to @('nil')."))))
+        If this option is not supplied, it defaults to @('nil').")))
+
+    (xdoc::desc
+     "@(':gcc') &mdash; default @('nil')"
+     (xdoc::p
+      "Boolean flag saying whether certain GCC extensions
+       should be accepted or not.")
+     (xdoc::p
+      "This affects the aforementioned checks for ASCII identifiers:
+       GCC extensions turns some otherwise legal identifiers into keywords.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

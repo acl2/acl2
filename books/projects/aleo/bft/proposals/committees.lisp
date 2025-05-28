@@ -233,10 +233,9 @@
     :induct t
     :enable fix)
 
-  (defrule committee-members-stake-when-emptyp-members
-    (implies (set::emptyp members)
-             (equal (committee-members-stake members commtt)
-                    0)))
+  (defrule committee-members-stake-of-empty
+    (equal (committee-members-stake nil commtt)
+           0))
 
   (defruled committee-members-stake-of-insert
     (implies (and (addressp member)
@@ -379,7 +378,37 @@
     :induct t
     :enable (committee-members-stake
              committee-validator-stake-to-committee-member-stake
-             set::expensive-rules)))
+             set::expensive-rules))
+
+  (defruled committee-validators-stake-monotone
+    (implies (and (address-setp vals1)
+                  (address-setp vals2)
+                  (set::subset vals1 vals2))
+             (<= (committee-validators-stake vals1 commtt)
+                 (committee-validators-stake vals2 commtt)))
+    :use (:instance committee-members-stake-monotone
+                    (members1 (set::intersect vals1 (committee-members commtt)))
+                    (members2 (set::intersect vals2 (committee-members commtt))))
+    :enable (set::intersect-mono-subset
+             set::expensive-rules))
+
+  (defrule committee-validators-stake-of-empty
+    (equal (committee-validators-stake nil commtt)
+           0))
+
+  (defruled committee-validators-stake-of-insert
+    (implies (and (addressp val)
+                  (address-setp vals))
+             (equal (committee-validators-stake (set::insert val vals)
+                                                commtt)
+                    (if (set::in val vals)
+                        (committee-validators-stake vals commtt)
+                      (+ (committee-validator-stake val commtt)
+                         (committee-validators-stake vals commtt)))))
+    :enable (committee-validator-stake
+             committee-members-stake-of-insert
+             set::expensive-rules
+             set::intersect-of-insert-right)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
