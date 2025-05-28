@@ -627,6 +627,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define certs-with-authors ((authors address-setp) (certs certificate-setp))
+  :returns (certs-with-authors certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with author in a given set."
+  (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
+       (cert (set::head certs)))
+    (if (set::in (certificate->author cert)
+                 (address-set-fix authors))
+        (set::insert cert (certs-with-authors authors (set::tail certs)))
+      (certs-with-authors authors (set::tail certs))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret certs-with-authors-subset
+    (set::subset certs-with-authors certs)
+    :hyp (certificate-setp certs)
+    :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
+
+  (defruled cert-set->author-set-of-certs-with-authors
+    (equal (cert-set->author-set (certs-with-authors authors certs))
+           (set::intersect (address-set-fix authors)
+                           (cert-set->author-set certs)))
+    :induct t
+    :enable (cert-set->author-set
+             cert-set->author-set-of-insert
+             set::expensive-rules))
+
+  (defruled in-of-certs-with-authors
+    (equal (set::in cert (certs-with-authors authors certs))
+           (and (certificatep cert)
+                (set::in cert (certificate-set-fix certs))
+                (set::in (certificate->author cert)
+                         (address-set-fix authors))))
+    :induct t)
+
+  (defrule certs-with-authors-of-empty
+    (equal (certs-with-authors authors nil)
+           nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define certs-with-author+round ((author addressp)
                                  (round posp)
                                  (certs certificate-setp))
