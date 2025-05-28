@@ -47,10 +47,7 @@
            exec-op
            exec-add
            read-xreg-of-write-xreg
-           read-xreg-signed
-           feat-32p
-           feat-64p)
-  :cases ((feat-32p feat)
-          (feat-64p feat)))
+           read-xreg-signed)
+  :cases ((feat-32p feat)))
 
 ; TODO: add more
