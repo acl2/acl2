@@ -14,8 +14,6 @@
 (include-book "encoding")
 (include-book "reads-over-writes")
 
-;; (local (include-book "ihs/logops-lemmas" :dir :system))
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
