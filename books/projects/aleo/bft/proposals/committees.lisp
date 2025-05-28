@@ -233,10 +233,9 @@
     :induct t
     :enable fix)
 
-  (defrule committee-members-stake-when-emptyp-members
-    (implies (set::emptyp members)
-             (equal (committee-members-stake members commtt)
-                    0)))
+  (defrule committee-members-stake-of-empty
+    (equal (committee-members-stake nil commtt)
+           0))
 
   (defruled committee-members-stake-of-insert
     (implies (and (addressp member)
