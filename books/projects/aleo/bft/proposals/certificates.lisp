@@ -982,6 +982,30 @@
     :enable (in-of-certs-with-authors+round
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
+    :disable certs-with-authors+round)
+
+  (defruled certs-with-authors+round-to-authors-of-round
+    (implies (certificate-setp certs)
+             (equal (certs-with-authors+round authors round certs)
+                    (certs-with-authors
+                     authors (certs-with-round round certs))))
+    :enable (set::expensive-rules
+             set::double-containment-no-backchain-limit
+             in-of-certs-with-authors+round
+             in-of-certs-with-authors
+             in-of-certs-with-round)
+    :disable certs-with-authors+round)
+
+  (defruled certs-with-authors+round-to-round-of-authors
+    (implies (certificate-setp certs)
+             (equal (certs-with-authors+round authors round certs)
+                    (certs-with-round
+                     round (certs-with-authors authors certs))))
+    :enable (set::expensive-rules
+             set::double-containment-no-backchain-limit
+             in-of-certs-with-authors+round
+             in-of-certs-with-authors
+             in-of-certs-with-round)
     :disable certs-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
