@@ -44,6 +44,7 @@
 (include-book "last-anchor-def")
 (include-book "last-anchor-present")
 (include-book "last-anchor-init-and-next")
+(include-book "last-anchor-voters")
 (include-book "fault-tolerance")
 (include-book "quorum-intersection")
 (include-book "nonforking-blockchains-def-and-init")
@@ -95,6 +96,7 @@
                     last-anchor-def
                     last-anchor-present
                     last-anchor-init-and-next
+                    last-anchor-voters
                     fault-tolerance
                     quorum-intersection
                     nonforking-blockchains-def-and-init

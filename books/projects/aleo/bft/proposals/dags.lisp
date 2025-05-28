@@ -375,7 +375,7 @@
 
   ///
 
-  (defrule dag-closedp-of-nil
+  (defrule dag-closedp-of-empty
     (dag-closedp nil))
 
   (defruled dag-closedp-of-insert
@@ -411,7 +411,9 @@
      i.e. that have the author of @('cert') in the @('previous') component."))
   (successors-loop (certs-with-round (1+ (certificate->round cert)) dag)
                    (certificate->author cert))
+
   :prepwork
+
   ((define successors-loop ((certs certificate-setp) (prev addressp))
      :returns (succ-certs certificate-setp)
      :parents nil
@@ -424,5 +426,60 @@
          (successors-loop (set::tail certs) prev)))
      :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
      :verify-guards :after-returns
-     :hooks (:fix)))
-  :hooks (:fix))
+     :hooks (:fix)
+
+     ///
+
+     (defret successors-loop-subset
+       (set::subset succ-certs certs)
+       :hyp (certificate-setp certs)
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable* set::expensive-rules))))
+
+     (defruled in-of-successors-loop
+       (implies (certificate-setp certs)
+                (equal (set::in cert (successors-loop certs prev))
+                       (and (set::in cert certs)
+                            (set::in (address-fix prev)
+                                     (certificate->previous cert)))))
+       :induct t)
+
+     (defruled successors-loop-monotone
+       (implies (and (certificate-setp certs1)
+                     (certificate-setp certs2)
+                     (set::subset certs1 certs2))
+                (set::subset (successors-loop certs1 prev)
+                             (successors-loop certs2 prev)))
+       :enable (in-of-successors-loop
+                set::expensive-rules))))
+
+  :hooks (:fix)
+
+  ///
+
+  (defret successors-subset-of-next-round
+    (set::subset certs
+                 (certs-with-round (1+ (certificate->round cert)) dag))
+    :hyp (certificate-setp dag))
+
+  (defret successors-subset-of-dag
+    (set::subset certs dag)
+    :hyp (certificate-setp dag)
+    :hints (("Goal"
+             :in-theory (e/d (successors-subset-of-next-round)
+                             (successors))
+             :use (:instance set::subset-transitive
+                             (x (successors cert dag))
+                             (y (certs-with-round
+                                 (1+ (certificate->round cert)) dag))
+                             (z dag)))))
+
+  (defruled successors-monotone
+    (implies (and (certificate-setp dag1)
+                  (certificate-setp dag2)
+                  (set::subset dag1 dag2))
+             (set::subset (successors cert dag1)
+                          (successors cert dag2)))
+    :enable (successors-loop-monotone
+             certs-with-round-monotone)))
