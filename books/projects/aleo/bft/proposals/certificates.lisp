@@ -178,7 +178,20 @@
                     (set::insert (certificate->author cert)
                                  (cert-set->author-set certs))))
     :induct (set::weak-insert-induction cert certs)
-    :enable certificate->author-in-cert-set->author-set))
+    :enable certificate->author-in-cert-set->author-set)
+
+  (defruled same-certificate-author-when-cardinality-leq-1
+    (implies (and (certificate-setp certs)
+                  (<= (set::cardinality (cert-set->author-set certs)) 1)
+                  (set::in cert1 certs)
+                  (set::in cert2 certs))
+             (equal (certificate->author cert1)
+                    (certificate->author cert2)))
+    :enable certificate->author-in-cert-set->author-set
+    :use (:instance set::same-element-when-cardinality-leq-1
+                    (elem1 (certificate->author cert1))
+                    (elem2 (certificate->author cert2))
+                    (set (cert-set->author-set certs)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -222,7 +235,20 @@
                     (set::insert (certificate->round cert)
                                  (cert-set->round-set certs))))
     :induct (set::weak-insert-induction cert certs)
-    :enable certificate->round-in-cert-set->round-set))
+    :enable certificate->round-in-cert-set->round-set)
+
+  (defruled same-certificate-round-when-cardinality-leq-1
+    (implies (and (certificate-setp certs)
+                  (<= (set::cardinality (cert-set->round-set certs)) 1)
+                  (set::in cert1 certs)
+                  (set::in cert2 certs))
+             (equal (certificate->round cert1)
+                    (certificate->round cert2)))
+    :enable certificate->round-in-cert-set->round-set
+    :use (:instance set::same-element-when-cardinality-leq-1
+                    (elem1 (certificate->round cert1))
+                    (elem2 (certificate->round cert2))
+                    (set (cert-set->round-set certs)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -464,6 +490,16 @@
     :enable (in-of-certs-with-author
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
+    :disable certs-with-author)
+
+  (defruled cardinality-of-author-set-of-certs-with-author-leq-1
+    (<= (set::cardinality
+         (cert-set->author-set
+          (certs-with-author author certs)))
+        1)
+    :rule-classes :linear
+    :enable (cert-set->author-set-of-certs-with-author
+             set::cardinality)
     :disable certs-with-author))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -577,6 +613,16 @@
     :enable (in-of-certs-with-round
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
+    :disable certs-with-round)
+
+  (defruled cardinality-of-round-set-of-certs-with-round-leq-1
+    (<= (set::cardinality
+         (cert-set->round-set
+          (certs-with-round round certs)))
+        1)
+    :rule-classes :linear
+    :enable (cert-set->round-set-of-certs-with-round
+             set::cardinality)
     :disable certs-with-round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1101,7 +1147,35 @@
                                 (certificate->author cert)
                                 (certificate->round cert)
                                 certs)))
-                       (certs (set::insert cert certs)))))))
+                       (certs (set::insert cert certs))))))
+
+  (defruled equal-cert-authors-when-unequivp-and-same-round
+    (implies (and (certificate-setp certs)
+                  (cert-set-unequivp certs)
+                  (<= (set::cardinality (cert-set->round-set certs)) 1)
+                  (set::in cert1 certs)
+                  (set::in cert2 certs))
+             (equal (equal (certificate->author cert1)
+                           (certificate->author cert2))
+                    (equal cert1 cert2)))
+    :use (cert-set-unequivp-necc
+          same-certificate-round-when-cardinality-leq-1)
+    :disable (cert-set-unequivp
+              cert-set-unequivp-necc))
+
+  (defruled equal-cert-rounds-when-unequivp-and-same-author
+    (implies (and (certificate-setp certs)
+                  (cert-set-unequivp certs)
+                  (<= (set::cardinality (cert-set->author-set certs)) 1)
+                  (set::in cert1 certs)
+                  (set::in cert2 certs))
+             (equal (equal (certificate->round cert1)
+                           (certificate->round cert2))
+                    (equal cert1 cert2)))
+    :use (cert-set-unequivp-necc
+          same-certificate-author-when-cardinality-leq-1)
+    :disable (cert-set-unequivp
+              cert-set-unequivp-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
