@@ -393,6 +393,10 @@
     :enable (set::intersect-mono-subset
              set::expensive-rules))
 
+  (defrule committee-validators-stake-of-empty
+    (equal (committee-validators-stake nil commtt)
+           0))
+
   (defruled committee-validators-stake-of-insert
     (implies (and (addressp val)
                   (address-setp vals))
