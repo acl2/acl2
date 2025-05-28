@@ -53,7 +53,6 @@
        (instr? (decode enc feat))
        ((unless instr?) (error stat feat)))
     (exec-instr instr? pc stat feat))
-  :guard-hints (("Goal" :in-theory (enable feat-32p feat-64p)))
   :hooks (:fix)
 
   ///

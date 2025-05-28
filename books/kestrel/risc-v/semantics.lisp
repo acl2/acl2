@@ -782,9 +782,7 @@
               (t (impossible))))
        (stat (inc4-pc stat feat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -793,7 +791,7 @@
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)
     :hints
-    (("Goal" :in-theory (enable feat->xnum ubyte5-fix feat-32p feat-64p)))))
+    (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -829,9 +827,7 @@
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -1108,9 +1104,7 @@
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -1152,9 +1146,7 @@
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -1197,9 +1189,7 @@
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -1973,9 +1963,7 @@
        (stat (write-xreg (ubyte5-fix rd) next-pc stat feat))
        (stat (write-pc target-pc stat feat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -2023,9 +2011,7 @@
        (stat (write-xreg (ubyte5-fix rd) next-pc stat feat))
        (stat (write-pc target-pc stat feat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -2074,9 +2060,7 @@
                  (write-pc target-pc stat feat)
                (inc4-pc stat feat))))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -2124,9 +2108,7 @@
                  (write-pc target-pc stat feat)
                (inc4-pc stat feat))))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -2174,9 +2156,7 @@
                  (write-pc target-pc stat feat)
                (inc4-pc stat feat))))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -2224,9 +2204,7 @@
                  (write-pc target-pc stat feat)
                (inc4-pc stat feat))))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -2274,9 +2252,7 @@
                  (write-pc target-pc stat feat)
                (inc4-pc stat feat))))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -2324,9 +2300,7 @@
                  (write-pc target-pc stat feat)
                (inc4-pc stat feat))))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p
-                                           feat-32p
-                                           feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
   :hooks (:fix)
 
   ///
@@ -2358,7 +2332,6 @@
                      :bltu (exec-bltu rs1 rs2 imm pc stat feat)
                      :bge (exec-bge rs1 rs2 imm pc stat feat)
                      :bgeu (exec-bgeu rs1 rs2 imm pc stat feat))
-  :guard-hints (("Goal" :in-theory (enable feat-32p feat-64p)))
   :hooks (:fix)
 
   ///
@@ -2744,7 +2717,7 @@
        (stat (write-memory-unsigned32 addr val stat feat))
        (stat (inc4-pc stat feat)))
     stat)
-  :guard-hints (("Goal" :in-theory (enable feat->xnum feat-32p feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum)))
   :hooks (:fix)
 
   ///
@@ -2908,7 +2881,7 @@
                                  instr.imm
                                  stat
                                  feat))
-  :guard-hints (("Goal" :in-theory (enable instr-validp feat-32p feat-64p)))
+  :guard-hints (("Goal" :in-theory (enable instr-validp)))
   :hooks (:fix)
 
   ///
