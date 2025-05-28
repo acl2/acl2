@@ -94,7 +94,12 @@
   :short "One of @(tsee feat-32p) and @(tsee feat-64p) always holds."
   (or (feat-32p feat)
       (feat-64p feat))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((feat-32p feat)
+                                                    (feat-64p feat))))
   :enable (feat-32p feat-64p))
+
+(in-theory (enable (:forward-chaining feat-32p-or-64p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
