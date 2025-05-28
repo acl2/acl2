@@ -2354,7 +2354,7 @@
     (:nonabstract ((declor declor)))
     (:abstract ((declor absdeclor)))
     (:none ())
-    (:ambig ((unwrap amb-declor/absdeclor)))
+    (:ambig ((declor amb-declor/absdeclor)))
     :pred param-declorp
     :measure (two-nats-measure (acl2-count x) 0))
 

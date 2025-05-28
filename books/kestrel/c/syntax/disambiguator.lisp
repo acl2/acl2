@@ -2289,7 +2289,7 @@
        (retok (param-declor-none) (dimb-table-fix table))
        :ambig
        (b* (((erp declor/absdeclor ident? table)
-             (dimb-amb-declor/absdeclor paramdeclor.unwrap table)))
+             (dimb-amb-declor/absdeclor paramdeclor.declor table)))
          (declor/absdeclor-case
           declor/absdeclor
           :declor
