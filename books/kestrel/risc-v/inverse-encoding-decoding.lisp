@@ -324,3 +324,69 @@
     :enable (encode
              get-rs2
              ubyte5-fix)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-funct3-of-encode-instr
+  :short "Theorems about @(tsee get-funct3) applied to
+          the encoding of instructions."
+
+  (defruled get-funct3-of-encode-instr-op-imm
+    (equal (get-funct3 (encode (instr-op-imm funct rd rs1 imm) feat))
+           (encode-op-imm-funct funct))
+    :enable (encode
+             get-funct3))
+
+  (defruled get-funct3-of-encode-instr-op-imms32
+    (equal (get-funct3 (encode (instr-op-imms32 funct rd rs1 imm) feat))
+           (mv-nth 0 (encode-op-imms32-funct funct)))
+    :enable (encode
+             get-funct3))
+
+  (defruled get-funct3-of-encode-instr-op-imms64
+    (equal (get-funct3 (encode (instr-op-imms64 funct rd rs1 imm) feat))
+           (mv-nth 0 (encode-op-imms64-funct funct)))
+    :enable (encode
+             get-funct3))
+
+  (defruled get-funct3-of-encode-instr-op-imm-32
+    (equal (get-funct3 (encode (instr-op-imm-32 funct rd rs1 imm) feat))
+           (encode-op-imm-32-funct funct))
+    :enable (encode
+             get-funct3))
+
+  (defruled get-funct3-of-encode-instr-op-imms-32
+    (equal (get-funct3 (encode (instr-op-imms-32 funct rd rs1 imm) feat))
+           (mv-nth 0 (encode-op-imms-32-funct funct)))
+    :enable (encode
+             get-funct3))
+
+  (defruled get-funct3-of-encode-instr-op
+    (equal (get-funct3 (encode (instr-op funct rd rs1 rs2) feat))
+           (mv-nth 0 (encode-op-funct funct)))
+    :enable (encode
+             get-funct3))
+
+  (defruled get-funct3-of-encode-instr-op-32
+    (equal (get-funct3 (encode (instr-op-32 funct rd rs1 rs2) feat))
+           (mv-nth 0 (encode-op-32-funct funct)))
+    :enable (encode
+             get-funct3))
+
+  (defruled get-funct3-of-encode-instr-branch
+    (equal (get-funct3 (encode (instr-branch funct rs1 rs2 imm) feat))
+           (encode-branch-funct funct))
+    :enable (encode
+             get-funct3))
+
+  (defruled get-funct3-of-encode-instr-load
+    (equal (get-funct3 (encode (instr-load funct rd rs1 imm) feat))
+           (encode-load-funct funct feat))
+    :enable (encode
+             get-funct3))
+
+  (defruled get-funct3-of-encode-instr-store
+    (equal (get-funct3 (encode (instr-store funct rs1 rs2 imm) feat))
+           (encode-store-funct funct feat))
+    :enable (encode
+             get-funct3)))
