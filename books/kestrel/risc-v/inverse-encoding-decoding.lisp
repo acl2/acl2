@@ -390,3 +390,21 @@
            (encode-store-funct funct feat))
     :enable (encode
              get-funct3)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-funct7-of-encode-instr
+  :short "Theorems about @(tsee get-funct7) applied to
+          the encoding of instructions."
+
+  (defruled get-funct7-of-encode-instr-op
+    (equal (get-funct7 (encode (instr-op funct rd rs1 rs2) feat))
+           (mv-nth 1 (encode-op-funct funct)))
+    :enable (encode
+             get-funct7))
+
+  (defruled get-funct7-of-encode-instr-op-32
+    (equal (get-funct7 (encode (instr-op-32 funct rd rs1 rs2) feat))
+           (mv-nth 1 (encode-op-32-funct funct)))
+    :enable (encode
+             get-funct7)))
