@@ -38,6 +38,8 @@
                        22))
            (b* ((stat1 (step stat feat)))
              (and (not (errorp stat1 feat))
+                  (equal (read-pc stat1 feat)
+                         (loghead (feat->xlen feat) (+ 4 pc)))
                   (equal (read-xreg-unsigned 3 stat1 feat)
                          33))))
   :enable (step
@@ -47,7 +49,9 @@
            exec-op
            exec-add
            read-xreg-of-write-xreg
-           read-xreg-signed)
+           read-xreg-signed
+           read-pc-of-inc4-pc)
+  :disable ((:e tau-system)) ; for speed
   :cases ((feat-32p feat)))
 
 ; TODO: add more
