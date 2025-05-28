@@ -560,7 +560,7 @@
 (defconst *axe-evaluator-functions*
   (strip-cars-list (strip-cdrs (axe-evaluator-function-info))))
 
-
+;; TODO: This introduces a skip-proofs for termination
 ;think this stuff through
 (make-evaluator axe-evaluator
                 (axe-evaluator-function-info)
@@ -579,6 +579,7 @@
            :do-not '(generalize eliminate-destructors)
            ))))
 
+;fffixme could lead to crashes?
 (skip-proofs (verify-guards apply-axe-evaluator-to-quoted-args))
 
 (make-event (add-tracing-to-evaluator 'axe-evaluator))
@@ -689,7 +690,7 @@
   (let ((supporting-non-base-fns (supporting-non-base-fns 1000000000 fns interpreted-function-alist throw-errorp nil)))
     (get-entries-eq supporting-non-base-fns interpreted-function-alist)))
 
-;fixme use this more?
+;todo: use this more?
 ;; interpreted-function-alist must give meaning to all non-built-in functions in DAG.
 (defund wrap-dag-in-dag-val (dag interpreted-function-alist)
   (if (quotep dag)
@@ -705,7 +706,7 @@
 
 ;; Create a term equivalent to DAG, where the meaning of any non-built-in
 ;; functions that support DAG comes from WRLD.
-;fixme use this more?
+;todo: use this more?
 (defund embed-dag-in-term (dag wrld)
   (declare (xargs :guard (and (or (quotep dag)
                                   (weak-dagp dag))
