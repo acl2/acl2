@@ -13,6 +13,7 @@
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/sbyte64" :dir :system)
+(include-book "kestrel/fty/ubyte3" :dir :system)
 (include-book "kestrel/fty/ubyte5" :dir :system)
 (include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte8" :dir :system)
@@ -129,6 +130,14 @@
            ifix
            nfix
            fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule loghead-3-of-ubyte3
+  (implies (ubyte3p x)
+           (equal (loghead 3 x)
+                  x))
+  :enable ubyte3p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
