@@ -16,6 +16,7 @@
 (include-book "kestrel/fty/ubyte3" :dir :system)
 (include-book "kestrel/fty/ubyte5" :dir :system)
 (include-book "kestrel/fty/ubyte6" :dir :system)
+(include-book "kestrel/fty/ubyte7" :dir :system)
 (include-book "kestrel/fty/ubyte8" :dir :system)
 (include-book "kestrel/fty/ubyte16" :dir :system)
 (include-book "kestrel/fty/ubyte32" :dir :system)
@@ -138,6 +139,14 @@
            (equal (loghead 3 x)
                   x))
   :enable ubyte3p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule loghead-7-of-ubyte7
+  (implies (ubyte7p x)
+           (equal (loghead 7 x)
+                  x))
+  :enable ubyte7p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
