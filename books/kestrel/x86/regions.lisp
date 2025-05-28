@@ -26,7 +26,7 @@
 ;; Defines what it means for AD to be in the region of size LEN starting at
 ;; START-AD.  Note that the region may wrap around the end of the address
 ;; space, so AD may be in the region even if it is less than START-AD.
-;; We put the len argument before start-ad because len often be a small constant.
+;; We put the len argument before start-ad because len is often a small constant.
 (defund in-regionp (ad len start-ad)
   (declare (xargs :guard (and (unsigned-byte-p 48 ad)
                               (unsigned-byte-p 48 len) ; can't be 2^48 as the len gets chopped to 48 bits
@@ -103,12 +103,14 @@
                   (in-regionp (bvplus 48 x y) len ad)))
   :hints (("Goal" :in-theory (enable in-regionp bvplus))))
 
-(defthm in-regionp-of-+-arg3
+(defthmd in-regionp-of-+-arg3
   (implies (and (integerp x)
                 (integerp y))
            (equal (in-regionp ad len (+ x y))
                   (in-regionp ad len (bvplus 48 x y))))
   :hints (("Goal" :in-theory (enable in-regionp bvplus))))
+
+(theory-invariant (incompatible (:rewrite in-regionp-of-+-arg3) (:definition bvplus)))
 
 (defthm in-regionp-cancel-1-1+
   (equal (in-regionp x len (bvplus 48 x z))
@@ -223,6 +225,16 @@
                   (in-regionp k n2 ad2)))
   :hints (("Goal" :in-theory (enable in-regionp))))
 
+(defthmd in-regionp-opener
+  (implies (and (not (zp len))
+                (unsigned-byte-p 48 len)
+         ;       (unsigned-byte-p 48 ad)
+                (unsigned-byte-p 48 start-ad))
+           (equal (in-regionp ad len start-ad)
+                  (or (equal (bvchop 48 ad) start-ad)
+                      (in-regionp ad (+ -1 len) (+ 1 start-ad)))))
+  :hints (("Goal" :in-theory (enable in-regionp bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Defines what it means for 2 memory regions to be disjoint.
@@ -276,6 +288,18 @@
            (not (disjoint-regionsp len1 start1 len2 start2)))
   :hints (("Goal" :in-theory (enable in-regionp disjoint-regionsp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
+(defthm not-in-regionp-when-disjoint-regionsp-1
+  (implies (and (disjoint-regionsp len1 start1 len2 start2)
+                (in-regionp ad len1 start1))
+           (not (in-regionp ad len2 start2)))
+  :hints (("Goal" :in-theory (enable))))
+
+(defthm not-in-regionp-when-disjoint-regionsp-2
+  (implies (and (disjoint-regionsp len1 start1 len2 start2)
+                (in-regionp ad len2 start2))
+           (not (in-regionp ad len1 start1)))
+  :hints (("Goal" :in-theory (enable))))
+
 ;; If they are disjoint, no address is in both.
 (defthm not-in-both-when-disjoint
   (implies (disjoint-regionsp len1 start1 len2 start2)
@@ -290,7 +314,7 @@
                (in-regionp start2 len1 start1)))
   :hints (("Goal" :in-theory (enable in-regionp disjoint-regionsp bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt))))
 
-(defthm disjoint-regionsp-of-+-arg2
+(defthmd disjoint-regionsp-of-+-arg2
   (implies (and (integerp ad1)
                 (integerp x))
            (equal (disjoint-regionsp len1 (+ x ad1) len2 ad2)
@@ -299,7 +323,9 @@
                                      acl2::bvminus-of-+-arg2
                                      acl2::bvminus-of-+-arg3))))
 
-(defthm disjoint-regionsp-of-+-arg4
+(theory-invariant (incompatible (:rewrite disjoint-regionsp-of-+-arg2) (:definition bvplus)))
+
+(defthmd disjoint-regionsp-of-+-arg4
   (implies (and (integerp ad2)
                 (integerp x))
            (equal (disjoint-regionsp len1 ad1 len2 (+ x ad2))
@@ -307,6 +333,8 @@
   :hints (("Goal" :in-theory (enable disjoint-regionsp
                                      acl2::bvminus-of-+-arg2
                                      acl2::bvminus-of-+-arg3))))
+
+(theory-invariant (incompatible (:rewrite disjoint-regionsp-of-+-arg4) (:definition bvplus)))
 
 ;more
 (defthm disjoint-regionsp-cancel-1-2
@@ -361,9 +389,97 @@
                   (disjoint-regionsp len1 ad1 len2 ad2)))
   :hints (("Goal" :in-theory (enable disjoint-regionsp))))
 
+;; Higher level spec of disjoint-regionsp: Two regions are disjoint if there is
+;; no address that is in both of them.
+(defun-sk disjoint-regionsp-spec (len1 ad1 len2 ad2)
+  (forall (ad)
+          (not (and (in-regionp ad len1 ad1)
+                    (in-regionp ad len2 ad2)))))
+
+(defthm disjoint-regionsp-spec-necc-better
+  (implies (and (in-regionp ad len1 ad1)
+                (in-regionp ad len2 ad2))
+           (not (disjoint-regionsp-spec len1 ad1 len2 ad2)))
+  :hints (("Goal" :use disjoint-regionsp-spec-necc
+           :in-theory (theory 'minimal-theory))))
+
+(defthm disjoint-regionsp-spec-necc-better-alt
+  (implies (and (in-regionp ad len2 ad2)
+                (in-regionp ad len1 ad1))
+           (not (disjoint-regionsp-spec len1 ad1 len2 ad2)))
+  :hints (("Goal" :use disjoint-regionsp-spec-necc
+           :in-theory (theory 'minimal-theory))))
+
+(defthm disjoint-regionsp-spec-of-one-smaller
+  (implies (and (not (zp len1))
+                (disjoint-regionsp-spec len1 ad1 len2 ad2)
+                (unsigned-byte-p 48 len1)
+                (unsigned-byte-p 48 len2)
+                (unsigned-byte-p 48 ad1)
+                (unsigned-byte-p 48 ad2))
+           (disjoint-regionsp-spec (+ -1 len1) (bvplus 48 1 ad1) len2 ad2))
+  :hints (("Goal" :expand ((disjoint-regionsp-spec (+ -1 len1) (bvplus 48 1 ad1) len2 ad2))
+           :use (:instance disjoint-regionsp-spec-necc-better
+                           (ad (disjoint-regionsp-spec-witness (+ -1 len1) (bvplus 48 1 ad1) len2 ad2)))
+           :in-theory (e/d (in-regionp-opener in-regionp-of-+-arg3)
+                           (disjoint-regionsp-spec-necc-better
+                            disjoint-regionsp-spec-necc-better-alt)))))
+
+(defthm disjoint-regionsp-when-zp
+  (implies (and (zp len1)
+                (natp len1) ; drop, have the function nfix
+                )
+           (disjoint-regionsp len1 ad1 len2 ad2))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp zp))))
+
+(local (defun indf (n ad) (if (zp n) (list n ad) (indf (+ -1 n) (bvplus 48 1 ad)))))
+
+(defthmd disjoint-regionsp-opener
+  (implies (and (posp len1)
+                (unsigned-byte-p 48 len1)
+                (unsigned-byte-p 48 len2)
+                (unsigned-byte-p 48 ad1)
+                (unsigned-byte-p 48 ad2))
+           (equal (disjoint-regionsp len1 ad1 len2 ad2)
+                  (and (not (in-regionp ad1 len2 ad2))
+                       (disjoint-regionsp (+ -1 len1) (+ 1 ad1) len2 ad2))))
+    :hints (("Goal" :in-theory (enable disjoint-regionsp in-regionp bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases))))
+
+(in-theory (disable disjoint-regionsp-spec))
+
+(defthm disjoint-regionsp-correct-backward
+  (implies (and (disjoint-regionsp-spec len1 ad1 len2 ad2)
+                ;(natp len1)
+                (unsigned-byte-p 48 len1)
+                (unsigned-byte-p 48 len2)
+                (unsigned-byte-p 48 ad1)
+                (unsigned-byte-p 48 ad2))
+           (disjoint-regionsp len1 ad1 len2 ad2))
+  :hints (("Goal" :induct (indf len1 ad1)
+           :in-theory (enable disjoint-regionsp-opener
+                              disjoint-regionsp-of-+-arg2))))
+
+(defthm disjoint-regionsp-correct-forward
+  (implies (disjoint-regionsp len1 ad1 len2 ad2)
+           (disjoint-regionsp-spec len1 ad1 len2 ad2))
+  :hints (("Goal" :in-theory (enable disjoint-regionsp-spec))))
+
+(defthm disjoint-regionsp-correct
+  (implies (and (unsigned-byte-p 48 len1)
+                (unsigned-byte-p 48 len2)
+                (unsigned-byte-p 48 ad1)
+                (unsigned-byte-p 48 ad2))
+           (equal (disjoint-regionsp-spec len1 ad1 len2 ad2)
+                  (disjoint-regionsp len1 ad1 len2 ad2)))
+  :hints (("Goal" :use (disjoint-regionsp-correct-forward
+                         disjoint-regionsp-correct-backward)
+           :in-theory (disable disjoint-regionsp-correct-forward
+                               disjoint-regionsp-correct-backward))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Checks whether all of the addresses in the first region are in the second region
+;; We put the len args first because they will often be small constants.
 (defund subregionp (len1 ad1 len2 ad2)
   (declare (xargs :guard (and (unsigned-byte-p 48 len1) ; can't be 2^48 as the len gets chopped to 48 bits
                               (unsigned-byte-p 48 ad1)
@@ -385,6 +501,11 @@
 ;; A region of size 0 is a subregion of any region
 (defthm subregionp-of-0-arg1
   (subregionp 0 ad len2 ad2)
+  :hints (("Goal" :in-theory (enable subregionp))))
+
+(defthm subregionp-when-zp-arg1
+  (implies (zp len1)
+           (subregionp len1 ad1 len2 ad2))
   :hints (("Goal" :in-theory (enable subregionp))))
 
 ;; A region is a subregion or some other region of size 0 only if it iself has size 0.
@@ -467,13 +588,14 @@
 
 ;; todo: more cancellation rules, or a general solution?
 
-(defthm subregionp-of-+-arg2
+(defthmd subregionp-of-+-arg2
   (implies (and (integerp x)
                 (integerp y))
            (equal (subregionp len1 (+ x y) len2 ad2)
                   (subregionp len1 (bvplus 48 x y) len2 ad2)))
   :hints (("Goal" :in-theory (enable subregionp
                                      acl2::bvminus-of-+-arg2))))
+(theory-invariant (incompatible (:rewrite subregionp-of-+-arg2) (:definition bvplus)))
 
 (defthm subregionp-of-+-arg4
   (implies (and (integerp x)
@@ -481,7 +603,8 @@
            (equal (subregionp len1 ad1 len2 (+ x y))
                   (subregionp len1 ad1 len2 (bvplus 48 x y))))
   :hints (("Goal" :in-theory (enable subregionp
-                                     acl2::bvminus-of-+-arg3))))
+                                     acl2::bvminus-of-+-arg3
+                                     in-regionp-of-+-arg3))))
 
 (defthm subregionp-of-bvchop-arg2
   (implies (and (<= 48 size)
@@ -583,7 +706,7 @@
   :hints (("Goal" :use in-regionp-when-in-regionp-and-subregionp-spec
            :in-theory (disable in-regionp-when-in-regionp-and-subregionp-spec))))
 
-(defthm subregion-correct-forward
+(defthm subregionp-correct-forward
   (implies (and (unsigned-byte-p 48 len1)
                 (unsigned-byte-p 48 len2))
            (implies (subregionp len1 ad1 len2 ad2)
@@ -621,7 +744,10 @@
            (equal (subregionp-spec len1 ad len2 ad)
                   (<= len1 len2))))
 
-;; ;; The bad guy is an address in r1 but not in r2, is there if such an address
+;todo: make some stuff here local:
+;todo: move some of this up:
+
+;; The bad guy is an address in r1 but not in r2, is there if such an address
 ;; (defun bad-guy (r1 r2)
 ;;   (if (zp (len r1))
 ;;       nil
@@ -629,47 +755,80 @@
 ;;         (bad-guy (rest r1) (remove1-equal (first r1) r2))
 ;;       (first r1))))
 
-;; (local (include-book "kestrel/lists-light/remove1-equal" :dir :system))
-;; (thm
-;;   (implies (and (no-duplicatesp-equal r1)
-;;                 (no-duplicatesp-equal r2)
-;;                 (< (len r2) (len r1)))
-;;            (and (member-equal (bad-guy r1 r2) r1)
-;;                 (not (member-equal (bad-guy r1 r2) r2)))))
+(defthmd subregionp-opener
+  (implies (and (unsigned-byte-p 48 len1)
+                (unsigned-byte-p 48 len2)
+                (integerp ad1)
+                (not (zp len1)))
+           (equal (subregionp len1 ad1 len2 ad2)
+                  (and (in-regionp ad1 len2 ad2)
+                       (subregionp (+ -1 len1) (+ 1 ad1) len2 ad2))))
+  :hints (("Goal" :in-theory (enable subregionp in-regionp bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases))))
 
-;; (thm
-;;   (implies (and (no-duplicatesp-equal r1)
-;;                 (no-duplicatesp-equal r2)
-;;                 (< (len r2) (len r1)))
-;;            (not (subsetp-equal r1 r2)))
-;;   :hints (("Goal" :induct (subsetp-equal r1 r2)
-;;            :in-theory (enable subsetp-equal))))
+;; The bad guy is an address in r1 but not in r2, is there if such an address
+(defund bad-guy (len1 ad1 len2 ad2)
+  (if (zp len1)
+      nil
+    (if (in-regionp ad1 len2 ad2)
+        ;; keep looking:
+        (bad-guy (+ -1 len1) (bvplus 48 1 ad1) len2 ad2)
+      ;; we found a bad guy:
+      ad1)))
 
+(defthm unsigned-byte-p-of-bad-guy
+  (implies (and (bad-guy len1 ad1 len2 ad2)
+                (unsigned-byte-p 48 ad1))
+           (unsigned-byte-p 48 (bad-guy len1 ad1 len2 ad2)))
+  :hints (("Goal" :in-theory (enable bad-guy))))
 
+(defthm in-regionp-of-bad-guy
+  (implies (and (bad-guy len1 ad1 len2 ad2)
+                ;(integerp ad1)
+                (unsigned-byte-p 48 ad1)
+                (unsigned-byte-p 48 ad2)
+                (unsigned-byte-p 48 len1))
+           (in-regionp (bad-guy len1 ad1 len2 ad2) len1 ad1))
+  :hints (("Goal" :in-theory (enable in-regionp-opener bad-guy in-regionp-of-+-arg3))))
 
-;; ;r2 could overlap both ends of r1 without overlapping the middle, since this is a cyclic space
-;; (thm
-;;   (implies (and (unsigned-byte-p 48 len1)
-;;                 (unsigned-byte-p 48 len2)
-;;                 (bvlt 48 len2 len1)
-;;                 (< 0 len1))
-;;            (not (subregionp-spec len1 ad1 len2 ad2))))
+(defthm subregionp-when-in-regionp-of-bad-guy
+  (implies (and (in-regionp (bad-guy len1 ad1 len2 ad2) len2 ad2)
+                (unsigned-byte-p 48 len1)
+                (unsigned-byte-p 48 len2)
+                (integerp ad1))
+           (subregionp len1 ad1 len2 ad2))
+  :hints (("Goal" :in-theory (enable subregionp-opener bad-guy subregionp-of-+-arg2))))
 
-;todo!
-;; (defthm subregion-correct-back
-;;   (implies (and (unsigned-byte-p 48 len1)
-;;                 (unsigned-byte-p 48 len2))
-;;            (implies (subregionp-spec len1 ad1 len2 ad2)
-;;                     (subregionp len1 ad1 len2 ad2)))
-;;   :otf-flg t
-;;   :hints (("Goal"
-;;            :use ( ;(:instance in-regionp-when-in-regionp-and-subregionp-spec (ad (if (in-regionp ad1 len2 ad2) (bvplus 48 -1 (bvplus 48 len1 ad1)) ad1)))
-;;                  )
-;;            :in-theory (e/d (subregionp ;in-regionp
-;;                             ;; bvuminus bvplus ifix acl2::bvchop-of-sum-cases zp bvlt
-;;                             )
-;;                            ( ;IN-REGIONP-WHEN-IN-REGIONP-AND-SUBREGIONP-SPEC
-;;                             )))))
+(defthm subregionp-when-not-bad-guy
+  (implies (and (not (bad-guy len1 ad1 len2 ad2))
+                (unsigned-byte-p 48 len1)
+                (unsigned-byte-p 48 len2)
+                (integerp ad1))
+           (subregionp len1 ad1 len2 ad2))
+  :hints (("Goal" :in-theory (enable subregionp-opener bad-guy subregionp-of-+-arg2))))
+
+;drop some hyps?
+(defthm subregionp-correct-back
+  (implies (and (unsigned-byte-p 48 len1)
+                (unsigned-byte-p 48 len2)
+                (unsigned-byte-p 48 ad1)
+                (unsigned-byte-p 48 ad2))
+           (implies (subregionp-spec len1 ad1 len2 ad2)
+                    (subregionp len1 ad1 len2 ad2)))
+  :hints (("Goal"
+           :cases ((bad-guy len1 ad1 len2 ad2))
+           :in-theory (enable subregionp-opener))))
+
+;; Our subregionp function matches the spec
+;; todo: drop some hyps?
+(defthm subregionp-correct
+  (implies (and (unsigned-byte-p 48 len1)
+                (unsigned-byte-p 48 len2)
+                (unsigned-byte-p 48 ad1)
+                (unsigned-byte-p 48 ad2))
+           (equal (subregionp-spec len1 ad1 len2 ad2)
+                  (subregionp len1 ad1 len2 ad2))))
+
+;todo: show that a larger region can't be a subregion of a smaller region
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
