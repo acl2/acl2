@@ -404,12 +404,13 @@
    (xdoc::p
     "The address is any integer,
      which we turn into a 64-bit unsigned address."))
-  (b* ((addr (loghead 64 addr)))
-    (change-state64 stat :mem (update-nth (loghead 64 addr)
-                                          (ubyte8-fix val)
-                                          (state64->mem stat))))
+  (change-state64 stat :mem (update-nth (loghead 64 addr)
+                                        (ubyte8-fix val)
+                                        (state64->mem stat)))
   :guard-hints (("Goal" :in-theory (enable memory64p)))
+
   ///
+
   (fty::deffixequiv write64-mem-ubyte8
     :hints (("Goal" :in-theory (enable loghead)))))
 

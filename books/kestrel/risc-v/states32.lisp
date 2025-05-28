@@ -321,12 +321,13 @@
    (xdoc::p
     "The address is any integer,
      which we turn into a 32-bit unsigned address."))
-  (b* ((addr (loghead 32 addr)))
-    (change-state32 stat :mem (update-nth (loghead 32 addr)
-                                          (ubyte8-fix val)
-                                          (state32->mem stat))))
+  (change-state32 stat :mem (update-nth (loghead 32 addr)
+                                        (ubyte8-fix val)
+                                        (state32->mem stat)))
   :guard-hints (("Goal" :in-theory (enable memory32p)))
+
   ///
+
   (fty::deffixequiv write32-mem-ubyte8
     :hints (("Goal" :in-theory (enable loghead)))))
 

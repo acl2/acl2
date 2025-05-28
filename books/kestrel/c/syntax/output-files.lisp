@@ -12,6 +12,7 @@
 
 (include-book "files")
 (include-book "printer")
+(include-book "ascii-identifiers")
 
 (include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
@@ -80,6 +81,7 @@
 (define output-files-process-const/arg (arg
                                         (options symbol-alistp)
                                         (progp booleanp)
+                                        (gcc booleanp)
                                         (wrld plist-worldp))
   :returns (mv erp (tunits transunit-ensemblep))
   :short "Process the @(':const') or @('arg') input."
@@ -113,6 +115,10 @@
        ((unless (transunit-ensemble-unambp tunits))
         (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
                       is ambiguous."
+                     tunits desc)))
+       ((unless (transunit-ensemble-aidentp tunits gcc))
+        (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
+                      contains non-all-ASCII identifiers."
                      tunits desc))))
     (retok tunits))
 
@@ -216,6 +222,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define output-files-process-gcc ((options symbol-alistp))
+  :returns (mv erp (gcc booleanp))
+  :short "Process the @(':gcc') input."
+  (b* (((reterr) nil)
+       (gcc-option (assoc-eq :gcc options))
+       (gcc (if gcc-option
+                (cdr gcc-option)
+              nil))
+       ((unless (booleanp gcc))
+        (reterr (msg "The :GCC input must be a boolean, ~
+                      but it is ~x0 instead."
+                     gcc))))
+    (retok gcc)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define output-files-process-inputs (arg
                                      (args true-listp)
                                      (progp booleanp)
@@ -231,7 +253,8 @@
                    transunit-ensemblep-when-output-files-process-tunits))))
                (path stringp)
                (indent-size posp)
-               (paren-nested-conds booleanp))
+               (paren-nested-conds booleanp)
+               (gcc booleanp))
   :short "Process the inputs."
   :long
   (xdoc::topstring
@@ -259,7 +282,7 @@
      we remove the ending @('/').
      This is for uniformity when concatenating this
      with the files specified in the @(':files') input."))
-  (b* (((reterr) (irr-transunit-ensemble) "" 1 nil)
+  (b* (((reterr) (irr-transunit-ensemble) "" 1 nil nil)
        ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args args *output-files-allowed-options*))
@@ -279,14 +302,17 @@
                      inputs-desc
                      extra)))
        ;; Process the inputs.
-       ((erp tunits) (output-files-process-const/arg arg options progp wrld))
+       ((erp gcc) (output-files-process-gcc options))
+       ((erp tunits)
+        (output-files-process-const/arg arg options progp gcc wrld))
        ((erp path) (output-files-process-path options))
        ((erp indent-size paren-nested-conds)
         (output-files-process-printer-options options)))
     (retok tunits
            path
            indent-size
-           paren-nested-conds))
+           paren-nested-conds
+           gcc))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp
                                            msgp
                                            character-alistp)))
@@ -357,7 +383,8 @@
        ((erp tunits
              path
              indent-size
-             paren-nested-conds)
+             paren-nested-conds
+             &) ; GCC flag only used in input processing
         (output-files-process-inputs arg args progp (w state)))
        ((erp state)
         (output-files-gen-files tunits
@@ -404,6 +431,7 @@
     "(output-files-prog tunits"
     "                   :path            ...  ; default \".\""
     "                   :printer-options ...  ; default nil"
+    "                   :gcc             ...  ; default nil"
     "  )")
    (xdoc::p
     "This is the same as @(tsee output-files),
