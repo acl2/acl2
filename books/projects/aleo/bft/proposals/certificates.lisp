@@ -468,6 +468,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection cert-set->author-set-ext
+  :extension cert-set->author-set
+
+  (defruled in-of-cert-set->author-set
+    (implies (certificate-setp certs)
+             (equal (set::in author (cert-set->author-set certs))
+                    (b* ((cert (set::nonempty-witness
+                                (certs-with-author author certs))))
+                      (and (set::in cert certs)
+                           (equal (certificate->author cert)
+                                  author)))))
+    :use (only-if-part if-part)
+
+    :prep-lemmas
+
+    ((defruled only-if-part
+       (implies (certificate-setp certs)
+                (implies (set::in author (cert-set->author-set certs))
+                         (b* ((cert (set::nonempty-witness
+                                     (certs-with-author author certs))))
+                           (and (set::in cert certs)
+                                (equal (certificate->author cert)
+                                       author)))))
+       :use (:instance set::nonemptyp-when-not-emptyp
+                       (set (certs-with-author author certs)))
+       :enable (set::nonemptyp
+                in-of-certs-with-author
+                emptyp-of-certs-with-author))
+
+     (defruled if-part
+       (implies (certificate-setp certs)
+                (b* ((cert (set::nonempty-witness
+                            (certs-with-author author certs))))
+                  (implies (and (set::in cert certs)
+                                (equal (certificate->author cert)
+                                       author))
+                           (set::in author (cert-set->author-set certs)))))
+       :use (:instance certificate->author-in-cert-set->author-set
+                       (cert (set::nonempty-witness
+                              (certs-with-author author certs))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define certs-with-round ((round posp) (certs certificate-setp))
   :returns (certs-with-round certificate-setp)
   :short "Retrieve, from a set of certificates,
