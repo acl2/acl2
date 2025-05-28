@@ -1,4 +1,4 @@
-; Gathering documentation for the x86 variant of Axe
+; The AXE package
 ;
 ; Copyright (C) 2025 Kestrel Institute
 ;
@@ -8,14 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+;; Currently, this package is not used for much.  The intent is to use it
+;; initially for documentation.
 
-;; TODO: Add more doc for this variant
-
-(include-book "unroll-x86-code")
-
-;; todo: extend this
-(defxdoc axe-x86
-  :parents (axe)
-  :short "The x86 variant of Axe."
-)
+(defpkg "AXE" (append '(defxdoc) *acl2-exports*))

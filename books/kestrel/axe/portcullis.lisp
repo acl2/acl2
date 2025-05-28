@@ -1,4 +1,4 @@
-; Gathering documentation for the x86 variant of Axe
+; Dummy book whose portcullis brings in package.lsp
 ;
 ; Copyright (C) 2025 Kestrel Institute
 ;
@@ -9,13 +9,3 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
-
-;; TODO: Add more doc for this variant
-
-(include-book "unroll-x86-code")
-
-;; todo: extend this
-(defxdoc axe-x86
-  :parents (axe)
-  :short "The x86 variant of Axe."
-)

@@ -174,7 +174,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
 ;; TODO: update
 (defxdoc unroll-spec
   :parents (axe)
-  :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
+  :short "A tool to open functions and unroll recursions."
   :long "<h3>General Form:</h3>
 
 @({
@@ -192,6 +192,8 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         [:produce-theorem]   ;; Whether to produce a theorem (without proof), asserting that lifiting produces the given result, Default: nil
         )
 })
+
+<p>Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations.</p>
 
 <p> By default, the set of rules used is @('(unroll-spec-rules)'), with any of the @(':extra-rules') added and then the @(':remove-rules') removed.  Or the user can specify @(':rules') to completely replace the set of rules.</p>
 

@@ -11,5 +11,5 @@
 ;; Loads the user's acl2-customization.lsp, if any:
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 
-;; Brings in the PUBLICATIONS package:
+;; Brings in the PUBS package:
 (ld "publications.acl2")

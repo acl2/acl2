@@ -24,7 +24,7 @@
 ; Lamb&aacute;n => Lamban
 ; Jim&eacute;nez => Jimenez
 
-(in-package "PUBLICATIONS")
+(in-package "PUBS")
 (include-book "xdoc/top" :dir :system)
 
 (defun docpath (s)
@@ -79,7 +79,7 @@
 
 (xdoc::order-subtopics publications nil t)
 
-(defxdoc pub-summary
+(defxdoc pubs-summary
   :parents (publications)
   :short "About ACL2:  Quick Summary of What Can Be Done and How to Learn ACL2"
   :long "
@@ -95,7 +95,7 @@
    slides by Inmaculada Medina Bulo and Francisco Palomo Lozano.</li>
  </ul></p>")
 
-(defxdoc pub-books
+(defxdoc pubs-books
   :parents (publications)
   :short "Books Published"
   :long "
@@ -256,15 +256,15 @@
 
  </p>")
 
-(defxdoc pub-papers
+(defxdoc pubs-papers
   :parents (publications)
   :short "Papers Involving ACL2"
   :long "<p>The best introduction to ACL2 is <i><a href='@(`(:raw (docpath
  \"acl2-books/car/index.html\"))`)'>Computer-Aided Reasoning: An
- Approach</a></i>; see @(see pub-books).  But if you prefer to read papers on
+ Approach</a></i>; see @(see pubs-books).  But if you prefer to read papers on
  the Web, see the papers listed in the subtopics of this @(see documentation)
  topic.  In particular, we recommend the first two papers in @(see
- pub-overviews).</p>
+ pubs-overviews).</p>
 
  <p>Typical formalization problems raise many issues that are not yet adequately
  addressed in ACL2 (or any other mechanized formal system).  If you are trying
@@ -275,16 +275,16 @@
  papers for ideas about how to deal with your problems.  A comprehensive
  set of case studies is presented in <i><a href='@(`(:raw (docpath
  \"acl2-books/acs/index.html\"))`)'>Computer-Aided Reasoning:  ACL2 Case
- Studies\"</a></i>; see @(see pub-books).</p>
+ Studies\"</a></i>; see @(see pubs-books).</p>
 
  <p>Several of the papers listed contain links to ACL2 scripts.</p>
 
  ")
 
-(xdoc::order-subtopics pub-papers nil t)
+(xdoc::order-subtopics pubs-papers nil t)
 
-(defxdoc pub-overviews
-  :parents (pub-papers)
+(defxdoc pubs-overviews
+  :parents (pubs-papers)
   :short "Overviews"
   :long "
  <ul>
@@ -360,8 +360,8 @@
      at <a href='http://www.cs.uwyo.edu/~ruben/acl2-13'>ACL2 Workshop 2013</a>.</li>
  </ul>")
 
-(defxdoc pub-foundations
-  :parents (pub-papers)
+(defxdoc pubs-foundations
+  :parents (pubs-papers)
   :short "Foundations"
   :long "
  <ul>
@@ -448,8 +448,8 @@
 
  </ul>")
 
-(defxdoc pub-capabilities
-  :parents (pub-papers)
+(defxdoc pubs-capabilities
+  :parents (pubs-papers)
   :short "ACL2 Capabilities"
   :long "
  <ul>
@@ -517,8 +517,8 @@
 
  </ul>")
 
-(defxdoc pub-utilities
-  :parents (pub-papers)
+(defxdoc pubs-utilities
+  :parents (pubs-papers)
   :short "Utilities"
   :long "
  <ul>
@@ -597,8 +597,8 @@
 
  </ul>")
 
-(defxdoc pub-data-structures
-  :parents (pub-papers)
+(defxdoc pubs-data-structures
+  :parents (pubs-papers)
   :short "Data Structures"
   :long "
  <ul>
@@ -676,13 +676,13 @@
 
  </ul>")
 
-(defxdoc pub-processor-models
-  :parents (pub-papers)
+(defxdoc pubs-processor-models
+  :parents (pubs-papers)
   :short "Processor Modeling and Hardware Verification"
   :long "
  <p>See also the previously mentioned book, <i>Design
  and Verification of Microprocessor Systems for High-Assurance
- Applications</i> (see @(see pub-books)), for a variety of papers by various authors on
+ Applications</i> (see @(see pubs-books)), for a variety of papers by various authors on
  processing modeling in ACL2 (and other systems).</p>
 
  <ul>
@@ -983,8 +983,8 @@
 
  </ul>")
 
-(defxdoc pub-programming-languages
-  :parents (pub-papers)
+(defxdoc pubs-programming-languages
+  :parents (pubs-papers)
   :short "Programming Languages and Software Verification"
   :long "
  <ul>
@@ -1122,7 +1122,7 @@
 
  </ul>")
 
-(defxdoc pub-floating-point-arithmetic
+(defxdoc pubs-floating-point-arithmetic
 
 ; The following were html comments in
 ; https://www.cs.utexas.edu/~moore/publications/acl2-papers.html.
@@ -1156,7 +1156,7 @@
 ;point adder of the AMD-K7 processor.  The paper includes the RTL for a
 ;simplified version of the AMD-K7 floating-point adder.  -->
 
-  :parents (pub-papers)
+  :parents (pubs-papers)
   :short "Floating Point Arithmetic"
   :long "
  <ul>
@@ -1236,8 +1236,8 @@
 
  </ul>")
 
-(defxdoc pub-real-arithmetic
-  :parents (pub-papers)
+(defxdoc pubs-real-arithmetic
+  :parents (pubs-papers)
   :short "Real Arithmetic"
   :long "
  <ul>
@@ -1309,8 +1309,8 @@
 
  </ul>")
 
-(defxdoc pub-concurrency
-  :parents (pub-papers)
+(defxdoc pubs-concurrency
+  :parents (pubs-papers)
   :short "Concurrency"
   :long "
  <ul>
@@ -1343,8 +1343,8 @@
 
  </ul>")
 
-(defxdoc pub-model-checking-and-ste
-  :parents (pub-papers)
+(defxdoc pubs-model-checking-and-ste
+  :parents (pubs-papers)
   :short "Model Checking and Symbolic Trajectory Evaluation"
   :long "
  <ul>
@@ -1416,8 +1416,8 @@
 
  </ul>")
 
-(defxdoc pub-logic-and-metamathematics
-  :parents (pub-papers)
+(defxdoc pubs-logic-and-metamathematics
+  :parents (pubs-papers)
   :short "Logic and Metamathematics"
   :long "
  <ul>
@@ -1511,8 +1511,8 @@
 
  </ul>")
 
-(defxdoc pub-miscellaneous-applications
-  :parents (pub-papers)
+(defxdoc pubs-miscellaneous-applications
+  :parents (pubs-papers)
   :short "Miscellaneous Applications"
   :long "
  <ul>
@@ -1668,7 +1668,7 @@
 
  </ul>")
 
-(defxdoc pub-related-web-sites
+(defxdoc pubs-related-web-sites
   :parents (publications)
   :short "Related Web Sites"
   :long "
@@ -1684,7 +1684,7 @@
 
  </ul>")
 
-(defxdoc pub-slides
+(defxdoc pubs-slides
   :parents (publications)
   :short "Slides for talks about ACL2"
   :long"
@@ -1703,7 +1703,7 @@
 
  <p>The rest of this topic is a stub.  Please feel free to extend it!</p>")
 
-(defxdoc pub-videos
+(defxdoc pubs-videos
   :parents (publications)
   :short "Videos about ACL2"
   :long "

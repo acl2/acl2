@@ -376,7 +376,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         `(local ,form)
       form))
   :parents (axe) ; or can we consider this a lifter?
-  :short "Open functions and unroll recursion in a spec."
+  :short "A tool to open functions and unroll recursions."
   :args ((defconst-name
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
          (term "The term to simplify.")
