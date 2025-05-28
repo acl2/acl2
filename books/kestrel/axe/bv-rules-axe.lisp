@@ -2326,6 +2326,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd bvshr-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvshr size x shift-amount)
+                  (bvshr size (trim size x) shift-amount)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Only needed for Axe.  TODO: Add such rules for all bvs?  Or do they already exist?
 (defthmd bvuminus-less-than-true
   (implies (and (syntaxp (quotep k))
