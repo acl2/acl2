@@ -15,6 +15,7 @@
 ;; Section numbers below refer to this RFC.
 
 (include-book "chacha20")
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 ;; Sec 2.1
 (thm
@@ -135,13 +136,12 @@
 
 ;; Tests involving the carry option:
 
-;; The 2 versions of the spec (with and without the carry option) agree for a single block:
+;; The 2 versions of the spec (with and without the carry option) agree for this single-block input:
 (thm
   (equal (chacha20 (acl2::repeat 32 0) (+ -1 (expt 2 32)) (acl2::repeat 12 0) (acl2::repeat 64 0) nil)
          (chacha20 (acl2::repeat 32 0) (+ -1 (expt 2 32)) (acl2::repeat 12 0) (acl2::repeat 64 0) t)))
 
-;; The 2 versions agree for a single block (general proof):
-(local (include-book "kestrel/bv/slice" :dir :system))
+;; In fact, the 2 versions agree for any single block:
 (thm
   (implies (and (= 64 (len plaintext)) ; only one block
                 (unsigned-byte-listp 8 key)
