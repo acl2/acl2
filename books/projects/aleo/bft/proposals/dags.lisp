@@ -16,6 +16,8 @@
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 
+(local (include-book "../library-extensions/oset-theorems"))
+
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
@@ -452,7 +454,25 @@
                 (set::subset (successors-loop certs1 prev)
                              (successors-loop certs2 prev)))
        :enable (in-of-successors-loop
-                set::expensive-rules))))
+                set::expensive-rules))
+
+     (defruled cert-set->round-set-of-successors-loop
+       (implies (and (certificate-setp certs)
+                     (equal (cert-set->round-set certs)
+                            (if (set::emptyp certs)
+                                nil
+                              (set::insert round nil))))
+                (equal (cert-set->round-set (successors-loop certs prev))
+                       (if (set::emptyp (successors-loop certs prev))
+                           nil
+                         (set::insert round nil))))
+       :induct t
+       :enable (cert-set->round-set
+                cert-set->round-set-of-insert
+                set::expensive-rules)
+       :hints ('(:use (:instance set::emptyp-when-proper-subset-of-singleton
+                                 (x (cert-set->round-set (tail certs)))
+                                 (a (certificate->round (head certs)))))))))
 
   :hooks (:fix)
 
@@ -482,7 +502,20 @@
              (set::subset (successors cert dag1)
                           (successors cert dag2)))
     :enable (successors-loop-monotone
-             certs-with-round-monotone)))
+             certs-with-round-monotone))
+
+  (defruled cert-set->round-set-of-successors
+    (implies (certificate-setp dag)
+             (equal (cert-set->round-set (successors cert dag))
+                    (if (set::emptyp (successors cert dag))
+                        nil
+                      (set::insert (1+ (certificate->round cert)) nil))))
+    :enable cert-set->round-set-of-certs-with-round
+    :use (:instance cert-set->round-set-of-successors-loop
+                    (prev (certificate->author cert))
+                    (certs (certs-with-round
+                            (+ 1 (certificate->round cert)) dag))
+                    (round (+ 1 (certificate->round cert))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
