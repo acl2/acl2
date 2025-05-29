@@ -180,6 +180,16 @@
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->author-in-cert-set->author-set)
 
+  (defruled cert-set->author-set-of-union
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2))
+             (equal (cert-set->author-set (set::union certs1 certs2))
+                    (set::union (cert-set->author-set certs1)
+                                (cert-set->author-set certs2))))
+    :induct t
+    :enable (set::union
+             cert-set->author-set-of-insert))
+
   (defruled same-certificate-author-when-cardinality-leq-1
     (implies (and (certificate-setp certs)
                   (<= (set::cardinality (cert-set->author-set certs)) 1)
@@ -236,6 +246,16 @@
                                  (cert-set->round-set certs))))
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->round-in-cert-set->round-set)
+
+  (defruled cert-set->round-set-of-union
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2))
+             (equal (cert-set->round-set (set::union certs1 certs2))
+                    (set::union (cert-set->round-set certs1)
+                                (cert-set->round-set certs2))))
+    :induct t
+    :enable (set::union
+             cert-set->round-set-of-insert))
 
   (defruled same-certificate-round-when-cardinality-leq-1
     (implies (and (certificate-setp certs)
