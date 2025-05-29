@@ -928,6 +928,7 @@
     (mv (erp-nil) result-dag-or-quotep untranslated-assumptions input-assumption-vars lifter-rules assumption-rules state)))
 
 ;; Returns (mv erp event state)
+;; TODO: Consider using the current print-base (:auto value) by default.
 (defun def-unrolled-fn (lifted-name
                         target
                         executable
