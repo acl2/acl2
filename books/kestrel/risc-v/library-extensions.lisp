@@ -64,7 +64,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled logext-plus-logext-logext
+(defruled logext-of-logext-plus-logext
   (equal (logext n (+ (logext n x) (logext n y)))
          (logext n (+ (ifix x) (ifix y))))
   :enable (logext
