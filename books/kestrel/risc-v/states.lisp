@@ -913,3 +913,19 @@
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)
     :hints (("Goal" :in-theory (enable stat-validp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv32im-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV32IM states."
+  (and (statp x)
+       (stat-validp x (feat-rv32im))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv64im-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV64IM states."
+  (and (statp x)
+       (stat-validp x (feat-rv64im))))
