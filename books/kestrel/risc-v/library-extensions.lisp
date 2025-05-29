@@ -94,6 +94,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule loghead-3-of-ubyte3
+  (implies (ubyte3p x)
+           (equal (loghead 3 x)
+                  x))
+  :enable ubyte3p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule loghead-7-of-ubyte7
+  (implies (ubyte7p x)
+           (equal (loghead 7 x)
+                  x))
+  :enable ubyte7p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule loghead-of-ifix
   (equal (loghead size (ifix i))
          (loghead size i)))
@@ -131,22 +147,6 @@
            ifix
            nfix
            fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule loghead-3-of-ubyte3
-  (implies (ubyte3p x)
-           (equal (loghead 3 x)
-                  x))
-  :enable ubyte3p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule loghead-7-of-ubyte7
-  (implies (ubyte7p x)
-           (equal (loghead 7 x)
-                  x))
-  :enable ubyte7p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
