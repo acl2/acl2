@@ -112,6 +112,13 @@
        (bytep (fixtype->pred fty-info))
        ;; choice between LOGHEAD and LOGEXT:
        (loghead/logext (if signed 'acl2::logext 'acl2::loghead))
+       ;; name of the generated XDOC topic:
+       (type-ihs-theorems
+        (acl2::packn-pos (list type '-ihs-theorems) bytep))
+       ;; short string for XDOC topic:
+       (short (str::cat "Theorems about @(tsee acl2::"
+                        (str::downcase-string (symbol-name type))
+                        ") and IHS functions."))
        ;; name of the generated theorem:
        (bytep-of-loghead/logext-of-size
         (acl2::packn-pos (list bytep '-of- loghead/logext '-of- size) bytep))
@@ -119,10 +126,13 @@
        (x (intern-in-package-of-symbol "X" bytep))
        ;; generated theorem:
        (event
-        `(defrule ,bytep-of-loghead/logext-of-size
-           (,bytep (,loghead/logext ,size ,x))
-           :enable ,bytep
-           :prep-books ((include-book "arithmetic-5/top" :dir :system)))))
+        `(defsection ,type-ihs-theorems
+           :parents (,type)
+           :short ,short
+           (local (include-book "arithmetic-5/top" :dir :system))
+           (defrule ,bytep-of-loghead/logext-of-size
+             (,bytep (,loghead/logext ,size ,x))
+             :enable ,bytep))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
