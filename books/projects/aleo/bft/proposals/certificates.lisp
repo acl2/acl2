@@ -1242,7 +1242,29 @@
      of a set of certificates all with the same round/author
      is the same as the number of those certificates:
      unequivocation means that there is a bijection between
-     those rounds and those certificates."))
+     those rounds and those certificates.")
+   (xdoc::p
+    "The theorems @('certs-same-round-unequiv-intersect-when-authors-intersect')
+     and @('certs-same-author-unequiv-intersect-when-rounds-intersect')
+     say that if two sets of unequivocal certificates with the same round/author
+     have at least one common author/round,
+     then there is at least one common certificate to the two sets.
+     This is because, as proved in
+     @('equal-certificate-authors-when-unequiv-and-same-round') and
+     @('equal-certificate-rounds-when-unequiv-and-same-author')
+     there is a bijection between unequivocal certificates
+     with the same round/author
+     and their authors/rounds.
+     The theorems @('certs-same-round-unequiv-intersect-when-authors-intersect')
+     and @('certs-same-author-unequiv-intersect-when-rounds-intersect')
+     are proved as follows:
+     take an author/round in the intersection of authors/rounds;
+     obtain two witness certificates with that author/round;
+     show that the two certificates must be equal using
+     @('equal-cert-authors-when-unequiv-and-same-round') or
+     @('equal-cert-rounds-when-unequiv-and-same-author');
+     thus that same certificate is in both sets of certificates,
+     which therefore have a non-empty intersection."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 (certificate-set-fix certs))
                         (set::in cert2 (certificate-set-fix certs))
@@ -1390,7 +1412,79 @@
               cert-set-unequivp-necc)
     :hints ('(:use (:instance cert-set->author-set-monotone
                               (certs1 (set::tail certs))
-                              (certs2 certs))))))
+                              (certs2 certs)))))
+
+  (defruled certs-same-round-unequiv-intersect-when-authors-intersect
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2)
+                  (cert-set-unequivp (set::union certs1 certs2))
+                  (<= (set::cardinality
+                       (cert-set->round-set
+                        (set::union certs1 certs2)))
+                      1)
+                  (not (set::emptyp (set::intersect
+                                     (cert-set->author-set certs1)
+                                     (cert-set->author-set certs2)))))
+             (not (set::emptyp (set::intersect certs1 certs2))))
+    :enable (set::nonemptyp
+             in-of-cert-set->author-set
+             set::not-emptyp-of-intersect-when-in-both)
+    :use ((:instance set::not-emptyp-to-nonemptyp
+                     (set (set::intersect
+                           (cert-set->author-set certs1)
+                           (cert-set->author-set certs2))))
+          (:instance equal-cert-authors-when-unequivp-and-same-round
+                     (certs (set::union certs1 certs2))
+                     (cert1 (set::nonempty-witness
+                             (certs-with-author
+                              (set::nonempty-witness
+                               (set::intersect
+                                (cert-set->author-set certs1)
+                                (cert-set->author-set certs2)))
+                              certs1)))
+                     (cert2 (set::nonempty-witness
+                             (certs-with-author
+                              (set::nonempty-witness
+                               (set::intersect
+                                (cert-set->author-set certs1)
+                                (cert-set->author-set certs2)))
+                              certs2))))))
+
+  (defruled certs-same-author-unequiv-intersect-when-rounds-intersect
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2)
+                  (cert-set-unequivp (set::union certs1 certs2))
+                  (<= (set::cardinality
+                       (cert-set->author-set
+                        (set::union certs1 certs2)))
+                      1)
+                  (not (set::emptyp (set::intersect
+                                     (cert-set->round-set certs1)
+                                     (cert-set->round-set certs2)))))
+             (not (set::emptyp (set::intersect certs1 certs2))))
+    :enable (set::nonemptyp
+             in-of-cert-set->round-set
+             set::not-emptyp-of-intersect-when-in-both)
+    :use ((:instance set::not-emptyp-to-nonemptyp
+                     (set (set::intersect
+                           (cert-set->round-set certs1)
+                           (cert-set->round-set certs2))))
+          (:instance equal-cert-rounds-when-unequivp-and-same-author
+                     (certs (set::union certs1 certs2))
+                     (cert1 (set::nonempty-witness
+                             (certs-with-round
+                              (set::nonempty-witness
+                               (set::intersect
+                                (cert-set->round-set certs1)
+                                (cert-set->round-set certs2)))
+                              certs1)))
+                     (cert2 (set::nonempty-witness
+                             (certs-with-round
+                              (set::nonempty-witness
+                               (set::intersect
+                                (cert-set->round-set certs1)
+                                (cert-set->round-set certs2)))
+                              certs2)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
