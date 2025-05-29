@@ -43,6 +43,14 @@
      We restrict this to valid instructions in valid states
      with respect to the RISC-V features.")
    (xdoc::p
+    "For some integer instructions, like @('SLT') and @('SLTU'),
+     it is important whether the operands are read as signed or unsigned.
+     For other instructions, like @('ADD') it does not matter,
+     so long as they are both read signed or unsigned
+     (not one signed and the other unsigned);
+     for these instructions, we add theorem showing two definitions equivalent,
+     one that reads signed operands and one that reads unsigned operands.")
+   (xdoc::p
     "There is a fair amount of repetition in boilerplate in these functions.
      We could consider shortening them via suitable macros."))
   :default-parent t
@@ -859,12 +867,7 @@
     "We read two (signed or unsigned) @('XLEN')-bit integers
      from @('rs1') and @('rs2').
      We add them, and write the result to @('rd').
-     We increment the program counter.")
-   (xdoc::p
-    "It does not matter whether we read the integers as signed or unsigned.
-     We prove that the two choices are equivalent.
-     But they both need to be read the same way
-     (not one signed and the other unsigned)."))
+     We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (result (+ rs1-operand rs2-operand))
