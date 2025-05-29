@@ -15,6 +15,7 @@
 (include-book "ubyte6-ihs-theorems")
 (include-book "ubyte7-ihs-theorems")
 (include-book "ubyte8-ihs-theorems")
+(include-book "ubyte12-ihs-theorems")
 (include-book "ubyte16-ihs-theorems")
 (include-book "ubyte32-ihs-theorems")
 (include-book "ubyte64-ihs-theorems")
