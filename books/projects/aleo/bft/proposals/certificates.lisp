@@ -647,6 +647,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection cert-set->round-set-ext
+  :extension cert-set->round-set
+
+  (defruled in-of-cert-set->round-set
+    (implies (certificate-setp certs)
+             (equal (set::in round (cert-set->round-set certs))
+                    (b* ((cert (set::nonempty-witness
+                                (certs-with-round round certs))))
+                      (and (set::in cert certs)
+                           (equal (certificate->round cert)
+                                  round)))))
+    :use (only-if-part if-part)
+
+    :prep-lemmas
+
+    ((defruled only-if-part
+       (implies (certificate-setp certs)
+                (implies (set::in round (cert-set->round-set certs))
+                         (b* ((cert (set::nonempty-witness
+                                     (certs-with-round round certs))))
+                           (and (set::in cert certs)
+                                (equal (certificate->round cert)
+                                       round)))))
+       :use (:instance set::nonemptyp-when-not-emptyp
+                       (set (certs-with-round round certs)))
+       :enable (set::nonemptyp
+                in-of-certs-with-round
+                emptyp-of-certs-with-round))
+
+     (defruled if-part
+       (implies (certificate-setp certs)
+                (b* ((cert (set::nonempty-witness
+                            (certs-with-round round certs))))
+                  (implies (and (set::in cert certs)
+                                (equal (certificate->round cert)
+                                       round))
+                           (set::in round (cert-set->round-set certs)))))
+       :use (:instance certificate->round-in-cert-set->round-set
+                       (cert (set::nonempty-witness
+                              (certs-with-round round certs))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define certs-with-authors ((authors address-setp) (certs certificate-setp))
   :returns (certs-with-authors certificate-setp)
   :short "Retrieve, from a set of certificates,
