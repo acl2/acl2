@@ -17,7 +17,6 @@
 (include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte12" :dir :system)
 (include-book "kestrel/fty/ubyte20" :dir :system)
-(include-book "std/util/deffixer" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
