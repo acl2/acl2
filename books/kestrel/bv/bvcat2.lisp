@@ -36,7 +36,7 @@
 
 ;; Concatenate several values together.  Takes a non-empty list of alternating sizes and values.
 ;; TODO: Pull out the macro body into a function.
-;; TODO: Perhaps rename
+;; TODO: Perhaps rename, perhaps to BVCATN
 (defmacro bvcat2 (&rest sizes-and-vals)
   (declare (xargs :guard (and (true-listp sizes-and-vals)
                               (evenp (len sizes-and-vals))
