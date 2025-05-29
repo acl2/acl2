@@ -31,6 +31,7 @@
                           loghead
                           nat
                           nat-list
+                          pos-fix
                           sbyte32
                           sbyte32p
                           sbyte64
