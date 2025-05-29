@@ -74,6 +74,20 @@
   ((include-book "kestrel/arithmetic-light/even-and-odd" :dir :system)
    (include-book "arithmetic-3/top" :dir :system)))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled logext-of-logext-minus-logext
+  (equal (logext n (- (logext n x) (logext n y)))
+         (logext n (- (ifix x) (ifix y))))
+  :enable (logext
+           loghead
+           oddp
+           ifix
+           logbitp)
+  :prep-books
+  ((include-book "kestrel/arithmetic-light/even-and-odd" :dir :system)
+   (include-book "arithmetic-3/top" :dir :system)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled loghead-of-logext-plus-logext
@@ -89,6 +103,24 @@
                    (m n)
                    (n n)))
   :enable logext-of-logext-plus-logext
+  :disable bitops::cancel-loghead-under-logext
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled loghead-of-logext-minus-logext
+  (equal (loghead n (- (logext n x) (logext n y)))
+         (loghead n (- (ifix x) (ifix y))))
+  :use ((:instance bitops::cancel-logext-under-loghead
+                   (x (- (logext n x)
+                         (logext n y)))
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-logext-under-loghead
+                   (x (- x y))
+                   (m n)
+                   (n n)))
+  :enable logext-of-logext-minus-logext
   :disable bitops::cancel-loghead-under-logext
   :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
 
