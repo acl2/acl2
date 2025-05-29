@@ -78,13 +78,3 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-theory (disable loghead logext))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun logappn-fn (args)
-  (cond ((endp args) 0)
-        ((endp (cdr args)) 0)
-        (t `(logapp ,(car args) ,(cadr args) ,(logappn-fn (cddr args))))))
-
-(defmacro logappn (&rest args)
-  (logappn-fn args))

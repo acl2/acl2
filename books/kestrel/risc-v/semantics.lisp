@@ -13,6 +13,8 @@
 (include-book "instructions")
 (include-book "states")
 
+(local (include-book "library-extensions"))
+
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
