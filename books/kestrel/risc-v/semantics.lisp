@@ -15,6 +15,9 @@
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
+(local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

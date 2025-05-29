@@ -16,9 +16,12 @@
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/ubyte3" :dir :system)
 (include-book "kestrel/fty/ubyte7" :dir :system)
+(include-book "kestrel/fty/ubyte32" :dir :system)
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
+(local (include-book "kestrel/fty/ubyte5-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte6-ihs-theorems" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

@@ -14,6 +14,8 @@
 (include-book "decoding")
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "kestrel/fty/ubyte3-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte7-ihs-theorems" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

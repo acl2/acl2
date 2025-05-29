@@ -17,6 +17,7 @@
 (include-book "kestrel/fty/ubyte3" :dir :system)
 (include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte7" :dir :system)
+(include-book "kestrel/fty/ubyte32" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
 

@@ -14,6 +14,9 @@
 (include-book "features")
 
 (include-book "centaur/bitops/part-select" :dir :system)
+(include-book "kestrel/fty/sbyte32" :dir :system)
+(include-book "kestrel/fty/sbyte64" :dir :system)
+(include-book "kestrel/fty/ubyte16" :dir :system)
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte32-list" :dir :system)
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
@@ -21,6 +24,8 @@
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
+(local (include-book "kestrel/fty/sbyte32-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
