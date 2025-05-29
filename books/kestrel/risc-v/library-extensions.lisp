@@ -65,9 +65,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled logext-plus-logext-logext
-  (equal (logext size (+ (logext size x)
-                         (logext size y)))
-         (logext size (+ (ifix x) (ifix y))))
+  (equal (logext n (+ (logext n x) (logext n y)))
+         (logext n (+ (ifix x) (ifix y))))
   :enable (logext
            loghead
            oddp)
