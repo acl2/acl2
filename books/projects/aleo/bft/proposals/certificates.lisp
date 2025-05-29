@@ -1236,12 +1236,13 @@
      We phrase these as rewrite rules
      in the typical form of an injectivity rewrite rule.")
    (xdoc::p
-    "The theorem @('cardinality-of-authors-when-unequiv-and-all-same-rounds')
-     says that the number of authors
-     of a set of certificates all in the same round
+    "The theorems @('cardinality-of-authors-when-unequiv-and-all-same-rounds')
+     and @('cardinality-of-rounds-when-unequiv-and-all-same-authors')
+     say that the number of authors/rounds
+     of a set of certificates all with the same round/author
      is the same as the number of those certificates:
      unequivocation means that there is a bijection between
-     those authors and those certificates."))
+     those rounds and those certificates."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 (certificate-set-fix certs))
                         (set::in cert2 (certificate-set-fix certs))
@@ -1369,6 +1370,25 @@
     :disable (cert-set-unequivp
               cert-set-unequivp-necc)
     :hints ('(:use (:instance cert-set->round-set-monotone
+                              (certs1 (set::tail certs))
+                              (certs2 certs)))))
+
+  (defruled cardinality-of-rounds-when-unequiv-and-all-same-authors
+    (implies (and (certificate-setp certs)
+                  (cert-set-unequivp certs)
+                  (<= (set::cardinality (cert-set->author-set certs)) 1))
+             (equal (set::cardinality (cert-set->round-set certs))
+                    (set::cardinality certs)))
+    :induct t
+    :enable (set::cardinality
+             cert-set->round-set
+             cert-set-unequivp-when-subset
+             set::expensive-rules
+             in-of-cert-set->round-set
+             equal-cert-rounds-when-unequivp-and-same-author)
+    :disable (cert-set-unequivp
+              cert-set-unequivp-necc)
+    :hints ('(:use (:instance cert-set->author-set-monotone
                               (certs1 (set::tail certs))
                               (certs2 certs))))))
 
