@@ -64,4 +64,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled logext-plus-logext-logext
+  (equal (logext size (+ (logext size x)
+                         (logext size y)))
+         (logext size (+ (ifix x) (ifix y))))
+  :enable (logext
+           loghead
+           oddp)
+  :prep-books
+  ((include-book "kestrel/arithmetic-light/even-and-odd" :dir :system)
+   (include-book "arithmetic-3/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable loghead logext))
