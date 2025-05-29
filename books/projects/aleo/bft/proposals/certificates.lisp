@@ -1175,7 +1175,30 @@
      with the same author and round
      are in the same certificates.
      This means that the certificates in the set
-     are uniquely identified by their author and round."))
+     are uniquely identified by their author and round.")
+   (xdoc::p
+    "The rule @('certificate-set-unequivocalp-of-insert')
+     is useful to prove the preservation of non-equivocation
+     when a set of certificates is extended.
+     Either the added certificate is already in the initial set,
+     or the initial set has no certificate with
+     the added certificate's author and round.")
+   (xdoc::p
+    "The theorems @('equal-certificate-authors-when-unequiv-and-same-round')
+     and @('equal-cert-rounds-when-unequivp-and-same-author')
+     say that if the certificates in an unequivocal sets
+     have all the same round/author,
+     then two certificates in that set are the same
+     if they have the same author/round.
+     We phrase these as rewrite rules
+     in the typical form of an injectivity rewrite rule.")
+   (xdoc::p
+    "The theorem @('cardinality-of-authors-when-unequiv-and-all-same-rounds')
+     says that the number of authors
+     of a set of certificates all in the same round
+     is the same as the number of those certificates:
+     unequivocation means that there is a bijection between
+     those authors and those certificates."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 (certificate-set-fix certs))
                         (set::in cert2 (certificate-set-fix certs))
@@ -1285,7 +1308,26 @@
     :use (cert-set-unequivp-necc
           same-certificate-author-when-cardinality-leq-1)
     :disable (cert-set-unequivp
-              cert-set-unequivp-necc)))
+              cert-set-unequivp-necc))
+
+  (defruled cardinality-of-authors-when-unequiv-and-all-same-rounds
+    (implies (and (certificate-setp certs)
+                  (cert-set-unequivp certs)
+                  (<= (set::cardinality (cert-set->round-set certs)) 1))
+             (equal (set::cardinality (cert-set->author-set certs))
+                    (set::cardinality certs)))
+    :induct t
+    :enable (set::cardinality
+             cert-set->author-set
+             cert-set-unequivp-when-subset
+             set::expensive-rules
+             in-of-cert-set->author-set
+             equal-cert-authors-when-unequivp-and-same-round)
+    :disable (cert-set-unequivp
+              cert-set-unequivp-necc)
+    :hints ('(:use (:instance cert-set->round-set-monotone
+                              (certs1 (set::tail certs))
+                              (certs2 certs))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
