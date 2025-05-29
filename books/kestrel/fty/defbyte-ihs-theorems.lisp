@@ -119,12 +119,14 @@
        (short (str::cat "Theorems about @(tsee acl2::"
                         (str::downcase-string (symbol-name type))
                         ") and IHS functions."))
-       ;; name of the generated theorem:
+       ;; name of the generated theorems:
        (bytep-of-loghead/logext-of-size
         (acl2::packn-pos (list bytep '-of- loghead/logext '-of- size) bytep))
-       ;; variable in the generated theorem:
+       (loghead/logext-of-size-when-bytep
+        (acl2::packn-pos (list loghead/logext '-of- size '-when- bytep) bytep))
+       ;; variable in the generated theorems:
        (x (intern-in-package-of-symbol "X" bytep))
-       ;; generated theorem:
+       ;; generated theorems:
        (event
         `(defsection ,type-ihs-theorems
            :parents (,type)
@@ -132,6 +134,10 @@
            (local (include-book "arithmetic-5/top" :dir :system))
            (defrule ,bytep-of-loghead/logext-of-size
              (,bytep (,loghead/logext ,size ,x))
+             :enable ,bytep)
+           (defrule ,loghead/logext-of-size-when-bytep
+             (implies (,bytep ,x)
+                      (equal (,loghead/logext ,size ,x) ,x))
              :enable ,bytep))))
     event))
 
