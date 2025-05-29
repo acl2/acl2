@@ -14,8 +14,6 @@
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(local (include-book "arithmetic-5/top" :dir :system))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled integerp-of-+
@@ -61,7 +59,8 @@
            evenp
            ifix
            nfix
-           fix))
+           fix)
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
