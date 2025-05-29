@@ -856,11 +856,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) @('XLEN')-bit integers
+     from @('rs1') and @('rs2').
      We add them, and write the result to @('rd').
-     We increment the program counter."))
-  (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-       (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+     We increment the program counter.")
+   (xdoc::p
+    "It does not matter whether we read the integers as signed or unsigned.
+     We prove that the two choices are equivalent.
+     But they both need to be read the same way
+     (not one signed and the other unsigned)."))
+  (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+       (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (result (+ rs1-operand rs2-operand))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
@@ -869,6 +875,22 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-add-alt-def
+    (equal (exec-add rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (+ rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-add
+             read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc
+             loghead-of-logext-plus-logext
+             ifix))
 
   (defret stat-validp-of-exec-add
     (stat-validp new-stat feat)

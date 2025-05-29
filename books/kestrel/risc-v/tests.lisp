@@ -87,7 +87,7 @@
           decode
           exec-instr
           exec-op
-          exec-add
+          exec-add-alt-def
           read-xreg-of-write-xreg
           read-pc-of-inc4-pc)
  :disable ((:e tau-system)) ; for speed
