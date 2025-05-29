@@ -916,8 +916,8 @@
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
      We subtract the second from the first, and write the result to @('rd').
      We increment the program counter."))
-  (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-       (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+  (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+       (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (result (- rs1-operand rs2-operand))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
