@@ -129,7 +129,7 @@
        ;; generated theorems:
        (event
         `(defsection ,type-ihs-theorems
-           :parents (,type)
+           :parents (,type fty::defbyte-standard-instances-ihs-theorems)
            :short ,short
            (local (include-book "arithmetic-5/top" :dir :system))
            (defrule ,bytep-of-loghead/logext-of-size
