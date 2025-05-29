@@ -48,7 +48,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule logext-smaller-of-loghead-larger
+(defrule logext-of-loghead
   (implies (and (posp size)
                 (posp size1)
                 (<= size1 size))
