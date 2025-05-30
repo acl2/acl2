@@ -35,9 +35,15 @@
 (include-book "magitastic-ev")
 (local (include-book "std/basic/arith-equivs" :dir :system))
 (local (include-book "std/lists/resize-list" :dir :system))
+(local (include-book "unify-thms"))
 (local (in-theory (disable resize-list)))
 (local (std::add-default-post-define-hook :fix))
 (set-state-ok t)
+
+
+;; ------------------------------------------------------------------------
+;; Miscellaneous helper functions
+;; ------------------------------------------------------------------------
 
 (define env->env$ ((x fgl-env-p) logicman)
   :guard (stobj-let ((aignet (logicman->aignet logicman)))
@@ -186,12 +192,12 @@
 ;;   multiple terms in the graph, then we try to recover a value for each term
 ;;   in arbitrary order and check whether we get to a fixpoint.
 
-;; Cgraph representation
+;; Cgraph representation -- see also cgraph.lisp, particularly the xdoc for cgraph.
 
-;; The form of the graph is a bit idiosyncratic. We map nodes to a list of
-;; edges, but the edges might be better called multiedges since while they only
-;; point from one node, they may point to multiple nodes. Each such multiedge
-;; consists of a rule; a substitution where for each key/value pair in the substitution, the value is a destintaion of the edge;
+;; The cgraph maps nodes to formulas, each of which has other nodes as
+;; dependencies.  A formula says how to compute a value for the target node in
+;; terms of the dependency values, and how to determine whether it was
+;; successful and how "good" (priority) the value was.
 
 ;;   Rule types.
 
@@ -200,15 +206,23 @@
 ;;   all of this is a purely heuristic process.
 
 ;;   The basic idea for any rule is that it should add certain nodes and
-;;   multiedges, or perhaps update existing multiedges, in the graph based on nodes that already exist (starting with a
-;;   node for each term bound in the bvar-db). For each multiedge B -> {Ai}, we
-;;   can either derive a complete value for B from the values for Ai, or an
-;;   update to the value of B. That means when we evaluate the counterexample,
-;;   we'll try to derive values for Ai and then use them to update/derive
-;;   B. Each node (FGL object) can be mapped to multiple multiedges; these can
-;;   either be compatible updates or conflicting derivations. Each multiedge
-;;   needs to say what its destination nodes are and how to assign a value to
-;;   the source object given some or all of those values.
+;;   multiedges, or perhaps update existing multiedges, in the graph based on
+;;   nodes that already exist (starting with a node for each term bound in the
+;;   bvar-db). For each multiedge B -> {Ai}, we can either derive a complete
+;;   value for B from the values for Ai, or an update to the value of B. That
+;;   means when we evaluate the counterexample, we'll try to derive values for
+;;   Ai and then use them to update/derive B. Each node (FGL object) can be
+;;   mapped to multiple multiedges; these can either be compatible updates or
+;;   conflicting derivations. Each multiedge needs to say what its destination
+;;   nodes are and how to assign a value to the source object given some or all
+;;   of those values.
+
+;;  - Implicit rule: A function call (foo x0..xn) can be considered to have a
+;;    multiedge (foo x0..xn) -> {x0..xn}, such that if we can derive the xi, we
+;;    can derive the function call.  However, these should be considered lower
+;;    priority and we need to take care that we don't get confused by loops --
+;;    e.g. elimination rules (below) will go in the opposite direction and
+;;    should be considered higher priority.
 
 ;;
 ;;  - Elimination rules.  These are basically destructor elimination rules, of the form
@@ -285,1434 +299,193 @@
 
 
 
+;; ------------------------------------------------------------------------
+;; Creating a cgraph from rules.
+;; See main function FGL-OBJECT-ADD-TO-CGRAPH, below
+;; ------------------------------------------------------------------------
 
 (fty::deflist ctrex-rulelist :elt-type ctrex-rule :true-listp t)
 
 (fty::defmap ctrex-ruletable :key-type pseudo-fnsym :val-type ctrex-rulelist :true-listp t)
 
-(define ctrex-rule-matches-to-ruletable ((matches pseudo-term-subst-p)
-                                         (rule ctrex-rule-p)
-                                         (ruletable ctrex-ruletable-p))
-  :prepwork ((local (defthm true-listp-when-ctrex-rulelist-p-rw
-                      (implies (ctrex-rulelist-p x)
-                               (true-listp x)))))
-  :returns (new-ruletable ctrex-ruletable-p)
-  :hooks ((:fix :hints(("Goal" :in-theory (enable pseudo-term-subst-fix)))))
-  (b* ((ruletable (ctrex-ruletable-fix ruletable))
-       ((when (atom matches)) ruletable)
-       ((unless (mbt (and (consp (car matches))
-                          (pseudo-var-p (caar matches)))))
-        (ctrex-rule-matches-to-ruletable (cdr matches) rule ruletable))
-       (x (cdar matches))
-       ((unless (pseudo-term-case x :fncall))
-        (ctrex-rule-matches-to-ruletable (cdr matches) rule ruletable))
-       ((pseudo-term-fncall x))
-       (ruletable (hons-acons x.fn (add-to-set-equal (ctrex-rule-fix rule)
-                                                     (cdr (hons-get x.fn ruletable)))
-                              ruletable)))
-    (ctrex-rule-matches-to-ruletable (cdr matches) rule ruletable)))
-
-
-
-
-(defconst *def-ctrex-rule-keys*
-  '(:match
-    :assigned-var
-    :assign
-    :assign-cond
-    :match-conds
-    :hyp
-    :equiv
-    :ruletype))
-
-(make-event
- (std::da-make-binder-gen
-  'ctrex-rule-keys
-  (stobjs::kwd-alist-field-accessor-alist *def-ctrex-rule-keys*)))
-
-(defun ctrex-rule-translate (x wrld)
-  (declare (xargs :mode :program))
-  (acl2::translate-cmp x t t t 'def-ctrex-rule wrld (default-state-vars nil)))
-
-(defun ctrex-rule-translate-matches (x wrld)
-  (declare (xargs :mode :program))
-  (b* (((When (atom x)) (mv nil nil))
-       ((unless (eql (len (car x)) 2))
-        (mv 'def-ctrex-rule (msg "bad entry in match: ~x0" x)))
-       (term (cadar x))
-       ((mv erp trans-term)
-        (ctrex-rule-translate term wrld))
-       ((when erp) (mv erp trans-term))
-       ((mv erp rest)
-        (ctrex-rule-translate-matches (cdr x) wrld))
-       ((when erp) (mv erp rest)))
-    (mv nil (cons (cons (caar x) trans-term) rest))))
-
-
-(defun def-ctrex-rule-fn (name keys wrld)
-  (declare (xargs :mode :program))
-  (b* (((unless (symbolp name))
-        (er hard? 'def-ctrex-rule "Bad name -- must be a symbol"))
-       ((mv keys rest)
-        (std::extract-keywords 'def-ctrex-rule
-                               *def-ctrex-rule-keys*
-                               keys nil))
-       ((when rest)
-        (er hard? 'def-ctrex-rule "Bad args: ~x0~%" rest))
-       (keys (if (assoc :ruletype keys)
-                 keys
-               (cons (cons :ruletype :property) keys)))
-       ((ctrex-rule-keys keys))
-       ((mv erp match) (ctrex-rule-translate-matches keys.match wrld))
-       ((when erp) (er hard? erp "~@0" match))
-       ((mv erp assign) (ctrex-rule-translate keys.assign wrld))
-       ((when erp) (er hard? erp "~@0" assign))
-       (user-assign-cond (std::getarg :assign-cond t keys))
-       ((mv erp assign-cond) (ctrex-rule-translate user-assign-cond wrld))
-       ((when erp) (er hard? erp "~@0" assign-cond))
-       ((mv erp hyp) (ctrex-rule-translate keys.hyp wrld))
-       ((when erp) (er hard? erp "~@0" hyp))
-       ((unless (pseudo-var-p keys.assigned-var))
-        (er hard? 'def-ctrex-rule "Bad ASSIGNED-VAR: must be a variable"))
-       ((unless (ctrex-ruletype-p keys.ruletype))
-        (er hard? 'def-ctrex-rule "Bad ruletype: must satisfy ~x0" 'ctrex-ruletype-p))
-       ((unless (pseudo-fnsym-p keys.equiv))
-        (er hard? 'def-ctrex-rule "Bad equiv: must be a function symbol"))
-       ((unless (acl2::doublet-listp keys.match-conds))
-        (er hard? 'def-ctrex-rule "Bad match-conds: must be a doublet-list"))
-       (rule (make-ctrex-rule :name name
-                              :match match
-                              :match-conds (acl2::doublets-to-alist keys.match-conds)
-                              :assign assign
-                              :assign-cond assign-cond
-                              :assigned-var keys.assigned-var
-                              :hyp hyp
-                              :equiv keys.equiv
-                              :ruletype keys.ruletype)))
-    `(table fgl-ctrex-rules nil (ctrex-rule-matches-to-ruletable
-                                 ',match ',rule
-                                 (make-fast-alist
-                                  (table-alist 'fgl-ctrex-rules world)))
-            :clear)))
-
-(defmacro def-ctrex-rule (name &rest args)
-  `(make-event
-    (def-ctrex-rule-fn ',name ',args (w state))))
-
-(defxdoc def-ctrex-rule
-  :parents (fgl-counterexamples)
-  :short "Define a rule that helps FGL derive term-level counterexamples from Boolean assignments."
-  :long "<p>This form defines an informal rule that FGL may use to help derive
-assignments for theorem variables from the Boolean assignments returned by SAT
-solvers.  During this process (see @(see fgl-counterexamples)), various FGL objects
-are assigned concrete values, and we use these values to derive further assignments.</p>
-
-<p>A counterexample rule tells how to derive a new assignment from some
-existing assignments.  An example:</p>
-
-@({
- (def-ctrex-rule intcar-intcdr-ctrex-elim
-   :match ((car (intcar x))
-           (cdr (intcdr x)))
-   :match-conds ((cdr-match cdr)
-                 (car-match car))
-   :assign (let ((cdr (if cdr-match cdr (intcdr x)))
-                 (car (if car-match car (intcar x))))
-             (intcons car cdr))
-   :assigned-var x
-   :ruletype :elim)
- })
-
-<p>The rule is stored under an arbitrary name, the first argument.  The rest of the arguments:</p>
-<ul>
-
-<li>@(':match') gives a list of bindings @('(var expr)').  When applying the
-rule, one or more of the @('expr') entries must be matched against an object
-with an existing assignment.  For example, to apply the above rule we must have
-an assignment of a value to some term matching @('(intcar x)'), @('(intcdr
-x)'), or both.  These assignments may come from three origins -- 1. the term
-may be one that is assigned a Boolean variable in the Boolean variable
-database (see @(see fgl-getting-bits-from-objects)); 2. the term may be contain
-no variables and thus be evaluated under the Boolean assignment; 3. the term
-may be given an assignment by applying other counterexample rules.</li>
-
-<li>@(':assigned-var') and @(':assign') respectively give the term to be
-assigned the value and the value.  In the above case, the subterm @('x') from
-that matched expressions is assigned the value @('(intcons car cdr)'), where
-@('car') and @('cdr') are the values assigned for the respective expressions,
-if they were assigned.  If not, @('x') may have been tentatively assigned a
-value by a previous rule and its @('intcar') or @('intcdr') may be
-preserved.</li>
-
-<li>@(':match-conds') provide variables that say whether a value was determined
-for the given variable.  In this case, @('cdr-match') will be true if
-@('(intcdr x)') (the binding of @('cdr') in the @(':match') field)) was
-successfully assigned a value.</li>
-
-<li>@(':ruletype') may be @(':elim'), @(':property'), or @(':fixup'), signifying how the rule
-is intended to be used.  An @(':elim') rule should be applied once when as many
-of the match expressions as possible have been assigned values; at that point,
-we apply the rule and compute the final value for the subexpression.  A
-@(':property') rule may be applied to several different matching expressions in
-order to compute a value for the same subexpression. A @(':fixup') rule is placed
-last in the order and is intended to fix up a previously assigned value.</li>
-
-<li>An additional keyword @(':assign-cond') must (if provided) be a term, which
-will be evaluated in the same way as @(':assign').  If it evaluates to a
-non-@('nil') value, then the value is assigned; if not, the rule does not
-provide an assignment.</li>
-
-</ul>
-
-<p>An example of a property rule:</p>
-
-@({
- (def-ctrex-rule assoc-equal-ctrex-rule
-   :match ((pair (assoc-equal k x)))
-   :assign (put-assoc-equal k (cdr pair) x)
-   :assigned-var x
-   :ruletype :property)
- })
-
-<p>This is a suitable property rule, but not an elim rule, because it may match
-many assignments to @('(assoc-equal k x)') for different @('k') in order to
-compute a value for @('x').</p>
-")
-
-
-(def-ctrex-rule intcar-intcdr-ctrex-elim
-  :match ((car (intcar x))
-          (cdr (intcdr x)))
-  :match-conds ((cdr-match cdr)
-                (car-match car)
-                (x-match x))
-  :assign (let ((cdr (if cdr-match cdr (intcdr x)))
-                (car (if car-match car (intcar x))))
-            (intcons car cdr))
-  :assigned-var x
-  :hyp (integerp x)
-  :ruletype :elim)
-
-(def-ctrex-rule car-cdr-ctrex-elim
-  :match ((car (car x))
-          (cdr (cdr x)))
-  :match-conds ((cdr-match cdr)
-                (car-match car))
-  :assign (let ((cdr (if cdr-match cdr (cdr x)))
-                (car (if car-match car (car x))))
-            (cons car cdr))
-  :assigned-var x
-  :hyp (consp x)
-  :ruletype :elim)
-
-(def-ctrex-rule assoc-equal-ctrex-rule
-  :match ((pair (assoc-equal k x)))
-  :assign (put-assoc-equal k (cdr pair) x)
-  :assigned-var x
-  :hyp (alistp x)
-  :ruletype :property)
-
-(defun redundant-hons-acons (key val x)
-  (if (hons-equal val (cdr (hons-get key x)))
-      x
-    (hons-acons key val x)))
-
-(def-ctrex-rule hons-get-ctrex-rule
-  :match ((val (cdr (hons-get k x))))
-  :assign (redundant-hons-acons k val x)
-  :assigned-var x
-  :ruletype :property)
-
-
-(defconst *fake-ctrex-rule-for-equivs*
-  (make-ctrex-rule :name 'fake-ctrex-rule-for-equivs
-                   :match '((val . (equiv x y)))
-                   :assign 'y
-                   :assign-cond 'val
-                   :assigned-var 'x
-                   :hyp 't
-                   :ruletype nil))
-
-(defconst *fake-ctrex-edge-for-candidate-value*
-  (make-cgraph-edge :rule (make-ctrex-rule :name 'fake-ctrex-rule-for-candidate-value
-                                           :assign 'x
-                                           :assigned-var 'x)))
-
-(include-book "unify-thms")
-
-(defthm fgl-unify-concrete-produces-concrete-objs
-  (b* (((mv ?flag new-alist) (fgl-unify-concrete pat x alist)))
-    (implies (and flag (not (hons-assoc-equal k alist)))
-             (equal (fgl-object-kind (cdr (hons-assoc-equal k new-alist)))
-                    :g-concrete)))
-  :hints(("Goal" :in-theory (e/d ((:i fgl-unify-concrete))
-                                 (logcar logcdr))
-          :induct (fgl-unify-concrete pat x alist))
-         (acl2::use-termhint
-          `(:expand ((fgl-unify-concrete ,(acl2::hq pat)
-                                          ,(acl2::hq x)
-                                          ,(acl2::hq alist)))))))
-
-(encapsulate nil
-  (make-event
-   (let ((wrld (w state))
-         (fn 'fgl-unify-term/gobj-fn))
-     `(flag::make-flag ,(flag::flag-fn-name fn wrld) ,fn
-                       :defthm-macro-name ,(flag::flag-defthm-macro fn wrld)
-                       :flag-mapping ,(acl2::alist-to-doublets (flag::flag-alist fn wrld))
-                       :local t
-                       :hints ((and stable-under-simplificationp
-                                    '(:expand ((pseudo-term-count pat)
-                                               (pseudo-term-list-count (pseudo-term-call->args pat))
-                                               (pseudo-term-list-count (cdr (pseudo-term-call->args pat))))))))))
-
-  (local (defthm fgl-object-count-of-mk-g-boolean
-           (equal (fgl-object-count (mk-g-boolean x)) 1)
-           :hints(("Goal" :in-theory (enable mk-g-boolean fgl-object-count)))))
-
-  (local (defthm fgl-object-count-of-mk-g-integer
-           (equal (fgl-object-count (mk-g-integer x)) 1)
-           :hints(("Goal" :in-theory (enable mk-g-integer fgl-object-count)))))
-
-  (local (defthm fgl-object-count-when-g-concrete
-           (implies (fgl-object-case x :g-concrete)
-                    (equal (fgl-object-count x) 1))
-           :hints(("Goal" :in-theory (enable fgl-object-count)))))
-
-  (local (in-theory (disable len acl2::member-of-cons member-equal)))
-
-  (local (defthm fgl-object-count-of-gobj-syntactic-boolean-fix
-           (<= (fgl-object-count (mv-nth 1 (gobj-syntactic-boolean-fix x)))
-               (fgl-object-count x))
-           :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-fix
-                                             fgl-object-count)))
-           :rule-classes :linear))
-
-  (local (defthm fgl-object-count-of-gobj-syntactic-boolean-negate
-           (<= (fgl-object-count (gobj-syntactic-boolean-negate x))
-               (fgl-object-count x))
-           :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-negate
-                                             fgl-object-count)))
-           :rule-classes :linear))
-
-
-
-  (std::defret-mutual-generate fgl-object-count-of-<fn>
-    :rules
-    ((t (:add-hyp (and flag
-                       (not (hons-assoc-equal k alist))
-                       (hons-assoc-equal k new-alist)))
-        (:add-keyword :hints ('(:expand ((:free (x-key) <call>)))
-                              (and stable-under-simplificationp
-                                   '(:expand ((:free (x y) (fgl-object-count (g-cons x y)))
-                                              (:free (x) (fgl-object-count (g-concrete x)))
-                                              (:free (x) (fgl-object-count (g-map '(:g-map) x))))))
-                              (and stable-under-simplificationp
-                                   '(:expand ((fgl-object-count x)))))))
-     ((:fnname fgl-unify-term/gobj)
-      (:add-concl
-       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-           (fgl-object-count x))))
-     ((:fnname fgl-unify-term/gobj-commutative-args)
-      (:add-concl
-       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-           (max (fgl-object-count x1)
-                (fgl-object-count x2)))))
-     ((or (:fnname fgl-unify-term/gobj-if)
-          (:fnname fgl-unify-term/gobj-if1))
-      (:add-concl
-       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-           (max (fgl-object-count x-test)
-                (max (fgl-object-count x-then)
-                     (fgl-object-count x-else))))))
-     ((:fnname fgl-unify-term/gobj-fn/args)
-      (:add-concl
-       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-           (fgl-objectlist-count x-args))))
-     ((:fnname fgl-unify-term/gobj-list)
-      (:add-concl
-       (< (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-          (fgl-objectlist-count x))))
-     ((:fnname fgl-unify-term/gobj-map)
-      (:add-concl
-       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-           (+ 3 (fgl-object-alist-count x)))))
-     ((:fnname fgl-unify-term/gobj-map-pair)
-      (:add-concl
-       (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-           (+ 4 (fgl-object-count val-obj))))))
-    :mutual-recursion fgl-unify-term/gobj)
-
-
-
-  (defthmd fgl-object-count-of-fgl-unify-term/gobj-casesplit
-    (b* (((mv flag new-alist)
-          (fgl-unify-term/gobj pat x alist)))
-      (implies (and flag
-                    (case-split (not (hons-assoc-equal k alist)))
-                    (hons-assoc-equal k new-alist))
-               (<= (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-                   (fgl-object-count x))))
-    :rule-classes :linear)
-
-  (local (defthm <=-max-forward-3
-           (implies (and (<= x (max y (max z w)))
-                         (natp y) (natp z) (natp w))
-                    (<= x (+ y z w)))
-           :rule-classes :forward-chaining))
-
-  (local (defthm <=-max-forward-2
-           (implies (and (<= x (max y z))
-                         (natp y) (natp z))
-                    (<= x (+ y z)))
-           :rule-classes :forward-chaining))
-
-  (local (in-theory (enable fgl-object-count-of-fgl-unify-term/gobj-casesplit)))
-  (local (in-theory (disable max)))
-  (defthm fgl-object-count-of-fgl-unify-term/gobj-strict
-    (b* (((mv flag new-alist)
-          (fgl-unify-term/gobj pat x alist)))
-      (implies (and flag (not (hons-assoc-equal k alist))
-                    (hons-assoc-equal k new-alist)
-                    (not (pseudo-term-case pat :var))
-                    (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map))))
-               (< (fgl-object-count (cdr (hons-assoc-equal k new-alist)))
-                  (fgl-object-count x))))
-    :hints (("goal" :expand ((fgl-unify-term/gobj pat x alist)
-                             (fgl-object-count x)))
-            (and stable-under-simplificationp
-                 '(:expand ((fgl-objectlist-count (g-apply->args x))
-                            (fgl-objectlist-count (cdr (g-apply->args x))))
-                   :use ((:instance fgl-object-count-of-fgl-unify-term/gobj-commutative-args
-                          (pat1 (car (pseudo-term-call->args pat)))
-                          (pat2 (cadr (pseudo-term-call->args pat)))
-                          (x1 (car (g-apply->args x)))
-                          (x2 (cadr (g-apply->args x))))
-                         (:instance fgl-object-count-of-fgl-unify-term/gobj-commutative-args
-                          (pat1 (car (pseudo-term-call->args pat)))
-                          (pat2 (cadr (pseudo-term-call->args pat)))
-                          (x2 (car (g-apply->args x)))
-                          (x1 (cadr (g-apply->args x))))
-                         (:instance fgl-object-count-of-fgl-unify-term/gobj-if
-                          (pat-test (car (pseudo-term-call->args pat)))
-                          (pat-then (cadr (pseudo-term-call->args pat)))
-                          (pat-else (caddr (pseudo-term-call->args pat)))
-                          (x-test (g-ite->test x))
-                          (x-then (g-ite->then x))
-                          (x-else (g-ite->else x)))
-                         (:instance fgl-object-count-of-fgl-unify-term/gobj-if
-                          (pat-test (car (pseudo-term-call->args pat)))
-                          (pat-then (cadr (pseudo-term-call->args pat)))
-                          (pat-else (caddr (pseudo-term-call->args pat)))
-                          (x-test (gobj-syntactic-boolean-negate
-                                   (mv-nth 1
-                                           (gobj-syntactic-boolean-fix (g-ite->test x)))))
-                          (x-then (g-ite->else x))
-                          (x-else (g-ite->then x)))
-                         (:instance fgl-object-count-of-fgl-unify-term/gobj-fn/args
-                          (pat-fn (pseudo-term-fncall->fn pat))
-                          (pat-args (pseudo-term-call->args pat))
-                          (x-fn (g-apply->fn x))
-                          (x-args (g-apply->args x)))
-                         ;; (:instance fgl-object-count-of-fgl-unify-term/gobj-map
-                         ;;  (pat pat)
-                         ;;  (x (g-map->alist x)))
-                         )
-                   :in-theory (disable fgl-object-count-of-fgl-unify-term/gobj-commutative-args
-                                       fgl-object-count-of-fgl-unify-term/gobj-if
-                                       fgl-object-count-of-fgl-unify-term/gobj-fn/args
-                                       ;; fgl-object-count-of-fgl-unify-term/gobj-map
-                                       ))))
-    :rule-classes :linear))
-
-
-(define my-alists-compatible ((rest-x alistp)
-                       (full-x alistp)
-                       (y alistp))
-  (if (atom rest-x)
-      t
-    (and (or (not (mbt (consp (car rest-x))))
-             (let* ((key (caar rest-x))
-                    (x-look (hons-assoc-equal key full-x))
-                    (y-look (hons-assoc-equal key y)))
-               (or (not y-look) (not x-look)
-                   (equal x-look y-look))))
-         (my-alists-compatible (cdr rest-x) full-x y)))
-  ///
-  (defthm my-alists-compatible-is-alists-compatible-on-keys
-    (equal (my-alists-compatible rest-x full-x y)
-           (acl2::alists-compatible-on-keys (alist-keys rest-x) full-x y))
-    :hints(("Goal" :in-theory (enable acl2::alists-compatible-on-keys alist-keys))))
-
-  (defthm my-alists-compatible-is-alists-compatible
-    (equal (my-alists-compatible x x y)
-           (acl2::alists-compatible x y))
-    :hints(("Goal" :in-theory (enable acl2::alists-compatible)))))
-
-(define my-join-alists ((x alistp) (y alistp))
+(define ctrex-rulelist-bfr-free ((x ctrex-rulelist-p))
   (if (atom x)
-      y
-    (if (mbt (consp (car x)))
-        (if (hons-assoc-equal (caar x) y)
-            (my-join-alists (cdr x) y)
-          (my-join-alists (cdr x) (cons (car x) y)))
-      (my-join-alists (cdr x) y)))
+      t
+    (and (not (fgl-object-bindings-bfrlist (ctrex-rule->unify-subst (car x))))
+         (ctrex-rulelist-bfr-free (cdr x))))
   ///
-  (defthm my-join-alists-is-fast-alist-fork
-    (equal (my-join-alists x y)
-           (fast-alist-fork x y))))
+  (defthm ctrex-rulelist-bfr-free-implies
+    (implies (ctrex-rulelist-bfr-free x)
+             (and (equal (fgl-object-bindings-bfrlist (ctrex-rule->unify-subst (car x))) nil)
+                  (ctrex-rulelist-bfr-free (cdr x))))))
 
-
-(define add-cgraph-edge-join1 ((x cgraph-edge-p)
-                               (y cgraph-edge-p))
-  :returns (mv ok (new-edge (implies ok (cgraph-edge-p new-edge))))
-  :prepwork ((defthm symbol-listp-when-pseudo-var-list-p
-               (implies (pseudo-var-list-p x)
-                        (symbol-listp x)))
-             (defthm pseudo-var-list-p-of-union
-               (implies (and (pseudo-var-list-p x)
-                             (pseudo-var-list-p y))
-                        (pseudo-var-list-p (union$ x y)))))
-  (b* (((cgraph-edge x))
-       ((cgraph-edge y))
-       ((unless (and (equal x.rule y.rule)
-                     (my-alists-compatible x.subst x.subst y.subst)))
-        (mv nil nil)))
-    (mv t
-        (change-cgraph-edge x :match-vars (acl2::union-eq x.match-vars y.match-vars)
-                            :subst (my-join-alists x.subst y.subst))))
-
+(define ctrex-ruletable-bfr-free ((x ctrex-ruletable-p))
+  (if (atom x)
+      t
+    (and (or (not (mbt (and (consp (car x))
+                            (pseudo-fnsym-p (caar x)))))
+             (ctrex-rulelist-bfr-free (cdar x)))
+         (ctrex-ruletable-bfr-free (cdr x))))
   ///
-  (local (defthm fgl-object-bindings-bfrlist-of-fast-alist-fork
-           (implies (and (not (member v (fgl-object-bindings-bfrlist x)))
-                         (not (member v (fgl-object-bindings-bfrlist y))))
-                    (not (member v (fgl-object-bindings-bfrlist (fast-alist-fork x y)))))
-           :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist fast-alist-fork)))))
+  (defthm ctrex-ruletable-bfr-free-implies
+    (implies (ctrex-ruletable-bfr-free x)
+             (and (implies (pseudo-fnsym-p (caar x))
+                           (ctrex-rulelist-bfr-free (cdar x)))
+                  (ctrex-ruletable-bfr-free (cdr x)))))
 
-  (defret cgraph-edge-bfrlist-of-<fn>
-    (implies (and (not (member v (cgraph-edge-bfrlist x)))
-                  (not (member v (cgraph-edge-bfrlist y))))
-             (not (member v (cgraph-edge-bfrlist new-edge))))))
+  (defthm ctrex-ruletable-bfr-free-implies-lookup
+    (implies (and (ctrex-ruletable-bfr-free x)
+                  (pseudo-fnsym-p fn))
+             (ctrex-rulelist-bfr-free (cdr (hons-assoc-equal fn x)))))
 
-(define add-cgraph-edge-join ((edge cgraph-edge-p)
-                              (edges cgraph-edgelist-p))
-  :returns (mv foundp
-               (new-edges cgraph-edgelist-p))
-  (b* (((when (atom edges)) (mv nil nil))
-       ((mv ok new-edge) (add-cgraph-edge-join1 edge (car edges)))
-       ((when ok)
-        (mv t (cons new-edge (cgraph-edgelist-fix (cdr edges)))))
-       ((mv found rest) (add-cgraph-edge-join edge (cdr edges)))
-       ((when found) (mv t (cons (cgraph-edge-fix (car edges)) rest))))
-    (mv nil nil))
-  ///
-  (defret cgraph-edgelist-bfrlist-of-<fn>
-    (implies (and (not (member v (cgraph-edge-bfrlist edge)))
-                  (not (member v (cgraph-edgelist-bfrlist edges))))
-             (not (member v (cgraph-edgelist-bfrlist new-edges))))
-    :hints(("Goal" :in-theory (e/d (cgraph-edgelist-bfrlist)
-                                   (cgraph-edge-bfrlist))))))
+  (local (in-theory (enable ctrex-ruletable-fix))))
 
 
 
 
-(define add-cgraph-edge ((matchvar pseudo-var-p)
-                         (subst fgl-object-bindings-p)
-                         (rule ctrex-rule-p)
-                         (cgraph cgraph-p))
+
+
+
+;; (defconst *cgraph-equiv-edge-template*
+;;   (make-cgraph-edge
+;;    :deps nil ;; filled in per instance -- key name should be EQUIV for the equivalence itself, X for the candidate equivalent object
+;;    :name 'fake-cgraph-formula-for-equiv
+;;    :dep-success-vars nil ;; not used for equivalences
+;;    :success 'equiv ;; different for equivalences
+;;    :value nil ;; different for equivalences
+;;    :priority ''0 ;; different for equivalences
+;;    :order *ctrex-order-first*
+;;    :ruletype :equiv))
+
+(defconst *cgraph-implicit-edge-template*
+  (make-cgraph-formula
+   :deps nil ;; filled in per instance
+   :name 'fake-cgraph-formula-for-implicit
+   :dep-success-vars nil ;; filled in per instance
+   :success nil ;; filled in per instance
+   :value nil ;; filled in per instance
+   :priority ''0 ;; lowest
+   :order (1- *ctrex-order-last*) ;; late but not as late as fixups
+   :ruletype :implicit))
+
+
+(local (defthm true-listp-when-cgraph-formulalist-p-rw
+         (implies (cgraph-formulalist-p x)
+                  (true-listp x))))
+
+(local (defthm cgraph-formulalist-p-of-cgraph-formula-insert
+         (implies (and (cgraph-formula-p x)
+                       (cgraph-formulalist-p lst))
+                  (cgraph-formulalist-p (cgraph-formula-insert x lst)))
+         :hints(("Goal" :in-theory (enable cgraph-formula-insert)))))
+
+(local (defthm cgraph-formulalist-bfrlist-of-cgraph-formula-insert
+         (implies (and (not (member v (cgraph-formula-bfrlist x)))
+                       (not (member v (cgraph-formulalist-bfrlist lst))))
+                  (not (member v (cgraph-formulalist-bfrlist (cgraph-formula-insert x lst)))))
+         :hints(("Goal" :in-theory (enable cgraph-formula-insert
+                                           cgraph-formulalist-bfrlist)))))
+
+(define add-cgraph-formula ((target fgl-object-p)
+                            (formula cgraph-formula-p)
+                            (cgraph cgraph-p))
   :returns (new-cgraph cgraph-p)
-  :prepwork ((local (defthm cgraph-edgelist-p-implies-true-listp
-                      (implies (cgraph-edgelist-p x)
-                               (true-listp x))))
-             (local (defthm cgraph-edgelist-bfrlist-of-append
-                      (equal (Cgraph-edgelist-bfrlist (append x y))
-                             (append (cgraph-edgelist-bfrlist x)
-                                     (cgraph-edgelist-bfrlist y)))
-                      :hints(("Goal" :in-theory (enable cgraph-edgelist-bfrlist))))))
-  (b* (((ctrex-rule rule))
-       (to (cdr (hons-assoc-equal rule.assigned-var (fgl-object-bindings-fix subst))))
-       (edge (make-cgraph-edge :match-vars (list matchvar) :rule rule :subst subst))
+  (b* ((target (fgl-object-fix target))
+       (formula (cgraph-formula-fix formula))
        (cgraph (cgraph-fix cgraph))
-       (edges (cdr (hons-get to cgraph)))
-       ((mv found new-edges) (add-cgraph-edge-join edge edges))
-       (new-edges (cond (found new-edges)
-                        ((eq rule.ruletype :fixup)
-                         ;; fixup rules are placed last
-                         (append edges (list edge)))
-                        (t (cons edge edges)))))
-    (hons-acons to new-edges cgraph))
+       (outedges (cdr (hons-get target cgraph)))
+       ((unless outedges)
+        (hons-acons target (cgraph-outedges (list formula) nil) cgraph))
+       ((cgraph-outedges outedges))
+       ((when (member-equal formula outedges.formulas)) cgraph))
+    (hons-acons target (cgraph-outedges (cgraph-formula-insert formula outedges.formulas) outedges.equivs) cgraph))
   ///
-  (defret cgraph-edgelist-bfrlist-of-<fn>
-    (implies (and (not (member v (fgl-object-bindings-bfrlist subst)))
+  (defret cgraph-bfrlist-of-<fn>
+    (implies (and (not (member v (cgraph-formula-bfrlist formula)))
                   (not (member v (cgraph-bfrlist cgraph))))
              (not (member v (cgraph-bfrlist new-cgraph))))
     :hints(("Goal" :in-theory (e/d (cgraph-bfrlist
-                                    cgraph-edgelist-bfrlist))))))
+                                    cgraph-formulalist-bfrlist))))))
 
-(local (defthm equal-const-of-plus-const
-         (implies (and (syntaxp (and (quotep a) (quotep c)))
-                       (acl2-numberp a) (acl2-numberp c))
-                  (equal (equal (+ a b) c)
-                         (equal (fix b) (- c a))))))
-
-
-
-
-
-
-
-
-
-
-
-(local (defthm len-equal-0
-         (equal (equal (len x) 0)
-                (not (consp x)))))
-
-(local (defthm len-of-cons
-         (equal (len (cons a b))
-                (+ 1 (len b)))))
-
-(local (defun len-is (x n)
-         (if (zp n)
-             (and (eql n 0) (atom x))
-           (and (consp x)
-                (len-is (cdr x) (1- n))))))
-
-(local (defthm open-len-is
-         (implies (syntaxp (quotep n))
-                  (equal (len-is x n)
-                         (if (zp n)
-                             (and (eql n 0) (atom x))
-                           (and (consp x)
-                                (len-is (cdr x) (1- n))))))))
-
-
-(local (defthm equal-len-hyp
-         (implies (syntaxp (and (or (acl2::rewriting-negative-literal-fn `(equal (len ,x) ,n) mfc state)
-                                    (acl2::rewriting-negative-literal-fn `(equal ,n (len ,x)) mfc state))
-                                (quotep n)))
-                  (equal (equal (len x) n)
-                         (len-is x n)))))
-
-(defines fgl-object-add-to-cgraph
-  (define fgl-object-add-to-cgraph ((x fgl-object-p)
-                                   (cgraph cgraph-p)
-                                   (memo cgraph-alist-p)
-                                   (ruletable ctrex-ruletable-p)
-                                   (bfrstate bfrstate-p)
-                                   (wrld plist-worldp))
-    :well-founded-relation acl2::nat-list-<
-    :measure (list (fgl-object-count x) 10 0 0)
-    :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
-    :guard (bfr-listp (fgl-object-bfrlist x))
-    :verify-guards nil
-    (b* ((fnsym (fgl-object-case x
-                  (:g-ite 'if)
-                  (:g-cons 'cons)
-                  (:g-apply x.fn)
-                  (otherwise nil)))
-         ((unless fnsym)
-          (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((when (hons-get (fgl-object-fix x) (cgraph-alist-fix memo)))
-          (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         (memo (hons-acons (fgl-object-fix x) t (cgraph-alist-fix memo)))
-         ((when (and (fgl-object-case x :g-apply)
-                     (fgetprop fnsym 'acl2::coarsenings nil wrld)))
-          ;; Equivalence relation.  Add edges between two args
-          (b* (((g-apply x))
-               ((unless (eql (len x.args) 2))
-                (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-               ((list arg1 arg2) x.args)
-               (rule1 (change-ctrex-rule *fake-ctrex-rule-for-equivs*
-                                         :match `((val . ,(pseudo-term-call x.fn '(x y))))
-                                         :equiv x.fn))
-               (rule2 (change-ctrex-rule *fake-ctrex-rule-for-equivs*
-                                         :match `((val . ,(pseudo-term-call x.fn '(y x))))
-                                         :equiv x.fn))
-               (cgraph (if (fgl-object-variable-free-p arg2)
-                           cgraph
-                         (add-cgraph-edge 'val `((x . ,arg2) (y . ,arg1)) rule2 cgraph)))
-               (cgraph (if (fgl-object-variable-free-p arg1)
-                           cgraph
-                         (add-cgraph-edge 'val `((x . ,arg1) (y . ,arg2)) rule1 cgraph)))
-               ((mv cgraph memo) (fgl-object-add-to-cgraph arg1 cgraph memo ruletable bfrstate wrld)))
-            (fgl-object-add-to-cgraph arg2 cgraph memo ruletable bfrstate wrld)))
-         (rules (cdr (hons-get fnsym (ctrex-ruletable-fix ruletable)))))
-      (fgl-object-add-to-cgraph-rules x rules cgraph memo ruletable bfrstate wrld)))
-
-  (define fgl-object-add-to-cgraph-rules ((x fgl-object-p)
-                                         (rules ctrex-rulelist-p)
-                                         (cgraph cgraph-p)
-                                         (memo cgraph-alist-p)
-                                         (ruletable ctrex-ruletable-p)
-                                         (bfrstate bfrstate-p)
-                                         (wrld plist-worldp))
-    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))
-                (bfr-listp (fgl-object-bfrlist x)))
-    :measure (list (fgl-object-count x) 7 (len rules) 0)
-    :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
-    (b* (((when (atom rules)) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((mv cgraph memo) (fgl-object-add-to-cgraph-rule x (car rules) cgraph memo ruletable bfrstate wrld)))
-      (fgl-object-add-to-cgraph-rules x (cdr rules) cgraph memo ruletable bfrstate wrld)))
-
-  (define fgl-object-add-to-cgraph-rule ((x fgl-object-p)
-                                        (rule ctrex-rule-p)
-                                        (cgraph cgraph-p)
-                                        (memo cgraph-alist-p)
-                                        (ruletable ctrex-ruletable-p)
-                                        (bfrstate bfrstate-p)
-                                        (wrld plist-worldp))
-    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))
-                (bfr-listp (fgl-object-bfrlist x)))
-    :measure (list (fgl-object-count x) 7 0 0)
-    :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
-    (b* (((ctrex-rule rule)))
-      (fgl-object-add-to-cgraph-matches x rule.match rule cgraph memo ruletable bfrstate wrld)))
-
-  (define fgl-object-add-to-cgraph-matches ((x fgl-object-p)
-                                           (matches pseudo-term-subst-p)
-                                           (rule ctrex-rule-p)
-                                           (cgraph cgraph-p)
-                                           (memo cgraph-alist-p)
-                                           (ruletable ctrex-ruletable-p)
-                                           (bfrstate bfrstate-p)
-                                           (wrld plist-worldp))
-    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))
-                (bfr-listp (fgl-object-bfrlist x)))
-    :measure (list (fgl-object-count x) 5 (len matches) 0)
-    :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
-    (b* (((when (atom matches)) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((unless (mbt (and (consp (car matches))
-                            (pseudo-var-p (caar matches)))))
-          (fgl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable bfrstate wrld))
-         ((mv cgraph memo) (fgl-object-add-to-cgraph-match x (caar matches) (cdar matches) rule cgraph memo ruletable bfrstate wrld)))
-      (fgl-object-add-to-cgraph-matches x (cdr matches) rule cgraph memo ruletable bfrstate wrld)))
-
-  (define fgl-object-add-to-cgraph-match ((x fgl-object-p)
-                                         (matchvar pseudo-var-p)
-                                         (match pseudo-termp)
-                                         (rule ctrex-rule-p)
-                                         (cgraph cgraph-p)
-                                         (memo cgraph-alist-p)
-                                         (ruletable ctrex-ruletable-p)
-                                         (bfrstate bfrstate-p)
-                                         (wrld plist-worldp))
-    :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))
-                (bfr-listp (fgl-object-bfrlist x)))
-    :measure (list (fgl-object-count x) 5 0 0)
-    :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
-    (b* (((when (pseudo-term-case match :var))
-          (cw "Bad ctrex rule? Match is a variable: ~x0" (ctrex-rule->name rule))
-          (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((unless (mbt (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))))
-          (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((mv ok subst) (fgl-unify-term/gobj match x nil))
-         ((unless ok) (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         ((ctrex-rule rule))
-         (to-look (hons-assoc-equal rule.assigned-var subst))
-         ((unless to-look)
-          (cw "Bad ctrex rule? ASSIGNED-VAR wasn't bound by match: ~x0" rule.name)
-          (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-         (to (cdr to-look))
-         (cgraph (add-cgraph-edge matchvar subst rule cgraph)))
-      (fgl-object-add-to-cgraph to cgraph memo ruletable bfrstate wrld)))
-  ///
-  (verify-guards fgl-object-add-to-cgraph
-    :hints (("goal" :do-not-induct t
-             :in-theory (enable bfr-listp-when-not-member-witness))))
-  (local (in-theory (disable fgl-object-add-to-cgraph
-                             fgl-object-add-to-cgraph-rules
-                             fgl-object-add-to-cgraph-rule
-                             fgl-object-add-to-cgraph-matches
-                             fgl-object-add-to-cgraph-match)))
-
-  (local (defthm pseudo-term-subst-fix-when-bad-car
-           (implies (not (and (consp (car x))
-                              (pseudo-var-p (caar x))))
-                    (equal (pseudo-term-subst-fix x)
-                           (pseudo-term-subst-fix (cdr x))))
-           :hints(("Goal" :in-theory (enable pseudo-term-subst-fix)))))
-
-  (local (in-theory (enable bfr-listp-when-not-member-witness)))
-
-  (defret-mutual cgraph-bfrlist-of-fgl-object-add-to-cgraph
-    (defret cgraph-bfrlist-of-<fn>
-      (implies (and (bfr-listp (fgl-object-bfrlist x))
-                    (bfr-listp (cgraph-bfrlist cgraph)))
-               (bfr-listp (cgraph-bfrlist new-cgraph)))
-      :hints ('(:expand (<call>)))
-      :fn fgl-object-add-to-cgraph)
-    (defret cgraph-bfrlist-of-<fn>
-      (implies (and (bfr-listp (fgl-object-bfrlist x))
-                    (bfr-listp (cgraph-bfrlist cgraph)))
-               (bfr-listp (cgraph-bfrlist new-cgraph)))
-      :hints ('(:expand (<call>)))
-      :fn fgl-object-add-to-cgraph-rules)
-    (defret cgraph-bfrlist-of-<fn>
-      (implies (and (bfr-listp (fgl-object-bfrlist x))
-                    (bfr-listp (cgraph-bfrlist cgraph)))
-               (bfr-listp (cgraph-bfrlist new-cgraph)))
-      :hints ('(:expand (<call>)))
-      :fn fgl-object-add-to-cgraph-rule)
-    (defret cgraph-bfrlist-of-<fn>
-      (implies (and (bfr-listp (fgl-object-bfrlist x))
-                    (bfr-listp (cgraph-bfrlist cgraph)))
-               (bfr-listp (cgraph-bfrlist new-cgraph)))
-      :hints ('(:expand (<call>)))
-      :fn fgl-object-add-to-cgraph-matches)
-    (defret cgraph-bfrlist-of-<fn>
-      (implies (and (bfr-listp (fgl-object-bfrlist x))
-                    (bfr-listp (cgraph-bfrlist cgraph)))
-               (bfr-listp (cgraph-bfrlist new-cgraph)))
-      :hints ('(:expand (<call>)))
-      :fn fgl-object-add-to-cgraph-match))
-
-  (fty::deffixequiv-mutual fgl-object-add-to-cgraph))
-
-(define bvar-db-add-to-cgraph-aux ((n natp)
-                                   (bvar-db)
-                                   (cgraph cgraph-p)
-                                   (memo cgraph-alist-p)
-                                   (ruletable ctrex-ruletable-p)
-                                   (bfrstate bfrstate-p)
-                                   (wrld plist-worldp))
-  :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
-  :guard (and (<= n (next-bvar bvar-db))
-              (<= (base-bvar bvar-db) n)
-              (bfr-listp (bvar-db-bfrlist bvar-db)))
-  :measure (nfix (- (next-bvar bvar-db) (nfix n)))
-  (b* (((when (mbe :logic (zp (- (next-bvar bvar-db) (nfix n)))
-                   :exec (eql n (next-bvar bvar-db))))
-        (mv (cgraph-fix cgraph) (cgraph-alist-fix memo)))
-       ((mv cgraph memo) (fgl-object-add-to-cgraph (get-bvar->term n bvar-db)
-                                                  cgraph memo ruletable bfrstate wrld)))
-    (bvar-db-add-to-cgraph-aux (1+ (lnfix n))
-                               bvar-db cgraph memo ruletable bfrstate wrld))
+(define add-cgraph-equiv1 ((target fgl-object-p)
+                           (equiv fgl-object-p)
+                           (other fgl-object-p)
+                           (cgraph cgraph-p))
+  :returns (new-cgraph cgraph-p)
+  (b* ((cgraph (cgraph-fix cgraph))
+       ((when (fgl-object-variable-free-p target))
+        cgraph)
+       (target (fgl-object-fix target))
+       (node (cgraph-equivnode equiv other))
+       (outedges (cdr (hons-get target (cgraph-fix cgraph))))
+       (new-outedges (if outedges
+                         (change-cgraph-outedges
+                          outedges
+                          :equivs (cons node (cgraph-outedges->equivs outedges)))
+                       (cgraph-outedges nil (list node)))))
+    (hons-acons target new-outedges cgraph))
   ///
   (defret cgraph-bfrlist-of-<fn>
-    (implies (and (bfr-listp (bvar-db-bfrlist bvar-db))
-                  (bfr-listp (cgraph-bfrlist cgraph))
-                  (<= (base-bvar$c bvar-db) (nfix n)))
-             (bfr-listp (cgraph-bfrlist new-cgraph)))))
+    (implies (and (not (member v (fgl-object-bfrlist equiv)))
+                  (not (member v (fgl-object-bfrlist other)))
+                  (not (member v (cgraph-bfrlist cgraph))))
+             (not (member v (cgraph-bfrlist new-cgraph))))))
 
-(define bvar-db-create-cgraph (bvar-db
-                               (ruletable ctrex-ruletable-p)
-                               (bfrstate bfrstate-p)
-                               (wrld plist-worldp))
-  :guard (bfr-listp (bvar-db-bfrlist bvar-db))
-  :returns (cgraph cgraph-p)
-  (b* (((mv cgraph memo)
-        (bvar-db-add-to-cgraph-aux (base-bvar bvar-db) bvar-db nil nil ruletable bfrstate wrld)))
-    (fast-alist-free memo)
-    (fast-alist-clean cgraph))
+(define add-cgraph-equiv ((equiv fgl-object-p)
+                          (a fgl-object-p)
+                          (b fgl-object-p)
+                          (cgraph cgraph-p))
+  :returns (new-cgraph cgraph-p)
+  (add-cgraph-equiv1 a equiv b (add-cgraph-equiv1 b equiv a cgraph))
   ///
-  (local (defthm cgraph-bfrlist-of-cdr-last
-           (equal (cgraph-bfrlist (cdr (last x))) nil)
-           :hints(("Goal" :in-theory (enable last cgraph-bfrlist)))))
-
-  (local (in-theory (enable bfr-listp-when-not-member-witness)))
-
   (defret cgraph-bfrlist-of-<fn>
-    (implies (bfr-listp (bvar-db-bfrlist bvar-db))
-             (bfr-listp (cgraph-bfrlist cgraph)))))
+    (implies (and (not (member v (fgl-object-bfrlist equiv)))
+                  (not (member v (fgl-object-bfrlist a)))
+                  (not (member v (fgl-object-bfrlist b)))
+                  (not (member v (cgraph-bfrlist cgraph))))
+             (not (member v (cgraph-bfrlist new-cgraph))))))
 
-(define bvar-db-update-cgraph ((cgraph cgraph-p)
-                               (memo cgraph-alist-p)
-                               (cgraph-index natp)
-                               bvar-db
-                               (ruletable ctrex-ruletable-p)
-                               (bfrstate bfrstate-p)
-                               (wrld plist-worldp))
-  :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-alist-p))
-  :guard (bfr-listp (bvar-db-bfrlist bvar-db))
-  ;; BOZO this never shrinks the cgraph -- probably not necessary
-  (b* (((when (<= (next-bvar bvar-db) (lnfix cgraph-index)))
-        (mv (cgraph-fix cgraph) (cgraph-alist-fix memo))))
-    (bvar-db-add-to-cgraph-aux (max (lnfix cgraph-index)
-                                    (base-bvar bvar-db))
-                               bvar-db cgraph memo ruletable bfrstate wrld))
+
+(local (defthm character-listp-of-explode-nonneg
+         (implies (character-listp acc)
+                  (character-listp (explode-nonnegative-integer n 10 acc)))))
+
+
+(local
+ (encapsulate nil
+   (local (in-theory (disable floor mod)))
+   (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+   (defthm has-digit-p-of-explode-nonneg
+     (implies (or (intersectp-equal '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) acc)
+                  (not acc))
+              (intersectp-equal '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                (explode-nonnegative-integer n 10 acc))))
+
+   (defthmd pseudo-var-p-by-has-digit
+     (implies (and (symbolp x)
+                   (intersectp-equal '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) (coerce (symbol-name x) 'list)))
+              (pseudo-var-p x)))))
+
+
+(define make-argvars ((stem stringp) (n natp) (acc pseudo-var-list-p))
+  :returns (vars pseudo-var-list-p)
+  :prepwork ((local (in-theory (e/d (pseudo-var-p-by-has-digit)
+                                    (explode-nonnegative-integer)))))
+  (if (zp n)
+      (pseudo-var-list-fix acc)
+    (make-argvars stem (1- n) (cons (intern-in-package-of-symbol
+                                     (concatenate 'string stem (coerce (explode-atom (1- n) 10) 'string)) 'fgl-pkg)
+                                    acc)))
   ///
+  (defret len-of-<fn>
+    (equal (len vars) (+ (nfix n) (len acc)))))
 
-  (defret cgraph-bfrlist-of-<fn>
-    (implies (and (bfr-listp (bvar-db-bfrlist bvar-db))
-                  (bfr-listp (cgraph-bfrlist cgraph)))
-             (bfr-listp (cgraph-bfrlist new-cgraph)))))
 
 
 
-
-
-;; (define cgraph-edges-invert ((from fgl-object-p)
-;;                              (edges cgraph-edgelist-p)
-;;                              (acc cgraph-p))
-;;   :returns (new-acc cgraph-p)
-;;   (b* ((acc (cgraph-fix acc))
-;;        ((when (atom edges)) acc)
-;;        ((cgraph-edge edge1) (car edges))
-;;        (new-edge (change-cgraph-edge edge1 :trigger from))
-;;        (acc (hons-acons edge1.trigger (cons new-edge (cdr (hons-get edge1.trigger acc))) acc)))
-;;     (cgraph-edges-invert from (cdr edges) acc)))
-
-;; (define cgraph-invert ((cgraph cgraph-p)
-;;                        (acc cgraph-p))
-;;   :returns (new-acc cgraph-p)
-;;   (if (atom cgraph)
-;;       (cgraph-fix acc)
-;;     (if (mbt (and (consp (car cgraph))
-;;                   (fgl-object-p (caar cgraph))))
-;;         (b* ((acc (cgraph-edges-invert (caar cgraph) (cdar cgraph) acc)))
-;;           (cgraph-invert (cdr cgraph) acc))
-;;       (cgraph-invert (cdr cgraph) acc))))
-
-;; (fty::defmap cgraph-indexmap :key-type fgl-object :val-type natp :true-listp t)
-
-
-;; (fty::deflist fgl-objectlistlist :elt-type fgl-objectlist :true-listp t)
-
-
-;; (define cgraph-stack-pop-n ((n natp)
-;;                             (stk cgraph-alist-p))
-;;   :guard (and (no-duplicatesp-equal (alist-keys stk))
-;;               (<= n (len stk)))
-;;   :guard-hints (("goal" :in-theory (enable cgraph-alist-p)))
-;;   :measure (len stk)
-;;   :returns (mv (popped fgl-objectlist-p)
-;;                (new-stk cgraph-alist-p))
-;;   (if (zp n)
-;;       (mv nil (cgraph-alist-fix stk))
-;;     (if (mbt (and (consp stk)
-;;                   (consp (car stk))
-;;                   (fgl-object-p (caar stk))))
-;;         (b* ((obj (caar stk))
-;;              (stk (acl2::fast-alist-pop stk))
-;;              ((mv rest stk) (cgraph-stack-pop-n (1- n) stk)))
-;;           (mv (cons obj rest) stk))
-;;       (if (consp stk)
-;;           (cgraph-stack-pop-n n (cdr stk))
-;;         (mv nil nil))))
-;;   ///
-;;   (defret len-of-cgraph-stack-pop-n-new-stk
-;;     (implies (<= (nfix n) (len (cgraph-alist-fix stk)))
-;;              (equal (len new-stk)
-;;                     (- (len (cgraph-alist-fix stk)) (nfix n))))
-;;     :hints(("Goal" :in-theory (enable cgraph-alist-fix))))
-
-;;   (defret len-of-cgraph-stack-pop-n-popped
-;;     (implies (<= (nfix n) (len (cgraph-alist-fix stk)))
-;;              (equal (len popped) (nfix n)))
-;;     :hints(("Goal" :in-theory (enable cgraph-alist-fix))))
-
-;;   (defret hons-assoc-equal-of-<fn>
-;;     (implies (not (hons-assoc-equal k (cgraph-alist-fix stk)))
-;;              (not (hons-assoc-equal k new-stk))))
-
-;;   (defret no-dups-of-<fn>
-;;     (implies (no-duplicatesp (alist-keys (cgraph-alist-fix stk)))
-;;              (no-duplicatesp (alist-keys new-stk)))
-;;     :hints(("Goal" :in-theory (enable alist-keys cgraph-alist-fix)))))
-
-;; (define cgraph-edgelist->triggers ((x cgraph-edgelist-p))
-;;   :returns (triggers fgl-objectlist-p)
-;;   (if (Atom x)
-;;       nil
-;;     (cons (cgraph-edge->trigger (car x))
-;;           (cgraph-edgelist->triggers (cdr x)))))
-
-;; (local
-;;  (defprojection cgraph-edgelist->triggers ((x cgraph-edgelist-p))
-;;    :returns (triggers fgl-objectlist-p)
-;;    (cgraph-edge->trigger x)
-;;    :already-definedp t))
-
-
-
-;; (local (defthm len-set-difference-of-cons
-;;          (<= (len (set-difference$ a (cons x b)))
-;;              (len (set-difference$ a b)))
-;;          :hints(("Goal" :in-theory (enable set-difference$)))
-;;          :rule-classes :linear))
-
-;; (local (defthm len-set-difference-of-cons-when-not-member
-;;          (implies (and (member x a)
-;;                        (not (member x b)))
-;;                   (< (len (set-difference$ a (cons x b)))
-;;                      (len (set-difference$ a b))))
-;;          :hints(("Goal" :in-theory (enable set-difference$)))
-;;          :rule-classes :linear))
-
-;; (local (in-theory (disable min len acl2::consp-when-member-equal-of-atom-listp
-;;                            cgraph-indexmap-p-when-subsetp-equal)))
-
-;; (defines cgraph-tarjan-sccs
-;;   (define cgraph-tarjan-sccs ((x fgl-object-p)
-;;                               (cgraph cgraph-p)
-;;                               (preorder cgraph-indexmap-p)
-;;                               (preorder-next)
-;;                               (stk cgraph-alist-p)
-;;                               (stack-size)
-;;                               (sccs-acc fgl-objectlistlist-p))
-;;     :guard (and (no-duplicatesp-equal (alist-keys stk))
-;;                 (equal stack-size (len stk))
-;;                 (equal preorder-next (len preorder))
-;;                 (subsetp-equal (alist-keys stk) (alist-keys preorder)))
-;;     :returns (mv (lowlink natp :rule-classes :type-prescription)
-;;                  (new-preorder cgraph-indexmap-p)
-;;                  (new-preorder-next (equal new-preorder-next (len new-preorder)))
-;;                  (new-stk cgraph-alist-p)
-;;                  (new-stack-size
-;;                   ;; need to prove this later
-;;                   ;; (equal new-stack-size (len new-stk))
-;;                   )
-;;                  (sccs fgl-objectlistlist-p))
-;;     :well-founded-relation acl2::nat-list-<
-;;     :measure (list (let ((rem (len (set-difference$ (alist-keys (cgraph-fix cgraph))
-;;                                                     (alist-keys (cgraph-indexmap-fix preorder))))))
-;;                      (+ rem ;; (if (hons-assoc-equal (fgl-object-fix x) (cgraph-fix cgraph)) 0 1)
-;;                         ))
-;;                    0 1)
-;;     :verify-guards nil
-;;     (b* ((preorder (cgraph-indexmap-fix preorder))
-;;          (stk (cgraph-alist-fix stk))
-;;          (preorder-next (mbe :logic (len preorder) :exec preorder-next))
-;;          (stack-size (mbe :logic (len stk) :exec stack-size))
-;;          (sccs-acc (fgl-objectlistlist-fix sccs-acc))
-;;          (x (fgl-object-fix x))
-;;          (index (cdr (hons-get x preorder)))
-;;          ((when index)
-;;           (mv (if (hons-get x stk)
-;;                   index
-;;                 preorder-next)
-;;               preorder
-;;               preorder-next
-;;               stk
-;;               stack-size
-;;               sccs-acc))
-;;          (index preorder-next)
-;;          (preorder (hons-acons x preorder-next preorder))
-;;          (preorder-next (1+ preorder-next))
-;;          (stk (hons-acons x nil stk))
-;;          (prev-stack-size stack-size)
-;;          (stack-size (1+ stack-size))
-;;          (edges (cdr (hons-get x (cgraph-fix cgraph))))
-;;          ((mv lowlink preorder preorder-next stk stack-size sccs-acc)
-;;           (cgraph-tarjan-sccs-edges edges cgraph preorder preorder-next stk stack-size sccs-acc))
-;;          (lowlink (min lowlink index))
-;;          ((unless (eql lowlink index))
-;;           (mv lowlink preorder preorder-next stk stack-size sccs-acc))
-;;          ((mv new-scc stk) (cgraph-stack-pop-n (- stack-size prev-stack-size) stk)))
-;;       (mv index preorder preorder-next stk prev-stack-size (cons new-scc sccs-acc))))
-
-;;   (define cgraph-tarjan-sccs-edges ((x cgraph-edgelist-p)
-;;                                     (cgraph cgraph-p)
-;;                                     (preorder cgraph-indexmap-p)
-;;                                     (preorder-next)
-;;                                     (stk cgraph-alist-p)
-;;                                     (stack-size)
-;;                                     (sccs-acc fgl-objectlistlist-p))
-;;     :guard (and (no-duplicatesp-equal (alist-keys stk))
-;;                 (equal stack-size (len stk))
-;;                 (equal preorder-next (len preorder))
-;;                 (subsetp-equal (alist-keys stk) (alist-keys preorder)))
-;;     :returns (mv (lowlink natp :rule-classes :type-prescription)
-;;                  (new-preorder cgraph-indexmap-p)
-;;                  (new-preorder-next (equal new-preorder-next (len new-preorder)))
-;;                  (new-stk cgraph-alist-p)
-;;                  (new-stack-size
-;;                   ;; need to prove this later
-;;                   ;; (equal new-stack-size (len new-stk))
-;;                   )
-;;                  (sccs fgl-objectlistlist-p))
-;;     :measure (list (let ((rem (len (set-difference$ (alist-keys (cgraph-fix cgraph))
-;;                                                     (alist-keys (cgraph-indexmap-fix preorder))))))
-;;                      (+ rem ;; (if (subsetp (cgraph-edgelist->triggers x)
-;;                             ;;              (alist-keys (cgraph-fix cgraph)))
-;;                             ;;     0 1)
-;;                         ))
-;;                    (len x) 0)
-;;     (b* ((preorder (cgraph-indexmap-fix preorder))
-;;          (stk (cgraph-alist-fix stk))
-;;          (preorder-next (mbe :logic (len preorder) :exec preorder-next))
-;;          (stack-size (mbe :logic (len stk) :exec stack-size))
-;;          (sccs-acc (fgl-objectlistlist-fix sccs-acc))
-
-;;          ((when (atom x))
-;;           (mv preorder-next preorder preorder-next stk stack-size sccs-acc))
-
-;;          ((mv lowlink1 preorder preorder-next stk stack-size sccs-acc)
-;;           (b* (((mv lowlink1 new-preorder new-preorder-next new-stk new-stack-size new-sccs-acc)
-;;                 (cgraph-tarjan-sccs (cgraph-edge->trigger (car x))
-;;                                     cgraph preorder preorder-next stk stack-size sccs-acc))
-;;                ((unless (mbt (<= (len (set-difference$ (alist-keys (cgraph-fix cgraph))
-;;                                                        (alist-keys (cgraph-indexmap-fix new-preorder))))
-;;                                  (len (set-difference$ (alist-keys (cgraph-fix cgraph))
-;;                                                        (alist-keys (cgraph-indexmap-fix preorder)))))))
-;;                 (mv preorder-next preorder preorder-next stk stack-size sccs-acc)))
-;;             (mv lowlink1 new-preorder new-preorder-next new-stk new-stack-size new-sccs-acc)))
-
-;;          ((mv lowlink2 preorder preorder-next stk stack-size sccs-acc)
-;;           (cgraph-tarjan-sccs-edges (cdr x) cgraph preorder preorder-next stk stack-size sccs-acc)))
-;;       (mv (min lowlink1 lowlink2) preorder preorder-next stk stack-size sccs-acc)))
-;;   ///
-;;   (local (in-theory (disable cgraph-tarjan-sccs-edges
-;;                              cgraph-tarjan-sccs)))
-
-;;   (defret-mutual cgraph-tarjan-sccs-stack-size-correct
-;;     (defret <fn>-stack-size-correct
-;;       (and (<= (len (cgraph-alist-fix stk)) (len new-stk))
-;;            (equal new-stack-size (len new-stk)))
-;;       :hints ('(:expand (<call>)))
-;;       :fn cgraph-tarjan-sccs)
-;;     (defret <fn>-stack-size-correct
-;;       (and (<= (len (cgraph-alist-fix stk)) (len new-stk))
-;;            (equal new-stack-size (len new-stk)))
-;;       :hints ('(:expand (<call>)))
-;;       :fn cgraph-tarjan-sccs-edges))
-
-;;   (defret <fn>-stack-size-decr-linear
-;;     (<= (len (cgraph-alist-fix stk)) (len new-stk))
-;;     :rule-classes :linear
-;;     :fn cgraph-tarjan-sccs)
-;;   (defret <fn>-stack-size-decr-linear
-;;     (<= (len (cgraph-alist-fix stk)) (len new-stk))
-;;     :rule-classes :linear
-;;     :fn cgraph-tarjan-sccs-edges)
-
-;;   (defret-mutual cgraph-tarjan-sccs-preorder-preserved
-;;     (defret <fn>-preorder-preserved
-;;       (implies (hons-assoc-equal k (cgraph-indexmap-fix preorder))
-;;                (hons-assoc-equal k preorder))
-;;       :hints ('(:expand (<call>)))
-;;       :fn cgraph-tarjan-sccs)
-;;     (defret <fn>-preorder-preserved
-;;       (implies (hons-assoc-equal k (cgraph-indexmap-fix preorder))
-;;                (hons-assoc-equal k preorder))
-;;       :hints ('(:expand (<call>)))
-;;       :fn cgraph-tarjan-sccs-edges))
-
-;;   (defret-mutual cgraph-tarjan-sccs-stack-subsetp
-;;     (defret <fn>-stack-subsetp-lemma
-;;       (implies (and (or (not (hons-assoc-equal k (cgraph-alist-fix stk)))
-;;                         (hons-assoc-equal k (cgraph-indexmap-fix preorder)))
-;;                     (hons-assoc-equal k new-stk))
-;;                (hons-assoc-equal k new-preorder))
-;;       :hints ('(:expand (<call>)))
-;;       :fn cgraph-tarjan-sccs)
-;;     (defret <fn>-stack-subsetp-lemma
-;;       (implies (and (or (not (hons-assoc-equal k (cgraph-alist-fix stk)))
-;;                         (hons-assoc-equal k (cgraph-indexmap-fix preorder)))
-;;                     (hons-assoc-equal k new-stk))
-;;                (hons-assoc-equal k new-preorder))
-;;       :hints ('(:expand (<call>)))
-;;       :fn cgraph-tarjan-sccs-edges))
-
-
-;;   (local (defthm subsetp-alist-keys-implies-hons-assoc-equal
-;;            (implies (and (subsetp (alist-keys a) (alist-keys b))
-;;                          (hons-assoc-equal k a))
-;;                     (hons-assoc-equal k b))
-;;            :hints (("goal" :use ((:instance acl2::subsetp-member
-;;                                   (a k) (x (alist-keys a)) (y (alist-keys b))))
-;;                     :in-theory (disable acl2::subsetp-member)))))
-
-;;   (defret <fn>-stack-subsetp
-;;     (implies (subsetp (alist-keys (cgraph-alist-fix stk))
-;;                       (alist-keys (cgraph-indexmap-fix preorder)))
-;;              (subsetp (alist-keys new-stk)
-;;                       (alist-keys new-preorder)))
-;;     :hints(("Goal" :in-theory (e/d (ACL2::SUBSETP-WITNESS-RW)
-;;                                    (acl2::subsetp-member))
-;;             ;; :use ((:instance acl2::subsetp-member
-;;             ;;        (a (acl2::subsetp-witness (alist-keys (cgraph-alist-fix new-stk))
-;;             ;;                                  (alist-keys (cgraph-indexmap-fix new-preorder))))
-;;             ;;        (x (alist-keys (cgraph-alist-fix stk)))
-;;             ;;        (y (alist-keys (cgraph-indexmap-fix preorder)))))
-;;             ))
-;;     :fn cgraph-tarjan-sccs)
-;;   (defret <fn>-stack-subsetp
-;;     (implies (subsetp (alist-keys (cgraph-alist-fix stk))
-;;                       (alist-keys (cgraph-indexmap-fix preorder)))
-;;              (subsetp (alist-keys new-stk)
-;;                       (alist-keys new-preorder)))
-;;     :hints(("Goal" :in-theory (e/d (ACL2::SUBSETP-WITNESS-RW)
-;;                                    (acl2::subsetp-member))
-;;             ;; :use ((:instance acl2::subsetp-member
-;;             ;;        (a (acl2::subsetp-witness (alist-keys (cgraph-alist-fix new-stk))
-;;             ;;                                  (alist-keys (cgraph-indexmap-fix new-preorder))))
-;;             ;;        (x (alist-keys (cgraph-alist-fix stk)))
-;;             ;;        (y (alist-keys (cgraph-indexmap-fix preorder)))))
-;;             ))
-;;     :fn cgraph-tarjan-sccs-edges)
-
-;;   (local (defthm cdr-hons-assoc-under-iff-when-cgraph-indexmap-p
-;;            (implies (cgraph-indexmap-p x)
-;;                     (iff (cdr (hons-assoc-equal k x))
-;;                          (hons-assoc-equal k x)))
-;;            :hints(("Goal" :in-theory (enable cgraph-indexmap-p)))))
-
-
-;;   (defret-mutual cgraph-tarjan-sccs-stack-no-dups
-;;     (defret <fn>-stack-no-dups
-;;       (implies (and (no-duplicatesp (alist-keys (cgraph-alist-fix stk)))
-;;                     (subsetp (alist-keys (cgraph-alist-fix stk))
-;;                              (alist-keys (cgraph-indexmap-fix preorder))))
-;;                (no-duplicatesp (alist-keys new-stk)))
-;;       :hints ('(:expand (<call>)))
-;;       :fn cgraph-tarjan-sccs)
-;;     (defret <fn>-stack-no-dups
-;;       (implies (and (no-duplicatesp (alist-keys (cgraph-alist-fix stk)))
-;;                     (subsetp (alist-keys (cgraph-alist-fix stk))
-;;                              (alist-keys (cgraph-indexmap-fix preorder))))
-;;                (no-duplicatesp (alist-keys new-stk)))
-;;       :hints ('(:expand (<call>)))
-;;       :fn cgraph-tarjan-sccs-edges))
-
-;;   (defret-mutual cgraph-tarjan-sccs-measure-decr
-;;     (defret <fn>-measure-decr
-;;       (<= (len (set-difference$
-;;                 (alist-keys (cgraph-fix cgraph))
-;;                 (alist-keys new-preorder)))
-;;           (len (set-difference$
-;;                 (alist-keys (cgraph-fix cgraph))
-;;                 (alist-keys (cgraph-indexmap-fix preorder)))))
-;;       :hints ('(:expand (<call>)))
-;;       :rule-classes :linear
-;;       :fn cgraph-tarjan-sccs)
-;;     (defret <fn>-measure-decr
-;;       (<= (len (set-difference$
-;;                 (alist-keys (cgraph-fix cgraph))
-;;                 (alist-keys new-preorder)))
-;;           (len (set-difference$
-;;                 (alist-keys (cgraph-fix cgraph))
-;;                 (alist-keys (cgraph-indexmap-fix preorder)))))
-;;       :hints ('(:expand (<call>)))
-;;       :rule-classes :linear
-;;       :fn cgraph-tarjan-sccs-edges))
-
-;;   (defret <fn>-measure-decr-no-fix
-;;     (implies (cgraph-p cgraph)
-;;              (<= (len (set-difference$
-;;                        (alist-keys cgraph)
-;;                        (alist-keys new-preorder)))
-;;                  (len (set-difference$
-;;                        (alist-keys cgraph)
-;;                        (alist-keys (cgraph-indexmap-fix preorder))))))
-;;       :hints (("goal" :use cgraph-tarjan-sccs-measure-decr
-;;                :in-theory (disable cgraph-tarjan-sccs-measure-decr)))
-;;       :rule-classes :linear
-;;       :fn cgraph-tarjan-sccs)
-
-;;   (verify-guards cgraph-tarjan-sccs))
-
-;; (local (in-theory (disable cgraph-tarjan-sccs-preorder-preserved
-;;                            cgraph-tarjan-sccs-edges-preorder-preserved)))
-
-;; (define cgraph-tarjan-sccs-iter ((x cgraph-p) ;; tail
-;;                                  (cgraph cgraph-p)
-;;                                  (preorder cgraph-indexmap-p)
-;;                                  (preorder-next)
-;;                                  (stk cgraph-alist-p)
-;;                                  (stack-size)
-;;                                  (sccs-acc fgl-objectlistlist-p))
-;;   :guard (and (no-duplicatesp-equal (alist-keys stk))
-;;               (equal stack-size (len stk))
-;;               (equal preorder-next (len preorder))
-;;               (subsetp-equal (alist-keys stk) (alist-keys preorder)))
-;;   :returns (sccs fgl-objectlistlist-p)
-;;   :verify-guards nil
-;;   (b* (;; (preorder (cgraph-indexmap-fix preorder))
-;;        ;; (stk (cgraph-alist-fix stk))
-;;        ;; (preorder-next (mbe :logic (len preorder) :exec preorder-next))
-;;        ;; (stack-size (mbe :logic (len stk) :exec stack-size))
-;;        (sccs-acc (fgl-objectlistlist-fix sccs-acc))
-
-;;        ((when (atom x))
-;;         ;; (mv preorder
-;;         ;;     preorder-next
-;;         ;;     stk
-;;         ;;     stack-size
-;;             sccs-acc)
-;;        ((unless (mbt (and (consp (car x))
-;;                           (fgl-object-p (caar x)))))
-;;         (cgraph-tarjan-sccs-iter (cdr x) cgraph preorder preorder-next stk stack-size sccs-acc))
-;;        ((mv ?lowlink
-;;             preorder
-;;             preorder-next
-;;             stk
-;;             stack-size
-;;             sccs-acc)
-;;         (cgraph-tarjan-sccs (caar x) cgraph preorder preorder-next stk stack-size sccs-acc)))
-;;     (cgraph-tarjan-sccs-iter (cdr x) cgraph preorder preorder-next stk stack-size sccs-acc))
-;;   ///
-;;   (verify-guards cgraph-tarjan-sccs-iter))
-
-;; (define cgraph-tarjan-sccs-top ((cgraph cgraph-p))
-;;   :returns (sccs fgl-objectlistlist-p)
-;;   (cgraph-tarjan-sccs-iter cgraph cgraph nil 0 nil 0 nil))
-
-
-;; ;; This is very similar to fgl-objectlistlist-p...
-;; (fty::defmap cgraph-scc-map :key-type fgl-object :val-type fgl-objectlist :true-listp t)
-
-;; (define cgraph-map-one-scc ((objs fgl-objectlist-p)
-;;                             (scc fgl-objectlist-p)
-;;                             (scc-map cgraph-scc-map-p))
-;;   :returns (new-scc-map cgraph-scc-map-p)
-;;   (if (atom objs)
-;;       (cgraph-scc-map-fix scc-map)
-;;     (cgraph-map-one-scc
-;;      (cdr objs) scc (hons-acons (fgl-object-fix (car objs))
-;;                                 (fgl-objectlist-fix scc)
-;;                                 scc-map))))
-
-;; (define cgraph-map-sccs ((sccs fgl-objectlistlist-p)
-;;                          (scc-map cgraph-scc-map-p))
-;;   :returns (new-scc-map cgraph-scc-map-p)
-;;   (if (atom sccs)
-;;       (cgraph-scc-map-fix scc-map)
-;;     (cgraph-map-sccs (cdr sccs)
-;;                      (cgraph-map-one-scc (car sccs) (car sccs) scc-map))))
-
-
-;; (defprod scc-cgraph-edges
-;;   ((tree-edges cgraph-edgelist-p)
-;;    (scc-edges cgraph-edgelist-p)
-;;    (scc fgl-objectlist-p))
-;;   :layout :tree)
-
-;; (fty::defmap scc-cgraph :key-type fgl-object :val-type scc-cgraph-edges :true-listp t)
-
-
-;; (define cgraph-edges-scc-split ((edges cgraph-edgelist-p)
-;;                                 (scc fgl-objectlist-p))
-;;   :returns (mv (tree-edges cgraph-edgelist-p)
-;;                (scc-edges cgraph-edgelist-p))
-;;   (b* (((when (atom edges))
-;;         (mv nil nil))
-;;        ((mv tree-edges scc-edges) (cgraph-edges-scc-split (cdr edges) scc))
-;;        ((cgraph-edge x1) (cgraph-edge-fix (car edges)))
-;;        ((when (acl2::hons-member-equal x1.trigger scc))
-;;         (mv tree-edges (cons x1 scc-edges))))
-;;     (mv (cons x1 tree-edges) scc-edges)))
-
-
-;; (define scc-to-scc-cgraph ((rest fgl-objectlist-p)
-;;                            (scc fgl-objectlist-p)
-;;                            (cgraph cgraph-p)
-;;                            (scc-cgraph scc-cgraph-p))
-;;   :returns (new-scc-cgraph scc-cgraph-p)
-;;   (b* (((when (atom rest)) (scc-cgraph-fix scc-cgraph))
-;;        (first (fgl-object-fix (car rest)))
-;;        (edges (cdr (hons-get first (cgraph-fix cgraph))))
-;;        ((unless edges)
-;;         ;; must be a singleton, leaf scc
-;;         (scc-to-scc-cgraph (cdr rest) scc cgraph scc-cgraph))
-;;        ((mv tree-edges scc-edges) (cgraph-edges-scc-split edges scc))
-;;        (scc-cgraph (hons-acons first (make-scc-cgraph-edges
-;;                                       :tree-edges tree-edges
-;;                                       :scc-edges scc-edges
-;;                                       :scc scc)
-;;                                scc-cgraph)))
-;;     (scc-to-scc-cgraph (cdr rest) scc cgraph scc-cgraph)))
-
-;; (define cgraph-to-scc-cgraph ((sccs fgl-objectlistlist-p)
-;;                               (cgraph cgraph-p)
-;;                               (scc-cgraph scc-cgraph-p))
-;;   :returns (new-scc-cgraph scc-cgraph-p)
-;;   (if (atom sccs)
-;;       (scc-cgraph-fix scc-cgraph)
-;;     (cgraph-to-scc-cgraph
-;;      (cdr sccs)
-;;      cgraph
-;;      (scc-to-scc-cgraph (car sccs) (car sccs) cgraph scc-cgraph))))
-
-
-
-(local (defthm assoc-is-hons-assoc-equal
-         (implies k
-                  (equal (assoc k x)
-                         (hons-assoc-equal k x)))))
-
-(defines magic-fgl-object-eval
-  (define magic-fgl-object-eval ((x fgl-object-p)
-                                (env$)
-                                &optional
-                                (logicman 'logicman)
-                                (state 'state))
-    :guard (and (bfr-env$-p env$ (logicman->bfrstate))
-                (lbfr-listp (fgl-object-bfrlist x)))
-    :returns (mv err val)
-    :verify-guards nil
-    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
-    (fgl-object-case x
-      :g-concrete (mv nil x.val)
-      :g-boolean (mv nil (bfr-eval-fast x.bool env$))
-      :g-integer (mv nil (bools->int (bfr-list-eval-fast x.bits env$)))
-      :g-ite (b* (((mv err test) (magic-fgl-object-eval x.test env$))
-                  ((when err) (mv err nil)))
-               (if test
-                   (magic-fgl-object-eval x.then env$)
-                 (magic-fgl-object-eval x.else env$)))
-      :g-cons (b* (((mv err car) (magic-fgl-object-eval x.car env$))
-                   ((when err) (mv err nil))
-                   ((mv err cdr) (magic-fgl-object-eval x.cdr env$))
-                   ((when err) (mv err nil)))
-                (mv nil (cons car cdr)))
-      :g-map (magic-fgl-object-alist-eval x.alist env$)
-      :g-var (mv nil (cdr (assoc-eq x.name (env$->obj-alist env$))))
-      :g-apply (b* (((mv err args) (magic-fgl-objectlist-eval x.args env$))
-                    ((when err) (mv err nil)))
-                 (magitastic-ev-fncall x.fn args 1000 state t t))))
-
-  (define magic-fgl-objectlist-eval ((x fgl-objectlist-p)
-                                    (env$)
-                                    &optional
-                                    (logicman 'logicman)
-                                    (state 'state))
-    :guard (and (bfr-env$-p env$ (logicman->bfrstate))
-                (lbfr-listp (fgl-objectlist-bfrlist x)))
-    :returns (mv err (val true-listp))
-    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
-    (b* (((when (atom x)) (mv nil nil))
-         ((mv err car) (magic-fgl-object-eval (car x) env$))
-         ((when err) (mv err nil))
-         ((mv err cdr) (magic-fgl-objectlist-eval (cdr x) env$))
-         ((when err) (mv err nil)))
-      (mv nil (cons car cdr))))
-
-  (define magic-fgl-object-alist-eval ((x fgl-object-alist-p)
-                                      (env$)
-                                      &optional
-                                      (logicman 'logicman)
-                                      (state 'state))
-    :guard (and (bfr-env$-p env$ (logicman->bfrstate))
-                (lbfr-listp (fgl-object-alist-bfrlist x)))
-    :returns (mv err val)
-    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
-    (b* (((when (atom x)) (mv nil x))
-         ((unless (mbt (consp (car x))))
-          (magic-fgl-object-alist-eval (cdr x) env$))
-         ((mv err val1) (magic-fgl-object-eval (cdar x) env$))
-         ((when err) (mv err nil))
-         ((mv err rest) (magic-fgl-object-alist-eval (cdr x) env$))
-         ((when err) (mv err nil)))
-      (mv nil (cons (cons (caar x) val1) rest))))
-  ///
-  (verify-guards magic-fgl-object-eval-fn
-    :hints (("goal" :expand (fgl-object-bfrlist x)
-             :in-theory (disable magic-fgl-object-eval-fn
-                                 magic-fgl-objectlist-eval
-                                 magic-fgl-object-alist-eval))))
-
-  (local (defthm fgl-object-alist-fix-when-bad-car
-           (implies (and (consp X)
-                         (not (consp (car x))))
-                    (equal (fgl-object-alist-fix x)
-                           (fgl-object-alist-fix (cdr x))))
-           :hints(("Goal" :in-theory (enable fgl-object-alist-fix)))))
-
-  (fty::deffixequiv-mutual magic-fgl-object-eval))
-
+(local (defthm symbol-listp-when-pseudo-var-list-p
+         (implies (pseudo-var-list-p x)
+                  (symbol-listp x))))
 
 (define pairlis-vars ((x symbol-listp)
                       (args))
@@ -1735,6 +508,12 @@ compute a value for @('x').</p>
     (implies (not (member v (fgl-objectlist-bfrlist args)))
              (not (member v (fgl-object-bindings-bfrlist (pairlis-vars x args)))))))
 
+
+
+(local (defthm assoc-is-hons-assoc-equal
+         (implies k
+                  (equal (assoc k x)
+                         (hons-assoc-equal k x)))))
 
 (defines pseudo-term-subst-fgl-objects
   (define pseudo-term-subst-fgl-objects ((x pseudo-termp)
@@ -1781,8 +560,511 @@ compute a value for @('x').</p>
   (fty::deffixequiv-mutual pseudo-term-subst-fgl-objects))
 
 
+(define pseudo-term-subst-subst-fgl-objects ((x pseudo-term-subst-p)
+                                             (alist fgl-object-bindings-p))
+  :returns (new-x fgl-object-bindings-p)
+  (if (atom x)
+      nil
+    (if (mbt (and (consp (car x))
+                  (pseudo-var-p (caar x))))
+        (cons (cons (caar x) (pseudo-term-subst-fgl-objects (cdar x) alist))
+              (pseudo-term-subst-subst-fgl-objects (cdr x) alist))
+      (pseudo-term-subst-subst-fgl-objects (cdr x) alist)))
+  ///
+  (defret fgl-object-bindings-bfrlist-of-<fn>
+    (implies (not (member v (fgl-object-bindings-bfrlist alist)))
+             (not (member v (fgl-object-bindings-bfrlist new-x)))))
+  (local (in-theory (enable pseudo-term-subst-fix))))
 
 
+
+;; (encapsulate nil
+;;   (make-event
+;;    (let ((wrld (w state))
+;;          (fn 'fgl-unify-term/gobj-fn))
+;;      `(flag::make-flag ,(flag::flag-fn-name fn wrld) ,fn
+;;                        :defthm-macro-name ,(flag::flag-defthm-macro fn wrld)
+;;                        :flag-mapping ,(acl2::alist-to-doublets (flag::flag-alist fn wrld))
+;;                        :local t
+;;                        :hints ((and stable-under-simplificationp
+;;                                     '(:expand ((pseudo-term-count pat)
+;;                                                (pseudo-term-list-count (pseudo-term-call->args pat))
+;;                                                (pseudo-term-list-count (cdr (pseudo-term-call->args pat))))))))))
+
+;;   (local (defthm fgl-object-bfrlist-of-mk-g-boolean
+;;            (equal (fgl-object-bfrlist (mk-g-boolean bit))
+;;                   (if (booleanp bit) nil (list bit)))
+;;            :hints(("Goal" :in-theory (enable mk-g-boolean)))))
+
+;;   (local (defthm fgl-object-bfrlist-of-gobj-syntactic-boolean-negate
+;;            (implies (not (member v (fgl-object-bfrlist x)))
+;;                     (not (member v (fgl-object-bfrlist (gobj-syntactic-boolean-negate x)))))
+;;            :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-negate bfr-negate)))))
+
+;;   (local (defthm fgl-object-bfrlist-of-gobj-syntactic-boolean-fix
+;;            (implies (not (member v (fgl-object-bfrlist x)))
+;;                     (not (member v (fgl-object-bfrlist (gobj-syntactic-boolean-fix x)))))
+;;            :hints(("Goal" :in-theory (enable gobj-syntactic-boolean-fix)))))
+  
+;;   (std::defretgen bfr-vars-of-<fn>
+;;     :formal-hyps
+;;     (((fgl-object-bindings-p alist)    (not (member v (fgl-object-bindings-bfrlist alist))))
+;;      ((fgl-object-p x)                 (not (member v (fgl-object-bfrlist x))))
+;;      ((fgl-objectlist-p x)             (not (member v (fgl-objectlist-bfrlist x))))
+;;      ((fgl-object-alist-p x)           (not (member v (fgl-object-alist-bfrlist x)))))
+;;     :rules ((t (:add-concl (not (member v (fgl-object-bindings-bfrlist new-alist)))))
+;;             (:mutrec
+;;              (:add-keyword
+;;               :hints ('(:expand ((:free (x-key) <call>))))))
+;;             (:recursive
+;;              (:add-keyword
+;;               :hints (("goal" :induct <call>
+;;                        :in-theory (enable (:i <fn>))
+;;                        :expand ((:free (x) <call>)))))))
+;;     :functions fgl-unify-fnset))
+
+
+
+(define ctrex-rule-to-formula ((match-obj fgl-object-p)
+                            (rule ctrex-rule-p)
+                            (bfrstate bfrstate-p))
+  :guard (bfr-listp (fgl-object-bfrlist match-obj))
+  :returns (mv ok (target fgl-object-p) (formula (implies ok (cgraph-formula-p formula))))
+  (b* (((ctrex-rule rule))
+       ((mv ok bindings) (fgl-unify-term/gobj rule.match match-obj rule.unify-subst))
+       ((unless ok) (mv nil nil nil))
+       (target (pseudo-term-subst-fgl-objects rule.target bindings))
+       (deps (pseudo-term-subst-subst-fgl-objects rule.deps bindings)))
+    (mv t
+        target
+        (make-cgraph-formula
+         :deps deps
+         :name rule.name
+         :dep-success-vars rule.dep-success-vars
+         :success          rule.success
+         :priority         rule.priority
+         :value            rule.value
+         :order            rule.order
+         :ruletype         rule.ruletype)))
+  ///
+  (defret bfr-listp-cgraph-formula-bfrlist-of-<fn>
+    (implies (and (bfr-listp (fgl-object-bfrlist match-obj))
+                  (bfr-listp (fgl-object-bindings-bfrlist (ctrex-rule->unify-subst rule))))
+             (and (bfr-listp (fgl-object-bfrlist target))
+                  (implies ok
+                           (and (bfr-listp (fgl-object-bindings-bfrlist (cgraph-formula->deps formula)))
+                                (bfr-listp (cgraph-formula-bfrlist formula))))))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
+
+;; (local (defthm bfrs-of-cgraph-formula->deps
+;;          (implies (not (member v (cgraph-formula-bfrlist x)))
+;;                   (not (member v (fgl-object-bindings-bfrlist (cgraph-formula->deps x)))))
+;;          :hints(("Goal" :in-theory (enable cgraph-formula-bfrlist)))))
+
+
+(define fgl-object-bindings-count ((x fgl-object-bindings-p))
+  :returns (count posp :rule-classes :type-prescription)
+  (if (atom x)
+      1
+    (if (mbt (and (consp (car x))
+                  (pseudo-var-p (caar x))))
+        (+ 1 (fgl-object-count (cdar x))
+           (fgl-object-bindings-count (cdr x)))
+      (fgl-object-bindings-count (cdr x))))
+  ///
+  (defret fgl-object-bindings-count-of-pairlis$
+    (implies (and (pseudo-var-list-p keys)
+                  (equal (len keys) (len vals)))
+             (equal (fgl-object-bindings-count (pairlis$ keys vals))
+                    (fgl-objectlist-count vals)))
+    :hints(("Goal" :in-theory (enable pairlis$ fgl-objectlist-count))))
+
+  (defret fgl-object-bindings-count-linear
+    (implies (and (consp (car x))
+                  (pseudo-var-p (caar x)))
+             (= (fgl-object-bindings-count x)
+                (+ 1 (fgl-object-count (cdar x))
+                   (fgl-object-bindings-count (cdr x)))))
+    :rule-classes :linear)
+
+  (defret fgl-object-bindings-count-cdr
+    (<= (fgl-object-bindings-count (cdr x)) (fgl-object-bindings-count x))
+    :rule-classes :linear)
+
+  ;; (defret fgl-object-bindings-count-cdr-strong
+  ;;   (implies (consp x)
+  ;;   (<= (fgl-object-bindings-count (cdr x)) (fgl-object-bindings-count x))
+  ;;   :rule-classes :linear)
+
+  (local (in-theory (enable fgl-object-bindings-fix))))
+
+(local (defthm fgl-object-bindings-count-of-g-ite
+         (implies (fgl-object-case x :g-ite)
+                  (equal (fgl-object-bindings-count (list (cons 'arg0 (g-ite->test x))
+                                                          (cons 'arg1 (g-ite->then x))
+                                                          (cons 'arg2 (g-ite->else x))))
+                         (fgl-object-count x)))
+         :hints (("goal" :in-theory (enable fgl-object-count
+                                            fgl-object-bindings-count)))))
+
+(local (defthm fgl-object-bindings-count-of-g-cons
+         (implies (fgl-object-case x :g-cons)
+                  (equal (fgl-object-bindings-count (list (cons 'arg0 (g-cons->car x))
+                                                          (cons 'arg1 (g-cons->cdr x))))
+                         (fgl-object-count x)))
+         :hints (("goal" :in-theory (enable fgl-object-count
+                                            fgl-object-bindings-count)))))
+
+
+
+(local (defthm len-equal-0
+         (equal (equal (len x) 0)
+                (not (consp x)))))
+
+;; (local (defthm len-of-cons
+;;          (equal (len (cons a b))
+;;                 (+ 1 (len b)))))
+
+;; (local (defun len-is (x n)
+;;          (if (zp n)
+;;              (and (eql n 0) (atom x))
+;;            (and (consp x)
+;;                 (len-is (cdr x) (1- n))))))
+
+;; (local (defthm open-len-is
+;;          (implies (syntaxp (quotep n))
+;;                   (equal (len-is x n)
+;;                          (if (zp n)
+;;                              (and (eql n 0) (atom x))
+;;                            (and (consp x)
+;;                                 (len-is (cdr x) (1- n))))))))
+
+
+;; (local (defthm equal-len-hyp
+;;          (implies (syntaxp (and (or (acl2::rewriting-negative-literal-fn `(equal (len ,x) ,n) mfc state)
+;;                                     (acl2::rewriting-negative-literal-fn `(equal ,n (len ,x)) mfc state))
+;;                                 (quotep n)))
+;;                   (equal (equal (len x) n)
+;;                          (len-is x n)))))
+
+
+(local (defthm equal-of-len
+         (implies (syntaxp (quotep n))
+                  (equal (equal (len x) n)
+                         (if (zp n)
+                             (and (atom x) (equal n 0))
+                           (and (consp x)
+                                (equal (len (cdr x)) (1- n))))))))
+
+(local (defthm len-cdr
+         (implies (consp x)
+                  (< (len (cdr x)) (len x)))
+         :rule-classes :linear))
+
+(local (defthm len-of-cons
+         (Equal (len (cons x y))
+                (+ 1 (len y)))))
+
+(local (in-theory (disable len)))
+
+
+(local
+ (defthm fgl-object-bindings-p-of-pairlis$
+   (implies (and (pseudo-var-list-p keys)
+                 (fgl-objectlist-p vals)
+                 (equal (len keys) (len vals)))
+            (fgl-object-bindings-p (pairlis$ keys vals)))
+   :hints(("Goal" :in-theory (enable pairlis$)))))
+
+(local (defthm fgl-object-bindings-bfrlist-of-pairlis$
+         (implies (and (pseudo-var-list-p keys)
+                       (equal (len keys) (len vals)))
+                  (equal (fgl-object-bindings-bfrlist
+                          (pairlis$ keys vals))
+                         (fgl-objectlist-bfrlist vals)))
+         :hints(("Goal" :in-theory (enable pairlis$)))))
+
+
+(local (defthm fgl-object-bindings-bfrlist-of-cdr
+         (implies (not (member v (fgl-object-bindings-bfrlist x)))
+                  (not (member v (fgl-object-bindings-bfrlist (cdr x)))))
+         :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist)))))
+
+(with-output
+  :off (event)
+  :evisc (:gag-mode (evisc-tuple 5 7 nil nil))
+  (defines fgl-object-add-to-cgraph
+    (define fgl-object-add-to-cgraph ((x fgl-object-p)
+                                      (cgraph cgraph-p)
+                                      (memo cgraph-memo-p)
+                                      (ruletable ctrex-ruletable-p)
+                                      (bfrstate bfrstate-p)
+                                      (wrld plist-worldp)
+                                      (clk natp))
+      :well-founded-relation acl2::nat-list-<
+      :measure (list (nfix clk) (fgl-object-count x) 10 0 0)
+      :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-memo-p))
+      :guard (and (bfr-listp (fgl-object-bfrlist x))
+                  (ctrex-ruletable-bfr-free ruletable))
+      :verify-guards nil
+      (b* ((fnsym (fgl-object-case x
+                    (:g-ite 'if)
+                    (:g-cons 'cons)
+                    (:g-apply x.fn)
+                    (otherwise nil)))
+           ((unless fnsym)
+            (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
+           ((when (fgl-object-variable-free-p x)) ;; ???
+            (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
+           ((when (hons-get (fgl-object-fix x) (cgraph-memo-fix memo)))
+            (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
+           (memo (hons-acons (fgl-object-fix x) t (cgraph-memo-fix memo)))
+           ((when (and (fgl-object-case x :g-apply)
+                       (fgetprop fnsym 'acl2::coarsenings nil wrld)))
+            ;; Equivalence relation.  Add edges between two args
+            (b* (((g-apply x))
+                 ((unless (eql (len x.args) 2))
+                  (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
+                 ((list arg1 arg2) x.args)
+                 ((mv cgraph memo) (fgl-object-add-to-cgraph arg1 cgraph memo ruletable bfrstate wrld clk))
+                 ((mv cgraph memo) (fgl-object-add-to-cgraph arg2 cgraph memo ruletable bfrstate wrld clk)))
+              (mv (add-cgraph-equiv x arg1 arg2 cgraph) memo)))
+           ((mv cgraph memo)
+            (fgl-object-add-to-cgraph-implicit x cgraph memo ruletable bfrstate wrld clk))
+           (rules (cdr (hons-get fnsym (ctrex-ruletable-fix ruletable)))))
+        (fgl-object-add-to-cgraph-rules x rules cgraph memo ruletable bfrstate wrld clk)))
+
+    (define fgl-object-add-to-cgraph-implicit ((x fgl-object-p)
+                                               (cgraph cgraph-p)
+                                               (memo cgraph-memo-p)
+                                               (ruletable ctrex-ruletable-p)
+                                               (bfrstate bfrstate-p)
+                                               (wrld plist-worldp)
+                                               (clk natp))
+      :measure (list (nfix clk) (fgl-object-count x) 7 0 0)
+      :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-memo-p))
+      :guard (and (bfr-listp (fgl-object-bfrlist x))
+                  (ctrex-ruletable-bfr-free ruletable))
+      (b* ((x (fgl-object-fix x))
+           ((mv fnsym args)
+            (fgl-object-case x
+              :g-ite (mv 'if (list x.test x.then x.else))
+              :g-cons (mv 'cons (list x.car x.cdr))
+              :g-apply (mv x.fn x.args)
+              :otherwise (mv nil nil)))
+           ((unless fnsym)
+            (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
+           (arg-vars (make-argvars "ARG" (len args) nil))
+           (success-vars (make-argvars "ARG-SUCCESS" (len args) nil))
+           (deps (pairlis$ arg-vars args))
+           ((mv cgraph memo)
+            (fgl-object-add-to-cgraph-bindings deps cgraph memo ruletable bfrstate wrld clk))
+           (template *cgraph-implicit-edge-template*)
+           (edge (change-cgraph-formula template
+                                     :deps deps
+                                     :dep-success-vars (pairlis$ success-vars arg-vars)
+                                     :success (disjoin success-vars)
+                                     :value (pseudo-term-fncall fnsym arg-vars))))
+        (mv (add-cgraph-formula x edge cgraph) memo)))
+
+    (define fgl-object-add-to-cgraph-bindings ((x fgl-object-bindings-p)
+                                               (cgraph cgraph-p)
+                                               (memo cgraph-memo-p)
+                                               (ruletable ctrex-ruletable-p)
+                                               (bfrstate bfrstate-p)
+                                               (wrld plist-worldp)
+                                               (clk natp))
+      :measure (list (nfix clk) (fgl-object-bindings-count x) 5 (len x) 0)
+      :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-memo-p))
+      :guard (And (bfr-listp (fgl-object-bindings-bfrlist x))
+                  (ctrex-ruletable-bfr-free ruletable))
+      (if (atom x)
+          (mv (cgraph-fix cgraph) (cgraph-memo-fix memo))
+        (if (mbt (and (consp (car x))
+                      (pseudo-var-p (caar x))))
+            (b* (((mv cgraph memo) (fgl-object-add-to-cgraph (cdar x) cgraph memo ruletable bfrstate wrld clk)))
+              (fgl-object-add-to-cgraph-bindings (cdr x) cgraph memo ruletable bfrstate wrld clk))
+          (fgl-object-add-to-cgraph-bindings (cdr x) cgraph memo ruletable bfrstate wrld clk))))
+
+
+    (define fgl-object-add-to-cgraph-rules ((x fgl-object-p)
+                                            (rules ctrex-rulelist-p)
+                                            (cgraph cgraph-p)
+                                            (memo cgraph-memo-p)
+                                            (ruletable ctrex-ruletable-p)
+                                            (bfrstate bfrstate-p)
+                                            (wrld plist-worldp)
+                                            (clk natp))
+      :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))
+                  (bfr-listp (fgl-object-bfrlist x))
+                  (ctrex-rulelist-bfr-free rules)
+                  (ctrex-ruletable-bfr-free ruletable))
+      :measure (list (nfix clk) (fgl-object-count x) 7 (len rules) 0)
+      :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-memo-p))
+      (b* (((when (atom rules)) (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
+           ((mv cgraph memo) (fgl-object-add-to-cgraph-rule x (car rules) cgraph memo ruletable bfrstate wrld clk)))
+        (fgl-object-add-to-cgraph-rules x (cdr rules) cgraph memo ruletable bfrstate wrld clk)))
+
+    (define fgl-object-add-to-cgraph-rule ((x fgl-object-p)
+                                           (rule ctrex-rule-p)
+                                           (cgraph cgraph-p)
+                                           (memo cgraph-memo-p)
+                                           (ruletable ctrex-ruletable-p)
+                                           (bfrstate bfrstate-p)
+                                           (wrld plist-worldp)
+                                           (clk natp))
+      :guard (and (not (fgl-object-case x '(:g-concrete :g-boolean :g-integer :g-map)))
+                  (bfr-listp (fgl-object-bfrlist x))
+                  (not (fgl-object-bindings-bfrlist (ctrex-rule->unify-subst rule)))
+                  (ctrex-ruletable-bfr-free ruletable))
+      :measure (list (nfix clk) (fgl-object-count x) 7 0 0)
+      :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-memo-p))
+      (b* (((mv ok target edge) (ctrex-rule-to-formula x rule bfrstate))
+           ((unless ok) (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
+           ((when (zp clk))
+            (raise "Loop in cgraph generation rules? Clock ran out")
+            (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
+           (clk (1- clk))
+           ((mv cgraph memo) (fgl-object-add-to-cgraph target cgraph memo ruletable bfrstate wrld clk))
+           ((mv cgraph memo) (fgl-object-add-to-cgraph-bindings (cgraph-formula->deps edge) cgraph memo ruletable bfrstate wrld clk)))
+        (mv (add-cgraph-formula target edge cgraph) memo)))
+    ///
+    (local (include-book "tools/trivial-ancestors-check" :dir :system))
+    (local (acl2::use-trivial-ancestors-check))
+    (verify-guards fgl-object-add-to-cgraph
+      ;; :guard-debug t
+      :hints (("goal" :do-not-induct t
+               :in-theory (enable bfr-listp-when-not-member-witness))))
+    (local (in-theory (disable fgl-object-add-to-cgraph
+                               fgl-object-add-to-cgraph-implicit
+                               fgl-object-add-to-cgraph-bindings
+                               fgl-object-add-to-cgraph-rules
+                               fgl-object-add-to-cgraph-rule)))
+
+    (local (defthm pseudo-term-subst-fix-when-bad-car
+             (implies (not (and (consp (car x))
+                                (pseudo-var-p (caar x))))
+                      (equal (pseudo-term-subst-fix x)
+                             (pseudo-term-subst-fix (cdr x))))
+             :hints(("Goal" :in-theory (enable pseudo-term-subst-fix)))))
+
+    (local (in-theory (enable bfr-listp-when-not-member-witness)))
+
+    (defret-mutual cgraph-bfrlist-of-fgl-object-add-to-cgraph
+      (defret cgraph-bfrlist-of-<fn>
+        (implies (and (bfr-listp (fgl-object-bfrlist x))
+                      (bfr-listp (cgraph-bfrlist cgraph))
+                      (ctrex-ruletable-bfr-free ruletable))
+                 (bfr-listp (cgraph-bfrlist new-cgraph)))
+        :hints ('(:expand (<call>)))
+        :fn fgl-object-add-to-cgraph)
+      (defret cgraph-bfrlist-of-<fn>
+        (implies (and (bfr-listp (fgl-object-bindings-bfrlist x))
+                      (bfr-listp (cgraph-bfrlist cgraph))
+                      (ctrex-ruletable-bfr-free ruletable))
+                 (bfr-listp (cgraph-bfrlist new-cgraph)))
+        :hints ('(:expand (<call>)))
+        :fn fgl-object-add-to-cgraph-bindings)
+      (defret cgraph-bfrlist-of-<fn>
+        (implies (and (bfr-listp (fgl-object-bfrlist x))
+                      (bfr-listp (cgraph-bfrlist cgraph))
+                      (ctrex-rulelist-bfr-free rules)
+                      (ctrex-ruletable-bfr-free ruletable))
+                 (bfr-listp (cgraph-bfrlist new-cgraph)))
+        :hints ('(:expand (<call>)))
+        :fn fgl-object-add-to-cgraph-rules)
+      (defret cgraph-bfrlist-of-<fn>
+        (implies (and (bfr-listp (fgl-object-bfrlist x))
+                      (bfr-listp (cgraph-bfrlist cgraph))
+                      (ctrex-ruletable-bfr-free ruletable))
+                 (bfr-listp (cgraph-bfrlist new-cgraph)))
+        :hints ('(:expand (<call>
+                           (:free (a b) (cgraph-bfrlist (cons a b)))
+                           (:free (a b) (cgraph-formulalist-bfrlist (cons a b))))
+                  :in-theory (enable cgraph-formula-bfrlist)))
+        :fn fgl-object-add-to-cgraph-implicit)
+      (defret cgraph-bfrlist-of-<fn>
+        (implies (and (bfr-listp (fgl-object-bfrlist x))
+                      (bfr-listp (cgraph-bfrlist cgraph))
+                      (not (fgl-object-bindings-bfrlist (ctrex-rule->unify-subst rule)))
+                      (ctrex-ruletable-bfr-free ruletable))
+                 (bfr-listp (cgraph-bfrlist new-cgraph)))
+        :hints ('(:expand (<call>)))
+        :fn fgl-object-add-to-cgraph-rule))
+
+    (local (in-theory (enable fgl-object-bindings-fix)))
+    (fty::deffixequiv-mutual fgl-object-add-to-cgraph)))
+
+
+
+
+
+;; ------------------------------------------------------------------------
+;; Creating a cgraph from a bvar-db and set of rules, using
+;; fgl-object-add-to-cgraph -- main function bvar-db-update-cgraph
+;; ------------------------------------------------------------------------
+
+
+(define bvar-db-add-to-cgraph-aux ((n natp)
+                                   (bvar-db)
+                                   (cgraph cgraph-p)
+                                   (memo cgraph-memo-p)
+                                   (ruletable ctrex-ruletable-p)
+                                   (bfrstate bfrstate-p)
+                                   (wrld plist-worldp))
+  :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-memo-p))
+  :guard (and (<= n (next-bvar bvar-db))
+              (<= (base-bvar bvar-db) n)
+              (bfr-listp (bvar-db-bfrlist bvar-db))
+              (ctrex-ruletable-bfr-free ruletable))
+  :measure (nfix (- (next-bvar bvar-db) (nfix n)))
+  (b* (((when (mbe :logic (zp (- (next-bvar bvar-db) (nfix n)))
+                   :exec (eql n (next-bvar bvar-db))))
+        (mv (cgraph-fix cgraph) (cgraph-memo-fix memo)))
+       ((mv cgraph memo) (fgl-object-add-to-cgraph (get-bvar->term n bvar-db)
+                                                  cgraph memo ruletable bfrstate wrld 1000)))
+    (bvar-db-add-to-cgraph-aux (1+ (lnfix n))
+                               bvar-db cgraph memo ruletable bfrstate wrld))
+  ///
+  (defret cgraph-bfrlist-of-<fn>
+    (implies (and (bfr-listp (bvar-db-bfrlist bvar-db))
+                  (bfr-listp (cgraph-bfrlist cgraph))
+                  (<= (base-bvar$c bvar-db) (nfix n))
+                  (ctrex-ruletable-bfr-free ruletable))
+             (bfr-listp (cgraph-bfrlist new-cgraph)))))
+
+(define bvar-db-update-cgraph ((cgraph cgraph-p)
+                               (memo cgraph-memo-p)
+                               (cgraph-index natp)
+                               bvar-db
+                               (ruletable ctrex-ruletable-p)
+                               (bfrstate bfrstate-p)
+                               (wrld plist-worldp))
+  :returns (mv (new-cgraph cgraph-p) (new-memo cgraph-memo-p))
+  :guard (and (bfr-listp (bvar-db-bfrlist bvar-db))
+              (ctrex-ruletable-bfr-free ruletable))
+  ;; BOZO this never shrinks the cgraph -- probably not necessary
+  (b* (((when (<= (next-bvar bvar-db) (lnfix cgraph-index)))
+        (mv (cgraph-fix cgraph) (cgraph-memo-fix memo))))
+    (bvar-db-add-to-cgraph-aux (max (lnfix cgraph-index)
+                                    (base-bvar bvar-db))
+                               bvar-db cgraph memo ruletable bfrstate wrld))
+  ///
+
+  (defret cgraph-bfrlist-of-<fn>
+    (implies (and (bfr-listp (bvar-db-bfrlist bvar-db))
+                  (bfr-listp (cgraph-bfrlist cgraph))
+                  (ctrex-ruletable-bfr-free ruletable))
+             (bfr-listp (cgraph-bfrlist new-cgraph)))))
+
+
+
+
+
+;; ------------------------------------------------------------------------
+;; Deriving counterexample values from a cgraph.
+;; See main function cgraph-derive-assignments-obj, below
+;; ------------------------------------------------------------------------
 
 
 
@@ -1974,52 +1256,7 @@ compute a value for @('x').</p>
                            (cgraph-fix (cdr x))))
            :hints(("Goal" :in-theory (enable cgraph-fix))))))
 
-(fty::defprod candidate-assign
-  ((edge cgraph-edge-p)
-   (val))
-  :layout :tree)
 
-(fty::deflist candidate-assigns :elt-type candidate-assign :true-listp t)
-
-;; (fty::defprod edge-errmsg
-;;   ((edge cgraph-edge-p)
-;;    (msg))
-;;   :layout :tree)
-
-;; (fty::deflist edge-errors :elt-type edge-errmsg :true-listp t)
-
-(define candidate-assigns->vals ((x candidate-assigns-p))
-  (if (atom x)
-      nil
-    (cons (candidate-assign->val (car x))
-          (candidate-assigns->vals (cdr x)))))
-
-(define combine-error-messages1 ((errors consp))
-  (cond ((atom (cdr errors)) (msg "~@0~%" (car errors)))
-        (t (msg "~@0~% * ~@1" (car errors)
-                (combine-error-messages1 (cdr errors))))))
-
-(define combine-error-messages (errors)
-  (cond ((atom errors) nil)
-        ((atom (cdr errors)) (msg "~@0~%" (car errors)))
-        (t (msg "~% * ~@0" (combine-error-messages1 errors)))))
-
-
-(define cgraph-set-error ((x fgl-object-p)
-                          (msg)
-                          (sts cgraph-derivstates-p))
-  :returns (new-sts cgraph-derivstates-p)
-  (b* ((x (fgl-object-fix x))
-       (sts (cgraph-derivstates-fix sts))
-       (st (cdr (hons-get x sts)))
-       ((unless st)
-        (hons-acons x (make-cgraph-derivstate :times-seen 0 :result-msg msg) sts)))
-    (hons-acons x (change-cgraph-derivstate st :result-msg msg) sts))
-  ///
-  (defret cgraph-derive-assigns-measure-of-<fn>
-    (<= (cgraph-derive-assigns-measure cgraph assigns new-sts replimit)
-        (cgraph-derive-assigns-measure cgraph assigns sts replimit))
-    :rule-classes :linear))
 
 (define cgraph-incr-seen ((x fgl-object-p)
                           (sts cgraph-derivstates-p))
@@ -2054,56 +1291,128 @@ compute a value for @('x').</p>
                 (cgraph-derive-assigns-measure cgraph assigns sts replimit)))
     :rule-classes :linear))
 
-(define candidate-assigns-remove-fake ((x candidate-assigns-p))
-  :returns (new-x candidate-assigns-p)
-  (b* (((When (atom x)) nil)
-       ((candidate-assign x1) (candidate-assign-fix (car x)))
-       ((cgraph-edge x1.edge))
-       ((ctrex-rule x1.edge.rule)))
-    (if (eq x1.edge.rule.name 'fake-ctrex-rule-for-candidate-value)
-        (candidate-assigns-remove-fake (cdr x))
-      (cons-with-hint x1 
-                      (candidate-assigns-remove-fake (cdr x))
-                      (cdr x)))))
-    
+
+(defines magic-fgl-object-eval
+  (define magic-fgl-object-eval ((x fgl-object-p)
+                                (env$)
+                                &optional
+                                (logicman 'logicman)
+                                (state 'state))
+    :guard (and (bfr-env$-p env$ (logicman->bfrstate))
+                (lbfr-listp (fgl-object-bfrlist x)))
+    :returns (mv err val)
+    :verify-guards nil
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
+    (fgl-object-case x
+      :g-concrete (mv nil x.val)
+      :g-boolean (mv nil (bfr-eval-fast x.bool env$))
+      :g-integer (mv nil (bools->int (bfr-list-eval-fast x.bits env$)))
+      :g-ite (b* (((mv err test) (magic-fgl-object-eval x.test env$))
+                  ((when err) (mv err nil)))
+               (if test
+                   (magic-fgl-object-eval x.then env$)
+                 (magic-fgl-object-eval x.else env$)))
+      :g-cons (b* (((mv err car) (magic-fgl-object-eval x.car env$))
+                   ((when err) (mv err nil))
+                   ((mv err cdr) (magic-fgl-object-eval x.cdr env$))
+                   ((when err) (mv err nil)))
+                (mv nil (cons car cdr)))
+      :g-map (magic-fgl-object-alist-eval x.alist env$)
+      :g-var (mv nil (cdr (assoc-eq x.name (env$->obj-alist env$))))
+      :g-apply (b* (((mv err args) (magic-fgl-objectlist-eval x.args env$))
+                    ((when err) (mv err nil)))
+                 (magitastic-ev-fncall x.fn args 1000 state t t))))
+
+  (define magic-fgl-objectlist-eval ((x fgl-objectlist-p)
+                                    (env$)
+                                    &optional
+                                    (logicman 'logicman)
+                                    (state 'state))
+    :guard (and (bfr-env$-p env$ (logicman->bfrstate))
+                (lbfr-listp (fgl-objectlist-bfrlist x)))
+    :returns (mv err (val true-listp))
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
+    (b* (((when (atom x)) (mv nil nil))
+         ((mv err car) (magic-fgl-object-eval (car x) env$))
+         ((when err) (mv err nil))
+         ((mv err cdr) (magic-fgl-objectlist-eval (cdr x) env$))
+         ((when err) (mv err nil)))
+      (mv nil (cons car cdr))))
+
+  (define magic-fgl-object-alist-eval ((x fgl-object-alist-p)
+                                      (env$)
+                                      &optional
+                                      (logicman 'logicman)
+                                      (state 'state))
+    :guard (and (bfr-env$-p env$ (logicman->bfrstate))
+                (lbfr-listp (fgl-object-alist-bfrlist x)))
+    :returns (mv err val)
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
+    (b* (((when (atom x)) (mv nil x))
+         ((unless (mbt (consp (car x))))
+          (magic-fgl-object-alist-eval (cdr x) env$))
+         ((mv err val1) (magic-fgl-object-eval (cdar x) env$))
+         ((when err) (mv err nil))
+         ((mv err rest) (magic-fgl-object-alist-eval (cdr x) env$))
+         ((when err) (mv err nil)))
+      (mv nil (cons (cons (caar x) val1) rest))))
+  ///
+  (verify-guards magic-fgl-object-eval-fn
+    :hints (("goal" :expand (fgl-object-bfrlist x)
+             :in-theory (disable magic-fgl-object-eval-fn
+                                 magic-fgl-objectlist-eval
+                                 magic-fgl-object-alist-eval))))
+
+  (local (defthm fgl-object-alist-fix-when-bad-car
+           (implies (and (consp X)
+                         (not (consp (car x))))
+                    (equal (fgl-object-alist-fix x)
+                           (fgl-object-alist-fix (cdr x))))
+           :hints(("Goal" :in-theory (enable fgl-object-alist-fix)))))
+
+  (fty::deffixequiv-mutual magic-fgl-object-eval))
 
 
-(define cgraph-summarize-errors-and-assign ((x fgl-object-p)
-                                            (errors true-listp)
-                                            (cands candidate-assigns-p)
-                                            (assigns cgraph-alist-p)
-                                            (sts cgraph-derivstates-p))
-  :returns (mv (new-assigns cgraph-alist-p)
-               (new-sts cgraph-derivstates-p))
-  (b* ((cands (candidate-assigns-remove-fake cands)
-              ;; (let ((nonfake-cands ))
-              ;;   (or nonfake-cands cands))
-              )
-       (vals (remove-duplicates-equal (candidate-assigns->vals cands)))
-       (cand-summary (cond ((atom vals) "No assignment succeeded")
-                           ((atom (cdr vals)) nil)
-                           (t "Multiple conflicting assignments")))
-       (error-summary (combine-error-messages (remove-eq t errors)))
-       (summary (if cand-summary
-                    (if error-summary
-                        (msg "~@0: ~@1" cand-summary error-summary)
-                      cand-summary)
-                  error-summary))
-       (assigns (cgraph-alist-fix assigns))
-       (assigns (if (consp vals)
-                    (hons-acons (fgl-object-fix x) (car vals) assigns)
-                  assigns))
-       (sts (cgraph-set-error x summary sts)))
-    (mv assigns sts))
+(define cgraph-set-error ((x fgl-object-p)
+                          (msg)
+                          (sts cgraph-derivstates-p))
+  :returns (new-sts cgraph-derivstates-p)
+  (b* ((x (fgl-object-fix x))
+       (sts (cgraph-derivstates-fix sts))
+       (st (cdr (hons-get x sts)))
+       ((unless st)
+        (hons-acons x (make-cgraph-derivstate :times-seen 0 :result-msg msg) sts))
+       ((cgraph-derivstate st))
+       (new-msg (if st.result-msg
+                    (msg "~@0~%~@1" msg st.result-msg)
+                  msg)))
+    (hons-acons x (change-cgraph-derivstate st :result-msg new-msg) sts))
   ///
   (defret cgraph-derive-assigns-measure-of-<fn>
-    (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+    (<= (cgraph-derive-assigns-measure cgraph assigns new-sts replimit)
         (cgraph-derive-assigns-measure cgraph assigns sts replimit))
-    :rule-classes :linear))
+    :rule-classes :linear)
 
+  (defret times-seen-of-<fn>
+    (equal (cgraph-derivstate->times-seen (cdr (hons-assoc-equal k new-sts)))
+           (cgraph-derivstate->times-seen (cdr (hons-assoc-equal k (cgraph-derivstates-fix sts)))))))
 
+(define cgraph-set-errors ((x fgl-objectlist-p)
+                          (msg)
+                          (sts cgraph-derivstates-p))
+  :returns (new-sts cgraph-derivstates-p)
+  (if (atom x)
+      (cgraph-derivstates-fix sts)
+    (cgraph-set-errors (cdr x) msg (cgraph-set-error (car x) msg sts)))
+  ///
+  (defret cgraph-derive-assigns-measure-of-<fn>
+    (<= (cgraph-derive-assigns-measure cgraph assigns new-sts replimit)
+        (cgraph-derive-assigns-measure cgraph assigns sts replimit))
+    :rule-classes :linear)
 
-
+  (defret times-seen-of-<fn>
+    (equal (cgraph-derivstate->times-seen (cdr (hons-assoc-equal k new-sts)))
+           (cgraph-derivstate->times-seen (cdr (hons-assoc-equal k (cgraph-derivstates-fix sts)))))))
 
 (local (defthm bfr-varname-p-of-get-term->bvar$c
          (implies (and (equal (bfr-nvars) (next-bvar$c bvar-db))
@@ -2112,191 +1421,318 @@ compute a value for @('x').</p>
          :hints(("Goal" :in-theory (enable bfr-varname-p)))))
 
 
-;; We used to have candidate-assigns-complete-match-subst, which looked for a
-;; property rule application among cands, removed it, and returned the new
-;; candidates as well as an assignment binding the assigned-var of rule to the
-;; candidate value.  Now, we do this in two steps, because there's no guarantee
-;; that we're going to produce a new value so we'll leave the old one
-;; otherwise.
-
-;; ;; If there is a property rule application among cands, add a binding of that
-;; ;; candidate's value to rule's assigned-var and remove that candidate.  Theory
-;; ;; being that all applicable property rules should work together to make one
-;; ;; value.
-;; (define candidate-assigns-complete-match-subst ((rule ctrex-rule-p)
-;;                                                 (cands candidate-assigns-p))
-;;   :returns (mv (new-match-subst symbol-alistp)
-;;                (rest-cands candidate-assigns-p))
-;;   (b* (((when (atom cands)) (mv (list (cons (ctrex-rule->assigned-var rule) nil)) nil))
-;;        ((candidate-assign cand) (candidate-assign-fix (car cands)))
-;;        ((cgraph-edge cand.edge))
-;;        ((ctrex-rule cand.edge.rule))
-;;        ((when (eq cand.edge.rule.ruletype :property))
-;;         (mv (list (cons (ctrex-rule->assigned-var rule) cand.val))
-;;             (candidate-assigns-fix (cdr cands))))
-;;        ((mv subst rest-cands)
-;;         (candidate-assigns-complete-match-subst rule (cdr cands))))
-;;     (mv subst (cons-with-hint cand rest-cands cands))))
-
-
-(define candidate-assigns-assigned-var-subst ((assigned-var pseudo-var-p)
-                                              (cands candidate-assigns-p))
-  :returns (new-match-subst symbol-alistp)
-  (b* ((cands (b* ((non-fake-cands (candidate-assigns-remove-fake cands)))
-                (or non-fake-cands cands)))
-       (vals (remove-duplicates-equal (candidate-assigns->vals cands))))
-    (and vals
-        (list (cons (pseudo-var-fix assigned-var) (car vals))))))
-
-(define candidate-assigns-remove-property-assign ((cands candidate-assigns-p))
-  :returns (rest-cands candidate-assigns-p)
-  (if (atom cands)
-      nil
-    (b* (((candidate-assign cand) (candidate-assign-fix (car cands)))
-         ((cgraph-edge cand.edge))
-         ((ctrex-rule cand.edge.rule)))
-      (if (or (eq cand.edge.rule.ruletype :property)
-              (eq cand.edge.rule.ruletype :fixup))
-          (candidate-assigns-fix (cdr cands))
-        (cons-with-hint cand
-                        (candidate-assigns-remove-property-assign (cdr cands))
-                        cands)))))
-
-
-(local (defthm symbol-alistp-of-append
-         (implies (and (symbol-alistp x)
-                       (symbol-alistp y))
-                  (symbol-alistp (append x y)))))
-
-;; (local (defthm symbol-alistp-when-fgl-object-bindings-p
-;;          (implies (fgl-object-bindings-p x)
-;;                   (symbol-alistp x))))
-
-(local (defthm caar-of-fgl-object-bindings-fix-type
-         (implies (consp (fgl-object-bindings-fix x))
-                  (pseudo-var-p (caar (fgl-object-bindings-fix x))))
-         :hints(("Goal" :in-theory (enable fgl-object-bindings-fix)))
-         :rule-classes :type-prescription))
-
-(define cgraph-match-cond-subst ((match-conds pseudo-term-subst-p)
-                                 (match-subst1 symbol-alistp))
-  :returns (new-subst symbol-alistp)
-  (b* (((when (atom match-conds)) nil)
-       ((unless (mbt (and (consp (car match-conds))
-                          (pseudo-var-p (caar match-conds)))))
-        (cgraph-match-cond-subst (cdr match-conds) match-subst1)))
-    (if (assoc-eq (pseudo-term-fix (cdar match-conds))
-                  match-subst1)
-        (cons (cons (caar match-conds) t)
-              (cgraph-match-cond-subst (cdr match-conds) match-subst1))
-      (cgraph-match-cond-subst (cdr match-conds) match-subst1)))
+(define cgraph-derive-assignments-end ((x fgl-object-p)
+                                        (assigns cgraph-alist-p)
+                                        (sts cgraph-derivstates-p)
+                                        (replimit posp))
+  :returns (done)
+  (b* ((x (fgl-object-fix x))
+       (assigns (cgraph-alist-fix assigns))
+       (sts (cgraph-derivstates-fix sts))
+       (assigns-look (hons-get x assigns))
+       ((when assigns-look) t)
+       ((cgraph-derivstate st)
+        (or (cdr (hons-get x sts))
+            (cgraph-derivstate-start))))
+    (<= (lposfix replimit) st.times-seen))
   ///
-  (local (in-theory (enable pseudo-term-subst-fix))))
-       
-    
-#||
 
-(trace$ bvar-db-update-cgraph)
+  (defret cgraph-derive-assigns-measure-of-incr-seen-when-<fn>
+    (implies (and (not done)
+                  (hons-assoc-equal (fgl-object-fix x) cgraph))
+             (< (cgraph-derive-assigns-measure cgraph assigns
+                                               (cgraph-incr-seen x sts)
+                                               replimit)
+                (cgraph-derive-assigns-measure cgraph assigns sts replimit)))
+    :rule-classes :linear))
 
-(trace$ (cgraph-derive-assignments-obj-fn
-         :entry (list 'cgraph-derive-assignments-obj x)
-         :exit (b* (((list ?new-assigns ?sts) values))
-                 (list 'cgraph-derive-assignments-obj
-                     (take (- (len new-assigns) (len assigns))
-                           new-assigns)))))
-
-
-(trace$ (cgraph-derive-assignments-edge-fn
-         :entry (list 'cgraph-derive-assignments-edge x cands)
-         :exit (b* (((list ?errmsg ?new-cands ?new-assigns ?new-sts) values))
-                 (list 'cgraph-derive-assignments-edge
-                       errmsg
-                       (take (- (len new-cands) (len cands)) new-cands)
-                       (take (- (len new-assigns) (len assigns)) new-assigns)))))
-
-||#
-
-
-
-(defines cgraph-derive-assignments
-  (define cgraph-derive-assignments-obj ((x fgl-object-p
-                                            "object to try and derive an assignment for")
-                                         (cands candidate-assigns-p)
-                                         (assigns cgraph-alist-p
-                                                  "accumulator of object assignments")
-                                         (sts cgraph-derivstates-p)
-                                         (env$)
-                                         (cgraph cgraph-p)
-                                         (replimit posp)
-                                         &optional
-                                         (logicman 'logicman)
-                                         (bvar-db 'bvar-db)
-                                         (state 'state))
-    :parents (fgl-counterexample-implementation-details)
+(define cgraph-derive-assignments-base ((x fgl-object-p)
+                                        (assigns cgraph-alist-p)
+                                        (sts cgraph-derivstates-p)
+                                        env$
+                                        &optional
+                                        (logicman 'logicman)
+                                        (bvar-db 'bvar-db)
+                                        (state 'state))
+  :returns (mv donep
+               (new-assigns cgraph-alist-p)
+               (new-sts cgraph-derivstates-p))
     :guard (and (lbfr-listp (fgl-object-bfrlist x))
                 (bfr-env$-p env$ (logicman->bfrstate))
-                (equal (bfr-nvars) (next-bvar bvar-db))
-                (lbfr-listp (cgraph-bfrlist cgraph)))
-    :returns (mv (new-assigns cgraph-alist-p)
-                 (new-sts cgraph-derivstates-p))
-    :well-founded-relation acl2::nat-list-<
-    :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
-                   0
-                   0)
-    :verify-guards nil
-    ;; Tries to derive an assignment for object X by looking it up in the
-    ;; cgraph and seeing what rules (edges) are available that might help
-    ;; determine its value.
-    ;; If x is already bound in assigns, then we're done with it already and we don't add an assignment.
-    ;; If x is variable free, then it just assigns its evaluation under the Boolean env.
-    ;; If x is term for which there is a Boolean variable in the bvar-db, we assign its Boolean value.
-    ;; Otherwise, we derive candidate values for x by looking at its edges in the cgraph.
-    ;; If any edge successfully (?) derives a value, we choose the first one.
-    (b* ((x (fgl-object-fix x))
-         (assigns (cgraph-alist-fix assigns))
-         (sts (cgraph-derivstates-fix sts))
-         (cgraph (cgraph-fix cgraph))
-         (assigns-look (hons-get x assigns))
-         ((when assigns-look)
-          (mv assigns sts))
-         ((cgraph-derivstate st)
-          (or (cdr (hons-get x sts))
-              (cgraph-derivstate-start)))
-         ((when (<= (lposfix replimit) st.times-seen))
-          (mv assigns sts))
-         ((when (fgl-object-variable-free-p x))
-          (b* (((mv err val) (magic-fgl-object-eval x env$))
-               ((when err)
-                (b* ((sts (cgraph-set-error x
-                                            (msg "Failed to evaluate the object: ~@0"
-                                                 (if* (eq err t) "(no msg)" err))
-                                            sts)))
-                  (mv assigns sts)))
-               (assigns (hons-acons x val assigns)))
-            (mv assigns sts)))
-         (bvar (get-term->bvar x bvar-db))
-         ((when bvar)
-          (b* ((val (bfr-eval-fast (bfr-var bvar) env$ logicman))
-               (assigns (hons-acons x val assigns)))
-            (mv assigns sts)))
+                (equal (bfr-nvars) (next-bvar bvar-db)))
+  (b* ((x (fgl-object-fix x))
+       (assigns (cgraph-alist-fix assigns))
+       (sts (cgraph-derivstates-fix sts))
+       (bvar (get-term->bvar x bvar-db))
+       ((when bvar)
+        (b* ((val (bfr-eval-fast (bfr-var bvar) env$ logicman))
+             (assigns (hons-acons x (cgraph-value val *ctrex-eval-default-priority* :boolean) assigns)))
+          (mv t assigns sts)))
+       ((when (fgl-object-variable-free-p x))
+        (b* (((mv err val) (magic-fgl-object-eval x env$))
+             ((when err)
+              (b* ((sts (cgraph-set-error x
+                                          (msg "Failed to evaluate the object: ~@0"
+                                               (if* (eq err t) "(no msg)" err))
+                                          sts)))
+                (mv nil assigns sts)))
+             (assigns (hons-acons x (cgraph-value val *ctrex-eval-default-priority* :evaluation) assigns)))
+          (mv t assigns sts))))
+    (mv nil assigns sts))
+  ///
 
-         (edges (cdr (hons-get x cgraph)))
-         ((unless edges)
-          (b* ((sts (cgraph-set-error x
-                                      "No rules for deriving the value of the object"
-                                      sts)))
-            (mv assigns sts)))
+  (defret cgraph-derive-assigns-measure-when-<fn>
+    (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+        (cgraph-derive-assigns-measure cgraph assigns sts replimit))
+    :rule-classes :linear)
 
-         (sts (cgraph-incr-seen x sts))
+  (defret cgraph-derive-assignments-end-of-base-when-not-done
+    (implies (not donep)
+             (equal (cgraph-derive-assignments-end y new-assigns new-sts replimit)
+                    (cgraph-derive-assignments-end y assigns sts replimit)))
+    :hints(("Goal" :in-theory (enable cgraph-derive-assignments-end
+                                      cgraph-set-error))))
 
-         ((mv errors candidate-assigns assigns sts)
-          (cgraph-derive-assignments-edges edges cands assigns sts env$ cgraph replimit)))
+  (defret cgraph-derive-assignments-base-bound-when-done
+    (implies (and donep
+                  (fgl-object-p x))
+             (hons-assoc-equal x new-assigns))))
 
-      (cgraph-summarize-errors-and-assign x errors candidate-assigns assigns sts)))
+(define cgraph-assign-all ((x fgl-objectlist-p)
+                           (val cgraph-value-p)
+                           (assigns cgraph-alist-p)
+                           (sts cgraph-derivstates-p))
+  :returns (mv (new-assigns cgraph-alist-p)
+               (new-sts cgraph-derivstates-p))
+  (b* ((assigns (cgraph-alist-fix assigns))
+       (sts (cgraph-derivstates-fix sts))
+       ((when (atom x)) (mv assigns sts))
+       (x1 (fgl-object-fix (car x)))
+       (look (hons-get x1 assigns))
+       (sts (if (and look
+                     (equal (cgraph-value->priority (cdr look)) (cgraph-value->priority val))
+                     (not (equal (cgraph-value->val (cdr look)) (cgraph-value->val val))))
+                (cgraph-set-error x1 (msg "Conflicting assignment: ~x0, ~x1" (cdr look) (cgraph-value-fix val)) sts)
+              sts))
+       (assigns (if (or (not look)
+                        (> (cgraph-value->priority val) (cgraph-value->priority (cdr look))))
+                    (hons-acons x1 (cgraph-value-fix val) assigns)
+                  assigns)))
+    (cgraph-assign-all (cdr x) val assigns sts))
+  ///
+  
 
-  (define cgraph-derive-assignments-edges ((x cgraph-edgelist-p)
-                                           (cands candidate-assigns-p)
-                                           (assigns cgraph-alist-p)
+  (defret cgraph-derive-assigns-measure-of-<fn>
+    (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+        (cgraph-derive-assigns-measure cgraph assigns sts replimit))
+    :rule-classes :linear))
+
+(define cgraph-derive-assignments-base-equivclass ((x fgl-objectlist-p)
+                                                   (equivclass fgl-objectlist-p)
+                                                   (assigns cgraph-alist-p)
+                                                   (sts cgraph-derivstates-p)
+                                                   env$
+                                                   &optional
+                                                   (logicman 'logicman)
+                                                   (bvar-db 'bvar-db)
+                                                   (state 'state))
+  ;; This is done for an equivalence class of objects where we want to derive a
+  ;; value for any of them and conclude that they're all the same.
+  :returns (mv donep
+               (new-assigns cgraph-alist-p)
+               (new-sts cgraph-derivstates-p))
+    :guard (and (lbfr-listp (fgl-objectlist-bfrlist x))
+                (bfr-env$-p env$ (logicman->bfrstate))
+                (equal (bfr-nvars) (next-bvar bvar-db)))
+    (b* (((when (atom x))
+          (mv nil (cgraph-alist-fix assigns) (cgraph-derivstates-fix sts)))
+         (x1 (fgl-object-fix (car x)))
+         (look (hons-get x1 (cgraph-alist-fix assigns)))
+         ((when look)
+          (b* (((mv assigns sts)
+                (cgraph-assign-all equivclass (cdr look) assigns sts)))
+            (mv t assigns sts)))
+         ((mv done assigns sts)
+          (cgraph-derive-assignments-base x1 assigns sts env$))
+         ((when done)
+          (b* (((mv assigns sts)
+                (cgraph-assign-all equivclass (cdr (hons-get x1 assigns)) assigns sts)))
+            (mv t assigns sts))))
+      (cgraph-derive-assignments-base-equivclass (cdr x) equivclass assigns sts env$))
+    ///
+    
+  
+
+  (defret cgraph-derive-assigns-measure-of-<fn>
+    (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+        (cgraph-derive-assigns-measure cgraph assigns sts replimit))
+    :rule-classes :linear))
+
+
+;; (define cgraph-formulalist-sortedp ((x cgraph-formulalist-p))
+;;   (if (or (atom x)
+;;           (atom (cdr x)))
+;;       t
+;;     (and (not (cgraph-formula-order< (cadr x) (car x)))
+;;          (cgraph-formulalist-sortedp (cdr x)))))
+
+
+(define cgraph-formulalist-member-by-order ((x cgraph-formula-p)
+                                            (lst cgraph-formulalist-p))
+  (cond ((atom lst) nil)
+        ((cgraph-formula-order< x (car lst)) nil)
+        ((equal (cgraph-formula-fix x)
+                (cgraph-formula-fix (car lst))) t)
+        (t (cgraph-formulalist-member-by-order x (cdr lst))))
+  ///
+  (local (defthm cgraph-formula-order-irreflexive
+           (not (cgraph-formula-order< x x))
+           :hints(("Goal" :in-theory (enable cgraph-formula-order<)))))
+  (local (defthm cgraph-formula-order-trans-lemma
+           (implies (and (cgraph-formula-order< x y)
+                         (not (cgraph-formula-order< z y)))
+                    (cgraph-formula-order< x z))
+           :hints(("Goal" :in-theory (enable cgraph-formula-order<)))))
+  (local (defthm cgraph-formula-order-trans
+           (implies (and (cgraph-formula-order< x y)
+                         (cgraph-formula-order< y z))
+                    (cgraph-formula-order< x z))
+           :hints(("Goal" :in-theory (enable cgraph-formula-order<)))))
+  
+  (local (defthm not-member-when-sorted
+           (implies (and (cgraph-formula-ordered-p lst)
+                         (cgraph-formula-order< x (car lst)))
+                    (not (member-equal (cgraph-formula-fix x)
+                                       (cgraph-formulalist-fix lst))))
+           :hints(("Goal" :in-theory (enable cgraph-formula-ordered-p
+                                             cgraph-formulalist-fix)))))
+  (defthm <fn>-correct-when-sorted
+    (implies (cgraph-formula-ordered-p lst)
+             (iff (cgraph-formulalist-member-by-order x lst)
+                  (member-equal (cgraph-formula-fix x)
+                                (cgraph-formulalist-fix lst))))
+    :hints(("Goal" :in-theory (enable cgraph-formula-ordered-p
+                                      cgraph-formulalist-fix)))))
+    
+
+(fty::deffixequiv cgraph-formula-ordered-p :args ((x cgraph-formulalist-p))
+  :hints(("Goal" :in-theory (enable cgraph-formula-ordered-p))))
+
+(define cgraph-formulalist-sortedp ((x cgraph-formulalist-p))
+  (if (or (atom x)
+          (atom (cdr x)))
+      t
+    (and (not (cgraph-formulalist-member-by-order (car x) (cdr x)))
+         (not (cgraph-formula-order< (cadr x) (car x)))
+         (cgraph-formulalist-sortedp (cdr x))))
+  ///
+  (defthm cgraph-formulalist-sortedp-implies-orderd-p
+    (implies (cgraph-formulalist-sortedp x)
+             (cgraph-formula-ordered-p x))
+    :hints(("Goal" :in-theory (enable cgraph-formula-ordered-p))))
+
+  
+  (local (defthm cgraph-formula-order-irreflexive
+           (not (cgraph-formula-order< x x))
+           :hints(("Goal" :in-theory (enable cgraph-formula-order<)))))
+
+  (local (defthm cgraph-formula-order-asymm
+           (implies (cgraph-formula-order< x y)
+                    (not (cgraph-formula-order< y x)))
+           :hints(("Goal" :in-theory (enable cgraph-formula-order<)))))
+  
+  (defthm cgraph-formulalist-sortedp-iff-ordered-and-dup-free
+    (iff (cgraph-formulalist-sortedp x)
+         (and (no-duplicatesp-equal (cgraph-formulalist-fix x))
+              (cgraph-formula-ordered-p x)))
+    :hints(("Goal" :in-theory (enable cgraph-formula-ordered-p
+                                      cgraph-formulalist-fix)))))
+
+(define cgraph-formulalist-uniqsort ((x cgraph-formulalist-p))
+  :returns (new-x cgraph-formulalist-p)
+  (if (cgraph-formulalist-sortedp x)
+      (cgraph-formulalist-fix x)
+    (cgraph-formula-sort (set::mergesort (cgraph-formulalist-fix x))))
+  ///
+  (defthm cgraph-formulalist-bfrlist-of-insert
+    (implies (and (not (member v (cgraph-formula-bfrlist x)))
+                  (not (member v (cgraph-formulalist-bfrlist y))))
+             (not (member v (cgraph-formulalist-bfrlist (set::insert x y)))))
+    :hints(("Goal" :in-theory (enable set::insert set::head set::emptyp set::tail))))
+
+  (defthm cgraph-formulalist-bfrlist-of-mergesort
+    (implies (not (member v (cgraph-formulalist-bfrlist x)))
+             (not (member v (cgraph-formulalist-bfrlist (set::mergesort x)))))
+    :hints(("Goal" :in-theory (enable set::mergesort))))
+
+  (defthm cgraph-formulalist-bfrlist-of-cgraph-formula-insertsort
+    (implies (not (member v (cgraph-formulalist-bfrlist x)))
+             (not (member v (cgraph-formulalist-bfrlist (cgraph-formula-insertsort x)))))
+    :hints(("Goal" :in-theory (enable cgraph-formula-insertsort))))
+
+  (defret cgraph-formulalist-bfrlist-of-uniqsort
+    (implies (not (member v (cgraph-formulalist-bfrlist x)))
+             (not (member v (cgraph-formulalist-bfrlist new-x))))))
+
+
+(define cgraph-extract-dep-values ((deps fgl-object-bindings-p)
+                                   (assigns cgraph-alist-p))
+  :returns (values symbol-alistp)
+  (if (atom deps)
+      nil
+    (if (mbt (and (consp (car deps))
+                  (pseudo-var-p (caar deps))))
+        (b* ((obj (fgl-object-fix (cdar deps)))
+             (look (hons-get obj assigns)))
+          (if look
+              (cons (cons (caar deps) (cgraph-value->val (cdr look)))
+                    (cgraph-extract-dep-values (cdr deps) assigns))
+            (cgraph-extract-dep-values (cdr deps) assigns)))
+      (cgraph-extract-dep-values (cdr deps) assigns)))
+  ///
+  (local (in-theory (enable fgl-object-bindings-fix))))
+
+(define cgraph-extract-dep-success-values ((dep-success-vars pseudo-term-subst-p)
+                                           (values symbol-alistp))
+  :returns (succ-values symbol-alistp)
+  (if (atom dep-success-vars)
+      nil
+    (if (and (mbt (and (consp (car dep-success-vars))
+                       (pseudo-var-p (caar dep-success-vars))))
+             (pseudo-term-case (cdar dep-success-vars) :var))
+        (b* ((var (pseudo-term-var->name (cdar dep-success-vars)))
+             (look (hons-assoc-equal var values)))
+          (if look
+              (cons (cons (caar dep-success-vars) t)
+                    (cgraph-extract-dep-success-values (cdr dep-success-vars) values))
+            (cgraph-extract-dep-success-values (cdr dep-success-vars) values)))
+      (cgraph-extract-dep-success-values (cdr dep-success-vars) values)))
+  ///
+  (local (in-theory (enable pseudo-term-subst-fix))))
+
+;; in case this needs tracing
+(define magitastic-ev-wrap ((x pseudo-termp)
+                            (alist symbol-alistp)
+                            (reclimit natp)
+                            state hard-errp aokp)
+  (magitastic-ev x alist (lnfix reclimit) state hard-errp aokp))
+
+(define cgraph-formulas-some-non-implicit ((x cgraph-formulalist-p))
+  (if (atom x)
+      nil
+    (or (not (eq (cgraph-formula->ruletype (car x)) :implicit))
+        (cgraph-formulas-some-non-implicit (cdr x)))))
+
+
+(with-output
+  :off (event)
+  :evisc (:gag-mode (evisc-tuple 5 7 nil nil))
+
+  (defines cgraph-derive-assignments
+    (define cgraph-derive-assignments-obj ((x fgl-object-p
+                                              "object to try and derive an assignment for")
+                                           (assigns cgraph-alist-p
+                                                    "accumulator of object assignments")
                                            (sts cgraph-derivstates-p)
                                            (env$)
                                            (cgraph cgraph-p)
@@ -2305,166 +1741,175 @@ compute a value for @('x').</p>
                                            (logicman 'logicman)
                                            (bvar-db 'bvar-db)
                                            (state 'state))
-    :guard (and (lbfr-listp (cgraph-edgelist-bfrlist x))
-                (bfr-env$-p env$ (logicman->bfrstate))
-                (equal (bfr-nvars) (next-bvar bvar-db))
-                (lbfr-listp (cgraph-bfrlist cgraph)))
+      :parents (fgl-counterexample-implementation-details)
+      :guard (and (lbfr-listp (fgl-object-bfrlist x))
+                  (bfr-env$-p env$ (logicman->bfrstate))
+                  (equal (bfr-nvars) (next-bvar bvar-db))
+                  (lbfr-listp (cgraph-bfrlist cgraph)))
+      :returns (mv (new-assigns cgraph-alist-p)
+                   (new-sts cgraph-derivstates-p))
+      :well-founded-relation acl2::nat-list-<
+      :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
+                     10
+                     0)
+      :verify-guards nil
+      ;; Tries to derive an assignment for object X by looking it up in the
+      ;; cgraph and seeing what rules (edges) are available that might help
+      ;; determine its value.
+      ;; If x is already bound in assigns, then we're done with it already and we don't add an assignment.
+      ;; If x is variable free, then it just assigns its evaluation under the Boolean env.
+      ;; If x is term for which there is a Boolean variable in the bvar-db, we assign its Boolean value.
+      ;; Otherwise, we derive candidate values for x by looking at its edges in the cgraph.
+      ;; If any edge successfully (?) derives a value, we choose the first one.
+      (b* ((x (fgl-object-fix x))
+           (assigns (cgraph-alist-fix assigns))
+           (sts (cgraph-derivstates-fix sts))
+           (cgraph (cgraph-fix cgraph))
+           (donep (cgraph-derive-assignments-end x assigns sts replimit))
+           ((when donep) (mv assigns sts))
+           ((mv donep assigns sts)
+            (cgraph-derive-assignments-base x assigns sts env$))
+           ((when donep) (mv assigns sts))
 
-    :returns (mv (errors true-listp)
-                 (new-cands candidate-assigns-p)
-                 (new-assigns cgraph-alist-p)
-                 (new-sts cgraph-derivstates-p))
-    :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
-                   9
-                   (len x))
-    ;; Just iterates over the list of edges applying cgraph-derive-assignments-edge to each.
-    (b* (((when (atom x)) (mv nil (candidate-assigns-fix cands)
-                              (cgraph-alist-fix assigns)
-                              (cgraph-derivstates-fix sts)))
-         ((mv err cands new-assigns new-sts)
-          (cgraph-derive-assignments-edge (car x) cands assigns sts env$ cgraph replimit))
-         ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
-                           (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
-          (mv nil (candidate-assigns-fix cands)
-              (cgraph-alist-fix assigns)
-              (cgraph-derivstates-fix sts)))
-         ((mv rest-errs cands assigns sts)
-          (cgraph-derive-assignments-edges (cdr x) cands new-assigns new-sts env$ cgraph replimit)))
-      (if err
-          (mv (cons err rest-errs) cands assigns sts)
-        (mv rest-errs cands assigns sts))))
+           (outedges (cdr (hons-get x cgraph)))
+           ((unless outedges)
+            (b* ((sts (cgraph-set-error x
+                                        "No rules for deriving the value of the object"
+                                        sts)))
+              (mv assigns sts)))
+           ((cgraph-outedges outedges))
 
-  (define cgraph-derive-assignments-edge ((x cgraph-edge-p)
-                                          (cands candidate-assigns-p)
-                                          (assigns cgraph-alist-p)
-                                          (sts cgraph-derivstates-p)
-                                          (env$)
-                                          (cgraph cgraph-p)
-                                          (replimit posp)
-                                          &optional
-                                          (logicman 'logicman)
-                                          (bvar-db 'bvar-db)
-                                          (state 'state))
-    :returns (mv errmsg
-                 (new-cands candidate-assigns-p)
-                 (new-assigns cgraph-alist-p)
-                 (new-sts cgraph-derivstates-p))
-    :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
-                   8
-                   0)
-    :guard (and (lbfr-listp (cgraph-edge-bfrlist x))
-                (bfr-env$-p env$ (logicman->bfrstate))
-                (equal (bfr-nvars) (next-bvar bvar-db))
-                (lbfr-listp (cgraph-bfrlist cgraph)))
-    ;; For a given cgraph edge, compute the candidate value for the assigned object:
-    ;;   - compute a substitution binding all the variables that might occur in
-    ;;     rule.assign/rule.assign-cond
-    ;;   - compute the value of rule.assign/rule.assign-cond under that substitution
-    ;;   - if rule.assign-cond's value is nonnil, add the value of rule.assign
-    ;;     as a candidate value.
+           (sts (cgraph-incr-seen x sts))
 
-    ;; First traverse the match variables and try to derive candidate
-    ;; assignments for them using cgraph-derive-assignments-matches.
-    ;;
-    ;; Example.  Suppose we are trying to obtain an assignment for (foo a)
-    ;; using intcar-intcdr-elim.  This rule has:
-    ;;   :match ((car (intcar x))
-    ;;           (cdr (intcdr x)))
-    ;;   :assign (intcons car cdr)
-    ;;   :assigned-var x
-    ;; The edge will have this rule, match-vars = (car cdr), and subst = ((x . (foo a))).
-    ;; First we call cgraph-derive-assignments-matches which for each var in match-vars, does:
-    ;;  - looks up the var (say car) in rule.match --> (intcar x)
-    ;;  - substitutes edge.subst into this term --> (:g-apply intcar (g-apply foo (g-var a)))
-    ;;  - tries to derive an assignment for this using cgraph-derive-assignments-obj.
-    ;;  Returns a mapping from the variables to the objects produced, i.e. car -> value, cdr -> value.
+           ((mv equiv-objects equiv-obj-formulas new-assigns new-sts)
+            (cgraph-derive-assignments-collect-equiv-class outedges.equivs (list x) outedges.formulas assigns sts env$ cgraph replimit))
+           ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+                             (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
+            (mv new-assigns new-sts))
+           (assigns new-assigns)
+           (sts new-sts)
+           ((mv donep assigns sts)
+            (cgraph-derive-assignments-base-equivclass equiv-objects equiv-objects assigns sts env$))
+           ((when donep)
+            (mv assigns sts))
 
-    ;; For a complicated example: Suppose we are trying to
-    ;; derive an assignment for (get-alist a) using hons-get-ctrex-rule, which has
-    ;;  :match ((val (cdr (hons-get k x))))
-    ;;  :assign (redundant-hons-acons k val x)
-    ;;  :assigned-var x
-    ;; In this case the edge will have this rule with a subst including not only x but also k.
-    ;; Suppose it is ((x . (get-alist a)) (k . 'bar)). Subst will also have match-vars = (val)
-    ;; since that's the only match var.
-    ;; To find its value (cgraph-derive-assignments-match), 
-    ;;  - look up the var --> (cdr (hons-get k x))
-    ;;  - substitute edge.subst --> (cdr (hons-get 'bar (get-alist a)))
-    ;;  - try to derive the assignment for this obj.
+           (formulas (cgraph-formulalist-uniqsort equiv-obj-formulas))
+           ((mv successp value assigns sts)
+            (cgraph-derive-assignments-formulas equiv-objects formulas
+                                                nil ;; successp
+                                                nil ;; current cgraph-value
+                                                assigns sts env$ cgraph replimit))
+      
+           ;; if successful, assign the value; otherwise store the error
+           ((unless successp)
+            (mv (cgraph-alist-fix assigns)
+                ;; Do we always set an error here? We get a lot of messages about (intcdr (intcdr ...))
+                ;; when it has really just reached the end of the vector. Heuristically, let's only produce the error if there is anon-implicit rule.
+                (if (cgraph-formulas-some-non-implicit formulas)
+                    (cgraph-set-errors equiv-objects (msg "No formula succeeded in computing a value") sts)
+                  sts))))
+        (cgraph-assign-all equiv-objects value assigns sts)))
+    
+    (define cgraph-derive-assignments-collect-equiv-class ((equivs cgraph-equivlist-p)
+                                                           (class fgl-objectlist-p)
+                                                           (edges cgraph-formulalist-p)
+                                                           (assigns cgraph-alist-p)
+                                                           (sts cgraph-derivstates-p)
+                                                           (env$)
+                                                           (cgraph cgraph-p)
+                                                           (replimit posp)
+                                                           &optional
+                                                           (logicman 'logicman)
+                                                           (bvar-db 'bvar-db)
+                                                           (state 'state))
+      :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
+                     20
+                     (len equivs))
+      :returns (mv (equiv-objects fgl-objectlist-p)
+                   (equiv-obj-edges cgraph-formulalist-p)
+                   (new-assigns cgraph-alist-p)
+                   (new-sts cgraph-derivstates-p))
+      :guard (and (lbfr-listp (fgl-objectlist-bfrlist class))
+                  (lbfr-listp (cgraph-equivlist-bfrlist equivs))
+                  (lbfr-listp (cgraph-formulalist-bfrlist edges))
+                  (bfr-env$-p env$ (logicman->bfrstate))
+                  (equal (bfr-nvars) (next-bvar bvar-db))
+                  (lbfr-listp (cgraph-bfrlist cgraph)))
+      (b* ((class (fgl-objectlist-fix class))
+           (edges (cgraph-formulalist-fix edges))
+           (assigns (cgraph-alist-fix assigns))
+           (sts (cgraph-derivstates-fix sts))
+           ((when (atom equivs))
+            (mv class edges assigns sts))
+           ((mv class edges new-assigns new-sts)
+            (cgraph-derive-assignments-collect-equiv (car equivs) class edges assigns sts env$ cgraph replimit))
+           ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+                             (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
+            (mv class edges new-assigns new-sts))
+           (assigns new-assigns)
+           (sts new-sts))
+        (cgraph-derive-assignments-collect-equiv-class (cdr equivs) class edges assigns sts env$ cgraph replimit)))
 
-    ;; A further complication is if k (in the example above) is itself a term
-    ;; containing variables.  To deal with this case, we try to resolve all the
-    ;; objects in the edge.subst using cgraph-derive-assignments-obj.  But we
-    ;; don't want to recur on the object we're currently resolving, so we omit
-    ;; the binding of the assigned-var of the rule.
 
-    (b* (((cgraph-edge x))
-         ((ctrex-rule x.rule))
-         (cands (candidate-assigns-fix cands))
-         ((mv eval-subst new-assigns new-sts)
-          ;; In the simple example, this doesn't do anything and returns
-          ;; eval-subst=nil, because the only variable in the subst is x which
-          ;; is the assigned-var.  In the complicated example, we additionally
-          ;; have (k . 'bar), which trivially evaluates to bar.  But in
-          ;; general, we use cgraph-derive-assignments-obj for any variables
-          ;; besides the assigned-var.  Another example: rule for deriving the
-          ;; value of x given an (update-nth n val x) term, we might have n be
-          ;; a symbolic integer and val be some arbitrary object, so we go and
-          ;; derive values for those before attempting to update x.
-          (cgraph-derive-assignments-eval-subst x.subst x.rule.assigned-var assigns sts env$ cgraph replimit logicman bvar-db state))
-         ;; This takes the first candidate value (non-fake if any) and assigns
-         ;; it to x.rule.assigned-var, or leaves it unassigned if none.
-         (var-subst (candidate-assigns-assigned-var-subst x.rule.assigned-var cands))
-         ;; This start-subst now has the variables of the rule, including the
-         ;; assigned var, assigned to some values.
-         (start-subst (append var-subst eval-subst))
-         ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
-                           (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
-          (mv nil nil
-              (cgraph-alist-fix assigns)
-              (cgraph-derivstates-fix sts)))
-         (assigns new-assigns)
-         (sts new-sts)
+    (define cgraph-derive-assignments-collect-equiv ((equiv cgraph-equivnode-p)
+                                                     (class fgl-objectlist-p)
+                                                     (edges cgraph-formulalist-p)
+                                                     (assigns cgraph-alist-p)
+                                                     (sts cgraph-derivstates-p)
+                                                     (env$)
+                                                     (cgraph cgraph-p)
+                                                     (replimit posp)
+                                                     &optional
+                                                     (logicman 'logicman)
+                                                     (bvar-db 'bvar-db)
+                                                     (state 'state))
+      :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
+                     20
+                     0)
+      :returns (mv (equiv-objects fgl-objectlist-p)
+                   (equiv-obj-edges cgraph-formulalist-p)
+                   (new-assigns cgraph-alist-p)
+                   (new-sts cgraph-derivstates-p))
+      :guard (and (lbfr-listp (fgl-objectlist-bfrlist class))
+                  (lbfr-listp (cgraph-equivnode-bfrlist equiv))
+                  (lbfr-listp (cgraph-formulalist-bfrlist edges))
+                  (bfr-env$-p env$ (logicman->bfrstate))
+                  (equal (bfr-nvars) (next-bvar bvar-db))
+                  (lbfr-listp (cgraph-bfrlist cgraph)))
+      (b* (((cgraph-equivnode equiv))
+           (class (fgl-objectlist-fix class))
+           (edges (cgraph-formulalist-fix edges))
+           (assigns (cgraph-alist-fix assigns))
+           (sts (cgraph-derivstates-fix sts))
+           ((when (member-equal equiv.other class))
+            (mv class edges assigns sts))
+           ((mv new-assigns new-sts)
+            (cgraph-derive-assignments-obj equiv.equivalence assigns sts env$ cgraph replimit))
+           ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+                             (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
+            (mv class edges new-assigns new-sts))
+           (assigns new-assigns)
+           (sts new-sts)
+           (look (hons-get equiv.equivalence assigns))
+           ((unless (and look (cdr look)))
+            (mv class edges assigns sts))
+           (class (cons equiv.other class))
+           (outedges (cdr (hons-get equiv.other (cgraph-fix cgraph))))
+           ((unless outedges)
+            (mv class edges assigns sts))
+           ((cgraph-outedges outedges))
+           (edges (append outedges.formulas edges))
+           (done (cgraph-derive-assignments-end equiv.other assigns sts replimit))
+           ((when done)
+            (mv class edges assigns sts))
+           (sts (cgraph-incr-seen equiv.other sts)))
+        (cgraph-derive-assignments-collect-equiv-class outedges.equivs class edges assigns sts env$ cgraph replimit)))
+    
 
-         ((mv match-subst assigns sts)
-          (cgraph-derive-assignments-matches x.match-vars x.rule x.subst
-                                             start-subst assigns sts env$ cgraph replimit))
-         ((unless match-subst)
-          ;; BOZO It would kind of make sense to produce a real error message
-          ;; here, but then we'd get not just the root cause of a given error,
-          ;; but tons of messages about its various consequences.
-
-          ;; Anyway, if we were unable to derive a value for any of the match
-          ;; terms, then fail.
-          (mv t cands ;; new-assigns new-sts
-              assigns sts))
-         (match-subst1 (append match-subst start-subst))
-         (match-cond-subst (cgraph-match-cond-subst x.rule.match-conds match-subst1))
-         (full-subst (append match-cond-subst match-subst1))
-         ((mv err assign-cond)
-          (magitastic-ev x.rule.assign-cond full-subst 1000 state t t))
-         ((when err)
-          (b* ((msg (msg "Failed to evaluate assignment condition ~x0 from rule ~x1"
-                         x.rule.assign-cond x.rule.name)))
-            ;; (cw "~@0~%" msg)
-            (mv msg cands assigns sts)))
-         ((unless assign-cond)
-          (mv nil cands assigns sts))
-         ((mv err val)
-          (magitastic-ev x.rule.assign full-subst 1000 state t t))
-         ;; (- (cw "magitastic-ev ~x0: ~x2 ~x3~%" x.rule.assign nil err val))
-         ((when err)
-          (b* ((msg (msg "Failed to evaluate assignment ~x0 from rule ~x1"
-                   x.rule.assign x.rule.name)))
-            ;; (cw "~@0~%" msg)
-            (mv msg cands assigns sts)))
-         (cands (candidate-assigns-remove-property-assign cands)))
-      (mv nil
-          (cons (make-candidate-assign :edge x :val val) cands)
-          assigns sts)))
-
-  (define cgraph-derive-assignments-eval-subst ((subst fgl-object-bindings-p)
-                                                (assigned-var pseudo-var-p)
+    (define cgraph-derive-assignments-formulas ((targets fgl-objectlist-p)
+                                                (formulas cgraph-formulalist-p)
+                                                (successp)
+                                                (curr-value (implies successp (cgraph-value-p curr-value)))
                                                 (assigns cgraph-alist-p)
                                                 (sts cgraph-derivstates-p)
                                                 (env$)
@@ -2474,236 +1919,498 @@ compute a value for @('x').</p>
                                                 (logicman 'logicman)
                                                 (bvar-db 'bvar-db)
                                                 (state 'state))
-    :returns (mv (eval-subst symbol-alistp)
-                 (new-assigns cgraph-alist-p)
-                 (new-sts cgraph-derivstates-p))
-    :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
-                   7
-                   (len (fgl-object-bindings-fix subst)))
-    :guard (and (lbfr-listp (fgl-object-bindings-bfrlist subst))
-                (bfr-env$-p env$ (logicman->bfrstate))
-                (equal (bfr-nvars) (next-bvar bvar-db))
-                (lbfr-listp (cgraph-bfrlist cgraph)))
-    (b* ((subst (fgl-object-bindings-fix subst))
-         ((when (atom subst))
-          (mv nil
-              (cgraph-alist-fix assigns)
-              (cgraph-derivstates-fix sts)))
-         ;; ((unless (mbt (and (consp (car subst))
-         ;;                    (pseudo-var-p (caar subst)))))
-         ;;  (cgraph-derive-assignments-eval-subst (cdr subst) assigns sts env$ cgraph replimit))
-         ((cons var obj) (car subst))
-         ((when (eq var (pseudo-var-fix assigned-var)))
-          (cgraph-derive-assignments-eval-subst (cdr subst) assigned-var assigns sts env$ cgraph replimit))
-         ((mv new-assigns new-sts) (cgraph-derive-assignments-obj obj nil assigns sts env$ cgraph replimit))
-         ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
-                           (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
-          (mv nil
-              (cgraph-alist-fix assigns)
-              (cgraph-derivstates-fix sts)))
-         (pair (hons-get ;; (fgl-object-fix obj)
-                obj new-assigns))
-         ((mv rest-subst assigns sts)
-          (cgraph-derive-assignments-eval-subst (cdr subst) assigned-var new-assigns new-sts env$ cgraph replimit)))
-      (mv (if pair
-              (cons (cons var (cdr pair)) rest-subst)
-            rest-subst)
-          assigns sts)))
+      :guard (and (lbfr-listp (cgraph-formulalist-bfrlist formulas))
+                  (bfr-env$-p env$ (logicman->bfrstate))
+                  (equal (bfr-nvars) (next-bvar bvar-db))
+                  (lbfr-listp (cgraph-bfrlist cgraph)))
+
+      :returns (mv (new-successp)
+                   (new-value (implies new-successp (cgraph-value-p new-value)))
+                   (new-assigns cgraph-alist-p)
+                   (new-sts cgraph-derivstates-p))
+      :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
+                     12
+                     (len formulas))
+      ;; Just iterates over the list of edges applying cgraph-derive-assignments-edge to each.
+      (b* (((when (atom formulas)) (mv successp
+                                       (mbe :logic (if successp (cgraph-value-fix curr-value) curr-value)
+                                            :exec curr-value)
+                                       (cgraph-alist-fix assigns) (cgraph-derivstates-fix sts)))
+           ((mv successp curr-value new-assigns new-sts)
+            (cgraph-derive-assignments-formula targets (car formulas) successp curr-value assigns sts env$ cgraph replimit))
+           ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+                             (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
+            (mv successp curr-value new-assigns new-sts))
+           (assigns new-assigns)
+           (sts new-sts))
+        (cgraph-derive-assignments-formulas targets (cdr formulas) successp curr-value assigns sts env$ cgraph replimit)))
+
+    (define cgraph-derive-assignments-formula ((targets fgl-objectlist-p)
+                                               (x cgraph-formula-p)
+                                               (successp)
+                                               (curr-value (implies successp (cgraph-value-p curr-value)))
+                                               (assigns cgraph-alist-p)
+                                               (sts cgraph-derivstates-p)
+                                               (env$)
+                                               (cgraph cgraph-p)
+                                               (replimit posp)
+                                               &optional
+                                               (logicman 'logicman)
+                                               (bvar-db 'bvar-db)
+                                               (state 'state))
+      (declare (ignorable targets))
+      :returns (mv (new-successp)
+                   (new-value (implies new-successp (cgraph-value-p new-value)))
+                   (new-assigns cgraph-alist-p)
+                   (new-sts cgraph-derivstates-p))
+      :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
+                     12
+                     0)
+      :guard (and (lbfr-listp (cgraph-formula-bfrlist x))
+                  (bfr-env$-p env$ (logicman->bfrstate))
+                  (equal (bfr-nvars) (next-bvar bvar-db))
+                  (lbfr-listp (cgraph-bfrlist cgraph)))
+      (b* (((cgraph-formula x))
+           (curr-value (mbe :logic (if successp (cgraph-value-fix curr-value) curr-value)
+                            :exec curr-value))
+           (curr-val (and successp (cgraph-value->val curr-value)))
+           (curr-prio (and successp (cgraph-value->priority curr-value)))
+           ;; Optimization
+           ((when (and (pseudo-term-case x.priority :quote)
+                       successp
+                       (< (nfix (pseudo-term-quote->val x.priority))
+                          curr-prio)))
+            (mv successp curr-value (cgraph-alist-fix assigns) (cgraph-derivstates-fix sts)))
+           ((mv new-assigns new-sts)
+            (cgraph-derive-assignments-bindings x.deps assigns sts env$ cgraph replimit))
+           ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+                             (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
+            (mv successp curr-value new-assigns new-sts))
+           (assigns new-assigns)
+           (sts new-sts)
+           (dep-values (cgraph-extract-dep-values x.deps assigns))
+           (dep-success-values (cgraph-extract-dep-success-values x.dep-success-vars dep-values))
+           (alist (append `((prev-successp . ,successp)
+                            (prev-value . ,curr-val)
+                            (prev-priority . ,curr-prio))
+                          dep-values dep-success-values))
+           ((mv err successp1) (magitastic-ev-wrap x.success alist 1000 state t t))
+           ((when err)
+            (raise "Failed to evaluate success condition ~x0, derived from rule ~x1: ~@2~%" x.success x.name
+                   (if (eq err t) "(no msg)" err))
+            (mv successp curr-value assigns sts))
+           ((unless successp1)
+            (mv successp curr-value assigns sts))
+           ((mv err priority1) (magitastic-ev-wrap x.priority alist 1000 state t t))
+           ((when err)
+            (raise "Failed to evaluate priority expression ~x0, derived from rule ~x1: ~@2~%" x.priority x.name
+                   (if (eq err t) "(no msg)" err))
+            (mv successp curr-value assigns sts))
+           ((unless (natp priority1))
+            (raise "Priority ~x0 derived from rule ~x1 evalued to non-natp ~x2~%" x.priority x.name priority1)
+            (mv successp curr-value assigns sts))
+           ((when (and successp (< priority1 curr-prio)))
+            (mv successp curr-value assigns sts))
+           ((mv err value1) (magitastic-ev-wrap x.value alist 1000 state t t))
+           ((when err)
+            (raise "Failed to evaluate value expression ~x0, derived from rule ~x1: ~@2~%" x.value x.name
+                   (if (eq err t) "(no msg)" err))
+            (mv successp curr-value assigns sts))
+           ;; (sts (if (and (eql (lnfix curr-priority) priority1)
+           ;;               (not (equal curr-value value1)))
+           ;;          (cgraph-set-errors targets (msg "Conflicting values from equal priority formulas (latest rule name: ~x0)" x.name)
+           ;;                             stas)
+           ;;        sts))
+           )
+        (mv t (cgraph-value value1 priority1 x.name) assigns sts)))
+
+    (define cgraph-derive-assignments-bindings ((x fgl-object-bindings-p)
+                                                (assigns cgraph-alist-p)
+                                                (sts cgraph-derivstates-p)
+                                                (env$)
+                                                (cgraph cgraph-p)
+                                                (replimit posp)
+                                                &optional
+                                                (logicman 'logicman)
+                                                (bvar-db 'bvar-db)
+                                                (state 'state))
+      :parents (fgl-counterexample-implementation-details)
+      :guard (and (lbfr-listp (fgl-object-bindings-bfrlist x))
+                  (bfr-env$-p env$ (logicman->bfrstate))
+                  (equal (bfr-nvars) (next-bvar bvar-db))
+                  (lbfr-listp (cgraph-bfrlist cgraph)))
+      :returns (mv (new-assigns cgraph-alist-p)
+                   (new-sts cgraph-derivstates-p))
+      :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
+                     10
+                     (len x))
+      (if (atom x)
+          (mv (cgraph-alist-fix assigns)
+              (cgraph-derivstates-fix sts))
+        (if (mbt (and (consp (car x))
+                      (pseudo-var-p (caar x))))
+            (b* (((mv new-assigns new-sts) (cgraph-derive-assignments-obj (cdar x) assigns sts env$ cgraph replimit))
+                 ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+                                   (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
+                  (mv new-assigns new-sts))
+                 (assigns new-assigns)
+                 (sts new-sts))
+              (cgraph-derive-assignments-bindings (cdr x) assigns sts env$ cgraph replimit))
+          (cgraph-derive-assignments-bindings (cdr x) assigns sts env$ cgraph replimit))))
+    ///
+
+    (std::defret-mutual-generate measure-decr-of-<fn>
+      :rules ((t
+               (:add-concl (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
+                               (cgraph-derive-assigns-measure cgraph assigns sts replimit)))
+               (:add-keyword :rule-classes :linear)
+               (:add-keyword :hints ('(:expand (<call>)))))))
+
+    (std::defret-mutual-generate bfr-listp-of-<fn>
+      :rules ((t
+               (:add-hyp (lbfr-listp (cgraph-bfrlist cgraph)))
+               (:each-formal :type fgl-object-p :var x :action (:add-hyp (lbfr-listp (fgl-object-bfrlist x))))
+               (:each-formal :type fgl-object-bindings-p :var x :action (:add-hyp (lbfr-listp (fgl-object-bindings-bfrlist x))))
+               (:each-formal :type fgl-objectlist-p :var x :action (:add-hyp (lbfr-listp (fgl-objectlist-bfrlist x))))
+               (:each-formal :type cgraph-equivlist-p :var x :action (:add-hyp (lbfr-listp (cgraph-equivlist-bfrlist x))))
+               (:each-formal :type cgraph-equivnode-p :var x :action (:add-hyp (lbfr-listp (cgraph-equivnode-bfrlist x))))
+               (:each-formal :type cgraph-formulalist-p :var x :action (:add-hyp (lbfr-listp (cgraph-formulalist-bfrlist x))))
+               (:each-formal :type cgraph-formula-p :var x :action (:add-hyp (lbfr-listp (cgraph-formula-bfrlist x))))
+               (:each-return :type cgraph-formulalist-p :var x :action (:add-concl (lbfr-listp (cgraph-formulalist-bfrlist x))))
+               (:each-return :type fgl-objectlist-p :var x :action (:add-concl (lbfr-listp (fgl-objectlist-bfrlist x))))
+               (:add-keyword :hints ('(:expand (<call>)
+                                       :in-theory (enable bfr-listp-when-not-member-witness))))))
+      :mutual-recursion cgraph-derive-assignments)
+
+    (local (defthm symbol-alistp-of-append
+             (implies (and (symbol-alistp x)
+                           (symbol-alistp y))
+                      (symbol-alistp (append x y)))))
+    
+    (verify-guards cgraph-derive-assignments-obj-fn
+      :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness))))
+    
+    (local (in-theory (enable fgl-object-bindings-fix)))
+    (fty::deffixequiv-mutual cgraph-derive-assignments)))
 
 
-  (define cgraph-derive-assignments-matches ((x pseudo-var-list-p)
-                                             (rule ctrex-rule-p)
-                                             (subst fgl-object-bindings-p)
-                                             (start-subst symbol-alistp)
-                                             (assigns cgraph-alist-p)
-                                             (sts cgraph-derivstates-p)
-                                             (env$)
-                                             (cgraph cgraph-p)
-                                             (replimit posp)
-                                             &optional
-                                             (logicman 'logicman)
-                                             (bvar-db 'bvar-db)
-                                             (state 'state))
-    :returns (mv (match-subst symbol-alistp)
-                 (new-assigns cgraph-alist-p)
-                 (new-sts cgraph-derivstates-p))
-    :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
-                   7
-                   (len x))
-    :guard (and (lbfr-listp (fgl-object-bindings-bfrlist subst))
-                (bfr-env$-p env$ (logicman->bfrstate))
-                (equal (bfr-nvars) (next-bvar bvar-db))
-                (lbfr-listp (cgraph-bfrlist cgraph)))
-    (b* (((when (atom x))
-          (mv nil
-              (cgraph-alist-fix assigns)
-              (cgraph-derivstates-fix sts)))
-         ((mv ok val new-assigns new-sts)
-          (cgraph-derive-assignments-match (car x) rule subst start-subst
-                                           assigns sts env$ cgraph replimit))
-         ((unless (mbt (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
-                           (cgraph-derive-assigns-measure cgraph assigns sts replimit))))
-          (mv nil
-              (cgraph-alist-fix assigns)
-              (cgraph-derivstates-fix sts)))
-         ((mv rest assigns sts)
-          (cgraph-derive-assignments-matches (cdr x) rule subst start-subst
-                                             new-assigns new-sts env$ cgraph replimit)))
-      (mv (if ok
-              (cons (cons (pseudo-var-fix (car x)) val) rest)
-            rest)
-          assigns sts)))
-
-  (define cgraph-derive-assignments-match ((x pseudo-var-p)
-                                           (rule ctrex-rule-p)
-                                           (subst fgl-object-bindings-p)
-                                           (start-subst symbol-alistp)
-                                           (assigns cgraph-alist-p)
-                                           (sts cgraph-derivstates-p)
-                                           (env$)
-                                           (cgraph cgraph-p)
-                                           (replimit posp)
-                                           &optional
-                                           (logicman 'logicman)
-                                           (bvar-db 'bvar-db)
-                                           (state 'state))
-    :returns (mv ok val
-                 (new-assigns cgraph-alist-p)
-                 (new-sts cgraph-derivstates-p))
-    :measure (list (cgraph-derive-assigns-measure cgraph assigns sts replimit)
-                   6
-                   0)
-    :guard (and (lbfr-listp (fgl-object-bindings-bfrlist subst))
-                (bfr-env$-p env$ (logicman->bfrstate))
-                (equal (bfr-nvars) (next-bvar bvar-db))
-                (lbfr-listp (cgraph-bfrlist cgraph)))
-    (b* (((ctrex-rule rule))
-         (term (cdr (assoc (pseudo-var-fix x) rule.match)))
-         (obj (pseudo-term-subst-fgl-objects term subst))
-         (cands (b* (((unless start-subst) nil)
-                     ((mv err val)
-                      (magitastic-ev term start-subst 1000 state t t))
-                     ((when err) nil))
-                  (list (make-candidate-assign :edge *fake-ctrex-edge-for-candidate-value*
-                                               :val val))))
-         ((mv assigns sts)
-          (cgraph-derive-assignments-obj obj cands assigns sts env$ cgraph replimit))
-         (assigns-look (hons-get obj assigns)))
-      (if assigns-look
-          (mv t (cdr assigns-look) assigns sts)
-        (mv nil nil assigns sts))))
-
-  ///
-  (local (in-theory (enable bfr-listp-when-not-member-witness)))
-  (local
-   (make-event
-    `(in-theory (disable . ,(getpropc 'cgraph-derive-assignments-obj-fn 'recursivep nil (w state))))))
-
-  (defret-mutual measure-decr-of-cgraph-derive-assigns
-    (defret measure-decr-of-<fn>
-      (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
-          (cgraph-derive-assigns-measure cgraph assigns sts replimit))
-      :hints ('(:expand (<call>)))
-      :rule-classes :linear
-      :fn cgraph-derive-assignments-obj)
-    (defret measure-decr-of-<fn>
-      (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
-          (cgraph-derive-assigns-measure cgraph assigns sts replimit))
-      :hints ('(:expand (<call>)))
-      :rule-classes :linear
-      :fn cgraph-derive-assignments-edges)
-    (defret measure-decr-of-<fn>
-      (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
-          (cgraph-derive-assigns-measure cgraph assigns sts replimit))
-      :hints ('(:expand (<call>)))
-      :rule-classes :linear
-      :fn cgraph-derive-assignments-edge)
-    (defret measure-decr-of-<fn>
-      (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
-          (cgraph-derive-assigns-measure cgraph assigns sts replimit))
-      :hints ('(:expand (<call>)))
-      :rule-classes :linear
-      :fn cgraph-derive-assignments-eval-subst)
-    (defret measure-decr-of-<fn>
-      (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
-          (cgraph-derive-assigns-measure cgraph assigns sts replimit))
-      :hints ('(:expand (<call>)))
-      :rule-classes :linear
-      :fn cgraph-derive-assignments-matches)
-    (defret measure-decr-of-<fn>
-      (<= (cgraph-derive-assigns-measure cgraph new-assigns new-sts replimit)
-          (cgraph-derive-assigns-measure cgraph assigns sts replimit))
-      :hints ('(:expand ((:free (start-subst) <call>))))
-      :rule-classes :linear
-      :fn cgraph-derive-assignments-match))
-
-  (verify-guards cgraph-derive-assignments-obj-fn
-    :hints (("goal" :Expand ((cgraph-edgelist-bfrlist x)
-                             (fgl-object-bindings-bfrlist subst)))))
-
-  (local (in-theory (disable cons-equal)))
-
-  ;; (local (defthm fgl-object-bindings-fix-open-when-bad-car
-  ;;          (implies (not (and (consp (car subst))
-  ;;                             (pseudo-var-p (caar subst))))
-  ;;                   (equal (fgl-object-bindings-fix (cdr subst))
-  ;;                          (fgl-object-bindings-fix subst)))
-  ;;          :hints(("Goal" :in-theory (enable fgl-object-bindings-fix)))))
-
-  ;; (local (defthm cdar-of-fgl-object-bindings-fix
-  ;;          (implies (and (consp (car subst))
-  ;;                        (pseudo-var-p (caar subst)))
-  ;;                   (equal (cdar (fgl-object-bindings-fix subst))
-  ;;                          (fgl-object-fix (cdar subst))))
-  ;;          :hints(("Goal" :in-theory (enable fgl-object-bindings-fix)))))
-
-  ;; (local (defthm fgl-object-bindings-fix-when-atom
-  ;;          (implies (not (consp subst))
-  ;;                   (not (fgl-object-bindings-fix subst)))
-  ;;          :hints(("Goal" :in-theory (enable fgl-object-bindings-fix)))))
-
-  (fty::deffixequiv-mutual cgraph-derive-assignments))
 
 
-(defines fgl-object-vars
-  (define fgl-object-vars ((x fgl-object-p) (acc pseudo-var-list-p))
-    :returns (vars pseudo-var-list-p)
-    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
-    :verify-guards nil
-    (fgl-object-case x
-      :g-var (add-to-set-eq x.name (pseudo-var-list-fix acc))
-      :g-apply (fgl-objectlist-vars x.args acc)
-      :g-ite (fgl-object-vars x.test (fgl-object-vars x.then (fgl-object-vars x.else acc)))
-      :g-cons (fgl-object-vars x.car (fgl-object-vars x.cdr acc))
-      :g-map (fgl-object-alist-vars x.alist acc)
-      :otherwise (pseudo-var-list-fix acc)))
 
-  (define fgl-objectlist-vars ((x fgl-objectlist-p) (acc pseudo-var-list-p))
-    :returns (vars pseudo-var-list-p)
-    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
-    (if (atom x)
-        (pseudo-var-list-fix acc)
-      (fgl-objectlist-vars (cdr x) (fgl-object-vars (car x) acc))))
 
-  (define fgl-object-alist-vars ((x fgl-object-alist-p) (acc pseudo-var-list-p))
-    :returns (vars pseudo-var-list-p)
-    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
-    (if (atom x)
-        (pseudo-var-list-fix acc)
-      (fgl-object-alist-vars (cdr x)
-                            (if (mbt (consp (car x)))
-                                (fgl-object-vars (cdar x) acc)
-                              acc))))
-  ///
-  (verify-guards fgl-object-vars)
 
-  (local (defthm fgl-object-alist-fix-when-bad-car
-           (implies (and (consp x) (not (Consp (car x))))
-                    (equal (fgl-object-alist-fix x)
-                           (fgl-object-alist-fix (cdr x))))
-           :hints(("Goal" :in-theory (enable fgl-object-alist-fix)))))
 
-  (fty::deffixequiv-mutual fgl-object-vars))
+
+
+
+
+
+
+
+;; ------------------------------------------------------------------------
+;; Creating rules from user def-cgraph-rule forms.
+;; ------------------------------------------------------------------------
+
+
+
+
+
+(defconst *def-ctrex-rule-keys*
+  '(:match
+    :assigned-var
+    :assign
+    :assign-cond
+    :match-conds
+    ;; :hyp
+    ;; :equiv
+    :ruletype
+
+    :unify-subst
+    :target
+    :deps
+    :dep-success-vars
+    :success
+    :priority
+    :value
+    :order
+    ))
+
+
+
+
+
+
+(define ctrex-rule-matches-to-ruletable ((matches pseudo-term-subst-p)
+                                         (rule ctrex-rule-p)
+                                         (ruletable ctrex-ruletable-p))
+  :prepwork ((local (defthm true-listp-when-ctrex-rulelist-p-rw
+                      (implies (ctrex-rulelist-p x)
+                               (true-listp x)))))
+  :returns (new-ruletable ctrex-ruletable-p)
+  :hooks ((:fix :hints(("Goal" :in-theory (enable pseudo-term-subst-fix)))))
+  (b* ((ruletable (ctrex-ruletable-fix ruletable))
+       ((when (atom matches)) ruletable)
+       ((unless (mbt (and (consp (car matches))
+                          (pseudo-var-p (caar matches)))))
+        (ctrex-rule-matches-to-ruletable (cdr matches) rule ruletable))
+       (x (cdar matches))
+       ((unless (pseudo-term-case x :fncall))
+        (ctrex-rule-matches-to-ruletable (cdr matches) rule ruletable))
+       ((pseudo-term-fncall x))
+       (ruletable (hons-acons x.fn (add-to-set-equal (change-ctrex-rule rule :match x)
+                                                     (cdr (hons-get x.fn ruletable)))
+                              ruletable)))
+    (ctrex-rule-matches-to-ruletable (cdr matches) rule ruletable)))
+
+
+
+
+(make-event
+ (std::da-make-binder-gen
+  'ctrex-rule-keys
+  (stobjs::kwd-alist-field-accessor-alist *def-ctrex-rule-keys*)))
+
+(defun ctrex-rule-translate (x wrld)
+  (declare (xargs :mode :program))
+  (acl2::translate-cmp x t t t 'def-ctrex-rule wrld (default-state-vars nil)))
+
+(defun ctrex-rule-translate-matches (x wrld)
+  (declare (xargs :mode :program))
+  (b* (((When (atom x)) (mv nil nil))
+       ((unless (eql (len (car x)) 2))
+        (mv 'def-ctrex-rule (msg "bad entry in match: ~x0" x)))
+       (term (cadar x))
+       ((mv erp trans-term)
+        (ctrex-rule-translate term wrld))
+       ((when erp) (mv erp trans-term))
+       ((mv erp rest)
+        (ctrex-rule-translate-matches (cdr x) wrld))
+       ((when erp) (mv erp rest)))
+    (mv nil (cons (cons (caar x) trans-term) rest))))
+
+
+(defun def-ctrex-rule-fn (name keys wrld)
+  (declare (xargs :mode :program))
+  (b* (((unless (symbolp name))
+        (er hard? 'def-ctrex-rule "Bad name -- must be a symbol"))
+       ((mv keys rest)
+        (std::extract-keywords 'def-ctrex-rule
+                               *def-ctrex-rule-keys*
+                               keys nil))
+       ((when rest)
+        (er hard? 'def-ctrex-rule "Bad args: ~x0~%" rest))
+       (keys (if (assoc :ruletype keys)
+                 keys
+               (cons (cons :ruletype :property) keys)))
+       ((ctrex-rule-keys keys))
+       ((mv erp match) (ctrex-rule-translate-matches keys.match wrld))
+       ((when erp) (er hard? erp "Failed to translate match pairs: ~@0" match))
+       (value (or keys.assign keys.value))
+       ((mv erp value) (ctrex-rule-translate value wrld))
+       ((when erp) (er hard? erp "failed to translate value term: ~@0" value))
+       (success (or keys.assign-cond keys.success t))
+       ((mv erp success) (ctrex-rule-translate success wrld))
+       ((when erp) (er hard? erp "failed to translate success term: ~@0" success))
+       (priority (or keys.priority
+                     (case keys.ruletype
+                       (:elim *ctrex-elim-default-priority*)
+                       (:property *ctrex-property-default-priority*)
+                       (:fixup *ctrex-fixup-default-priority*)
+                       (otherwise *ctrex-other-default-priority*))))
+       ((mv erp priority) (ctrex-rule-translate priority wrld))
+       ((when erp) (er hard? erp "failed to translate priority term: ~@0" priority))
+       (target (or keys.assigned-var keys.target))
+       ((mv erp target) (ctrex-rule-translate target wrld))
+       ((when erp) (er hard? erp "failed to translate target term: ~@0" target))
+       ((unless (ctrex-ruletype-p keys.ruletype))
+        (er hard? 'def-ctrex-rule "Bad ruletype: must satisfy ~x0" 'ctrex-ruletype-p))
+       ;; ((unless (pseudo-fnsym-p keys.equiv))
+       ;;  (er hard? 'def-ctrex-rule "Bad equiv: must be a function symbol"))
+       ((unless (acl2::doublet-listp keys.match-conds))
+        (er hard? 'def-ctrex-rule "Bad match-conds: must be a doublet-list"))
+
+       (dep-vars (remove-eq target (cmr::termlist-vars (strip-cdrs match))))
+       (deps (append (pairlis$ dep-vars dep-vars) match))
+       (dep-success-vars (or keys.dep-success-vars (acl2::doublets-to-alist keys.match-conds)))
+
+       ((mv success value priority)
+        (if (pseudo-term-case target :var)
+            ;; If target is a variable and it is used in any of the formulas,
+            ;; replace it with prev-value in those formulas.  If it has an
+            ;; entry in dep-success-vars, replace that entry with
+            ;; 'prev-successp in the formulas.
+            (b* ((target-var (pseudo-term-var->name target))
+                 (alist (list (cons target-var 'prev-value)))
+                 (success-look (rassoc-eq target-var dep-success-vars))
+                 (alist (if success-look (cons (cons (car success-look) 'prev-successp) alist) alist)))
+              (mv (acl2::sublis-var alist success)
+                  (acl2::sublis-var alist value)
+                  (acl2::sublis-var alist priority)))
+          (mv success value priority)))
+       
+       
+       (rule (make-ctrex-rule :name name
+                              :match nil
+                              :unify-subst keys.unify-subst
+                              :target target
+                              :deps deps
+                              :dep-success-vars dep-success-vars
+                              :success success
+                              :priority priority
+                              :value value
+                              :order (or keys.order
+                                         (case keys.ruletype
+                                           (:elim (1+ *ctrex-order-first*))
+                                           (:property *ctrex-order-mid*)
+                                           (:fixup *ctrex-order-last*)
+                                           (otherwise *ctrex-order-mid*)))
+                              :ruletype keys.ruletype)))
+    `(table fgl-ctrex-rules nil (ctrex-rule-matches-to-ruletable
+                                 ',match ',rule
+                                 (make-fast-alist
+                                  (table-alist 'fgl-ctrex-rules world)))
+            :clear)))
+
+(defmacro def-ctrex-rule (name &rest args)
+  `(make-event
+    (def-ctrex-rule-fn ',name ',args (w state))))
+
+(defxdoc def-ctrex-rule
+  :parents (fgl-counterexamples)
+  :short "Define a rule that helps FGL derive term-level counterexamples from Boolean assignments."
+  :long "<p>This form defines an informal rule that FGL may use to help derive
+assignments for theorem variables from the Boolean assignments returned by SAT
+solvers.  During this process (see @(see fgl-counterexamples)), various FGL objects
+are assigned concrete values, and we use these values to derive further assignments.</p>
+
+<p>A counterexample rule tells how to derive a new assignment from some
+existing assignments.  An example:</p>
+
+@({
+ (def-ctrex-rule intcar-intcdr-ctrex-elim
+   :match ((car (intcar x))
+           (cdr (intcdr x)))
+   :match-conds ((cdr-match cdr)
+                 (car-match car))
+   :assign (let ((cdr (if cdr-match cdr (intcdr x)))
+                 (car (if car-match car (intcar x))))
+             (intcons car cdr))
+   :assigned-var x
+   :ruletype :elim)
+ })
+
+<p>The rule is stored under an arbitrary name, the first argument.  The rest of the arguments:</p>
+<ul>
+
+<li>@(':match') gives a list of bindings @('(var expr)').  When applying the
+rule, one or more of the @('expr') entries must be matched against an object
+with an existing assignment.  For example, to apply the above rule we must have
+an assignment of a value to some term matching @('(intcar x)'), @('(intcdr
+x)'), or both.  These assignments may come from three origins -- 1. the term
+may be one that is assigned a Boolean variable in the Boolean variable
+database (see @(see fgl-getting-bits-from-objects)); 2. the term may be contain
+no variables and thus be evaluated under the Boolean assignment; 3. the term
+may be given an assignment by applying other counterexample rules.</li>
+
+<li>@(':assigned-var') and @(':assign') respectively give the term to be
+assigned the value and the value.  In the above case, the subterm @('x') from
+that matched expressions is assigned the value @('(intcons car cdr)'), where
+@('car') and @('cdr') are the values assigned for the respective expressions,
+if they were assigned.  If not, @('x') may have been tentatively assigned a
+value by a previous rule and its @('intcar') or @('intcdr') may be
+preserved.</li>
+
+<li>@(':match-conds') provide variables that say whether a value was determined
+for the given variable.  In this case, @('cdr-match') will be true if
+@('(intcdr x)') (the binding of @('cdr') in the @(':match') field)) was
+successfully assigned a value.</li>
+
+<li>@(':ruletype') may be @(':elim'), @(':property'), or @(':fixup'), signifying how the rule
+is intended to be used.  An @(':elim') rule should be applied once when as many
+of the match expressions as possible have been assigned values; at that point,
+we apply the rule and compute the final value for the subexpression.  A
+@(':property') rule may be applied to several different matching expressions in
+order to compute a value for the same subexpression. A @(':fixup') rule is placed
+last in the order and is intended to fix up a previously assigned value.</li>
+
+<li>An additional keyword @(':assign-cond') must (if provided) be a term, which
+will be evaluated in the same way as @(':assign').  If it evaluates to a
+non-@('nil') value, then the value is assigned; if not, the rule does not
+provide an assignment.</li>
+
+</ul>
+
+<p>An example of a property rule:</p>
+
+@({
+ (def-ctrex-rule assoc-equal-ctrex-rule
+   :match ((pair (assoc-equal k x)))
+   :assign (put-assoc-equal k (cdr pair) x)
+   :assigned-var x
+   :ruletype :property)
+ })
+
+<p>This is a suitable property rule, but not an elim rule, because it may match
+many assignments to @('(assoc-equal k x)') for different @('k') in order to
+compute a value for @('x').</p>
+")
+
+
+(def-ctrex-rule intcar-intcdr-ctrex-elim
+  :match ((car (intcar x))
+          (cdr (intcdr x)))
+  :match-conds ((cdr-match cdr)
+                (car-match car)
+                (x-match x))
+  :assign (let ((cdr (if cdr-match cdr (intcdr x)))
+                (car (if car-match car (intcar x))))
+            (intcons car cdr))
+  :assigned-var x
+  ;; :hyp (integerp x)
+  :ruletype :elim)
+
+(def-ctrex-rule car-cdr-ctrex-elim
+  :match ((car (car x))
+          (cdr (cdr x)))
+  :match-conds ((cdr-match cdr)
+                (car-match car))
+  :assign (let ((cdr (if cdr-match cdr (cdr x)))
+                (car (if car-match car (car x))))
+            (cons car cdr))
+  :assigned-var x
+  ;; :hyp (consp x)
+  :ruletype :elim)
+
+(def-ctrex-rule assoc-equal-ctrex-rule
+  :match ((pair (assoc-equal k x)))
+  :assign (put-assoc-equal k (cdr pair) x)
+  :assigned-var x
+  ;; :hyp (alistp x)
+  :ruletype :property)
+
+;; (defconst *implicit-subterm-ctrex-rule-template*
+;;   (make-ctrex-rule :name 'implicit-subterm-ctrex-rule
+;;                    :assigned-var 'x
+;;                    :ruletype :implicit))
+
+(defun redundant-hons-acons (key val x)
+  (if (hons-equal val (cdr (hons-get key x)))
+      x
+    (hons-acons key val x)))
+
+(def-ctrex-rule hons-get-ctrex-rule
+  :match ((val (cdr (hons-get k x))))
+  :assign (redundant-hons-acons k val x)
+  :assigned-var x
+  :ruletype :property)
+
+
+
+
+;; ------------------------------------------------------------------------
+;; Deriving a cgraph and set of variable assignments for a counterexample
+;; Top function: interp-st-infer-ctrex-var-assignments
+;; ------------------------------------------------------------------------
 
 (define cgraph-derive-assignments-for-vars ((x pseudo-var-list-p
                                                "list of variables to derive values for")
@@ -2734,10 +2441,11 @@ compute a value for @('x').</p>
        (obj (g-var (car x)))
        ((mv assigns sts)
         (cgraph-derive-assignments-obj
-         obj nil assigns sts env$ cgraph replimit))
+         obj assigns sts env$ cgraph replimit))
        (pair (hons-get obj assigns))
        (vals (if pair
-                 (cons (cons (pseudo-var-fix (car x)) (cdr pair)) vals)
+                 (cons (cons (pseudo-var-fix (car x))
+                             (cgraph-value->val (cdr pair))) vals)
                vals)))
     (cgraph-derive-assignments-for-vars
      (cdr x) vals assigns sts env$ cgraph replimit)))
@@ -2781,35 +2489,6 @@ compute a value for @('x').</p>
 
 (local (in-theory (disable w)))
 
-(define ctrex-eval-summarize-errors ((eval-error)
-                                     (deriv-errors))
-  (if eval-error
-      (if deriv-errors
-          (msg "Error evaluating the bindings: ~@0~%Additionally, there were ~
-                errors deriving the variable assignments:~@1"
-               eval-error
-               deriv-errors)
-        eval-error)
-    deriv-errors))
-
-
-(local (defthm fgl-objectlist-p-alist-vals-of-fgl-object-bindings
-         (implies (fgl-object-bindings-p x)
-                  (fgl-objectlist-p (alist-vals x)))
-         :hints(("Goal" :in-theory (enable alist-vals)))))
-
-(local (defthm fgl-objectlist-bfrlist-alist-vals-of-fgl-object-bindings
-         (implies (fgl-object-bindings-p x)
-                  (equal (fgl-objectlist-bfrlist (alist-vals x))
-                         (fgl-object-bindings-bfrlist x)))
-         :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist
-                                           alist-vals)))))
-
-(local (defthm symbol-listp-keys-of-fgl-object-bindings
-         (implies (fgl-object-bindings-p x)
-                  (symbol-listp (alist-keys x)))
-         :hints(("Goal" :in-theory (enable alist-keys)))))
-
 (define bfr-env$-fix (env$ (bfrstate bfrstate-p))
   :prepwork ((local (in-theory (enable bfr-env$-p))))
   :returns (new-env$ (bfr-env$-p new-env$ bfrstate))
@@ -2848,26 +2527,28 @@ compute a value for @('x').</p>
     (stobj-let ((logicman (interp-st->logicman interp-st))
                 (bvar-db (interp-st->bvar-db interp-st))
                 (env$ (interp-st->ctrex-env interp-st)))
-               (errmsg cgraph memo cgraph-index env$)
+               (errmsg cgraph memo cgraph-index env$ assigns)
                (b* ((env$ (bfr-env$-fix env$ (logicman->bfrstate)))
                     (ruletable (make-fast-alist (table-alist 'fgl-ctrex-rules (w state))))
-                    ((unless (ctrex-ruletable-p ruletable))
-                     (mv "bad ctrex-ruletable~%" cgraph memo cgraph-index env$))
+                    ((unless (and (ctrex-ruletable-p ruletable)
+                                  (ctrex-ruletable-bfr-free ruletable)))
+                     (mv "bad ctrex-ruletable~%" cgraph memo cgraph-index env$ nil))
                     ((mv cgraph memo) ;; (bvar-db-update-cgraph cgraph cgraph-index bvar-db ruletable (w state))
                      (bvar-db-update-cgraph cgraph memo cgraph-index bvar-db ruletable
                                             (logicman->bfrstate)
                                             (w state)))
                     ((mv var-vals assigns sts)
-                     (cgraph-derive-assignments-for-vars vars nil nil nil env$ cgraph 10))
+                     (cgraph-derive-assignments-for-vars vars nil nil nil env$ cgraph 2))
                     (- (fast-alist-free assigns))
                     (sts (fast-alist-free (fast-alist-clean sts)))
                     (deriv-errors (cgraph-derivstates-summarize-errors sts))
                     (env$ (update-env$->obj-alist var-vals env$))
                     (full-deriv-errors (ctrex-summarize-errors vars var-vals deriv-errors)))
-                 (mv full-deriv-errors cgraph memo (next-bvar bvar-db) env$))
+                 (mv full-deriv-errors cgraph memo (next-bvar bvar-db) env$ assigns))
                (b* ((interp-st (update-interp-st->cgraph cgraph interp-st))
                     (interp-st (update-interp-st->cgraph-memo memo interp-st))
-                    (interp-st (update-interp-st->cgraph-index cgraph-index interp-st)))
+                    (interp-st (update-interp-st->cgraph-index cgraph-index interp-st))
+                    (interp-st (interp-st-put-user-scratch :ctrex-assigns assigns interp-st) ))
                  (mv errmsg interp-st))))
   ///
   (defret interp-st-get-of-<fn>
@@ -2886,6 +2567,14 @@ compute a value for @('x').</p>
     (implies (and ;; (not errmsg)
                   (equal bfrstate (logicman->bfrstate (interp-st->logicman interp-st))))
              (bfr-env$-p (interp-st->ctrex-env new-interp-st) bfrstate))))
+
+
+
+
+
+;; ------------------------------------------------------------------------
+;; Checking consistency of a counterexample with bvar-db assignments
+;; ------------------------------------------------------------------------
 
 
 (fty::deftagsum bvar-db-consistency-error
@@ -2970,57 +2659,83 @@ compute a value for @('x').</p>
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st)))))
 
+
+
+
+
+
+
+
+;; ------------------------------------------------------------------------
+;; Interp-st-counterex-bindings: get the counterexample's values for a
+;; set of fgl-object bindings
+;; ------------------------------------------------------------------------
+
+
+(defines fgl-object-vars
+  (define fgl-object-vars ((x fgl-object-p) (acc pseudo-var-list-p))
+    :returns (vars pseudo-var-list-p)
+    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
+    :verify-guards nil
+    (fgl-object-case x
+      :g-var (add-to-set-eq x.name (pseudo-var-list-fix acc))
+      :g-apply (fgl-objectlist-vars x.args acc)
+      :g-ite (fgl-object-vars x.test (fgl-object-vars x.then (fgl-object-vars x.else acc)))
+      :g-cons (fgl-object-vars x.car (fgl-object-vars x.cdr acc))
+      :g-map (fgl-object-alist-vars x.alist acc)
+      :otherwise (pseudo-var-list-fix acc)))
+
+  (define fgl-objectlist-vars ((x fgl-objectlist-p) (acc pseudo-var-list-p))
+    :returns (vars pseudo-var-list-p)
+    :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
+    (if (atom x)
+        (pseudo-var-list-fix acc)
+      (fgl-objectlist-vars (cdr x) (fgl-object-vars (car x) acc))))
+
+  (define fgl-object-alist-vars ((x fgl-object-alist-p) (acc pseudo-var-list-p))
+    :returns (vars pseudo-var-list-p)
+    :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
+    (if (atom x)
+        (pseudo-var-list-fix acc)
+      (fgl-object-alist-vars (cdr x)
+                            (if (mbt (consp (car x)))
+                                (fgl-object-vars (cdar x) acc)
+                              acc))))
+  ///
+  (verify-guards fgl-object-vars)
+
+  (local (defthm fgl-object-alist-fix-when-bad-car
+           (implies (and (consp x) (not (Consp (car x))))
+                    (equal (fgl-object-alist-fix x)
+                           (fgl-object-alist-fix (cdr x))))
+           :hints(("Goal" :in-theory (enable fgl-object-alist-fix)))))
+
+  (fty::deffixequiv-mutual fgl-object-vars))
+
 (define counterex-bindings-summarize-errors (infer-errors eval-errors)
   (if infer-errors
       (if eval-errors
           (msg "~@0~%~@1" infer-errors eval-errors)
         (msg "~@0" infer-errors))
-    (msg "~@0" eval-errors)))
+    (and eval-errors (msg "~@0" eval-errors))))
 
 
-(define interp-st-counterex-value ((x fgl-object-p)
-                                   (interp-st)
-                                   (state))
-  :returns (mv (errmsg)
-               (x-val)
-               (new-interp-st))
-  :guard (and (interp-st-bfrs-ok interp-st)
-              (interp-st-bfr-listp (fgl-object-bfrlist x)))
-  :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable interp-st-bfrs-ok
-                                          bfr-listp-when-not-member-witness))))
-  :prepwork ((local (defthm fgl-object-alist-p-when-fgl-object-bindings-p
-                      (implies (fgl-object-bindings-p x)
-                               (fgl-object-alist-p x))
-                      :hints(("Goal" :in-theory (enable fgl-object-alist-p
-                                                        fgl-object-bindings-p))))))
-  (b* ((x (fgl-object-fix x))
-       (vars (fgl-object-vars x nil))
-       ((mv infer-err interp-st)
-        (interp-st-infer-ctrex-var-assignments vars interp-st state))
-       ;; ((when err)
-       ;;  (mv (msg "Error inferring counterexample term-level variable assignments: ~@0" err)
-       ;;      nil nil interp-st))
-       )
-    (stobj-let ((logicman (interp-st->logicman interp-st))
-                (env$ (interp-st->ctrex-env interp-st)))
-               (eval-err x-val)
-               (magic-fgl-object-eval x env$)
-               (mv (counterex-bindings-summarize-errors infer-err eval-err)
-                   x-val interp-st)))
-  ///
-  (defret interp-st-get-of-<fn>
-    (implies (member (interp-st-field-fix key)
-                     '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
-                       :equiv-contexts :reclimit :errmsg))
-             (equal (interp-st-get key new-interp-st)
-                    (interp-st-get key interp-st))))
+(local (defthm fgl-objectlist-p-alist-vals-of-fgl-object-bindings
+         (implies (fgl-object-bindings-p x)
+                  (fgl-objectlist-p (alist-vals x)))
+         :hints(("Goal" :in-theory (enable alist-vals)))))
 
-  (defret interp-st-bfrs-ok-of-<fn>
-    (implies (interp-st-bfrs-ok interp-st)
-             (interp-st-bfrs-ok new-interp-st))
-    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
+(local (defthm fgl-objectlist-bfrlist-alist-vals-of-fgl-object-bindings
+         (implies (fgl-object-bindings-p x)
+                  (equal (fgl-objectlist-bfrlist (alist-vals x))
+                         (fgl-object-bindings-bfrlist x)))
+         :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist
+                                           alist-vals)))))
 
+(local (defthm symbol-listp-keys-of-fgl-object-bindings
+         (implies (fgl-object-bindings-p x)
+                  (symbol-listp (alist-keys x)))
+         :hints(("Goal" :in-theory (enable alist-keys)))))
 
 (define interp-st-counterex-bindings ((x fgl-object-bindings-p)
                                       (interp-st)
@@ -3071,6 +2786,60 @@ compute a value for @('x').</p>
     :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 
 
+
+;; ------------------------------------------------------------------------
+;; Utilities for computing/accessing counterexamples in rewrite rules
+;; interp-st-counterex-value, interp-st-counterex-stack-bindings,
+;; interp-st-counterex-prev-bindings,
+;; and /print-errors variants
+;; ------------------------------------------------------------------------
+
+(define interp-st-counterex-value ((x fgl-object-p)
+                                   (interp-st)
+                                   (state))
+  :returns (mv (errmsg)
+               (x-val)
+               (new-interp-st))
+  :guard (and (interp-st-bfrs-ok interp-st)
+              (interp-st-bfr-listp (fgl-object-bfrlist x)))
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable interp-st-bfrs-ok
+                                          bfr-listp-when-not-member-witness))))
+  :prepwork ((local (defthm fgl-object-alist-p-when-fgl-object-bindings-p
+                      (implies (fgl-object-bindings-p x)
+                               (fgl-object-alist-p x))
+                      :hints(("Goal" :in-theory (enable fgl-object-alist-p
+                                                        fgl-object-bindings-p))))))
+  (b* ((x (fgl-object-fix x))
+       (vars (fgl-object-vars x nil))
+       ((mv infer-err interp-st)
+        (interp-st-infer-ctrex-var-assignments vars interp-st state))
+       ;; ((when err)
+       ;;  (mv (msg "Error inferring counterexample term-level variable assignments: ~@0" err)
+       ;;      nil nil interp-st))
+       )
+    (stobj-let ((logicman (interp-st->logicman interp-st))
+                (env$ (interp-st->ctrex-env interp-st)))
+               (eval-err x-val)
+               (magic-fgl-object-eval x env$)
+               (mv (counterex-bindings-summarize-errors infer-err eval-err)
+                   x-val interp-st)))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (member (interp-st-field-fix key)
+                     '(:stack :logicman :bvar-db :pathcond :constraint :constraint-db
+                       :equiv-contexts :reclimit :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret interp-st-bfrs-ok-of-<fn>
+    (implies (interp-st-bfrs-ok interp-st)
+             (interp-st-bfrs-ok new-interp-st))
+    :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
+
+
+
+
 (define interp-st-counterex-stack-bindings ((interp-st interp-st-bfrs-ok)
                                             (state))
   :returns (mv errmsg
@@ -3102,8 +2871,8 @@ compute a value for @('x').</p>
     :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 
 
-(verify-termination evisc-tuple)
-(verify-guards evisc-tuple)
+;; (verify-termination evisc-tuple)
+;; (verify-guards evisc-tuple)
 
 (define interp-st-counterex-stack-bindings/print-errors ((interp-st interp-st-bfrs-ok)
                                                                 (state))
@@ -3210,6 +2979,14 @@ compute a value for @('x').</p>
              (interp-st-bfrs-ok new-interp-st))
     :hints(("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
 
+
+
+;; ------------------------------------------------------------------------
+;; Top level function for computing/runnign a counterexample after a SAT check:
+;; interp-st-run-ctrex
+;; ------------------------------------------------------------------------
+
+
 (define interp-st-run-ctrex (sat-config
                              (interp-st interp-st-bfrs-ok)
                              state)
@@ -3250,3 +3027,4 @@ compute a value for @('x').</p>
                    interp-st))
        (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
     (mv nil interp-st)))
+

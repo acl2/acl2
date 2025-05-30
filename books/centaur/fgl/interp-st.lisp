@@ -119,7 +119,7 @@
 
     ;; no logical significance
     (cgraph :type (satisfies cgraph-p) :initially nil :fix cgraph-fix)
-    (cgraph-memo :type (satisfies cgraph-alist-p) :initially nil :fix cgraph-alist-fix)
+    (cgraph-memo :type (satisfies cgraph-memo-p) :initially nil :fix cgraph-memo-fix)
     (cgraph-index :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
     (ctrex-env :type env$)
     (sat-ctrex :type bitarr)
