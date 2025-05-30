@@ -16,6 +16,8 @@
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 
+(local (include-book "../library-extensions/oset-theorems"))
+
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 
@@ -452,7 +454,25 @@
                 (set::subset (successors-loop certs1 prev)
                              (successors-loop certs2 prev)))
        :enable (in-of-successors-loop
-                set::expensive-rules))))
+                set::expensive-rules))
+
+     (defruled cert-set->round-set-of-successors-loop
+       (implies (and (certificate-setp certs)
+                     (equal (cert-set->round-set certs)
+                            (if (set::emptyp certs)
+                                nil
+                              (set::insert round nil))))
+                (equal (cert-set->round-set (successors-loop certs prev))
+                       (if (set::emptyp (successors-loop certs prev))
+                           nil
+                         (set::insert round nil))))
+       :induct t
+       :enable (cert-set->round-set
+                cert-set->round-set-of-insert
+                set::expensive-rules)
+       :hints ('(:use (:instance set::emptyp-when-proper-subset-of-singleton
+                                 (x (cert-set->round-set (tail certs)))
+                                 (a (certificate->round (head certs)))))))))
 
   :hooks (:fix)
 
@@ -482,4 +502,75 @@
              (set::subset (successors cert dag1)
                           (successors cert dag2)))
     :enable (successors-loop-monotone
-             certs-with-round-monotone)))
+             certs-with-round-monotone))
+
+  (defruled cert-set->round-set-of-successors
+    (implies (certificate-setp dag)
+             (equal (cert-set->round-set (successors cert dag))
+                    (if (set::emptyp (successors cert dag))
+                        nil
+                      (set::insert (1+ (certificate->round cert)) nil))))
+    :enable cert-set->round-set-of-certs-with-round
+    :use (:instance cert-set->round-set-of-successors-loop
+                    (prev (certificate->author cert))
+                    (certs (certs-with-round
+                            (+ 1 (certificate->round cert)) dag))
+                    (round (+ 1 (certificate->round cert))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define predecessors ((cert certificatep) (dag certificate-setp))
+  :guard (set::in cert dag)
+  :returns (certs certificate-setp)
+  :short "Set of the certificates in a DAG that
+          are precedessors of a certificate in a DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the destination certificates of the edges in the DAG
+     that have the certificate @('cert') as source.
+     These edges are outgoing edges of @('cert').")
+   (xdoc::p
+    "Here `precedessor' refers to the fact that
+     the return certificates are
+     in the (immediately) preceding round of @('cert')
+     (unless @('cert') is in round 1,
+     in which case this function returns the empty set),
+     even though the directed edges point backwards.")
+   (xdoc::p
+    "If the certificate is at round 1, we return the empty set.
+     Otherwise, we return the certificates at the previous round
+     that are authored by the previous authors in the certificate.
+     All the returned certificates are in the round just before @('cert')."))
+  (if (equal (certificate->round cert) 1)
+      nil
+    (certs-with-authors+round (certificate->previous cert)
+                              (1- (certificate->round cert))
+                              dag))
+  :guard-hints (("Goal" :in-theory (enable posp)))
+  :hooks (:fix)
+
+  ///
+
+  (defret predecessors-subset-of-dag
+    (set::subset certs dag)
+    :hyp (certificate-setp dag))
+
+  (defret predecessors-subset-of-previous-round
+    (set::subset certs
+                 (certs-with-round (1- (certificate->round cert)) dag))
+    :hyp (certificate-setp dag)
+    :hints
+    (("Goal"
+      :in-theory (enable certs-with-authors+round-to-round-of-authors
+                         certs-with-round-monotone))))
+
+  (defruled cert-set->round-set-of-predecessors
+    (implies (certificate-setp dag)
+             (equal (cert-set->round-set (predecessors cert dag))
+                    (if (set::emptyp (predecessors cert dag))
+                        nil
+                      (set::insert (1- (certificate->round cert)) nil))))
+    :enable (certs-with-authors+round-to-round-of-authors
+             cert-set->round-set-of-certs-with-round
+             posp)))

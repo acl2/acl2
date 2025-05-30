@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -67,13 +67,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Here @('n') and @('f') are
+    "Here @('n') and @('f') in this theorem are
      the @($n$) and @($f$) mentioned in @(tsee max-faulty-for-total).
-     Here @('successors-vals') represents
+     With reference to @(see successor-predecessor-intersection),
+     here @('successor-vals') represents
      the authors of the successors of @($A$),
-     while @('predecessors') represents
-     the authors of the predecessors of @($C$),
-     with reference to @(see successor-predecessor-intersection).")
+     while @('predecessor-vals') represents
+     the authors of the predecessors of @($C$).")
    (xdoc::p
     "If (i) the total stake of successor and predecessor authors
      is bounded by @('n'),

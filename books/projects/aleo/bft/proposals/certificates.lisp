@@ -180,6 +180,16 @@
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->author-in-cert-set->author-set)
 
+  (defruled cert-set->author-set-of-union
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2))
+             (equal (cert-set->author-set (set::union certs1 certs2))
+                    (set::union (cert-set->author-set certs1)
+                                (cert-set->author-set certs2))))
+    :induct t
+    :enable (set::union
+             cert-set->author-set-of-insert))
+
   (defruled same-certificate-author-when-cardinality-leq-1
     (implies (and (certificate-setp certs)
                   (<= (set::cardinality (cert-set->author-set certs)) 1)
@@ -236,6 +246,16 @@
                                  (cert-set->round-set certs))))
     :induct (set::weak-insert-induction cert certs)
     :enable certificate->round-in-cert-set->round-set)
+
+  (defruled cert-set->round-set-of-union
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2))
+             (equal (cert-set->round-set (set::union certs1 certs2))
+                    (set::union (cert-set->round-set certs1)
+                                (cert-set->round-set certs2))))
+    :induct t
+    :enable (set::union
+             cert-set->round-set-of-insert))
 
   (defruled same-certificate-round-when-cardinality-leq-1
     (implies (and (certificate-setp certs)
@@ -627,6 +647,93 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection cert-set->round-set-ext
+  :extension cert-set->round-set
+
+  (defruled in-of-cert-set->round-set
+    (implies (certificate-setp certs)
+             (equal (set::in round (cert-set->round-set certs))
+                    (b* ((cert (set::nonempty-witness
+                                (certs-with-round round certs))))
+                      (and (set::in cert certs)
+                           (equal (certificate->round cert)
+                                  round)))))
+    :use (only-if-part if-part)
+
+    :prep-lemmas
+
+    ((defruled only-if-part
+       (implies (certificate-setp certs)
+                (implies (set::in round (cert-set->round-set certs))
+                         (b* ((cert (set::nonempty-witness
+                                     (certs-with-round round certs))))
+                           (and (set::in cert certs)
+                                (equal (certificate->round cert)
+                                       round)))))
+       :use (:instance set::nonemptyp-when-not-emptyp
+                       (set (certs-with-round round certs)))
+       :enable (set::nonemptyp
+                in-of-certs-with-round
+                emptyp-of-certs-with-round))
+
+     (defruled if-part
+       (implies (certificate-setp certs)
+                (b* ((cert (set::nonempty-witness
+                            (certs-with-round round certs))))
+                  (implies (and (set::in cert certs)
+                                (equal (certificate->round cert)
+                                       round))
+                           (set::in round (cert-set->round-set certs)))))
+       :use (:instance certificate->round-in-cert-set->round-set
+                       (cert (set::nonempty-witness
+                              (certs-with-round round certs))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define certs-with-authors ((authors address-setp) (certs certificate-setp))
+  :returns (certs-with-authors certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates with author in a given set."
+  (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
+       (cert (set::head certs)))
+    (if (set::in (certificate->author cert)
+                 (address-set-fix authors))
+        (set::insert cert (certs-with-authors authors (set::tail certs)))
+      (certs-with-authors authors (set::tail certs))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret certs-with-authors-subset
+    (set::subset certs-with-authors certs)
+    :hyp (certificate-setp certs)
+    :hints (("Goal" :induct t :in-theory (enable* set::expensive-rules))))
+
+  (defruled cert-set->author-set-of-certs-with-authors
+    (equal (cert-set->author-set (certs-with-authors authors certs))
+           (set::intersect (address-set-fix authors)
+                           (cert-set->author-set certs)))
+    :induct t
+    :enable (cert-set->author-set
+             cert-set->author-set-of-insert
+             set::expensive-rules))
+
+  (defruled in-of-certs-with-authors
+    (equal (set::in cert (certs-with-authors authors certs))
+           (and (certificatep cert)
+                (set::in cert (certificate-set-fix certs))
+                (set::in (certificate->author cert)
+                         (address-set-fix authors))))
+    :induct t)
+
+  (defrule certs-with-authors-of-empty
+    (equal (certs-with-authors authors nil)
+           nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define certs-with-author+round ((author addressp)
                                  (round posp)
                                  (certs certificate-setp))
@@ -737,6 +844,28 @@
     :enable (in-of-certs-with-author+round
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
+    :disable certs-with-author+round)
+
+  (defruled certs-with-author+round-to-author-of-round
+    (implies (certificate-setp certs)
+             (equal (certs-with-author+round author round certs)
+                    (certs-with-author author (certs-with-round round certs))))
+    :enable (set::expensive-rules
+             set::double-containment-no-backchain-limit
+             in-of-certs-with-author+round
+             in-of-certs-with-author
+             in-of-certs-with-round)
+    :disable certs-with-author+round)
+
+  (defruled certs-with-author+round-to-round-of-author
+    (implies (certificate-setp certs)
+             (equal (certs-with-author+round author round certs)
+                    (certs-with-round round (certs-with-author author certs))))
+    :enable (set::expensive-rules
+             set::double-containment-no-backchain-limit
+             in-of-certs-with-author+round
+             in-of-certs-with-author
+             in-of-certs-with-round)
     :disable certs-with-author+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -916,6 +1045,30 @@
     :enable (in-of-certs-with-authors+round
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
+    :disable certs-with-authors+round)
+
+  (defruled certs-with-authors+round-to-authors-of-round
+    (implies (certificate-setp certs)
+             (equal (certs-with-authors+round authors round certs)
+                    (certs-with-authors
+                     authors (certs-with-round round certs))))
+    :enable (set::expensive-rules
+             set::double-containment-no-backchain-limit
+             in-of-certs-with-authors+round
+             in-of-certs-with-authors
+             in-of-certs-with-round)
+    :disable certs-with-authors+round)
+
+  (defruled certs-with-authors+round-to-round-of-authors
+    (implies (certificate-setp certs)
+             (equal (certs-with-authors+round authors round certs)
+                    (certs-with-round
+                     round (certs-with-authors authors certs))))
+    :enable (set::expensive-rules
+             set::double-containment-no-backchain-limit
+             in-of-certs-with-authors+round
+             in-of-certs-with-authors
+             in-of-certs-with-round)
     :disable certs-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1065,7 +1218,53 @@
      with the same author and round
      are in the same certificates.
      This means that the certificates in the set
-     are uniquely identified by their author and round."))
+     are uniquely identified by their author and round.")
+   (xdoc::p
+    "The rule @('certificate-set-unequivocalp-of-insert')
+     is useful to prove the preservation of non-equivocation
+     when a set of certificates is extended.
+     Either the added certificate is already in the initial set,
+     or the initial set has no certificate with
+     the added certificate's author and round.")
+   (xdoc::p
+    "The theorems @('equal-certificate-authors-when-unequiv-and-same-round')
+     and @('equal-cert-rounds-when-unequivp-and-same-author')
+     say that if the certificates in an unequivocal sets
+     have all the same round/author,
+     then two certificates in that set are the same
+     if they have the same author/round.
+     We phrase these as rewrite rules
+     in the typical form of an injectivity rewrite rule.")
+   (xdoc::p
+    "The theorems @('cardinality-of-authors-when-unequiv-and-all-same-rounds')
+     and @('cardinality-of-rounds-when-unequiv-and-all-same-authors')
+     say that the number of authors/rounds
+     of a set of certificates all with the same round/author
+     is the same as the number of those certificates:
+     unequivocation means that there is a bijection between
+     those rounds and those certificates.")
+   (xdoc::p
+    "The theorems @('certs-same-round-unequiv-intersect-when-authors-intersect')
+     and @('certs-same-author-unequiv-intersect-when-rounds-intersect')
+     say that if two sets of unequivocal certificates with the same round/author
+     have at least one common author/round,
+     then there is at least one common certificate to the two sets.
+     This is because, as proved in
+     @('equal-certificate-authors-when-unequiv-and-same-round') and
+     @('equal-certificate-rounds-when-unequiv-and-same-author')
+     there is a bijection between unequivocal certificates
+     with the same round/author
+     and their authors/rounds.
+     The theorems @('certs-same-round-unequiv-intersect-when-authors-intersect')
+     and @('certs-same-author-unequiv-intersect-when-rounds-intersect')
+     are proved as follows:
+     take an author/round in the intersection of authors/rounds;
+     obtain two witness certificates with that author/round;
+     show that the two certificates must be equal using
+     @('equal-cert-authors-when-unequiv-and-same-round') or
+     @('equal-cert-rounds-when-unequiv-and-same-author');
+     thus that same certificate is in both sets of certificates,
+     which therefore have a non-empty intersection."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 (certificate-set-fix certs))
                         (set::in cert2 (certificate-set-fix certs))
@@ -1175,7 +1374,117 @@
     :use (cert-set-unequivp-necc
           same-certificate-author-when-cardinality-leq-1)
     :disable (cert-set-unequivp
-              cert-set-unequivp-necc)))
+              cert-set-unequivp-necc))
+
+  (defruled cardinality-of-authors-when-unequiv-and-all-same-rounds
+    (implies (and (certificate-setp certs)
+                  (cert-set-unequivp certs)
+                  (<= (set::cardinality (cert-set->round-set certs)) 1))
+             (equal (set::cardinality (cert-set->author-set certs))
+                    (set::cardinality certs)))
+    :induct t
+    :enable (set::cardinality
+             cert-set->author-set
+             cert-set-unequivp-when-subset
+             set::expensive-rules
+             in-of-cert-set->author-set
+             equal-cert-authors-when-unequivp-and-same-round)
+    :disable (cert-set-unequivp
+              cert-set-unequivp-necc)
+    :hints ('(:use (:instance cert-set->round-set-monotone
+                              (certs1 (set::tail certs))
+                              (certs2 certs)))))
+
+  (defruled cardinality-of-rounds-when-unequiv-and-all-same-authors
+    (implies (and (certificate-setp certs)
+                  (cert-set-unequivp certs)
+                  (<= (set::cardinality (cert-set->author-set certs)) 1))
+             (equal (set::cardinality (cert-set->round-set certs))
+                    (set::cardinality certs)))
+    :induct t
+    :enable (set::cardinality
+             cert-set->round-set
+             cert-set-unequivp-when-subset
+             set::expensive-rules
+             in-of-cert-set->round-set
+             equal-cert-rounds-when-unequivp-and-same-author)
+    :disable (cert-set-unequivp
+              cert-set-unequivp-necc)
+    :hints ('(:use (:instance cert-set->author-set-monotone
+                              (certs1 (set::tail certs))
+                              (certs2 certs)))))
+
+  (defruled certs-same-round-unequiv-intersect-when-authors-intersect
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2)
+                  (cert-set-unequivp (set::union certs1 certs2))
+                  (<= (set::cardinality
+                       (cert-set->round-set
+                        (set::union certs1 certs2)))
+                      1)
+                  (not (set::emptyp (set::intersect
+                                     (cert-set->author-set certs1)
+                                     (cert-set->author-set certs2)))))
+             (not (set::emptyp (set::intersect certs1 certs2))))
+    :enable (set::nonemptyp
+             in-of-cert-set->author-set
+             set::not-emptyp-of-intersect-when-in-both)
+    :use ((:instance set::not-emptyp-to-nonemptyp
+                     (set (set::intersect
+                           (cert-set->author-set certs1)
+                           (cert-set->author-set certs2))))
+          (:instance equal-cert-authors-when-unequivp-and-same-round
+                     (certs (set::union certs1 certs2))
+                     (cert1 (set::nonempty-witness
+                             (certs-with-author
+                              (set::nonempty-witness
+                               (set::intersect
+                                (cert-set->author-set certs1)
+                                (cert-set->author-set certs2)))
+                              certs1)))
+                     (cert2 (set::nonempty-witness
+                             (certs-with-author
+                              (set::nonempty-witness
+                               (set::intersect
+                                (cert-set->author-set certs1)
+                                (cert-set->author-set certs2)))
+                              certs2))))))
+
+  (defruled certs-same-author-unequiv-intersect-when-rounds-intersect
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2)
+                  (cert-set-unequivp (set::union certs1 certs2))
+                  (<= (set::cardinality
+                       (cert-set->author-set
+                        (set::union certs1 certs2)))
+                      1)
+                  (not (set::emptyp (set::intersect
+                                     (cert-set->round-set certs1)
+                                     (cert-set->round-set certs2)))))
+             (not (set::emptyp (set::intersect certs1 certs2))))
+    :enable (set::nonemptyp
+             in-of-cert-set->round-set
+             set::not-emptyp-of-intersect-when-in-both)
+    :use ((:instance set::not-emptyp-to-nonemptyp
+                     (set (set::intersect
+                           (cert-set->round-set certs1)
+                           (cert-set->round-set certs2))))
+          (:instance equal-cert-rounds-when-unequivp-and-same-author
+                     (certs (set::union certs1 certs2))
+                     (cert1 (set::nonempty-witness
+                             (certs-with-round
+                              (set::nonempty-witness
+                               (set::intersect
+                                (cert-set->round-set certs1)
+                                (cert-set->round-set certs2)))
+                              certs1)))
+                     (cert2 (set::nonempty-witness
+                             (certs-with-round
+                              (set::nonempty-witness
+                               (set::intersect
+                                (cert-set->round-set certs1)
+                                (cert-set->round-set certs2)))
+                              certs2)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

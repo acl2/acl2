@@ -728,7 +728,7 @@
                                  set::expensive-rules))))
 
   (defrule certs-with-authors-of-nil
-    (equal (certs-with-author authors nil)
+    (equal (certs-with-authors authors nil)
            nil))
 
   (defruled in-of-certs-with-authors
