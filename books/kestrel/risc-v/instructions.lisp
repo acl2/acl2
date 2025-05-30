@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,7 +17,6 @@
 (include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte12" :dir :system)
 (include-book "kestrel/fty/ubyte20" :dir :system)
-(include-book "std/util/deffixer" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

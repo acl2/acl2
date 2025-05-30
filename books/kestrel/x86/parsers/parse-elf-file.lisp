@@ -1,6 +1,6 @@
 ; A parser for ELF executables
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,11 +10,13 @@
 
 (in-package "ACL2")
 
-;; See https://refspecs.linuxfoundation.org/elf/elf.pdf
-;; and
+;; References:
+;; https://refspecs.linuxfoundation.org/elf/elf.pdf
 ;; https://www.uclibc.org/docs/elf-64-gen.pdf
-;; and
 ;; https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
+;; https://en.wikipedia.org/wiki/Executable_and_Linkable_Format
+;; https://github.com/nasa/elf2cfetbl/blob/main/ELF_Structures.h
+;; https://gabi.xinuos.com/elf/a-emachine.html
 
 (include-book "parser-utils")
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
@@ -164,6 +166,9 @@
     (symbolp (decode-file-type e_type))
     :hints (("Goal" :in-theory (enable decode-file-type)))))
 
+;; TODO: Add/check these.  Where is the official list?
+;; There are more of these here:
+;; https://gist.github.com/x0nu11byt3/bcb35c3de461e5fb66173071a2379779
 (defconst *elf-machine-types*
   '((0 . :EM_NONE)
     (1 . :EM_M32)  ;       AT&T WE 32100
@@ -251,6 +256,7 @@
     (98 . :EM_TPC)       ;      Tenor Network TPC processor
     (99 . :EM_SNP1K)     ;      Trebia SNP 1000 processor
     (100 . :EM_ST200) ;     STMicroelectronics (www.st.com) ST200 microcontroller
+    (243 . :EM_RISCV)
     ))
 
 ;; Returns (mv erp u16 bytes).  Little endian.

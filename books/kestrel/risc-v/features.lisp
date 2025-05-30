@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -94,7 +95,12 @@
   :short "One of @(tsee feat-32p) and @(tsee feat-64p) always holds."
   (or (feat-32p feat)
       (feat-64p feat))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((feat-32p feat)
+                                                    (feat-64p feat))))
   :enable (feat-32p feat-64p))
+
+(in-theory (enable (:forward-chaining feat-32p-or-64p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
