@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,17 +11,25 @@
 
 (in-package "RISCV")
 
-(include-book "library-extensions")
 (include-book "features")
 
+(include-book "logappn")
+
 (include-book "centaur/bitops/part-select" :dir :system)
+(include-book "kestrel/fty/sbyte32" :dir :system)
+(include-book "kestrel/fty/sbyte64" :dir :system)
+(include-book "kestrel/fty/ubyte16" :dir :system)
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte32-list" :dir :system)
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
 
+(local (include-book "library-extensions"))
+
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
+(local (include-book "kestrel/fty/sbyte32-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
@@ -904,3 +913,19 @@
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)
     :hints (("Goal" :in-theory (enable stat-validp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv32im-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV32IM states."
+  (and (statp x)
+       (stat-validp x (feat-rv32im))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv64im-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV64IM states."
+  (and (statp x)
+       (stat-validp x (feat-rv64im))))
