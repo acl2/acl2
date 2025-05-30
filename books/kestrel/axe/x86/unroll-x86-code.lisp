@@ -932,14 +932,14 @@
 (defun def-unrolled-fn (lifted-name
                         target
                         executable
+                        inputs
+                        output-indicator
                         extra-assumptions
                         suppress-assumptions
                         inputs-disjoint-from
                         stack-slots
                         position-independent
-                        inputs
                         type-assumptions-for-array-varsp
-                        output-indicator
                         use-internal-contextsp
                         prune-precise
                         prune-approx
@@ -1162,19 +1162,19 @@
 ;bad name?
 ;; TODO: :print nil is not fully respected
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
-(acl2::defmacrodoc def-unrolled (&whole whole-form
+(defmacrodoc def-unrolled (&whole whole-form
                                   lifted-name
                                   executable
                                   &key
                                   (target ':entry-point)
+                                  (inputs ':skip)
+                                  (output ':all)
                                   (extra-assumptions 'nil)
                                   (suppress-assumptions 'nil)
                                   (inputs-disjoint-from ':code)
                                   (stack-slots '100)
                                   (position-independent ':auto)
-                                  (inputs ':skip)
                                   (type-assumptions-for-array-vars 't)
-                                  (output ':all)
                                   (use-internal-contextsp 't)
                                   (prune-precise '1000)
                                   (prune-approx 't)
@@ -1204,14 +1204,14 @@
       ',lifted-name
       ,target
       ,executable ; gets evaluated
+      ',inputs
+      ',output
       ,extra-assumptions
       ',suppress-assumptions
       ',inputs-disjoint-from
       ',stack-slots
       ',position-independent
-      ',inputs
       ',type-assumptions-for-array-vars
-      ',output
       ',use-internal-contextsp
       ',prune-precise
       ',prune-approx
