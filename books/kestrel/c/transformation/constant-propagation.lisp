@@ -209,7 +209,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "See (tsee union-env)."))
+     "See @(tsee union-env)."))
   :returns (block env-blockp)
   (if (omap::emptyp x)
       nil
