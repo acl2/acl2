@@ -622,7 +622,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We set the flag @('progp) for the programmatic interface to @('nil').
+    "We set the flag @('progp') for the programmatic interface to @('nil').
      We ignore the artifacts returned as additional results."))
   (b* (((mv erp event & state)
         (input-files-process-inputs-and-gen-events args nil state))

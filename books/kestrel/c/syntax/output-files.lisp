@@ -402,7 +402,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We set the flag @('progp) for the programmatic interface to @('nil')."))
+    "We set the flag @('progp') for the programmatic interface to @('nil')."))
   (b* (((mv erp state)
         (output-files-process-inputs-and-gen-files nil args nil state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
