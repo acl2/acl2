@@ -495,6 +495,18 @@
                                  (1+ (certificate->round cert)) dag))
                              (z dag)))))
 
+  (defruled in-of-successors
+    (equal (set::in succ (successors cert dag))
+           (and (certificatep succ)
+                (set::in succ (certificate-set-fix dag))
+                (equal (certificate->round succ)
+                       (1+ (certificate->round cert)))
+                (set::in (certificate->author cert)
+                         (certificate->previous succ))))
+    :enable (in-of-successors-loop
+             in-of-certs-with-round
+             set::expensive-rules))
+
   (defruled successors-monotone
     (implies (and (certificate-setp dag1)
                   (certificate-setp dag2)
