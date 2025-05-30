@@ -273,13 +273,15 @@
 
        (mutual-recursion
 
-        ;; Returns (mv erp result) where RESULT is the unquoted value.
-        ;; The ARGS passed in to this version are not expected to be quoted (unless they happen to be, by chance).
-        ;; fn must be either built-in or passed in via interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
+        ;; Returns (mv erp result) where RESULT is the result of applying FN to ARGS (not quoted unless by chance).
+        ;; The ARGS are not expected to be quoted (unless they happen to be, by chance).
+        ;; FN must be either built-in or passed in via interpreted-function-alist - otherwise, the return value is meaningless and an error is returned.
+        ;; WARNING: Keep in sync with ,apply-function-to-quoted-args-name.
         (defund ,apply-function-name (fn args interpreted-function-alist count)
           (declare (type (unsigned-byte 60) count)
                    (xargs :guard (and (or (symbolp fn)
-                                          (pseudo-lambdap fn))
+                                          (pseudo-lambdap fn) ; should be closed
+                                          )
                                       (true-listp args)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (natp count)
@@ -287,25 +289,23 @@
                           :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 2 0))
                           :verify-guards nil ; optionally done below
                           ))
-          (if (consp fn) ;test for lambda
-              (let* ((formals (second fn))
-                     (body (third fn))
-                     (alist ;(extend-alist formals args alist) ;i think this was overkill, since the
-                      ;;formals for lambdas in ACL2 bind all the variables in the body.
-                      ;;fffixme - but is that guaranteed?
-                      (pairlis$-fast formals args)))
+          (if (flambdap fn)
+              (let* ((formals (lambda-formals fn))
+                     (body (lambda-body fn))
+                     (alist (pairlis$-fast formals args)))
                 (,eval-function-name alist body interpreted-function-alist count))
             (let ((args-to-walk-down args)) ;why??
-              (mv-let (hit val)
+              (mv-let (known-functionp val)
+                ;; Here we build in all the known functions:
                 ,(make-apply-cases-for-arities-simple max-arity
                                                       arity-fn-call-alist-alist
                                                       nil ;quoted-argsp
                                                       t   ;innermost-callp
                                                       nil ;not tracing
                                                       ;;acc:
-                                                      '(mv nil ;no hit
+                                                      '(mv nil ;no known-functionp
                                                         nil))
-                (if hit
+                (if known-functionp
                     (mv (erp-nil) val)
                   ;;fn isn't one of the built-in functions, so try to interpret it
                   (let ((match (assoc-eq fn interpreted-function-alist)))
@@ -321,7 +321,7 @@
                         (,eval-function-name alist body interpreted-function-alist count)))))))))
 
         ;; Returns (mv erp result).
-        ;; all functions to evaluate must be either built-in or passed in in interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
+        ;; all functions to evaluate must be either built-in or passed in in interpreted-function-alist - otherwise, the return value is meaningless and an error is returned
         ;; the cdrs of the alist are never quoted?
         ;; all the variables in form must have bindings in alist -- TODO: Add to guard
         ;; returns the (unquoted) value
@@ -362,7 +362,7 @@
                            (,apply-function-name fn args interpreted-function-alist (+ -1 count)))))))))
 
         ;; Returns (mv erp result).
-        ;; all functions to evaluate must be either built-in or passed in in interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
+        ;; all functions to evaluate must be either built-in or passed in in interpreted-function-alist - otherwise, the return value is meaningless and an error is returned
         ;; the cdrs of the alist are never quoted?
         ;; all the variables in form-lst must have bindings in alist
         ;; returns the (unquoted) list of values
@@ -402,8 +402,9 @@
 
        ;; Returns (mv erp result).
        ;; The ARGS passed in to this version must all be quoted.
-       ;; fn must be either built-in or passed in via interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
+       ;; fn must be either built-in or passed in via interpreted-function-alist - otherwise, the return value is meaningless and an error is returned
        ;; returns the (unquoted) value.
+       ;; WARNING: Keep in sync with ,apply-function-name.
        (defund ,apply-function-to-quoted-args-name (fn args interpreted-function-alist)
          (declare (xargs :guard (and (or (symbolp fn)
                                          (pseudo-lambdap fn))
@@ -413,25 +414,23 @@
                                      ,@extra-guards-apply)
                          :verify-guards nil ; maybe done below
                          ))
-         (if (consp fn) ;test for lambda
-             (let* ((formals (second fn))
-                    (body (third fn))
-                    (alist ;(extend-alist formals args alist) ;i think this was overkill, since the
-                     ;;formals for lambdas in ACL2 bind all the variables in the body.
-                     ;;fffixme - but is that guaranteed?
-                     (pairlis$-fast formals (unquote-list args))))
+         (if (flambdap fn)
+             (let* ((formals (lambda-formals fn))
+                    (body (lambda-body fn))
+                    (alist (pairlis$-fast formals (unquote-list args))))
                (,eval-function-name alist body interpreted-function-alist *max-fixnum*))
            (let ((args-to-walk-down args)) ;why??
-             (mv-let (hit val)
+             (mv-let (known-functionp val)
+               ;; Here we build in all the known functions:
                ,(make-apply-cases-for-arities-simple max-arity
                                               arity-fn-call-alist-alist
                                               t        ;quoted-argsp
                                               t        ;innermost-callp
                                               nil      ;not tracing
                                               ;;acc:
-                                              '(mv nil ;no hit
+                                              '(mv nil ;no known-functionp
                                                    nil))
-               (if hit
+               (if known-functionp
                    (mv (erp-nil) val)
                  ;;fn isn't one of the built-in functions, so try to interpret it
                  (let ((match (assoc-eq fn interpreted-function-alist)))
@@ -443,6 +442,7 @@
                             (body (second fn-info))
                             (alist (pairlis$-fast formals (unquote-list args))) ;could pass two lists to walk down in parallel?
                             )
+                       ;; Evaluate the function's body with its formals bound to the actuals:
                        (,eval-function-name alist body interpreted-function-alist *max-fixnum*)))))))))
 
        ,@(and verify-guards
