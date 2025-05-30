@@ -1,10 +1,10 @@
 ; FTY Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,20 +33,18 @@
 
    (xdoc::p
     "Since @(tsee unsigned-byte-p) and @(tsee signed-byte-p)
-     have certain formal relations with functions in IHS,
+     have certain formal relations with functions in the IHS library,
      similar relations can be proved for instances of @(tsee defbyte).")
 
    (xdoc::p
     "This macro automates this process,
      by including the IHS basic definitions
-     and by generating theorems.
-     For now this macro generates just one theorem;
-     more will be added in the future as needed.")
+     and by generating theorems.")
 
    (xdoc::p
     "The reason for not having @(tsee defbyte) itself generate these theorems
      is to avoid always including IHS when using @(tsee defbyte).
-     Having a separate macro leads to greater modularity.")
+     Having a separate macro promotes greater modularity.")
 
    (xdoc::h3 "General Form")
 
@@ -67,7 +65,7 @@
    (xdoc::desc
     "@('bytep-of-loghead-of-size')"
     (xdoc::p
-     "One of the following")
+     "One of the following:")
     (xdoc::ul
      (xdoc::li
       "If the @(tsee defbyte) instance is unsigned,
@@ -114,17 +112,33 @@
        (bytep (fixtype->pred fty-info))
        ;; choice between LOGHEAD and LOGEXT:
        (loghead/logext (if signed 'acl2::logext 'acl2::loghead))
-       ;; name of the generated theorem:
+       ;; name of the generated XDOC topic:
+       (type-ihs-theorems
+        (acl2::packn-pos (list type '-ihs-theorems) bytep))
+       ;; short string for XDOC topic:
+       (short (str::cat "Theorems about @(tsee acl2::"
+                        (str::downcase-string (symbol-name type))
+                        ") and IHS functions."))
+       ;; name of the generated theorems:
        (bytep-of-loghead/logext-of-size
         (acl2::packn-pos (list bytep '-of- loghead/logext '-of- size) bytep))
-       ;; variable in the generated theorem:
+       (loghead/logext-of-size-when-bytep
+        (acl2::packn-pos (list loghead/logext '-of- size '-when- bytep) bytep))
+       ;; variable in the generated theorems:
        (x (intern-in-package-of-symbol "X" bytep))
-       ;; generated theorem:
+       ;; generated theorems:
        (event
-        `(defrule ,bytep-of-loghead/logext-of-size
-           (,bytep (,loghead/logext ,size ,x))
-           :enable ,bytep
-           :prep-books ((include-book "arithmetic-5/top" :dir :system)))))
+        `(defsection ,type-ihs-theorems
+           :parents (,type fty::defbyte-standard-instances-ihs-theorems)
+           :short ,short
+           (local (include-book "arithmetic-5/top" :dir :system))
+           (defrule ,bytep-of-loghead/logext-of-size
+             (,bytep (,loghead/logext ,size ,x))
+             :enable ,bytep)
+           (defrule ,loghead/logext-of-size-when-bytep
+             (implies (,bytep ,x)
+                      (equal (,loghead/logext ,size ,x) ,x))
+             :enable ,bytep))))
     event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

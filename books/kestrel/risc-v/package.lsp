@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -30,6 +31,7 @@
                           loghead
                           nat
                           nat-list
+                          pos-fix
                           sbyte32
                           sbyte32p
                           sbyte64

@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -86,7 +87,7 @@
           decode
           exec-instr
           exec-op
-          exec-add
+          exec-add-alt-def
           read-xreg-of-write-xreg
           read-pc-of-inc4-pc)
  :disable ((:e tau-system)) ; for speed

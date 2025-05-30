@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,8 +14,13 @@
 (include-book "instructions")
 (include-book "states")
 
+(local (include-book "library-extensions"))
+
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
+(local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -36,6 +42,14 @@
      each instruction operates on the state.
      We restrict this to valid instructions in valid states
      with respect to the RISC-V features.")
+   (xdoc::p
+    "For some integer instructions, like @('SLT') and @('SLTU'),
+     it is important whether the operands are read as signed or unsigned.
+     For other instructions, like @('ADD') it does not matter,
+     so long as they are both read signed or unsigned
+     (not one signed and the other unsigned);
+     for these instructions, we add theorem showing two definitions equivalent,
+     one that reads signed operands and one that reads unsigned operands.")
    (xdoc::p
     "There is a fair amount of repetition in boilerplate in these functions.
      We could consider shortening them via suitable macros."))
@@ -850,11 +864,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) @('XLEN')-bit integers
+     from @('rs1') and @('rs2').
      We add them, and write the result to @('rd').
      We increment the program counter."))
-  (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-       (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+  (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+       (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (result (+ rs1-operand rs2-operand))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
@@ -863,6 +878,22 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-add-alt-def
+    (equal (exec-add rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (+ rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-add
+             read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc
+             loghead-of-logext-plus-logext
+             ifix))
 
   (defret stat-validp-of-exec-add
     (stat-validp new-stat feat)
@@ -882,11 +913,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) @('XLEN')-bit integers
+     from @('rs1') and @('rs2').
      We subtract the second from the first, and write the result to @('rd').
      We increment the program counter."))
-  (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-       (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+  (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+       (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (result (- rs1-operand rs2-operand))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
@@ -895,6 +927,22 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-sub-alt-def
+    (equal (exec-sub rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (- rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-sub
+             read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc
+             loghead-of-logext-minus-logext
+             ifix))
 
   (defret stat-validp-of-exec-sub
     (stat-validp new-stat feat)

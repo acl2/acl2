@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,6 +15,9 @@
 (include-book "decoding")
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+(local (include-book "kestrel/fty/ubyte3-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte7-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte12-ihs-theorems" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -408,3 +412,33 @@
            (mv-nth 1 (encode-op-32-funct funct)))
     :enable (encode
              get-funct7)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-imm-itype-of-encode-instr
+  :short "Theorems about @(tsee get-imm-itype) applied to
+          the encoding of instructions."
+
+  (defruled get-imm-itype-of-encode-instr-op-imm
+    (equal (get-imm-itype (encode (instr-op-imm funct rd rs1 imm) feat))
+           (ubyte12-fix imm))
+    :enable (get-imm-itype
+             encode))
+
+  (defruled get-imm-itype-of-encode-instr-op-imm-32
+    (equal (get-imm-itype (encode (instr-op-imm-32 funct rd rs1 imm) feat))
+           (ubyte12-fix imm))
+    :enable (get-imm-itype
+             encode))
+
+  (defruled get-imm-itype-of-encode-instr-jalr
+    (equal (get-imm-itype (encode (instr-jalr rd rs1 imm) feat))
+           (ubyte12-fix imm))
+    :enable (get-imm-itype
+             encode))
+
+  (defruled get-imm-itype-of-encode-instr-load
+    (equal (get-imm-itype (encode (instr-load funct rd rs1 imm) feat))
+           (ubyte12-fix imm))
+    :enable (encode
+             get-imm-itype)))
