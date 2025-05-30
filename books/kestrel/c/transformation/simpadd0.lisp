@@ -1575,6 +1575,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-expr-cond ((test exprp)
+                            (test-new exprp)
+                            (test-events pseudo-event-form-listp)
+                            (test-thm-name symbolp)
+                            (test-vartys ident-type-mapp)
+                            (test-diffp booleanp)
+                            (then expr-optionp)
+                            (then-new expr-optionp)
+                            (then-events pseudo-event-form-listp)
+                            (then-thm-name symbolp)
+                            (then-vartys ident-type-mapp)
+                            (then-diffp booleanp)
+                            (else exprp)
+                            (else-new exprp)
+                            (else-events pseudo-event-form-listp)
+                            (else-thm-name symbolp)
+                            (else-vartys ident-type-mapp)
+                            (else-diffp booleanp)
+                            (gin simpadd0-ginp))
+  :guard (and (expr-unambp test)
+              (expr-unambp test-new)
+              (expr-option-unambp then)
+              (expr-option-unambp then-new)
+              (expr-unambp else)
+              (expr-unambp else-new))
+  (declare (ignore test then else
+                   test-thm-name then-thm-name else-thm-name))
+  :returns (mv (expr exprp) (gou simpadd0-goutp))
+  :short "Transform a conditional expression."
+  (b* (((simpadd0-gin gin) gin))
+    (mv (make-expr-cond :test test-new
+                        :then then-new
+                        :else else-new)
+        (make-simpadd0-gout
+         :events (append test-events
+                         then-events
+                         else-events)
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :vartys (omap::update* test-vartys
+                                (omap::update* then-vartys
+                                               else-vartys))
+         :diffp (or test-diffp then-diffp else-diffp))))
+
+  ///
+
+  (defret expr-unambp-of-simpadd0-expr-cond
+    (expr-unambp expr)
+    :hyp (and (expr-unambp test-new)
+              (expr-option-unambp then-new)
+              (expr-unambp else-new))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-stmt-return ((expr? expr-optionp)
                               (expr?-new expr-optionp)
                               (expr?-events pseudo-event-form-listp)
@@ -2133,21 +2188,27 @@
              (simpadd0-expr-option expr.then gin state))
             (gin (simpadd0-gin-update gin gout-then))
             ((mv new-else (simpadd0-gout gout-else))
-             (simpadd0-expr expr.else gin state)))
-         (mv (make-expr-cond :test new-test
-                             :then new-then
-                             :else new-else)
-             (make-simpadd0-gout
-              :events (append gout-test.events
-                              gout-then.events
-                              gout-else.events)
-              :thm-name nil
-              :thm-index gout-else.thm-index
-              :names-to-avoid gout-else.names-to-avoid
-              :vartys (omap::update* gout-test.vartys
-                                     (omap::update* gout-then.vartys
-                                                    gout-else.vartys))
-              :diffp (or gout-test.diffp gout-then.diffp gout-else.diffp))))
+             (simpadd0-expr expr.else gin state))
+            (gin (simpadd0-gin-update gin gout-else)))
+         (simpadd0-expr-cond expr.test
+                             new-test
+                             gout-test.events
+                             gout-test.thm-name
+                             gout-test.vartys
+                             gout-test.diffp
+                             expr.then
+                             new-then
+                             gout-then.events
+                             gout-then.thm-name
+                             gout-then.vartys
+                             gout-then.diffp
+                             expr.else
+                             new-else
+                             gout-else.events
+                             gout-else.thm-name
+                             gout-else.vartys
+                             gout-else.diffp
+                             gin))
        :comma
        (b* (((mv new-first (simpadd0-gout gout-first))
              (simpadd0-expr expr.first gin state))
