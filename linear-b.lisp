@@ -371,9 +371,13 @@
               (eval-ground-subexpressions1 (fargn term 3) ens wrld safe-mode
                                            gc-off ttree hands-off-fns memo)
               (mv (or flg1 flg2 flg3)
-                  (if (or flg1 flg2 flg3)
-                      (fcons-term* 'if arg1 arg2 arg3)
-                    term)
+                  (if (or flg2 flg3)
+                      (if (equal arg2 arg3)
+                          arg2
+                        (fcons-term* 'if arg1 arg2 arg3))
+                    (if flg1
+                        (fcons-term 'if (cons arg1 (cdr (fargs term))))
+                      term))
                   ttree
                   memo)))))))
    (t
