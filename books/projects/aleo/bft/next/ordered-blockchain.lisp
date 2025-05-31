@@ -148,8 +148,8 @@
              blocks-orderedp-of-extend-blockchain
              cert-list-orderedp-of-collect-anchors
              cert-list-evenp-of-collect-anchors
-             aleobft::evenp-of-1-less-when-not-evenp
-             aleobft::evenp-of-3-less-when-not-evenp
+             evenp-of-1-less-when-not-evenp
+             evenp-of-3-less-when-not-evenp
              last-blockchain-round-p-necc-with-address-fix
              collect-anchors-above-last-committed-round))
 

@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -449,7 +449,7 @@
              cert-with-author+round-element
              omni-paths-p-necc
              last-anchor-present-p-necc
-             aleobft::evenp-of-1-less-when-not-evenp
+             evenp-of-1-less-when-not-evenp
              last-anchor-in-dag
              same-committees-p-necc
              certificate->author-of-last-anchor
@@ -573,7 +573,7 @@
              backward-closed-p-necc
              last-anchor-present-p-necc
              last-anchor-in-dag
-             aleobft::evenp-of-1-less-when-not-evenp
+             evenp-of-1-less-when-not-evenp
              same-committees-p-necc
              dag-omni-paths-p-when-commit-possiblep
              certificate->round-of-last-anchor

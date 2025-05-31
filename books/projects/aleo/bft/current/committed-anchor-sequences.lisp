@@ -292,8 +292,8 @@
              blocks-ordered-even-p-of-extend-blockchain
              certificates-ordered-even-p-of-collect-anchors
              commit-possiblep
-             aleobft::evenp-of-1-less-when-not-evenp
-             aleobft::evenp-of-3-less-when-not-evenp
+             evenp-of-1-less-when-not-evenp
+             evenp-of-3-less-when-not-evenp
              active-committee-at-previous-round-when-at-round
              evenp-of-blocks-last-round
              posp
@@ -493,8 +493,8 @@
            blocks-ordered-even-p-of-extend-blockchain
            certificates-ordered-even-p-of-collect-anchors
            certificate->round-of-cert-with-author+round
-           aleobft::evenp-of-1-less-when-not-evenp
-           aleobft::evenp-of-3-less-when-not-evenp
+           evenp-of-1-less-when-not-evenp
+           evenp-of-3-less-when-not-evenp
            posp
            last-blockchain-round-p-necc
            collect-anchors-above-last-committed-round

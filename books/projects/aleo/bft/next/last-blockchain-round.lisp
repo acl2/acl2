@@ -153,8 +153,8 @@
              commit-possiblep
              blocks-last-round-of-extend-blockchain
              car-of-collect-anchors
-             aleobft::evenp-of-1-less-when-not-evenp
-             aleobft::evenp-of-3-less-when-not-evenp))
+             evenp-of-1-less-when-not-evenp
+             evenp-of-3-less-when-not-evenp))
 
   (defruled last-blockchain-round-p-of-event-next
     (implies (and (last-blockchain-round-p systate)

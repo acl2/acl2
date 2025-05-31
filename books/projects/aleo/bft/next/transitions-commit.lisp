@@ -178,8 +178,8 @@
   (("Goal"
     :in-theory (enable commit-possiblep
                        natp
-                       aleobft::evenp-of-1-less-when-not-evenp
-                       aleobft::evenp-of-3-less-when-not-evenp
+                       evenp-of-1-less-when-not-evenp
+                       evenp-of-3-less-when-not-evenp
                        active-committee-at-previous-round-when-at-round
                        active-committee-at-previous3-round-when-at-round
                        certificate->round-of-cert-with-author+round)))

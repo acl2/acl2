@@ -137,7 +137,7 @@
     :induct t
     :enable (append
              last
-             aleobft::lt-to-2+le-when-both-evenp)))
+             lt-to-2+le-when-both-evenp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
