@@ -1,6 +1,6 @@
 ; Proving equivalence of two x86 binary functions.
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,33 +19,33 @@
 ;; todo: add support for extra-proof-rules, and extra-lifting-rules?
 ;; todo: add support for print argument
 ;; todo: consider allowing the second inputs and outputs to be elided.  or maybe make all the input and output things keyword args (:inputs, :inputs1, :inputs2, etc.)
-(defun prove-functions-equivalent-fn (executable1
-                                      function1
+(defund prove-functions-equivalent-fn (executable1
+                                      target1
                                       inputs1
                                       output1
                                       executable2
-                                      function2
+                                      target2
                                       inputs2
                                       output2
                                       extra-rules ; a form to be evaluated
                                       count-hits
                                       print)
   (declare (xargs :guard (and (stringp executable1)
-                              (stringp function1)
+                              (stringp target1)
                               (names-and-typesp inputs1)
                               ;; (output-indicatorp output1)
                               (stringp executable2)
-                              (stringp function2)
+                              (stringp target2)
                               (names-and-typesp inputs2)
                               ;; (output-indicatorp output2)
                               (or (eq :auto count-hits) (acl2::count-hits-argp count-hits))
                               (or (eq :auto count-hits) (acl2::print-levelp print)))))
   (b* (((when (and (equal executable1 executable2)
-                   (equal function1 function2)
+                   (equal target1 target2)
                    (equal output1 output2)))
         (er hard? 'prove-functions-equivalent-fn "The two functions and executables (and the outputs of interest) are the same."))
-       (name1 (acl2::pack-in-package "X" (acl2::string-upcase-gen executable1) "." (acl2::string-upcase-gen function1)))
-       (name2 (acl2::pack-in-package "X" (acl2::string-upcase-gen executable2) "." (acl2::string-upcase-gen function2)))
+       (name1 (acl2::pack-in-package "X" (acl2::string-upcase-gen executable1) "." (acl2::string-upcase-gen target1)))
+       (name2 (acl2::pack-in-package "X" (acl2::string-upcase-gen executable2) "." (acl2::string-upcase-gen target2)))
        ((when (eq name1 name2))
         (er hard? 'prove-functions-equivalent-fn "Name clash on ~x0." name1))
        (params1 (strip-cars inputs1))
@@ -54,7 +54,7 @@
     `(progn
        ;; Lift the first function:
        (def-unrolled ,name1 ,executable1 ; no replacement of register with fresh vars (for now), so that the functions each just take a single param, x86
-         :target ,function1
+         :target ,target1
          :inputs ,inputs1
          :output ,output1
          ;; For the :auto values, we insert nothing into the calls of
@@ -64,7 +64,7 @@
          ,@(if (eq :auto print) nil `(:print ,print)))
        ;; Lift the second function:
        (def-unrolled ,name2 ,executable2
-         :target ,function2
+         :target ,target2
          :inputs ,inputs2
          :output ,output2
          ,@(if (eq :auto count-hits) nil `(:count-hits ,count-hits))
@@ -85,26 +85,41 @@
                                                   )
                                                 ,extra-rules)))))
 
-(defmacro prove-functions-equivalent (executable1
-                                      function1
-                                      inputs1
-                                      output1
-                                      executable2
-                                      function2
-                                      inputs2
-                                      output2
-                                      &key
-                                      (extra-rules 'nil)
-                                      (count-hits ':auto)
-                                      (print ':auto))
+(defmacrodoc prove-functions-equivalent (executable1
+                                         target1
+                                         inputs1
+                                         output1
+                                         executable2
+                                         target2
+                                         inputs2
+                                         output2
+                                         &key
+                                         (extra-rules 'nil)
+                                         (count-hits ':auto)
+                                         (print ':auto))
   (prove-functions-equivalent-fn executable1
-                                 function1
+                                 target1
                                  inputs1
                                  output1
                                  executable2
-                                 function2
+                                 target2
                                  inputs2
                                  output2
                                  extra-rules
                                  count-hits
-                                 print))
+                                 print)
+  :parents (acl2::axe-x86 acl2::axe-lifters)
+  :short "A tool to prove two x86 binary functions equivalent."
+  :description "This runs @(see def-unrolled) twice, once for each executable, and then tries to prove the two resulting lifted computations equal using rewriting and SMT solving."
+  :args ((executable1 "The first executable.  Usually a string (a filename).")
+         (target1 "The target to lift in the first executable.  See the @(':target') option of @(see def-unrolled).")
+         (inputs1 "Information about the inputs of the first executable.  See the @(':inputs') option of @(see def-unrolled).  Corresponding inputs should have the same names in the @(':inputs2') below.")
+         (output1 "Which output to extract from the first executable.  See the @(':output') option of @(see def-unrolled).")
+         (executable2 "The second executable.  Usually a string (a filename).")
+         (target2 "The target to lift in the second executable.  See the @(':target') option of @(see def-unrolled).")
+         (inputs2 "Information about the inputs of the second executable.  See the @(':inputs') option of @(see def-unrolled).  Corresponding inputs should have the same names in the @(':inputs1') above.")
+         (output2 "Which output to extract from the second executable.  See the @(':output') option of @(see def-unrolled).")
+         (extra-rules "Extra rules to use during lifting.")
+         (count-hits "Whether to count rewrite rule hits.")
+         (print "Verbosity level.") ; todo values
+         ))

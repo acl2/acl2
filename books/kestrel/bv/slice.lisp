@@ -38,16 +38,33 @@
          (< y x))
   :hints (("Goal" :cases ((< (+ (- x) y) 0)))))
 
+;move?  mixes a logop and a bvop
+;not clear which form is better
+(defthmd logtail-of-bvchop
+  (implies (and (natp low)
+                (natp n))
+           (equal (logtail low (bvchop n x))
+                  (bvchop (- n low) (logtail low x))))
+  :hints (("Goal" :cases ((< n low)
+                          (equal low n))
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (enable logtail bvchop))))
+
+;; (defthmd logtail-of-bvchop
+;;   (implies (and (natp size1)
+;;                 (natp size))
+;;            (equal (logtail size1 (bvchop size i))
+;;                   (bvchop (- size size1)
+;;                            (logtail size1 i))))
+;;   :hints (("Goal" :use (:instance ;logtail-bvchop
+;;                         ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm slice-of-0
   (equal (slice high low 0)
          0)
   :hints (("Goal" :in-theory (enable slice))))
-
-(defthm integerp-of-slice
-  (integerp (slice high low x)))
-
-(defthm natp-of-slice
-  (natp (slice high low x)))
 
 ;disable?
 (defthm slice-when-val-is-not-an-integer
@@ -70,8 +87,32 @@
                   (slice high 0 val)))
   :hints (("Goal" :in-theory (enable slice))))
 
+(defthm slice-when-low-is-negative
+  (implies (and (< low 0)
+                (integerp low)
+                (integerp high)
+                )
+           (equal (slice high low x)
+                  (bvchop (+ 1 high (- low)) x)))
+  :hints (("Goal" :in-theory (enable slice bvchop))))
+
+(defthm slice-when-indices-are-negative
+  (implies (< n 0)
+           (equal (slice n n x)
+                  (slice 0 0 x)))
+  :hints (("Goal" :in-theory (enable slice))))
+
 (defthm slice-too-high-is-0
   (implies (unsigned-byte-p low x)
+           (equal (slice high low x)
+                  0))
+  :hints (("Goal" :in-theory (enable slice))))
+
+;; May be cheaper, as it only fires when we have an unsigned-byte-p hyp about X.
+(defthm slice-too-high-when-unsigned-byte-p
+  (implies (and (unsigned-byte-p free x)
+                (<= free low)
+                (integerp low))
            (equal (slice high low x)
                   0))
   :hints (("Goal" :in-theory (enable slice))))
@@ -90,6 +131,17 @@
                   0))
   :hints (("Goal" :in-theory (enable slice))))
 
+;rename
+(defthm unsigned-byte-p-of-slice-gen
+  (implies (and (<= (+ 1 high (- low)) n)
+                (integerp high)
+                (integerp low))
+           (equal (unsigned-byte-p n (slice high low x))
+                  (natp n)))
+  :hints (("Goal" :cases ((<= low high))
+           :in-theory (e/d (slice) (slice-becomes-bvchop)))))
+
+;drop?
 (defthm bvchop-of-slice
   (implies (and (<= n (+ 1 (- high low)))
                 (integerp n)
@@ -99,103 +151,6 @@
            (equal (bvchop n (slice high low x))
                   (slice (+ -1 n low) low x)))
   :hints (("Goal" :in-theory (enable slice))))
-
-(defthm logtail-of-bvchop
-  (implies (and (natp low)
-                (natp n))
-           (equal (logtail low (bvchop n x))
-                  (bvchop (- n low) (logtail low x))))
-  :hints (("Goal" :cases ((< n low)
-                          (equal low n))
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (enable logtail bvchop))))
-
-(defthm slice-of-bvchop-low
-  (implies (and (< high n)
-                (natp high)
-                (natp low)
-                (integerp n))
-           (equal (slice high low (bvchop n x))
-                  (slice high low x)))
-  :hints (("Goal" :cases ((and (<= low high) (integerp x))
-                          (and (<= low high) (not (integerp x)))
-                          (and (not (<= low high)) (not (integerp x))))
-           :in-theory (enable slice))))
-
-(defthm slice-of-bvchop-tighten
-  (implies (and (<= n high)
-                ;; (<= low high)
-                ;; (<= low n)
-                (natp high)
-                (natp low)
-                (natp n))
-           (equal (slice high low (bvchop n x))
-                  (slice (+ -1 n) low x)))
-  :hints (("Goal" :cases ((integerp x))
-           :in-theory (enable slice))))
-
-(defthm slice-of-bvchop-too-high
-  (implies (and (<= n n2)
-                ;; (natp n)
-                (natp n2)
-                ;;(natp m)
-                )
-           (equal (slice m n2 (bvchop n x))
-                  0))
-  :hints (("Goal" :cases ((integerp x))
-           :in-theory (enable slice))))
-
-(defthm slice-of-bvchop-low-gen
-  (implies (and (natp high)
-                (natp low)
-                (integerp n))
-           (equal (slice high low (bvchop n x))
-                  (if (< high n)
-                      (slice high low x)
-                    (if (and (<= n high)
-                             (<= low n))
-                        (slice (+ -1 n) low x)
-                      0)))))
-
-(defthm unsigned-byte-p-of-slice-gen
-  (implies (and (>= n (+ 1 high (- low)))
-                (integerp n)
-                (integerp high)
-                (integerp low))
-           (equal (unsigned-byte-p n (slice high low x))
-                  (<= 0 n)))
-  :hints
-  (("Goal" :cases ((<= low high))
-    :in-theory (e/d (slice) (slice-becomes-bvchop)))))
-
-(defthm slice-when-low-is-negative
-  (implies (and (< low 0)
-                (integerp low)
-                (integerp high)
-                )
-           (equal (slice high low x)
-                  (bvchop (+ 1 high (- low)) x)))
-  :hints (("Goal" :in-theory (enable slice bvchop))))
-
-(local
- (defthmd unsigned-byte-p-of-slice-helper
-   (implies (and (equal n (+ 1 high (- low)))
-                 (<= low high) ;todo
-                 (integerp high)
-                 (integerp low))
-            (unsigned-byte-p n (slice high low x)))
-   :hints (("Goal" ;:cases ( (< high low))
-            :in-theory (e/d (slice) (slice-becomes-bvchop))))))
-
-(defthmd unsigned-byte-p-of-slice
-  (implies (and (equal n (+ 1 high (- low)))
-                (integerp high)
-                (integerp low))
-           (equal (unsigned-byte-p n (slice high low x))
-                  (natp n)))
-  :hints (("Goal" :use (slice-out-of-order
-                        unsigned-byte-p-of-slice-helper)
-           :in-theory (e/d (natp) (unsigned-byte-p-of-slice-helper slice-out-of-order)))))
 
 (defthm bvchop-of-slice-both
   (implies (and (integerp high)
@@ -209,16 +164,54 @@
   :hints (("Goal" :use bvchop-of-slice
            :in-theory (disable bvchop-of-slice))))
 
-(in-theory (disable logtail-of-bvchop))
 
-;; (defthmd logtail-of-bvchop
-;;   (implies (and (natp size1)
-;;                 (natp size))
-;;            (equal (logtail size1 (bvchop size i))
-;;                   (bvchop (- size size1)
-;;                            (logtail size1 i))))
-;;   :hints (("Goal" :use (:instance ;logtail-bvchop
-;;                         ))))
+(defthm slice-of-bvchop-low
+  (implies (and (< high n)
+                (natp high)
+                (natp low)
+                (integerp n))
+           (equal (slice high low (bvchop n x))
+                  (slice high low x)))
+  :hints (("Goal" :cases ((and (<= low high) (integerp x))
+                          (and (<= low high) (not (integerp x)))
+                          (and (not (<= low high)) (not (integerp x))))
+           :in-theory (enable slice logtail-of-bvchop))))
+
+(defthm slice-of-bvchop-tighten
+  (implies (and (<= n high)
+                ;; (<= low high)
+                ;; (<= low n)
+                (natp high)
+                (natp low)
+                (natp n))
+           (equal (slice high low (bvchop n x))
+                  (slice (+ -1 n) low x)))
+  :hints (("Goal" :cases ((integerp x))
+           :in-theory (enable slice logtail-of-bvchop))))
+
+;maybe just use slice-of-bvchop-tighten?
+(defthm slice-of-bvchop-too-high
+  (implies (and (<= n low)
+                ;; (natp n)
+                (natp low)
+                ;;(natp high)
+                )
+           (equal (slice high low (bvchop n x))
+                  0))
+  :hints (("Goal" :cases ((integerp x))
+           :in-theory (enable slice))))
+
+(defthm slice-of-bvchop-low-gen
+  (implies (and (natp high)
+                (natp low)
+                (integerp n))
+           (equal (slice high low (bvchop n x))
+                  (if (< high n)
+                      (slice high low x)
+                    (if (and ;(<= n high)
+                             (<= low n))
+                        (slice (+ -1 n) low x)
+                      0)))))
 
 ;newly disabled..
 (defthmd logtail-of-bvchop-becomes-slice
@@ -422,11 +415,7 @@
   :hints (("Goal" :cases ((< 0 X))
            :in-theory (enable slice))))
 
-(defthm slice-when-indices-are-negative
-  (implies (< n 0)
-           (equal (slice n n x)
-                  (slice 0 0 x)))
-  :hints (("Goal" :in-theory (enable slice))))
+
 
 ;; In case we don't turn slice into getbit
 (defthm bitp-of-slice-same-type
@@ -607,8 +596,8 @@
                 (natp low)
                 )
            (< (slice high low x) k))
-  :hints (("Goal" :use (:instance UNSIGNED-BYTE-P-OF-SLICE (n (+ 1 high (- low))))
-           :in-theory (e/d (UNSIGNED-BYTE-P)( UNSIGNED-BYTE-P-OF-SLICE UNSIGNED-BYTE-P-OF-SLICE-GEN)))))
+  :hints (("Goal" :use (:instance UNSIGNED-BYTE-P-OF-SLICE-gen (n (+ 1 high (- low))))
+           :in-theory (e/d (UNSIGNED-BYTE-P) (UNSIGNED-BYTE-P-OF-SLICE-GEN)))))
 
 (defthm slice-of-+-of-expt-gen
   (implies (and (< high i)
