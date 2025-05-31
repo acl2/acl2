@@ -1600,25 +1600,96 @@
               (expr-option-unambp then-new)
               (expr-unambp else)
               (expr-unambp else-new))
-  (declare (ignore test then else
-                   test-thm-name then-thm-name else-thm-name))
   :returns (mv (expr exprp) (gou simpadd0-goutp))
   :short "Transform a conditional expression."
-  (b* (((simpadd0-gin gin) gin))
-    (mv (make-expr-cond :test test-new
-                        :then then-new
-                        :else else-new)
-        (make-simpadd0-gout
-         :events (append test-events
-                         then-events
-                         else-events)
-         :thm-name nil
-         :thm-index gin.thm-index
-         :names-to-avoid gin.names-to-avoid
-         :vartys (omap::update* test-vartys
-                                (omap::update* then-vartys
-                                               else-vartys))
-         :diffp (or test-diffp then-diffp else-diffp))))
+  (b* (((simpadd0-gin gin) gin)
+       (expr (make-expr-cond :test test :then then :else else))
+       (expr-new (make-expr-cond :test test-new :then then-new :else else-new))
+       (test-vartys (ident-type-map-fix test-vartys))
+       (then-vartys (ident-type-map-fix then-vartys))
+       (else-vartys (ident-type-map-fix else-vartys))
+       ((unless (omap::compatiblep then-vartys else-vartys))
+        (raise "Internal error: ~
+                incompatible variable-type maps ~x0 and ~x1."
+               then-vartys else-vartys)
+        (mv (irr-expr) (irr-simpadd0-gout)))
+       (vartys (omap::update* then-vartys else-vartys))
+       ((unless (omap::compatiblep test-vartys vartys))
+        (raise "Internal error: ~
+                incompatible variable-type maps ~x0 and ~x1."
+               test-vartys vartys)
+        (mv (irr-expr) (irr-simpadd0-gout)))
+       (vartys (omap::update* test-vartys vartys))
+       (diffp (or test-diffp then-diffp else-diffp))
+       ((unless (and test-thm-name
+                     then-thm-name
+                     else-thm-name))
+        (mv expr-new
+            (make-simpadd0-gout
+             :events (append test-events
+                             then-events
+                             else-events)
+             :thm-name nil
+             :thm-index gin.thm-index
+             :names-to-avoid gin.names-to-avoid
+             :vartys vartys
+             :diffp diffp)))
+       (hints `(("Goal"
+                 :in-theory '((:e ldm-expr))
+                 :use (,test-thm-name
+                       ,then-thm-name
+                       ,else-thm-name
+                       (:instance
+                        simpadd0-expr-cond-support-lemma-1
+                        (old-test (mv-nth 1 (ldm-expr ',test)))
+                        (old-then (mv-nth 1 (ldm-expr ',then)))
+                        (old-else (mv-nth 1 (ldm-expr ',else)))
+                        (new-test (mv-nth 1 (ldm-expr ',test-new)))
+                        (new-then (mv-nth 1 (ldm-expr ',then-new)))
+                        (new-else (mv-nth 1 (ldm-expr ',else-new))))
+                       (:instance
+                        simpadd0-expr-cond-support-lemma-2
+                        (old-test (mv-nth 1 (ldm-expr ',test)))
+                        (old-then (mv-nth 1 (ldm-expr ',then)))
+                        (old-else (mv-nth 1 (ldm-expr ',else)))
+                        (new-test (mv-nth 1 (ldm-expr ',test-new)))
+                        (new-then (mv-nth 1 (ldm-expr ',then-new)))
+                        (new-else (mv-nth 1 (ldm-expr ',else-new))))
+                       (:instance
+                        simpadd0-expr-cond-support-lemma-3
+                        (old-test (mv-nth 1 (ldm-expr ',test)))
+                        (old-then (mv-nth 1 (ldm-expr ',then)))
+                        (old-else (mv-nth 1 (ldm-expr ',else)))
+                        (new-test (mv-nth 1 (ldm-expr ',test-new)))
+                        (new-then (mv-nth 1 (ldm-expr ',then-new)))
+                        (new-else (mv-nth 1 (ldm-expr ',else-new))))
+                       (:instance
+                        simpadd0-expr-cond-support-lemma-4
+                        (test (mv-nth 1 (ldm-expr ',test)))
+                        (then (mv-nth 1 (ldm-expr ',then)))
+                        (else (mv-nth 1 (ldm-expr ',else))))
+                       (:instance
+                        simpadd0-expr-cond-support-lemma-5
+                        (test (mv-nth 1 (ldm-expr ',test)))
+                        (then (mv-nth 1 (ldm-expr ',then)))
+                        (else (mv-nth 1 (ldm-expr ',else))))))))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-expr-pure-thm expr
+                                    expr-new
+                                    vartys
+                                    gin.const-new
+                                    gin.thm-index
+                                    hints)))
+    (mv expr-new
+        (make-simpadd0-gout :events (append test-events
+                                            then-events
+                                            else-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+                            :vartys vartys
+                            :diffp diffp)))
 
   ///
 
@@ -1626,7 +1697,110 @@
     (expr-unambp expr)
     :hyp (and (expr-unambp test-new)
               (expr-option-unambp then-new)
-              (expr-unambp else-new))))
+              (expr-unambp else-new))
+    :hints (("Goal" :in-theory (enable irr-expr))))
+
+  (defruled simpadd0-expr-cond-support-lemma-1
+    (b* ((old (c::expr-cond old-test old-then old-else))
+         (new (c::expr-cond new-test new-then new-else))
+         (old-test-result (c::exec-expr-pure old-test compst))
+         (old-then-result (c::exec-expr-pure old-then compst))
+         (new-test-result (c::exec-expr-pure new-test compst))
+         (new-then-result (c::exec-expr-pure new-then compst))
+         (old-test-value (c::expr-value->value old-test-result))
+         (old-then-value (c::expr-value->value old-then-result))
+         (new-test-value (c::expr-value->value new-test-result))
+         (new-then-value (c::expr-value->value new-then-result))
+         (old-result (c::exec-expr-pure old compst))
+         (new-result (c::exec-expr-pure new compst))
+         (old-value (c::expr-value->value old-result))
+         (new-value (c::expr-value->value new-result))
+         (type-test (c::type-of-value old-test-value))
+         (type-then (c::type-of-value old-then-value)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-test-result))
+                    (not (c::errorp new-then-result))
+                    (equal old-test-value new-test-value)
+                    (equal old-then-value new-then-value)
+                    (c::type-nonchar-integerp type-test)
+                    (c::type-nonchar-integerp type-then)
+                    (c::test-value old-test-value))
+               (and (not (c::errorp new-result))
+                    (equal old-value new-value)
+                    (equal (c::type-of-value old-value) type-then))))
+    :expand ((c::exec-expr-pure (c::expr-cond old-test old-then old-else)
+                                compst)
+             (c::exec-expr-pure (c::expr-cond new-test new-then new-else)
+                                compst))
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-expr-cond-support-lemma-2
+    (b* ((old (c::expr-cond old-test old-then old-else))
+         (new (c::expr-cond new-test new-then new-else))
+         (old-test-result (c::exec-expr-pure old-test compst))
+         (old-else-result (c::exec-expr-pure old-else compst))
+         (new-test-result (c::exec-expr-pure new-test compst))
+         (new-else-result (c::exec-expr-pure new-else compst))
+         (old-test-value (c::expr-value->value old-test-result))
+         (old-else-value (c::expr-value->value old-else-result))
+         (new-test-value (c::expr-value->value new-test-result))
+         (new-else-value (c::expr-value->value new-else-result))
+         (old-result (c::exec-expr-pure old compst))
+         (new-result (c::exec-expr-pure new compst))
+         (old-value (c::expr-value->value old-result))
+         (new-value (c::expr-value->value new-result))
+         (type-test (c::type-of-value old-test-value))
+         (type-else (c::type-of-value old-else-value)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-test-result))
+                    (not (c::errorp new-else-result))
+                    (equal old-test-value new-test-value)
+                    (equal old-else-value new-else-value)
+                    (c::type-nonchar-integerp type-test)
+                    (c::type-nonchar-integerp type-else)
+                    (not (c::test-value old-test-value)))
+               (and (not (c::errorp new-result))
+                    (equal old-value new-value)
+                    (equal (c::type-of-value old-value) type-else))))
+    :expand ((c::exec-expr-pure (c::expr-cond old-test old-then old-else)
+                                compst)
+             (c::exec-expr-pure (c::expr-cond new-test new-then new-else)
+                                compst))
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-expr-cond-support-lemma-3
+    (implies (c::errorp (c::exec-expr-pure test compst))
+             (c::errorp
+              (c::exec-expr-pure (c::expr-cond test then else) compst)))
+    :expand (c::exec-expr-pure (c::expr-cond test then else) compst))
+
+  (defruled simpadd0-expr-cond-support-lemma-4
+    (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
+                  (c::value-integerp
+                   (c::expr-value->value (c::exec-expr-pure test compst)))
+                  (c::test-value
+                   (c::expr-value->value (c::exec-expr-pure test compst)))
+                  (c::errorp (c::exec-expr-pure then compst)))
+             (c::errorp
+              (c::exec-expr-pure (c::expr-cond test then else) compst)))
+    :expand (c::exec-expr-pure (c::expr-cond test then else) compst)
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-expr-cond-support-lemma-5
+    (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
+                  (c::value-integerp
+                   (c::expr-value->value (c::exec-expr-pure test compst)))
+                  (not (c::test-value
+                        (c::expr-value->value (c::exec-expr-pure test compst))))
+                  (c::errorp (c::exec-expr-pure else compst)))
+             (c::errorp
+              (c::exec-expr-pure (c::expr-cond test then else) compst)))
+    :expand (c::exec-expr-pure (c::expr-cond test then else) compst)
+    :enable (c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
