@@ -55,6 +55,8 @@
     "The subdirectory @('next') contains
      an in-progress extension of the model and proofs,
      which will replace the current version when completed.
+     (The files in @('next') are not included in the manual,
+     so that they can use names overlapping with the current version.)
      This extension refines certificate creation,
      which in the current model is an atomic event,
      to be a multi-step process,
