@@ -637,7 +637,13 @@
         (len roles))
     :rule-classes :linear
     :induct t
-    :enable sinteger-bit-roles-sign-count))
+    :enable sinteger-bit-roles-sign-count)
+
+  (defruled sinteger-bit-roles-value-count-upper-bound
+    (<= (sinteger-bit-roles-value-count roles)
+        (- (len roles)
+           (sinteger-bit-roles-sign-count roles)))
+    :enable sinteger-bit-roles-value/sign-count-upper-bound))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
