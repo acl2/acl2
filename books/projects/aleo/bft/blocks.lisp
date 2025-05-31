@@ -13,7 +13,7 @@
 
 (include-book "transactions")
 
-(local (include-book "../library-extensions/arithmetic-theorems"))
+(local (include-book "library-extensions/arithmetic-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

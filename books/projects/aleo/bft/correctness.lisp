@@ -56,7 +56,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ correctness
-  :parents (aleobft-definition-and-correctness)
+  :parents (aleobft)
   :short "Correctness proofs of the AleoBFT labeled state transition system."
   :long
   (xdoc::topstring

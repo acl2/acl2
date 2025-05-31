@@ -15,7 +15,7 @@
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
 
-(local (include-book "../library-extensions/oset-theorems"))
+(local (include-book "library-extensions/oset-theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 

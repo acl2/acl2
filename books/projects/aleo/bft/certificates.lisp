@@ -17,7 +17,7 @@
 (include-book "kestrel/fty/pos-set" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "../library-extensions/oset-theorems"))
+(local (include-book "library-extensions/oset-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

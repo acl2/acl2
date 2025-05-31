@@ -14,7 +14,7 @@
 (include-book "omni-paths-def-and-implied")
 (include-book "anchors-extension")
 
-(local (include-book "../library-extensions/arithmetic-theorems"))
+(local (include-book "library-extensions/arithmetic-theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 

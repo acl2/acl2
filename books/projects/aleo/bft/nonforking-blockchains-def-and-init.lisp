@@ -13,7 +13,7 @@
 
 (include-book "initialization")
 
-(include-book "../library-extensions/lists-noforkp")
+(include-book "library-extensions/lists-noforkp")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

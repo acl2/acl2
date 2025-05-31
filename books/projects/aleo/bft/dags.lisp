@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -17,7 +17,7 @@
 (include-book "kestrel/utilities/osets" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
-(local (include-book "../library-extensions/oset-theorems"))
+(local (include-book "library-extensions/oset-theorems"))
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
