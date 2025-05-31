@@ -123,7 +123,7 @@
 
   ///
 
-  (defret stat-validp-of-exec-sltii
+  (defret stat-validp-of-exec-slti
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
