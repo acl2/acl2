@@ -598,7 +598,14 @@
      the type of a binary expression based on
      the operator and the types of the operands.
      If there is not enough information,
-     the unknown type is returned."))
+     the unknown type is returned.")
+   (xdoc::p
+    "For a conditional information,
+     we look at the types of the two branches,
+     and if they have exactly the same type,
+     we return that type, otherwise we return the unkwnon type.
+     If there is no `then' branch, we also return the unknown type.
+     This is an approximation."))
   (expr-case
    expr
    :ident (var-info->type (coerce-var-info expr.info))
@@ -621,7 +628,13 @@
    :alignof (type-unknown)
    :cast (type-unknown)
    :binary (binary-info->type (coerce-binary-info expr.info))
-   :cond (type-unknown)
+   :cond (b* (((when (expr-option-case expr.then :none)) (type-unknown))
+              (expr.then (expr-option-some->val expr.then))
+              (then-type (expr-type expr.then))
+              (else-type (expr-type expr.else)))
+           (if (equal then-type else-type)
+               then-type ; = else-type
+             (type-unknown)))
    :comma (expr-type expr.next)
    :stmt (type-unknown)
    :tycompat (type-unknown)
