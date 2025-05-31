@@ -1087,7 +1087,34 @@
      the maximum value is @('2^M - 1')."))
   (1- (expt 2 (sinteger-bit-roles-value-count
                (sinteger-format->bits format))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret sinteger-format->max-upper-bound
+    (<= max
+        (1- (expt 2 (1- (len (sinteger-format->bits format))))))
+    :rule-classes :linear
+    :hints
+    (("Goal"
+      :in-theory (e/d (sinteger-bit-roles-wfp)
+                      (sinteger-format-requirements
+                       acl2::expt-is-weakly-increasing-for-base->-1
+                       acl2::|(* (expt x m) (/ (expt x n)))|
+                       acl2::|(* a (/ a))|
+                       acl2::bubble-down-*-match-1
+                       acl2::bubble-down-*-match-2
+                       acl2::simplify-products-gather-exponents-<
+                       acl2::expt-is-weakly-increasing-for-base->-1
+                       acl2::expt-is-increasing-for-base->-1))
+      :use ((:instance sinteger-format-requirements (x format))
+            (:instance ACL2::EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1
+                       (x 2)
+                       (m (sinteger-bit-roles-value-count
+                           (sinteger-format->bits format)))
+                       (n (1- (len (sinteger-format->bits format)))))
+            (:instance sinteger-bit-roles-value-count-upper-bound
+                       (roles (sinteger-format->bits format))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
