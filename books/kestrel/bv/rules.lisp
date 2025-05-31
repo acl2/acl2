@@ -1096,7 +1096,7 @@
 (defthm slice-bound-hack3
   (not (> (slice 31 27 x) 31))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-slice-gen (x x) (low 27) (high 31) (n 5))
-           :in-theory (disable unsigned-byte-p-of-slice-gen unsigned-byte-p-of-slice))))
+           :in-theory (disable unsigned-byte-p-of-slice-gen))))
 
 ;bozo think about these...
 (defthm bvcat-bvxor-neighbors-hack
