@@ -1568,7 +1568,7 @@
      AleoBFT achieves nonequivocation of proposals in certificates,
      not of whole certificates."))
   (forall (cert1 cert2)
-          (implies (and (set::in cert1 (certificate-set-fix certs2))
+          (implies (and (set::in cert1 (certificate-set-fix certs1))
                         (set::in cert2 (certificate-set-fix certs2))
                         (equal (certificate->author cert1)
                                (certificate->author cert2))
