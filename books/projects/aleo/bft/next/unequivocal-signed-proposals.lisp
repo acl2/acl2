@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-PROPOSALS")
+(in-package "ALEOBFT")
 
 (include-book "signed-in-signer")
 (include-book "author-round-pairs-in-validators")

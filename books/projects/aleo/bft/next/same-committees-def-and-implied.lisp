@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-PROPOSALS")
+(in-package "ALEOBFT")
 
 (include-book "ordered-blockchain")
 (include-book "nonforking-blockchains-def-and-init")

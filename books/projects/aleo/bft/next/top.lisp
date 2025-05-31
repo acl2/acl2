@@ -9,15 +9,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-PROPOSALS")
+(in-package "ALEOBFT")
 
 (include-book "definition")
 (include-book "correctness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ aleobft-proposals
-  :parents (aleobft::aleobft)
+(defxdoc+ aleobft-definition-and-correctness
+  :parents (aleobft)
   :short "Formal specification and correctness proofs of
           AleoBFT with dynamic committees with stake and proposals."
   :long

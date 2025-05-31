@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-PROPOSALS")
+(in-package "ALEOBFT")
 
 (include-book "last-anchor-def")
 (include-book "unequivocal-dag")
