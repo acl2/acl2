@@ -668,7 +668,7 @@
                                             acl2::bvminus-of-+-arg2))))
        (theory-invariant (incompatible (:rewrite subregionp-of-+-arg2) (:definition bvplus)))
 
-       (defthm subregionp-of-+-arg4
+       (defthmd subregionp-of-+-arg4
          (implies (and (integerp x)
                        (integerp y))
                   (equal (subregionp len1 ad1 len2 (+ x y))
@@ -676,6 +676,7 @@
          :hints (("Goal" :in-theory (enable subregionp
                                             acl2::bvminus-of-+-arg3
                                             in-regionp-of-+-arg3))))
+      (theory-invariant (incompatible (:rewrite subregionp-of-+-arg4) (:definition bvplus)))
 
        (defthm subregionp-of-bvchop-arg2
          (implies (and (<= ,num-address-bits size)

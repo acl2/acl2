@@ -1466,6 +1466,7 @@
     defthm-axe-basic
     defthm-stp
     prove-with-stp
+    defmacrodoc
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
     pseudo-dag-arrayp

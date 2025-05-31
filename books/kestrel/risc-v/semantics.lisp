@@ -17,6 +17,7 @@
 (local (include-book "library-extensions"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
@@ -69,10 +70,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned @('XLEN')-bit integer from @('rs1').
+    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining an unsigned @('XLEN')-bit integer.
-     We add the two unsigned @('XLEN')-bit integers.
+     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     We add the two integers.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -85,6 +86,68 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-addi-alt-def
+    (equal (exec-addi rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (+ rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-addi
+             read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc)
+    :use (:instance lemma
+                    (imm (ubyte12-fix imm))
+                    (rs1 (ubyte5-fix rs1)))
+    :prep-lemmas
+    ((defruled lemma
+       (equal (loghead (feat->xlen feat)
+                       (+ (logext 12 imm)
+                          (logext (feat->xlen feat)
+                                  (read-xreg-unsigned rs1 stat feat))))
+              (loghead (feat->xlen feat)
+                       (+ (loghead (feat->xlen feat)
+                                   (logext 12 imm))
+                          (read-xreg-unsigned rs1 stat feat))))
+       :use (lemma1 lemma2 lemma3)
+       :disable bitops::loghead-of-+-of-loghead-same
+       :cases ((feat-32p feat))
+       :prep-lemmas
+       ((defruled lemma1
+          (equal (loghead (feat->xlen feat)
+                          (+ (logext 12 imm)
+                             (logext (feat->xlen feat)
+                                     (read-xreg-unsigned rs1 stat feat))))
+                 (loghead (feat->xlen feat)
+                          (+ (logext (feat->xlen feat)
+                                     (logext 12 imm))
+                             (logext (feat->xlen feat)
+                                     (read-xreg-unsigned rs1 stat feat)))))
+          :cases ((feat-32p feat)))
+        (defruled lemma2
+          (equal (loghead (feat->xlen feat)
+                          (+ (logext (feat->xlen feat)
+                                     (logext 12 imm))
+                             (logext (feat->xlen feat)
+                                     (read-xreg-unsigned rs1 stat feat))))
+                 (loghead (feat->xlen feat)
+                          (+ (logext 12 imm)
+                             (read-xreg-unsigned rs1 stat feat))))
+          :enable (loghead-of-logext-plus-logext
+                   ifix))
+        (defruled lemma3
+          (equal (loghead (feat->xlen feat)
+                          (+ (logext 12 imm)
+                             (read-xreg-unsigned rs1 stat feat)))
+                 (loghead (feat->xlen feat)
+                          (+ (loghead (feat->xlen feat)
+                                      (logext 12 imm))
+                             (loghead (feat->xlen feat)
+                                      (read-xreg-unsigned rs1 stat feat))))))))))
 
   (defret stat-validp-of-exec-addi
     (stat-validp new-stat feat)
@@ -123,7 +186,7 @@
 
   ///
 
-  (defret stat-validp-of-exec-sltii
+  (defret stat-validp-of-exec-slti
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
@@ -866,7 +929,8 @@
    (xdoc::p
     "We read two (signed or unsigned) @('XLEN')-bit integers
      from @('rs1') and @('rs2').
-     We add them, and write the result to @('rd').
+     We add the two integers.
+     We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
@@ -915,7 +979,8 @@
    (xdoc::p
     "We read two (signed or unsigned) @('XLEN')-bit integers
      from @('rs1') and @('rs2').
-     We subtract the second from the first, and write the result to @('rd').
+     We subtract the second integer from the first integer.
+     We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))

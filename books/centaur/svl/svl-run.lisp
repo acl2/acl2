@@ -821,7 +821,7 @@ svl-run-phase-wog) instead, which has the same arguments but no guards.
     :returns (res alistp)
     :parents (acl2::svl)
     :short "Evaluate SVL designs"
-    :long "<p>SVL-RUN has similar inputs to (@see acl2::def-svtv). However, some
+    :long "<p>SVL-RUN has similar inputs to @(see sv::defsvtv$). However, some
 of those inputs (i.e., simulation patterns) are supplied to svl-run at runtime
 (or during the proofs). </p>
 
