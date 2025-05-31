@@ -13,7 +13,6 @@
 
 (include-book "library-extensions/top")
 (include-book "current/top")
-(include-book "next/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,5 +98,4 @@
      to be preserved by state transitions,
      and to hold in every state reachable from an initial state."))
   :order-subtopics (library-extensions
-                    aleobft-definition-and-correctness
-                    aleobft-proposals::aleobft-proposals))
+                    aleobft-definition-and-correctness))
