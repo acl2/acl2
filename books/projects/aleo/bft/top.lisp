@@ -12,17 +12,14 @@
 (in-package "ALEOBFT")
 
 (include-book "library-extensions/top")
-(include-book "static/top")
-(include-book "dynamic/top")
-(include-book "stake/top")
-(include-book "arxiv/top")
-(include-book "proposals/top")
+(include-book "current/top")
+(include-book "next/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ aleobft
   :parents (aleo::aleo)
-  :short "Formal specification and correctness proofs of AleoBFT."
+  :short "Formal model and correctness proofs of AleoBFT."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -35,120 +32,48 @@
     ", particuarly "
     (xdoc::ahref "https://arxiv.org/abs/2209.05633"
                  "partially synchronous Bullshark")
-    ", which AleoBFT extends with dynamic committees with staking.
+    ", which AleoBFT extends with dynamic committees, staking, and syncing.
      AleoBFT is implemented in "
     (xdoc::ahref "https://github.com/AleoNet/snarkOS" "snarkOS")
     " (primarily) and "
     (xdoc::ahref "https://github.com/AleoNet/snarkVM" "snarkVM")
     " (for some functionality).")
    (xdoc::p
-    "This directory contains various versions of
-     a formal specification and correctness proofs of AleoBFT:")
-   (xdoc::ul
-    (xdoc::li
-     "The subdirectory @('static') contains a version for
-      AleoBFT with static committees and without stake,
-      which is therefore very similar to plain Bullshark,
-      with some slight differences unique to AleoBFT.
-      This is useful as a baseline,
-      simpler to understand than the other versions;
-      given its similarity to plain Bullshark,
-      this can be regarded as providing
-      formal correctness proofs for certain important aspects of Bullshark.
-      This version models the Narwhal component of AleoBFT somewhat abstractly,
-      with certificate creation as an atomic event
-      instead of an exchange of proposals, signatures, and certificates.
-      The main properties proved are
-      the non-equivocation of certificates (for the Narwhal component)
-      and the nonforking of blockchains (for the Bullshark component),
-      with the latter building on the former,
-      and with many other properties involved,
-      such as the nonforking of committed anchor sequences.")
-    (xdoc::li
-     "The subdirectory @('dynamic') contains a version for
-      AleoBFT with dynamic committees but without stake,
-      which is a significant extension of the static version.
-      The same two key properties of the static version are proved,
-      namely certificate non-equivocation and blockchain nonforking,
-      along with many other properties like anchor nonforking.
-      But here they cannot be all proved
-      in a simple sequential way as in the static version:
-      besides blockchain nonforking needing certificate nonequivocation,
-      the latter, which depends on committees,
-      needs validators to agree on committees,
-      which are calculated from blockchains,
-      thus requiring blockchain nonforking.
-      The circularity is inductively well-formed in the proofs,
-      but the proofs are more complex than in the static version.")
-    (xdoc::li
-     "The subdirectory @('stake') contains a version for
-      AleoBFT with dynamic committees and with stake,
-      which mainly extends the version in @('dynamic') with stake,
-      generalizing from validator counts to validator stakes.
-      This extension from @('dynamic') to @('stake') is not as big as
-      the extension from @('static') to @('dynamic'),
-      but it nonetheless involves non-trivial generalizations.
-      We also take the opportunity, in this version,
-      to allow empty committees,
-      which would likely deadlock the protocol,
-      although we have not studied the situation in detail yet.
-      We also take the opportunity, in this version,
-      to move certain checks
-      from certificate receiving events
-      to certificate storing events,
-      which makes certain aspects of the definitions and proofs simpler.")
-    (xdoc::li
-     "The subdirectory @('arxiv') contains a version that is
-      a slightly simplified variant of the version in @('stake'),
-      and that is described in "
-     (xdoc::ahref "https://arxiv.org/abs/2504.16853" "this arXiv paper")
-     " (hence the name of the subdirectory).
-      It omits buffers from validator states,
-      and combines certificate receiving and storing events
-      into single certificate acceptance events;
-      this makes the model simpler
-      without really affecting its expressiveness.
-      Another simplification in this version is that
-      the round advancement logic is much simpler,
-      and there are no timeout events and no timers in validator states:
-      there is just an event to advance a validator's round by one,
-      which may nondeterministically take place any time, like the other events.
-      While this does not affect the expressiveness of the model
-      for the purpose of proving properties like blockchain nonforking
-      (because the simplification makes more executions possible
-      than in a model with more detailed and restrictive
-      round advancement logic),
-      it could affect the ability to prove certain other properties,
-      e.g. because the system may deadlock more easily in this model.
-      In addition to the simplifications just described,
-      this version also eliminates some invariants
-      that are not needed to prove blockchain nonforking.")
-    (xdoc::li
-     "The subdirectory @('proposals') contains a version that
-      extends the @('arxiv') version
-      by explicitly modeling the exchange of proposals and signatures.
-      Certificate creation is no longer an atomic event:
-      there are separate events for
-      creating and broadcasting proposal,
-      endorsing proposals,
-      augmenting proposals with endorsements,
-      and finally creating and broadcasting certificates.
-      The other events, namely
-      certificate acceptance,
-      round advancement, and
-      anchor commitment,
-      are similar to the @('arxiv') version."))
+    "This directory contains
+     a formal model and correctness proofs of AleoBFT.
+     More precisely, the subdirectory @('current')
+     contains the current version of the model and proofs,
+     while the subdirectory @('next') contains
+     an in-progress extension of the model and proofs,
+     which will replace the version in @('current') when completed.")
    (xdoc::p
-    "We plan to add other subdirectories
-     for versions that cover additional aspects of AleoBFT,
-     such as syncing.
-     We may also extend the existing directories with more proofs,
-     or we may revise and improve the existing definitions and proofs,
-     also in order to update the model to reflect the latest AleoBFT
-     as implemented in the aforementioned snarkOS and snarkVM.")
+    "The version in @('current') models dynamic committees with stake,
+     but does not model syncing yet;
+     it models certificate creation as an atomic event.
+     The version in ('next') refines certificate creation
+     to be a multi-step process,
+     with explicit creation and exchange of
+     proposals, endorsements, and certificates.
+     Modeling syncing is future work.
+     The proofs of correctness in both @('current') and @('next')
+     mainly concern the safety property that blockchains do not fork.
+     Proving other correctness properties is future work.")
    (xdoc::p
-    "In each version of our formal model and proofs,
-     we formally specify AleoBFT as a labeled state transition system:
+    "The current version of the model and proof is
+     the last one of a series of versions that we have developed.
+     We started with a version with static committees without stake,
+     which was therefore very similar to plain Bullshark.
+     Then we made the significant extension to dynamic committees,
+     initially without stake, and then with stake;
+     adding stake was not a big extension.
+     The next version also has dynamic committees with stake,
+     but has a more refined model of certificate creation (see above).")
+   (xdoc::p
+    "The current version corresponds to the contents of "
+    (xdoc::ahref "https://arxiv.org/abs/2504.16853" "this arXiv paper")
+    ".")
+   (xdoc::p
+    "We formally specify AleoBFT as a labeled state transition system:
      we define the possible states of the system,
      the possible events that can take place in the system,
      and then we define, in essence, a ternary transition relation,
@@ -174,8 +99,5 @@
      to be preserved by state transitions,
      and to hold in every state reachable from an initial state."))
   :order-subtopics (library-extensions
-                    aleobft-static::aleobft-static
-                    aleobft-dynamic::aleobft-dynamic
-                    aleobft-stake::aleobft-stake
                     aleobft-arxiv::aleobft-arxiv
                     aleobft-proposals::aleobft-proposals))
