@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-ARXIV")
+(in-package "ALEOBFT")
 
 (include-book "unequivocal-dags-def-and-init")
 (include-book "same-committees-def-and-implied")

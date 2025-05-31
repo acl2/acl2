@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-ARXIV")
+(in-package "ALEOBFT")
 
 (include-book "dag-certificate-next")
 (include-book "last-anchor-present")

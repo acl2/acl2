@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-ARXIV")
+(in-package "ALEOBFT")
 
 (include-book "committed-redundant-def-and-init-and-next")
 (include-book "committed-anchor-sequences")

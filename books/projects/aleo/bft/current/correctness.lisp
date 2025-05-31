@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-ARXIV")
+(in-package "ALEOBFT")
 
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
@@ -56,7 +56,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ correctness
-  :parents (aleobft-arxiv)
+  :parents (aleobft-definition-and-correctness)
   :short "Correctness proofs of the AleoBFT labeled state transition system."
   :long
   (xdoc::topstring

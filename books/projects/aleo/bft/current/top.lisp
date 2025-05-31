@@ -9,15 +9,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-ARXIV")
+(in-package "ALEOBFT")
 
 (include-book "definition")
 (include-book "correctness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ aleobft-arxiv
-  :parents (aleobft::aleobft)
+(defxdoc+ aleobft-definition-and-correctness
+  :parents (aleobft)
   :short "Formal specification and correctness proofs of
           AleoBFT with dynamic committees with stake."
   :long
@@ -33,10 +33,6 @@
      the underlying DAG consensus layer.
      The level of abstraction of this model
      is about the same as the Bullshark papers.
-     This model does not capture garbage collection or syncing.")
-   (xdoc::p
-    "This is a slightly simplified version of
-     the version in @(see aleobft-stake::aleobft-stake):
-     see @(see aleobft::aleobft) for more details."))
+     This model does not capture garbage collection or syncing."))
   :order-subtopics (definition
                     correctness))
