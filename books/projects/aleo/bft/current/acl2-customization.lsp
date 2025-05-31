@@ -15,4 +15,4 @@
 
 (reset-prehistory)
 
-(in-package "ALEOBFT-ARXIV")
+(in-package "ALEOBFT")
