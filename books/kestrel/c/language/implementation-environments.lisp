@@ -1058,7 +1058,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is determined by the number @('N') of value bits:
-     the maximum value is @('2^N - 1')."))
+     the maximum value is @('2^N - 1').")
+   (xdoc::p
+    "Since @('N <= T'), where @('T') is the total number of bits,
+     the maximum value cannot be above @('2^T - 1')."))
   (1- (expt 2 (uinteger-bit-roles-value-count
                (uinteger-format->bits format))))
   :hooks (:fix)
@@ -1084,7 +1087,11 @@
   (xdoc::topstring
    (xdoc::p
     "This is determined by the number @('M') of value bits:
-     the maximum value is @('2^M - 1')."))
+     the maximum value is @('2^M - 1').")
+   (xdoc::p
+    "Since @('M <= T - 1'), where @('T') is the total number of bits,
+     and where the 1 accounts for the sign bit,
+     the maximum value cannot be above @('2^(T-1) - 1')."))
   (1- (expt 2 (sinteger-bit-roles-value-count
                (sinteger-format->bits format))))
   :hooks (:fix)
@@ -1108,7 +1115,7 @@
                        acl2::expt-is-weakly-increasing-for-base->-1
                        acl2::expt-is-increasing-for-base->-1))
       :use ((:instance sinteger-format-requirements (x format))
-            (:instance ACL2::EXPT-IS-WEAKLY-INCREASING-FOR-BASE->-1
+            (:instance acl2::expt-is-weakly-increasing-for-base->-1
                        (x 2)
                        (m (sinteger-bit-roles-value-count
                            (sinteger-format->bits format)))
