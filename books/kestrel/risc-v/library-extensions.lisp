@@ -16,26 +16,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled integerp-of-+
-  (implies (and (integerp x)
-                (integerp y))
-           (integerp (+ x y))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled integerp-of-*
-  (implies (and (integerp x)
-                (integerp y))
-           (integerp (* x y))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled integerp-of-unary-minus
-  (implies (integerp x)
-           (integerp (- x))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule loghead-of-ifix
   (equal (loghead size (ifix i))
          (loghead size i)))
