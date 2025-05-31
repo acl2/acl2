@@ -199,7 +199,11 @@
             ;; rules is an explicit list of rules:
             (mv nil rules))))
        ;; Add the :extra-rules and remove the :remove-rules:
+       (unneeded-extra-rules (intersection-eq extra-rules base-rules))
+       (- (and unneeded-extra-rules (cw "Note: The following from the :extra-rules were already present: ~X01.~%" unneeded-extra-rules nil)))
        (rules (union-eq extra-rules base-rules))
+       (unneeded-remove-rules (set-difference-eq remove-rules base-rules))
+       (- (and unneeded-remove-rules (cw "Note: The following from the :remove-rules were not present and so need not be removed: ~X01.~%" unneeded-remove-rules nil)))
        (rules (set-difference-eq rules remove-rules))
        ;; Submit any needed defopener rules:
        (state (submit-events-quiet pre-events state))

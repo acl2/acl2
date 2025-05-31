@@ -1109,6 +1109,7 @@
 
      slice-out-of-order
      slice-too-high-is-0-bind-free-axe
+     slice-too-high-when-unsigned-byte-p ; requires an unsigned-byte-p hyp, should be fairly cheap
      ;; slice-of-getbit-too-high ; just use slice-too-high-is-0-bind-free-axe
      slice-becomes-getbit
      slice-becomes-bvchop

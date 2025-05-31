@@ -43,6 +43,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd integerp-of-slice
+  (integerp (slice high low x)))
+
+(defthmd natp-of-slice
+  (natp (slice high low x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthmd integerp-of-bvplus
   (integerp (bvplus size x y)))
 
