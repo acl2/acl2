@@ -527,7 +527,18 @@
                     (prev (certificate->author cert))
                     (certs (certs-with-round
                             (+ 1 (certificate->round cert)) dag))
-                    (round (+ 1 (certificate->round cert))))))
+                    (round (+ 1 (certificate->round cert)))))
+
+  (defruled certificate->round-of-element-of-successors
+    (implies (and (certificate-setp dag)
+                  (set::in cert1 (successors cert dag)))
+             (equal (certificate->round cert1)
+                    (1+ (certificate->round cert))))
+    :use successors-subset-of-next-round
+    :disable (successors
+              successors-subset-of-next-round)
+    :enable (in-of-certs-with-round
+             set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -577,6 +588,17 @@
       :in-theory (enable certs-with-authors+round-to-round-of-authors
                          certs-with-round-monotone))))
 
+  (defruled in-of-predecessors
+    (equal (set::in pred (predecessors cert dag))
+           (and (certificatep pred)
+                (set::in pred (certificate-set-fix dag))
+                (equal (certificate->round pred)
+                       (1- (certificate->round cert)))
+                (set::in (certificate->author pred)
+                         (certificate->previous cert))))
+    :enable (in-of-certs-with-authors+round
+             posp))
+
   (defruled cert-set->round-set-of-predecessors
     (implies (certificate-setp dag)
              (equal (cert-set->round-set (predecessors cert dag))
@@ -585,4 +607,12 @@
                       (set::insert (1- (certificate->round cert)) nil))))
     :enable (certs-with-authors+round-to-round-of-authors
              cert-set->round-set-of-certs-with-round
+             posp))
+
+  (defruled certificate->round-of-element-of-predecessors
+    (implies (and (certificate-setp dag)
+                  (set::in cert1 (predecessors cert dag)))
+             (equal (certificate->round cert1)
+                    (1- (certificate->round cert))))
+    :enable (in-of-certs-with-authors+round
              posp)))
