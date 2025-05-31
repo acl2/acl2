@@ -19,6 +19,8 @@
 
 (local (include-book "../library-extensions/oset-theorems"))
 
+(local (include-book "arithmetic/top" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -965,7 +967,65 @@
        (implies (set::in cert certs)
                 (equal (cert-with-author+round
                         author round (set::insert cert certs))
-                       (cert-with-author+round author round certs)))))))
+                       (cert-with-author+round author round certs))))))
+
+  (defruled certs-with-author+round-when-cert-with-author+round
+    (implies (cert-with-author+round author round certs)
+             (equal (certs-with-author+round author round certs)
+                    (set::insert (cert-with-author+round author round certs)
+                                 nil)))
+    :expand (cardinality (certs-with-author+round author round certs))
+    :enable set::expensive-rules)
+
+  (defruled cert-with-author+round-subset-superset-same
+    (implies (and (certificate-setp certs0)
+                  (certificate-setp certs)
+                  (set::subset certs0 certs)
+                  (cert-with-author+round author round certs)
+                  (set::in cert certs0)
+                  (equal (certificate->author cert)
+                         (address-fix author))
+                  (equal (certificate->round cert)
+                         (pos-fix round)))
+             (equal (cert-with-author+round author round certs0)
+                    (cert-with-author+round author round certs)))
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (certificate-setp certs0)
+                     (certificate-setp certs)
+                     (set::subset certs0 certs)
+                     (cert-with-author+round author round certs)
+                     (set::in cert certs0)
+                     (equal (certificate->author cert)
+                            (address-fix author))
+                     (equal (certificate->round cert)
+                            (pos-fix round)))
+                (equal (certs-with-author+round author round certs0)
+                       (certs-with-author+round author round certs)))
+       :enable (set::double-containment-no-backchain-limit
+                certs-with-author+round-monotone)
+       :disable cert-with-author+round
+       :prep-lemmas
+       ((defrule lemma-lemma
+          (implies (and (certificate-setp certs0)
+                        (certificate-setp certs)
+                        (set::subset certs0 certs)
+                        (cert-with-author+round author round certs)
+                        (set::in cert certs0)
+                        (equal (certificate->author cert)
+                               (address-fix author))
+                        (equal (certificate->round cert)
+                               (pos-fix round)))
+                   (set::subset (certs-with-author+round author round certs)
+                                (certs-with-author+round author round certs0)))
+          :enable (certs-with-author+round-monotone
+                   in-of-certs-with-author+round)
+          :disable cert-with-author+round
+          :use (certs-with-author+round-when-cert-with-author+round
+                (:instance set::same-element-when-in-subset-of-singleton
+                           (set (certs-with-author+round author round certs0))
+                           (elem (cert-with-author+round author round certs))
+                           (elem1 cert)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
