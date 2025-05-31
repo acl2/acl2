@@ -100,9 +100,9 @@
          (if (and (consp term)
                   (eq :eval (car term)))
              ;; Evaluate TERM:
-             `(make-event (,',defthm-axe-fn-name ',name ,(cadr term) ',tactic ',rules ',rule-lists ',remove-rules ',no-splitp ',print-as-clausesp ',no-print-fns ',monitor ',use ',print ',var-ordering ',count-hits ',rule-classes state))
+             `(make-event (,',defthm-axe-fn-name ',name ,(cadr term) ',tactic ,rules ,rule-lists ,remove-rules ',no-splitp ',print-as-clausesp ',no-print-fns ,monitor ',use ',print ',var-ordering ',count-hits ',rule-classes state))
            ;; Don't evaluate TERM:
-           `(make-event (,',defthm-axe-fn-name ',name ',term ',tactic ',rules ',rule-lists ',remove-rules ',no-splitp ',print-as-clausesp ',no-print-fns ',monitor ',use ',print ',var-ordering ',count-hits ',rule-classes state))))
+           `(make-event (,',defthm-axe-fn-name ',name ',term ',tactic ,rules ,rule-lists ,remove-rules ',no-splitp ',print-as-clausesp ',no-print-fns ,monitor ',use ',print ',var-ordering ',count-hits ',rule-classes state))))
        )))
 
 (defmacro register-and-wrap-clause-processor-simple (suffix)
