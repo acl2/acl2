@@ -335,6 +335,10 @@
     (case (get-opcode enc)
       (#b0000011 ; LOAD [ISA:2.6] [ISA:4.3]
        (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (and (ubyte4p rd)
+                              (ubyte4p rs1))))
+             nil)
             (funct (case funct3
                      (#b000 (load-funct-lb))
                      (#b001 (load-funct-lh))
@@ -352,6 +356,10 @@
          (instr-load funct rd rs1 imm)))
       (#b0010011 ; OP-IMM [ISA:2.4.1]
        (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (and (ubyte4p rd)
+                              (ubyte4p rs1))))
+             nil)
             (funct (case funct3
                      (#b000 (op-imm-funct-addi))
                      (#b001 nil) ; could be SLLI, handled below
@@ -396,11 +404,18 @@
                            nil))
                (t nil))))))
       (#b0010111 ; AUIPC [ISA:2.4.1]
-       (b* (((mv rd imm) (decode-utype enc)))
+       (b* (((mv rd imm) (decode-utype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (ubyte4p rd)))
+             nil))
          (instr-auipc rd imm)))
       (#b0011011 ; OP-IMM-32 [ISA:4.2.1]
        (b* (((unless (feat-64p feat)) nil)
             ((mv funct3 rd rs1 imm) (decode-itype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (and (ubyte4p rd)
+                              (ubyte4p rs1))))
+             nil)
             ((when (= funct3 #b000))
              (instr-op-imm-32 (op-imm-32-funct-addiw) rd rs1 imm))
             (loimm (part-select imm :low 0 :high 4))
@@ -419,6 +434,10 @@
          nil))
       (#b0100011 ; STORE [ISA:2.6] [ISA:4.3]
        (b* (((mv funct3 rs1 rs2 imm) (decode-stype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (and (ubyte4p rs1)
+                              (ubyte4p rs2))))
+             nil)
             (funct (case funct3
                      (#b000 (store-funct-sb))
                      (#b001 (store-funct-sh))
@@ -431,6 +450,11 @@
          (instr-store funct rs1 rs2 imm)))
       (#b0110011 ; OP [ISA:2.4.2] [ISA:13.1] [ISA:13.2]
        (b* (((mv funct3 funct7 rd rs1 rs2) (decode-rtype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (and (ubyte4p rd)
+                              (ubyte4p rs1)
+                              (ubyte4p rs2))))
+             nil)
             (funct (case funct3
                      (#b000 (case funct7
                               (#b0000000 (op-funct-add))
@@ -469,11 +493,19 @@
             ((unless funct) nil))
          (instr-op funct rd rs1 rs2)))
       (#b0110111 ; LUI [ISA:2.4.1]
-       (b* (((mv rd imm) (decode-utype enc)))
+       (b* (((mv rd imm) (decode-utype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (ubyte4p rd)))
+             nil))
          (instr-lui rd imm)))
       (#b0111011 ; OP-32 [ISA:4.2.2]
        (b* (((unless (feat-64p feat)) nil)
             ((mv funct3 funct7 rd rs1 rs2) (decode-rtype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (and (ubyte4p rd)
+                              (ubyte4p rs1)
+                              (ubyte4p rs2))))
+             nil)
             (funct (case funct3
                      (#b000 (case funct7
                               (#b0000000 (op-32-funct-addw))
@@ -503,6 +535,10 @@
          (instr-op-32 funct rd rs1 rs2)))
       (#b1100011 ; BRANCH [ISA:2.5.2]
        (b* (((mv funct3 rs1 rs2 imm) (decode-btype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (and (ubyte4p rs1)
+                              (ubyte4p rs2))))
+             nil)
             (funct (case funct3
                      (#b000 (branch-funct-beq))
                      (#b001 (branch-funct-bne))
@@ -516,10 +552,17 @@
          (instr-branch funct rs1 rs2 imm)))
       (#b1100111 ; JALR [ISA:2.5.1]
        (b* (((mv funct3 rd rs1 imm) (decode-itype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (and (ubyte4p rd)
+                              (ubyte4p rs1))))
+             nil)
             ((unless (= funct3 0)) nil))
          (instr-jalr rd rs1 imm)))
       (#b1101111 ; JAL [ISA:2.5.1]
-       (b* (((mv rd imm) (decode-jtype enc)))
+       (b* (((mv rd imm) (decode-jtype enc))
+            ((unless (or (not (feat-embedp feat))
+                         (ubyte4p rd)))
+             nil))
          (instr-jal rd imm)))
       (t nil)))
   :hooks (:fix)
