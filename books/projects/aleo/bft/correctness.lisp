@@ -63,7 +63,13 @@
    (xdoc::p
     "We formulate and prove a number of properties of the protocol,
      culminating in the main property that we are interested in,
-     namely the non-forking of blockchains."))
+     namely the non-forking of blockchains.")
+   (xdoc::p
+    "We formulate the correctness properties of AleoBFT
+     mainly as state invariants, which we show
+     to hold in the initial states
+     to be preserved by state transitions,
+     and to hold in every state reachable from an initial state."))
   :order-subtopics (last-blockchain-round
                     ordered-even-blocks
                     backward-closure

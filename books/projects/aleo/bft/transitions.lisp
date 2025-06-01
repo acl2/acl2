@@ -40,9 +40,11 @@
      In other words, we define the transitions of
      the state transition system that models AleoBFT.")
    (xdoc::p
-    "Both the predicates and the functions are executable.
+    "Both the predicates and the functions are essentially executable
+     (except for a few constrained functions used in the model,
+     for which we could provide executable attachments or refinements).
      This means that, given an initial state and a list of events,
-     it is possible to simulate the execution of the system in ACL2
+     it should be possible to simulate the execution of the system in ACL2
      by running each event in turn, starting with the initial state.
      The execution is not necessarily fast,
      because the definition of the labeled state transition system
