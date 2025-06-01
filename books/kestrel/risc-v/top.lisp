@@ -38,12 +38,12 @@
    (xdoc::p
     "This ACL2 library includes
      a preliminary formalization of part of the the RISC-V ISA:
-     unprivileged RV32IM and RV64IM
+     unprivileged RV32IM, RV64IM, RV32EM, and RV64EM,
      (except for
      the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
      little endian memory access,
      fully readable and writable address space,
-     no alignment checks.
+     and no alignment checks.
      We plan to extend and improve this library.")
    (xdoc::p
     "We have a generic model of RISC-V,

@@ -50,10 +50,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only support RV32I [ISA:2] and RV64I [ISA:4].
-     We plan to add RV32E, RV64E, and RV128I [ISA:3] [ISA:5]."))
+    "For now we support
+     RV32I [ISA:2], RV64I [ISA:4], RV32E [ISA:3], and RV64E [ISA:3].
+     We plan to add RV128I [ISA:5]."))
   (:rv32i ())
   (:rv64i ())
+  (:rv32e ())
+  (:rv64e ())
   :pred feat-basep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,7 +80,8 @@
 (define feat-32p ((feat featp))
   :returns (yes/no booleanp)
   :short "Check if the features indicate 32 bits."
-  (feat-base-case (feat->base feat) :rv32i)
+  (or (feat-base-case (feat->base feat) :rv32i)
+      (feat-base-case (feat->base feat) :rv32e))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -85,7 +89,8 @@
 (define feat-64p ((feat featp))
   :returns (yes/no booleanp)
   :short "Check if the features indicate 64 bits."
-  (feat-base-case (feat->base feat) :rv64i)
+  (or (feat-base-case (feat->base feat) :rv64i)
+      (feat-base-case (feat->base feat) :rv64e))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -104,6 +109,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define feat-embedp ((feat featp))
+  :returns (yes/no booleanp)
+  :short "Check if the features indicate embedded systems."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, if the base is RV32E or RV64E."))
+  (or (feat-base-case (feat->base feat) :rv32e)
+      (feat-base-case (feat->base feat) :rv64e))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define feat->xlen ((feat featp))
   :returns (xlen posp :rule-classes (:rewrite :type-prescription))
   :short "The @('XLEN') parameter [ISA:1.3]."
@@ -114,7 +132,9 @@
   (b* (((feat feat) feat))
     (feat-base-case feat.base
                     :rv32i 32
-                    :rv64i 64))
+                    :rv64i 64
+                    :rv32e 32
+                    :rv64e 64))
   :hooks (:fix)
 
   ///
@@ -138,13 +158,26 @@
   (xdoc::topstring
    (xdoc::p
     "This is 32 for the RV32I and RV64I bases,
-     but it is reduced to 16 for the RV32E and RV64E bases [ISA:3].
-     Although our features do not yet model the latter bases,
-     we define this operation so that other code can use it
-     and more easily accommodate the extension for RV32E/RV64E."))
-  (declare (ignore feat))
-  32
-  :hooks (:fix))
+     but it is reduced to 16 for the RV32E and RV64E bases [ISA:3]."))
+  (b* (((feat feat) feat))
+    (feat-base-case feat.base
+                    :rv32i 32
+                    :rv64i 32
+                    :rv32e 16
+                    :rv64e 16))
+  :hooks (:fix)
+
+  ///
+
+  (defret feat->xnum-when-embedp
+    (equal xnum 16)
+    :hyp (feat-embedp feat)
+    :hints (("Goal" :in-theory (enable feat-embedp))))
+
+  (defret feat->xnum-when-not-embedp
+    (equal xnum 32)
+    :hyp (not (feat-embedp feat))
+    :hints (("Goal" :in-theory (enable feat-embedp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,3 +192,17 @@
   :returns (feat featp)
   :short "Features for RV64IM."
   (make-feat :base (feat-base-rv64i)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv32em ()
+  :returns (feat featp)
+  :short "Features for RV32EM."
+  (make-feat :base (feat-base-rv32e)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv64em ()
+  :returns (feat featp)
+  :short "Features for RV64EM."
+  (make-feat :base (feat-base-rv64e)))
