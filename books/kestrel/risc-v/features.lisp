@@ -52,7 +52,8 @@
    (xdoc::p
     "For now we support
      RV32I [ISA:2], RV64I [ISA:4], RV32E [ISA:3], and RV64E [ISA:3].
-     We plan to add RV128I [ISA:5]."))
+     Since RV128I [ISA:5] is still 'Draft' in the table in the Preface in [ISA],
+     we do not have immediate plans to add that, unless the need arises."))
   (:rv32i ())
   (:rv64i ())
   (:rv32e ())
