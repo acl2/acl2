@@ -1635,7 +1635,11 @@
              :vartys vartys
              :diffp diffp)))
        (hints `(("Goal"
-                 :in-theory '((:e ldm-expr))
+                 :in-theory '((:e ldm-expr)
+                              (:e ldm-ident)
+                              (:e ident)
+                              (:e c::expr-cond)
+                              (:e c::type-nonchar-integerp))
                  :use (,test-thm-name
                        ,then-thm-name
                        ,else-thm-name
@@ -1657,12 +1661,9 @@
                         (new-else (mv-nth 1 (ldm-expr ',else-new))))
                        (:instance
                         simpadd0-expr-cond-support-lemma-3
-                        (old-test (mv-nth 1 (ldm-expr ',test)))
-                        (old-then (mv-nth 1 (ldm-expr ',then)))
-                        (old-else (mv-nth 1 (ldm-expr ',else)))
-                        (new-test (mv-nth 1 (ldm-expr ',test-new)))
-                        (new-then (mv-nth 1 (ldm-expr ',then-new)))
-                        (new-else (mv-nth 1 (ldm-expr ',else-new))))
+                        (test (mv-nth 1 (ldm-expr ',test)))
+                        (then (mv-nth 1 (ldm-expr ',then)))
+                        (else (mv-nth 1 (ldm-expr ',else))))
                        (:instance
                         simpadd0-expr-cond-support-lemma-4
                         (test (mv-nth 1 (ldm-expr ',test)))
@@ -1778,8 +1779,9 @@
 
   (defruled simpadd0-expr-cond-support-lemma-4
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
-                  (c::value-integerp
-                   (c::expr-value->value (c::exec-expr-pure test compst)))
+                  (c::type-nonchar-integerp
+                   (c::type-of-value
+                    (c::expr-value->value (c::exec-expr-pure test compst))))
                   (c::test-value
                    (c::expr-value->value (c::exec-expr-pure test compst)))
                   (c::errorp (c::exec-expr-pure then compst)))
@@ -1791,8 +1793,9 @@
 
   (defruled simpadd0-expr-cond-support-lemma-5
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
-                  (c::value-integerp
-                   (c::expr-value->value (c::exec-expr-pure test compst)))
+                  (c::type-nonchar-integerp
+                   (c::type-of-value
+                    (c::expr-value->value (c::exec-expr-pure test compst))))
                   (not (c::test-value
                         (c::expr-value->value (c::exec-expr-pure test compst))))
                   (c::errorp (c::exec-expr-pure else compst)))
