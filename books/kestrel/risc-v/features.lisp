@@ -70,10 +70,13 @@
     "For now we only model the following choices:")
    (xdoc::ul
     (xdoc::li
-     "The base."))
+     "The base.")
+    (xdoc::li
+     "Whether the M extension [ISA:13] is present or not."))
    (xdoc::p
     "More features will be added later."))
-  ((base feat-base))
+  ((base feat-base)
+   (m bool))
   :pred featp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -119,6 +122,14 @@
     "That is, if the base is RV32E or RV64E."))
   (or (feat-base-case (feat->base feat) :rv32e)
       (feat-base-case (feat->base feat) :rv64e))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-mp ((feat featp))
+  :returns (yes/no booleanp)
+  :short "Check if the features indicate the M extension."
+  (feat->m feat)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -182,28 +193,64 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define feat-rv32i ()
+  :returns (feat featp)
+  :short "Features for RV32I."
+  (make-feat :base (feat-base-rv32i)
+             :m nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv64i ()
+  :returns (feat featp)
+  :short "Features for RV64I."
+  (make-feat :base (feat-base-rv64i)
+             :m nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv32e ()
+  :returns (feat featp)
+  :short "Features for RV32E."
+  (make-feat :base (feat-base-rv32e)
+             :m nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv64e ()
+  :returns (feat featp)
+  :short "Features for RV64E."
+  (make-feat :base (feat-base-rv64e)
+             :m nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define feat-rv32im ()
   :returns (feat featp)
   :short "Features for RV32IM."
-  (make-feat :base (feat-base-rv32i)))
+  (make-feat :base (feat-base-rv32i)
+             :m t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define feat-rv64im ()
   :returns (feat featp)
   :short "Features for RV64IM."
-  (make-feat :base (feat-base-rv64i)))
+  (make-feat :base (feat-base-rv64i)
+             :m t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define feat-rv32em ()
   :returns (feat featp)
   :short "Features for RV32EM."
-  (make-feat :base (feat-base-rv32e)))
+  (make-feat :base (feat-base-rv32e)
+             :m t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define feat-rv64em ()
   :returns (feat featp)
   :short "Features for RV64EM."
-  (make-feat :base (feat-base-rv64e)))
+  (make-feat :base (feat-base-rv64e)
+             :m t))

@@ -351,8 +351,7 @@
    (xdoc::p
     "In RV32E/RV64E, register indices are only 4 bits.")
    (xdoc::p
-    "For now we implicitly assume that the M extension is present;
-     we plan to add a choice about that in the @(see features)."))
+    "Certain instructions are only valid with the M extension."))
   (b* (((feat feat) feat))
     (instr-case instr
                 :op-imm (implies (feat-embedp feat)
@@ -378,15 +377,23 @@
                               (ubyte4p instr.rd))
                 :auipc (implies (feat-embedp feat)
                                 (ubyte4p instr.rd))
-                :op (implies (feat-embedp feat)
-                             (and (ubyte4p instr.rd)
-                                  (ubyte4p instr.rs1)
-                                  (ubyte4p instr.rs2)))
+                :op (and (implies (feat-embedp feat)
+                                  (and (ubyte4p instr.rd)
+                                       (ubyte4p instr.rs1)
+                                       (ubyte4p instr.rs2)))
+                         (implies (member-eq (op-funct-kind instr.funct)
+                                             '(:mul :mulh :mulhu :mulhsu
+                                               :div :divu :rem :remu))
+                                  (feat-mp feat)))
                 :op-32 (and (feat-64p feat)
                             (implies (feat-embedp feat)
                                      (and (ubyte4p instr.rd)
                                           (ubyte4p instr.rs1)
-                                          (ubyte4p instr.rs2))))
+                                          (ubyte4p instr.rs2)))
+                            (implies (member-eq (op-32-funct-kind instr.funct)
+                                                '(:mulw
+                                                  :divw :divuw :remw :remuw))
+                                     (feat-mp feat)))
                 :jal (implies (feat-embedp feat)
                               (ubyte4p instr.rd))
                 :jalr (implies (feat-embedp feat)

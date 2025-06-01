@@ -916,6 +916,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stat-rv32i-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV32I states."
+  (and (statp x)
+       (stat-validp x (feat-rv32i))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv64i-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV64I states."
+  (and (statp x)
+       (stat-validp x (feat-rv64i))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv32e-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV32E states."
+  (and (statp x)
+       (stat-validp x (feat-rv32e))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv64e-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV64E states."
+  (and (statp x)
+       (stat-validp x (feat-rv64e))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stat-rv32im-p (x)
   :returns (yes/no booleanp)
   :short "Recognizer of RV32IM states."
