@@ -637,7 +637,13 @@
         (len roles))
     :rule-classes :linear
     :induct t
-    :enable sinteger-bit-roles-sign-count))
+    :enable sinteger-bit-roles-sign-count)
+
+  (defruled sinteger-bit-roles-value-count-upper-bound
+    (<= (sinteger-bit-roles-value-count roles)
+        (- (len roles)
+           (sinteger-bit-roles-sign-count roles)))
+    :enable sinteger-bit-roles-value/sign-count-upper-bound))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1052,7 +1058,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is determined by the number @('N') of value bits:
-     the maximum value is @('2^N - 1')."))
+     the maximum value is @('2^N - 1').")
+   (xdoc::p
+    "Since @('N <= T'), where @('T') is the total number of bits,
+     the maximum value cannot be above @('2^T - 1')."))
   (1- (expt 2 (uinteger-bit-roles-value-count
                (uinteger-format->bits format))))
   :hooks (:fix)
@@ -1078,10 +1087,41 @@
   (xdoc::topstring
    (xdoc::p
     "This is determined by the number @('M') of value bits:
-     the maximum value is @('2^M - 1')."))
+     the maximum value is @('2^M - 1').")
+   (xdoc::p
+    "Since @('M <= T - 1'), where @('T') is the total number of bits,
+     and where the 1 accounts for the sign bit,
+     the maximum value cannot be above @('2^(T-1) - 1')."))
   (1- (expt 2 (sinteger-bit-roles-value-count
                (sinteger-format->bits format))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret sinteger-format->max-upper-bound
+    (<= max
+        (1- (expt 2 (1- (len (sinteger-format->bits format))))))
+    :rule-classes :linear
+    :hints
+    (("Goal"
+      :in-theory (e/d (sinteger-bit-roles-wfp)
+                      (sinteger-format-requirements
+                       acl2::expt-is-weakly-increasing-for-base->-1
+                       acl2::|(* (expt x m) (/ (expt x n)))|
+                       acl2::|(* a (/ a))|
+                       acl2::bubble-down-*-match-1
+                       acl2::bubble-down-*-match-2
+                       acl2::simplify-products-gather-exponents-<
+                       acl2::expt-is-weakly-increasing-for-base->-1
+                       acl2::expt-is-increasing-for-base->-1))
+      :use ((:instance sinteger-format-requirements (x format))
+            (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                       (x 2)
+                       (m (sinteger-bit-roles-value-count
+                           (sinteger-format->bits format)))
+                       (n (1- (len (sinteger-format->bits format)))))
+            (:instance sinteger-bit-roles-value-count-upper-bound
+                       (roles (sinteger-format->bits format))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1107,7 +1147,11 @@
      As explained in @(tsee sinteger-format),
      currently we do not have a detailed model of trap representations;
      as a placeholder, for now we regard that representation to be a trap one
-     iff the @('traps') component of @(tsee sinteger-format) is not @('nil')."))
+     iff the @('traps') component of @(tsee sinteger-format) is not @('nil').")
+   (xdoc::p
+    "Since @('M <= T - 1'), where @('T') is the total number of bits,
+     and where the 1 accounts for the sign bit,
+     the minimum value cannot be below @('- 2^(T-1)')."))
   (if (and (equal (signed-format-kind (sinteger-format->signed format))
                   :twos-complement)
            (not (sinteger-format->traps format)))
@@ -1122,7 +1166,32 @@
   (defret sinteger-format->min-type-prescription
     (and (integerp min)
          (< min 0))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret sinteger-format->min-lower-bound
+    (>= min
+        (- (expt 2 (1- (len (sinteger-format->bits format))))))
+    :rule-classes :linear
+    :hints
+    (("Goal"
+      :in-theory (e/d (sinteger-bit-roles-wfp)
+                      (sinteger-format-requirements
+                       acl2::expt-is-weakly-increasing-for-base->-1
+                       acl2::|(* (expt x m) (/ (expt x n)))|
+                       acl2::|(* a (/ a))|
+                       acl2::bubble-down-*-match-1
+                       acl2::bubble-down-*-match-2
+                       acl2::simplify-products-gather-exponents-<
+                       acl2::expt-is-weakly-increasing-for-base->-1
+                       acl2::expt-is-increasing-for-base->-1))
+      :use ((:instance sinteger-format-requirements (x format))
+            (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                       (x 2)
+                       (m (sinteger-bit-roles-value-count
+                           (sinteger-format->bits format)))
+                       (n (1- (len (sinteger-format->bits format)))))
+            (:instance sinteger-bit-roles-value-count-upper-bound
+                       (roles (sinteger-format->bits format))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

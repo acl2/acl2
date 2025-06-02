@@ -285,15 +285,22 @@
      in the @('BRANCH') instructions [ISA:2.5.2]."))
   (instr-case
    instr
-   :op-imm (b* ((opcode #b0010011)
-                (funct3 (encode-op-imm-funct instr.funct)))
-             (logappn 7 opcode
-                      5 instr.rd
-                      3 funct3
-                      5 instr.rs1
-                      12 instr.imm))
+   :op-imm (assert$
+            (implies (feat-embedp feat)
+                     (and (ubyte4p instr.rd)
+                          (ubyte4p instr.rs1)))
+            (b* ((opcode #b0010011)
+                 (funct3 (encode-op-imm-funct instr.funct)))
+              (logappn 7 opcode
+                       5 instr.rd
+                       3 funct3
+                       5 instr.rs1
+                       12 instr.imm)))
    :op-imms32 (assert$
-               (feat-32p feat)
+               (and (feat-32p feat)
+                    (implies (feat-embedp feat)
+                             (and (ubyte4p instr.rd)
+                                  (ubyte4p instr.rs1))))
                (b* ((opcode #b0010011)
                     ((mv funct3 hi7imm) (encode-op-imms32-funct instr.funct)))
                  (logappn 7 opcode
@@ -303,7 +310,10 @@
                           5 instr.imm
                           7 hi7imm)))
    :op-imms64 (assert$
-               (feat-64p feat)
+               (and (feat-64p feat)
+                    (implies (feat-embedp feat)
+                             (and (ubyte4p instr.rd)
+                                  (ubyte4p instr.rs1))))
                (b* ((opcode #b0010011)
                     ((mv funct3 hi6imm) (encode-op-imms64-funct instr.funct)))
                  (logappn 7 opcode
@@ -313,7 +323,10 @@
                           6 instr.imm
                           6 hi6imm)))
    :op-imm-32 (assert$
-               (feat-64p feat)
+               (and (feat-64p feat)
+                    (implies (feat-embedp feat)
+                             (and (ubyte4p instr.rd)
+                                  (ubyte4p instr.rs1))))
                (b* ((opcode #b0011011)
                     (funct3 (encode-op-imm-32-funct instr.funct)))
                  (logappn 7 opcode
@@ -322,7 +335,10 @@
                           5 instr.rs1
                           12 instr.imm)))
    :op-imms-32 (assert$
-                (feat-64p feat)
+                (and (feat-64p feat)
+                     (implies (feat-embedp feat)
+                              (and (ubyte4p instr.rd)
+                                   (ubyte4p instr.rs1))))
                 (b* ((opcode #b0011011)
                      ((mv funct3 hi6imm) (encode-op-imms-32-funct instr.funct)))
                   (logappn 7 opcode
@@ -332,24 +348,47 @@
                            5 instr.imm
                            1 0
                            6 hi6imm)))
-   :lui (b* ((opcode #b0110111))
+   :lui (assert$
+         (implies (feat-embedp feat)
+                  (ubyte4p instr.rd))
+         (b* ((opcode #b0110111))
+           (logappn 7 opcode
+                    5 instr.rd
+                    20 instr.imm)))
+   :auipc (assert$
+           (implies (feat-embedp feat)
+                    (ubyte4p instr.rd))
+           (b* ((opcode #b0010111))
+             (logappn 7 opcode
+                      5 instr.rd
+                      10 instr.imm)))
+   :op (assert$
+        (and (implies (feat-embedp feat)
+                      (and (ubyte4p instr.rd)
+                           (ubyte4p instr.rs1)
+                           (ubyte4p instr.rs2)))
+             (implies (member-eq (op-funct-kind instr.funct)
+                                 '(:mul :mulh :mulhu :mulhsu
+                                   :div :divu :rem :remu))
+                      (feat-mp feat)))
+        (b* ((opcode #b0110011)
+             ((mv funct3 funct7) (encode-op-funct instr.funct)))
           (logappn 7 opcode
                    5 instr.rd
-                   20 instr.imm))
-   :auipc (b* ((opcode #b0010111))
-            (logappn 7 opcode
-                     5 instr.rd
-                     10 instr.imm))
-   :op (b* ((opcode #b0110011)
-            ((mv funct3 funct7) (encode-op-funct instr.funct)))
-         (logappn 7 opcode
-                  5 instr.rd
-                  3 funct3
-                  5 instr.rs1
-                  5 instr.rs2
-                  7 funct7))
+                   3 funct3
+                   5 instr.rs1
+                   5 instr.rs2
+                   7 funct7)))
    :op-32 (assert$
-           (feat-64p feat)
+           (and (feat-64p feat)
+                (implies (feat-embedp feat)
+                         (and (ubyte4p instr.rd)
+                              (ubyte4p instr.rs1)
+                              (ubyte4p instr.rs2)))
+                (implies (member-eq (op-32-funct-kind instr.funct)
+                                    '(:mulw
+                                      :divw :divuw :remw :remuw))
+                         (feat-mp feat)))
            (b* ((opcode #b0111011)
                 ((mv funct3 funct7) (encode-op-32-funct instr.funct)))
              (logappn 7 opcode
@@ -358,54 +397,86 @@
                       5 instr.rs1
                       5 instr.rs2
                       7 funct7)))
-   :jal (b* ((opcode #b1101111)
-             (imm-10-1 (part-select instr.imm :low 0 :high 9))
-             (imm-11 (logbit 10 instr.imm))
-             (imm-19-12 (part-select instr.imm :low 11 :high 18))
-             (imm-20 (logbit 19 instr.imm)))
-          (logappn 7 opcode
-                   5 instr.rd
-                   8 imm-19-12
-                   1 imm-11
-                   10 imm-10-1
-                   1 imm-20))
-   :jalr (b* ((opcode #b1100111)
-              (funct3 #b000))
+   :jal (assert$
+         (implies (feat-embedp feat)
+                  (ubyte4p instr.rd))
+         (b* ((opcode #b1101111)
+              (imm-10-1 (part-select instr.imm :low 0 :high 9))
+              (imm-11 (logbit 10 instr.imm))
+              (imm-19-12 (part-select instr.imm :low 11 :high 18))
+              (imm-20 (logbit 19 instr.imm)))
            (logappn 7 opcode
                     5 instr.rd
-                    3 funct3
-                    5 instr.rs1
-                    12 instr.imm))
-   :branch (b* ((opcode #b1100011)
-                (funct3 (encode-branch-funct instr.funct))
-                (imm-4-1 (part-select instr.imm :low 0 :high 3))
-                (imm-10-5 (part-select instr.imm :low 4 :high 9))
-                (imm-11 (logbit 10 instr.imm))
-                (imm-12 (logbit 11 instr.imm)))
+                    8 imm-19-12
+                    1 imm-11
+                    10 imm-10-1
+                    1 imm-20)))
+   :jalr (assert$
+          (implies (feat-embedp feat)
+                   (and (ubyte4p instr.rd)
+                        (ubyte4p instr.rs1)))
+          (b* ((opcode #b1100111)
+               (funct3 #b000))
+            (logappn 7 opcode
+                     5 instr.rd
+                     3 funct3
+                     5 instr.rs1
+                     12 instr.imm)))
+   :branch (assert$
+            (implies (feat-embedp feat)
+                     (and (ubyte4p instr.rs1)
+                          (ubyte4p instr.rs2)))
+            (b* ((opcode #b1100011)
+                 (funct3 (encode-branch-funct instr.funct))
+                 (imm-4-1 (part-select instr.imm :low 0 :high 3))
+                 (imm-10-5 (part-select instr.imm :low 4 :high 9))
+                 (imm-11 (logbit 10 instr.imm))
+                 (imm-12 (logbit 11 instr.imm)))
+              (logappn 7 opcode
+                       1 imm-11
+                       4 imm-4-1
+                       3 funct3
+                       5 instr.rs1
+                       5 instr.rs2
+                       6 imm-10-5
+                       1 imm-12)))
+   :load (assert$
+          (and (load-funct-case instr.funct
+                                :lb t
+                                :lbu t
+                                :lh t
+                                :lhu t
+                                :lw t
+                                :lwu (feat-64p feat)
+                                :ld (feat-64p feat))
+               (implies (feat-embedp feat)
+                        (and (ubyte4p instr.rd)
+                             (ubyte4p instr.rs1))))
+          (b* ((opcode #b0000011)
+               (funct3 (encode-load-funct instr.funct feat)))
+            (logappn 7 opcode
+                     5 instr.rd
+                     3 funct3
+                     5 instr.rs1
+                     12 instr.imm)))
+   :store (assert$
+           (and (store-funct-case instr.funct
+                                  :sb t
+                                  :sh t
+                                  :sw t
+                                  :sd (feat-64p feat))
+                (implies (feat-embedp feat)
+                         (and (ubyte4p instr.rs1)
+                              (ubyte4p instr.rs2))))
+           (b* ((opcode #b0100011)
+                (funct3 (encode-store-funct instr.funct feat))
+                (imm-4-0 (part-select instr.imm :low 0 :high 4))
+                (imm-11-5 (part-select instr.imm :low 5 :high 11)))
              (logappn 7 opcode
-                      1 imm-11
-                      4 imm-4-1
+                      5 imm-4-0
                       3 funct3
                       5 instr.rs1
                       5 instr.rs2
-                      6 imm-10-5
-                      1 imm-12))
-   :load (b* ((opcode #b0000011)
-              (funct3 (encode-load-funct instr.funct feat)))
-           (logappn 7 opcode
-                    5 instr.rd
-                    3 funct3
-                    5 instr.rs1
-                    12 instr.imm))
-   :store (b* ((opcode #b0100011)
-               (funct3 (encode-store-funct instr.funct feat))
-               (imm-4-0 (part-select instr.imm :low 0 :high 4))
-               (imm-11-5 (part-select instr.imm :low 5 :high 11)))
-            (logappn 7 opcode
-                     5 imm-4-0
-                     3 funct3
-                     5 instr.rs1
-                     5 instr.rs2
-                     7 imm-11-5)))
+                      7 imm-11-5))))
   :guard-hints (("Goal" :in-theory (enable fix ifix instr-validp)))
   :hooks (:fix))

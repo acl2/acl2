@@ -115,11 +115,11 @@
      that fixtype models all possible machine states for all possible features.
      Here we define restrictions based on features.")
    (xdoc::p
-    "For now, the only features we model are
-     whether the base is RV32I or RV64I.
-     This dictates the size @('XLEN') of the registers, either 32 or 64 bits;
+    "The features dictate
+     the size @('XLEN') of the registers, either 32 or 64 bits,
      so we constrain them to form a list of 32-bit or 64-bit unsigned values.
-     The number of registers is @(tsee feat->xnum).
+     The number of registers is @(tsee feat->xnum), either 32 or 16,
+     also based on the features.
      However, since @('x0') is hardwired to 0 [ISA:2.1],
      we do not model that register explicitly:
      we only model @('x1'), @('x2'), etc.;
@@ -916,6 +916,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stat-rv32i-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV32I states."
+  (and (statp x)
+       (stat-validp x (feat-rv32i))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv64i-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV64I states."
+  (and (statp x)
+       (stat-validp x (feat-rv64i))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv32e-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV32E states."
+  (and (statp x)
+       (stat-validp x (feat-rv32e))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv64e-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV64E states."
+  (and (statp x)
+       (stat-validp x (feat-rv64e))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stat-rv32im-p (x)
   :returns (yes/no booleanp)
   :short "Recognizer of RV32IM states."
@@ -929,3 +961,19 @@
   :short "Recognizer of RV64IM states."
   (and (statp x)
        (stat-validp x (feat-rv64im))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv32em-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV32EM states."
+  (and (statp x)
+       (stat-validp x (feat-rv32em))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stat-rv64em-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognizer of RV64EM states."
+  (and (statp x)
+       (stat-validp x (feat-rv64em))))
