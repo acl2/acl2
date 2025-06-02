@@ -442,3 +442,21 @@
            (ubyte12-fix imm))
     :enable (get-imm-itype
              encode)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-imm-stype-of-encode-instr
+  :short "Theorems about @(tsee get-imm-stype) applied to
+          the encoding of instructions."
+
+  (defruled get-imm-stype-of-instr-store
+    (equal (get-imm-stype (encode (instr-store funct rs1 rs2 imm) feat))
+           (ubyte12-fix imm))
+    :use (:instance lemma (imm (ubyte12-fix imm)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (ubyte12p imm)
+                (equal (get-imm-stype (encode (instr-store funct rs1 rs2 imm) feat))
+                       imm))
+       :enable (get-imm-stype
+                encode)))))
