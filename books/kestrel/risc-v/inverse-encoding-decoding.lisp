@@ -440,5 +440,5 @@
   (defruled get-imm-itype-of-encode-instr-load
     (equal (get-imm-itype (encode (instr-load funct rd rs1 imm) feat))
            (ubyte12-fix imm))
-    :enable (encode
-             get-imm-itype)))
+    :enable (get-imm-itype
+             encode)))
