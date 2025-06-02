@@ -16,8 +16,8 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "../library-extensions/oset-theorems"))
 (local (include-book "../library-extensions/omap-theorems"))
+(local (include-book "../library-extensions/oset-theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
