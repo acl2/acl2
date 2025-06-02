@@ -166,244 +166,191 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define committee-member-stake ((member addressp) (commtt committeep))
-  :guard (set::in (address-fix member) (committee-members commtt))
-  :returns (stake posp :rule-classes (:rewrite :type-prescription))
-  :short "Stake of a member of the committee."
+(define validator-stake ((val addressp) (commtt committeep))
+  :returns (stake natp :rule-classes (:rewrite :type-prescription))
+  :short "Stake of a validator in a committee."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We look up the member's address in the map."))
-  (pos-fix (omap::lookup (address-fix member)
-                         (committee->members-with-stake commtt)))
-  :guard-hints (("Goal" :in-theory (enable committee-members
-                                           omap::in-of-keys-to-assoc)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define committee-members-stake ((members address-setp) (commtt committeep))
-  :guard (set::subset members (committee-members commtt))
-  :returns (stake natp)
-  :short "Total stake of a set of members of the committee."
-  :long
-  (xdoc::topstring
+    "We look up the validator's address in the committee.
+     If the validator is not a member of the committee, we return 0.")
    (xdoc::p
-    "We add up all the stakes of the members.")
-   (xdoc::p
-    "We prove various properties that relate this function to set operations.")
-   (xdoc::p
-    "The monotonicity property uses a (locally defined) custom induction,
-     which removes from the second set the head of the first set
-     in the recursive call, when the first set is not empty;
-     this is needed to exclude the stake of that committee member
-     (if present in the second set of committee members)
-     in the induction hypothesis.")
-   (xdoc::p
-    "The union expansion properties is analogous to
-     the property of cardinalities of sets,
-     but with stake in this case.
-     The total stake of the union of two sets is their sum,
-     minus the stake of the intersection (if any),
-     which the sum union counts twice."))
-  (cond ((set::emptyp (address-set-fix members)) 0)
-        (t (+ (committee-member-stake (address-fix (set::head members)) commtt)
-              (committee-members-stake (set::tail members) commtt))))
-  :prepwork ((local (in-theory (enable emptyp-of-address-set-fix))))
-  :guard-hints (("Goal" :in-theory (enable set::subset)))
-  :verify-guards :after-returns
+    "We intentionally avoid guarding this function
+     to require the validator to be a member of the committee,
+     so that this function and @(tsee validators-stake)
+     can be used more flexibly."))
+  (b* ((val+stake (omap::assoc (address-fix val)
+                               (committee->members-with-stake commtt))))
+    (if val+stake
+        (nfix (cdr val+stake))
+      0))
   :hooks (:fix)
 
   ///
 
   (more-returns
    (stake posp
-          :hyp (not (set::emptyp (address-set-fix members)))
+          :hyp (set::in (address-fix val) (committee-members commtt))
           :rule-classes (:rewrite :type-prescription)
-          :hints (("Goal" :induct t))))
+          :hints (("Goal"
+                   :use (:instance
+                         posp-of-cdr-of-assoc-address-pos-mapp
+                         (k (address-fix val))
+                         (x (committee->members-with-stake commtt)))
+                   :in-theory (e/d (committee-members
+                                    nfix
+                                    omap::assoc-to-in-of-keys)
+                                   (posp-of-cdr-of-assoc-address-pos-mapp)))))))
 
-  (defruled committee-members-stake-0-to-emptyp-members
-    (equal (equal (committee-members-stake members commtt) 0)
-           (set::emptyp (address-set-fix members)))
-    :induct t
-    :enable fix)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defrule committee-members-stake-of-empty
-    (equal (committee-members-stake nil commtt)
+(define validators-stake ((vals address-setp) (commtt committeep))
+  :returns (stake natp :rule-classes (:rewrite :type-prescription))
+  :short "Stake of a set of validators in a committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We add up all the stakes of the validators.")
+   (xdoc::p
+    "We intentionally avoid guarding this function
+     to require the validators to be members of the committee,
+     so that this function and @(tsee validator-stake)
+     can be used more flexibly.")
+   (xdoc::p
+    "We prove various properties that relate this function to set operations.")
+   (xdoc::p
+    "The monotonicity property uses a (locally defined) custom induction,
+     which removes from the second set the head of the first set
+     in the recursive call, when the first set is not empty;
+     this is needed to exclude the stake of that validator
+     (if present in the second set of validators)
+     in the induction hypothesis.")
+   (xdoc::p
+    "The union expansion property is analogous to
+     the property of cardinalities of sets,
+     but with stake in this case.
+     The total stake of the union of two sets is their sum,
+     minus the stake of the intersection (if any),
+     which the sum union counts twice.
+     We also prove the related property that expands intersection,
+     also analogous to set cardinalities,
+     with a theory invariant to prevent both from being enabled.")
+   (xdoc::p
+    "We also show that only members of the committee contribute stake."))
+  (cond ((set::emptyp (address-set-fix vals)) 0)
+        (t (+ (validator-stake (address-fix (set::head vals)) commtt)
+              (validators-stake (set::tail vals) commtt))))
+  :prepwork ((local (in-theory (enable emptyp-of-address-set-fix))))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (stake posp
+          :hyp (not (set::emptyp (set::intersect (address-set-fix vals)
+                                                 (committee-members commtt))))
+          :rule-classes (:rewrite :type-prescription)
+          :hints (("Goal"
+                   :induct t
+                   :in-theory (e/d* (set::intersect
+                                     set::expensive-rules)
+                                    (posp-of-validator-stake)))
+                  '(:use (:instance posp-of-validator-stake
+                                    (val (set::head vals)))))))
+
+  (defrule validators-stake-of-empty
+    (equal (validators-stake nil commtt)
            0))
 
-  (defruled committee-members-stake-of-insert
-    (implies (and (addressp member)
-                  (address-setp members))
-             (equal (committee-members-stake (set::insert member members)
-                                             commtt)
-                    (if (set::in member members)
-                        (committee-members-stake members commtt)
-                      (+ (committee-member-stake member commtt)
-                         (committee-members-stake members commtt)))))
-    :induct (set::weak-insert-induction member members)
+  (defruled validators-stake-of-insert
+    (implies (and (addressp val)
+                  (address-setp vals))
+             (equal (validators-stake (set::insert val vals) commtt)
+                    (if (set::in val vals)
+                        (validators-stake vals commtt)
+                      (+ (validator-stake val commtt)
+                         (validators-stake vals commtt)))))
+    :induct (set::weak-insert-induction val vals)
     :enable set::expensive-rules)
 
-  (defruled committee-members-stake-of-union
-    (implies (and (address-setp members1)
-                  (address-setp members2))
-             (equal (committee-members-stake (set::union members1
-                                                         members2)
-                                             commtt)
-                    (- (+ (committee-members-stake members1 commtt)
-                          (committee-members-stake members2 commtt))
-                       (committee-members-stake (set::intersect members1
-                                                                members2)
-                                                commtt))))
+  (defruled validators-stake-of-union
+    (implies (and (address-setp vals1)
+                  (address-setp vals2))
+             (equal (validators-stake (set::union vals1 vals2) commtt)
+                    (- (+ (validators-stake vals1 commtt)
+                          (validators-stake vals2 commtt))
+                       (validators-stake (set::intersect vals1 vals2) commtt))))
     :induct t
-    :enable (committee-members-stake-of-insert
+    :enable (validators-stake-of-insert
              set::union
-             set::intersect
-             fix))
+             set::intersect))
 
-  (defruled committee-members-stake-of-delete
-    (implies (address-setp members)
-             (equal (committee-members-stake (set::delete member members)
-                                             commtt)
-                    (if (set::in member members)
-                        (- (committee-members-stake members commtt)
-                           (committee-member-stake member commtt))
-                      (committee-members-stake members commtt))))
+  (defruled validators-stake-of-intersect
+    (implies (and (address-setp vals1)
+                  (address-setp vals2))
+             (equal (validators-stake (set::intersect vals1 vals2) commtt)
+                    (- (+ (validators-stake vals1 commtt)
+                          (validators-stake vals2 commtt))
+                       (validators-stake (set::union vals1 vals2) commtt))))
+    :enable validators-stake-of-union
+    :disable validators-stake)
+
+  (theory-invariant
+   (incompatible (:rewrite validators-stake-of-union)
+                 (:rewrite validators-stake-of-intersect)))
+
+  (defruled validators-stake-of-delete
+    (implies (address-setp vals)
+             (equal (validators-stake (set::delete val vals) commtt)
+                    (if (set::in val vals)
+                        (- (validators-stake vals commtt)
+                           (validator-stake val commtt))
+                      (validators-stake vals commtt))))
     :induct t
     :enable (set::delete
-             committee-members-stake-of-insert))
+             validators-stake-of-insert))
 
-  (defruled committee-members-stake-of-difference
-    (implies (and (address-setp members1)
-                  (address-setp members2))
-             (equal (committee-members-stake (set::difference members1
-                                                              members2)
-                                             commtt)
-                    (- (committee-members-stake (set::union members1
-                                                            members2)
-                                                commtt)
-                       (committee-members-stake members2
-                                                commtt))))
+  (defruled validators-stake-of-difference
+    (implies (and (address-setp vals1)
+                  (address-setp vals2))
+             (equal (validators-stake (set::difference vals1 vals2) commtt)
+                    (- (validators-stake (set::union vals1 vals2) commtt)
+                       (validators-stake vals2 commtt))))
     :induct t
     :enable (set::difference
              set::union
-             committee-members-stake-of-insert))
+             validators-stake-of-insert))
 
-  (defruled committee-members-stake-of-intersect
-    (implies (and (address-setp members1)
-                  (address-setp members2))
-             (equal (committee-members-stake (set::intersect members1
-                                                             members2)
-                                             commtt)
-                    (- (+ (committee-members-stake members1 commtt)
-                          (committee-members-stake members2 commtt))
-                       (committee-members-stake (set::union members1
-                                                            members2)
-                                                commtt))))
-    :enable committee-members-stake-of-union
-    :disable committee-members-stake)
-
-  (theory-invariant
-   (incompatible (:rewrite committee-members-stake-of-union)
-                 (:rewrite committee-members-stake-of-intersect)))
-
-  (defruled committee-members-stake-monotone
-    (implies (and (address-setp members1)
-                  (address-setp members2)
-                  (set::subset members1 members2))
-             (<= (committee-members-stake members1 commtt)
-                 (committee-members-stake members2 commtt)))
-    :induct (ind members1 members2)
+  (defruled validators-stake-monotone
+    (implies (and (address-setp vals1)
+                  (address-setp vals2)
+                  (set::subset vals1 vals2))
+             (<= (validators-stake vals1 commtt)
+                 (validators-stake vals2 commtt)))
+    :induct (ind vals1 vals2)
     :enable (set::subset-of-tail-and-delete-when-subset
-             committee-members-stake-of-delete
+             validators-stake-of-delete
              set::expensive-rules)
     :prep-lemmas
     ((defun ind (x y)
        (declare (irrelevant y))
        (cond ((set::emptyp x) nil)
-             (t (ind (set::tail x) (set::delete (set::head x) y))))))))
+             (t (ind (set::tail x) (set::delete (set::head x) y)))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define committee-validator-stake ((val addressp) (commtt committeep))
-  :returns (stake natp)
-  :short "Stake of a validator with respect to a committee."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The validator may or may not be a member of the committee.
-     If it is not a member, we return 0;
-     otherwise, we return its stake in the committee."))
-  (if (set::in (address-fix val) (committee-members commtt))
-      (committee-member-stake val commtt)
-    0)
-  :hooks (:fix)
-
-  ///
-
-  (defruled committee-validator-stake-to-committee-member-stake
-    (implies (set::in val (committee-members commtt))
-             (equal (committee-validator-stake val commtt)
-                    (committee-member-stake val commtt)))
-    :enable committee-member-stake))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define committee-validators-stake ((vals address-setp) (commtt committeep))
-  :returns (stake natp)
-  :short "Total stake of a set of validators with respect to a committee."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The validators may or may not be members of the committee.
-     We add up the stake of the validators who are members,
-     while the validators who are not members contribute 0 stake."))
-  (committee-members-stake (set::intersect (address-set-fix vals)
-                                           (committee-members commtt))
-                           commtt)
-  :hooks (:fix)
-
-  ///
-
-  (defruled committee-validators-stake-to-committee-members-stake
-    (implies (and (address-setp vals)
-                  (set::subset vals (committee-members commtt)))
-             (equal (committee-validators-stake vals commtt)
-                    (committee-members-stake vals commtt)))
+  (defruled validators-stake-only-members
+    (implies (address-setp vals)
+             (equal (validators-stake (set::intersect vals
+                                                      (committee-members commtt))
+                                      commtt)
+                    (validators-stake vals commtt)))
     :induct t
-    :enable (committee-members-stake
-             committee-validator-stake-to-committee-member-stake
-             set::expensive-rules))
-
-  (defruled committee-validators-stake-monotone
-    (implies (and (address-setp vals1)
-                  (address-setp vals2)
-                  (set::subset vals1 vals2))
-             (<= (committee-validators-stake vals1 commtt)
-                 (committee-validators-stake vals2 commtt)))
-    :use (:instance committee-members-stake-monotone
-                    (members1 (set::intersect vals1 (committee-members commtt)))
-                    (members2 (set::intersect vals2 (committee-members commtt))))
-    :enable (set::intersect-mono-subset
-             set::expensive-rules))
-
-  (defrule committee-validators-stake-of-empty
-    (equal (committee-validators-stake nil commtt)
-           0))
-
-  (defruled committee-validators-stake-of-insert
-    (implies (and (addressp val)
-                  (address-setp vals))
-             (equal (committee-validators-stake (set::insert val vals)
-                                                commtt)
-                    (if (set::in val vals)
-                        (committee-validators-stake vals commtt)
-                      (+ (committee-validator-stake val commtt)
-                         (committee-validators-stake vals commtt)))))
-    :enable (committee-validator-stake
-             committee-members-stake-of-insert
-             set::expensive-rules
-             set::intersect-of-insert-right)))
+    :enable (validators-stake
+             validator-stake
+             validators-stake-of-insert
+             committee-members
+             set::intersect
+             omap::in-of-keys-to-assoc
+             address-setp-of-keys-when-address-pos-mapp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1065,7 +1012,7 @@
     "This is @($n$), using the notation in @(tsee max-faulty-for-total).
      It is the sum of all the units of stake
      associated to members of the committee."))
-  (committee-members-stake (committee-members commtt) commtt)
+  (validators-stake (committee-members commtt) commtt)
   :hooks (:fix)
 
   ///

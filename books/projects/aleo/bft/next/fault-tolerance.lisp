@@ -217,8 +217,7 @@
      because the dependency on the system state is only on
      the addresses of correct vs. faulty validators,
      which do not change as the system evolves."))
-  (<= (committee-members-stake (committee-faulty-members commtt systate)
-                               commtt)
+  (<= (validators-stake (committee-faulty-members commtt systate) commtt)
       (committee-max-faulty-stake commtt))
   :hooks (:fix)
 
@@ -226,7 +225,7 @@
 
   (defruled committee-fault-tolerant-p-alt-def
     (equal (committee-fault-tolerant-p commtt systate)
-           (>= (committee-members-stake
+           (>= (validators-stake
                 (committee-correct-members commtt systate)
                 commtt)
                (committee-quorum-stake commtt)))
@@ -234,8 +233,8 @@
              committee-faulty-members
              committee-quorum-stake
              committee-total-stake
-             committee-members-stake-of-difference
-             committee-members-stake-of-union))
+             validators-stake-of-difference
+             validators-stake-of-union))
 
   (defret committee-fault-tolerant-p-of-propose-next
     (equal (committee-fault-tolerant-p commtt new-systate)
@@ -767,7 +766,7 @@
      Thus @('pick-correct-validator') must return an address,
      which, as proved in the other theorems,
      is in @('vals') and is the address of a correct validator.
-     We use the @('committee-members-stake-monotone') theorem
+     We use the @('validators-stake-monotone') theorem
      to inject the appropriate facts into the proof.
      Given that @('vals') is a subset of the committee members,
      but that @('vals') is disjoint from correct addresses
@@ -823,7 +822,7 @@
     (implies (and (address-setp vals)
                   (set::subset vals (committee-members commtt))
                   (committee-fault-tolerant-p commtt systate)
-                  (> (committee-members-stake vals commtt)
+                  (> (validators-stake vals commtt)
                      (committee-max-faulty-stake commtt)))
              (pick-correct-validator vals systate))
     :enable (committee-fault-tolerant-p
@@ -831,16 +830,16 @@
              set::subset-of-difference-when-disjoint)
     :disable pick-correct-validator
     :use (all-faulty-when-not-pick-correct-validator
-          (:instance committee-members-stake-monotone
-                     (members1 vals)
-                     (members2 (committee-faulty-members commtt systate)))))
+          (:instance validators-stake-monotone
+                     (vals1 vals)
+                     (vals2 (committee-faulty-members commtt systate)))))
 
   (defruled pick-correct-validator-when-fault-tolerant-and-geq-quorum
     (implies (and (address-setp vals)
                   (set::subset vals (committee-members commtt))
                   (committee-fault-tolerant-p commtt systate)
                   (committee-nonemptyp commtt)
-                  (>= (committee-members-stake vals commtt)
+                  (>= (validators-stake vals commtt)
                       (committee-quorum-stake commtt)))
              (pick-correct-validator vals systate))
     :enable (pick-correct-validator-when-fault-tolerant-and-gt-max-faulty
