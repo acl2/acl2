@@ -799,7 +799,7 @@
          (steps "A number of steps to run.  A natural number (for debugging only), or :auto, meaning run until the method returns.")
          )
   :description ("Given a JVM/Java method, this defines a function that represents the (unrolled) effect of the given method on the JVM state (under the given assumptions).  This uses symbolic execution including unrolling all loops."
-                "Unlike, @(see unroll-java-code), this supports a compositional approach, using pre-existing lifting theorems for subroutine calls when possible.  Otherwise, it effectively inlines the subroutine call."
+                "Unlike, @(tsee unroll-java-code), this supports a compositional approach, using pre-existing lifting theorems for subroutine calls when possible.  Otherwise, it effectively inlines the subroutine call."
                 "To inspect the resulting form, you can use @('print-list') on the generated defconst.")
   )
 
