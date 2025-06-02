@@ -2600,10 +2600,10 @@
      (xdoc::p
       "We ensure that the list of specifiers and qualifiers is not empty."))
     (b* (((tyname tyname) tyname)
-         ((unless tyname.specqual)
+         ((unless tyname.specquals)
           (raise "Misusage error: empty list of specifiers and qualifiers.")
           (pristate-fix pstate))
-         (pstate (print-spec/qual-list tyname.specqual pstate))
+         (pstate (print-spec/qual-list tyname.specquals pstate))
          ((unless (absdeclor-option-case tyname.decl? :some)) pstate)
          (pstate (print-astring " " pstate))
          (pstate (print-absdeclor (absdeclor-option-some->val tyname.decl?)

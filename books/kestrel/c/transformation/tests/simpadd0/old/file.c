@@ -67,6 +67,10 @@ void nonint_const() {
   long long ll = 34LL;
 }
 
+/* int ternary_int(int x, int y, int z) { */
+/*   return x ? y : z; */
+/* } */
+
 int main() {
   return 0;
 }

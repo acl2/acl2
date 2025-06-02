@@ -3698,12 +3698,12 @@
     :short "Transform a type name."
     (b* (((simpadd0-gin gin) gin)
          ((tyname tyname) tyname)
-         ((mv new-specqual (simpadd0-gout gout-specqual))
-          (simpadd0-spec/qual-list tyname.specqual gin state))
+         ((mv new-specquals (simpadd0-gout gout-specqual))
+          (simpadd0-spec/qual-list tyname.specquals gin state))
          (gin (simpadd0-gin-update gin gout-specqual))
          ((mv new-decl? (simpadd0-gout gout-decl?))
           (simpadd0-absdeclor-option tyname.decl? gin state)))
-      (mv (make-tyname :specqual new-specqual
+      (mv (make-tyname :specquals new-specquals
                        :decl? new-decl?)
           (make-simpadd0-gout
            :events (append gout-specqual.events gout-decl?.events)
