@@ -1548,15 +1548,9 @@
      those of @('unsigned char')
      [C17:6.2.5/8]."))
   (b* ((bit-size (integer-format->bit-size short-format))
-       (signed-short-min (sinteger-format->min
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair short-format))))
-       (signed-short-max (sinteger-format->max
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair short-format))))
-       (unsigned-short-max (uinteger-format->max
-                            (uinteger+sinteger-format->unsigned
-                             (integer-format->pair short-format))))
+       (signed-short-min (integer-format->signed-min short-format))
+       (signed-short-max (integer-format->signed-max short-format))
+       (unsigned-short-max (integer-format->unsigned-max short-format))
        (signed-char-min (schar-format->min schar-format uchar-format))
        (signed-char-max (schar-format->max schar-format uchar-format))
        (unsigned-char-max (uchar-format->max uchar-format)))
@@ -1593,24 +1587,12 @@
      those of @('unsigned short')
      [C17:6.2.5/8]."))
   (b* ((bit-size (integer-format->bit-size int-format))
-       (signed-int-min (sinteger-format->min
-                        (uinteger+sinteger-format->signed
-                         (integer-format->pair int-format))))
-       (signed-int-max (sinteger-format->max
-                        (uinteger+sinteger-format->signed
-                         (integer-format->pair int-format))))
-       (unsigned-int-max (uinteger-format->max
-                          (uinteger+sinteger-format->unsigned
-                           (integer-format->pair int-format))))
-       (signed-short-min (sinteger-format->min
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair short-format))))
-       (signed-short-max (sinteger-format->max
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair short-format))))
-       (unsigned-short-max (uinteger-format->max
-                            (uinteger+sinteger-format->unsigned
-                             (integer-format->pair short-format)))))
+       (signed-int-min (integer-format->signed-min int-format))
+       (signed-int-max (integer-format->signed-max int-format))
+       (unsigned-int-max (integer-format->unsigned-max int-format))
+       (signed-short-min (integer-format->signed-min short-format))
+       (signed-short-max (integer-format->signed-max short-format))
+       (unsigned-short-max (integer-format->unsigned-max short-format)))
     (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-int-min -32767)
          (<= +32767 signed-int-max)
@@ -1645,24 +1627,12 @@
      those of @('unsigned int')
      [C17:6.2.5/8]."))
   (b* ((bit-size (integer-format->bit-size long-format))
-       (signed-long-min (sinteger-format->min
-                         (uinteger+sinteger-format->signed
-                          (integer-format->pair long-format))))
-       (signed-long-max (sinteger-format->max
-                         (uinteger+sinteger-format->signed
-                          (integer-format->pair long-format))))
-       (unsigned-long-max (uinteger-format->max
-                           (uinteger+sinteger-format->unsigned
-                            (integer-format->pair long-format))))
-       (signed-int-min (sinteger-format->min
-                        (uinteger+sinteger-format->signed
-                         (integer-format->pair int-format))))
-       (signed-int-max (sinteger-format->max
-                        (uinteger+sinteger-format->signed
-                         (integer-format->pair int-format))))
-       (unsigned-int-max (uinteger-format->max
-                          (uinteger+sinteger-format->unsigned
-                           (integer-format->pair int-format)))))
+       (signed-long-min (integer-format->signed-min long-format))
+       (signed-long-max (integer-format->signed-max long-format))
+       (unsigned-long-max (integer-format->unsigned-max long-format))
+       (signed-int-min (integer-format->signed-min int-format))
+       (signed-int-max (integer-format->signed-max int-format))
+       (unsigned-int-max (integer-format->unsigned-max int-format)))
     (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-long-min -2147483647)
          (<= +2147483647 signed-long-max)
@@ -1698,24 +1668,12 @@
      those of @('unsigned long')
      [C17:6.2.5/8]."))
   (b* ((bit-size (integer-format->bit-size llong-format))
-       (signed-llong-min (sinteger-format->min
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair llong-format))))
-       (signed-llong-max (sinteger-format->max
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair llong-format))))
-       (unsigned-llong-max (uinteger-format->max
-                            (uinteger+sinteger-format->unsigned
-                             (integer-format->pair llong-format))))
-       (signed-long-min (sinteger-format->min
-                         (uinteger+sinteger-format->signed
-                          (integer-format->pair long-format))))
-       (signed-long-max (sinteger-format->max
-                         (uinteger+sinteger-format->signed
-                          (integer-format->pair long-format))))
-       (unsigned-long-max (uinteger-format->max
-                           (uinteger+sinteger-format->unsigned
-                            (integer-format->pair long-format)))))
+       (signed-llong-min (integer-format->signed-min llong-format))
+       (signed-llong-max (integer-format->signed-max llong-format))
+       (unsigned-llong-max (integer-format->unsigned-max llong-format))
+       (signed-long-min (integer-format->signed-min long-format))
+       (signed-long-max (integer-format->signed-max long-format))
+       (unsigned-long-max (integer-format->unsigned-max long-format)))
     (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-llong-min -9223372036854775807)
          (<= +9223372036854775807 signed-llong-max)
