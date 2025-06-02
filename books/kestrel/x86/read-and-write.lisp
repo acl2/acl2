@@ -3391,3 +3391,20 @@
                                   (ad2 (bvchop 48 ad2)))
            :expand (:with unsigned-byte-p (unsigned-byte-p 48 n1))
            :in-theory (disable read-of-write-within-helper))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Read a list of chunks
+;; See also read-bytes.
+;; TODO: Move to own file?
+(defund read-chunks (addr count bytes-per-chunk x86)
+  (declare (xargs :guard (and (unsigned-byte-p 48 addr)
+                              (natp count)
+                              (natp bytes-per-chunk))
+                  :stobjs x86))
+  (if (zp count)
+      nil
+    (cons (read bytes-per-chunk addr x86)
+          (read-chunks (bvplus 48 1 addr) (+ -1 count) bytes-per-chunk x86))))
+
+(defopeners read-chunks)
