@@ -1347,11 +1347,10 @@
   ///
 
   (defruled integer-format->bit-size-alt-def
-    (implies (integer-formatp format)
-             (equal (integer-format->bit-size format)
-                    (len (sinteger-format->bits
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair format))))))
+    (equal (integer-format->bit-size format)
+           (len (sinteger-format->bits
+                 (uinteger+sinteger-format->signed
+                  (integer-format->pair format)))))
     :use (:instance same-len-when-uinteger-sinteger-bit-roles-wfp
                     (sroles (sinteger-format->bits
                              (uinteger+sinteger-format->signed
@@ -1377,7 +1376,15 @@
   (uinteger-format->max
    (uinteger+sinteger-format->unsigned
     (integer-format->pair format)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret integer-format->unsigned-max-upper-bound
+    (<= max
+        (1- (expt 2 (integer-format->bit-size format))))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable integer-format->bit-size)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1388,7 +1395,15 @@
   (sinteger-format->max
    (uinteger+sinteger-format->signed
     (integer-format->pair format)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret integer-format->signed-max-upper-bound
+    (<= max
+        (1- (expt 2 (1- (integer-format->bit-size format)))))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable integer-format->bit-size-alt-def)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1406,7 +1421,12 @@
   (defret integer-format->signed-min-type-prescription
     (and (integerp min)
          (< min 0))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret integer-format->signed-min-lower-bound
+    (>= min
+        (- (expt 2 (1- (integer-format->bit-size format)))))
+    :hints (("Goal" :in-theory (enable integer-format->bit-size-alt-def)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
