@@ -6007,6 +6007,7 @@
                                      print
                                      monitored-symbols
                                      fns-to-elide
+                                     ;; todo: add context array and other args?
                                      ,@maybe-state)
            (declare (xargs :guard (and (pseudo-dagp dag)
                                        (pseudo-term-listp assumptions)
@@ -6404,7 +6405,7 @@
                                       rule-alist
                                       interpreted-function-alist
                                       known-booleans
-                                      normalize-xors
+                                      normalize-xors ; next few args do affect the result
                                       limits
                                       memoizep
                                       count-hits
