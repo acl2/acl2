@@ -64,7 +64,9 @@
      Note that non-equivocation is limited to the proposals,
      not to the whole certificates,
      because it is possible that two correct validator obtain certificates
-     certificates with identical proposals but slightly different signatures.")
+     with identical proposals but slightly different signatures;
+     these slightly different certificates would be generated
+     by faulty validators, not by correct validators.")
    (xdoc::p
     "Here we introduce a function that picks a correct validator (if any)
      from the intersection of two sets of (addresses of) validators
