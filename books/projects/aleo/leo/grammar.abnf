@@ -355,8 +355,7 @@ struct-expression = identifier "{" struct-component-initializer
                                    *( "," struct-component-initializer )
                                    [ "," ] "}"
 
-struct-component-initializer = identifier
-                             / identifier ":" expression
+struct-component-initializer = identifier [ ":" expression ]
 
 self-expression = %s"self" "." %s"address"
                 / %s"self" "." %s"caller"
@@ -455,7 +454,7 @@ block = "{" *statement "}"
 
 return-statement = %s"return" [ expression ] ";"
 
-variable-declaration = %s"let" identifier-or-identifiers ":" type
+variable-declaration = %s"let" identifier-or-identifiers [ ":" type ]
                        "=" expression ";"
 
 constant-declaration = %s"const" identifier ":" type "=" expression ";"
@@ -469,7 +468,7 @@ conditional-statement = branch
                       / branch %s"else" block
                       / branch %s"else" conditional-statement
 
-loop-statement = %s"for" identifier ":" type
+loop-statement = %s"for" identifier [ ":" type ]
                  %s"in" expression ".." expression
                  block
 

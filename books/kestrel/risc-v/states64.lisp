@@ -147,7 +147,14 @@
     (if (= reg 0)
         0
       (nth (1- reg) (state64->xregfile stat))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (val natp
+        :rule-classes :type-prescription
+        :hints (("Goal" :in-theory (disable read64-xreg-unsigned))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

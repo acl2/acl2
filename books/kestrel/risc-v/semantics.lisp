@@ -17,6 +17,7 @@
 (local (include-book "library-extensions"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
@@ -63,16 +64,18 @@
                    (imm ubyte12p)
                    (stat statp)
                    (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('ADDI') instruction [ISA:2.4.1]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned @('XLEN')-bit integer from @('rs1').
+    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining an unsigned @('XLEN')-bit integer.
-     We add the two unsigned @('XLEN')-bit integers.
+     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     We add the two integers.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -86,9 +89,72 @@
 
   ///
 
+  (defruled exec-addi-alt-def
+    (equal (exec-addi rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (+ rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-addi
+             read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc)
+    :use (:instance lemma
+                    (imm (ubyte12-fix imm))
+                    (rs1 (ubyte5-fix rs1)))
+    :prep-lemmas
+    ((defruled lemma
+       (equal (loghead (feat->xlen feat)
+                       (+ (logext 12 imm)
+                          (logext (feat->xlen feat)
+                                  (read-xreg-unsigned rs1 stat feat))))
+              (loghead (feat->xlen feat)
+                       (+ (loghead (feat->xlen feat)
+                                   (logext 12 imm))
+                          (read-xreg-unsigned rs1 stat feat))))
+       :use (lemma1 lemma2 lemma3)
+       :disable bitops::loghead-of-+-of-loghead-same
+       :cases ((feat-32p feat))
+       :prep-lemmas
+       ((defruled lemma1
+          (equal (loghead (feat->xlen feat)
+                          (+ (logext 12 imm)
+                             (logext (feat->xlen feat)
+                                     (read-xreg-unsigned rs1 stat feat))))
+                 (loghead (feat->xlen feat)
+                          (+ (logext (feat->xlen feat)
+                                     (logext 12 imm))
+                             (logext (feat->xlen feat)
+                                     (read-xreg-unsigned rs1 stat feat)))))
+          :cases ((feat-32p feat)))
+        (defruled lemma2
+          (equal (loghead (feat->xlen feat)
+                          (+ (logext (feat->xlen feat)
+                                     (logext 12 imm))
+                             (logext (feat->xlen feat)
+                                     (read-xreg-unsigned rs1 stat feat))))
+                 (loghead (feat->xlen feat)
+                          (+ (logext 12 imm)
+                             (read-xreg-unsigned rs1 stat feat))))
+          :enable (loghead-of-logext-plus-logext
+                   ifix))
+        (defruled lemma3
+          (equal (loghead (feat->xlen feat)
+                          (+ (logext 12 imm)
+                             (read-xreg-unsigned rs1 stat feat)))
+                 (loghead (feat->xlen feat)
+                          (+ (loghead (feat->xlen feat)
+                                      (logext 12 imm))
+                             (loghead (feat->xlen feat)
+                                      (read-xreg-unsigned rs1 stat feat))))))))))
+
   (defret stat-validp-of-exec-addi
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -98,7 +164,9 @@
                    (imm ubyte12p)
                    (stat statp)
                    (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SLTI') instruction [ISA:2.4.1]."
   :long
@@ -123,9 +191,10 @@
 
   ///
 
-  (defret stat-validp-of-exec-sltii
+  (defret stat-validp-of-exec-slti
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -135,7 +204,9 @@
                     (imm ubyte12p)
                     (stat statp)
                     (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SLTIU') instruction [ISA:2.4.1]."
   :long
@@ -162,7 +233,8 @@
 
   (defret stat-validp-of-exec-sltiu
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -172,7 +244,9 @@
                    (imm ubyte12p)
                    (stat statp)
                    (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('ANDI') instruction [ISA:2.4.1]."
   :long
@@ -198,7 +272,8 @@
 
   (defret stat-validp-of-exec-andi
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -208,7 +283,9 @@
                   (imm ubyte12p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('ORI') instruction [ISA:2.4.1]."
   :long
@@ -234,7 +311,8 @@
 
   (defret stat-validp-of-exec-ori
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -244,7 +322,9 @@
                    (imm ubyte12p)
                    (stat statp)
                    (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('XORI') instruction [ISA:2.4.1]."
   :long
@@ -270,7 +350,8 @@
 
   (defret stat-validp-of-exec-xori
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -281,7 +362,9 @@
                      (imm ubyte12p)
                      (stat statp)
                      (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the non-shift instructions with the @('OP-IMM') opcode
           [ISA:2.4.1]."
@@ -298,7 +381,8 @@
 
   (defret stat-validp-of-exec-op-imm
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -308,7 +392,9 @@
                      (stat statp)
                      (feat featp))
   :guard (and (feat-32p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the SLLI instruction [ISA:2.4.1] in 32-bit mode."
   :long
@@ -332,7 +418,8 @@
 
   (defret stat-validp-of-exec-slli32
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -343,7 +430,9 @@
                      (stat statp)
                      (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the SLLI instruction [ISA:2.4.1] in 64-bit mode."
   :long
@@ -367,7 +456,8 @@
 
   (defret stat-validp-of-exec-slli64
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -378,7 +468,9 @@
                      (stat statp)
                      (feat featp))
   :guard (and (feat-32p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the SRLI instruction [ISA:2.4.1] in 32-bit mode."
   :long
@@ -403,7 +495,8 @@
 
   (defret stat-validp-of-exec-srli32
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -414,7 +507,9 @@
                      (stat statp)
                      (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the SRLI instruction [ISA:2.4.1] in 64-bit mode."
   :long
@@ -439,7 +534,8 @@
 
   (defret stat-validp-of-exec-srli64
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -450,7 +546,9 @@
                      (stat statp)
                      (feat featp))
   :guard (and (feat-32p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the SRAI instruction [ISA:2.4.1] in 32-bit mode."
   :long
@@ -475,7 +573,8 @@
 
   (defret stat-validp-of-exec-srai32
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -486,7 +585,9 @@
                      (stat statp)
                      (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the SRAI instruction [ISA:2.4.1] in 64-bit mode."
   :long
@@ -511,7 +612,8 @@
 
   (defret stat-validp-of-exec-srai64
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -523,7 +625,9 @@
                         (stat statp)
                         (feat featp))
   :guard (and (feat-32p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the shift instructions with the @('OP-IMM') opcode
           [ISA:2.4.1] in 32-bit mode."
@@ -537,7 +641,8 @@
 
   (defret stat-validp-of-exec-op-imms32
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -548,7 +653,9 @@
                         (stat statp)
                         (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the shift instructions with the @('OP-IMM') opcode
           [ISA:2.4.1] in 64-bit mode."
@@ -562,7 +669,8 @@
 
   (defret stat-validp-of-exec-op-imms64
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -572,7 +680,9 @@
                     (stat statp)
                     (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('ADDIW') instruction [ISA:4.2.1]."
   :long
@@ -599,7 +709,8 @@
 
   (defret stat-validp-of-exec-addiw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -611,7 +722,9 @@
                         (stat statp)
                         (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the non-shift instructions with the @('OP-IMM-32') opcode
           [ISA:4.2.1]."
@@ -627,7 +740,8 @@
 
   (defret stat-validp-of-exec-op-imm-32
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -637,7 +751,9 @@
                     (stat statp)
                     (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SLLIW') instruction [ISA:4.2.1]."
   :long
@@ -663,7 +779,8 @@
 
   (defret stat-validp-of-exec-slliw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -674,7 +791,9 @@
                     (stat statp)
                     (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SRLIW') instruction [ISA:4.2.1]."
   :long
@@ -701,7 +820,8 @@
 
   (defret stat-validp-of-exec-srliw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -712,7 +832,9 @@
                     (stat statp)
                     (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SRAIW') instruction [ISA:4.2.1]."
   :long
@@ -739,7 +861,8 @@
 
   (defret stat-validp-of-exec-sraiw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -751,7 +874,9 @@
                          (stat statp)
                          (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of a shift instruction with the @('OP-IMM-32') opcode
           [ISA:4.2.1]."
@@ -769,7 +894,8 @@
 
   (defret stat-validp-of-exec-op-imms-32
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -777,7 +903,8 @@
                   (imm ubyte20p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('LUI') instruction [ISA:4.2.1]."
   :long
@@ -803,7 +930,8 @@
 
   (defret stat-validp-of-exec-lui
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints
     (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
@@ -817,7 +945,8 @@
   :guard (and (stat-validp stat feat)
               (cond ((feat-32p feat) (ubyte32p pc))
                     ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible))))
+                    (t (impossible)))
+              (< (lnfix rd) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('AUIPC') instruction [ISA:4.2.1]."
   :long
@@ -848,7 +977,8 @@
 
   (defret stat-validp-of-exec-auipc
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -858,7 +988,10 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('ADD') instruction [ISA:2.4.2]."
   :long
@@ -866,7 +999,8 @@
    (xdoc::p
     "We read two (signed or unsigned) @('XLEN')-bit integers
      from @('rs1') and @('rs2').
-     We add them, and write the result to @('rd').
+     We add the two integers.
+     We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
@@ -897,7 +1031,8 @@
 
   (defret stat-validp-of-exec-add
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -907,7 +1042,10 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SUB') instruction [ISA:2.4.2]."
   :long
@@ -915,7 +1053,8 @@
    (xdoc::p
     "We read two (signed or unsigned) @('XLEN')-bit integers
      from @('rs1') and @('rs2').
-     We subtract the second from the first, and write the result to @('rd').
+     We subtract the second integer from the first integer.
+     We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
@@ -946,7 +1085,8 @@
 
   (defret stat-validp-of-exec-sub
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -956,7 +1096,10 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SLT') instruction [ISA:2.4.2]."
   :long
@@ -981,7 +1124,8 @@
 
   (defret stat-validp-of-exec-slt
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -991,7 +1135,10 @@
                    (rs2 ubyte5p)
                    (stat statp)
                    (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SLTU') instruction [ISA:2.4.2]."
   :long
@@ -1016,7 +1163,8 @@
 
   (defret stat-validp-of-exec-sltu
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1026,7 +1174,10 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('AND') instruction [ISA:2.4.2]."
   :long
@@ -1050,7 +1201,8 @@
 
   (defret stat-validp-of-exec-and
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1060,7 +1212,10 @@
                  (rs2 ubyte5p)
                  (stat statp)
                  (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('OR') instruction [ISA:2.4.2]."
   :long
@@ -1084,7 +1239,8 @@
 
   (defret stat-validp-of-exec-or
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1094,7 +1250,10 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('XOR') instruction [ISA:2.4.2]."
   :long
@@ -1118,7 +1277,8 @@
 
   (defret stat-validp-of-exec-xor
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1128,7 +1288,10 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SLL') instruction [ISA:4.2.2]."
   :long
@@ -1159,7 +1322,8 @@
 
   (defret stat-validp-of-exec-sll
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1169,7 +1333,10 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SRL') instruction [ISA:4.2.2]."
   :long
@@ -1201,7 +1368,8 @@
 
   (defret stat-validp-of-exec-srl
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1211,7 +1379,10 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SRA') instruction [ISA:4.2.2]."
   :long
@@ -1244,7 +1415,8 @@
 
   (defret stat-validp-of-exec-sra
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1254,7 +1426,11 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semanics of the @('MUL') instruction [ISA:13.1]."
   :long
@@ -1276,7 +1452,8 @@
 
   (defret stat-validp-of-exec-mul
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1286,7 +1463,11 @@
                    (rs2 ubyte5p)
                    (stat statp)
                    (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semanics of the @('MULH') instruction [ISA:13.1]."
   :long
@@ -1311,7 +1492,8 @@
 
   (defret stat-validp-of-exec-mulh
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1321,7 +1503,11 @@
                     (rs2 ubyte5p)
                     (stat statp)
                     (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semanics of the @('MULHU') instruction [ISA:13.1]."
   :long
@@ -1346,7 +1532,8 @@
 
   (defret stat-validp-of-exec-mulhu
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1356,7 +1543,11 @@
                      (rs2 ubyte5p)
                      (stat statp)
                      (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semanics of the @('MULHSU') instruction [ISA:13.1]."
   :long
@@ -1382,7 +1573,8 @@
 
   (defret stat-validp-of-exec-mulhsu
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1392,7 +1584,11 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semanics of the @('DIV') instruction [ISA:13.2]."
   :long
@@ -1419,7 +1615,8 @@
 
   (defret stat-validp-of-exec-div
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1429,7 +1626,11 @@
                    (rs2 ubyte5p)
                    (stat statp)
                    (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semanics of the @('DIVU') instruction [ISA:13.2]."
   :long
@@ -1456,7 +1657,8 @@
 
   (defret stat-validp-of-exec-divu
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1466,7 +1668,11 @@
                   (rs2 ubyte5p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semanics of the @('REM') instruction [ISA:13.2]."
   :long
@@ -1494,7 +1700,8 @@
 
   (defret stat-validp-of-exec-rem
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1504,7 +1711,11 @@
                    (rs2 ubyte5p)
                    (stat statp)
                    (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semanics of the @('REMU') instruction [ISA:13.2]."
   :long
@@ -1532,7 +1743,8 @@
 
   (defret stat-validp-of-exec-remu
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1543,7 +1755,14 @@
                  (rs2 ubyte5p)
                  (stat statp)
                  (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat))
+              (implies (member-eq (op-funct-kind funct)
+                                  '(:mul :mulh :mulhu :mulhsu
+                                    :div :divu :rem :remu))
+                       (feat-mp feat)))
   :returns (new-stat statp)
   :short "Semantics of the instructions with the @('OP') opcode
           [ISA:2.4.2] [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
@@ -1572,7 +1791,8 @@
 
   (defret stat-validp-of-exec-op
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1582,7 +1802,10 @@
                    (stat statp)
                    (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('ADDW') instruction [ISA:4.2.2]."
   :long
@@ -1607,7 +1830,8 @@
 
   (defret stat-validp-of-exec-addw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1618,7 +1842,10 @@
                    (stat statp)
                    (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SUBW') instruction [ISA:4.2.2]."
   :long
@@ -1640,7 +1867,8 @@
 
   (defret stat-validp-of-exec-subw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1651,7 +1879,10 @@
                    (stat statp)
                    (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SLLW') instruction [ISA:4.2.2]."
   :long
@@ -1677,7 +1908,8 @@
 
   (defret stat-validp-of-exec-sllw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1688,7 +1920,10 @@
                    (stat statp)
                    (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SRLW') instruction [ISA:4.2.2]."
   :long
@@ -1715,7 +1950,8 @@
 
   (defret stat-validp-of-exec-srlw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1726,7 +1962,10 @@
                    (stat statp)
                    (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SRAW') instruction [ISA:4.2.2]."
   :long
@@ -1753,7 +1992,8 @@
 
   (defret stat-validp-of-exec-sraw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1764,7 +2004,11 @@
                    (stat statp)
                    (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('MULW') instruction [ISA:13.1]."
   :long
@@ -1787,7 +2031,8 @@
 
   (defret stat-validp-of-exec-mulw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1798,7 +2043,11 @@
                    (stat statp)
                    (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('DIVW') instruction [ISA:13.2]."
   :long
@@ -1825,7 +2074,8 @@
 
   (defret stat-validp-of-exec-divw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1836,7 +2086,11 @@
                     (stat statp)
                     (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('DIVUW') instruction [ISA:13.2]."
   :long
@@ -1863,7 +2117,8 @@
 
   (defret stat-validp-of-exec-divuw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1874,7 +2129,11 @@
                    (stat statp)
                    (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('REMW') instruction [ISA:13.2]."
   :long
@@ -1902,7 +2161,8 @@
 
   (defret stat-validp-of-exec-remw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1913,7 +2173,11 @@
                     (stat statp)
                     (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (feat-mp feat)
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('REMUW') instruction [ISA:13.2]."
   :long
@@ -1941,7 +2205,8 @@
 
   (defret stat-validp-of-exec-remuw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1953,7 +2218,14 @@
                     (stat statp)
                     (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat))
+              (implies (member-eq (op-32-funct-kind funct)
+                                  '(:mulw
+                                    :divw :divuw :remw :remuw))
+                       (feat-mp feat)))
   :returns (new-stat statp)
   :short "Semantics of the instructions with the @('OP-32') opcode
           [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
@@ -1974,7 +2246,8 @@
 
   (defret stat-validp-of-exec-op-32
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1986,7 +2259,8 @@
   :guard (and (stat-validp stat feat)
               (cond ((feat-32p feat) (ubyte32p pc))
                     ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible))))
+                    (t (impossible)))
+              (< (lnfix rd) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('JAL') instruction [ISA:2.5.1]."
   :long
@@ -2018,7 +2292,8 @@
 
   (defret stat-validp-of-exec-jal
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2032,7 +2307,9 @@
   :guard (and (stat-validp stat feat)
               (cond ((feat-32p feat) (ubyte32p pc))
                     ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible))))
+                    (t (impossible)))
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('JALR') instruction [ISA:2.5.1]."
   :long
@@ -2066,7 +2343,8 @@
 
   (defret stat-validp-of-exec-jalr
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2080,7 +2358,9 @@
   :guard (and (stat-validp stat feat)
               (cond ((feat-32p feat) (ubyte32p pc))
                     ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible))))
+                    (t (impossible)))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('BEQ') instruction [ISA:2.5.2]."
   :long
@@ -2128,7 +2408,9 @@
   :guard (and (stat-validp stat feat)
               (cond ((feat-32p feat) (ubyte32p pc))
                     ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible))))
+                    (t (impossible)))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('BNE') instruction [ISA:2.5.2]."
   :long
@@ -2176,7 +2458,9 @@
   :guard (and (stat-validp stat feat)
               (cond ((feat-32p feat) (ubyte32p pc))
                     ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible))))
+                    (t (impossible)))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('BLT') instruction [ISA:2.5.2]."
   :long
@@ -2224,7 +2508,9 @@
   :guard (and (stat-validp stat feat)
               (cond ((feat-32p feat) (ubyte32p pc))
                     ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible))))
+                    (t (impossible)))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('BLTU') instruction [ISA:2.5.2]."
   :long
@@ -2272,7 +2558,9 @@
   :guard (and (stat-validp stat feat)
               (cond ((feat-32p feat) (ubyte32p pc))
                     ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible))))
+                    (t (impossible)))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('BGE') instruction [ISA:2.5.2]."
   :long
@@ -2320,7 +2608,9 @@
   :guard (and (stat-validp stat feat)
               (cond ((feat-32p feat) (ubyte32p pc))
                     ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible))))
+                    (t (impossible)))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('BGEU') instruction [ISA:2.5.2]."
   :long
@@ -2369,7 +2659,9 @@
   :guard (and (stat-validp stat feat)
               (cond ((feat-32p feat) (ubyte32p pc))
                     ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible))))
+                    (t (impossible)))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the instructions with the @('BRANCH') opcode
           [ISA:2.5.2]."
@@ -2391,7 +2683,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eff-addr ((rs1 ubyte5p) (imm ubyte12p) (stat statp) (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (addr integerp)
   :short "Effective address for a load or store instruction [ISA:2.6]."
   :long
@@ -2415,7 +2708,9 @@
                  (imm ubyte12p)
                  (stat statp)
                  (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('LB') instruction [ISA:2.6]."
   :long
@@ -2439,7 +2734,8 @@
 
   (defret stat-validp-of-exec-lb
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2449,7 +2745,9 @@
                   (imm ubyte12p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('LBU') instruction [ISA:2.6]."
   :long
@@ -2472,7 +2770,8 @@
 
   (defret stat-validp-of-exec-lbu
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2482,7 +2781,9 @@
                  (imm ubyte12p)
                  (stat statp)
                  (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('LH') instruction [ISA:2.6]."
   :long
@@ -2506,7 +2807,8 @@
 
   (defret stat-validp-of-exec-lh
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2516,7 +2818,9 @@
                   (imm ubyte12p)
                   (stat statp)
                   (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('LHU') instruction [ISA:2.6]."
   :long
@@ -2539,7 +2843,8 @@
 
   (defret stat-validp-of-exec-lhu
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2549,7 +2854,9 @@
                  (imm ubyte12p)
                  (stat statp)
                  (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('LW') instruction [ISA:2.6]."
   :long
@@ -2571,7 +2878,8 @@
 
   (defret stat-validp-of-exec-lw
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2582,7 +2890,9 @@
                   (stat statp)
                   (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('LW') instruction [ISA:4.3]."
   :long
@@ -2607,7 +2917,8 @@
 
   (defret stat-validp-of-exec-lwu
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2618,7 +2929,9 @@
                  (stat statp)
                  (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('LW') instruction [ISA:4.3]."
   :long
@@ -2642,7 +2955,8 @@
 
   (defret stat-validp-of-exec-ld
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))
     :hints (("Goal" :in-theory (enable feat->xnum ubyte5-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2656,7 +2970,9 @@
   :guard (and (stat-validp stat feat)
               (implies (or (load-funct-case funct :lwu)
                            (load-funct-case funct :ld))
-                       (feat-64p feat)))
+                       (feat-64p feat))
+              (< (lnfix rd) (feat->xnum feat))
+              (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the instructions with the @('LOAD') opcode [ISA:2.6]."
   (load-funct-case funct
@@ -2673,7 +2989,8 @@
 
   (defret stat-validp-of-exec-load
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (and (stat-validp stat feat)
+              (< (lnfix rd) (feat->xnum feat)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2682,7 +2999,9 @@
                  (imm ubyte12p)
                  (stat statp)
                  (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SB') instruction [ISA:2.6]."
   :long
@@ -2713,7 +3032,9 @@
                  (imm ubyte12p)
                  (stat statp)
                  (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SH') instruction [ISA:2.6]."
   :long
@@ -2744,7 +3065,9 @@
                  (imm ubyte12p)
                  (stat statp)
                  (feat featp))
-  :guard (stat-validp stat feat)
+  :guard (and (stat-validp stat feat)
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SW') instruction [ISA:2.6]."
   :long
@@ -2782,7 +3105,9 @@
                  (stat statp)
                  (feat featp))
   :guard (and (feat-64p feat)
-              (stat-validp stat feat))
+              (stat-validp stat feat)
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('SD') instruction [ISA:4.3]."
   :long
@@ -2818,7 +3143,9 @@
                     (feat featp))
   :guard (and (stat-validp stat feat)
               (implies (store-funct-case funct :sd)
-                       (feat-64p feat)))
+                       (feat-64p feat))
+              (< (lnfix rs1) (feat->xnum feat))
+              (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the instructions with the @('STORE') opcode [ISA:2.6]."
   (store-funct-case funct
@@ -2929,11 +3256,22 @@
                                  instr.imm
                                  stat
                                  feat))
-  :guard-hints (("Goal" :in-theory (enable instr-validp)))
+  :guard-hints (("Goal"
+                 :in-theory (enable instr-validp)
+                 :cases ((feat-embedp feat))))
   :hooks (:fix)
+
+  :prepwork
+  ((defrulel lemma
+     (implies (ubyte5p x)
+              (< x 32))))
 
   ///
 
   (defret stat-validp-of-exec-instr
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (and (stat-validp stat feat)
+              (instr-validp instr feat))
+    :hints (("Goal"
+             :in-theory (enable instr-validp)
+             :cases ((feat-embedp feat))))))
