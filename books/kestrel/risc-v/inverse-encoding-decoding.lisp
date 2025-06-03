@@ -18,6 +18,7 @@
 (local (include-book "kestrel/fty/ubyte3-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte7-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte12-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte20-ihs-theorems" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -440,5 +441,75 @@
   (defruled get-imm-itype-of-encode-instr-load
     (equal (get-imm-itype (encode (instr-load funct rd rs1 imm) feat))
            (ubyte12-fix imm))
-    :enable (encode
-             get-imm-itype)))
+    :enable (get-imm-itype
+             encode)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-imm-stype-of-encode-instr
+  :short "Theorems about @(tsee get-imm-stype) applied to
+          the encoding of instructions."
+
+  (defruled get-imm-stype-of-encode-instr-store
+    (equal (get-imm-stype (encode (instr-store funct rs1 rs2 imm) feat))
+           (ubyte12-fix imm))
+    :use (:instance lemma (imm (ubyte12-fix imm)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (ubyte12p imm)
+                (equal (get-imm-stype (encode (instr-store funct rs1 rs2 imm) feat))
+                       imm))
+       :enable (get-imm-stype
+                encode)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-imm-utype-of-encode-instr
+  :short "Theorems about @(tsee get-imm-utype) applied to
+          the encoding of instructions."
+
+  (defruled get-imm-utype-of-encode-instr-lui
+    (equal (get-imm-utype (encode (instr-lui rd imm) feat))
+           (ubyte20-fix imm))
+    :enable (get-imm-utype
+             encode))
+
+  (defruled get-imm-ubyte-of-encode-instr-auipc
+    (equal (get-imm-utype (encode (instr-auipc rd imm) feat))
+           (ubyte20-fix imm))
+    :enable (get-imm-utype
+             encode)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection decode-rtype-of-encode-instr
+  :short "Theorems about @(tsee decode-rtype) applied to
+          the encoding of instructions."
+
+  (defruled encode-rtype-of-encode-instr-op
+    (equal (decode-rtype (encode (instr-op funct rd rs1 rs2) feat))
+           (mv (mv-nth 0 (encode-op-funct funct))
+               (mv-nth 1 (encode-op-funct funct))
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (ubyte5-fix rs2)))
+    :enable (decode-rtype
+             get-funct3-of-encode-instr-op
+             get-funct7-of-encode-instr-op
+             get-rd-of-encode-instr-op
+             get-rs1-of-encode-instr-op
+             get-rs2-of-encode-instr-op))
+
+  (defruled encode-rtype-of-encode-instr-op-32
+    (equal (decode-rtype (encode (instr-op-32 funct rd rs1 rs2) feat))
+           (mv (mv-nth 0 (encode-op-32-funct funct))
+               (mv-nth 1 (encode-op-32-funct funct))
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (ubyte5-fix rs2)))
+    :enable (decode-rtype
+             get-funct3-of-encode-instr-op-32
+             get-funct7-of-encode-instr-op-32
+             get-rd-of-encode-instr-op-32
+             get-rs1-of-encode-instr-op-32
+             get-rs2-of-encode-instr-op-32)))

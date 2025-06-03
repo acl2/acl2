@@ -60,16 +60,7 @@
     "The guard serves to establish that,
      if the last committed round is not 0,
      there is a last comitted anchor
-     of which we can take the successor certificates in the DAG.")
-   (xdoc::p
-    "We use @(tsee committee-validators-stake)
-     instead of @(tsee committee-members-stake)
-     because, in the body of this definition,
-     we do not have available the fact that
-     the successors of the last committed anchor
-     are all in the active committee of the round just after the anchor.
-     It is an invariant (proved elsewhere) that they are,
-     but we do not have the invariant available here."))
+     of which we can take the successor certificates in the DAG."))
   (forall (val)
           (implies (set::in val (correct-addresses systate))
                    (b* (((validator-state vstate)
@@ -79,7 +70,7 @@
                                             (1+ vstate.last)
                                             vstate.blockchain)))
                                 (and commtt
-                                     (> (committee-validators-stake
+                                     (> (validators-stake
                                          (cert-set->author-set
                                           (successors (last-anchor vstate)
                                                       vstate.dag))
@@ -158,7 +149,7 @@
                            (certify-next cert dests systate))))
           (:instance last-anchor-voters-p-necc
                      (val (certificate->author cert)))
-          (:instance committee-validators-stake-monotone
+          (:instance validators-stake-monotone
                      (vals1 (cert-set->author-set
                              (successors
                               (last-anchor (get-validator-state
@@ -206,7 +197,7 @@
                            (accept-next val cert systate))))
           (:instance last-anchor-voters-p-necc
                      (val val))
-          (:instance committee-validators-stake-monotone
+          (:instance validators-stake-monotone
                      (vals1 (cert-set->author-set
                              (successors
                               (last-anchor
@@ -261,7 +252,7 @@
                   (cert-set-unequivp certs)
                   (addressp prev)
                   (<= (set::cardinality (cert-set->round-set certs)) 1))
-             (equal (committee-validators-stake
+             (equal (validators-stake
                      (cert-set->author-set (successors-loop certs prev))
                      commtt)
                     (leader-stake-votes prev certs commtt)))
@@ -270,7 +261,7 @@
              successors-loop
              cert-set-unequivp-when-subset
              cert-set->author-set-of-insert
-             committee-validators-stake-of-insert
+             validators-stake-of-insert
              in-of-cert-set->author-set
              in-of-successors-loop
              equal-cert-authors-when-unequivp-and-same-round)
@@ -281,7 +272,7 @@
   (defruled stake-of-successors-to-leader-stake-votes
     (implies (and (certificate-setp dag)
                   (cert-set-unequivp dag))
-             (equal (committee-validators-stake
+             (equal (validators-stake
                      (cert-set->author-set (successors cert dag))
                      commtt)
                     (leader-stake-votes
