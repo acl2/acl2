@@ -479,14 +479,9 @@
                    (x (blocks-last-round blocks1))
                    (y (block->round (nth (1- (- (len blocks2)
                                                 (len blocks1)))
-                                         blocks2))))
-        (:instance block-requirements
-                   (x (nth (1- (- (len blocks2) (len blocks1))) blocks2)))
-        (:instance block-requirements
-                   (x (car blocks1))))
+                                         blocks2)))))
   :enable (bonded-committee-at-round
            blocks-last-round)
-  :disable block-requirements
   :prep-lemmas
   ((defruled lemma
      (implies (and (blocks-orderedp blocks1)
