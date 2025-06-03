@@ -13,6 +13,8 @@
 
 (include-book "reachability")
 
+(local (include-book "library-extensions/arithmetic-theorems"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -150,7 +152,10 @@
              commit-possiblep
              consp-of-extend-blockchain
              car-of-collect-anchors
-             blocks-last-round-of-extend-blockchain))
+             blocks-last-round-of-extend-blockchain
+             certificates-ordered-even-p-of-collect-anchors
+             evenp-of-1-less-when-not-evenp
+             evenp-of-3-less-when-not-evenp))
 
   (defruled last-blockchain-round-p-of-event-next
     (implies (and (last-blockchain-round-p systate)

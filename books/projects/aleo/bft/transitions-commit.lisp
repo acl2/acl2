@@ -207,7 +207,8 @@
                        evenp
                        active-committee-at-previous-round-when-at-round
                        active-committee-at-previous3-round-when-at-round
-                       certificate->round-of-cert-with-author+round)))
+                       certificate->round-of-cert-with-author+round
+                       certificates-ordered-even-p-of-collect-anchors)))
   :hooks (:fix)
 
   ///

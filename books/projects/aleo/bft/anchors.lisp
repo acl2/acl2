@@ -400,6 +400,15 @@
     :hints (("Goal" :in-theory (enable car-of-collect-anchors))))
   (in-theory (disable car-of-collect-all-anchors))
 
+  (defret certificates-ordered-even-p-of-collect-all-anchors
+    (certificates-ordered-even-p all-anchors)
+    :hyp (evenp (certificate->round last-anchor))
+    :hints
+    (("Goal"
+      :in-theory (enable certificates-ordered-even-p-of-collect-anchors
+                         evenp))))
+  (in-theory (disable certificates-ordered-even-p-of-collect-all-anchors))
+
   (defret certificates-dag-paths-p-of-collect-all-anchors
     (certificates-dag-paths-p all-anchors dag)
     :hyp (and (certificate-setp dag)

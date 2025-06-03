@@ -84,6 +84,17 @@
                     (last-anchor vstate)))
     :enable car-of-collect-all-anchors)
 
+  (defret certificates-ordered-even-p-of-committed-anchors
+    (certificates-ordered-even-p anchors)
+    :hyp (and (evenp (validator-state->last vstate))
+              (or (equal (validator-state->last vstate) 0)
+                  (last-anchor vstate)))
+    :hints
+    (("Goal"
+      :in-theory (enable certificates-ordered-even-p-of-collect-all-anchors
+                         certificate->round-of-last-anchor))))
+  (in-theory (disable certificates-ordered-even-p-of-committed-anchors))
+
   (defret certificates-dag-paths-p-of-committed-anchors
     (certificates-dag-paths-p anchors (validator-state->dag vstate))
     :hyp (or (equal (validator-state->last vstate) 0)

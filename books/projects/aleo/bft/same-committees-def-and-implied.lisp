@@ -472,7 +472,12 @@
                                               blocks2))))
         trim-blocks-for-round-of-longer
         trim-blocks-for-round-of-shorter
-        lemma
+        lemma1
+        (:instance lemma2
+                   (a (block->round (nth (1- (- (len blocks2)
+                                                (len blocks1)))
+                                         blocks2)))
+                   (b (blocks-last-round blocks1)))
         (:instance evenp-of-nth-when-blocks-ordered-even-p
                    (blocks blocks2)
                    (i (1- (- (len blocks2)
@@ -480,11 +485,9 @@
         (:instance evenp-of-car-when-blocks-ordered-even-p
                    (blocks blocks1)))
   :enable (bonded-committee-at-round
-           blocks-last-round
-           nfix
-           evenp)
+           blocks-last-round)
   :prep-lemmas
-  ((defruled lemma
+  ((defruled lemma1
      (implies (and (blocks-ordered-even-p blocks1)
                    (blocks-ordered-even-p blocks2)
                    (< (len blocks1) (len blocks2))
@@ -507,7 +510,15 @@
                            blocks2))
             (blocks2 (nthcdr (- (len blocks2)
                                 (len blocks1))
-                             blocks2)))))))
+                             blocks2)))))
+   (defruled lemma2
+     (implies (and (integerp a)
+                   (integerp b)
+                   (evenp a)
+                   (evenp b)
+                   (> a b))
+              (>= a (+ 2 b)))
+     :enable evenp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -47,10 +47,10 @@
     "We model a block as consisting of
      a list of transactions and a round number.
      The round number is always even,
-     since blocks are only produced at even rounds,
-     but we do not capture that constraint in this fixtype."))
+     since blocks are only produced at even rounds."))
   ((transactions transaction-list)
-   (round pos))
+   (round pos :reqfix (if (evenp round) round 2)))
+  :require (evenp round)
   :pred blockp)
 
 ;;;;;;;;;;;;;;;;;;;;

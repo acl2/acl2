@@ -57,6 +57,9 @@
   (equal (validator-state->blockchain vstate)
          (calculate-blockchain (committed-anchors vstate)
                                (validator-state->dag vstate)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable certificates-ordered-even-p-of-committed-anchors)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
