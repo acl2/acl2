@@ -42,7 +42,8 @@
 (include-book "../../portcullis/sharp-dot-constants")
 (add-include-book-dir :machine "../../machine")
 (add-include-book-dir :proof-utils ".")
-; The book basics.lisp, at least, seems to need :useless-runes nil:
-;; cert-flags: ? t :ttags (:syscall-exec :other-non-det :undef-flg)  :useless-runes nil
+; Previously, the book basics.lisp, at least, seemed to need :useless-runes nil
+; but that no longer seems to be the case.
+;; cert-flags: ? t :ttags (:syscall-exec :other-non-det :undef-flg)
 
 ;; ======================================================================
