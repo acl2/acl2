@@ -794,9 +794,10 @@
        ((when (set::in val (correct-addresses systate))) val))
     (pick-correct-validator (set::tail vals) systate))
   :prepwork ((local (in-theory (enable emptyp-of-address-set-fix))))
-  :hooks (:fix)
 
   ///
+
+  (fty::deffixequiv pick-correct-validator)
 
   (defruled pick-correct-validator-in-set
     (implies (pick-correct-validator vals systate)
@@ -810,6 +811,15 @@
                       (correct-addresses systate)))
     :induct t)
 
+  (defruled not-all-faulty-when-pick-correct-validator
+    (implies (pick-correct-validator vals systate)
+             (not (set::emptyp (set::intersect (address-set-fix vals)
+                                               (correct-addresses systate)))))
+    :use ((:instance pick-correct-validator-in-set (vals (address-set-fix vals)))
+          pick-correct-validator-is-correct)
+    :enable set::not-emptyp-of-intersect-when-in-both
+    :disable pick-correct-validator)
+
   (defruled all-faulty-when-not-pick-correct-validator
     (implies (not (pick-correct-validator vals systate))
              (set::emptyp (set::intersect (address-set-fix vals)
@@ -818,26 +828,41 @@
     :enable (set::intersect
              not-in-address-setp-when-not-addressp))
 
+  (defruled pick-correct-validator-iff-not-all-faulty
+    (iff (pick-correct-validator vals systate)
+         (not (set::emptyp (set::intersect (address-set-fix vals)
+                                           (correct-addresses systate)))))
+    :use (all-faulty-when-not-pick-correct-validator
+          not-all-faulty-when-pick-correct-validator)
+    :disable pick-correct-validator)
+
+  (defruled pick-correct-validator-of-superset-when-of-subset
+    (implies (and (set::subset (address-set-fix vals)
+                               (address-set-fix vals1))
+                  (pick-correct-validator vals systate))
+             (pick-correct-validator vals1 systate))
+    :disable pick-correct-validator
+    :enable (pick-correct-validator-iff-not-all-faulty
+             set::emptyp-of-intersect-of-subset-left))
+
   (defruled pick-correct-validator-when-fault-tolerant-and-gt-max-faulty
-    (implies (and (address-setp vals)
-                  (set::subset vals (committee-members commtt))
-                  (committee-fault-tolerant-p commtt systate)
+    (implies (and (committee-fault-tolerant-p commtt systate)
                   (> (validators-stake vals commtt)
                      (committee-max-faulty-stake commtt)))
              (pick-correct-validator vals systate))
-    :enable (committee-fault-tolerant-p
-             committee-faulty-members
-             set::subset-of-difference-when-disjoint)
     :disable pick-correct-validator
-    :use (all-faulty-when-not-pick-correct-validator
-          (:instance validators-stake-monotone
-                     (vals1 vals)
-                     (vals2 (committee-faulty-members commtt systate)))))
+    :enable (pick-correct-validator-iff-not-all-faulty
+             committee-fault-tolerant-p
+             committee-faulty-members
+             validators-stake-only-members
+             set::intersect-ab-subset-difference-bc-when-disjoint-ac)
+    :use (:instance validators-stake-monotone
+                    (vals1 (set::intersect (address-set-fix vals)
+                                           (committee-members commtt)))
+                    (vals2 (committee-faulty-members commtt systate))))
 
   (defruled pick-correct-validator-when-fault-tolerant-and-geq-quorum
-    (implies (and (address-setp vals)
-                  (set::subset vals (committee-members commtt))
-                  (committee-fault-tolerant-p commtt systate)
+    (implies (and (committee-fault-tolerant-p commtt systate)
                   (committee-nonemptyp commtt)
                   (>= (validators-stake vals commtt)
                       (committee-quorum-stake commtt)))
