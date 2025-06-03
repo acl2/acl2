@@ -1595,6 +1595,19 @@
               (expr-unambp else-new))
   :returns (mv (expr exprp) (gou simpadd0-goutp))
   :short "Transform a conditional expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The resulting expression is obtained by
+     combining the possibly transformed argument expression.")
+   (xdoc::p
+    "We generate a theorem iff
+     a theorem was generated for the argument expressions.
+     The theorem is proved via a few general ones that we prove below.
+     These are a bit more complicated than for strict expressions,
+     because conditional expressions are non-strict:
+     the branch not taken could return an error
+     while the conditional expression does not."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-cond :test test :then then :else else))
        (expr-new (make-expr-cond :test test-new :then then-new :else else-new))
