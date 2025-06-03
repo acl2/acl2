@@ -103,9 +103,7 @@
     "Note that, as in @(tsee propose-possiblep),
      the endorser does not check that the authors of the previous certificates
      are members of the active committee at the previous round.
-     The reason is that this is an invariant, so it can be safely skipped.
-     Indeed, we use @(tsee committee-validators-stake)
-     to check the quorum the condition.")
+     The reason is that this is an invariant, so it can be safely skipped.")
    (xdoc::p
     "The same observation about (non-)empty committees applies here,
      which is made in the documentation of @(tsee propose-possiblep)."))
@@ -134,7 +132,7 @@
         nil)
        (prev-commtt
         (active-committee-at-round (1- prop.round) vstate.blockchain))
-       ((unless (>= (committee-validators-stake prop.previous prev-commtt)
+       ((unless (>= (validators-stake prop.previous prev-commtt)
                     (committee-quorum-stake prev-commtt)))
         nil))
     t)

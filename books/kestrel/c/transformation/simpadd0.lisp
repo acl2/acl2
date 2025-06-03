@@ -630,7 +630,7 @@
                                   (gin simpadd0-ginp))
   :returns (mv (okp booleanp)
                (args symbol-listp)
-               (parargs true-listp)
+               (parargs "A term.")
                (arg-types true-listp)
                (arg-types-compst true-listp))
   :short "Generate certain pieces of information
@@ -647,11 +647,11 @@
      "A list @('args') of symbols used as ACL2 variables
       that denote the C values passed as arguments to the function.")
     (xdoc::li
-     "A list @('parargs') of terms that denote
-      the @(tsee cons) pairs that form
-      the initial scope of the function.
-      Each @(tsee cons) pair consists of the name of the parameter
-      and the variable for the corresponding argument.")
+     "A term @('parargs') that is a nest of @(tsee omap::update)
+      that denotes the initial scope of the function.
+      Each @(tsee omap::update) call adds
+      the name of the parameter as key
+      and the variable for the corresponding argument as value.")
     (xdoc::li
      "A list @('arg-types') of terms that assert that
       each variable in @('args') is a value of the appropriate type.")
@@ -676,7 +676,6 @@
        (ident (c::obj-declor-ident->get param.declor))
        (par (c::ident->name ident))
        (arg (intern-in-package-of-symbol par (simpadd0-gin->const-new gin)))
-       (pararg `(cons (c::ident ,par) ,arg))
        (arg-type `(and (c::valuep ,arg)
                        (equal (c::type-of-value ,arg) ',type)))
        (arg-type-compst
@@ -688,23 +687,19 @@
                 (equal (c::type-of-value val) ',type))))
        ((mv okp
             more-args
-            more-parargs
+            parargs
             more-arg-types
             more-arg-types-compst)
         (simpadd0-gen-from-params (cdr params) gin))
-       ((unless okp) (mv nil nil nil nil nil)))
+       ((unless okp) (mv nil nil nil nil nil))
+       (parargs `(omap::update (c::ident ,par) ,arg ,parargs)))
     (mv t
         (cons arg more-args)
-        (cons pararg more-parargs)
+        parargs
         (cons arg-type more-arg-types)
         (cons arg-type-compst more-arg-types-compst)))
 
   ///
-
-  (defret len-of-simpadd0-gen-from-params.parargs
-    (equal (len parargs)
-           (len args))
-    :hints (("Goal" :induct t :in-theory (enable len))))
 
   (defret len-of-simpadd0-gen-from-params.arg-types
     (equal (len arg-types)
@@ -720,7 +715,7 @@
 
 (define simpadd0-gen-init-scope-thm ((params c::param-declon-listp)
                                      (args symbol-listp)
-                                     (parargs true-listp)
+                                     (parargs "A term.")
                                      (arg-types true-listp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp))
@@ -734,7 +729,7 @@
     "The theorem says that, given values of certain types for the arguments,
      @(tsee c::init-scope) applied to the list of parameter declarations
      and to the list of parameter values
-     yields an omap (which we express it directly as an alist)
+     yields an omap (which we express as an @(tsee omap::update) nest)
      that associates parameter name and argument value.")
    (xdoc::p
     "The name of the theorem is used locally to another theorem,
@@ -742,17 +737,11 @@
      But we should check and disambiguate this more thoroughly."))
   (b* ((formula `(implies (and ,@arg-types)
                           (equal (c::init-scope ',params (list ,@args))
-                                 (list ,@parargs))))
+                                 ,parargs)))
        (hints
-        '(("Goal" :in-theory '(omap::mapp
-                               omap::mfix-when-mapp
-                               omap::head
-                               omap::tail
-                               omap::update
-                               omap::assoc
-                               omap::mapp-non-nil-implies-not-emptyp
+        '(("Goal" :in-theory '(omap::assoc-when-emptyp
                                (:e omap::emptyp)
-                               c::errorp
+                               omap::assoc-of-update
                                c::init-scope
                                c::not-flexible-array-member-p-when-ucharp
                                c::not-flexible-array-member-p-when-scharp
@@ -811,11 +800,19 @@
                                mv-nth
                                car-cons
                                cdr-cons
-                               (:e <<)))))
+                               (:e <<)
+                               lemma1
+                               lemma2))))
        (thm-name 'init-scope-thm)
        (thm-event `(defruled ,thm-name
                      ,formula
-                     :hints ,hints)))
+                     :hints ,hints
+                     :prep-lemmas
+                     ((defruled lemma1
+                        (not (c::errorp nil)))
+                      (defruled lemma2
+                        (not (c::errorp (omap::update key val map)))
+                        :enable (c::errorp omap::update))))))
     (mv thm-event thm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -873,7 +870,8 @@
                                c::compustate-frames-number
                                c::top-frame
                                c::read-object
-                               c::scopep
+                               c::scopep-of-update
+                               (:e c::scopep)
                                c::compustate->frames-of-compustate
                                c::frame->scopes-of-frame
                                c::frame-fix-when-framep
@@ -891,12 +889,7 @@
                                (:e c::ident-fix$inline)
                                (:e c::identp)
                                (:t c::objdesign-auto)
-                               omap::assoc
-                               omap::head
-                               omap::tail
-                               omap::mfix-when-mapp
-                               omap::mapp-non-nil-implies-not-emptyp
-                               (:e omap::emptyp)
+                               omap::assoc-of-update
                                simpadd0-param-thm-list-lemma
                                nfix
                                fix
@@ -3698,12 +3691,12 @@
     :short "Transform a type name."
     (b* (((simpadd0-gin gin) gin)
          ((tyname tyname) tyname)
-         ((mv new-specqual (simpadd0-gout gout-specqual))
-          (simpadd0-spec/qual-list tyname.specqual gin state))
+         ((mv new-specquals (simpadd0-gout gout-specqual))
+          (simpadd0-spec/qual-list tyname.specquals gin state))
          (gin (simpadd0-gin-update gin gout-specqual))
          ((mv new-decl? (simpadd0-gout gout-decl?))
           (simpadd0-absdeclor-option tyname.decl? gin state)))
-      (mv (make-tyname :specqual new-specqual
+      (mv (make-tyname :specquals new-specquals
                        :decl? new-decl?)
           (make-simpadd0-gout
            :events (append gout-specqual.events gout-decl?.events)
