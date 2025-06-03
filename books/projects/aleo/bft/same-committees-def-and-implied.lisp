@@ -14,6 +14,8 @@
 (include-book "ordered-even-blocks")
 (include-book "nonforking-blockchains-def-and-init")
 
+(local (include-book "library-extensions/arithmetic-theorems"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -472,12 +474,12 @@
                                               blocks2))))
         trim-blocks-for-round-of-longer
         trim-blocks-for-round-of-shorter
-        lemma1
-        (:instance lemma2
-                   (a (block->round (nth (1- (- (len blocks2)
+        lemma
+        (:instance lt-to-2+le-when-both-evenp
+                   (x (blocks-last-round blocks1))
+                   (y (block->round (nth (1- (- (len blocks2)
                                                 (len blocks1)))
-                                         blocks2)))
-                   (b (blocks-last-round blocks1)))
+                                         blocks2))))
         (:instance block-requirements
                    (x (nth (1- (- (len blocks2) (len blocks1))) blocks2)))
         (:instance block-requirements
@@ -486,7 +488,7 @@
            blocks-last-round)
   :disable block-requirements
   :prep-lemmas
-  ((defruled lemma1
+  ((defruled lemma
      (implies (and (blocks-orderedp blocks1)
                    (blocks-orderedp blocks2)
                    (< (len blocks1) (len blocks2))
@@ -509,15 +511,7 @@
                            blocks2))
             (blocks2 (nthcdr (- (len blocks2)
                                 (len blocks1))
-                             blocks2)))))
-   (defruled lemma2
-     (implies (and (integerp a)
-                   (integerp b)
-                   (evenp a)
-                   (evenp b)
-                   (> a b))
-              (>= a (+ 2 b)))
-     :enable evenp)))
+                             blocks2)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
