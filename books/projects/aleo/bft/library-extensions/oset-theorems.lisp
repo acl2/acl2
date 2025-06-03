@@ -163,6 +163,14 @@
     :use (:instance set::never-in-empty (a a) (x (set::intersect x y)))
     :disable set::never-in-empty)
 
+  (defruled set::intersect-ab-subset-difference-bc-when-disjoint-ac
+    (implies (set::emptyp (set::intersect a c))
+             (set::subset (set::intersect a b)
+                          (set::difference b c)))
+    :enable (set::expensive-rules
+             set::emptyp
+             set::not-member-when-member-of-disjoint))
+
   ;; pick-a-point:
   (define-sk set::subset-sk ((set1 set::setp) (set2 set::setp))
     (forall (elem)
