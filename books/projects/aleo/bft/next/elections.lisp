@@ -137,17 +137,14 @@
      exactly at the @(tsee lookback) distance.
      This possible change of committee is unproblematic
      for the purpose of the correctness of the protocol,
-     as we ensure by way of formal proofs.
-     This is why we use @(tsee committee-validator-stake)
-     instead of @(tsee committee-member-stake).")
+     as we ensure by way of formal proofs.")
    (xdoc::p
     "We go through the voters, and check whether the leader address
      is among the referenced previous certificates or not,
      counting its stake as part of the resulting vote stake."))
   (b* (((when (set::emptyp (certificate-set-fix voters))) 0)
        (voter (set::head voters))
-       (voter-stake
-        (committee-validator-stake (certificate->author voter) commtt))
+       (voter-stake (validator-stake (certificate->author voter) commtt))
        (yes-stake (leader-stake-votes leader (set::tail voters) commtt)))
     (if (set::in (address-fix leader)
                  (certificate->previous voter))

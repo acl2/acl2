@@ -220,11 +220,11 @@ entry is left blank.
 
 <tr>
 <td align=center valign=MIDDLE>
-<a href=\"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html\">
+<a href=\"http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PUBLICATIONS\">
 <img src=\"HTML/doc03.gif\" alt=\"papers icon\" border=0></a>
 </td>
 <td>
-<a href=\"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html\">
+<a href=\"http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PUBLICATIONS\">
 Publications about ACL2 and Its Applications</a>
 </td>
 
@@ -438,7 +438,7 @@ programming, interfaces, debugging, and testing; see <a
 href='http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html'>
 the documentation</a>.  Some relevant papers may be found by following links in
 the pages on <a
-href='http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html'>
+href='http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PUBLICATIONS'>
 Books and Papers about ACL2 and Its Applications</a> and the <a
 href='http://www.cs.utexas.edu/users/moore/acl2/workshops.html'>ACL2 Workshops
 Series</a>.  The <a href=\"HTML/installation/installation.html\">installation

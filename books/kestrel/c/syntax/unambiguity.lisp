@@ -1341,9 +1341,9 @@
              (absdeclor-unambp (param-declor-abstract->declor param-declor)))
     :expand (param-declor-unambp param-declor))
 
-  (defrule spec/qual-list-unambp-of-tyname->specqual
+  (defrule spec/qual-list-unambp-of-tyname->specquals
     (implies (tyname-unambp tyname)
-             (spec/qual-list-unambp (tyname->specqual tyname)))
+             (spec/qual-list-unambp (tyname->specquals tyname)))
     :expand (tyname-unambp tyname))
 
   (defrule absdeclor-option-unambp-of-tyname->decl?

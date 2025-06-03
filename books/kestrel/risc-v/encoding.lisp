@@ -361,7 +361,7 @@
            (b* ((opcode #b0010111))
              (logappn 7 opcode
                       5 instr.rd
-                      10 instr.imm)))
+                      20 instr.imm)))
    :op (assert$
         (and (implies (feat-embedp feat)
                       (and (ubyte4p instr.rd)
