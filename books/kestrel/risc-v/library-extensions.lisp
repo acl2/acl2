@@ -106,4 +106,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule loghead-of-1-of-logbit
+  (equal (loghead 1 (logbit i x))
+         (logbit i x))
+  :enable acl2::bool->bit
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable loghead logext))
