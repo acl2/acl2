@@ -255,7 +255,7 @@
 
   (defruled validator-signed-previous-quorum-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (set::in val1 (correct-addresses systate))
                   (validator-signed-previous-quorum-p
                    cert
@@ -271,7 +271,7 @@
              blocks-orderedp-of-extend-blockchain
              certificate-list-orderedp-of-collect-anchors
              commit-possiblep
-             ordered-even-p-necc-fixing
+             ordered-blockchain-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing
              posp
@@ -280,7 +280,7 @@
 
   (defruled signed-previous-quorum-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signed-previous-quorum-p systate)
                   (commit-possiblep val systate))
              (signed-previous-quorum-p (commit-next val systate)))
@@ -293,7 +293,7 @@
 
   (defruled signed-previous-quorum-p-of-event-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signed-previous-quorum-p systate)
                   (event-possiblep event systate))
              (signed-previous-quorum-p (event-next event systate)))
@@ -306,7 +306,7 @@
   :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
                 (last-blockchain-round-p systate)
-                (ordered-even-p systate)
+                (ordered-blockchain-p systate)
                 (signed-previous-quorum-p systate))
            (signed-previous-quorum-p (events-next events systate)))
   :induct t
@@ -321,13 +321,13 @@
            (signed-previous-quorum-p systate))
   :enable (system-state-reachablep
            signed-previous-quorum-p-when-init
-           ordered-even-p-when-init
+           ordered-blockchain-p-when-init
            last-blockchain-round-p-when-init)
   :prep-lemmas
   ((defrule lemma
      (implies (and (system-state-reachable-from-p systate from)
                    (last-blockchain-round-p from)
-                   (ordered-even-p from)
+                   (ordered-blockchain-p from)
                    (signed-previous-quorum-p from))
               (signed-previous-quorum-p systate))
      :use (:instance

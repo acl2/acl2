@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -55,7 +55,7 @@
   (implies (and (all-system-committees-fault-tolerant-p systate events)
                 (backward-closed-p systate)
                 (last-blockchain-round-p systate)
-                (ordered-even-p systate)
+                (ordered-blockchain-p systate)
                 (signed-previous-quorum-p systate)
                 (no-self-endorsed-p systate)
                 (signer-records-p systate)
@@ -74,7 +74,7 @@
                 (events-possiblep events systate))
            (and (backward-closed-p (events-next events systate))
                 (last-blockchain-round-p (events-next events systate))
-                (ordered-even-p (events-next events systate))
+                (ordered-blockchain-p (events-next events systate))
                 (signed-previous-quorum-p (events-next events systate))
                 (no-self-endorsed-p (events-next events systate))
                 (signer-records-p (events-next events systate))

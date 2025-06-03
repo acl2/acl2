@@ -407,7 +407,7 @@
     :hyp (and (commit-possiblep val systate)
               (set::in val1 (correct-addresses systate))
               (last-blockchain-round-p systate)
-              (ordered-even-p systate))
+              (ordered-blockchain-p systate))
     :fn commit-next
     :hints
     (("Goal"
@@ -417,7 +417,7 @@
       (e/d (commit-possiblep
             validator-state->blockchain-of-commit-next
             active-committee-at-round-of-extend-blockchain-no-change
-            ordered-even-p-necc-fixing
+            ordered-blockchain-p-necc-fixing
             blocks-orderedp-of-extend-blockchain
             certificate-list-orderedp-of-collect-anchors
             last-blockchain-round-p-necc-fixing
@@ -443,7 +443,7 @@
     :hyp (and (event-possiblep event systate)
               (set::in val (correct-addresses systate))
               (last-blockchain-round-p systate)
-              (ordered-even-p systate))
+              (ordered-blockchain-p systate))
     :fn event-next
     :hints (("Goal" :in-theory (e/d (event-possiblep
                                      event-next)
@@ -535,7 +535,7 @@
              (system-committees-fault-tolerant-p systate))
     :hyp (and (commit-possiblep val systate)
               (last-blockchain-round-p systate)
-              (ordered-even-p systate))
+              (ordered-blockchain-p systate))
     :fn commit-next
     :hints
     (("Goal"
@@ -550,7 +550,7 @@
              (system-committees-fault-tolerant-p systate))
     :hyp (and (event-possiblep event systate)
               (last-blockchain-round-p systate)
-              (ordered-even-p systate))
+              (ordered-blockchain-p systate))
     :fn event-next
     :hints (("Goal" :in-theory (e/d (event-possiblep
                                      event-next)
@@ -564,7 +564,7 @@
 
   (defruled system-committees-fault-tolerant-p-of-events-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (events-possiblep events systate))
              (b* ((new-systate (events-next events systate)))
                (implies (system-committees-fault-tolerant-p new-systate)
@@ -619,7 +619,7 @@
 
   (defruled all-system-committees-fault-tolerant-p-when-final
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (events-possiblep events systate))
              (b* ((new-systate (events-next events systate)))
                (implies (system-committees-fault-tolerant-p new-systate)

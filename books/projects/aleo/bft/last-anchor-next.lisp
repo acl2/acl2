@@ -118,7 +118,7 @@
 
   (defruled last-anchor-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (set::in val (correct-addresses systate))
                   (commit-possiblep val1 systate)
                   (addressp val1))
@@ -144,7 +144,7 @@
              active-committee-at-round-of-extend-blockchain-no-change
              blocks-orderedp-of-extend-blockchain
              certificate-list-orderedp-of-collect-anchors
-             ordered-even-p-necc-fixing
+             ordered-blockchain-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing
              posp

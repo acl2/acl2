@@ -42,7 +42,7 @@
   :enable (system-state-reachablep
            backward-closed-p-when-init
            last-blockchain-round-p-when-init
-           ordered-even-p-when-init
+           ordered-blockchain-p-when-init
            signed-previous-quorum-p-when-init
            no-self-endorsed-p-when-init
            signer-records-p-when-init
@@ -64,7 +64,7 @@
                    (system-committees-fault-tolerant-p systate)
                    (backward-closed-p from)
                    (last-blockchain-round-p from)
-                   (ordered-even-p from)
+                   (ordered-blockchain-p from)
                    (signed-previous-quorum-p from)
                    (no-self-endorsed-p from)
                    (signer-records-p from)

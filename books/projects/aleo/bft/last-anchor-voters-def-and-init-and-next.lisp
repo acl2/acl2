@@ -381,7 +381,7 @@
 
   (defruled validator-last-anchor-voters-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (unequivocal-dags-p systate)
                   (commit-possiblep val systate)
                   (addressp val)
@@ -401,7 +401,7 @@
              active-committee-at-round-of-extend-blockchain-no-change
              blocks-orderedp-of-extend-blockchain
              certificate-list-orderedp-of-collect-anchors
-             ordered-even-p-necc-fixing
+             ordered-blockchain-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing
              posp
@@ -411,7 +411,7 @@
   (defruled last-anchor-voters-p-of-commit-next
     (implies (and (last-anchor-voters-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (unequivocal-dags-p systate)
                   (commit-possiblep val systate)
                   (addressp val))
@@ -426,7 +426,7 @@
     (implies (and (last-anchor-voters-p systate)
                   (system-committees-fault-tolerant-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
                   (signer-quorum-p systate)

@@ -591,10 +591,10 @@
      also see the observation in @(tsee same-active-committees-when-nofork)
      about the particular form of that rewrite rule."))
   (implies (and (nonforking-blockchains-p systate)
-                (ordered-even-p systate))
+                (ordered-blockchain-p systate))
            (same-committees-p systate))
   :enable (same-committees-p
            same-active-committees-p
            nonforking-blockchains-p-necc
-           ordered-even-p-necc
+           ordered-blockchain-p-necc
            same-active-committees-when-nofork))
