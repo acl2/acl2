@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT")
 
-(include-book "ordered-even-blocks")
+(include-book "ordered-blockchain")
 (include-book "last-anchor-def-and-init")
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -213,7 +213,7 @@
 
   (defruled last-anchor-not-nil-of-commit-next-same
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (commit-possiblep val systate)
                   (addressp val))
              (last-anchor (get-validator-state
@@ -224,9 +224,9 @@
              validator-state->blockchain-of-commit-next
              active-committee-at-previous-round-when-at-round
              active-committee-at-round-of-extend-blockchain-no-change
-             blocks-ordered-even-p-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
-             ordered-even-p-necc-fixing
+             blocks-orderedp-of-extend-blockchain
+             certificate-list-orderedp-of-collect-anchors
+             ordered-blockchain-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing
              posp
@@ -234,7 +234,7 @@
 
   (defruled last-anchor-present-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (last-anchor-present-p systate)
                   (commit-possiblep val systate)
                   (addressp val))
@@ -249,7 +249,7 @@
 
   (defruled last-anchor-present-p-of-event-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (last-anchor-present-p systate)
                   (event-possiblep event systate))
              (last-anchor-present-p (event-next event systate)))
@@ -262,7 +262,7 @@
   :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
                 (last-blockchain-round-p systate)
-                (ordered-even-p systate)
+                (ordered-blockchain-p systate)
                 (last-anchor-present-p systate))
            (last-anchor-present-p (events-next events systate)))
   :induct t
@@ -277,13 +277,13 @@
            (last-anchor-present-p systate))
   :enable (system-state-reachablep
            last-anchor-present-p-when-init
-           ordered-even-p-when-init
+           ordered-blockchain-p-when-init
            last-blockchain-round-p-when-init)
   :prep-lemmas
   ((defrule lemma
      (implies (and (system-state-reachable-from-p systate from)
                    (last-blockchain-round-p from)
-                   (ordered-even-p from)
+                   (ordered-blockchain-p from)
                    (last-anchor-present-p from))
               (last-anchor-present-p systate))
      :use (:instance
