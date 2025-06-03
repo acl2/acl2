@@ -649,7 +649,7 @@
     (xdoc::li
      "A term @('parargs') that is a nest of @(tsee omap::update)
       that denotes the initial scope of the function.
-      Each @(omap::update) call adds
+      Each @(tsee omap::update) call adds
       the name of the parameter as key
       and the variable for the corresponding argument as value.")
     (xdoc::li
