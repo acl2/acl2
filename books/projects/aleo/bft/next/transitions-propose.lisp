@@ -105,8 +105,7 @@
      that is, the event can happen only if these conditions are satisfied:")
    (xdoc::ul
     (xdoc::li
-     "The round of the proposal
-      must match the round of the validator.
+     "The round of the proposal must match the round of the validator.
       A correct validator always generates proposals for the current round.")
     (xdoc::li
      "The author must be in the active committee for that round.
@@ -132,12 +131,11 @@
       if the round is 1, the @('previous') component must be empty."))
    (xdoc::p
     "For the case of a round that is not 1,
-     we use @(tsee committee-validators-stake) for the quorum test;
      we do not check that the previous certificate authors
-     are in fact members of the committee at the previous round.
+     are members of the committee at the previous round.
      As proved elsewhere, it is an invariant that
      those authors are indeed members of the committee;
-     so the check can be safely skipped.")
+     so the check can be safely skipped here.")
    (xdoc::p
     "Note that above we say `non-empty quorum', not just `quorum'.
      The two are equivalent only if
@@ -146,7 +144,7 @@
      but this non-emptiness check of the previous quorum
      enforces, in the protocol, that committees do not actually become empty.
      If they do, the protocol effectively stops;
-     correct validators cannot create new certificates.")
+     correct validators cannot create new proposals.")
    (xdoc::p
     "A correct validator broadcasts the proposal to
      all the other validators in the active committee,
@@ -195,7 +193,7 @@
         nil)
        (prev-commtt
         (active-committee-at-round (1- prop.round) vstate.blockchain))
-       ((unless (>= (committee-validators-stake prop.previous prev-commtt)
+       ((unless (>= (validators-stake prop.previous prev-commtt)
                     (committee-quorum-stake prev-commtt)))
         nil))
     t)

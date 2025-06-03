@@ -64,7 +64,9 @@
      Note that non-equivocation is limited to the proposals,
      not to the whole certificates,
      because it is possible that two correct validator obtain certificates
-     certificates with identical proposals but slightly different signatures.")
+     with identical proposals but slightly different signatures;
+     these slightly different certificates would be generated
+     by faulty validators, not by correct validators.")
    (xdoc::p
     "Here we introduce a function that picks a correct validator (if any)
      from the intersection of two sets of (addresses of) validators
@@ -134,7 +136,7 @@
     "This fact is proved as a local lemma,
      which fires as a rewrite rule in the proof of the main theorem.")
    (xdoc::p
-    "We start from the previously proved (in @(tsee committee-members-stake))
+    "We start from the previously proved (in @(tsee validators-stake))
      fact that")
    (xdoc::@[]
     "S(A \\cup B) = S(A) + S(B) - S(A \\cap B)")
@@ -187,30 +189,18 @@
   (implies (and (address-setp vals1)
                 (address-setp vals2)
                 (committee-nonemptyp commtt)
-                (set::subset vals1 (committee-members commtt))
-                (set::subset vals2 (committee-members commtt))
-                (>= (committee-members-stake vals1 commtt)
+                (>= (validators-stake vals1 commtt)
                     (committee-quorum-stake commtt))
-                (>= (committee-members-stake vals2 commtt)
+                (>= (validators-stake vals2 commtt)
                     (committee-quorum-stake commtt)))
-           (> (committee-members-stake (set::intersect vals1 vals2) commtt)
+           (> (validators-stake (set::intersect vals1 vals2) commtt)
               (committee-max-faulty-stake commtt)))
   :rule-classes :linear
-  :enable (committee-members-stake-of-intersect
+  :enable (validators-stake-of-intersect
            committee-quorum-stake
            committee-max-faulty-stake
-           total-lower-bound-wrt-max-faulty)
-  :prep-lemmas
-  ((defrule lemma
-     (implies (and (address-setp vals1)
-                   (address-setp vals2)
-                   (set::subset vals1 (committee-members commtt))
-                   (set::subset vals2 (committee-members commtt)))
-              (<= (committee-members-stake (set::union vals1 vals2) commtt)
-                  (committee-total-stake commtt)))
-     :rule-classes :linear
-     :enable (committee-total-stake
-              committee-members-stake-monotone))))
+           total-lower-bound-wrt-max-faulty
+           validators-stake-upper-bound))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -234,11 +224,9 @@
                 (address-setp vals2)
                 (committee-nonemptyp commtt)
                 (committee-fault-tolerant-p commtt systate)
-                (set::subset vals1 (committee-members commtt))
-                (set::subset vals2 (committee-members commtt))
-                (>= (committee-members-stake vals1 commtt)
+                (>= (validators-stake vals1 commtt)
                     (committee-quorum-stake commtt))
-                (>= (committee-members-stake vals2 commtt)
+                (>= (validators-stake vals2 commtt)
                     (committee-quorum-stake commtt)))
            (b* ((val (pick-common-correct-validator vals1 vals2 systate)))
              (and (set::in val vals1)
@@ -251,11 +239,9 @@
                    (address-setp vals2)
                    (committee-nonemptyp commtt)
                    (committee-fault-tolerant-p commtt systate)
-                   (set::subset vals1 (committee-members commtt))
-                   (set::subset vals2 (committee-members commtt))
-                   (>= (committee-members-stake vals1 commtt)
+                   (>= (validators-stake vals1 commtt)
                        (committee-quorum-stake commtt))
-                   (>= (committee-members-stake vals2 commtt)
+                   (>= (validators-stake vals2 commtt)
                        (committee-quorum-stake commtt)))
               (b* ((val (pick-common-correct-validator vals1 vals2 systate)))
                 (and (set::in val (set::intersect vals1 vals2))

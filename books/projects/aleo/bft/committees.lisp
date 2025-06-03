@@ -205,7 +205,7 @@
      (if present in the second set of committee members)
      in the induction hypothesis.")
    (xdoc::p
-    "The union expansion properties is analogous to
+    "The union expansion property is analogous to
      the property of cardinalities of sets,
      but with stake in this case.
      The total stake of the union of two sets is their sum,
