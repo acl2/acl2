@@ -418,7 +418,7 @@
             validator-state->blockchain-of-commit-next
             active-committee-at-round-of-extend-blockchain-no-change
             ordered-even-p-necc-fixing
-            blocks-ordered-even-p-of-extend-blockchain
+            blocks-orderedp-of-extend-blockchain
             certificates-ordered-even-p-of-collect-anchors
             last-blockchain-round-p-necc-fixing
             collect-anchors-above-last-committed-round

@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -457,7 +457,7 @@
              validator-state->blockchain-of-commit-next
              active-committee-at-round-of-extend-blockchain-no-change
              active-committee-at-previous-round-when-at-round
-             blocks-ordered-even-p-of-extend-blockchain
+             blocks-orderedp-of-extend-blockchain
              certificates-ordered-even-p-of-collect-anchors
              commit-possiblep
              ordered-even-p-necc-fixing

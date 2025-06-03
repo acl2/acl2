@@ -315,7 +315,7 @@
     :enable (validator-signer-quorum-p
              validator-state->blockchain-of-commit-next
              active-committee-at-round-of-extend-blockchain-no-change
-             blocks-ordered-even-p-of-extend-blockchain
+             blocks-orderedp-of-extend-blockchain
              certificates-ordered-even-p-of-collect-anchors
              commit-possiblep
              ordered-even-p-necc-fixing

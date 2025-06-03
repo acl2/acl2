@@ -399,7 +399,7 @@
              get-validator-state-of-update-validator-state
              nfix
              active-committee-at-round-of-extend-blockchain-no-change
-             blocks-ordered-even-p-of-extend-blockchain
+             blocks-orderedp-of-extend-blockchain
              certificates-ordered-even-p-of-collect-anchors
              ordered-even-p-necc-fixing
              collect-anchors-above-last-committed-round

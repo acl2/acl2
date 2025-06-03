@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -179,7 +179,7 @@
     "This function removes from a list of blocks
      all the ones whose round is less than or equal to a given round.
      More precisely, it does that when the blocks are ordered
-     (i.e. when they satisfy @(tsee blocks-ordered-even-p)).
+     (i.e. when they satisfy @(tsee blocks-orderedp)).
      But we do not require the ordering here,
      and just remove blocks until we find one
      whose round is below the given round."))
@@ -235,17 +235,17 @@
      Here we need to assume that block rounds are ordered
      (in the longer blockchain, which implies that
      they are also ordered in the extension and in the smaller blockchain)."))
-  (implies (and (blocks-ordered-even-p (append blocks1 blocks2))
+  (implies (and (blocks-orderedp (append blocks1 blocks2))
                 (consp blocks1))
            (equal (trim-blocks-for-round (block->round (car (last blocks1)))
                                          (append blocks1 blocks2))
                   (block-list-fix blocks2)))
   :induct t
   :enable (trim-blocks-for-round
-           blocks-ordered-even-p
+           blocks-orderedp
            last
-           blocks-ordered-even-p-of-append)
-  :hints ('(:use (:instance newest-geq-oldest-when-blocks-ordered-even-p
+           blocks-orderedp-of-append)
+  :hints ('(:use (:instance newest-geq-oldest-when-blocks-orderedp
                             (blocks (cdr blocks1))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -340,8 +340,8 @@
    (xdoc::p
     "The theorem says that the trimming of the longer blockchain
      reduces to the shorter blockchain."))
-  (implies (and (blocks-ordered-even-p blocks1)
-                (blocks-ordered-even-p blocks2)
+  (implies (and (blocks-orderedp blocks1)
+                (blocks-orderedp blocks2)
                 (< (len blocks1) (len blocks2))
                 (equal blocks1
                        (nthcdr (- (len blocks2)
@@ -390,8 +390,8 @@
    (xdoc::p
     "The theorem says that the trimming of the shorter blockchain
      reduces to the shorter blockchain."))
-  (implies (and (blocks-ordered-even-p blocks1)
-                (blocks-ordered-even-p blocks2)
+  (implies (and (blocks-orderedp blocks1)
+                (blocks-orderedp blocks2)
                 (< (len blocks1) (len blocks2))
                 (equal blocks1
                        (nthcdr (- (len blocks2)
@@ -409,7 +409,7 @@
                                                (len blocks1)))
                                         blocks2)))
               (blocks blocks1))
-   (:instance oldest-of-prefix-gt-newest-of-suffix-when-blocks-ordered-even-p
+   (:instance oldest-of-prefix-gt-newest-of-suffix-when-blocks-orderedp
               (blocks1 (take (- (len blocks2)
                                 (len blocks1))
                              blocks2))
@@ -449,8 +449,8 @@
    (xdoc::p
     "This proof, and its hints, is a bit more complex than ideal.
      Perhaps it can be simplified and streamlined a bit."))
-  (implies (and (blocks-ordered-even-p blocks1)
-                (blocks-ordered-even-p blocks2)
+  (implies (and (blocks-orderedp blocks1)
+                (blocks-orderedp blocks2)
                 (< (len blocks1) (len blocks2))
                 (equal blocks1
                        (nthcdr (- (len blocks2)
@@ -478,18 +478,17 @@
                                                 (len blocks1)))
                                          blocks2)))
                    (b (blocks-last-round blocks1)))
-        (:instance evenp-of-nth-when-blocks-ordered-even-p
-                   (blocks blocks2)
-                   (i (1- (- (len blocks2)
-                             (len blocks1)))))
-        (:instance evenp-of-car-when-blocks-ordered-even-p
-                   (blocks blocks1)))
+        (:instance block-requirements
+                   (x (nth (1- (- (len blocks2) (len blocks1))) blocks2)))
+        (:instance block-requirements
+                   (x (car blocks1))))
   :enable (bonded-committee-at-round
            blocks-last-round)
+  :disable block-requirements
   :prep-lemmas
   ((defruled lemma1
-     (implies (and (blocks-ordered-even-p blocks1)
-                   (blocks-ordered-even-p blocks2)
+     (implies (and (blocks-orderedp blocks1)
+                   (blocks-orderedp blocks2)
                    (< (len blocks1) (len blocks2))
                    (equal blocks1
                           (nthcdr (- (len blocks2)
@@ -504,7 +503,7 @@
             (list1 blocks1)
             (list2 blocks2))
            (:instance
-            oldest-of-prefix-gt-newest-of-suffix-when-blocks-ordered-even-p
+            oldest-of-prefix-gt-newest-of-suffix-when-blocks-orderedp
             (blocks1 (take (- (len blocks2)
                               (len blocks1))
                            blocks2))
@@ -536,8 +535,8 @@
     "Transferring the proof to active committees is easy,
      because those are defined in terms of bonded committees.
      The theorem formulation is the same."))
-  (implies (and (blocks-ordered-even-p blocks1)
-                (blocks-ordered-even-p blocks2)
+  (implies (and (blocks-orderedp blocks1)
+                (blocks-orderedp blocks2)
                 (< (len blocks1) (len blocks2))
                 (equal blocks1
                        (nthcdr (- (len blocks2)
@@ -575,8 +574,8 @@
      so it can fire as a rewrite rule in the main theorem
      @(tsee same-committees-p-implied)."))
   (implies (and (lists-noforkp blocks1 blocks2)
-                (blocks-ordered-even-p blocks1)
-                (blocks-ordered-even-p blocks2)
+                (blocks-orderedp blocks1)
+                (blocks-orderedp blocks2)
                 (active-committee-at-round round blocks1)
                 (active-committee-at-round round blocks2))
            (equal (equal (active-committee-at-round round blocks1)

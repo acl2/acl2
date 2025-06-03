@@ -45,7 +45,7 @@
           strictly increasing, even round numbers."
   (forall (val)
           (implies (set::in val (correct-addresses systate))
-                   (blocks-ordered-even-p
+                   (blocks-orderedp
                     (validator-state->blockchain
                      (get-validator-state val systate)))))
 
@@ -57,7 +57,7 @@
   (defruled ordered-even-p-necc-fixing
     (implies (and (ordered-even-p systate)
                   (set::in (address-fix val) (correct-addresses systate)))
-             (blocks-ordered-even-p
+             (blocks-orderedp
               (validator-state->blockchain
                (get-validator-state val systate))))
     :use (:instance ordered-even-p-necc (val (address-fix val))))
@@ -141,7 +141,7 @@
              ordered-even-p-necc-fixing
              last-blockchain-round-p-necc-fixing
              validator-state->blockchain-of-commit-next
-             blocks-ordered-even-p-of-extend-blockchain
+             blocks-orderedp-of-extend-blockchain
              certificates-ordered-even-p-of-collect-anchors
              collect-anchors-above-last-committed-round
              commit-possiblep

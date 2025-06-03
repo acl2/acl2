@@ -1415,7 +1415,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee blocks-ordered-even-p),
+    "This is analogous to @(tsee blocks-orderedp),
      but for certificates instead of blocks.
      The reason for having this predicate on certificates is that
      blockchains are extended from sequences of anchors,

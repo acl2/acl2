@@ -300,7 +300,7 @@
              validator-state->blockchain-of-commit-next
              last-anchor-of-commit-next
              collect-all-anchors-of-extend-blockchain-no-change
-             blocks-ordered-even-p-of-extend-blockchain
+             blocks-orderedp-of-extend-blockchain
              certificates-ordered-even-p-of-collect-anchors
              commit-possiblep
              evenp-of-1-less-when-not-evenp
@@ -379,7 +379,7 @@
              pos-fix
              collect-anchors-of-extend-blockchain-no-change
              ordered-even-p-necc
-             blocks-ordered-even-p-of-extend-blockchain
+             blocks-orderedp-of-extend-blockchain
              certificates-ordered-even-p-of-collect-anchors
              evenp
              posp
@@ -501,7 +501,7 @@
            last-anchor-of-commit-next
            collect-all-anchors-of-extend-blockchain-no-change
            ordered-even-p-necc
-           blocks-ordered-even-p-of-extend-blockchain
+           blocks-orderedp-of-extend-blockchain
            certificates-ordered-even-p-of-collect-anchors
            certificate->round-of-cert-with-author+round
            evenp-of-1-less-when-not-evenp
