@@ -12,7 +12,7 @@
 (in-package "ALEOBFT")
 
 (include-book "last-blockchain-round")
-(include-book "ordered-even-blocks")
+(include-book "ordered-blockchain")
 (include-book "backward-closure")
 (include-book "signer-quorum")
 (include-book "system-certificates")
@@ -71,7 +71,7 @@
      to be preserved by state transitions,
      and to hold in every state reachable from an initial state."))
   :order-subtopics (last-blockchain-round
-                    ordered-even-blocks
+                    ordered-blockchain
                     backward-closure
                     signer-quorum
                     system-certificates

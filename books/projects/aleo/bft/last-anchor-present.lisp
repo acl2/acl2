@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT")
 
-(include-book "ordered-even-blocks")
+(include-book "ordered-blockchain")
 (include-book "last-anchor-def-and-init")
 
 (local (include-book "arithmetic-3/top" :dir :system))

@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT")
 
-(include-book "ordered-even-blocks")
+(include-book "ordered-blockchain")
 (include-book "nonforking-blockchains-def-and-init")
 
 (local (include-book "library-extensions/arithmetic-theorems"))

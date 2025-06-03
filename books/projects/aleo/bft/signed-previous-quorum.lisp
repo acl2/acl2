@@ -12,7 +12,7 @@
 (in-package "ALEOBFT")
 
 (include-book "signed-certificates")
-(include-book "ordered-even-blocks")
+(include-book "ordered-blockchain")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 

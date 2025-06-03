@@ -13,7 +13,7 @@
 
 (include-book "transitions")
 (include-book "last-blockchain-round")
-(include-book "ordered-even-blocks")
+(include-book "ordered-blockchain")
 
 (local (include-book "library-extensions/oset-theorems"))
 
