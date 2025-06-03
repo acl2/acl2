@@ -12295,14 +12295,14 @@
         (b* ((parstate (unread-token parstate)) ; specquals
              ((erp absdeclor last-span parstate) ; specquals absdeclor
               (parse-abstract-declarator parstate)))
-          (retok (make-tyname :specqual specquals
+          (retok (make-tyname :specquals specquals
                               :decl? absdeclor)
                  (span-join span last-span)
                  parstate)))
        ;; Otherwise, there is no abstract declarator.
        (t ; specquals other
         (b* ((parstate (if token (unread-token parstate) parstate)))
-          (retok (make-tyname :specqual specquals
+          (retok (make-tyname :specquals specquals
                               :decl? nil)
                  span
                  parstate)))))
