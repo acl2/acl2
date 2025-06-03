@@ -426,9 +426,31 @@
     :enable (get-imm-itype
              encode))
 
+  (defruled get-imm-itype-of-encode-of-instr-op-imms32
+    (equal (get-imm-itype (encode (instr-op-imms32 funct rd rs1 imm) feat))
+           (logappn 5 (ubyte5-fix imm)
+                    7 (mv-nth 1 (encode-op-imms32-funct funct))))
+    :enable (get-imm-itype
+             encode))
+
+  (defruled get-imm-itype-of-encode-of-instr-op-imms64
+    (equal (get-imm-itype (encode (instr-op-imms64 funct rd rs1 imm) feat))
+           (logappn 6 (ubyte6-fix imm)
+                    6 (mv-nth 1 (encode-op-imms64-funct funct))))
+    :enable (get-imm-itype
+             encode))
+
   (defruled get-imm-itype-of-encode-of-instr-op-imm-32
     (equal (get-imm-itype (encode (instr-op-imm-32 funct rd rs1 imm) feat))
            (ubyte12-fix imm))
+    :enable (get-imm-itype
+             encode))
+
+  (defruled get-imm-itype-of-encode-of-instr-op-imms-32
+    (equal (get-imm-itype (encode (instr-op-imms-32 funct rd rs1 imm) feat))
+           (logappn 5 (ubyte5-fix imm)
+                    1 0
+                    6 (mv-nth 1 (encode-op-imms-32-funct funct))))
     :enable (get-imm-itype
              encode))
 
