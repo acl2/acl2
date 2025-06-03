@@ -1338,6 +1338,61 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-expr-cast ((type tynamep)
+                            (type-new tynamep)
+                            (type-events pseudo-event-form-listp)
+                            (type-thm-name symbolp)
+                            (type-vartys ident-type-mapp)
+                            (type-diffp booleanp)
+                            (arg exprp)
+                            (arg-new exprp)
+                            (arg-events pseudo-event-form-listp)
+                            (arg-thm-name symbolp)
+                            (arg-vartys ident-type-mapp)
+                            (arg-diffp booleanp)
+                            (gin simpadd0-ginp))
+  :guard (and (tyname-unambp type)
+              (expr-unambp arg))
+  (declare (ignore type type-thm-name arg arg-thm-name))
+  :returns (mv (expr exprp) (gout simpadd0-goutp))
+  :short "Transform a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The resulting expression is obtained by
+     combining the possibly transformed type name with
+     the possibly transformed argument expression."))
+  (b* (((simpadd0-gin gin) gin)
+       (expr-new (make-expr-cast :type type-new
+                                 :arg arg-new))
+       (type-vartys (ident-type-map-fix type-vartys))
+       (arg-vartys (ident-type-map-fix arg-vartys))
+       ((unless (omap::compatiblep type-vartys arg-vartys))
+        (raise "Internal error: ~
+                incompatible variable-type maps ~x0 and ~x1."
+               type-vartys arg-vartys)
+        (mv (irr-expr) (irr-simpadd0-gout)))
+       (vartys (omap::update* type-vartys arg-vartys))
+       (diffp (or type-diffp arg-diffp)))
+    (mv expr-new
+        (make-simpadd0-gout
+         :events (append type-events arg-events)
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :vartys vartys
+         :diffp diffp)))
+
+  ///
+
+  (defret expr-unambp-of-simpadd0-expr-cast
+    (expr-unambp expr)
+    :hyp (and (tyname-unambp type-new)
+              (expr-unambp arg-new))
+    :hints (("Goal" :in-theory (enable irr-expr)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-expr-binary ((op binopp)
                               (arg1 exprp)
                               (arg1-new exprp)
@@ -2331,16 +2386,21 @@
              (simpadd0-tyname expr.type gin state))
             (gin (simpadd0-gin-update gin gout-type))
             ((mv new-arg (simpadd0-gout gout-arg))
-             (simpadd0-expr expr.arg gin state)))
-         (mv (make-expr-cast :type new-type
-                             :arg new-arg)
-             (make-simpadd0-gout
-              :events (append gout-type.events gout-arg.events)
-              :thm-name nil
-              :thm-index gout-arg.thm-index
-              :names-to-avoid gout-arg.names-to-avoid
-              :vartys (omap::update* gout-type.vartys gout-arg.vartys)
-              :diffp (or gout-type.diffp gout-arg.diffp))))
+             (simpadd0-expr expr.arg gin state))
+            (gin (simpadd0-gin-update gin gout-arg)))
+         (simpadd0-expr-cast expr.type
+                             new-type
+                             gout-type.events
+                             gout-type.thm-name
+                             gout-type.vartys
+                             gout-type.diffp
+                             expr.arg
+                             new-arg
+                             gout-arg.events
+                             gout-arg.thm-name
+                             gout-arg.vartys
+                             gout-arg.diffp
+                             gin))
        :binary
        (b* (((mv new-arg1 (simpadd0-gout gout-arg1))
              (simpadd0-expr expr.arg1 gin state))
