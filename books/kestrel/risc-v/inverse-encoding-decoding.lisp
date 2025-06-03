@@ -479,3 +479,37 @@
            (ubyte20-fix imm))
     :enable (get-imm-utype
              encode)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection decode-rtype-of-encode-instr
+  :short "Theorems about @(tsee decode-rtype) applied to
+          the encoding of instructions."
+
+  (defruled encode-rtype-of-encode-instr-op
+    (equal (decode-rtype (encode (instr-op funct rd rs1 rs2) feat))
+           (mv (mv-nth 0 (encode-op-funct funct))
+               (mv-nth 1 (encode-op-funct funct))
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (ubyte5-fix rs2)))
+    :enable (decode-rtype
+             get-funct3-of-encode-instr-op
+             get-funct7-of-encode-instr-op
+             get-rd-of-encode-instr-op
+             get-rs1-of-encode-instr-op
+             get-rs2-of-encode-instr-op))
+
+  (defruled encode-rtype-of-encode-instr-op-32
+    (equal (decode-rtype (encode (instr-op-32 funct rd rs1 rs2) feat))
+           (mv (mv-nth 0 (encode-op-32-funct funct))
+               (mv-nth 1 (encode-op-32-funct funct))
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (ubyte5-fix rs2)))
+    :enable (decode-rtype
+             get-funct3-of-encode-instr-op-32
+             get-funct7-of-encode-instr-op-32
+             get-rd-of-encode-instr-op-32
+             get-rs1-of-encode-instr-op-32
+             get-rs2-of-encode-instr-op-32)))
