@@ -49,7 +49,7 @@
      a finite map from validator addresses to their bonded stake,
      the latter expressed as a positive integer
      whose exact units are irrelevant (cf. @(tsee transaction)).
-     We introduce a fixtype to wrap that,
+     We introduce a fixtype to wrap the finite map,
      for greater abstraction and extensibility.")
    (xdoc::p
     "The genesis committee is arbitrary,
