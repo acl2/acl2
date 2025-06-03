@@ -71,7 +71,7 @@
                            (dag certificate-setp)
                            (blockchain block-listp)
                            (committed-certs certificate-setp))
-  :guard (certificates-ordered-even-p anchors)
+  :guard (certificate-list-evenp anchors)
   :returns (mv (new-blockchain block-listp)
                (new-committed-certs certificate-setp))
   :short "Extend the blockchain with one or more anchors."
@@ -171,7 +171,6 @@
        (committed-certs (set::union committed-certs certs-to-commit)))
     (mv blockchain committed-certs))
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable certificates-ordered-even-p)))
 
   ///
 
@@ -230,16 +229,16 @@
     (equal (blocks-last-round new-blockchain)
            (certificate->round (car anchors)))
     :hyp (and (consp anchors)
-              (certificates-ordered-even-p anchors))
+              (certificate-list-evenp anchors))
     :hints (("Goal"
              :in-theory (enable blocks-last-round
-                                consp-of-extend-blockchain
-                                certificates-ordered-even-p))))
+                                consp-of-extend-blockchain))))
   (in-theory (disable blocks-last-round-of-extend-blockchain))
 
   (defret blocks-orderedp-of-extend-blockchain
     (blocks-orderedp new-blockchain)
-    :hyp (and (certificates-ordered-even-p anchors)
+    :hyp (and (certificate-list-orderedp anchors)
+              (certificate-list-evenp anchors)
               (blocks-orderedp blockchain)
               (consp anchors)
               (> (certificate->round (car (last anchors)))
@@ -248,7 +247,7 @@
              :induct t
              :in-theory (enable blocks-orderedp
                                 blocks-last-round
-                                certificates-ordered-even-p
+                                certificate-list-orderedp
                                 last))))
   (in-theory (disable blocks-orderedp-of-extend-blockchain))
 
@@ -394,7 +393,7 @@
 
 (define calculate-blockchain ((anchors certificate-listp)
                               (dag certificate-setp))
-  :guard (certificates-ordered-even-p anchors)
+  :guard (certificate-list-evenp anchors)
   :returns (blockchain block-listp)
   :short "Calculate a blockchain from a sequence of anchors and a DAG."
   :long

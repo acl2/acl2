@@ -84,16 +84,23 @@
                     (last-anchor vstate)))
     :enable car-of-collect-all-anchors)
 
-  (defret certificates-ordered-even-p-of-committed-anchors
-    (certificates-ordered-even-p anchors)
+  (defret certificate-list-evenp-of-committed-anchors
+    (certificate-list-evenp anchors)
+    :hyp (and (evenp (validator-state->last vstate))
+              (or (equal (validator-state->last vstate) 0)
+                  (last-anchor vstate)))
+    :hints (("Goal" :in-theory (enable certificate->round-of-last-anchor))))
+
+  (defret certificate-list-orderedp-of-committed-anchors
+    (certificate-list-orderedp anchors)
     :hyp (and (evenp (validator-state->last vstate))
               (or (equal (validator-state->last vstate) 0)
                   (last-anchor vstate)))
     :hints
     (("Goal"
-      :in-theory (enable certificates-ordered-even-p-of-collect-all-anchors
+      :in-theory (enable certificate-list-orderedp-of-collect-all-anchors
                          certificate->round-of-last-anchor))))
-  (in-theory (disable certificates-ordered-even-p-of-committed-anchors))
+  (in-theory (disable certificate-list-orderedp-of-committed-anchors))
 
   (defret certificates-dag-paths-p-of-committed-anchors
     (certificates-dag-paths-p anchors (validator-state->dag vstate))
@@ -301,7 +308,7 @@
              last-anchor-of-commit-next
              collect-all-anchors-of-extend-blockchain-no-change
              blocks-orderedp-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             certificate-list-orderedp-of-collect-anchors
              commit-possiblep
              evenp-of-1-less-when-not-evenp
              evenp-of-3-less-when-not-evenp
@@ -380,7 +387,7 @@
              collect-anchors-of-extend-blockchain-no-change
              ordered-even-p-necc
              blocks-orderedp-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             certificate-list-orderedp-of-collect-anchors
              evenp
              posp
              collect-anchors-above-last-committed-round
@@ -502,7 +509,7 @@
            collect-all-anchors-of-extend-blockchain-no-change
            ordered-even-p-necc
            blocks-orderedp-of-extend-blockchain
-           certificates-ordered-even-p-of-collect-anchors
+           certificate-list-orderedp-of-collect-anchors
            certificate->round-of-cert-with-author+round
            evenp-of-1-less-when-not-evenp
            evenp-of-3-less-when-not-evenp

@@ -153,7 +153,7 @@
              consp-of-extend-blockchain
              car-of-collect-anchors
              blocks-last-round-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             certificate-list-orderedp-of-collect-anchors
              evenp-of-1-less-when-not-evenp
              evenp-of-3-less-when-not-evenp))
 

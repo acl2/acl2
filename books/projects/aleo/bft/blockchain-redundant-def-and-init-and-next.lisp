@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -59,7 +59,7 @@
                                (validator-state->dag vstate)))
   :guard-hints
   (("Goal"
-    :in-theory (enable certificates-ordered-even-p-of-committed-anchors)))
+    :in-theory (enable certificate-list-orderedp-of-committed-anchors)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

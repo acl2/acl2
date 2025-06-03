@@ -143,7 +143,7 @@
              commit-next
              active-committee-at-round-of-extend-blockchain-no-change
              blocks-orderedp-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             certificate-list-orderedp-of-collect-anchors
              ordered-even-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing

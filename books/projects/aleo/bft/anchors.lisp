@@ -183,17 +183,25 @@
     :hints (("Goal" :induct t)))
   (in-theory (disable car-of-collect-anchors))
 
-  (defret certificates-ordered-even-p-of-collect-anchors
-    (certificates-ordered-even-p anchors)
+  (defret certificate-list-evenp-of-collect-anchors
+    (certificate-list-evenp anchors)
+    :hyp (and (evenp (certificate->round current-anchor))
+              (evenp previous-round))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable certificate-list-evenp evenp))))
+
+  (defret certificate-list-orderedp-of-collect-anchors
+    (certificate-list-orderedp anchors)
     :hyp (and (evenp (certificate->round current-anchor))
               (evenp previous-round)
               (< previous-round
                  (certificate->round current-anchor)))
     :hints (("Goal"
              :induct t
-             :in-theory (enable certificates-ordered-even-p
+             :in-theory (enable certificate-list-orderedp
                                 car-of-collect-anchors))))
-  (in-theory (disable certificates-ordered-even-p-of-collect-anchors))
+  (in-theory (disable certificate-list-orderedp-of-collect-anchors))
 
   (defret certificates-dag-paths-p-of-collect-anchors
     (certificates-dag-paths-p anchors dag)
@@ -400,14 +408,19 @@
     :hints (("Goal" :in-theory (enable car-of-collect-anchors))))
   (in-theory (disable car-of-collect-all-anchors))
 
-  (defret certificates-ordered-even-p-of-collect-all-anchors
-    (certificates-ordered-even-p all-anchors)
+  (defret certificate-list-evenp-of-collect-all-anchors
+    (certificate-list-evenp all-anchors)
+    :hyp (evenp (certificate->round last-anchor))
+    :hints (("Goal" :in-theory (enable evenp))))
+
+  (defret certificate-list-orderedp-of-collect-all-anchors
+    (certificate-list-orderedp all-anchors)
     :hyp (evenp (certificate->round last-anchor))
     :hints
     (("Goal"
-      :in-theory (enable certificates-ordered-even-p-of-collect-anchors
+      :in-theory (enable certificate-list-orderedp-of-collect-anchors
                          evenp))))
-  (in-theory (disable certificates-ordered-even-p-of-collect-all-anchors))
+  (in-theory (disable certificate-list-orderedp-of-collect-all-anchors))
 
   (defret certificates-dag-paths-p-of-collect-all-anchors
     (certificates-dag-paths-p all-anchors dag)

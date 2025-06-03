@@ -316,7 +316,7 @@
              validator-state->blockchain-of-commit-next
              active-committee-at-round-of-extend-blockchain-no-change
              blocks-orderedp-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             certificate-list-orderedp-of-collect-anchors
              commit-possiblep
              ordered-even-p-necc-fixing
              collect-anchors-above-last-committed-round

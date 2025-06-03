@@ -142,7 +142,7 @@
              last-blockchain-round-p-necc-fixing
              validator-state->blockchain-of-commit-next
              blocks-orderedp-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             certificate-list-orderedp-of-collect-anchors
              collect-anchors-above-last-committed-round
              commit-possiblep
              pos-fix
