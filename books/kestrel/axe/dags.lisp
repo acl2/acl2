@@ -453,6 +453,13 @@
                 (and (natp top-nodenum) ; we check this here but avoid checking natp for every nodenum in pseudo-dagp-aux as we decrement
                      (pseudo-dagp-aux dag top-nodenum)))))))
 
+;; So we can always tell which we have:
+;; In fact, even an untranslated term cannot be a dag (consider its car).
+(thm
+  (not (and (pseudo-dagp x)
+            (pseudo-termp x)))
+  :hints (("Goal" :in-theory (enable pseudo-dagp))))
+
 ;keeping this disabled for now, since it could be expensive.
 (defthmd alistp-when-pseudo-dagp
   (implies (pseudo-dagp dag)
