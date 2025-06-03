@@ -189,8 +189,6 @@
   (implies (and (address-setp vals1)
                 (address-setp vals2)
                 (committee-nonemptyp commtt)
-                (set::subset vals1 (committee-members commtt))
-                (set::subset vals2 (committee-members commtt))
                 (>= (validators-stake vals1 commtt)
                     (committee-quorum-stake commtt))
                 (>= (validators-stake vals2 commtt)
@@ -201,18 +199,8 @@
   :enable (validators-stake-of-intersect
            committee-quorum-stake
            committee-max-faulty-stake
-           total-lower-bound-wrt-max-faulty)
-  :prep-lemmas
-  ((defrule lemma
-     (implies (and (address-setp vals1)
-                   (address-setp vals2)
-                   (set::subset vals1 (committee-members commtt))
-                   (set::subset vals2 (committee-members commtt)))
-              (<= (validators-stake (set::union vals1 vals2) commtt)
-                  (committee-total-stake commtt)))
-     :rule-classes :linear
-     :enable (committee-total-stake
-              validators-stake-monotone))))
+           total-lower-bound-wrt-max-faulty
+           validators-stake-upper-bound))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,8 +224,6 @@
                 (address-setp vals2)
                 (committee-nonemptyp commtt)
                 (committee-fault-tolerant-p commtt systate)
-                (set::subset vals1 (committee-members commtt))
-                (set::subset vals2 (committee-members commtt))
                 (>= (validators-stake vals1 commtt)
                     (committee-quorum-stake commtt))
                 (>= (validators-stake vals2 commtt)
@@ -253,8 +239,6 @@
                    (address-setp vals2)
                    (committee-nonemptyp commtt)
                    (committee-fault-tolerant-p commtt systate)
-                   (set::subset vals1 (committee-members commtt))
-                   (set::subset vals2 (committee-members commtt))
                    (>= (validators-stake vals1 commtt)
                        (committee-quorum-stake commtt))
                    (>= (validators-stake vals2 commtt)
