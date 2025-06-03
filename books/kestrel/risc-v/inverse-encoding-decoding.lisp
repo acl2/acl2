@@ -18,6 +18,7 @@
 (local (include-book "kestrel/fty/ubyte3-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte7-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte12-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte20-ihs-theorems" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -449,7 +450,7 @@
   :short "Theorems about @(tsee get-imm-stype) applied to
           the encoding of instructions."
 
-  (defruled get-imm-stype-of-instr-store
+  (defruled get-imm-stype-of-encode-instr-store
     (equal (get-imm-stype (encode (instr-store funct rs1 rs2 imm) feat))
            (ubyte12-fix imm))
     :use (:instance lemma (imm (ubyte12-fix imm)))
@@ -460,3 +461,21 @@
                        imm))
        :enable (get-imm-stype
                 encode)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-imm-utype-of-encode-instr
+  :short "Theorems about @(tsee get-imm-utype) applied to
+          the encoding of instructions."
+
+  (defruled get-imm-utype-of-encode-instr-lui
+    (equal (get-imm-utype (encode (instr-lui rd imm) feat))
+           (ubyte20-fix imm))
+    :enable (get-imm-utype
+             encode))
+
+  (defruled get-imm-ubyte-of-encode-instr-auipc
+    (equal (get-imm-utype (encode (instr-auipc rd imm) feat))
+           (ubyte20-fix imm))
+    :enable (get-imm-utype
+             encode)))
