@@ -1021,7 +1021,17 @@
    (total posp
           :hyp (committee-nonemptyp commtt)
           :rule-classes (:rewrite :type-prescription)
-          :hints (("Goal" :in-theory (enable committee-nonemptyp))))))
+          :hints (("Goal" :in-theory (enable committee-nonemptyp)))))
+
+  (defruled validators-stake-upper-bound
+    (<= (validators-stake vals commtt)
+        (committee-total-stake commtt))
+    :rule-classes :linear
+    :use (:instance validators-stake-monotone
+                    (vals1 (set::intersect (address-set-fix vals)
+                                           (committee-members commtt)))
+                    (vals2 (committee-members commtt)))
+    :enable validators-stake-only-members))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
