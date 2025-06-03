@@ -99,24 +99,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate
-  ()
+(fty::defomap address-pos-map
+  :short "Fixtype of maps from addresses to positive integers."
+  :key-type address
+  :val-type pos
+  :pred address-pos-mapp
 
-  (set-induction-depth-limit 1)
+  ///
 
-  (fty::defomap address-pos-map
-    :short "Fixtype of maps from addresses to positive integers."
-    :key-type address
-    :val-type pos
-    :pred address-pos-mapp
-
-    ///
-
-    (defrule address-setp-of-keys-when-address-pos-mapp
-      (implies (address-pos-mapp map)
-               (address-setp (omap::keys map)))
-      :induct t
-      :enable omap::keys)))
+  (defrule address-setp-of-keys-when-address-pos-mapp
+    (implies (address-pos-mapp map)
+             (address-setp (omap::keys map)))
+    :induct t
+    :enable omap::keys))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
