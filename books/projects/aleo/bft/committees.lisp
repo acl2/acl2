@@ -107,7 +107,7 @@
 
   ///
 
-  (defrule address-setp-of-keys-when-address-pos-mapp
+  (defruled address-setp-of-keys-when-address-pos-mapp
     (implies (address-pos-mapp map)
              (address-setp (omap::keys map)))
     :induct t
