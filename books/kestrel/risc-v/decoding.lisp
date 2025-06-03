@@ -171,10 +171,10 @@
      which, when joined, form the bits @('imm[12:1]') of the immediate.
      We return those 12 bits,
      not @('imm[12:0]') with @('imm[0]') implicitly 0."))
-  (b* ((imm[4.1] (part-select enc :low 8 :width 4))
-       (imm[10.5] (part-select enc :low 25 :width 6))
-       (imm[11] (part-select enc :low 7 :width 1))
-       (imm[12] (part-select enc :low 31 :width 1)))
+  (b* ((imm[4.1] (part-select enc :low 8 :high 11))
+       (imm[10.5] (part-select enc :low 25 :high 30))
+       (imm[11] (part-select enc :low 7 :high 7))
+       (imm[12] (part-select enc :low 31 :high 31)))
     (logappn 4 imm[4.1]
              6 imm[10.5]
              1 imm[11]
@@ -209,10 +209,10 @@
      which, when joined, form the bits @('imm[20:1] of the immediate.
      We return those 20 bits,
      not @('imm[20:0') with @('imm[0]') implicitly 0."))
-  (b* ((imm[10.1] (part-select enc :low 21 :width 10))
-       (imm[11] (part-select enc :low 20 :width 1))
-       (imm[19.12] (part-select enc :low 12 :width 8))
-       (imm[20] (part-select enc :low 31 :width 1)))
+  (b* ((imm[10.1] (part-select enc :low 21 :high 30))
+       (imm[11] (part-select enc :low 20 :high 20))
+       (imm[19.12] (part-select enc :low 12 :high 19))
+       (imm[20] (part-select enc :low 31 :high 31)))
     (logappn 10 imm[10.1]
              1 imm[11]
              8 imm[19.12]

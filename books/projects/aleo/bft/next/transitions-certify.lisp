@@ -112,15 +112,7 @@
      is sent to at least another validator:
      even if no certificate messages are added to the network,
      the certificate is still added to the validator's DAG,
-     and thus there is some system change.")
-   (xdoc::p
-    "It is an invariant, proved elsewhere, that the endorsers of each proposal
-     in the @('proposed') map of a correct validator
-     are members of the active committee at the proposal's round.
-     But this invariant is not available here,
-     as we define @('certify') transitions,
-     and thus we use @(tsee committee-validators-stake)
-     to measure the stake of the signers."))
+     and thus there is some system change."))
   (b* (((certificate cert) cert)
        ((proposal prop) cert.proposal)
        ((when (not (set::in prop.author (correct-addresses systate))))
@@ -135,7 +127,7 @@
        (commtt (active-committee-at-round prop.round vstate.blockchain))
        ((unless commtt) nil)
        (signers (certificate->signers cert))
-       ((unless (>= (committee-validators-stake signers commtt)
+       ((unless (>= (validators-stake signers commtt)
                     (committee-quorum-stake commtt)))
         nil))
     t)

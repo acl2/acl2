@@ -1455,12 +1455,12 @@
                  (new-env envp))
     (b* ((env (env-fix env))
          ((tyname tyname) tyname)
-         ((mv specqual env)
-          (const-prop-spec/qual-list tyname.specqual env))
+         ((mv specquals env)
+          (const-prop-spec/qual-list tyname.specquals env))
          ((mv decl? env)
           (const-prop-absdeclor-option tyname.decl? env)))
       (mv (make-tyname
-            :specqual specqual
+            :specquals specquals
             :decl? decl?)
           env))
     :measure (tyname-count tyname))
