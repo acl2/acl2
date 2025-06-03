@@ -482,32 +482,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection decode-rtype-of-encode-of-instr
-  :short "Theorems about @(tsee decode-rtype) applied to
+(defsection get-fields-rtype-of-encode-of-instr
+  :short "Theorems about @(tsee get-fields-rtype) applied to
           the encoding of instructions."
 
-  (defruled decode-rtype-of-encode-of-instr-op
-    (equal (decode-rtype (encode (instr-op funct rd rs1 rs2) feat))
+  (defruled get-fields-rtype-of-encode-of-instr-op
+    (equal (get-fields-rtype (encode (instr-op funct rd rs1 rs2) feat))
            (mv (mv-nth 0 (encode-op-funct funct))
                (mv-nth 1 (encode-op-funct funct))
                (ubyte5-fix rd)
                (ubyte5-fix rs1)
                (ubyte5-fix rs2)))
-    :enable (decode-rtype
+    :enable (get-fields-rtype
              get-funct3-of-encode-of-instr-op
              get-funct7-of-encode-of-instr-op
              get-rd-of-encode-of-instr-op
              get-rs1-of-encode-of-instr-op
              get-rs2-of-encode-of-instr-op))
 
-  (defruled decode-rtype-of-encode-of-instr-op-32
-    (equal (decode-rtype (encode (instr-op-32 funct rd rs1 rs2) feat))
+  (defruled get-fields-rtype-of-encode-of-instr-op-32
+    (equal (get-fields-rtype (encode (instr-op-32 funct rd rs1 rs2) feat))
            (mv (mv-nth 0 (encode-op-32-funct funct))
                (mv-nth 1 (encode-op-32-funct funct))
                (ubyte5-fix rd)
                (ubyte5-fix rs1)
                (ubyte5-fix rs2)))
-    :enable (decode-rtype
+    :enable (get-fields-rtype
              get-funct3-of-encode-of-instr-op-32
              get-funct7-of-encode-of-instr-op-32
              get-rd-of-encode-of-instr-op-32
