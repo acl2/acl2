@@ -63,7 +63,7 @@
    (xdoc::h3 "Generated Events")
 
    (xdoc::desc
-    "@('bytep-of-loghead-of-size')"
+    "@('bytep-of-loghead/logext-of-size')"
     (xdoc::p
      "One of the following:")
     (xdoc::ul
@@ -76,7 +76,25 @@
       "If the @(tsee defbyte) instance is signed,
        a rewrite rule saying that
        @('(logext size ...)'), where @('size') is the byte size,
-       satisfies the recognizer of the bytes.")))))
+       satisfies the recognizer of the bytes.")))
+
+   (xdoc::desc
+    "@('loghead/logext-of-size-when-bytep')"
+    (xdoc::p
+     "One of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "If the @(tsee defbyte) instance is unsigned,
+       a rewrite rule saying that
+       @('(loghead size x)'), where @('size') is the byte size,
+       simplifies to @('x'),
+       when @('x') satisfies the recognizer of the bytes.")
+     (xdoc::li
+      "If the @(tsee defbyte) instance is signed,
+       a rewrite rule saying that
+       @('(logext size x)'), where @('size') is the byte size,
+       simplifies to @('x'),
+       when @('x') satisfies the recognizer of the bytes.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
