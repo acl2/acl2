@@ -1417,6 +1417,7 @@
     __function__
     defrule
 
+    defpun
     defp
 
     erp-nil
