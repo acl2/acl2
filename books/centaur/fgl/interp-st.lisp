@@ -49,11 +49,12 @@
 
 (fty::defbitstruct interp-flags
   ((intro-bvars booleanp :default t)
-   (intro-synvars booleanp :default t)
-   (simplify-logic booleanp :default t)
+   ;; (intro-synvars booleanp :default t)
+   ;; (simplify-logic booleanp :default t)
    (trace-rewrites booleanp :default nil)
    (make-ites booleanp :default nil)
-   (branch-on-ifs booleanp :default t)))
+   (branch-on-ifs booleanp :default t)
+   (hide          booleanp :default nil)))
 
 (local (defthm unsigned-byte-p-of-flags
          (implies (interp-flags-p flags)

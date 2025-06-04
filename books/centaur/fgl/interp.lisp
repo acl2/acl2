@@ -3700,6 +3700,8 @@
                        ((fgl-interp-recursive-call args)
                         (fgl-interp-arglist x.args argcontexts interp-st state))
 
+                       ((when (interp-flags->hide (interp-st->flags interp-st)))
+                        (mv (g-apply x.fn args) interp-st state))
                        ;; ((when err)
                        ;;  (mv nil interp-st state))
                        )
@@ -3776,7 +3778,24 @@
 
           ((fgl-interp-obj 1)
            (fgl-interp-fgl-interp-obj (first args)
-                                     interp-st state))))
+                                      interp-st state))
+
+          ((fgl-hide 1)
+           (b* ((flags (interp-st->flags interp-st))
+                (new-flags (!interp-flags->hide t flags))
+                ((interp-st-bind
+                  (flags new-flags flags))
+                 ((fgl-interp-value val)
+                  (fgl-interp-term-top (first args) interp-st state))))
+             (fgl-interp-value val)))
+
+          ((trigger-constraints 1)
+           (b* (((interp-st-bind
+                  (equiv-contexts (fgl-interp-test-equiv-contexts (interp-st->equiv-contexts interp-st))))
+                 ((fgl-interp-recursive-call val)
+                  (fgl-interp-term-equivs (first args) interp-st state)))
+                ((fgl-interp-value) (fgl-interp-add-constraints val interp-st state)))
+             (fgl-interp-value nil)))))
 
       (define fgl-interp-arglist ((args pseudo-term-listp)
                                   (argcontexts equiv-argcontexts-p)
@@ -5041,14 +5060,14 @@
                                                             (mv enabledp pathcond))
                                                           (fgl-interp-value enabledp)))
 
-             (flags (interp-st->flags interp-st))
-             (new-flags  (!interp-flags->intro-synvars
-                          t
-                          ;; (!interp-flags->intro-bvars
-                          ;;  nil
-                           (!interp-flags->simplify-logic nil flags)))
+             ;; (flags (interp-st->flags interp-st))
+             ;; (new-flags  (!interp-flags->intro-synvars
+             ;;              t
+             ;;              ;; (!interp-flags->intro-bvars
+             ;;              ;;  nil
+             ;;               (!interp-flags->simplify-logic nil flags)))
              ((interp-st-bind
-               (flags new-flags flags)
+               ;; (flags new-flags flags)
                (reclimit (1- reclimit) reclimit)
                (equiv-contexts '(iff)))
               ((fgl-interp-value)
@@ -7209,6 +7228,25 @@
                      alist))
                (fgl-ev-context-equiv-forall-extensions
                 contexts obj x alist)))
+    :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
+
+  (defthm fgl-ev-context-equiv-forall-extensions-of-fgl-hide-term
+    (b* (((pseudo-term-fncall x)))
+      (implies (and (pseudo-term-case x :fncall)
+                    (equal x.fn 'fgl-hide)
+                    (fgl-ev-context-equiv-forall-extensions
+                     contexts obj (car x.args)
+                     alist))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts obj x alist)))
+    :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
+
+  (defthm fgl-ev-context-equiv-forall-extensions-of-trigger-constraints-term
+    (b* (((pseudo-term-fncall x)))
+      (implies (and (pseudo-term-case x :fncall)
+                    (equal x.fn 'trigger-constraints))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts nil x alist)))
     :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
 
   (local (defthm lookup-in-fgl-object-bindings-ev
