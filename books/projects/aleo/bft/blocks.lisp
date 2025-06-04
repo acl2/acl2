@@ -60,8 +60,7 @@
   :elt-type block
   :true-listp t
   :elementp-of-nil nil
-  :pred block-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred block-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
