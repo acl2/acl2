@@ -313,7 +313,6 @@
              evenp-of-1-less-when-not-evenp
              evenp-of-3-less-when-not-evenp
              active-committee-at-previous-round-when-at-round
-             evenp-of-blocks-last-round
              posp
              ordered-blockchain-p-necc
              collect-anchors-above-last-committed-round
