@@ -1287,6 +1287,15 @@
      or the initial set has no certificate with
      the added certificate's author and round.")
    (xdoc::p
+    "The theorem @('cardinality-of-certs-with-author+round-when-unequivp')
+     says that, in an unequivocal set of certificates,
+     there is at most one certificate with a given author and round.
+     As a consequence,
+     the theorem @('cert-with-author+round-of-cert-in-unequiv-certs')
+     says that retrieving the certificate with
+     the author and round of a certificate in the set
+     yields that certificate.")
+   (xdoc::p
     "The theorems @('equal-certificate-authors-when-unequiv-and-same-round')
      and @('equal-cert-rounds-when-unequivp-and-same-author')
      say that if the certificates in an unequivocal sets
@@ -1407,6 +1416,45 @@
                                 (certificate->round cert)
                                 certs)))
                        (certs (set::insert cert certs))))))
+
+  (defruled cardinality-of-certs-with-author+round-when-unequivp
+    (implies (cert-set-unequivp certs)
+             (<= (set::cardinality (certs-with-author+round author round certs))
+                 1))
+    :rule-classes :linear
+    :enable in-of-certs-with-author+round
+    :use ((:instance set::two-diff-elements-when-cardinality-gt-1
+                     (set (certs-with-author+round author round certs)))
+          (:instance cert-set-unequivp-necc
+                     (cert1 (set::head
+                             (certs-with-author+round author round certs)))
+                     (cert2 (set::head
+                             (set::tail
+                              (certs-with-author+round author round certs)))))))
+
+  (defruled cert-with-author+round-of-cert-in-unequiv-certs
+    (implies (and (certificate-setp certs)
+                  (cert-set-unequivp certs)
+                  (set::in cert certs))
+             (equal (cert-with-author+round (certificate->author cert)
+                                            (certificate->round cert)
+                                            certs)
+                    cert))
+    :enable (cert-with-author+round
+             cardinality-of-certs-with-author+round-when-unequivp)
+    :use ((:instance in-of-certs-with-author+round
+                     (author (certificate->author cert))
+                     (round (certificate->round cert)))
+          (:instance set::same-element-when-cardinality-leq-1
+                     (set (certs-with-author+round
+                           (certificate->author cert)
+                           (certificate->round cert)
+                           certs))
+                     (elem1 cert)
+                     (elem2 (set::head (certs-with-author+round
+                                        (certificate->author cert)
+                                        (certificate->round cert)
+                                        certs))))))
 
   (defruled equal-cert-authors-when-unequivp-and-same-round
     (implies (and (certificate-setp certs)
