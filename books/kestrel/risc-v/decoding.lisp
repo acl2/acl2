@@ -384,12 +384,12 @@
            (b* ((loimm (part-select imm :low 0 :high 4))
                 (hiimm (part-select imm :low 5 :high 11))
                 ((when (= funct3 #b001))
-                 (if (= hiimm #b000000)
+                 (if (= hiimm #b0000000)
                      (instr-op-imms32 (op-imms-funct-slli) rd rs1 loimm)
                    nil)))
              (case hiimm
-               (#b000000 (instr-op-imms32 (op-imms-funct-srli) rd rs1 loimm))
-               (#b010000 (instr-op-imms32 (op-imms-funct-srai) rd rs1 loimm))
+               (#b0000000 (instr-op-imms32 (op-imms-funct-srli) rd rs1 loimm))
+               (#b0100000 (instr-op-imms32 (op-imms-funct-srai) rd rs1 loimm))
                (t nil))))))
       (#b0010111 ; AUIPC [ISA:2.4.1]
        (b* (((mv rd imm) (get-fields-utype enc))
