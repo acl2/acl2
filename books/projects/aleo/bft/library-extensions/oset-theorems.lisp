@@ -81,6 +81,19 @@
     :enable (set::cardinality
              set::in))
 
+  (defruled set::two-diff-elements-when-cardinality-gt-1
+    (implies (> (set::cardinality set) 1)
+             (b* ((elem1 (set::head set))
+                  (elem2 (set::head (set::tail set))))
+               (and (set::in elem1 set)
+                    (set::in elem2 set)
+                    (not (equal elem1 elem2)))))
+    :enable (set::cardinality
+             set::expensive-rules)
+    :use (:instance set::head-unique (x set))
+    :disable set::head-unique
+    :cases ((set::emptyp (set::tail set))))
+
   (defrule set::cardinality-of-tail-leq
     (<= (set::cardinality (set::tail set))
         (set::cardinality set))
