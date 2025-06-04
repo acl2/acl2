@@ -512,7 +512,7 @@
              logtail
              loghead))
 
-  (defruled get-imm-btype-of-instr-branch
+  (defruled get-imm-btype-of-encode-of-instr-branch
     (equal (get-imm-btype (encode (instr-branch funct rs1 rs2 imm) feat))
            (ubyte12-fix imm))
     :use (:instance lemma (imm (ubyte12-fix imm)))
@@ -524,9 +524,7 @@
                        imm))
        :enable (get-imm-btype
                 encode
-                logbit-11-to-logtail-11-when-ubyte12p
-                logapp-1-of-logbit-logtail
-                logapp-6-logtail-4-logtail-10)
+                logapp-1-of-logbit-logtail)
        :disable bitops::logbit-to-logbitp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -546,6 +544,46 @@
            (ubyte20-fix imm))
     :enable (get-imm-utype
              encode)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-imm-jtype-of-encode-of-instr
+  :short "Theorems about @(tsee get-imm-jtype) applied to
+          the encoding of instructions."
+
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (defrulel logbit-19-to-logtail-19-when-ubyte20p
+    (implies (ubyte20p x)
+             (equal (logbit 19 x)
+                    (logtail 19 x)))
+    :enable (logtail
+             bool->bit
+             logbitp
+             ubyte20p
+             unsigned-byte-p))
+
+  (defrulel logapp-8-logtail-11-logtail-19
+    (implies (integerp x)
+             (equal (logapp 8 (logtail 11 x) (logtail 19 x))
+                    (logtail 11 x)))
+    :enable (logapp
+             logtail
+             loghead))
+
+  (defruled get-imm-jtype-of-encode-of-instr-jal
+    (equal (get-imm-jtype (encode (instr-jal rd imm) feat))
+           (ubyte20-fix imm))
+    :use (:instance lemma (imm (ubyte20-fix imm)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (ubyte20p imm)
+                (equal (get-imm-jtype (encode (instr-jal rd imm) feat))
+                       imm))
+       :enable (get-imm-jtype
+                encode
+                logapp-1-of-logbit-logtail)
+       :disable bitops::logbit-to-logbitp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
