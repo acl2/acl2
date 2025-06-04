@@ -94,6 +94,24 @@
        a rewrite rule saying that
        @('(logext size x)'), where @('size') is the byte size,
        simplifies to @('x'),
+       when @('x') satisfies the recognizer of the bytes.")))
+
+   (xdoc::desc
+    "@('logtail-of-size-when-bytep')"
+    (xdoc::p
+     "One of the following:")
+    (xdoc::ul
+     (xdoc::li
+      "If the @(tsee defbyte) instance is unsigned,
+       a rewrite rule saying that
+       @('(logtail size x)'), where @('size') is the byte size,
+       simplifies to @('0'),
+       when @('x') satisfies the recognizer of the bytes.")
+     (xdoc::li
+      "If the @(tsee defbyte) instance is signed,
+       a rewrite rule saying that
+       @('(logtail size x)'), where @('size') is the byte size,
+       simplifies to @('-1') if @('x') is negative and to @('0') otherwise,
        when @('x') satisfies the recognizer of the bytes.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,6 +160,8 @@
         (acl2::packn-pos (list bytep '-of- loghead/logext '-of- size) bytep))
        (loghead/logext-of-size-when-bytep
         (acl2::packn-pos (list loghead/logext '-of- size '-when- bytep) bytep))
+       (logtail-of-size-when-bytep
+        (acl2::packn-pos (list 'logtail-of- size '-when- bytep) bytep))
        ;; variable in the generated theorems:
        (x (intern-in-package-of-symbol "X" bytep))
        ;; generated theorems:
@@ -156,6 +176,13 @@
            (defrule ,loghead/logext-of-size-when-bytep
              (implies (,bytep ,x)
                       (equal (,loghead/logext ,size ,x) ,x))
+             :enable ,bytep)
+           (defrule ,logtail-of-size-when-bytep
+             (implies (,bytep ,x)
+                      (equal (acl2::logtail ,size ,x)
+                             ,(if signed
+                                  `(if (< ,x 0) -1 0)
+                                0)))
              :enable ,bytep))))
     event))
 
