@@ -68,7 +68,7 @@
 
 (define-sk nonforking-anchors-p ((systate system-statep))
   :guard (and (last-blockchain-round-p systate)
-              (ordered-even-p systate)
+              (ordered-blockchain-p systate)
               (last-anchor-present-p systate))
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
@@ -80,7 +80,7 @@
                    (lists-noforkp
                     (committed-anchors (get-validator-state val1 systate))
                     (committed-anchors (get-validator-state val2 systate)))))
-  :guard-hints (("Goal" :in-theory (enable evenp-of-last-when-ordered-even-p
+  :guard-hints (("Goal" :in-theory (enable evenp-of-last-when-ordered-blockchain-p
                                            last-anchor-present-p-necc)))
   ///
   (fty::deffixequiv-sk nonforking-anchors-p
@@ -325,7 +325,7 @@
   (defruledl case-others
     (implies (and (nonforking-anchors-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -347,7 +347,7 @@
   (defruledl case-other-aligned
     (implies (and (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -419,7 +419,7 @@
   (defruledl case-other-behind
     (implies (and (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -456,7 +456,7 @@
              certificate->round-of-last-anchor
              last-blockchain-round-p-necc
              evenp-of-blocks-last-round
-             ordered-even-p-necc)
+             ordered-blockchain-p-necc)
     :expand (committed-anchors (get-validator-state val0 systate))
     :use (:instance collect-all-anchors-to-append-of-collect-anchors-dags
                     (dag1 (validator-state->dag
@@ -543,7 +543,7 @@
   (defruledl case-other-ahead
     (implies (and (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -579,7 +579,7 @@
              certificate->round-of-last-anchor
              last-blockchain-round-p-necc
              evenp-of-blocks-last-round
-             ordered-even-p-necc
+             ordered-blockchain-p-necc
              cert-with-author+round-element)
     :expand (committed-anchors (get-validator-state val0 systate))
     :use (:instance collect-all-anchors-to-append-of-collect-anchors-dags
@@ -610,7 +610,7 @@
     (implies (and (nonforking-anchors-p systate)
                   (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -638,7 +638,7 @@
     (implies (and (nonforking-anchors-p systate)
                   (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -658,7 +658,7 @@
                   (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
                   (unequivocal-signed-certs-p systate)

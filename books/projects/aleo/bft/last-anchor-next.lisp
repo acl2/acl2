@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -118,7 +118,7 @@
 
   (defruled last-anchor-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (set::in val (correct-addresses systate))
                   (commit-possiblep val1 systate)
                   (addressp val1))
@@ -142,9 +142,9 @@
              commit-possiblep
              commit-next
              active-committee-at-round-of-extend-blockchain-no-change
-             blocks-ordered-even-p-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
-             ordered-even-p-necc-fixing
+             blocks-orderedp-of-extend-blockchain
+             certificate-list-orderedp-of-collect-anchors
+             ordered-blockchain-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing
              posp

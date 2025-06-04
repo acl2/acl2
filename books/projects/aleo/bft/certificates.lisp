@@ -1408,14 +1408,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define certificates-ordered-even-p ((certs certificate-listp))
+(std::deflist certificate-list-evenp (x)
+  :guard (certificate-listp x)
+  :short "Check if
+          the round numbers of all the certificates in a list are even."
+  (evenp (certificate->round x))
+
+  ///
+
+  (fty::deffixequiv certificate-list-evenp
+    :args ((x certificate-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define certificate-list-orderedp ((certs certificate-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of certificates has
           even and strictly increasing (right to left) round numbers."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is analogous to @(tsee blocks-ordered-even-p),
+    "This is analogous to @(tsee blocks-orderedp),
      but for certificates instead of blocks.
      The reason for having this predicate on certificates is that
      blockchains are extended from sequences of anchors,
@@ -1424,12 +1437,11 @@
      is that the collected lists of anchors also have
      strictly increasing, even round numbers."))
   (b* (((when (endp certs)) t)
-       (cert (car certs))
-       (round (certificate->round cert))
-       ((unless (evenp round)) nil)
        ((when (endp (cdr certs))) t)
-       ((unless (> round (certificate->round (cadr certs)))) nil))
-    (certificates-ordered-even-p (cdr certs)))
+       ((unless (> (certificate->round (car certs))
+                   (certificate->round (cadr certs))))
+        nil))
+    (certificate-list-orderedp (cdr certs)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

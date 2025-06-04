@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -437,7 +437,7 @@
 
   (defruled validator-dag-previous-quorum-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (set::in val1 (correct-addresses systate))
                   (set::in cert
@@ -457,10 +457,10 @@
              validator-state->blockchain-of-commit-next
              active-committee-at-round-of-extend-blockchain-no-change
              active-committee-at-previous-round-when-at-round
-             blocks-ordered-even-p-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             blocks-orderedp-of-extend-blockchain
+             certificate-list-orderedp-of-collect-anchors
              commit-possiblep
-             ordered-even-p-necc-fixing
+             ordered-blockchain-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing
              posp
@@ -470,7 +470,7 @@
   (defruled dag-previous-quorum-p-of-commit-next
     (implies (and (dag-previous-quorum-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (commit-possiblep val systate)
                   (addressp val))
@@ -485,7 +485,7 @@
     (implies (and (dag-previous-quorum-p systate)
                   (system-committees-fault-tolerant-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signed-previous-quorum-p systate)
                   (signer-quorum-p systate)
                   (same-committees-p systate)
