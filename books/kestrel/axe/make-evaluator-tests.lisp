@@ -31,222 +31,220 @@
 ;; Expected result:
 (must-be-redundant
  (MUTUAL-RECURSION
-  (DEFUND APPLY-LEN-EVALUATOR (FN ARGS INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH)
-    (DECLARE (XARGS :MEASURE 1
-                    :GUARD (AND (OR (SYMBOLP FN) (PSEUDO-LAMBDAP FN))
-                                (TRUE-LISTP ARGS)
-                                (INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
-                                (NATP ARRAY-DEPTH))))
-    (IF (CONSP FN) ; todo: do we sometimes know that things are lambda-free?
-        (LET* ((FORMALS (SECOND FN))
-               (BODY (THIRD FN))
-               (ALIST (PAIRLIS$-FAST FORMALS ARGS))) ;todo: avoid this?
-              (EVAL-LEN-EVALUATOR
-               ALIST BODY
-               INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH))
-        (LET
-         ((ARGS-TO-WALK-DOWN ARGS))
-         (MV-LET
-           (HIT VAL)
-           (IF
-            (ENDP ARGS-TO-WALK-DOWN)
-            (MV NIL NIL)
-            (LET
-             ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-             (IF
-              (ENDP ARGS-TO-WALK-DOWN)
-              (LET ((ARG1 (NTH 0 ARGS)))
+  (defund apply-len-evaluator (fn args interpreted-function-alist array-depth)
+    (declare (xargs :measure 1
+                    :guard (and (or (symbolp fn) (pseudo-lambdap fn))
+                                (true-listp args)
+                                (interpreted-function-alistp interpreted-function-alist)
+                                (natp array-depth))))
+    (if (consp fn) ; todo: do we sometimes know that things are lambda-free?
+        (let* ((formals (second fn))
+               (body (third fn))
+               (alist (pairlis$-fast formals args))) ;todo: avoid this?
+              (eval-len-evaluator
+               alist body
+               interpreted-function-alist array-depth))
+        (let
+         ((args-to-walk-down args))
+         (mv-let
+           (hit val)
+           (if
+            (endp args-to-walk-down)
+            (mv nil nil)
+            (let
+             ((args-to-walk-down (cdr args-to-walk-down)))
+             (if
+              (endp args-to-walk-down)
+              (let ((arg1 (nth 0 args)))
                    (case fn
                      (len (mv t (len arg1)))
                      (consp (mv t (consp arg1)))
                      (cdr (mv t (cdr arg1)))
                      (t (mv nil nil))))
-              (LET
-               ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-               (IF
-                (ENDP ARGS-TO-WALK-DOWN)
-                (LET ((ARG2 (NTH 1 ARGS))
-                      (ARG1 (NTH 0 ARGS)))
+              (let
+               ((args-to-walk-down (cdr args-to-walk-down)))
+               (if
+                (endp args-to-walk-down)
+                (let ((arg2 (nth 1 args))
+                      (arg1 (nth 0 args)))
                      (case fn
                        (binary-+ (mv t (binary-+ arg1 arg2)))
                        (t (mv nil nil))))
-                (LET
-                 ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                 (IF
-                  (ENDP ARGS-TO-WALK-DOWN)
-                  (MV NIL NIL)
-                  (LET
-                   ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                   (IF
-                    (ENDP ARGS-TO-WALK-DOWN)
-                    (LET
-                     ((ARG4 (NTH 3 ARGS)) ;todo: optimize stuff like this
-                      (ARG3 (NTH 2 ARGS))
-                      (ARG2 (NTH 1 ARGS))
-                      (ARG1 (NTH 0 ARGS)))
-                     (DECLARE (IGNORE ARG4)) ;todo: why?  don't compute
+                (let
+                 ((args-to-walk-down (cdr args-to-walk-down)))
+                 (if
+                  (endp args-to-walk-down)
+                  (mv nil nil)
+                  (let
+                   ((args-to-walk-down (cdr args-to-walk-down)))
+                   (if
+                    (endp args-to-walk-down)
+                    (let
+                     ((arg4 (nth 3 args)) ;todo: optimize stuff like this
+                      (arg3 (nth 2 args))
+                      (arg2 (nth 1 args))
+                      (arg1 (nth 0 args)))
+                     (declare (ignore arg4)) ;todo: why?  don't compute
                      (case fn
                        (dag-val-with-len-evaluator
                          (mv t
-                             (dag-val-with-len-evaluator
-                               arg1 arg2 arg3 (+ 1 array-depth))))
+                             (eval-in-logic (dag-val-with-len-evaluator arg1 arg2 arg3 (+ 1 array-depth)))))
                        (apply-len-evaluator
                          (mv t
-                             (apply-len-evaluator
-                               arg1 arg2 arg3 array-depth)))
+                             (eval-in-logic (apply-len-evaluator arg1 arg2 arg3 array-depth))))
                        (t (mv nil nil))))
-                    (LET
-                     ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                     (IF
-                      (ENDP ARGS-TO-WALK-DOWN)
-                      (MV NIL NIL)
-                      (LET
-                       ((ARGS-TO-WALK-DOWN (CDR ARGS-TO-WALK-DOWN)))
-                       (IF
-                        (ENDP ARGS-TO-WALK-DOWN)
-                        (MV NIL NIL)
-                        (LET
-                         ((ARGS-TO-WALK-DOWN
-                           (CDR ARGS-TO-WALK-DOWN)))
-                         (IF
-                          (ENDP ARGS-TO-WALK-DOWN)
-                          (MV NIL NIL)
-                          (LET
-                           ((ARGS-TO-WALK-DOWN
-                             (CDR ARGS-TO-WALK-DOWN)))
-                           (IF
-                            (ENDP ARGS-TO-WALK-DOWN)
-                            (LET
-                             ((ARG8 (NTH 7 ARGS))
-                              (ARG7 (NTH 6 ARGS))
-                              (ARG6 (NTH 5 ARGS))
-                              (ARG5 (NTH 4 ARGS))
-                              (ARG4 (NTH 3 ARGS))
-                              (ARG3 (NTH 2 ARGS))
-                              (ARG2 (NTH 1 ARGS))
-                              (ARG1 (NTH 0 ARGS)))
-                             (DECLARE (IGNORE ARG8))
+                    (let
+                     ((args-to-walk-down (cdr args-to-walk-down)))
+                     (if
+                      (endp args-to-walk-down)
+                      (mv nil nil)
+                      (let
+                       ((args-to-walk-down (cdr args-to-walk-down)))
+                       (if
+                        (endp args-to-walk-down)
+                        (mv nil nil)
+                        (let
+                         ((args-to-walk-down
+                           (cdr args-to-walk-down)))
+                         (if
+                          (endp args-to-walk-down)
+                          (mv nil nil)
+                          (let
+                           ((args-to-walk-down
+                             (cdr args-to-walk-down)))
+                           (if
+                            (endp args-to-walk-down)
+                            (let
+                             ((arg8 (nth 7 args))
+                              (arg7 (nth 6 args))
+                              (arg6 (nth 5 args))
+                              (arg5 (nth 4 args))
+                              (arg4 (nth 3 args))
+                              (arg3 (nth 2 args))
+                              (arg2 (nth 1 args))
+                              (arg1 (nth 0 args)))
+                             (declare (ignore arg8))
                              (case fn
                                (eval-dag-with-len-evaluator
                                  (mv
                                    t
-                                   (eval-dag-with-len-evaluator
-                                     arg1 arg2 arg3
-                                     arg4 arg5 arg6 arg7 array-depth)))
+                                   (eval-in-logic (eval-dag-with-len-evaluator
+                                                    arg1 arg2 arg3
+                                                    arg4 arg5 arg6 arg7 array-depth))))
                                (t (mv nil nil))))
-                            (MV NIL NIL))))))))))))))))))
-           (IF
-            HIT VAL
-            (LET
-             ((MATCH (ASSOC-EQ FN INTERPRETED-FUNCTION-ALIST)))
-             (IF
-              (NOT MATCH)
-              (ER
-               HARD? 'APPLY-LEN-EVALUATOR
+                            (mv nil nil))))))))))))))))))
+           (if
+            hit val
+            (let
+             ((match (assoc-eq fn interpreted-function-alist)))
+             (if
+              (not match)
+              (er
+               hard? 'apply-len-evaluator
                "Unknown function: ~x0 applied to args ~x1.  Consider passing it as an interpreted function, or adding it to the list of built-ins for the evaluator ~x2.  (This error also occurs when a function appears with an incorrect number of arguments.)"
-               FN ARGS 'LEN-EVALUATOR)
-              (LET* ((FN-INFO (CDR MATCH))
-                     (FORMALS (FIRST FN-INFO))
-                     (BODY (SECOND FN-INFO))
-                     (ALIST (PAIRLIS$-FAST FORMALS ARGS)))
-                    (EVAL-LEN-EVALUATOR
-                     ALIST BODY INTERPRETED-FUNCTION-ALIST
-                     ARRAY-DEPTH)))))))))
-  (DEFUN EVAL-LEN-EVALUATOR (ALIST FORM INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH)
-    (DECLARE
-     (XARGS
-      :VERIFY-GUARDS NIL
-      :GUARD
-      (AND
-       (SYMBOL-ALISTP ALIST)
-       (PSEUDO-TERMP FORM)
-       (INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
-       (NATP ARRAY-DEPTH))))
-    (COND
-     ((VARIABLEP FORM)
-      (LOOKUP-EQ FORM ALIST))
-     ((FQUOTEP FORM) (UNQUOTE FORM))
-     (T
-      (LET
-       ((FN (FFN-SYMB FORM)))
-       (IF
-        (and (OR (EQ FN 'IF) (EQ FN 'MYIF))
+               fn args 'len-evaluator)
+              (let* ((fn-info (cdr match))
+                     (formals (first fn-info))
+                     (body (second fn-info))
+                     (alist (pairlis$-fast formals args)))
+                    (eval-len-evaluator
+                     alist body interpreted-function-alist
+                     array-depth)))))))))
+  (defun eval-len-evaluator (alist form interpreted-function-alist array-depth)
+    (declare
+     (xargs
+      :verify-guards nil
+      :guard
+      (and
+       (symbol-alistp alist)
+       (pseudo-termp form)
+       (interpreted-function-alistp interpreted-function-alist)
+       (natp array-depth))))
+    (cond
+     ((variablep form)
+      (lookup-eq form alist))
+     ((fquotep form) (unquote form))
+     (t
+      (let
+       ((fn (ffn-symb form)))
+       (if
+        (and (or (eq fn 'if) (eq fn 'myif))
              (= 3 (len (fargs form))))
-        (LET*
-         ((TEST-FORM (farg1 FORM))
-          (TEST-RESULT (EVAL-LEN-EVALUATOR
-                        ALIST
-                        TEST-FORM INTERPRETED-FUNCTION-ALIST
-                        ARRAY-DEPTH)))
-         (EVAL-LEN-EVALUATOR
-          ALIST
-          (IF TEST-RESULT (farg2 FORM)
-              (farg3 FORM))
-          INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH))
-        (LET
-         ((ARGS
-           (EVAL-LIST-LEN-EVALUATOR ALIST (FARGS FORM)
-                                    INTERPRETED-FUNCTION-ALIST
-                                    ARRAY-DEPTH)))
-         (APPLY-LEN-EVALUATOR FN ARGS INTERPRETED-FUNCTION-ALIST
-                              ARRAY-DEPTH)))))))
-  (DEFUN
-    EVAL-LIST-LEN-EVALUATOR
-    (ALIST FORM-LST
-           INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH)
-    (DECLARE
-     (XARGS
-      :VERIFY-GUARDS NIL
-      :MEASURE (LEN FORM-LST)
-      :GUARD
-      (AND
-       (SYMBOL-ALISTP ALIST)
-       (PSEUDO-TERM-LISTP FORM-LST)
-       (INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
-       (NATP ARRAY-DEPTH))))
-    (IF
-     (ENDP FORM-LST)
-     NIL
-     (CONS (EVAL-LEN-EVALUATOR
-            ALIST (CAR FORM-LST)
-            INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH)
-           (EVAL-LIST-LEN-EVALUATOR ALIST (CDR FORM-LST)
-                                    INTERPRETED-FUNCTION-ALIST
-                                    ARRAY-DEPTH))))
-  (DEFUN
-    DAG-VAL-WITH-LEN-EVALUATOR
-    (DAG ALIST
-         INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH)
-    (DECLARE
-     (XARGS
-      :MEASURE 0
-      :GUARD
-      (AND
-       (OR (QUOTEP DAG)
-           (AND (PSEUDO-DAGP DAG)
-                (< (LEN DAG) *max-1d-array-length*)))
-       (SYMBOL-ALISTP ALIST)
-       (INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
-       (NATP ARRAY-DEPTH))))
-    (IF
-     (QUOTEP DAG)
-     (UNQUOTE DAG)
-     (LET*
-      ((TOP-NODENUM (TOP-NODENUM-of-dag DAG))
-       (DAG-ARRAY-NAME (PACK$ 'DAG-ARRAY-
-                              ARRAY-DEPTH '-FOR-DAG-VAL))
-       (DAG-ARRAY (MAKE-INTO-ARRAY DAG-ARRAY-NAME DAG))
-       (EVAL-ARRAY-NAME (PACK$ 'EVAL-ARRAY-
-                               ARRAY-DEPTH '-FOR-DAG-VAL))
-       (EVAL-ARRAY
-        (MAKE-EMPTY-ARRAY EVAL-ARRAY-NAME (+ 1 TOP-NODENUM))))
-      (CAR (AREF1 EVAL-ARRAY-NAME
-                  (EVAL-DAG-WITH-LEN-EVALUATOR
-                   (LIST TOP-NODENUM)
-                   DAG-ARRAY-NAME DAG-ARRAY
-                   ALIST EVAL-ARRAY-NAME EVAL-ARRAY
-                   INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH)
-                  TOP-NODENUM)))))
+        (let*
+         ((test-form (farg1 form))
+          (test-result (eval-len-evaluator
+                        alist
+                        test-form interpreted-function-alist
+                        array-depth)))
+         (eval-len-evaluator
+          alist
+          (if test-result (farg2 form)
+              (farg3 form))
+          interpreted-function-alist array-depth))
+        (let
+         ((args
+           (eval-list-len-evaluator alist (fargs form)
+                                    interpreted-function-alist
+                                    array-depth)))
+         (apply-len-evaluator fn args interpreted-function-alist
+                              array-depth)))))))
+  (defun
+    eval-list-len-evaluator
+    (alist form-lst
+           interpreted-function-alist array-depth)
+    (declare
+     (xargs
+      :verify-guards nil
+      :measure (len form-lst)
+      :guard
+      (and
+       (symbol-alistp alist)
+       (pseudo-term-listp form-lst)
+       (interpreted-function-alistp interpreted-function-alist)
+       (natp array-depth))))
+    (if
+     (endp form-lst)
+     nil
+     (cons (eval-len-evaluator
+            alist (car form-lst)
+            interpreted-function-alist array-depth)
+           (eval-list-len-evaluator alist (cdr form-lst)
+                                    interpreted-function-alist
+                                    array-depth))))
+  (defun
+    dag-val-with-len-evaluator
+    (dag alist
+         interpreted-function-alist array-depth)
+    (declare
+     (xargs
+      :measure 0
+      :guard
+      (and
+       (or (myquotep dag)
+           (and (pseudo-dagp dag)
+                (< (len dag) *max-1d-array-length*)))
+       (symbol-alistp alist)
+       (interpreted-function-alistp interpreted-function-alist)
+       (natp array-depth))))
+    (if
+     (quotep dag)
+     (unquote dag)
+     (let*
+      ((top-nodenum (top-nodenum-of-dag dag))
+       (dag-array-name (pack$ 'dag-array-
+                              array-depth '-for-dag-val))
+       (dag-array (make-into-array dag-array-name dag))
+       (eval-array-name (pack$ 'eval-array-
+                               array-depth '-for-dag-val))
+       (eval-array
+        (make-empty-array eval-array-name (+ 1 top-nodenum))))
+      (car (aref1 eval-array-name
+                  (eval-dag-with-len-evaluator
+                   (list top-nodenum)
+                   dag-array-name dag-array
+                   alist eval-array-name eval-array
+                   interpreted-function-alist array-depth)
+                  top-nodenum)))))
   (DEFUN EVAL-DAG-WITH-LEN-EVALUATOR (NODENUM-WORKLIST DAG-ARRAY-NAME DAG-ARRAY VAR-VALUE-ALIST
                                                        EVAL-ARRAY-NAME EVAL-ARRAY
                                                        INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH)
@@ -294,10 +292,11 @@
                INTERPRETED-FUNCTION-ALIST ARRAY-DEPTH))
          (LET
           ((DARGS (DARGS EXPR)))
-          (IF
-           (OR (EQ 'IF FN)
-               (EQ 'MYIF FN)
-               (EQ 'BVIF FN))
+          (IF (or (and (or (eq 'if fn)
+                           (eq 'myif fn))
+                       (= 3 (len dargs)))
+                  (and (eq 'bvif fn)
+                       (= 4 (len dargs))))
            (LET*
             ((TEST (IF (EQ 'BVIF FN)
                        (SECOND DARGS)
@@ -464,12 +463,10 @@
                  (case fn
                     (dag-val-with-len-evaluator
                       (mv t
-                          (dag-val-with-len-evaluator
-                            arg1 arg2 arg3 (+ 1 array-depth))))
+                          (eval-in-logic (dag-val-with-len-evaluator arg1 arg2 arg3 (+ 1 array-depth)))))
                     (apply-len-evaluator
                       (mv t
-                          (apply-len-evaluator
-                            arg1 arg2 arg3 array-depth)))
+                          (eval-in-logic (apply-len-evaluator arg1 arg2 arg3 array-depth))))
                     (t (mv nil nil))))
                 (let
                  ((args-to-walk-down (cdr args-to-walk-down)))
@@ -506,9 +503,9 @@
                            (eval-dag-with-len-evaluator
                              (mv
                                t
-                               (eval-dag-with-len-evaluator
-                                 arg1 arg2 arg3
-                                 arg4 arg5 arg6 arg7 array-depth)))
+                               (eval-in-logic (eval-dag-with-len-evaluator
+                                                arg1 arg2 arg3
+                                                arg4 arg5 arg6 arg7 array-depth))))
                            (t (mv nil nil))))
                         (mv nil nil))))))))))))))))))
        (if
