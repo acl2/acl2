@@ -165,7 +165,7 @@
 
 ;extends the worklist with any args not done
 ;returns (mv nodenum-worklist worklist-extendedp)
-(defun get-args-not-done-array (args eval-array-name eval-array worklist worklist-extendedp)
+(defund get-args-not-done-array (args eval-array-name eval-array worklist worklist-extendedp)
   (declare (xargs :guard (and (darg-listp args)
                               (implies (not (all-consp args))
                                        (eval-arrayp eval-array-name eval-array (+ 1 (largest-non-quotep args))))
@@ -189,7 +189,8 @@
 (defthm all-natp-of-mv-nth-0-of-get-args-not-done-array
   (implies (and (darg-listp args)
                 (all-natp worklist))
-           (all-natp (mv-nth 0 (get-args-not-done-array args eval-array-name eval-array worklist worklist-extendedp)))))
+           (all-natp (mv-nth 0 (get-args-not-done-array args eval-array-name eval-array worklist worklist-extendedp))))
+  :hints (("Goal" :in-theory (enable get-args-not-done-array))))
 
 ;assumes all dargs are done (and thus wrapped in a cons)
 (defun get-vals-of-args-array (dargs eval-array-name eval-array)
@@ -317,6 +318,7 @@
              (integerp (maxelem vals)))
     :hints (("Goal" :in-theory (enable nat-listp)))))
 
+(defmacro eval-in-logic (x) `(with-guard-checking nil (ec-call ,x)))
 
 ;;this generates a mutually recursive set of defuns that evaluates functions and dags
 ;fixme make a simple version that doesn't use arrays or have any built-in functions other than the primitives?
@@ -335,9 +337,9 @@
          (eval-dag-name (pack$ 'eval-dag-with- base-name))
 
          ;;we include the apply function itself as an evaluatable function! what about the eval functions?
-         (arity-fn-call-alist-alist (add-call-to-calls apply-function-name 4 `(,apply-function-name arg1 arg2 arg3 array-depth) arity-fn-call-alist-alist))
-         (arity-fn-call-alist-alist (add-call-to-calls dag-val-name 4 `(,dag-val-name arg1 arg2 arg3 (+ 1 array-depth)) arity-fn-call-alist-alist))
-         (arity-fn-call-alist-alist (add-call-to-calls eval-dag-name 8 `(,eval-dag-name arg1 arg2 arg3 arg4 arg5 arg6 arg7 array-depth) arity-fn-call-alist-alist))
+         (arity-fn-call-alist-alist (add-call-to-calls apply-function-name 4 `(eval-in-logic (,apply-function-name arg1 arg2 arg3 array-depth)) arity-fn-call-alist-alist))
+         (arity-fn-call-alist-alist (add-call-to-calls dag-val-name 4 `(eval-in-logic (,dag-val-name arg1 arg2 arg3 (+ 1 array-depth))) arity-fn-call-alist-alist))
+         (arity-fn-call-alist-alist (add-call-to-calls eval-dag-name 8 `(eval-in-logic (,eval-dag-name arg1 arg2 arg3 arg4 arg5 arg6 arg7 array-depth)) arity-fn-call-alist-alist))
 
          ;;(arity-call-record (pair-arities-with-calls-new calls nil)) ;this digs definitions out of the state
 
@@ -444,7 +446,7 @@
          ;; returns the (unquoted) value of the top-node of the dag
          (defund ,dag-val-name (dag alist interpreted-function-alist array-depth)
            (declare (xargs :measure 0 ;ffixme
-                           :guard (and (or (quotep dag)
+                           :guard (and (or (myquotep dag)
                                            (and (pseudo-dagp dag)
                                                 ;; todo: why not <= ?
                                                 (< (len dag) *max-1d-array-length*)) ;can't guarantee this, so perhaps we should check it (same for all args?)
@@ -476,11 +478,14 @@
          ;;tail recursive - redoes some analysis of nodes with unprocessed children, but maybe worth it since it's tail-recursive?
          ;; all functions to evaluate must be either built-in or passed in in interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
          ;; the cdrs of var-value-alist are never quoted?
-         ;; all the variables in dag-lst must have bindings in alist - do we check this?
+         ;; all the variables in the dag must have bindings in alist - do we check this?
          ;; if an entry in eval-array is nil, that spot is not yet computed.  if it's (cons val nil), the value is val
-         (defund ,eval-dag-name (nodenum-worklist dag-array-name dag-array var-value-alist eval-array-name
-                                                 eval-array ;computed values are wrapped in cons
-                                                 interpreted-function-alist array-depth)
+         (defund ,eval-dag-name (nodenum-worklist ; would be nice if this was increasing - merge sort the children?
+                                 dag-array-name dag-array
+                                 var-value-alist
+                                 eval-array-name eval-array ;computed values are wrapped in cons
+                                 interpreted-function-alist
+                                 array-depth)
            (declare (xargs :guard (and (nat-listp nodenum-worklist)
                                        (if (consp nodenum-worklist)
                                            (pseudo-dag-arrayp dag-array-name dag-array (+ 1 (maxelem nodenum-worklist)))
@@ -512,9 +517,11 @@
                                          interpreted-function-alist array-depth))
                      ;;function call or if
                      (let ((dargs (dargs expr)))
-                       (if (or (eq 'if fn) ;maybe also bif? ;ffixme boolif!  but add a boolfix..
-                               (eq 'myif fn)
-                               (eq 'bvif fn))
+                       (if (or (and (or (eq 'if fn) ;maybe also bif? ;ttodo: boolif! but add a boolfix..
+                                        (eq 'myif fn))
+                                    (= 3 (len dargs)))
+                               (and (eq 'bvif fn)
+                                    (= 4 (len dargs))))
                            ;;if it's an ITE, only evaluate the branch we need
                            (let* ((test (if (eq 'bvif fn)
                                             (second dargs)
@@ -587,7 +594,6 @@
                                                eval-array-name
                                                (aset1 eval-array-name eval-array nodenum (cons value nil))
                                                interpreted-function-alist array-depth)))))))))))))
-
 
         ;; The ARGS passed in to this version must all be quoted.
         ;; fn must be either built-in or passed in via interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown

@@ -57,7 +57,8 @@
            (fn (car entry))
            (expr (cdr entry)))
       (if (not (and (true-listp expr)
-                    (equal current-arity (len (fargs expr)))))
+                    ;;(equal current-arity (len (fargs expr))) ; todo: option to put this back? ; might involve a wrapper like eval-in-logic
+                    ))
           (er hard? 'make-eval-case-for-fns "Bad entry for fn ~x0 in the fn-call-alist." fn)
         (cons
           `(,fn ,(if tracingp

@@ -1,7 +1,7 @@
 ; Alists mapping functions to definitions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -35,6 +35,13 @@
       t
     (and (interpreted-function-infop (first infos))
          (all-interpreted-function-infop (rest infos)))))
+
+(local
+  (defthm all-interpreted-function-infop-of-cons
+    (equal (all-interpreted-function-infop (cons info infos))
+           (and (interpreted-function-infop info)
+                (all-interpreted-function-infop infos)))
+    :hints (("Goal" :in-theory (enable all-interpreted-function-infop)))))
 
 ;;
 ;; interpreted-function-alistp
@@ -87,6 +94,13 @@
                             all-interpreted-function-infop)
                            (interpreted-function-infop)))))
 
+(defthmd true-listp-of-assoc-equal-when-interpreted-function-alistp
+  (implies (and (interpreted-function-alistp interpreted-function-alist)
+                ;(assoc-equal fn interpreted-function-alist)
+                )
+           (true-listp (assoc-equal fn interpreted-function-alist)))
+  :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
+
 ;maybe use a custom lookup and handle this rule of it?
 (defthmd true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
   (implies (and (interpreted-function-alistp interpreted-function-alist)
@@ -112,10 +126,10 @@
            :in-theory (e/d (interpreted-function-alistp)
                            (interpreted-function-infop-of-cdr-of-assoc-equal)))))
 
-(defthmd true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
+(defthmd true-listp-of-cdr-of-assoc-equal-when-interpreted-function-alistp
   (implies (and (interpreted-function-alistp interpreted-function-alist)
                 (assoc-equal fn interpreted-function-alist))
-           (true-listp (cadr (assoc-equal fn interpreted-function-alist))))
+           (true-listp (cdr (assoc-equal fn interpreted-function-alist))))
   :hints (("Goal" :in-theory (enable interpreted-function-alistp assoc-equal))))
 
 (defthmd symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp

@@ -364,7 +364,7 @@
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Unroll the computation:
        ;; TODO: Need this to return assumptions that may be needed in the proof (e.g., about separateness of memory regions)
-       ((mv erp result-dag-or-quotep & & & & state)
+       ((mv erp result-dag-or-quotep & & & & & state)
         (unroll-x86-code-core
           target
           parsed-executable
