@@ -492,6 +492,8 @@
   :short "Theorems about @(tsee get-imm-btype) applied to
           the encoding of instructions."
 
+  (local (include-book "arithmetic-5/top" :dir :system))
+
   (defrulel logbit-11-to-logtail-11-when-ubyte12p
     (implies (ubyte12p x)
              (equal (logbit 11 x)
@@ -500,8 +502,7 @@
              bool->bit
              logbitp
              ubyte12p
-             unsigned-byte-p)
-    :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+             unsigned-byte-p))
 
   (defrulel logapp-6-logtail-4-logtail-10
     (implies (integerp x)
@@ -509,19 +510,24 @@
                     (logtail 4 x)))
     :enable (logapp
              logtail
-             loghead)
-    :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+             loghead))
 
   (defruled get-imm-btype-of-instr-branch
-    (implies (ubyte12p imm)
-             (equal (get-imm-btype (encode (instr-branch funct rs1 rs2 imm) feat))
-                    imm))
-    :enable (get-imm-btype
-             encode
-             logbit-11-to-logtail-11-when-ubyte12p
-             logapp-1-of-logbit-logtail
-             logapp-6-logtail-4-logtail-10)
-    :disable bitops::logbit-to-logbitp))
+    (equal (get-imm-btype (encode (instr-branch funct rs1 rs2 imm) feat))
+           (ubyte12-fix imm))
+    :use (:instance lemma (imm (ubyte12-fix imm)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (ubyte12p imm)
+                (equal (get-imm-btype
+                        (encode (instr-branch funct rs1 rs2 imm) feat))
+                       imm))
+       :enable (get-imm-btype
+                encode
+                logbit-11-to-logtail-11-when-ubyte12p
+                logapp-1-of-logbit-logtail
+                logapp-6-logtail-4-logtail-10)
+       :disable bitops::logbit-to-logbitp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
