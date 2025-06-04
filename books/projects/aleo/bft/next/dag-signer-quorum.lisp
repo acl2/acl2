@@ -11,8 +11,7 @@
 
 (in-package "ALEOBFT")
 
-(include-book "proposed-author-in-committee")
-(include-book "proposed-endorser-in-committee")
+(include-book "active-committees-after-commit")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -24,14 +23,14 @@
 (defxdoc+ dag-signer-quorum
   :parents (correctness)
   :short "Invariant that each certificate in the DAG of a validator
-          has signers that form a quorum in the committee."
+          has signers with a quorum stake."
   :long
   (xdoc::topstring
    (xdoc::p
     "Certificates are added to DAGs by @('certify') and @('accept') events.
      In both cases, the validator checks that
      the active committee for the certificate's round can be calculated,
-     and that the signers form a quorum in that committee."))
+     and that the signers' stake forms a quorum in that committee."))
   :order-subtopics t
   :default-parent t)
 
@@ -49,8 +48,6 @@
                                             (certificate->round cert)
                                             vstate.blockchain)))
                                 (and commtt
-                                     (set::subset (certificate->signers cert)
-                                                  (committee-members commtt))
                                      (>= (validators-stake
                                           (certificate->signers cert) commtt)
                                          (committee-quorum-stake commtt))))))))
@@ -118,22 +115,15 @@
 
   (defruled dag-signer-quorum-p-of-certify-next
     (implies (and (certify-possiblep cert dests systate)
-                  (proposed-author-in-committee-p systate)
-                  (proposed-endorser-in-committee-p systate)
                   (dag-signer-quorum-p systate))
              (dag-signer-quorum-p (certify-next cert dests systate)))
     :use ((:instance dag-signer-quorum-p-necc
                      (val (mv-nth 0 (dag-signer-quorum-p-witness
                                      (certify-next cert dests systate))))
                      (cert (mv-nth 1 (dag-signer-quorum-p-witness
-                                      (certify-next cert dests systate)))))
-          (:instance proposed-endorser-in-committee-p-necc
-                     (val (mv-nth 0 (dag-signer-quorum-p-witness
-                                     (certify-next cert dests systate))))
-                     (prop (certificate->proposal cert))))
+                                      (certify-next cert dests systate))))))
     :enable (dag-signer-quorum-p
              dag-signer-quorum-p-necc
-             proposed-author-in-committee-p-necc
              validator-state->dag-of-certify-next
              certify-possiblep
              certificate->author
@@ -178,8 +168,6 @@
     (implies (and (event-possiblep event systate)
                   (last-blockchain-round-p systate)
                   (ordered-blockchain-p systate)
-                  (proposed-author-in-committee-p systate)
-                  (proposed-endorser-in-committee-p systate)
                   (dag-signer-quorum-p systate))
              (dag-signer-quorum-p (event-next event systate)))
     :enable (event-possiblep
@@ -192,8 +180,6 @@
   (implies (and (events-possiblep events systate)
                 (last-blockchain-round-p systate)
                 (ordered-blockchain-p systate)
-                (proposed-author-in-committee-p systate)
-                (proposed-endorser-in-committee-p systate)
                 (dag-signer-quorum-p systate))
            (dag-signer-quorum-p (events-next events systate)))
   :induct t
@@ -209,16 +195,12 @@
   :enable (system-state-reachablep
            dag-signer-quorum-p-when-init
            last-blockchain-round-p-when-init
-           ordered-blockchain-p-when-init
-           proposed-author-in-committee-p-when-init
-           proposed-endorser-in-committee-p-when-init)
+           ordered-blockchain-p-when-init)
   :prep-lemmas
   ((defrule lemma
      (implies (and (system-state-reachable-from-p systate from)
                    (last-blockchain-round-p from)
                    (ordered-blockchain-p from)
-                   (proposed-author-in-committee-p from)
-                   (proposed-endorser-in-committee-p from)
                    (dag-signer-quorum-p from))
               (dag-signer-quorum-p systate))
      :use (:instance
