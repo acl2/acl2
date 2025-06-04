@@ -1405,7 +1405,7 @@
 ;;     jnle-condition))
 
 ;; these are for functions axe can't evaluate
-(defun constant-opener-rules ()
+(defund constant-opener-rules ()
   (declare (xargs :guard t))
   '(x86isa::zf-spec$inline-constant-opener
 
@@ -1461,10 +1461,10 @@
     x86isa::sub-sf-spec64-constant-opener
     x86isa::sub-zf-spec64-constant-opener
 
-    ;;acl2::bool->bit$inline-constant-opener
-;    byte-ify-base
-;    x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
-;    x86isa::byte-listp-base-1
+    ;; acl2::bool->bit$inline-constant-opener
+    ;; byte-ify-base
+    ;; x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
+    ;; x86isa::byte-listp-base-1
 
     jo-condition-constant-opener
     jno-condition-constant-opener
@@ -1491,9 +1491,7 @@
 
     subregionp-constant-opener
     in-regionp-constant-opener
-    disjoint-regionsp-constant-opener
-
-    ))
+    disjoint-regionsp-constant-opener))
 
 (defun get-prefixes-openers ()
   (declare (xargs :guard t))
@@ -2567,6 +2565,7 @@
      acl2::signed-byte-p-logext)
    (region-rules)
    (acl2::lookup-rules)
+   (constant-opener-rules)
    ;; needed for BV-mode:
    '(acl2::bvchop-of-+-becomes-bvplus
      acl2::bvplus-trim-leading-constant)))
