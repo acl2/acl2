@@ -60,8 +60,7 @@
   :elt-type block
   :true-listp t
   :elementp-of-nil nil
-  :pred block-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred block-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -152,14 +151,14 @@
 
   ///
 
-  (defruled evenp-of-blocks-last-round
+  (defrule evenp-of-blocks-last-round
     (evenp (blocks-last-round blocks)))
 
   (defruled oldest-of-prefix-gt-newest-of-suffix-when-blocks-orderedp
     (implies (and (blocks-orderedp (append blocks1 blocks2))
                   (consp blocks1))
-             (> (block->round (car (last blocks1)))
-                (blocks-last-round blocks2)))
+             (>= (block->round (car (last blocks1)))
+                 (+ 2 (blocks-last-round blocks2))))
     :rule-classes ((:linear
                     :trigger-terms ((block->round (car (last blocks1)))
                                     (blocks-last-round blocks2))))

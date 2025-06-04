@@ -68,8 +68,7 @@
                   (set::in val (correct-addresses systate)))
              (evenp (validator-state->last
                      (get-validator-state val systate))))
-    :enable (evenp-of-blocks-last-round
-             last-blockchain-round-p-necc)
+    :enable last-blockchain-round-p-necc
     :disable ordered-blockchain-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

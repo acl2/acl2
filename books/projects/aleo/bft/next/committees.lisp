@@ -258,6 +258,10 @@
                   '(:use (:instance posp-of-validator-stake
                                     (val (set::head vals)))))))
 
+  (defruled not-emptyp-when-validators-stake-gt-0
+    (implies (> (validators-stake vals commtt) 0)
+             (not (set::emptyp vals))))
+
   (defrule validators-stake-of-empty
     (equal (validators-stake nil commtt)
            0))

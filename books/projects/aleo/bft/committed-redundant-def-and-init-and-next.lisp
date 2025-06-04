@@ -311,7 +311,6 @@
              certificate->author-of-last-anchor
              certificate->round-of-last-anchor
              ordered-blockchain-p-necc
-             evenp-of-blocks-last-round
              evenp-lemma
              set::expensive-rules)
     :use ((:instance certificate-causal-history-subset-when-path
