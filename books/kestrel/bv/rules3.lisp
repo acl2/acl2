@@ -1712,26 +1712,21 @@
                   (bvcat highsize highval lowsize (bvplus lowsize x y))))
   :hints (("Goal" :in-theory (e/d (bvplus) (
                                             )))))
-
-(defthm bvplus-of-*-arg2
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z)
-                (natp size))
+;todo: rename
+(defthmd bvplus-of-*-arg2
+  (implies (and (integerp y)
+                (integerp z))
            (equal (bvplus size x (* y z))
                   (bvplus size x (bvmult size y z))))
   :hints (("Goal" :in-theory (enable bvmult))))
 
-;add in:
-;; (defthm bvplus-of-*-arg1
-;;   (implies (and (integerp x)
-;;                 (integerp y)
-;;                 (integerp z)
-;;                 (natp size)
-;;                 )
-;;            (equal (bvplus size (* y z) x)
-;;                   (bvplus size (bvmult size y z) x)))
-;;   :hints (("Goal" :in-theory (enable bvmult))))
+;todo: rename
+(defthmd bvplus-of-*-arg1
+  (implies (and (integerp y)
+                (integerp z))
+           (equal (bvplus size (* y z) x)
+                  (bvplus size (bvmult size y z) x)))
+  :hints (("Goal" :in-theory (enable bvmult))))
 
 ;fixme gen
 (defthm bvplus-of-bvcat-of-0-hack

@@ -1,8 +1,24 @@
-int nosimp(int x) {
+int nosimp_int(int x) {
   int x1 = +x;
   int x2 = -x;
   int x3 = ~x;
   int x4 = !x;
+  return x1 + x2 + x3 + x4;
+}
+
+int nosimp_short(short x) {
+  int x1 = +x;
+  int x2 = -x;
+  int x3 = ~x;
+  int x4 = !x;
+  return x1 + x2 + x3 + x4;
+}
+
+unsigned long nosimp_ulong(unsigned long x) {
+  unsigned long x1 = +x;
+  unsigned long x2 = -x;
+  unsigned long x3 = ~x;
+  unsigned long x4 = !x;
   return x1 + x2 + x3 + x4;
 }
 
@@ -49,6 +65,10 @@ int paren() {
 
 void nonint_const() {
   long long ll = 34LL;
+}
+
+int ternary_int(int x, int y, int z) {
+  return x ? y : z;
 }
 
 int main() {

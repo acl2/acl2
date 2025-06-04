@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,12 +13,22 @@
 
 (include-book "library-extensions")
 
+(include-book "kestrel/fty/deflist-of-len" :dir :system)
+(include-book "kestrel/fty/sbyte32" :dir :system)
+(include-book "kestrel/fty/sbyte64" :dir :system)
+(include-book "kestrel/fty/ubyte5" :dir :system)
+(include-book "kestrel/fty/ubyte16" :dir :system)
+(include-book "kestrel/fty/ubyte32" :dir :system)
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
-(include-book "kestrel/fty/deflist-of-len" :dir :system)
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
+(local (include-book "kestrel/fty/sbyte32-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/sbyte64-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
+(local (include-book "kestrel/fty/ubyte64-ihs-theorems" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,8 +37,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ states64
-  :parents (states)
-  :short "Model of states for RV64I."
+  :parents (rv64im)
+  :short "Model of states for RV64IM."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -136,7 +147,14 @@
     (if (= reg 0)
         0
       (nth (1- reg) (state64->xregfile stat))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (val natp
+        :rule-classes :type-prescription
+        :hints (("Goal" :in-theory (disable read64-xreg-unsigned))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -404,12 +422,13 @@
    (xdoc::p
     "The address is any integer,
      which we turn into a 64-bit unsigned address."))
-  (b* ((addr (loghead 64 addr)))
-    (change-state64 stat :mem (update-nth (loghead 64 addr)
-                                          (ubyte8-fix val)
-                                          (state64->mem stat))))
+  (change-state64 stat :mem (update-nth (loghead 64 addr)
+                                        (ubyte8-fix val)
+                                        (state64->mem stat)))
   :guard-hints (("Goal" :in-theory (enable memory64p)))
+
   ///
+
   (fty::deffixequiv write64-mem-ubyte8
     :hints (("Goal" :in-theory (enable loghead)))))
 

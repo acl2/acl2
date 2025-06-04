@@ -263,7 +263,7 @@
      We must also ensure that there are no type qualifiers,
      which are not supported in the formal semantics."))
   (b* (((tyname tyname) tyname)
-       ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specqual)))
+       ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specquals)))
     (and okp
          (type-spec-list-integer-formalp tyspecs)
          (not tyname.decl?)))
@@ -890,20 +890,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define paramdeclor-formalp ((paramdeclor paramdeclorp))
-  :guard (paramdeclor-unambp paramdeclor)
+(define param-declor-formalp ((paramdeclor param-declorp))
+  :guard (param-declor-unambp paramdeclor)
   :returns (yes/no booleanp)
   :short "Check if a parameter declarator has formal dynamic semantics."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Based on @(tsee ldm-paramdeclor),
+    "Based on @(tsee ldm-param-declor),
      the parameter declarator must be present and not abstract.
      The underlying declarator must be supported, for an object."))
-  (paramdeclor-case
+  (param-declor-case
    paramdeclor
-   :declor (declor-obj-formalp paramdeclor.unwrap)
-   :absdeclor nil
+   :nonabstract (declor-obj-formalp paramdeclor.declor)
+   :abstract nil
    :none nil
    :ambig (impossible))
   :hooks (:fix))
@@ -924,7 +924,7 @@
        ((mv okp tyspecs) (check-decl-spec-list-all-typespec param.specs)))
     (and okp
          (type-spec-list-formalp tyspecs)
-         (paramdeclor-formalp param.declor)))
+         (param-declor-formalp param.declor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

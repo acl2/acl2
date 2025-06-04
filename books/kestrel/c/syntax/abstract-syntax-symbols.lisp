@@ -273,13 +273,13 @@
     param-declon-list-fix
     param-declon-list-count
 
-    paramdeclorp
-    paramdeclor-fix
-    paramdeclor-count
-    paramdeclor-case
-    paramdeclor-declor
-    paramdeclor-absdeclor
-    paramdeclor-none
+    param-declorp
+    param-declor-fix
+    param-declor-count
+    param-declor-case
+    param-declor-nonabstract
+    param-declor-abstract
+    param-declor-none
 
     tynamep
     tyname-fix
@@ -444,7 +444,7 @@
     irr-absdeclor
     irr-dirabsdeclor
     irr-param-declon
-    irr-paramdeclor
+    irr-param-declor
     irr-decl
     irr-stmt
     irr-block-item
@@ -483,7 +483,7 @@
     dirabsdeclor-option-unambp
     param-declon-unambp
     param-declon-list-unambp
-    paramdeclor-unambp
+    param-declor-unambp
     tyname-unambp
     strunispec-unambp
     structdecl-unambp

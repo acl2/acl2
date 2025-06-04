@@ -2695,13 +2695,13 @@
                                     ordinary identifer."
                                    (ident->unwrap tyspec.name)))))
                   (valid-ord-info-case
-                    info?
-                    :typedef (retok (type-spec-typedef tyspec.name)
-                                    info?.def
-                                    nil
-                                    nil
-                                    same-table)
-                    :otherwise (reterr (msg "The identifier ~x0 does not ~
+                   info?
+                   :typedef (retok (type-spec-typedef tyspec.name)
+                                   info?.def
+                                   nil
+                                   nil
+                                   same-table)
+                   :otherwise (reterr (msg "The identifier ~x0 does not ~
                                              represent a typedef."))))
        :int128 (retok (type-spec-int128) nil ext-tyspecs nil same-table)
        :float32 (if (endp tyspecs)
@@ -3904,7 +3904,7 @@
              (if (equal dirdeclor.params
                         (list (make-param-declon
                                :specs (list (decl-spec-typespec (type-spec-void)))
-                               :declor (paramdeclor-none))))
+                               :declor (param-declor-none))))
                  (retok dirdeclor.params nil table)
                (valid-param-declon-list
                 dirdeclor.params fundef-params-p table ienv)))
@@ -4141,7 +4141,7 @@
              (if (equal dirabsdeclor.params
                         (list (make-param-declon
                                :specs (list (decl-spec-typespec (type-spec-void)))
-                               :declor (paramdeclor-none))))
+                               :declor (param-declor-none))))
                  (retok dirabsdeclor.params nil table)
                (valid-param-declon-list dirabsdeclor.params nil table ienv)))
             (table (valid-pop-scope table)))
@@ -4233,7 +4233,7 @@
                        (param-declon-fix paramdecl)
                        (stor-spec-list-fix storspecs))))
          ((erp new-decl type ident? more-types table)
-          (valid-paramdeclor paramdecl.declor type table ienv))
+          (valid-param-declor paramdecl.declor type table ienv))
          ((when (and fundef-params-p
                      (not ident?)))
           (reterr (msg "The parameter declaration ~x0 ~
@@ -4297,13 +4297,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-paramdeclor ((paramdeclor paramdeclorp)
-                             (type typep)
-                             (table valid-tablep)
-                             (ienv ienvp))
-    :guard (paramdeclor-unambp paramdeclor)
+  (define valid-param-declor ((paramdeclor param-declorp)
+                              (type typep)
+                              (table valid-tablep)
+                              (ienv ienvp))
+    :guard (param-declor-unambp paramdeclor)
     :returns (mv erp
-                 (new-paramdeclor paramdeclorp)
+                 (new-paramdeclor param-declorp)
                  (new-type typep)
                  (ident? ident-optionp)
                  (return-types type-setp)
@@ -4327,34 +4327,34 @@
        If the parameter declarator is absent,
        we return the type unchanged and no identifer."))
     (b* (((reterr)
-          (irr-paramdeclor) (irr-type) (irr-ident) nil (irr-valid-table)))
-      (paramdeclor-case
+          (irr-param-declor) (irr-type) (irr-ident) nil (irr-valid-table)))
+      (param-declor-case
        paramdeclor
-       :declor
+       :nonabstract
        (b* (((erp new-declor & type ident types table)
-             (valid-declor paramdeclor.unwrap nil type table ienv)))
-         (retok (paramdeclor-declor new-declor)
+             (valid-declor paramdeclor.declor nil type table ienv)))
+         (retok (param-declor-nonabstract new-declor)
                 type
                 ident
                 types
                 table))
-       :absdeclor
+       :abstract
        (b* (((erp new-absdeclor type types table)
-             (valid-absdeclor paramdeclor.unwrap type table ienv)))
-         (retok (paramdeclor-absdeclor new-absdeclor)
+             (valid-absdeclor paramdeclor.declor type table ienv)))
+         (retok (param-declor-abstract new-absdeclor)
                 type
                 nil
                 types
                 table))
        :none
-       (retok (paramdeclor-none)
+       (retok (param-declor-none)
               (type-fix type)
               nil
               nil
               (valid-table-fix table))
        :ambig
        (prog2$ (impossible) (reterr t))))
-    :measure (paramdeclor-count paramdeclor))
+    :measure (param-declor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4380,11 +4380,11 @@
        We return the latter type."))
     (b* (((reterr) (irr-tyname) (irr-type) nil (irr-valid-table))
          ((tyname tyname) tyname)
-         ((erp new-specqual type types table)
-          (valid-spec/qual-list tyname.specqual nil nil table ienv))
+         ((erp new-specquals type types table)
+          (valid-spec/qual-list tyname.specquals nil nil table ienv))
          ((erp new-decl? type more-types table)
           (valid-absdeclor-option tyname.decl? type table ienv)))
-      (retok (make-tyname :specqual new-specqual :decl? new-decl?)
+      (retok (make-tyname :specquals new-specquals :decl? new-decl?)
              type
              (set::union types more-types)
              table))
@@ -4893,8 +4893,8 @@
                            currentp
                            (or (not (valid-ord-info-case info? :typedef))
                                (not (type-compatiblep
-                                      (valid-ord-info-typedef->def info?)
-                                      type)))))
+                                     (valid-ord-info-typedef->def info?)
+                                     type)))))
                 (reterr (msg "The typedef name ~x0 ~
                               is already declared in the current scope ~
                               with associated information ~x1."
@@ -5684,11 +5684,11 @@
                (param-declon-list-unambp new-paramdecls))
       :hyp (param-declon-list-unambp paramdecls)
       :fn valid-param-declon-list)
-    (defret paramdeclor-unambp-of-valid-paramdeclor
+    (defret param-declor-unambp-of-valid-param-declor
       (implies (not erp)
-               (paramdeclor-unambp new-paramdeclor))
-      :hyp (paramdeclor-unambp paramdeclor)
-      :fn valid-paramdeclor)
+               (param-declor-unambp new-paramdeclor))
+      :hyp (param-declor-unambp paramdeclor)
+      :fn valid-param-declor)
     (defret tyname-unambp-of-valid-tyname
       (implies (not erp)
                (tyname-unambp new-tyname))

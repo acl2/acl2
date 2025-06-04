@@ -33,12 +33,13 @@
 ;; TODO: Support expressing bytes in terms of single bit-vars
 ;; TODO: Support expressing the whole array as a single value (a byte-list)
 ;; todo: rename because this now also puts in non-null assumptions
-(defund var-intro-assumptions-for-array-input (index element-count bytes-per-element pointer-name var-name-base assumptions-acc vars-acc)
+(defund var-intro-assumptions-for-array-input (index element-count bytes-per-element pointer-name var-name-base type-assumptions-for-array-varsp assumptions-acc vars-acc)
   (declare (xargs :guard (and (natp index)
                               (natp element-count)
                               (posp bytes-per-element)
                               (symbolp pointer-name)
                               (symbolp var-name-base)
+                              (booleanp type-assumptions-for-array-varsp)
                               (true-listp assumptions-acc)
                               (symbol-listp vars-acc))
                   :measure (nfix (+ 1 (- element-count index)))))
@@ -46,10 +47,11 @@
                          (natp index))))
           (<= element-count index))
       (mv assumptions-acc vars-acc) ; will be reversed later
-    (let ((var (acl2::pack-in-package "X" var-name-base index))
+    (let ((var (acl2::pack-in-package "X" var-name-base index) ; todo: consider this (acl2::pack-in-package "X" var-name-base "[" index "]").  better if the var-name-base ends in a number
+               )
           (element-offset (* index bytes-per-element))
           )
-      (var-intro-assumptions-for-array-input (+ 1 index) element-count bytes-per-element pointer-name var-name-base
+      (var-intro-assumptions-for-array-input (+ 1 index) element-count bytes-per-element pointer-name var-name-base type-assumptions-for-array-varsp
                                              (cons `(equal (read ,bytes-per-element
                                                                  ,(if (= 0 index)
                                                                       pointer-name ; special case (offset of 0)
@@ -62,19 +64,22 @@
                                                              `(not (equal '0 (bvchop '64 ,pointer-name)))
                                                            `(not (equal '0 (bvplus '64 ',element-offset ,pointer-name))) ; may get simplified later
                                                            )
-                                                         assumptions-acc))
+                                                         (if type-assumptions-for-array-varsp
+                                                             (cons `(unsigned-byte-p ',(* 8 bytes-per-element) ,var)
+                                                                   assumptions-acc)
+                                                           assumptions-acc)))
                                              (cons var vars-acc)))))
 
 (local
   (defthm true-listp-of-mv-nth-0-of-var-intro-assumptions-for-array-input
     (implies (true-listp assumptions-acc)
-             (true-listp (mv-nth 0 (var-intro-assumptions-for-array-input index element-count bytes-per-element pointer-name var-name-base assumptions-acc vars-acc))))
+             (true-listp (mv-nth 0 (var-intro-assumptions-for-array-input index element-count bytes-per-element pointer-name var-name-base type-assumptions-for-array-varsp assumptions-acc vars-acc))))
     :hints (("Goal" :in-theory (enable var-intro-assumptions-for-array-input)))))
 
 (local
   (defthm symbol-listp-of-mv-nth-1-of-var-intro-assumptions-for-array-input
     (implies (symbol-listp vars-acc)
-             (symbol-listp (mv-nth 1 (var-intro-assumptions-for-array-input index element-count bytes-per-element pointer-name var-name-base assumptions-acc vars-acc))))
+             (symbol-listp (mv-nth 1 (var-intro-assumptions-for-array-input index element-count bytes-per-element pointer-name var-name-base type-assumptions-for-array-varsp assumptions-acc vars-acc))))
     :hints (("Goal" :in-theory (enable var-intro-assumptions-for-array-input)))))
 
 ;; (var-intro-assumptions-for-array-input '0 '6 '4 'foo-ptr 'foo)
@@ -190,7 +195,7 @@
          (and (symbol-listp names)
               ;; Can't use the same name as a register (would make the output-indicator ambiguous):
               ;; todo: print a message when this check fails:
-              (not (intersection-equal (acl2::map-symbol-name names) '("RAX" "EAX" "ZMM0" "YMM0" "XMM0"))) ; todo: keep in sync with normal-output-indicatorp
+              (not (intersection-equal (acl2::map-symbol-name names) '("RAX" "EAX" "ZMM0" "YMM0" "XMM0"))) ; todo: keep in sync with wrap-in-normal-output-extractor
               ;; Types are symbols, e.g., u8[64]:
               (symbol-listp types)))))
 
@@ -202,13 +207,15 @@
                                input-type ;; examples: u32 or u32* or u32[4]
                                state-component
                                stack-slots
-                               disjoint-chunk-addresses-and-lens)
+                               disjoint-chunk-addresses-and-lens
+                               type-assumptions-for-array-varsp)
   (declare (xargs :guard (and (symbolp input-name)
                               (symbolp input-type)
                               ;;state-component might be rdi or (rdi x86)
                               (natp stack-slots)
                               (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
-                              (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens)))))
+                              (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
+                              (booleanp type-assumptions-for-array-varsp))))
   (let ((type (parse-type input-type)))
     (if (eq :error type)
         (prog2$ (er hard? 'assumptions-for-input "Bad input type: ~x0." type)
@@ -263,7 +270,7 @@
                      (numbytes (* element-count bytes-per-element))
                      (pointer-name (acl2::pack-in-package "X" input-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
                      ((mv assumptions input-assumption-vars-rev)
-                      (var-intro-assumptions-for-array-input 0 element-count bytes-per-element pointer-name input-name nil nil)))
+                      (var-intro-assumptions-for-array-input 0 element-count bytes-per-element pointer-name input-name type-assumptions-for-array-varsp nil nil)))
                   (mv ;;todo: think about the order here (it will be reversed!):
                     (append assumptions
                               `(;; Rewriting will replace the state component with the pointer's name:
@@ -293,26 +300,27 @@
 (local
   (defthm true-listp-of-mv-nth-0-of-assumptions-for-input
     (implies (true-listp assumptions-acc)
-             (true-listp (mv-nth 0 (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens))))
+             (true-listp (mv-nth 0 (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp))))
     :hints (("Goal" :in-theory (enable assumptions-for-input)))))
 
 (local
   (defthm symbol-listp-of-mv-nth-1-of-assumptions-for-input
     (implies (and (symbol-listp vars-acc)
                   (symbolp input-name))
-             (symbol-listp (mv-nth 1 (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens))))
+             (symbol-listp (mv-nth 1 (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp))))
     :hints (("Goal" :in-theory (enable assumptions-for-input)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv assumptions input-assumption-vars).
 ;; might have extra, unneeded items in state-components
-(defun input-assumptions-and-vars (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens assumptions-acc vars-acc)
+(defun input-assumptions-and-vars (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc)
   (declare (xargs :guard (and (names-and-typesp input-names-and-types)
                               (true-listp state-components)
                               (natp stack-slots)
                               (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
                               (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
+                              (booleanp type-assumptions-for-array-varsp)
                               (true-listp assumptions-acc)
                               (symbol-listp vars-acc))
                   :guard-hints (("Goal" :in-theory (enable acl2::true-listp-when-symbol-listp-rewrite-unlimited)))))
@@ -324,9 +332,10 @@
          (input-type (second name-and-type))
          (state-component (first state-components))
          ((mv assumptions-for-first vars-for-first-rev)
-          (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens)))
+          (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp)))
       (input-assumptions-and-vars (rest input-names-and-types)
                                   (rest state-components) stack-slots disjoint-chunk-addresses-and-lens
+                                  type-assumptions-for-array-varsp
                                   (append assumptions-for-first assumptions-acc)
                                   (append vars-for-first-rev vars-acc) ; todo: check for dups
                                   ))))

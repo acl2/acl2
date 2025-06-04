@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,13 +12,13 @@
 (in-package "RISCV")
 
 (include-book "decoding")
-(include-book "semantics")
+(include-book "semantics64")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ execution64
   :parents (execution)
-  :short "Model of execution for RV64I."
+  :short "Model of execution for RV64IM."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -36,7 +37,7 @@
    (xdoc::p
     "We make no change if the error flag is set.
      Otherwise, we read the program counter,
-     we read the 32-bit of the instruction from there
+     we read the 32-bit encoding of the instruction from there
      (which is always little endian [ISA:1.5.1]),
      we decode it, and, if we obtain an instruction,
      we run the semantic function of the instruction;
@@ -44,7 +45,7 @@
   (b* (((when (error64p stat)) (state64-fix stat))
        (pc (read64-pc stat))
        (enc (read64-mem-ubyte32-lendian pc stat))
-       (instr? (decode enc t))
+       (instr? (decode enc (feat-rv64im)))
        ((unless instr?) (error64 stat)))
     (exec64-instr instr? pc stat))
   :hooks (:fix))

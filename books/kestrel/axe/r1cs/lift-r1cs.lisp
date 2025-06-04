@@ -179,9 +179,9 @@
                                          ,print
                                          ',whole-form
                                          state))
-  :parents (r1cs-verification-with-axe)
+  :parents (acl2::axe-r1cs)
   :short "A tool to lift an R1CS into logic"
-  :description "Lifts an R1CS into a logical term, represented as an Axe DAG.  Takes an R1CS, given as a list of variables, a list of constraints, and a prime.  Creates a constant DAG whose name is the @('name-of-defconst') input supplied by the user.  The lifting is done by applying the Axe Rewriter.  See also @(tsee r1cs-verification-with-axe)."
+  :description "Lifts an R1CS into a logical term, represented as an Axe DAG.  Takes an R1CS, given as a list of variables, a list of constraints, and a prime.  Creates a constant DAG whose name is the @('name-of-defconst') input supplied by the user.  The lifting is done by applying the Axe Rewriter.  See also @(tsee acl2::axe-r1cs)."
   :args ((name-of-defconst "The name of the defconst (a symbol) that will be created to hold the DAG.  This name should start and end with @('*').")
          (vars "A form that evaluates to the variables of the R1CS.")
          (constraints "A form that evaluates to the constraints of the R1CS.")

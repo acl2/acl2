@@ -71,6 +71,16 @@
          (nfix n))
   :hints (("Goal" :in-theory (enable read-bytes))))
 
+(defthm consp-of-read-bytes
+  (equal (consp (read-bytes addr n x86))
+         (posp n))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
+(defthm read-bytes-iff
+  (iff (read-bytes addr n x86)
+       (posp n))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund write-bytes (addr bytes x86)

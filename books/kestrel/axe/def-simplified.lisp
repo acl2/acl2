@@ -202,10 +202,11 @@
        (assumptions (translate-terms assumptions 'def-simplified-fn (w state))))
     (def-simplified-fn-core defconst-name term rules extra-rules remove-rules assumptions interpreted-function-alist monitor memoizep count-hits normalize-xors print whole-form state)))
 
-;; ;; TODO: update, or use defmacro-doc
+;; ;; TODO: update, or use defmacrodoc
 ;; (defxdoc def-simplified
-;;   :parents (axe)
-;;   :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
+;;   :parents (axe-core)
+;;   :short "A tool to simplify a term or DAG."
+;; ;;   :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
 ;;   :long "<h3>General Form:</h3>
 
 ;; @({

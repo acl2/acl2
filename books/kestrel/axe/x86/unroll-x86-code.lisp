@@ -42,6 +42,7 @@
 (include-book "kestrel/x86/rflags2" :dir :system)
 (include-book "kestrel/x86/support-bv" :dir :system)
 (include-book "kestrel/x86/alt-defs" :dir :system)
+(include-book "kestrel/x86/read-and-write2" :dir :system)
 (include-book "rule-lists")
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
@@ -97,6 +98,8 @@
 
 (acl2::ensure-rules-known (unroller-rules32))
 (acl2::ensure-rules-known (unroller-rules64))
+(acl2::ensure-rules-known (read-and-write-rules-bv))
+(acl2::ensure-rules-known (read-and-write-rules-non-bv))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 (acl2::ensure-rules-known (step-opener-rules32))
 (acl2::ensure-rules-known (step-opener-rules64))
@@ -454,7 +457,18 @@
          ((when nothing-changedp)
           (cw "Note: Stopping the run because nothing changed.~%")
           (mv (erp-nil) dag state)) ; todo: return an error?  or maybe this can happen if we hit one of the stop-pcs
-         (run-completedp (not (intersection-eq '(run-until-stack-shorter-than run-until-stack-shorter-than-or-reach-pc) dag-fns))) ;; stop if the run is done
+         (run-completedp (not (intersection-eq '(run-until-stack-shorter-than
+                                                 run-until-stack-shorter-than-or-reach-pc
+                                                 ;; new scheme:
+                                                 run-until-rsp-is
+                                                 run-until-rsp-is-or-reach-pc
+                                                 ;; newer scheme:
+                                                 run-until-rsp-is-above
+                                                 run-until-rsp-is-above-or-reach-pc
+                                                 ;; new:
+                                                 x86-fetch-decode-execute
+                                                 )
+                                               dag-fns))) ;; stop if the run is done
          (- (and run-completedp (cw " The run has completed.~%")))
          )
       (if run-completedp
@@ -474,24 +488,24 @@
                 ;;                     :limits limits
                 ;;                     :memoizep memoizep
                 ;;                     :check-inputs nil)
-                  (mv-let (erp result limits state)
-                    (acl2::simplify-dag-x86 dag
-                                            assumptions
-                                            rule-alist
-                                            nil ; interpreted-function-alist
-                                            (acl2::known-booleans (w state))
-                                            normalize-xors
-                                            limits
-                                            memoizep
-                                            count-hits
-                                            print
-                                            rules-to-monitor
-                                            '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
-                                            state)
-                    (declare (ignore limits)) ; todo: use the limits?
-                    (mv erp result state))
+                (mv-let (erp result limits state)
+                  (acl2::simplify-dag-x86 dag
+                                          assumptions
+                                          rule-alist
+                                          nil ; interpreted-function-alist
+                                          (acl2::known-booleans (w state))
+                                          normalize-xors
+                                          limits
+                                          memoizep
+                                          count-hits
+                                          print
+                                          rules-to-monitor
+                                          '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
+                                          state)
+                  (declare (ignore limits)) ; todo: use the limits?
+                  (mv erp result state))
                   ;)
-                  )
+                )
                ((when erp) (mv erp nil state))
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
                )
@@ -583,8 +597,9 @@
        (- (cw " Done simplifying assumptions)~%")))
     (mv nil assumptions assumption-rules state)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp result-dag-or-quotep assumptions input-assumption-vars lifter-rules-used assumption-rules-used state).
+;; Returns (mv erp result-dag-or-quotep assumptions input-assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state).
 ;; This is also called by the formal unit tester.
 (defun unroll-x86-code-core (target
                              parsed-executable
@@ -594,13 +609,14 @@
                              stack-slots
                              position-independent
                              inputs
-                             output
+                             type-assumptions-for-array-varsp
+                             output-indicator
                              use-internal-contextsp
                              prune-precise
                              prune-approx
                              extra-rules
                              remove-rules
-                             extra-assumption-rules
+                             extra-assumption-rules ; todo: why "extra"?
                              remove-assumption-rules
                              step-limit
                              step-increment
@@ -612,6 +628,7 @@
                              print
                              print-base
                              untranslatep
+                             bvp ; whether to use new-style assumptions
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable
@@ -621,7 +638,8 @@
                               (natp stack-slots)
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
-                              (output-indicatorp output)
+                              (booleanp type-assumptions-for-array-varsp)
+                              ;; (output-indicatorp output-indicator)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
@@ -643,7 +661,8 @@
                               (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
-                              (booleanp untranslatep))
+                              (booleanp untranslatep)
+                              (booleanp bvp))
                   :stobjs state
                   :mode :program ; todo: need a magic wrapper for translate-terms (must translate at least the user-supplied assumptions)
                   ))
@@ -673,7 +692,7 @@
        ((when (and (not position-independentp) ; todo: think about this:
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
-        (mv :bad-options nil nil nil nil nil state))
+        (mv :bad-options nil nil nil nil nil nil state))
        (- (if position-independentp (cw "Using position-independent lifting.~%") (cw "Using non-position-independent lifting.~%")))
        (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
@@ -725,7 +744,9 @@
                                            'x86
                                            base-var
                                            inputs
+                                           type-assumptions-for-array-varsp
                                            disjoint-chunk-addresses-and-lens
+                                           bvp
                                            parsed-executable)))
                  ((when erp) (mv erp nil nil nil nil state))
 
@@ -789,18 +810,21 @@
                                                          ',parsed-executable
                                                          ',stack-slots
                                                          ,text-offset
+                                                         ',bvp
                                                          x86))
                      (if (eq :pe-64 executable-type)
                          `((standard-assumptions-pe-64 ',target
                                                        ',parsed-executable
                                                        ',stack-slots
                                                        text-offset
+                                                       ',bvp
                                                        x86))
                        (if (eq :elf-64 executable-type)
                            `((standard-assumptions-elf-64 ',target
                                                           ',parsed-executable
                                                           ',stack-slots
                                                           ,text-offset
+                                                          ',bvp
                                                           x86))
                          (if (eq :mach-o-32 executable-type)
                              (gen-standard-assumptions-mach-o-32 target parsed-executable stack-slots)
@@ -821,6 +845,7 @@
                                                 '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                                 stack-slots
                                                 (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
+                                                type-assumptions-for-array-varsp
                                                 nil nil)
                   (mv nil nil)))
                (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
@@ -829,9 +854,9 @@
                (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
                (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
                                                                      (print-terms-elided assumptions
-                                                                                         '((standard-assumptions-elf-64 t nil t t t)
-                                                                                           (standard-assumptions-mach-o-64 t nil t t t)
-                                                                                           (standard-assumptions-pe-64 t nil t t t)
+                                                                                         '((standard-assumptions-elf-64 t nil t t t t)
+                                                                                           (standard-assumptions-mach-o-64 t nil t t t t)
+                                                                                           (standard-assumptions-pe-64 t nil t t t t)
                                                                                            )) ; todo: more?
                                                                      (cw ")~%"))))
                ;; Next, we simplify the assumptions.  This allows us to state the
@@ -846,7 +871,7 @@
             (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))
        ((when erp)
         (er hard? 'unroll-x86-code-core "Error generating assumptions: ~x0." erp)
-        (mv erp nil nil nil nil nil state))
+        (mv erp nil nil nil nil nil nil state))
        (- (and print (progn$ (cw "(Assumptions for lifting:~%") ; should we untranslate these?
                              (if (acl2::print-level-at-least-tp print)
                                  (acl2::print-list assumptions)
@@ -858,18 +883,26 @@
                position-independentp
                (er hard? 'unroll-x86-code-core ":stop-pcs are not supported with position-independentp.")))
        (term-to-simulate (if stop-pcs
-                             `(run-until-return-or-reach-pc ',stop-pcs x86)
-                           '(run-until-return x86)))
-       (term-to-simulate (wrap-in-output-extractor output term-to-simulate)) ;TODO: delay this if lifting a loop?
+                             ;; `(run-until-return-or-reach-pc ',stop-pcs x86)
+                             ;;`(,(if 64-bitp 'run-until-return-or-reach-pc64 'run-until-return-or-reach-pc32) ',stop-pcs x86)
+                             `(run-until-return-or-reach-pc3 ',stop-pcs x86)
+                           ;;'(run-until-return x86)
+                           ;;`(,(if 64-bitp 'run-until-return64 'run-until-return32) x86)
+                           '(run-until-return3 x86)))
+       (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (acl2::make-term-into-dag-basic term-to-simulate nil))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil nil nil state))
        ((when (quotep dag-to-simulate))
         (er hard? 'unroll-x86-code-core "Unexpected quotep: ~x0." dag-to-simulate)
-        (mv :unexpected-quotep nil nil nil nil nil state))
+        (mv :unexpected-quotep nil nil nil nil nil nil state))
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
+       (lifter-rules (append (if bvp
+                                 (read-and-write-rules-bv)
+                               (read-and-write-rules-non-bv))
+                             lifter-rules))
        (lifter-rules (if stop-pcs
                          (append (symbolic-execution-rules-with-stop-pcs) lifter-rules)
                        lifter-rules))
@@ -885,16 +918,16 @@
        (lifter-rules (set-difference-eq lifter-rules remove-rules))
        ((mv erp lifter-rule-alist)
         (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil nil nil state))
        ;; Now make a rule-alist for pruning (must exclude rules that require the x86 rewriter):
        (pruning-rules (set-difference-eq lifter-rules (x86-rewriter-rules))) ; optimize?  should we pre-sort rule-lists?
        ((mv erp pruning-rule-alist)
         (acl2::make-rule-alist pruning-rules (w state)))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil nil nil state))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep state))
-       ((when erp) (mv erp nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil nil nil state))
        (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
        (- (cw " (Lifting took ")
@@ -907,19 +940,21 @@
                     (acl2::print-dag-info result-dag-or-quotep 'result t)
                     (cw ")~%") ; matches (Lifting...
                     ))))
-    (mv (erp-nil) result-dag-or-quotep untranslated-assumptions input-assumption-vars lifter-rules assumption-rules state)))
+    (mv (erp-nil) result-dag-or-quotep untranslated-assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
 
 ;; Returns (mv erp event state)
+;; TODO: Consider using the current print-base (:auto value) by default.
 (defun def-unrolled-fn (lifted-name
                         target
                         executable
+                        inputs
+                        output-indicator
                         extra-assumptions
                         suppress-assumptions
                         inputs-disjoint-from
                         stack-slots
                         position-independent
-                        inputs
-                        output
+                        type-assumptions-for-array-varsp
                         use-internal-contextsp
                         prune-precise
                         prune-approx
@@ -942,6 +977,7 @@
                         produce-theorem
                         prove-theorem ;whether to try to prove the theorem with ACL2 (rarely works)
                         restrict-theory
+                        bvp
                         whole-form
                         state)
   (declare (xargs :guard (and (symbolp lifted-name)
@@ -953,7 +989,8 @@
                               (natp stack-slots)
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
-                              (output-indicatorp output)
+                              (booleanp type-assumptions-for-array-varsp)
+                              ;; (output-indicatorp output-indicator)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
@@ -980,7 +1017,8 @@
                               (member-eq non-executable '(t nil :auto))
                               (booleanp produce-theorem)
                               (booleanp prove-theorem)
-                              (booleanp restrict-theory))
+                              (booleanp restrict-theory)
+                              (booleanp bvp))
                   :stobjs state
                   :mode :program ; todo
                   ))
@@ -1000,11 +1038,11 @@
         (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Lift the function to obtain the DAG:
-       ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used state)
+       ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
-          inputs output use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
-          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep state))
+          inputs type-assumptions-for-array-varsp output-indicator use-internal-contextsp prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
+          step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base untranslatep bvp state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -1037,7 +1075,8 @@
        ;;            (set-print-base-radix print-base state)
        ;;          state)) ; todo: do this better
        ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return
-                                                run-until-stack-shorter-than-or-reach-pc run-until-return-or-reach-pc)))
+                                                run-until-stack-shorter-than-or-reach-pc run-until-return-or-reach-pc
+                                                run-until-rsp-is-above run-until-rsp-is-above-or-reach-pc)))
         (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
                     (cw "~X01" (let ((term (dag-to-term result-dag)))
@@ -1082,7 +1121,7 @@
                ;;use defun-nx by default because stobj updates are not all let-bound to x86
                (non-executable (if (eq :auto non-executable)
                                    (if (member-eq 'x86 fn-formals) ; there may be writes to the stobj (perhaps with unresolved reads around them), so we use defun-nx (todo: do a more precise check)
-                                       ;; (eq :all output) ; we use defun-nx since there is almost certainly a stobj update (and updates are not properly let-bound)
+                                       ;; (eq :all output-indicator) ; we use defun-nx since there is almost certainly a stobj update (and updates are not properly let-bound)
                                        t
                                      nil)
                                  non-executable))
@@ -1113,7 +1152,7 @@
                 t)
               (let* ((defthm `(defthm ,(acl2::pack$ lifted-name '-correct)
                                 (implies (and ,@assumptions)
-                                         (equal (run-until-return x86)
+                                         (equal ,term-to-simulate
                                                 (,lifted-name ,@fn-formals)))
                                 :hints ,(if restrict-theory
                                             `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
@@ -1139,18 +1178,19 @@
 ;bad name?
 ;; TODO: :print nil is not fully respected
 ;; Creates some events to represent the unrolled computation, including a defconst for the DAG and perhaps a defun and a theorem.
-(acl2::defmacrodoc def-unrolled (&whole whole-form
+(defmacrodoc def-unrolled (&whole whole-form
                                   lifted-name
                                   executable
                                   &key
                                   (target ':entry-point)
+                                  (inputs ':skip)
+                                  (output ':all)
                                   (extra-assumptions 'nil)
                                   (suppress-assumptions 'nil)
                                   (inputs-disjoint-from ':code)
                                   (stack-slots '100)
                                   (position-independent ':auto)
-                                  (inputs ':skip)
-                                  (output ':all)
+                                  (type-assumptions-for-array-vars 't)
                                   (use-internal-contextsp 't)
                                   (prune-precise '1000)
                                   (prune-approx 't)
@@ -1173,19 +1213,21 @@
                                   (produce-theorem 'nil)
                                   (prove-theorem 'nil)
                                   (restrict-theory 't)       ;todo: deprecate
+                                  (bvp 'nil)
                                   )
   `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
     (def-unrolled-fn
       ',lifted-name
       ,target
       ,executable ; gets evaluated
+      ',inputs
+      ',output
       ,extra-assumptions
       ',suppress-assumptions
       ',inputs-disjoint-from
       ',stack-slots
       ',position-independent
-      ',inputs
-      ',output
+      ',type-assumptions-for-array-vars
       ',use-internal-contextsp
       ',prune-precise
       ',prune-approx
@@ -1208,11 +1250,12 @@
       ',produce-theorem
       ',prove-theorem
       ',restrict-theory
+      ',bvp
       ',whole-form
       state))
-  :parents (lifters)
-  :short "Lift an x86 binary function to create a DAG, unrolling loops as needed."
-  :args ((lifted-name "The name to use for the generated function and constant (the latter surrounded by stars).")
+  :parents (acl2::axe-x86 acl2::axe-lifters)
+  :short "A tool to lift x86 binary code into logic, unrolling loops as needed."
+  :args ((lifted-name "A symbol, the name to use for the generated function.  The name of the generated constant is created by adding stars to the front and back of this symbol.")
          (executable "The x86 binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.")
          (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
          (extra-assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
@@ -1221,13 +1264,14 @@
          (stack-slots "How much available stack space to assume exists.") ; 4 or 8 bytes each?
          (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
          (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")
+         (type-assumptions-for-array-vars "Whether to put in type assumptions for the variables that represent elements of input arrays.")
          (output "An indication of which state component(s) will hold the result of the computation being lifted.  See output-indicatorp.")
          (use-internal-contextsp "Whether to use contextual information from ovararching conditionals when simplifying DAG nodes.")
          ;; todo: better name?  only for precise pruning:
          (prune-precise "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
          (prune-approx "Whether to prune DAGs using approximate contexts.  Either t or nil or a natural number representing the smallest dag size that we deem too large for pruning (where here the size is the number of nodes in the corresponding term).  This kind of pruning should not blow up but doesn't use fully precise contextual information.")
          ;; todo: how do these affect assumption simp:
-         (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64).")
+         (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64) plus a few others.")
          (remove-rules "Rules to turn off.")
          (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
          (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
@@ -1245,7 +1289,9 @@
          (non-executable "Whether to make the generated function non-executable, e.g., because stobj updates are not properly let-bound.  Either t or nil or :auto.")
          (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
          (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
-         (restrict-theory "To be deprecated..."))
-  :description ("Given an x86 binary function, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
-                "This event creates a @(see defconst) whose name is derived from the @('lifted-name') argument."
+         (restrict-theory "To be deprecated...")
+         (bvp "Whether to use new-style, BV-friendly assumptions.")
+         )
+  :description ("Lift some x86 binary code into an ACL2 representation, by symbolic execution including inlining all functions and unrolling all loops."
+                "Usually, @('def-unrolled') creates both a function representing the lifted code (in term or DAG form, depending on the size) and a @(tsee defconst) whose value is the corresponding DAG (or, rarely, a quoted constant).  The function's name is @('lifted-name') and the @('defconst')'s name is created by adding stars around  @('lifted-name')."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))

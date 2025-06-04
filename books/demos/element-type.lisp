@@ -34,5 +34,8 @@
              (let ((st1 (update-ar1i n d st1)))
                (writes-st1 st1 d n))))))
 
+; NOTE: SBCL (or at least some versions of it) cannot handle the argument below
+; of *ar-size*, as of this writing (mid-May, 2025).  Consider smaller sizes
+; when running the forms below, e.g., (/ *ar-size* 100) or (/ *ar-size* 200).
 ; (time$ (reads-st1 st1 *ar-size*))
 ; (time$ (writes-st1 st1 (to-df 2) *ar-size*))

@@ -37,7 +37,7 @@
 
 (define value-integer->get ((val valuep))
   :guard (value-integerp val)
-  :returns (int integerp)
+  :returns (mathint integerp)
   :short "Turn a C integer value into a mathematical (i.e. ACL2) integer."
   (value-case val
               :uchar val.get
@@ -286,7 +286,6 @@
   (defruled valuep-of-convert-integer-value-from-schar-to-sint
     (implies (value-case val :schar)
              (valuep (convert-integer-value val (type-sint))))
-    :disable ((:e type-sint))
     :enable (integer-type-rangep
              integer-type-min
              integer-type-max
@@ -731,14 +730,22 @@
           ((integer-type-rangep mathint type) (value-integer mathint type))
           (t (error (list :out-of-range mathint (type-fix type))))))
   :guard-hints (("Goal" :in-theory (enable integer-type-rangep ifix)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-result-integer-value
+    (implies (not (errorp val))
+             (equal (type-of-value val)
+                    (type-fix type)))
+    :hyp (type-nonchar-integerp type)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define plus-integer-value ((val valuep))
   :guard (and (value-integerp val)
               (value-promoted-arithmeticp val))
-  :returns (resval value-resultp)
+  :returns (resval valuep)
   :short "Apply unary @('+') to an integer value [C17:6.5.3.3/2]."
   :long
   (xdoc::topstring
@@ -752,7 +759,13 @@
      We introduce this function mainly for uniformity with other operations,
      despite it being trivial in a way."))
   (value-fix val)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-plus-integer-value
+    (equal (type-of-value resval)
+           (type-of-value val))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -777,7 +790,15 @@
        (resval (result-integer-value result (type-of-value val)))
        ((when (errorp resval)) (error (list :undefined-minus (value-fix val)))))
     resval)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-minus-integer-value
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-of-value val)))
+    :hyp (value-integerp val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -829,8 +850,8 @@
     "Because the result of the signed operation is always in range,
      and the unsigned operation never causes errors in general,
      this operation never causes errors.
-     So we prove an additional theorem saying that
-     this operation always returns a value.
+     So we prove an additional theorems saying that
+     this operation always returns a value (never an error).
      But we need a hypothesis implied by the guard for this to hold.
      We keep the @(':returns') type broader (i.e. @(tsee value-resultp))
      but unconditional, for consistency with other operations."))
@@ -839,10 +860,36 @@
        (resval (result-integer-value result (type-of-value val))))
     resval)
   :hooks (:fix)
+
   ///
 
   (defret valuep-of-bitnot-integer-value
     (valuep resval)
+    :hyp (value-integerp val)
+    :hints (("Goal" :in-theory (enable result-integer-value
+                                       integer-type-rangep
+                                       integer-type-max
+                                       integer-type-min
+                                       lognot
+                                       value-integerp
+                                       value-unsigned-integerp
+                                       value-signed-integerp
+                                       value-integer->get
+                                       (:e schar-min)
+                                       (:e schar-max)
+                                       (:e sshort-min)
+                                       (:e sshort-max)
+                                       (:e sint-min)
+                                       (:e sint-max)
+                                       (:e slong-min)
+                                       (:e slong-max)
+                                       (:e sllong-min)
+                                       (:e sllong-max)
+                                       ifix))))
+
+  (defret type-of-value-of-bitnot-integer-value
+    (equal (type-of-value resval)
+           (type-of-value val))
     :hyp (value-integerp val)
     :hints (("Goal" :in-theory (enable result-integer-value
                                        integer-type-rangep
@@ -881,7 +928,13 @@
   (if (equal (value-integer->get val) 0)
       (value-sint 1)
     (value-sint 0))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-lognot-integer-value
+    (equal (type-of-value resval)
+           (type-sint))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -913,7 +966,15 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-mul-integer-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-of-value val1))) ; = (type-of-value val2)
+    :hyp (value-integerp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -951,7 +1012,15 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-div-integer-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-of-value val1))) ; = (type-of-value val2)
+    :hyp (value-integerp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -991,7 +1060,15 @@
                                             (value-fix val2)))))
     resval)
   :guard-hints (("Goal" :in-theory (enable rem)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-rem-integer-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-of-value val1))) ; = (type-of-value val2)
+    :hyp (value-integerp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1023,7 +1100,15 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-add-integer-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-of-value val1))) ; = (type-of-value val2)
+    :hyp (value-integerp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1055,7 +1140,15 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-sub-integer-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-of-value val1))) ; = (type-of-value val2)
+    :hyp (value-integerp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1099,7 +1192,15 @@
                                             (value-fix val2)))))
     resval)
   :guard-hints (("Goal" :in-theory (enable integer-range-p)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-shl-integer-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-of-value val1)))
+    :hyp (value-integerp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1142,7 +1243,15 @@
                                             (value-fix val1)
                                             (value-fix val2)))))
     resval)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-shr-integer-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (type-of-value val1)))
+    :hyp (value-integerp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1171,7 +1280,13 @@
     (if (< mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-lt-integer-values
+    (equal (type-of-value resval)
+           (type-sint))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1200,7 +1315,13 @@
     (if (> mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-gt-integer-values
+    (equal (type-of-value resval)
+           (type-sint))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1229,7 +1350,13 @@
     (if (<= mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-le-integer-values
+    (equal (type-of-value resval)
+           (type-sint))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1258,7 +1385,13 @@
     (if (>= mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-ge-integer-values
+    (equal (type-of-value resval)
+           (type-sint))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1287,7 +1420,13 @@
     (if (= mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-eq-integer-values
+    (equal (type-of-value resval)
+           (type-sint))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1316,7 +1455,13 @@
     (if (/= mathint1 mathint2)
         (value-sint 1)
       (value-sint 0)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-ne-integer-values
+    (equal (type-of-value resval)
+           (type-sint))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1379,7 +1524,14 @@
                                   type-kind-of-type-of-value))
                  :use ((:instance type-kind-of-type-of-value (val val1))
                        (:instance type-kind-of-type-of-value (val val2)))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-bitand-integer-values
+    (equal (type-of-value resval)
+           (type-of-value val1)) ; = (type-of-value val2)
+    :hyp (value-integerp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1432,7 +1584,14 @@
                                   type-kind-of-type-of-value))
                  :use ((:instance type-kind-of-type-of-value (val val1))
                        (:instance type-kind-of-type-of-value (val val2)))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-bitxor-integer-values
+    (equal (type-of-value resval)
+           (type-of-value val1)) ; = (type-of-value val2)
+    :hyp (value-integerp val1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1485,4 +1644,11 @@
                                   type-kind-of-type-of-value))
                  :use ((:instance type-kind-of-type-of-value (val val1))
                        (:instance type-kind-of-type-of-value (val val2)))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-bitior-integer-values
+    (equal (type-of-value resval)
+           (type-of-value val1)) ; = (type-of-value val2)
+    :hyp (value-integerp val1)))

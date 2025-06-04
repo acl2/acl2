@@ -570,28 +570,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled transunit-annop-of-head-when-filepath-transunit-map-annop
+(defruled filepath-transunit-map-annop-when-not-emptyp
   (implies (and (filepath-transunit-mapp map)
-                (filepath-transunit-map-annop map)
                 (not (omap::emptyp map)))
-           (transunit-annop (mv-nth 1 (omap::head map))))
-  :induct t
+           (equal (filepath-transunit-map-annop map)
+                  (and (transunit-annop (omap::head-val map))
+                       (filepath-transunit-map-annop (omap::tail map)))))
   :enable filepath-transunit-map-annop)
 
 (add-to-ruleset abstract-syntax-annop-rules
-                '(transunit-annop-of-head-when-filepath-transunit-map-annop))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled filepath-transunit-map-annop-of-tail
-  (implies (and (filepath-transunit-mapp map)
-                (filepath-transunit-map-annop map))
-           (filepath-transunit-map-annop (omap::tail map)))
-  :induct t
-  :enable filepath-transunit-map-annop)
-
-(add-to-ruleset abstract-syntax-annop-rules
-                '(filepath-transunit-map-annop-of-tail))
+                '(filepath-transunit-map-annop-when-not-emptyp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -610,7 +598,14 @@
      the type of a binary expression based on
      the operator and the types of the operands.
      If there is not enough information,
-     the unknown type is returned."))
+     the unknown type is returned.")
+   (xdoc::p
+    "For a conditional information,
+     we look at the types of the two branches,
+     and if they have exactly the same type,
+     we return that type, otherwise we return the unkwnon type.
+     If there is no `then' branch, we also return the unknown type.
+     This is an approximation."))
   (expr-case
    expr
    :ident (var-info->type (coerce-var-info expr.info))
@@ -633,7 +628,13 @@
    :alignof (type-unknown)
    :cast (type-unknown)
    :binary (binary-info->type (coerce-binary-info expr.info))
-   :cond (type-unknown)
+   :cond (b* (((when (expr-option-case expr.then :none)) (type-unknown))
+              (expr.then (expr-option-some->val expr.then))
+              (then-type (expr-type expr.then))
+              (else-type (expr-type expr.else)))
+           (if (equal then-type else-type)
+               then-type ; = else-type
+             (type-unknown)))
    :comma (expr-type expr.next)
    :stmt (type-unknown)
    :tycompat (type-unknown)

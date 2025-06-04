@@ -61,4 +61,17 @@
   :guard-hints (("Goal" :in-theory (enable value-scalarp
                                            value-arithmeticp
                                            value-realp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-lognot-scalar-value
+    (equal (type-of-value resval)
+           (type-sint))
+    :hyp (value-scalarp val)
+    :hints (("Goal" :in-theory (enable value-scalarp
+                                       value-arithmeticp
+                                       value-realp
+                                       value-integerp
+                                       value-signed-integerp
+                                       value-unsigned-integerp)))))

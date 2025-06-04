@@ -605,18 +605,18 @@
   (defrule param-declon-unambp-of-param-declon
     (equal (param-declon-unambp (param-declon specs decl))
            (and (decl-spec-list-unambp specs)
-                (paramdeclor-unambp decl)))
+                (param-declor-unambp decl)))
     :expand (param-declon-unambp (param-declon specs decl)))
 
-  (defrule paramdeclor-unambp-of-paramdeclor-declor
-    (equal (paramdeclor-unambp (paramdeclor-declor declor))
+  (defrule param-declor-unambp-of-param-declor-declor
+    (equal (param-declor-unambp (param-declor-nonabstract declor))
            (declor-unambp declor))
-    :expand (paramdeclor-unambp (paramdeclor-declor declor)))
+    :expand (param-declor-unambp (param-declor-nonabstract declor)))
 
-  (defrule paramdeclor-unambp-of-paramdeclor-absdeclor
-    (equal (paramdeclor-unambp (paramdeclor-absdeclor absdeclor))
+  (defrule param-declor-unambp-of-param-declor-abstract
+    (equal (param-declor-unambp (param-declor-abstract absdeclor))
            (absdeclor-unambp absdeclor))
-    :expand (paramdeclor-unambp (paramdeclor-absdeclor absdeclor)))
+    :expand (param-declor-unambp (param-declor-abstract absdeclor)))
 
   (defrule tyname-unambp-of-tyname
     (equal (tyname-unambp (tyname specqual decl?))
@@ -1324,26 +1324,26 @@
              (decl-spec-list-unambp (param-declon->specs param)))
     :expand (param-declon-unambp param))
 
-  (defrule paramdeclor-unambp-of-param-declon->declor
+  (defrule param-declor-unambp-of-param-declon->declor
     (implies (param-declon-unambp param)
-             (paramdeclor-unambp (param-declon->declor param)))
+             (param-declor-unambp (param-declon->declor param)))
     :expand (param-declon-unambp param))
 
-  (defrule declor-unambp-of-paramdeclor-declor->unwrap
-    (implies (and (paramdeclor-unambp paramdeclor)
-                  (paramdeclor-case paramdeclor :declor))
-             (declor-unambp (paramdeclor-declor->unwrap paramdeclor)))
-    :expand (paramdeclor-unambp paramdeclor))
+  (defrule declor-unambp-of-param-declor-nonabstract->declor
+    (implies (and (param-declor-unambp param-declor)
+                  (param-declor-case param-declor :nonabstract))
+             (declor-unambp (param-declor-nonabstract->declor param-declor)))
+    :expand (param-declor-unambp param-declor))
 
-  (defrule absdeclor-unambp-of-paramdeclor-absdeclor->unwrap
-    (implies (and (paramdeclor-unambp paramdeclor)
-                  (paramdeclor-case paramdeclor :absdeclor))
-             (absdeclor-unambp (paramdeclor-absdeclor->unwrap paramdeclor)))
-    :expand (paramdeclor-unambp paramdeclor))
+  (defrule absdeclor-unambp-of-param-declor-abstract->declor
+    (implies (and (param-declor-unambp param-declor)
+                  (param-declor-case param-declor :abstract))
+             (absdeclor-unambp (param-declor-abstract->declor param-declor)))
+    :expand (param-declor-unambp param-declor))
 
-  (defrule spec/qual-list-unambp-of-tyname->specqual
+  (defrule spec/qual-list-unambp-of-tyname->specquals
     (implies (tyname-unambp tyname)
-             (spec/qual-list-unambp (tyname->specqual tyname)))
+             (spec/qual-list-unambp (tyname->specquals tyname)))
     :expand (tyname-unambp tyname))
 
   (defrule absdeclor-option-unambp-of-tyname->decl?
@@ -1740,11 +1740,11 @@
     :rule-classes :forward-chaining
     :enable align-spec-unambp)
 
-  (defrule not-ambig-when-paramdeclor-unambp
-    (implies (paramdeclor-unambp paramdeclor)
-             (not (equal (paramdeclor-kind paramdeclor) :ambig)))
+  (defrule not-ambig-when-param-declor-unambp
+    (implies (param-declor-unambp param-declor)
+             (not (equal (param-declor-kind param-declor) :ambig)))
     :rule-classes :forward-chaining
-    :expand (paramdeclor-unambp paramdeclor))
+    :expand (param-declor-unambp param-declor))
 
   (defrule not-for-ambig-when-stmt-unambp
     (implies (stmt-unambp stmt)

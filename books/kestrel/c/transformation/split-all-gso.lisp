@@ -265,7 +265,9 @@
           blacklist))
        ((unless erp)
         (retok (and internal (omap::head-key map)) gso field-name)))
-    (filepath-transunit-map-find-gso-candidate (omap::tail map) blacklist)))
+    (filepath-transunit-map-find-gso-candidate (omap::tail map) blacklist))
+  :guard-hints
+  (("Goal" :in-theory (acl2::enable* c$::abstract-syntax-annop-rules))))
 
 (define transunit-ensemble-find-gso-candidate
   ((tunits transunit-ensemblep)

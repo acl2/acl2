@@ -50,13 +50,15 @@
 
 ;; ;todo: not really an assumption generator
 ;; todo: redo this like elf64-section-loadedp.
+;todo: move this to ../x86/ ?
 (defun section-assumptions-mach-o-64 (segment-name section-name parsed-mach-o
-                                      text-offset stack-slots-needed x86)
+                                                   text-offset stack-slots-needed bvp x86)
   (declare (xargs :guard (and (stringp segment-name)
                               (stringp section-name)
                               ;; parsed-mach-o
                               (natp text-offset)
-                              (natp stack-slots-needed))
+                              (natp stack-slots-needed)
+                              (booleanp bvp))
                   :stobjs x86
                   :verify-guards nil ;todo
                   ))
@@ -69,31 +71,40 @@
              ;; todo: can this be negative?:
              (section-offset-from-text (- section-address text-section-address))
              (section-start (+ text-offset section-offset-from-text)))
-        (and (bytes-loaded-at-address-64 section-bytes section-start x86)
+        (and (bytes-loaded-at-address-64 section-bytes section-start bvp x86)
              ;; (canonical-address-p$inline const-section-start)
              ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
              ;; The constant data is disjoint from the part of the stack that is written:
-             (separate :r (len section-bytes) section-start
-                       ;; Only a single stack slot is written
-                       ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rsp x86)))))
+             (if bvp
+                 (disjoint-regionsp (len section-bytes) section-start
+                                    ;; Only a single stack slot is written
+                                    ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
+                                    (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rsp x86)))
+               (separate :r (len section-bytes) section-start
+                         ;; Only a single stack slot is written
+                         ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
+                         :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rsp x86))))))
     ;; no assumptions if section not present:
     t))
 
+;; todo: think about signed vs unsigned addresses
 (defun elf64-section-loadedp (section-bytes
                               section-address
                               text-offset
                               position-independentp ; whether to assume position independence
                               stack-slots-needed
                               text-section-address
+                              bvp
                               x86)
   (declare (xargs :guard (and (acl2::unsigned-byte-listp 8 section-bytes)
                               (consp section-bytes)
-                              (natp section-address)
+                              (unsigned-byte-p 48 (len section-bytes))
+                              (unsigned-byte-p 48 section-address) ; (natp section-address) ; or allow signed?
                               (natp text-offset)
                               (booleanp position-independentp)
-                              (natp stack-slots-needed)
-                              (natp text-section-address))
+                              (unsigned-byte-p 45 stack-slots-needed) ; (natp stack-slots-needed)
+                              (natp text-section-address)
+                              (booleanp bvp))
                   :stobjs x86))
   (let* ((section-start (if position-independentp
                             ;; position-independent, so assume the section is loaded at the appropriate offset wrt TEXT-OFFSET, which is where we assume the text section starts.
@@ -103,19 +114,23 @@
                               (+ text-offset section-offset-from-text))
                           ;; not position-independent, so use the numeric address (may be necessary):
                           section-address)))
-    (and (bytes-loaded-at-address-64 section-bytes section-start x86)
+    (and (bytes-loaded-at-address-64 section-bytes section-start bvp x86) ; todo: this wants section-start to be canonical, not a usb
          ;; (canonical-address-p$inline const-section-start)
          ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
          ;; The section is disjoint from the part of the stack that we expect to be written:
          (if (posp stack-slots-needed) ; should be resolved, because separate requires but numbers to be positive
-             (separate :r (len section-bytes) section-start
-                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed)
-                                                      (rsp x86)))
+             (if bvp
+                 (disjoint-regionsp (len section-bytes) (bvchop 48 section-start)
+                                    (* 8 stack-slots-needed) (bvchop 48 (+ (* -8 stack-slots-needed)
+                                                                           (rsp x86))))
+               (separate :r (len section-bytes) section-start
+                         :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed)
+                                                        (rsp x86))))
            t))))
 
 ;; Returns a list of terms over the variables X86 and (perhaps TEXT-OFFSET).
 ;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
-(defund assumptions-for-elf64-sections (section-names position-independentp stack-slots text-section-address parsed-elf)
+(defund assumptions-for-elf64-sections (section-names position-independentp stack-slots text-section-address parsed-elf bvp)
   ;; (declare (xargs :guard (and (string-listp section-names) (booleanp position-independentp) (natp stack-slots)
   ;;                             (parsed-elfp parsed-elf)
   ;;                             )))
@@ -132,26 +147,28 @@
                                                 ',position-independentp
                                                 ',stack-slots
                                                 ',text-section-address
+                                                ',bvp
                                                 x86)
-                        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf)))
-        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf)))))
+                        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf bvp)))
+        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf bvp)))))
 
 ;; Returns a list of terms.
 ;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
-(defun architecture-specific-assumptions (executable-type position-independentp stack-slots parsed-executable)
+(defun architecture-specific-assumptions (executable-type position-independentp stack-slots parsed-executable bvp)
   (declare (xargs :guard (and (member-eq executable-type '(:mach-o-64 :elf-64))
                               (booleanp position-independentp)
                               (natp stack-slots)
                               ;; parsed-executable
+                              (booleanp bvp)
                               )
                   :verify-guards nil))
   (if (eq :mach-o-64 executable-type)
       (b* ((- (and (acl2::mach-o-section-presentp "__TEXT" "__const" parsed-executable) (cw "(__TEXT,__const section detected.)~%")))
            (- (and (acl2::mach-o-section-presentp "__DATA" "__data" parsed-executable) (cw "(__DATA,__data section detected.)~%")))
            (- (and (acl2::mach-o-section-presentp "__DATA_CONST" "__got" parsed-executable) (cw "(__DATA_CONST,__got section detected.)~%"))))
-        `((section-assumptions-mach-o-64 "__TEXT" "__const" ',parsed-executable text-offset ',stack-slots x86)
-          (section-assumptions-mach-o-64 "__DATA" "__data" ',parsed-executable text-offset ',stack-slots x86)
-          (section-assumptions-mach-o-64 "__DATA_CONST" "__got" ',parsed-executable text-offset ',stack-slots x86)
+        `((section-assumptions-mach-o-64 "__TEXT" "__const" ',parsed-executable text-offset ',stack-slots ',bvp x86)
+          (section-assumptions-mach-o-64 "__DATA" "__data" ',parsed-executable text-offset ',stack-slots ',bvp x86)
+          (section-assumptions-mach-o-64 "__DATA_CONST" "__got" ',parsed-executable text-offset ',stack-slots ',bvp x86)
           ;; ,@(and const-section-presentp ; suppress when there is no __const section
           ;;        `((acl2::const-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
           ;; ,@(and data-section-presentp ; suppress when there is no __data section
@@ -162,7 +179,7 @@
         (assumptions-for-elf64-sections '(".data" ".rodata"
                                           ;;  ".got" ; todo: consider putting this back (at least assume it disjoint from the stack)
                                           )
-                                        position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable)
+                                        position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable bvp)
       (if (eq :elf-32 executable-type)
           (cw "WARNING: Architecture-specific assumptions are not yet supported for ELF32.~%")
         nil))))
@@ -261,8 +278,8 @@
                            parsed-executable
                            param-names ; todo: can we somehow get these from the executable?
                            assumptions ; untranslated terms
-                           extra-rules extra-lift-rules extra-proof-rules
-                           remove-rules remove-lift-rules remove-proof-rules
+                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                            normalize-xors count-hits print monitor
                            step-limit step-increment
                            prune-precise prune-approx tactics
@@ -270,12 +287,15 @@
                            inputs-disjoint-from
                            stack-slots
                            position-independentp
+                           bvp
                            state)
   (declare (xargs :guard (and (stringp function-name-string)
                               (symbol-listp extra-rules)
+                              (symbol-listp extra-assumption-rules)
                               (symbol-listp extra-lift-rules)
                               (symbol-listp extra-proof-rules)
                               (symbol-listp remove-rules)
+                              (symbol-listp remove-assumption-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
                               (or (eq :debug monitor)
@@ -296,7 +316,8 @@
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
-                              (booleanp position-independentp))
+                              (booleanp position-independentp)
+                              (booleanp bvp))
                   :mode :program ; because of apply-tactic-prover and unroll-x86-code-core
                   :stobjs state))
   (b* ((- (acl2::ensure-x86 parsed-executable))
@@ -335,7 +356,7 @@
                       ,@register-replacement-assumptions
                       ,@register-type-assumptions
                       ;; todo: build this into def-unrolled:
-                      ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable)
+                      ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable bvp)
                       ))
        (target function-name-string)
 
@@ -343,7 +364,7 @@
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Unroll the computation:
        ;; TODO: Need this to return assumptions that may be needed in the proof (e.g., about separateness of memory regions)
-       ((mv erp result-dag-or-quotep & & & & state)
+       ((mv erp result-dag-or-quotep & & & & & state)
         (unroll-x86-code-core
           target
           parsed-executable
@@ -353,6 +374,7 @@
           stack-slots
           position-independentp
           :skip ; no input assumptions -- todo
+          nil ; type-assumptions-for-array-varsp -- todo
           '(:register-bool 0) ; output, rax (output should always be boolean), this chops it down to 1 byte (why not one bit?)
           t                   ; use-internal-contextsp
           prune-precise
@@ -382,9 +404,11 @@
                     elf64-section-loadedp ; todo:package
                     acl2::elf-section-presentp
                     fix-of-rsp
-                    integerp-of-rsp))
-          ;; remove-asumption-rules:
-          nil ; todo: use the remove-lift-rules?
+                    integerp-of-rsp)
+                  extra-assumption-rules
+                  ;; extra-rules ;todo
+                  )
+          remove-assumption-rules ; todo: also use the remove-rules?
           step-limit
           step-increment
           nil ; stop-pcs
@@ -395,6 +419,7 @@
           print
           10 ; print-base (todo: consider 16)
           t ; untranslatep (todo: make this an option)
+          bvp
           state))
        ((when erp) (mv erp nil nil state))
        ((when (quotep result-dag-or-quotep))
@@ -489,20 +514,23 @@
                          executable ; a parsed-executable or a string (meaning read from that file)
                          param-names ; todo: can we somehoe get these from the executable?
                          assumptions
-                         extra-rules extra-lift-rules extra-proof-rules
-                         remove-rules remove-lift-rules remove-proof-rules
+                         extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                         remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                          normalize-xors count-hits print monitor
                          step-limit step-increment
                          prune-precise prune-approx tactics
                          max-conflicts inputs-disjoint-from stack-slots
                          position-independent
                          expected-result
+                         bvp
                          state)
   (declare (xargs :guard (and (stringp function-name-string)
                               (symbol-listp extra-rules)
+                              (symbol-listp extra-assumption-rules)
                               (symbol-listp extra-lift-rules)
                               (symbol-listp extra-proof-rules)
                               (symbol-listp remove-rules)
+                              (symbol-listp remove-assumption-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
                               (acl2::normalize-xors-optionp normalize-xors)
@@ -524,7 +552,8 @@
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (member-eq position-independent '(t nil :auto))
-                              (member-eq expected-result '(:pass :fail :any)))
+                              (member-eq expected-result '(:pass :fail :any))
+                              (booleanp bvp))
                   :mode :program
                   :stobjs state))
   (b* (((mv erp parsed-executable state)
@@ -548,9 +577,9 @@
           function-name-string))
        ((mv erp passedp elapsed state)
         (test-function-core function-name-string parsed-executable param-names assumptions
-                            extra-rules extra-lift-rules extra-proof-rules
-                            remove-rules remove-lift-rules remove-proof-rules
-                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
+                            extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                            remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                            normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots position-independentp bvp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -574,9 +603,11 @@
                          (param-names ':none)
                          (assumptions 'nil)
                          (extra-rules 'nil)
+                         (extra-assumption-rules 'nil)
                          (extra-lift-rules 'nil)
                          (extra-proof-rules 'nil)
                          (remove-rules 'nil)
+                         (remove-assumption-rules 'nil)
                          (remove-lift-rules 'nil)
                          (remove-proof-rules 'nil)
                          (normalize-xors 't) ; todo: try :compact?  maybe not worth it when not equivalence checking
@@ -592,22 +623,25 @@
                          (inputs-disjoint-from ':code)
                          (stack-slots ':auto)
                          (position-independent ':auto)
-                         (max-conflicts '1000000))
+                         (max-conflicts '1000000)
+                         (bvp 'nil))
   `(acl2::make-event-quiet (test-function-fn ',function-name-string
                                              ,executable   ; gets evaluated
                                              ,param-names  ; gets evaluated
                                              ,assumptions  ; gets evaluated
                                              ,extra-rules  ; gets evaluated
+                                             ,extra-assumption-rules ; gets evaluated
                                              ,extra-lift-rules ; gets evaluated
                                              ,extra-proof-rules ; gets evaluated
                                              ,remove-rules ; gets evaluated
+                                             ,remove-assumption-rules ; gets evaluated
                                              ,remove-lift-rules ; gets evaluated
                                              ,remove-proof-rules ; gets evaluated
                                              ',normalize-xors
                                              ',count-hits
                                              ',print
                                              ,monitor ; gets evaluated
-                                             ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent ',expected-result state)))
+                                             ',step-limit ',step-increment ',prune-precise ',prune-approx ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent ',expected-result ',bvp state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -615,8 +649,8 @@
 (defun test-functions-fn-aux (function-name-strings
                               parsed-executable
                               assumptions-alist
-                              extra-rules extra-lift-rules extra-proof-rules
-                              remove-rules remove-lift-rules remove-proof-rules
+                              extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                              remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                               normalize-xors count-hits
                               print monitor step-limit step-increment prune-precise prune-approx
                               tactics max-conflicts
@@ -625,15 +659,18 @@
                               position-independentp
                               expected-failures
                               result-alist
+                              bvp
                               state)
   (declare (xargs :guard (and (string-listp function-name-strings)
                               (and (alistp assumptions-alist)
                                    (string-listp (strip-cars assumptions-alist))
                                    (true-list-listp (strip-cdrs assumptions-alist)))
                               (symbol-listp extra-rules)
+                              (symbol-listp extra-assumption-rules)
                               (symbol-listp extra-lift-rules)
                               (symbol-listp extra-proof-rules)
                               (symbol-listp remove-rules)
+                              (symbol-listp remove-assumption-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
                               (acl2::normalize-xors-optionp normalize-xors)
@@ -656,7 +693,8 @@
                                   (eq :auto stack-slots))
                               (booleanp position-independentp)
                               (string-listp expected-failures)
-                              (alistp result-alist))
+                              (alistp result-alist)
+                              (booleanp bvp))
                   :mode :program
                   :stobjs state))
   (if (endp function-name-strings)
@@ -666,9 +704,9 @@
           (test-function-core function-name parsed-executable
                               :none ; todo: some way to pass in param-names?
                               (acl2::lookup-equal function-name assumptions-alist)
-                              extra-rules extra-lift-rules extra-proof-rules
-                              remove-rules remove-lift-rules remove-proof-rules
-                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
+                              extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                              remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from stack-slots position-independentp bvp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -677,12 +715,12 @@
          (- (cw "~%")) ; blank line as separator
          )
       (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
-                             extra-rules extra-lift-rules extra-proof-rules
-                             remove-rules remove-lift-rules remove-proof-rules
+                             extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                             remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                              normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                              tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
                              expected-failures
-                             (acons function-name (list result expected-result elapsed) result-alist)
+                             (acons function-name (list result expected-result elapsed) result-alist) bvp
                              state))))
 
 ;; Returns (mv erp event state) an event (a progn containing an event for each test).
@@ -691,11 +729,12 @@
                           include-fns ; a list of strings (names of functions), or :all
                           exclude-fns ; a list of strings (names of functions)
                           assumptions
-                          extra-rules extra-lift-rules extra-proof-rules
-                          remove-rules remove-lift-rules remove-proof-rules
+                          extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                          remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                           normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                           tactics max-conflicts inputs-disjoint-from stack-slots position-independent
                           expected-failures
+                          bvp
                           state)
   (declare (xargs :guard (and (stringp executable)
                           (or (string-listp include-fns)
@@ -703,9 +742,11 @@
                           (string-listp exclude-fns)
                               ;; assumptions
                           (symbol-listp extra-rules)
+                          (symbol-listp extra-assumption-rules)
                           (symbol-listp extra-lift-rules)
                           (symbol-listp extra-proof-rules)
                           (symbol-listp remove-rules)
+                          (symbol-listp remove-assumption-rules)
                           (symbol-listp remove-lift-rules)
                           (symbol-listp remove-proof-rules)
                           (acl2::normalize-xors-optionp normalize-xors)
@@ -728,7 +769,8 @@
                               (eq :auto stack-slots))
                           (member-eq position-independent '(t nil :auto))
                           (or (eq :auto expected-failures)
-                              (string-listp expected-failures)))
+                              (string-listp expected-failures))
+                          (booleanp bvp))
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))
@@ -796,12 +838,13 @@
        ((mv erp result-alist state)
         (test-functions-fn-aux function-name-strings parsed-executable
                                assumption-alist
-                               extra-rules extra-lift-rules extra-proof-rules
-                               remove-rules remove-lift-rules remove-proof-rules
+                               extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
+                               remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
                                normalize-xors count-hits print monitor step-limit step-increment prune-precise prune-approx
                                tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
+                               bvp
                                state))
        ((mv overall-time state) (acl2::real-time-since overall-start-real-time state))
        ((when erp) (mv erp nil state))
@@ -822,9 +865,11 @@
                           executable ; a string
                           &key
                           (extra-rules 'nil)
+                          (extra-assumption-rules 'nil)
                           (extra-lift-rules 'nil)
                           (extra-proof-rules 'nil)
                           (remove-rules 'nil)
+                          (remove-assumption-rules 'nil)
                           (remove-lift-rules 'nil)
                           (remove-proof-rules 'nil)
                           (normalize-xors 't)
@@ -842,15 +887,17 @@
                           (position-independent ':auto)
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                          )
+                          (bvp 'nil))
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',function-name-strings
                                               nil ; no need for excludes (just don't list the functions you don't want to test)
                                               ,assumptions  ; gets evaluated
                                               ,extra-rules  ; gets evaluated
+                                              ,extra-assumption-rules  ; gets evaluated
                                               ,extra-lift-rules ; gets evaluated
                                               ,extra-proof-rules ; gets evaluated
                                               ,remove-rules ; gets evaluated
+                                              ,remove-assumption-rules ; gets evaluated
                                               ,remove-lift-rules ; gets evaluated
                                               ,remove-proof-rules ; gets evaluated
                                               ',normalize-xors
@@ -860,6 +907,7 @@
                                               ',step-limit ',step-increment ',prune-precise ',prune-approx
                                               ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent
                                               ',expected-failures
+                                              ',bvp
                                               state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -872,9 +920,11 @@
                      (include ':all) ; names of functions (strings) to test, or can be :all
                      (exclude 'nil) ; names of functions (strings) to exclude from testing
                      (extra-rules 'nil)
+                     (extra-assumption-rules 'nil)
                      (extra-lift-rules 'nil)
                      (extra-proof-rules 'nil)
                      (remove-rules 'nil)
+                     (remove-assumption-rules 'nil)
                      (remove-lift-rules 'nil)
                      (remove-proof-rules 'nil)
                      (normalize-xors 't)
@@ -892,15 +942,17 @@
                      (position-independent ':auto)
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                     )
+                     (bvp 'nil))
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',include ; todo: evaluate?
                                               ',exclude ; todo: evaluate?
                                               ,assumptions  ; gets evaluated
                                               ,extra-rules  ; gets evaluated
+                                              ,extra-assumption-rules  ; gets evaluated
                                               ,extra-lift-rules ; gets evaluated
                                               ,extra-proof-rules ; gets evaluated
                                               ,remove-rules ; gets evaluated
+                                              ,remove-assumption-rules ; gets evaluated
                                               ,remove-lift-rules ; gets evaluated
                                               ,remove-proof-rules ; gets evaluated
                                               ',normalize-xors
@@ -909,4 +961,5 @@
                                               ',step-limit ',step-increment ',prune-precise ',prune-approx
                                               ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent
                                               ',expected-failures
+                                              ',bvp
                                               state)))

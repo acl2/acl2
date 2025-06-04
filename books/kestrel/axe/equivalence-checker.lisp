@@ -17916,8 +17916,8 @@
        (maybe-remove-temp-dir2 ,keep-temp-dir nil t state)
        ;; No need to clean up anything if no interrupt and no error:
        state))
-  :parents (axe)
-  :short "Prove that two items (DAGs or terms) are equivalent for all values of all of their variables."
+  :parents (axe-core axe-provers)
+  :short "A tool for proving that DAGs / terms are equivalent."
   :args ((dag-or-term1 "The first DAG or term to compare")
          (dag-or-term2 "The second DAG or term to compare")
          (assumptions "Assumptions to use when proving equivalence, a list of terms (not necessarily translated).  The proof is done assuming all of the :assumptions are non-nil.")
@@ -17942,7 +17942,8 @@
          (check-vars "Whether to check that the two DAGs/terms have exactly the same vars.  Can be t (throw an error if the var lists differ), nil (do not check the var lists), or :warn (print a warning if the var lists differ but then continue).")
          (prove-theorem "Whether to produce an ACL2 theorem stating the equivalence (using skip-proofs, currently)")
          (local "whether to make the generated events local"))
-  :description ("If the call to @('prove-equal-with-axe') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."
+  :description ("The equivalence claim to be proved is universally quantified over all values of the variables in the two terms/DAGs."
+                "If the call to @('prove-equal-with-axe') completes without error, the DAG/terms are equal, given the :assumptions (including the :types)."
                 "Usually, the two items (DAGs or terms) have the same set of free variables."
                 "See also @('prove-equal-with-axe+'), for a variant that supports more exotic options."))
 

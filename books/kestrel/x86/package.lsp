@@ -1417,6 +1417,7 @@
     __function__
     defrule
 
+    defpun
     defp
 
     erp-nil
@@ -1462,6 +1463,11 @@
     dag-array ; for calls of axe-syntaxp functions
     def-simplified-x86
     dag-val-with-axe-evaluator
+    defthm-axe
+    defthm-axe-basic
+    defthm-stp
+    prove-with-stp
+    defmacrodoc
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
     pseudo-dag-arrayp
@@ -1530,6 +1536,7 @@
     extend-progn
     get-vars-from-term
     doublets-to-alist
+    translate-term
     translate-terms
     myquotep
     variablep

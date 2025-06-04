@@ -295,12 +295,7 @@
     :disable acl2::expt-is-weakly-increasing-for-base->-1)
 
   (defret schar-format->min-upper-bound
-    (<= min (if (and (equal (signed-format-kind
-                             (schar-format->signed schar-format))
-                            :twos-complement)
-                     (not (schar-format->trap schar-format)))
-                -128
-              -127))
+    (<= min -127)
     :rule-classes
     ((:linear
       :trigger-terms ((schar-format->min schar-format uchar-format))))))
@@ -393,14 +388,7 @@
     :rule-classes :type-prescription)
 
   (defret char-format->min-upper-bound
-    (<= min (if (char-format->signedp char-format)
-                (if (and (equal (signed-format-kind
-                                 (schar-format->signed schar-format))
-                                :twos-complement)
-                         (not (schar-format->trap schar-format)))
-                    -128
-                  -127)
-              0))
+    (<= min 0)
     :rule-classes
     ((:linear
       :trigger-terms
@@ -602,6 +590,12 @@
     (equal (uinteger-bit-roles-value-count (append roles1 roles2))
            (+ (uinteger-bit-roles-value-count roles1)
               (uinteger-bit-roles-value-count roles2)))
+    :induct t)
+
+  (defruled uinteger-bit-roles-value-count-upper-bound
+    (<= (uinteger-bit-roles-value-count roles)
+        (len roles))
+    :rule-classes :linear
     :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -635,7 +629,21 @@
     (equal (sinteger-bit-roles-value-count (append roles1 roles2))
            (+ (sinteger-bit-roles-value-count roles1)
               (sinteger-bit-roles-value-count roles2)))
-    :induct t))
+    :induct t)
+
+  (defruled sinteger-bit-roles-value/sign-count-upper-bound
+    (<= (+ (sinteger-bit-roles-value-count roles)
+           (sinteger-bit-roles-sign-count roles))
+        (len roles))
+    :rule-classes :linear
+    :induct t
+    :enable sinteger-bit-roles-sign-count)
+
+  (defruled sinteger-bit-roles-value-count-upper-bound
+    (<= (sinteger-bit-roles-value-count roles)
+        (- (len roles)
+           (sinteger-bit-roles-sign-count roles)))
+    :enable sinteger-bit-roles-value/sign-count-upper-bound))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -672,7 +680,15 @@
              (posp (uinteger-bit-roles-value-count roles)))
     :rule-classes (:rewrite :type-prescription)
     :enable (uinteger-bit-roles-wfp
-             uinteger-bit-roles-value-count-alt-def)))
+             uinteger-bit-roles-value-count-alt-def))
+
+  (defruled len-gt-0-when-uinteger-bit-roles-wfp
+    (implies (uinteger-bit-roles-wfp roles)
+             (> (len roles) 0))
+    :enable (uinteger-bit-roles-wfp
+             uinteger-bit-roles-value-count-alt-def
+             uinteger-bit-roles-value-count-upper-bound)
+    :disable (acl2::|(< 0 (len x))|)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -713,7 +729,14 @@
              (posp (sinteger-bit-roles-value-count roles)))
     :rule-classes (:rewrite :type-prescription)
     :enable (sinteger-bit-roles-wfp
-             sinteger-bit-roles-value-count-alt-def)))
+             sinteger-bit-roles-value-count-alt-def))
+
+  (defruled len-gt-1-when-sinteger-bit-roles-wfp
+    (implies (sinteger-bit-roles-wfp roles)
+             (> (len roles) 1))
+    :enable (sinteger-bit-roles-wfp
+             sinteger-bit-roles-value-count-alt-def
+             sinteger-bit-roles-value/sign-count-upper-bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -779,104 +802,6 @@
                     (and (uinteger-sinteger-bit-roles-wfp uroles1 sroles1)
                          (uinteger-sinteger-bit-roles-wfp uroles2 sroles2))))
     :induct t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define uinteger-bit-roles-for-sinteger-bit-roles
-  ((sroles sinteger-bit-role-listp))
-  :guard (sinteger-bit-roles-wfp sroles)
-  :returns (uroles uinteger-bit-role-listp)
-  :short "Create the simplest list of unsigned bit roles
-          consistent with a given list of signed bit roles."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The signed bit role list is well-formed, as required by the guard.
-     We create a list of unsigned bit roles with identical roles,
-     except that the sign bit is replaced with a value bit
-     whose exponent is the number of signed value bits.
-     The result should be
-     both well-formed as a list of unsigned integer bit roles,
-     and well-formed with respect to the signed integer bit roles.")
-   (xdoc::p
-    "This is the simplest list of unsigned integer bit roles
-     that corresponds, according to [C17], to a list of signed ones:
-     all the value bits match,
-     all the padding bits match,
-     and the sign bit corresponds to the bit with the highest value.")
-   (xdoc::p
-    "We plan to prove that the resulting list
-     satisfies @(tsee uinteger-bit-roles-wfp)
-     and that, with the input list,
-     it also satisfies @(tsee uinteger-sinteger-bit-roles-wfp)."))
-  (b* ((m (sinteger-bit-roles-value-count sroles)))
-    (uinteger-bit-roles-for-sinteger-bit-roles-loop sroles m))
-  :hooks (:fix)
-  :prepwork
-  ((define uinteger-bit-roles-for-sinteger-bit-roles-loop
-     ((sroles sinteger-bit-role-listp) (m posp))
-     :returns (uroles uinteger-bit-role-listp)
-     :parents nil
-     (b* (((when (endp sroles)) nil)
-          (srole (car sroles))
-          (urole (sinteger-bit-role-case
-                  srole
-                  :sign (uinteger-bit-role-value (pos-fix m))
-                  :value (uinteger-bit-role-value srole.exp)
-                  :padding (uinteger-bit-role-padding)))
-          (uroles
-           (uinteger-bit-roles-for-sinteger-bit-roles-loop (cdr sroles) m)))
-       (cons urole uroles))
-     :hooks (:fix))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define sinteger-bit-roles-for-uinteger-bit-roles
-  ((uroles uinteger-bit-role-listp))
-  :guard (uinteger-bit-roles-wfp uroles)
-  :returns (sroles sinteger-bit-role-listp)
-  :short "Create the simplest list of signed bit roles
-          consistent with a given list of unsigned bit roles."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The unsigned bit role list is well-formed, as required by the guard.
-     We create a list of signed bit roles with identical roles,
-     except that the bit with the highest value is replaced with a sign bit.
-     The result should be
-     both well-formed as a list of signed integer bit roles,
-     and well-formed with respect to the unsigned integer bit roles.")
-   (xdoc::p
-    "This is the simplest list of signed integer bit roles
-     that corresponds, according to [C17], to a list of unsigned ones:
-     all the value bits match,
-     all the padding bits match,
-     and the sign bit corresponds to the bit with the highest value.")
-   (xdoc::p
-    "We plan to prove that the resulting list
-     satisfies @(tsee sinteger-bit-roles-wfp)
-     and that, with the input list,
-     it also satisfies @(tsee uinteger-sinteger-bit-roles-wfp)."))
-  (b* ((n (uinteger-bit-roles-value-count uroles)))
-    (sinteger-bit-roles-for-uinteger-bit-roles-loop uroles n))
-  :hooks (:fix)
-  :prepwork
-  ((define sinteger-bit-roles-for-uinteger-bit-roles-loop
-     ((uroles uinteger-bit-role-listp) (n posp))
-     :returns (sroles sinteger-bit-role-listp)
-     :parents nil
-     (b* (((when (endp uroles)) nil)
-          (urole (car uroles))
-          (srole (uinteger-bit-role-case
-                  urole
-                  :value (if (equal urole.exp (1- (pos-fix n)))
-                             (sinteger-bit-role-sign)
-                           (sinteger-bit-role-value urole.exp))
-                  :padding (uinteger-bit-role-padding)))
-          (sroles
-           (sinteger-bit-roles-for-uinteger-bit-roles-loop (cdr uroles) n)))
-       (cons srole sroles))
-     :hooks (:fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1133,10 +1058,22 @@
   (xdoc::topstring
    (xdoc::p
     "This is determined by the number @('N') of value bits:
-     the maximum value is @('2^N - 1')."))
+     the maximum value is @('2^N - 1').")
+   (xdoc::p
+    "Since @('N <= T'), where @('T') is the total number of bits,
+     the maximum value cannot be above @('2^T - 1')."))
   (1- (expt 2 (uinteger-bit-roles-value-count
                (uinteger-format->bits format))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret uinteger-format->max-upper-bound
+    (<= max
+        (1- (expt 2 (len (uinteger-format->bits format)))))
+    :rule-classes :linear
+    :hints
+    (("Goal" :in-theory (enable uinteger-bit-roles-value-count-upper-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1150,10 +1087,41 @@
   (xdoc::topstring
    (xdoc::p
     "This is determined by the number @('M') of value bits:
-     the maximum value is @('2^M - 1')."))
+     the maximum value is @('2^M - 1').")
+   (xdoc::p
+    "Since @('M <= T - 1'), where @('T') is the total number of bits,
+     and where the 1 accounts for the sign bit,
+     the maximum value cannot be above @('2^(T-1) - 1')."))
   (1- (expt 2 (sinteger-bit-roles-value-count
                (sinteger-format->bits format))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret sinteger-format->max-upper-bound
+    (<= max
+        (1- (expt 2 (1- (len (sinteger-format->bits format))))))
+    :rule-classes :linear
+    :hints
+    (("Goal"
+      :in-theory (e/d (sinteger-bit-roles-wfp)
+                      (sinteger-format-requirements
+                       acl2::expt-is-weakly-increasing-for-base->-1
+                       acl2::|(* (expt x m) (/ (expt x n)))|
+                       acl2::|(* a (/ a))|
+                       acl2::bubble-down-*-match-1
+                       acl2::bubble-down-*-match-2
+                       acl2::simplify-products-gather-exponents-<
+                       acl2::expt-is-weakly-increasing-for-base->-1
+                       acl2::expt-is-increasing-for-base->-1))
+      :use ((:instance sinteger-format-requirements (x format))
+            (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                       (x 2)
+                       (m (sinteger-bit-roles-value-count
+                           (sinteger-format->bits format)))
+                       (n (1- (len (sinteger-format->bits format)))))
+            (:instance sinteger-bit-roles-value-count-upper-bound
+                       (roles (sinteger-format->bits format))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1179,7 +1147,11 @@
      As explained in @(tsee sinteger-format),
      currently we do not have a detailed model of trap representations;
      as a placeholder, for now we regard that representation to be a trap one
-     iff the @('traps') component of @(tsee sinteger-format) is not @('nil')."))
+     iff the @('traps') component of @(tsee sinteger-format) is not @('nil').")
+   (xdoc::p
+    "Since @('M <= T - 1'), where @('T') is the total number of bits,
+     and where the 1 accounts for the sign bit,
+     the minimum value cannot be below @('- 2^(T-1)')."))
   (if (and (equal (signed-format-kind (sinteger-format->signed format))
                   :twos-complement)
            (not (sinteger-format->traps format)))
@@ -1192,8 +1164,34 @@
   ///
 
   (defret sinteger-format->min-type-prescription
-    (< min 0)
-    :rule-classes :type-prescription))
+    (and (integerp min)
+         (< min 0))
+    :rule-classes :type-prescription)
+
+  (defret sinteger-format->min-lower-bound
+    (>= min
+        (- (expt 2 (1- (len (sinteger-format->bits format))))))
+    :rule-classes :linear
+    :hints
+    (("Goal"
+      :in-theory (e/d (sinteger-bit-roles-wfp)
+                      (sinteger-format-requirements
+                       acl2::expt-is-weakly-increasing-for-base->-1
+                       acl2::|(* (expt x m) (/ (expt x n)))|
+                       acl2::|(* a (/ a))|
+                       acl2::bubble-down-*-match-1
+                       acl2::bubble-down-*-match-2
+                       acl2::simplify-products-gather-exponents-<
+                       acl2::expt-is-weakly-increasing-for-base->-1
+                       acl2::expt-is-increasing-for-base->-1))
+      :use ((:instance sinteger-format-requirements (x format))
+            (:instance acl2::expt-is-weakly-increasing-for-base->-1
+                       (x 2)
+                       (m (sinteger-bit-roles-value-count
+                           (sinteger-format->bits format)))
+                       (n (1- (len (sinteger-format->bits format)))))
+            (:instance sinteger-bit-roles-value-count-upper-bound
+                       (roles (sinteger-format->bits format))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1301,11 +1299,8 @@
      the consistency between the unsigned and signed integer formats
      (i.e. @(tsee uinteger-sinteger-bit-roles-wfp)).
      But if we have two separate components,
-     we need separate fixers (in @(':reqfix') for the two components:
-     we plan to use @(tsee uinteger-bit-roles-for-sinteger-bit-roles)
-     and @(tsee sinteger-bit-roles-for-uinteger-bit-roles) for that,
-     but we still need to prove the needed properties of those functions,
-     since they take a little bit of work.
+     we need separate fixers (in @(':reqfix') for the two components,
+     which we plan to define later as they may take a bit of work.
      Once we have the proofs,
      we will eliminate the intermediate fixtype @(tsee uinteger+sinteger-format)
      and have two components and two fixers in this fixtype here."))
@@ -1335,7 +1330,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define integer-format->size ((format integer-formatp))
+(define integer-format->bit-size ((format integer-formatp))
   :returns (size posp :hints (("Goal" :in-theory (enable posp))))
   :short "Number of bits of an integer format."
   :long
@@ -1351,19 +1346,87 @@
 
   ///
 
-  (defruled integer-format->size-alt-def
-    (implies (integer-formatp format)
-             (equal (integer-format->size format)
-                    (len (sinteger-format->bits
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair format))))))
+  (defruled integer-format->bit-size-alt-def
+    (equal (integer-format->bit-size format)
+           (len (sinteger-format->bits
+                 (uinteger+sinteger-format->signed
+                  (integer-format->pair format)))))
     :use (:instance same-len-when-uinteger-sinteger-bit-roles-wfp
                     (sroles (sinteger-format->bits
                              (uinteger+sinteger-format->signed
                               (integer-format->pair format))))
                     (uroles (uinteger-format->bits
                              (uinteger+sinteger-format->unsigned
-                              (integer-format->pair format)))))))
+                              (integer-format->pair format))))))
+
+  (defret integer-format->bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :hyp (integer-formatp format)
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (e/d (integer-format->bit-size-alt-def)
+                                    (integer-format->bit-size))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format->unsigned-max ((format integer-formatp))
+  :returns (max posp :rule-classes (:rewrite :type-prescription))
+  :short "The ACL2 integer value of
+          the maximum unsigned value representable in an integer format."
+  (uinteger-format->max
+   (uinteger+sinteger-format->unsigned
+    (integer-format->pair format)))
+  :hooks (:fix)
+
+  ///
+
+  (defret integer-format->unsigned-max-upper-bound
+    (<= max
+        (1- (expt 2 (integer-format->bit-size format))))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable integer-format->bit-size)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format->signed-max ((format integer-formatp))
+  :returns (max posp :rule-classes (:rewrite :type-prescription))
+  :short "The ACL2 integer value of
+          the maximum signed value representable in an integer format."
+  (sinteger-format->max
+   (uinteger+sinteger-format->signed
+    (integer-format->pair format)))
+  :hooks (:fix)
+
+  ///
+
+  (defret integer-format->signed-max-upper-bound
+    (<= max
+        (1- (expt 2 (1- (integer-format->bit-size format)))))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable integer-format->bit-size-alt-def)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define integer-format->signed-min ((format integer-formatp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of
+          the minimum signed value representable in an integer format."
+  (sinteger-format->min
+   (uinteger+sinteger-format->signed
+    (integer-format->pair format)))
+  :hooks (:fix)
+
+  ///
+
+  (defret integer-format->signed-min-type-prescription
+    (and (integerp min)
+         (< min 0))
+    :rule-classes :type-prescription)
+
+  (defret integer-format->signed-min-lower-bound
+    (>= min
+        (- (expt 2 (1- (integer-format->bit-size format)))))
+    :hints (("Goal" :in-theory (enable integer-format->bit-size-alt-def)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1408,12 +1471,12 @@
        uinteger-sinteger-bit-roles-wfp-of-integer-format-inc-sign-tcnpnt
        posp))))
 
-  (defruled integer-format->size-of-integer-format-inc-sign-tcnpnt
+  (defruled integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (integer-format->size (integer-format-inc-sign-tcnpnt size))
+             (equal (integer-format->bit-size (integer-format-inc-sign-tcnpnt size))
                     size))
-    :enable (integer-format->size
+    :enable (integer-format->bit-size
              uinteger-format-inc-npnt
              sinteger-format-inc-sign-tcnpnt
              uinteger-sinteger-bit-roles-wfp-of-inc-n-and-sign
@@ -1484,20 +1547,14 @@
      and the possible unsigned values must at least include
      those of @('unsigned char')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size short-format))
-       (signed-short-min (sinteger-format->min
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair short-format))))
-       (signed-short-max (sinteger-format->max
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair short-format))))
-       (unsigned-short-max (uinteger-format->max
-                            (uinteger+sinteger-format->unsigned
-                             (integer-format->pair short-format))))
+  (b* ((bit-size (integer-format->bit-size short-format))
+       (signed-short-min (integer-format->signed-min short-format))
+       (signed-short-max (integer-format->signed-max short-format))
+       (unsigned-short-max (integer-format->unsigned-max short-format))
        (signed-char-min (schar-format->min schar-format uchar-format))
        (signed-char-max (schar-format->max schar-format uchar-format))
        (unsigned-char-max (uchar-format->max uchar-format)))
-    (and (integerp (/ size (uchar-format->size uchar-format)))
+    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-short-min -32767)
          (<= +32767 signed-short-max)
          (<= 65535 unsigned-short-max)
@@ -1529,26 +1586,14 @@
      and the possible unsigned values must at least include
      those of @('unsigned short')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size int-format))
-       (signed-int-min (sinteger-format->min
-                        (uinteger+sinteger-format->signed
-                         (integer-format->pair int-format))))
-       (signed-int-max (sinteger-format->max
-                        (uinteger+sinteger-format->signed
-                         (integer-format->pair int-format))))
-       (unsigned-int-max (uinteger-format->max
-                          (uinteger+sinteger-format->unsigned
-                           (integer-format->pair int-format))))
-       (signed-short-min (sinteger-format->min
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair short-format))))
-       (signed-short-max (sinteger-format->max
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair short-format))))
-       (unsigned-short-max (uinteger-format->max
-                            (uinteger+sinteger-format->unsigned
-                             (integer-format->pair short-format)))))
-    (and (integerp (/ size (uchar-format->size uchar-format)))
+  (b* ((bit-size (integer-format->bit-size int-format))
+       (signed-int-min (integer-format->signed-min int-format))
+       (signed-int-max (integer-format->signed-max int-format))
+       (unsigned-int-max (integer-format->unsigned-max int-format))
+       (signed-short-min (integer-format->signed-min short-format))
+       (signed-short-max (integer-format->signed-max short-format))
+       (unsigned-short-max (integer-format->unsigned-max short-format)))
+    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-int-min -32767)
          (<= +32767 signed-int-max)
          (<= 65535 unsigned-int-max)
@@ -1581,26 +1626,14 @@
      and the possible unsigned values must at least include
      those of @('unsigned int')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size long-format))
-       (signed-long-min (sinteger-format->min
-                         (uinteger+sinteger-format->signed
-                          (integer-format->pair long-format))))
-       (signed-long-max (sinteger-format->max
-                         (uinteger+sinteger-format->signed
-                          (integer-format->pair long-format))))
-       (unsigned-long-max (uinteger-format->max
-                           (uinteger+sinteger-format->unsigned
-                            (integer-format->pair long-format))))
-       (signed-int-min (sinteger-format->min
-                        (uinteger+sinteger-format->signed
-                         (integer-format->pair int-format))))
-       (signed-int-max (sinteger-format->max
-                        (uinteger+sinteger-format->signed
-                         (integer-format->pair int-format))))
-       (unsigned-int-max (uinteger-format->max
-                          (uinteger+sinteger-format->unsigned
-                           (integer-format->pair int-format)))))
-    (and (integerp (/ size (uchar-format->size uchar-format)))
+  (b* ((bit-size (integer-format->bit-size long-format))
+       (signed-long-min (integer-format->signed-min long-format))
+       (signed-long-max (integer-format->signed-max long-format))
+       (unsigned-long-max (integer-format->unsigned-max long-format))
+       (signed-int-min (integer-format->signed-min int-format))
+       (signed-int-max (integer-format->signed-max int-format))
+       (unsigned-int-max (integer-format->unsigned-max int-format)))
+    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-long-min -2147483647)
          (<= +2147483647 signed-long-max)
          (<= 4294967295 unsigned-long-max)
@@ -1634,26 +1667,14 @@
      and the possible unsigned values must at least include
      those of @('unsigned long')
      [C17:6.2.5/8]."))
-  (b* ((size (integer-format->size llong-format))
-       (signed-llong-min (sinteger-format->min
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair llong-format))))
-       (signed-llong-max (sinteger-format->max
-                          (uinteger+sinteger-format->signed
-                           (integer-format->pair llong-format))))
-       (unsigned-llong-max (uinteger-format->max
-                            (uinteger+sinteger-format->unsigned
-                             (integer-format->pair llong-format))))
-       (signed-long-min (sinteger-format->min
-                         (uinteger+sinteger-format->signed
-                          (integer-format->pair long-format))))
-       (signed-long-max (sinteger-format->max
-                         (uinteger+sinteger-format->signed
-                          (integer-format->pair long-format))))
-       (unsigned-long-max (uinteger-format->max
-                           (uinteger+sinteger-format->unsigned
-                            (integer-format->pair long-format)))))
-    (and (integerp (/ size (uchar-format->size uchar-format)))
+  (b* ((bit-size (integer-format->bit-size llong-format))
+       (signed-llong-min (integer-format->signed-min llong-format))
+       (signed-llong-max (integer-format->signed-max llong-format))
+       (unsigned-llong-max (integer-format->unsigned-max llong-format))
+       (signed-long-min (integer-format->signed-min long-format))
+       (signed-long-max (integer-format->signed-max long-format))
+       (unsigned-long-max (integer-format->unsigned-max long-format)))
+    (and (integerp (/ bit-size (uchar-format->size uchar-format)))
          (<= signed-llong-min -9223372036854775807)
          (<= +9223372036854775807 signed-llong-max)
          (<= 18446744073709551615 unsigned-llong-max)
@@ -1691,8 +1712,8 @@
                               (uchar-format-8)
                               (schar-format-8tcnt)))
 
-  (defruled integer-format->size-of-short-format-16tcnt
-    (equal (integer-format->size (short-format-16tcnt))
+  (defruled integer-format->bit-size-of-short-format-16tcnt
+    (equal (integer-format->bit-size (short-format-16tcnt))
            16))
 
   (defruled uinteger-format->max-of-short-format-16tcnt
@@ -1745,8 +1766,8 @@
                             (uchar-format-8)
                             (short-format-16tcnt)))
 
-  (defruled integer-format->size-of-int-format-16tcnt
-    (equal (integer-format->size (int-format-16tcnt))
+  (defruled integer-format->bit-size-of-int-format-16tcnt
+    (equal (integer-format->bit-size (int-format-16tcnt))
            16))
 
   (defruled uinteger-format->max-of-int-format-16tcnt
@@ -1799,8 +1820,8 @@
                              (uchar-format-8)
                              (int-format-16tcnt)))
 
-  (defruled integer-format->size-of-long-format-32tcnt
-    (equal (integer-format->size (long-format-32tcnt))
+  (defruled integer-format->bit-size-of-long-format-32tcnt
+    (equal (integer-format->bit-size (long-format-32tcnt))
            32))
 
   (defruled uinteger-format->max-of-long-format-32tcnt
@@ -1853,8 +1874,8 @@
                               (uchar-format-8)
                               (long-format-32tcnt)))
 
-  (defruled integer-format->size-of-llong-format-64tcnt
-    (equal (integer-format->size (llong-format-64tcnt))
+  (defruled integer-format->bit-size-of-llong-format-64tcnt
+    (equal (integer-format->bit-size (llong-format-64tcnt))
            64))
 
   (defruled uinteger-format->max-of-llong-format-64tcnt
@@ -2067,16 +2088,7 @@
     :rule-classes :type-prescription)
 
   (defret ienv->schar-min-upper-bound
-    (<= min (if (and (equal (signed-format-kind
-                             (schar-format->signed
-                              (char+short+int+long+llong-format->schar
-                               (ienv->char+short+int+long+llong-format ienv))))
-                            :twos-complement)
-                     (not (schar-format->trap
-                           (char+short+int+long+llong-format->schar
-                            (ienv->char+short+int+long+llong-format ienv)))))
-                -128
-              -127))
+    (<= min -127)
     :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2132,19 +2144,217 @@
     :rule-classes :type-prescription)
 
   (defret ienv->char-min-upper-bound
-    (<= min (if (char-format->signedp
-                 (char+short+int+long+llong-format->char
-                  (ienv->char+short+int+long+llong-format ienv)))
-                (if (and
-                     (equal (signed-format-kind
-                             (schar-format->signed
-                              (char+short+int+long+llong-format->schar
-                               (ienv->char+short+int+long+llong-format ienv))))
-                            :twos-complement)
-                     (not (schar-format->trap
-                           (char+short+int+long+llong-format->schar
-                            (ienv->char+short+int+long+llong-format ienv)))))
-                    -128
-                  -127)
-              0))
+    (<= min 0)
     :rule-classes ((:linear :trigger-terms ((ienv->char-min ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->short-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('short') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->short
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->short-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->int-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('int') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->int
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->int-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->long-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('long') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->long
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->long-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->llong-bit-size ((ienv ienvp))
+  :returns (size posp)
+  :short "Number of bits of unsigned and signed @('long long') objects."
+  (integer-format->bit-size
+   (char+short+int+long+llong-format->llong
+    (ienv->char+short+int+long+llong-format ienv)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ienv->llong-bit-size-type-prescription
+    (and (posp size)
+         (> size 1))
+    :rule-classes :type-prescription))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->ushort-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('USHRT_MAX') [C17:5.2.4.2.1]."
+  (uinteger-format->max
+   (uinteger+sinteger-format->unsigned
+    (integer-format->pair
+     (char+short+int+long+llong-format->short
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sshort-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('SHRT_MAX') [C17:5.2.4.2.1]."
+  (sinteger-format->max
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->short
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sshort-min ((ienv ienvp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('SHRT_MIN') [C17:5.2.4.2.1]."
+  (sinteger-format->min
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->short
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->uint-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('UINT_MAX') [C17:5.2.4.2.1]."
+  (uinteger-format->max
+   (uinteger+sinteger-format->unsigned
+    (integer-format->pair
+     (char+short+int+long+llong-format->int
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sint-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('INT_MAX') [C17:5.2.4.2.1]."
+  (sinteger-format->max
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->int
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sint-min ((ienv ienvp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('INT_MIN') [C17:5.2.4.2.1]."
+  (sinteger-format->min
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->int
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->ulong-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('ULONG_MAX') [C17:5.2.4.2.1]."
+  (uinteger-format->max
+   (uinteger+sinteger-format->unsigned
+    (integer-format->pair
+     (char+short+int+long+llong-format->long
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->slong-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('LONG_MAX') [C17:5.2.4.2.1]."
+  (sinteger-format->max
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->long
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->slong-min ((ienv ienvp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('LONG_MIN') [C17:5.2.4.2.1]."
+  (sinteger-format->min
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->long
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->ullong-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('ULLONG_MAX') [C17:5.2.4.2.1]."
+  (uinteger-format->max
+   (uinteger+sinteger-format->unsigned
+    (integer-format->pair
+     (char+short+int+long+llong-format->llong
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sllong-max ((ienv ienvp))
+  :returns (max posp)
+  :short "The ACL2 integer value of @('LLONG_MAX') [C17:5.2.4.2.1]."
+  (sinteger-format->max
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->llong
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->sllong-min ((ienv ienvp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('LLONG_MIN') [C17:5.2.4.2.1]."
+  (sinteger-format->min
+   (uinteger+sinteger-format->signed
+    (integer-format->pair
+     (char+short+int+long+llong-format->llong
+      (ienv->char+short+int+long+llong-format ienv)))))
+  :hooks (:fix))

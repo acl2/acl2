@@ -130,7 +130,8 @@
   (declare (xargs :guard t))
   (and (alistp options)
        (subsetp-eq (strip-cars options) '(;; :no-splitp ;whether to split into cases
-                                          :no-stp))))
+                                          :no-stp
+                                          :counterexample))))
 
 ;; Make a version of instantiate-hyp, etc that use the basic evaluator:
 ;; (make-instantiation-code-simple basic axe-evaluator-basic)
@@ -1777,9 +1778,9 @@
                        (mv :not-calling-stp state)
                      ;; Calling STP:
                      (prove-disjunction-with-stp literal-nodenums dag-array dag-len dag-parent-array case-designator print max-conflicts
-                                                      nil ;no counterexample (for now)
-                                                      nil ; don't print cex as signed
-                                                      state))
+                                                 (lookup-eq :counterexample options)
+                                                 nil ; don't print cex as signed
+                                                 state))
                    (if (eq *valid* result)
                        (prog2$ (cw "Proved case ~s0 with STP.~%" case-designator)
                                (mv (erp-nil) :proved dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))
@@ -1914,7 +1915,6 @@
 
  ) ;end mutual-recursion for Axe Prover
 
-
 ;; Returns (mv erp result state) where RESULT is :proved, :failed, or :timed-out.  If RESULT is :proved, we proved that the top-node of DAG is
 ;; non-nil.
 (defun prove-dag-with-axe-prover (dag
@@ -1931,7 +1931,6 @@
                                   print-max-conflicts-goalp
                                   options state)
   (declare (xargs :stobjs state
-                  :verify-guards nil ;todo: first do prove-disjunction-with-axe-prover
                   :guard (and (or (and (pseudo-dagp dag)
                                        (<= (len dag) *max-1d-array-length*))
                                   (myquotep dag))
@@ -1946,7 +1945,9 @@
                               (all-rule-alistp rule-alists)
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
-                              (axe-prover-optionsp options))))
+                              (axe-prover-optionsp options))
+                  :verify-guards nil ;todo: first do prove-disjunction-with-axe-prover
+                  ))
   (if (quotep dag)
       (if (unquote dag) ;a non-nil constant:
           (mv (erp-nil) :proved state)
@@ -2027,19 +2028,17 @@
 (defun prove-implication-with-axe-prover (conc ;a term
                                           hyps ;list of terms
                                           name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
-  (declare (xargs :stobjs state
-                  :guard (and (pseudo-termp conc)
+  (declare (xargs :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (symbolp name)
                               (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
-                              ;;... todo add more
-                              (axe-prover-optionsp options)
-                              )
-                  :mode :program ;todo
-                  :verify-guards nil ;todo
+                              (print-levelp print)
+                              (axe-prover-optionsp options))
+                  :stobjs state
+                  :verify-guards nil ;todo: first do prove-disjunction-with-axe-prover
                   ))
   (b* ((- (cw "(Proving theorem with Axe prover:~%"))
        (literal-terms (cons conc (negate-terms hyps)))
@@ -2081,17 +2080,16 @@
 (defun prove-theorem-with-axe-prover (conc ;a term
                                       hyps ;list of terms
                                       defthm-name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
-  (declare (xargs :mode :program ;because we call submit-events
-                  :guard (and (pseudo-termp conc)
+  (declare (xargs :guard (and (pseudo-termp conc)
                               (pseudo-term-listp hyps)
                               (symbolp defthm-name)
                               (or (natp max-conflicts) (null max-conflicts))
                               (all-rule-alistp rule-alists)
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
-                              ;;... todo add more
-                              (axe-prover-optionsp options)
-                              )
+                              (print-levelp print)
+                              (axe-prover-optionsp options))
+                  :mode :program ;because we call submit-events
                   :stobjs state))
   (mv-let (erp provedp state)
     (prove-implication-with-axe-prover conc hyps defthm-name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
@@ -2131,9 +2129,8 @@
                               (all-rule-alistp rule-alists)
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
-                              ;;... todo add more
-                              (axe-prover-optionsp options)
-                              )))
+                              (print-levelp print)
+                              (axe-prover-optionsp options))))
   (mv-let (erp provedp state)
     (prove-theorem-with-axe-prover conc hyps defthm-name max-conflicts rule-alists monitored-symbols interpreted-function-alist print options state)
     (if erp
@@ -2154,10 +2151,9 @@
                               (all-rule-alistp rule-alists)
                               (symbol-listp monitored-symbols)
                               (interpreted-function-alistp interpreted-function-alist)
-                              ;;... todo add more
-                              (axe-prover-optionsp options)
-                              )
-                  :mode :program ;todo
+                              (print-levelp print)
+                              (axe-prover-optionsp options))
+;                  :mode :program ;todo
                   :verify-guards nil ;todo ;first verify-guards for MAKE-TERMS-INTO-DAG-ARRAY
                   ))
   (b* ((- (cw "(Proving clause with Axe prover:~%"))
@@ -2198,15 +2194,15 @@
 ;; is a singleton set containing the original clause (indicating that no change
 ;; was made).  TODO: Allow it to change the clause but not prove it entirely?
 (defun axe-prover-clause-processor (clause hint state)
-  (declare (xargs :stobjs state
-                  ;; :verify-guards nil
-                  :mode :program
-                  :guard (and (pseudo-term-listp clause)
-                              (alistp hint))))
+  (declare (xargs :guard (and (pseudo-term-listp clause)
+                              (alistp hint))
+                  :stobjs state
+                  :mode :program))
   (b* ((must-prove (lookup-eq :must-prove hint))
        (max-conflicts (if (assoc-eq :max-conflicts hint)
-                    (lookup-eq :max-conflicts hint)
-                  *default-stp-max-conflicts*))
+                          (lookup-eq :max-conflicts hint)
+                        *default-stp-max-conflicts*))
+       (counterexample (lookup-eq :counterexample hint))
        ;; Handle the :rules input:
        (rules (lookup-eq :rules hint))
        ((when (not (symbol-listp rules)))
@@ -2225,9 +2221,10 @@
                        (list rules)
                      rule-lists))
        (monitored-symbols (lookup-eq :monitor hint))
-       (print (lookup-eq :print hint))
        ((mv erp rule-alists) (make-rule-alists rule-lists (w state)))
        ((when erp) (mv erp (list clause) state))
+       (print (lookup-eq :print hint))
+       ;; todo: check print option
        ((mv erp provedp state)
         (prove-clause-with-axe-prover clause
                                       'axe-prover-clause-proc
@@ -2236,7 +2233,7 @@
                                       monitored-symbols
                                       nil ;interpreted-function-alist ;todo?
                                       print
-                                      nil ;; options
+                                      (acons :counterexample counterexample nil) ;; options
                                       state))
        ((when erp) (mv erp (list clause) state)) ; error (and no change to clause set)
        )

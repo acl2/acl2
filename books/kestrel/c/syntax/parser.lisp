@@ -111,15 +111,12 @@
      at the cost of more complicated parsing logic,
      but we prefer the cleaner separation of concerns.")
    (xdoc::p
-    "The current implementation of our parser
-     does not capture all ambiguous constructs yet.
-     It is possible that our parser may reject some valid C code.
-     However, we plan to cover all ambiguous constructs soon.")
-   (xdoc::p
     "Our parser uses recursive descent,
      both for lexing and for parsing proper.
      The parser is closely based on the ABNF grammar in @(see grammar),
      which should be consulted alongside the parser code.
+     The function names are mostly based on the names of the grammar rules;
+     we plan to make all of them based on the names of the grammar rules.
      Since that grammar is left-recursive,
      we perform the usual left recursion elimination.")
    (xdoc::p
@@ -12168,7 +12165,7 @@
             (token-punctuatorp token ",")) ; declspecs ,
         (b* ((parstate (unread-token parstate))) ; declspecs
           (retok (make-param-declon :specs declspecs
-                                    :declor (paramdeclor-none))
+                                    :declor (param-declor-none))
                  span
                  parstate)))
        ;; Otherwise, we parse
@@ -12187,7 +12184,7 @@
            :declor
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (paramdeclor-declor declor/absdeclor.unwrap))
+                   :declor (param-declor-nonabstract declor/absdeclor.unwrap))
                   (span-join span last-span)
                   parstate)
            ;; If we parsed an unambiguous abstract declarator,
@@ -12195,7 +12192,7 @@
            :absdeclor
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (paramdeclor-absdeclor declor/absdeclor.unwrap))
+                   :declor (param-declor-abstract declor/absdeclor.unwrap))
                   (span-join span last-span)
                   parstate)
            ;; If we parsed an ambiguous declarator or abstract declarator,
@@ -12203,7 +12200,7 @@
            :ambig
            (retok (make-param-declon
                    :specs declspecs
-                   :declor (paramdeclor-ambig declor/absdeclor.unwrap))
+                   :declor (param-declor-ambig declor/absdeclor.unwrap))
                   (span-join span last-span)
                   parstate))))))
     :measure (two-nats-measure (parsize parstate) 2))
@@ -12298,14 +12295,14 @@
         (b* ((parstate (unread-token parstate)) ; specquals
              ((erp absdeclor last-span parstate) ; specquals absdeclor
               (parse-abstract-declarator parstate)))
-          (retok (make-tyname :specqual specquals
+          (retok (make-tyname :specquals specquals
                               :decl? absdeclor)
                  (span-join span last-span)
                  parstate)))
        ;; Otherwise, there is no abstract declarator.
        (t ; specquals other
         (b* ((parstate (if token (unread-token parstate) parstate)))
-          (retok (make-tyname :specqual specquals
+          (retok (make-tyname :specquals specquals
                               :decl? nil)
                  span
                  parstate)))))

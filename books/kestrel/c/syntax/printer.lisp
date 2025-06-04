@@ -2540,7 +2540,7 @@
           (raise "Misusage error: no declaration specifiers.")
           (pristate-fix pstate))
          (pstate (print-decl-spec-list param.specs pstate))
-         (pstate (print-paramdeclor param.declor pstate)))
+         (pstate (print-param-declor param.declor pstate)))
       pstate)
     :measure (two-nats-measure (param-declon-count param) 0))
 
@@ -2563,8 +2563,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-paramdeclor ((paramdeclor paramdeclorp) (pstate pristatep))
-    :guard (paramdeclor-unambp paramdeclor)
+  (define print-param-declor ((paramdeclor param-declorp) (pstate pristatep))
+    :guard (param-declor-unambp paramdeclor)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a parameter declarator."
@@ -2576,17 +2576,17 @@
        Thus, if the parameter declarator is present,
        we print a space to separate the declaration specifiers
        from the declarator or abstract declarator."))
-    (paramdeclor-case
+    (param-declor-case
      paramdeclor
-     :declor (b* ((pstate (print-astring " " pstate))
-                  (pstate (print-declor paramdeclor.unwrap pstate)))
-               pstate)
-     :absdeclor (b* ((pstate (print-astring " " pstate))
-                     (pstate (print-absdeclor paramdeclor.unwrap pstate)))
-                  pstate)
+     :nonabstract (b* ((pstate (print-astring " " pstate))
+                       (pstate (print-declor paramdeclor.declor pstate)))
+                    pstate)
+     :abstract (b* ((pstate (print-astring " " pstate))
+                    (pstate (print-absdeclor paramdeclor.declor pstate)))
+                 pstate)
      :none (pristate-fix pstate)
      :ambig (prog2$ (impossible) (pristate-fix pstate)))
-    :measure (two-nats-measure (paramdeclor-count paramdeclor) 0))
+    :measure (two-nats-measure (param-declor-count paramdeclor) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2600,10 +2600,10 @@
      (xdoc::p
       "We ensure that the list of specifiers and qualifiers is not empty."))
     (b* (((tyname tyname) tyname)
-         ((unless tyname.specqual)
+         ((unless tyname.specquals)
           (raise "Misusage error: empty list of specifiers and qualifiers.")
           (pristate-fix pstate))
-         (pstate (print-spec/qual-list tyname.specqual pstate))
+         (pstate (print-spec/qual-list tyname.specquals pstate))
          ((unless (absdeclor-option-case tyname.decl? :some)) pstate)
          (pstate (print-astring " " pstate))
          (pstate (print-absdeclor (absdeclor-option-some->val tyname.decl?)

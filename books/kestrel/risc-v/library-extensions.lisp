@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,95 +12,124 @@
 (in-package "RISCV")
 
 (include-book "ihs/basic-definitions" :dir :system)
-(include-book "kestrel/fty/sbyte32" :dir :system)
-(include-book "kestrel/fty/sbyte64" :dir :system)
-(include-book "kestrel/fty/ubyte5" :dir :system)
-(include-book "kestrel/fty/ubyte6" :dir :system)
-(include-book "kestrel/fty/ubyte8" :dir :system)
-(include-book "kestrel/fty/ubyte16" :dir :system)
-(include-book "kestrel/fty/ubyte32" :dir :system)
-(include-book "kestrel/fty/ubyte64" :dir :system)
-
-(local (include-book "arithmetic-5/top" :dir :system))
+(include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled integerp-of-+
-  (implies (and (integerp x)
-                (integerp y))
-           (integerp (+ x y))))
+(defrule loghead-of-ifix
+  (equal (loghead size (ifix i))
+         (loghead size i)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled integerp-of-*
-  (implies (and (integerp x)
-                (integerp y))
-           (integerp (* x y))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled integerp-of-unary-minus
-  (implies (integerp x)
-           (integerp (- x))))
+(defrule logext-of-ifix
+  (equal (logext size (ifix i))
+         (logext size i)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule ubyte5p-of-loghead-of-5
-  (ubyte5p (loghead 5 x))
-  :enable ubyte5p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule ubyte6p-of-loghead-of-6
-  (ubyte6p (loghead 6 x))
-  :enable ubyte6p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule ubyte8p-of-loghead-of-8
-  (ubyte8p (loghead 8 x))
-  :enable ubyte8p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule ubyte16p-of-loghead-of-16
-  (ubyte16p (loghead 16 x))
-  :enable ubyte16p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule ubyte32p-of-loghead-of-32
-  (ubyte32p (loghead 32 x))
-  :enable ubyte32p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule ubyte64p-of-loghead-of-64
-  (ubyte64p (loghead 64 x))
-  :enable ubyte64p)
+(defrule logext-of-loghead
+  (implies (and (posp size)
+                (posp size1)
+                (<= size1 size))
+           (equal (logext size1 (loghead size i))
+                  (logext size1 i)))
+  :enable (logbitp
+           oddp
+           evenp
+           ifix
+           nfix
+           fix)
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule sbyte32p-of-logext-of-32
-  (sbyte32p (logext 32 x))
-  :enable sbyte32p)
+(defruled logext-of-logext-plus-logext
+  (equal (logext n (+ (logext n x) (logext n y)))
+         (logext n (+ (ifix x) (ifix y))))
+  :enable (logext
+           loghead
+           oddp)
+  :prep-books
+  ((include-book "kestrel/arithmetic-light/even-and-odd" :dir :system)
+   (include-book "arithmetic-3/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled logext-of-logext-minus-logext
+  (equal (logext n (- (logext n x) (logext n y)))
+         (logext n (- (ifix x) (ifix y))))
+  :enable (logext
+           loghead
+           oddp
+           ifix
+           logbitp)
+  :prep-books
+  ((include-book "kestrel/arithmetic-light/even-and-odd" :dir :system)
+   (include-book "arithmetic-3/top" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule sbyte64p-of-logext-of-64
-  (sbyte64p (logext 64 x))
-  :enable sbyte64p)
+(defruled loghead-of-logext-plus-logext
+  (equal (loghead n (+ (logext n x) (logext n y)))
+         (loghead n (+ (ifix x) (ifix y))))
+  :use ((:instance bitops::cancel-logext-under-loghead
+                   (x (+ (logext n x)
+                         (logext n y)))
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-logext-under-loghead
+                   (x (+ x y))
+                   (m n)
+                   (n n)))
+  :enable logext-of-logext-plus-logext
+  :disable bitops::cancel-loghead-under-logext
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled loghead-of-logext-minus-logext
+  (equal (loghead n (- (logext n x) (logext n y)))
+         (loghead n (- (ifix x) (ifix y))))
+  :use ((:instance bitops::cancel-logext-under-loghead
+                   (x (- (logext n x)
+                         (logext n y)))
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-logext-under-loghead
+                   (x (- x y))
+                   (m n)
+                   (n n)))
+  :enable logext-of-logext-minus-logext
+  :disable bitops::cancel-loghead-under-logext
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule loghead-of-1-of-logbit
+  (equal (loghead 1 (logbit i x))
+         (logbit i x))
+  :enable bool->bit
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled logapp-1-of-logbit-logtail
+  (implies (and (natp i)
+                (equal j (1+ i))
+                (integerp x))
+           (equal (logapp 1 (logbit i x) (logtail j x))
+                  (logtail i x)))
+  :cases ((logbitp i x))
+  :enable (logtail
+           logapp
+           ifix
+           logbitp
+           fix
+           oddp
+           evenp)
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-theory (disable loghead logext))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun logappn-fn (args)
-  (cond ((endp args) 0)
-        ((endp (cdr args)) 0)
-        (t `(logapp ,(car args) ,(cadr args) ,(logappn-fn (cddr args))))))
-
-(defmacro logappn (&rest args)
-  (logappn-fn args))

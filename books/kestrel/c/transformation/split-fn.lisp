@@ -20,7 +20,6 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
-(include-book "deftrans")
 (include-book "utilities/free-vars")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -105,11 +104,11 @@
       disambiguated, the empty map is returned instead."))
   :returns (map ident-paramdeclon-mapp)
   (b* (((param-declon paramdecl) paramdecl))
-    (paramdeclor-case
+    (param-declor-case
       paramdecl.declor
-      :declor (omap::update (declor->ident paramdecl.declor.unwrap)
-                            (param-declon-fix paramdecl)
-                            nil)
+      :nonabstract (omap::update (declor->ident paramdecl.declor.declor)
+                                 (param-declon-fix paramdecl)
+                                 nil)
       :otherwise nil)))
 
 (define param-declon-list-to-ident-paramdeclon-map
@@ -165,7 +164,7 @@
          ident
          (make-param-declon
            :specs declspecs
-           :declor (paramdeclor-declor initdeclor.declor))
+           :declor (param-declor-nonabstract initdeclor.declor))
          (decl-to-ident-paramdeclon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 

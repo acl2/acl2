@@ -25,6 +25,7 @@
 (include-book "readers-and-writers64")
 (include-book "flags")
 (include-book "conditions")
+(include-book "zmm")
 
 (include-book "support-bv")
 (include-book "support-x86")
@@ -48,7 +49,10 @@
 (include-book "assumptions64")
 
 (include-book "run-until-return")
+(include-book "run-until-return2")
+(include-book "run-until-return3")
 (include-book "separate")
 (include-book "support")
 
+(include-book "make-memory-region-machinery") ; todo: move out (and change package?)
 (include-book "regions")

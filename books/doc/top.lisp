@@ -68,6 +68,7 @@
 
 (include-book "relnotes")
 (include-book "practices")
+(include-book "publications")
 
 (include-book "100-theorems")
 
@@ -189,6 +190,9 @@
 (include-book "system/acl2-system-exports" :dir :system)
 (include-book "system/doc/developers-guide" :dir :system)
 (include-book "system/pseudo-tests-and-calls-listp" :dir :system)
+(include-book "workshops/2025/whats-new-in-acl2-2025" :dir :system)
+(include-book "demos/divp-by-casting" :dir :system)
+(include-book "demos/majority-vote" :dir :system)
 
 ;; [Jared] removing these to speed up the manual build
 ;; BOZO should we put them back in?

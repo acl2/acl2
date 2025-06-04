@@ -37,8 +37,7 @@
       a default for the constant arguments,
       the binary operation on @('R'),
       and any number of overrides of the boilerplate code
-      for specific cases of the fixtypes.")
-    (xdoc::p))
+      for specific cases of the fixtypes."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,6 +54,7 @@
      "                :parents    ...  ; no default"
      "                :short      ...  ; no default"
      "                :long       ...  ; no default"
+     "                :print      ...  ; default :result"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -74,7 +74,7 @@
     (xdoc::desc
      "@(':types') &mdash; no default"
      (xdoc::p
-      "Fixtype for which fold functions must be generated.")
+      "Fixtypes for which fold functions must be generated.")
      (xdoc::p
       "This must be a list of symbols, which is not evaluated by the macro,
        where each symbols must be one of the following:")
@@ -117,7 +117,7 @@
      "@(':extra-args') &mdash; default @('nil')"
      (xdoc::p
       "Extra arguments of the functions,
-       which are passed unchanged to the recursively calls.")
+       which are passed unchanged to the recursive calls.")
      (xdoc::p
       "This must be a list of "
       (xdoc::seetopic "std::extended-formals" "extended formals")
@@ -179,7 +179,16 @@
       "@(':long')")
      (xdoc::p
       "These, if present, are added to the generated XDOC topic
-       described in the Section `Generated Events' below.")))
+       described in the Section `Generated Events' below."))
+
+    (xdoc::desc
+     "@(':print')"
+     (xdoc::p
+      "Controls how much information is printed. This is a @(see
+       apt::print-specifier). On @('nil') or @(':error'), only error messages
+       are printed. On @(':result') (the default) or @(':info'), the events to
+       be submitted are printed, in addition to error messages. Finally, all
+       information is printed under @(':all').")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

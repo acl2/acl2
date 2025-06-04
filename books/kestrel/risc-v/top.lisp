@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,9 +15,13 @@
 (include-book "instructions")
 (include-book "encoding")
 (include-book "decoding")
+(include-book "inverse-encoding-decoding")
 (include-book "states")
+(include-book "reads-over-writes")
 (include-book "semantics")
 (include-book "execution")
+(include-book "rv32im")
+(include-book "rv64im")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,13 +38,20 @@
    (xdoc::p
     "This ACL2 library includes
      a preliminary formalization of part of the the RISC-V ISA:
-     unprivileged RV32IM and RV64IM
+     unprivileged RV32IM, RV64IM, RV32EM, and RV64EM,
      (except for
      the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
      little endian memory access,
      fully readable and writable address space,
-     no alignment checks.
+     and no alignment checks.
      We plan to extend and improve this library.")
+   (xdoc::p
+    "We have a generic model of RISC-V,
+     parameterized over a growing set of features,
+     and we have two specialized models tailored to RV32IM and RV64IM.
+     We plan to have the general model cover more features,
+     and we plan to re-obtain the specialized models via
+     transformation and specialization of the general model.")
    (xdoc::p
     "This library is based on the following sources:")
    (xdoc::ul
@@ -66,9 +78,13 @@
    (xdoc::p
     "These square-bracketed references may be used
      as nouns or parenthentically."))
-  :order-subtopics (instructions
-                    decoding
+  :order-subtopics (features
+                    instructions
                     states
+                    reads-over-writes
+                    encoding
+                    decoding
                     semantics
-                    execution)
-  :default-parent t)
+                    execution
+                    rv32im
+                    rv64im))

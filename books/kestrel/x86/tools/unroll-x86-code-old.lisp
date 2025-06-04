@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (not based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,8 +24,8 @@
 ;; state assumptions (since they can mention X and Y).  We use the
 ;; second approach here for now.
 
-;; See also lifter-axe.lisp, for the Axe-based version of this lifter (which is
-;; what we mostly use).
+;; See also books/kestrel/axe/x86/unroll-x86-code.lisp, for the Axe-based
+;; version of this lifter (which is what we mostly use).
 
 (include-book "../support")
 (include-book "lifter-support")
@@ -63,7 +63,7 @@
                   :guard (and (symbolp lifted-name)
                               (stringp subroutine-name)
                               (natp stack-slots-needed)
-                              (output-indicatorp output)
+                              ;; (output-indicatorp output)
                               (booleanp non-executable))
                   :mode :program))
   (b* ( ;; Check whether this call to the lifter has already been made:
@@ -87,6 +87,7 @@
                                                                ',parsed-executable
                                                                ',stack-slots-needed
                                                                text-offset
+                                                               nil ; bvp
                                                                x86)
                               assumptions)
                       ;; TODO: Support :pe-32
@@ -95,6 +96,7 @@
                                                              ',parsed-executable
                                                              ',stack-slots-needed
                                                              text-offset
+                                                             nil ; bvp
                                                              x86)
                                 assumptions)
                         (if (eq :elf-64 executable-type)
@@ -102,6 +104,7 @@
                                                                 ',parsed-executable
                                                                 ',stack-slots-needed
                                                                 text-offset
+                                                                nil ; bvp
                                                                 x86)
                                   assumptions)
                           assumptions))))
@@ -123,7 +126,7 @@
        ;; Do the symbolic simulation:
        (enables (append enables *standard-lifter-enables*))
        (term-to-simulate '(run-until-return x86))
-       (term-to-simulate (wrap-in-output-extractor output term-to-simulate))
+       (term-to-simulate (wrap-in-output-extractor output term-to-simulate (w state)))
        ((mv result runes state)
         (symsim$-fn term-to-simulate
                     assumptions

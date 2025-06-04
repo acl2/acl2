@@ -102,6 +102,13 @@
     :enable (set::subset
              set::expensive-rules))
 
+  (defrule set::same-element-when-in-subset-of-singleton
+    (implies (and (set::subset set (set::insert elem nil))
+                  (set::in elem1 set))
+             (equal elem elem1))
+    :rule-classes nil
+    :enable set::expensive-rules)
+
   (defruled set::intersect-mono-subset
     (implies (set::subset a b)
              (set::subset (set::intersect a c)
@@ -155,6 +162,14 @@
              (not (set::emptyp (set::intersect x y))))
     :use (:instance set::never-in-empty (a a) (x (set::intersect x y)))
     :disable set::never-in-empty)
+
+  (defruled set::intersect-ab-subset-difference-bc-when-disjoint-ac
+    (implies (set::emptyp (set::intersect a c))
+             (set::subset (set::intersect a b)
+                          (set::difference b c)))
+    :enable (set::expensive-rules
+             set::emptyp
+             set::not-member-when-member-of-disjoint))
 
   ;; pick-a-point:
   (define-sk set::subset-sk ((set1 set::setp) (set2 set::setp))

@@ -30,7 +30,7 @@
 
 (define plus-arithmetic-value ((val valuep))
   :guard (value-arithmeticp val)
-  :returns (resval value-resultp)
+  :returns (resval valuep)
   :short "Apply unary @('+') to an arithmetic value [C17:6.5.3.3/2]."
   :long
   (xdoc::topstring
@@ -45,7 +45,14 @@
     (plus-integer-value val))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-plus-arithmetic-value
+    (equal (type-of-value resval)
+           (promote-type (type-of-value val)))
+    :hints (("Goal" :in-theory (enable type-of-value-of-promote-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -66,7 +73,18 @@
     (minus-integer-value val))
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-minus-arithmetic-value
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (promote-type (type-of-value val))))
+    :hyp (value-arithmeticp val)
+    :hints (("Goal" :in-theory (enable value-arithmeticp
+                                       value-realp
+                                       type-of-value-of-promote-value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,7 +107,21 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-mul-arithmetic-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))
+    :hyp (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+    :hints (("Goal"
+             :in-theory (enable value-arithmeticp
+                                value-realp
+                                type-of-value-of-uaconvert-values)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,7 +145,21 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-div-arithmetic-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))
+    :hyp (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+    :hints (("Goal"
+             :in-theory (enable value-arithmeticp
+                                value-realp
+                                type-of-value-of-uaconvert-values)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,7 +183,21 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-rem-arithmetic-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))
+    :hyp (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+    :hints (("Goal"
+             :in-theory (enable value-arithmeticp
+                                value-realp
+                                type-of-value-of-uaconvert-values)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,7 +220,21 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-add-arithmetic-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))
+    :hyp (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+    :hints (("Goal"
+             :in-theory (enable value-arithmeticp
+                                value-realp
+                                type-of-value-of-uaconvert-values)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -183,14 +257,28 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-sub-arithmetic-values
+    (implies (not (errorp resval))
+             (equal (type-of-value resval)
+                    (uaconvert-types (type-of-value val1)
+                                     (type-of-value val2))))
+    :hyp (and (value-arithmeticp val1)
+              (value-arithmeticp val2))
+    :hints (("Goal"
+             :in-theory (enable value-arithmeticp
+                                value-realp
+                                type-of-value-of-uaconvert-values)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eq-arithmetic-values ((val1 valuep) (val2 valuep))
   :guard (and (value-arithmeticp val1)
               (value-arithmeticp val2))
-  :returns (resval value-resultp)
+  :returns (resval valuep)
   :short "Apply @('==') to arithmetic values [C17:6.5.9/3] [C17:6.5.9/4]."
   :long
   (xdoc::topstring
@@ -206,14 +294,20 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-eq-arithmetic-values
+    (equal (type-of-value resval)
+           (type-sint))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define ne-arithmetic-values ((val1 valuep) (val2 valuep))
   :guard (and (value-arithmeticp val1)
               (value-arithmeticp val2))
-  :returns (resval value-resultp)
+  :returns (resval valuep)
   :short "Apply @('!=') to arithmetic values [C17:6.5.9/3] [C17:6.5.9/4]."
   :long
   (xdoc::topstring
@@ -229,4 +323,10 @@
   :guard-hints (("Goal" :in-theory (enable value-arithmeticp
                                            value-realp
                                            type-of-value-of-uaconvert-values)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret type-of-value-of-ne-arithmetic-values
+    (equal (type-of-value resval)
+           (type-sint))))

@@ -85,23 +85,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-strings-to-filepaths ((strings string-listp))
-  :returns (filepaths filepath-setp)
-  :short "Turn a list of strings into a set of file paths."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Wrap each string into a file path.")
-   (xdoc::p
-    "This is more general than @(tsee input-files),
-     and should be moved to a more central place."))
-  (cond ((endp strings) nil)
-        (t (set::insert (filepath (car strings))
-                        (input-files-strings-to-filepaths (cdr strings)))))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define input-files-preprocess-inputp (x)
   :returns (yes/no booleanp)
   :short "Recognize valid values of the @(':preprocess') input."
@@ -639,7 +622,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We set the flag @('progp) for the programmatic interface to @('nil').
+    "We set the flag @('progp') for the programmatic interface to @('nil').
      We ignore the artifacts returned as additional results."))
   (b* (((mv erp event & state)
         (input-files-process-inputs-and-gen-events args nil state))

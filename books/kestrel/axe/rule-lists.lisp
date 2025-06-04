@@ -256,6 +256,7 @@
   (declare (xargs :guard t))
   '(;these should be safe, because each replaces an argument of a BV op with a
     ;strict subterm of that argument:
+    ;; bvcat rules:
     bvand-of-bvcat-low-arg2
     bvand-of-bvcat-low-arg3
     bvor-of-bvcat-low-arg2
@@ -277,6 +278,9 @@
     bvuminus-of-bvcat-low ; todo: also rules for bitnot and bvnot?
     bvif-of-bvcat-low-arg3
     bvif-of-bvcat-low-arg4
+    bvcat-of-bvcat-tighten-arg2
+    bvcat-of-bvcat-tighten-arg4
+    ;; bvsx rules:
     bitand-of-bvsx-low-arg1
     bitand-of-bvsx-low-arg2
     bitor-of-bvsx-low-arg1
@@ -572,6 +576,7 @@
 
 ;fixme a few of these are -all rules...
 ;; todo: we shouldn't use these without the trim-helpers  - add them to this?
+;; add bvlt-trim rules?
 (defun trim-rules ()
   (declare (xargs :guard t))
   '(;; -all and -non-all versions?
@@ -725,6 +730,10 @@
      bvminus-of-0-arg1
      bvminus-of-0-arg2
      bvminus-of-0-arg3
+     bvminus-of-bvplus-and-bvplus-same
+     bvminus-of-constant-and-bvplus-of-constant
+     bvminus-of-bvplus-of-constant-and-constant
+     bvminus-cancel-3-2 ; todo: more!
 
      bvplus-of-0-arg2
 
@@ -1042,7 +1051,7 @@
      bvcat-of-bvcat-high-tighten ;bozo general rule?
      bvcat-of-getbit-high-tighten
      bvcat-of-bvchop-high-tighten-axe ;gen the bvchop to any bv term
-;            bvcat-of-bvcat-trim-high-arg ;use trim Mon Mar 14 18:54:23 2011
+;            bvcat-of-bvcat-tighten-arg2 ;use trim Mon Mar 14 18:54:23 2011
 ;    bvmult-27-bvcat-hack ;;trying without...
 ;            bvmult-8-27-blast-hack
 ;           bvmult-8-27-blast
@@ -1100,6 +1109,7 @@
 
      slice-out-of-order
      slice-too-high-is-0-bind-free-axe
+     slice-too-high-when-unsigned-byte-p ; requires an unsigned-byte-p hyp, should be fairly cheap
      ;; slice-of-getbit-too-high ; just use slice-too-high-is-0-bind-free-axe
      slice-becomes-getbit
      slice-becomes-bvchop

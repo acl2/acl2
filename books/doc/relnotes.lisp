@@ -143,12 +143,22 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "HOL-ACL2 Link Support")
+   (xdoc::h4 "ACL2-IN-HOL Link Support")
 
    (xdoc::p
-    "See projects/hol-acl2/README-acl2.  That directory provides modifications
+    "See projects/acl2-in-hol/README-acl2.  That directory provides modifications
      of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
      that link to work with the latest versions of ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "HOL4 to ACL2 Translator")
+
+   (xdoc::p
+    "The directory @('[books]/projects/hol-in-acl2/') contains a translator
+     from HOL4 to ACL2 &mdash; more specifically, a translator to the
+     integration of set theory with ACL2 supported by directory
+     @('[books]/projects/set-theory/').  Examples are included.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -290,6 +300,10 @@
      floating-point operations may be found in
      @('demos/floating-point-input.lsp'), with associated output file
      @('demos/floating-point-log.txt'), with associated output file")
+
+   (xdoc::p
+    "The publications page available from the ACL2 home page has been replaced
+     by the :DOC topic, @(see publications).")
 
    ))
 

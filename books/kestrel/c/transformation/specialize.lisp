@@ -17,7 +17,6 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
-(include-book "deftrans")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -78,9 +77,9 @@
      "This may return @('nil') when the parameter declaration is unnamed."))
   :returns (ident ident-optionp)
   (b* (((param-declon paramdecl) paramdecl))
-    (paramdeclor-case
+    (param-declor-case
       paramdecl.declor
-      :declor (declor->ident paramdecl.declor.unwrap)
+      :nonabstract (declor->ident paramdecl.declor.declor)
       :otherwise nil)))
 
 (define param-declon-to-decl
@@ -90,13 +89,13 @@
   :returns (mv (success booleanp)
                (decl declp))
   (b* (((param-declon paramdecl) paramdecl))
-    (paramdeclor-case
+    (param-declor-case
       paramdecl.declor
-      :declor (mv t
-                  (make-decl-decl
-                    :extension nil
-                    :specs paramdecl.specs
-                    :init (cons (initdeclor paramdecl.declor.unwrap nil nil init?) nil)))
+      :nonabstract (mv t
+                       (make-decl-decl
+                        :extension nil
+                        :specs paramdecl.specs
+                        :init (cons (initdeclor paramdecl.declor.declor nil nil init?) nil)))
       :otherwise (mv nil (irr-decl)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

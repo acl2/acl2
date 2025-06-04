@@ -83,9 +83,8 @@
                   x))
   :hints (("Goal" :in-theory (enable all-equal$ nth))))
 
-;Disable?
 ;Is the other rule better?
-(defthm nth-when-all-equal$
+(defthmd nth-when-all-equal$
   (implies (and (all-equal$ x lst)
                 (syntaxp (not (equal x `(nth ,n ,lst)))) ;helps prevent loops
                 ;; (natp n)

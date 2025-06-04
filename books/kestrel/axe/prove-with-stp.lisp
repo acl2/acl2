@@ -1461,6 +1461,118 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;move
+;; This seems necessary to prevent stack overflows when printing things like calls of program-at.
+;; Replaces long list constants with the special var :VERY-LONG-LIST.
+(mutual-recursion
+  (defund elide-list-constants-in-term (term)
+    (declare (xargs :guard (pseudo-termp term)))
+    (if (variablep term)
+        term
+      (if (fquotep term)
+          (let ((val (unquote term)))
+            (if (and (consp val)
+                     (<= 500 (len val)))
+                ':very-long-list
+              term))
+        ;; todo: elide withing lambda bodies?
+        (cons (ffn-symb term) (elide-list-constants-in-terms (fargs term))))))
+  (defund elide-list-constants-in-terms (terms)
+    (declare (xargs :guard (pseudo-term-listp terms)))
+    (if (endp terms)
+        nil
+      (cons (elide-list-constants-in-term (first terms))
+            (elide-list-constants-in-terms (rest terms))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *smt-functions*
+  '(bitnot bitand bitor bitxor bvchop bvnot bvuminus getbit slice bvand bvor bvxor bvplus bvminus bvmult bvdiv bvmod sbvdiv sbvrem bvcat bvsx bvif leftrotate32 bv-array-read bv-array-write bv-array-if))
+
+(defund smt-function-callp (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (and (consp term)
+       (member-eq (ffn-symb term) *smt-functions*)))
+
+(defund smt-constantp (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (and (consp term)
+       (eq (ffn-symb term) 'quote)
+       (let ((val (unquote term)))
+         (or (natp val) ; possibly a constant BV
+             (nat-listp val) ; possibly a constant array
+             (booleanp val) ; a constant boolean
+             ))))
+
+;; Checks whether an assumption might be useful in an SMT proof.
+;;todo: booland (or maybe that gets flattened), xor/boolxor?
+(defund smt-assumptionp (term)
+  (declare (xargs :guard (pseudo-termp term)))
+  (if (variablep term)
+      nil ; a naked variable as an assumption is not useful
+    (let ((fn (ffn-symb term)))
+      (case fn
+        (quote nil) ; a constant assumption is not useful
+        ;; Look past calls to NOT:
+        (not (and (= 1 (len (fargs term)))
+                  (smt-assumptionp (farg1 term))))
+        ((bvlt bvle sbvlt sbvle bvequal) t)
+        ;; We keep a boolor if both args are usable:
+        ;; We could relax this to require only 1 of them to be usable, but then we'd need the other to be known nil somehow.
+        (boolor (and (= 2 (len (fargs term)))
+                     (smt-assumptionp (farg1 term))
+                     (smt-assumptionp (farg2 term))))
+        (boolif (and (= 3 (len (fargs term)))
+                     (smt-assumptionp (farg1 term))
+                     (smt-assumptionp (farg2 term))
+                     (smt-assumptionp (farg3 term))))
+        ;; keep for generating type info:
+        ((unsigned-byte-p true-listp all-unsigned-byte-p) t)
+        ;; todo: handle (equal x t) and (equal x nil)
+        (equal (and (= 2 (len (fargs term)))
+                    (let ((arg1 (farg1 term))
+                          (arg2 (farg2 term)))
+                      ;; claims about len may be needed to generate type info:
+                      (if (or (and (call-of 'len arg1) (quotep arg2)) ; (equal (len <X>) '<y>)
+                              (and (call-of 'len arg2) (quotep arg1)) ; (equal '<y> (len <X>))
+                              )
+                          t
+                        (if (or (smt-function-callp arg1)
+                                (smt-function-callp arg2))
+                            t
+                          (if (smt-constantp arg1)
+                              (variablep arg2)
+                            (if (smt-constantp arg2)
+                                (variablep arg1)
+                              (and (variablep arg1)
+                                   (variablep arg2)))))))))
+        (otherwise nil)))))
+
+;; Keeps terms that may possibly be useful for SMT.
+;; Returns a list of pseudo-terms.
+(defund keep-smt-assumptions (terms)
+  (declare (xargs :guard (pseudo-term-listp terms)))
+  (if (endp terms)
+      nil
+    (let ((term (first terms)))
+      (if (smt-assumptionp term)
+          (cons term (keep-smt-assumptions (rest terms)))
+        (progn$ ;; (cw "Dropping non-SMT assumption ~x0.~%" (elide-list-constants-in-term term))
+                (keep-smt-assumptions (rest terms)))))))
+
+(defthm pseudo-term-listp-of-keep-smt-assumptions
+  (implies (pseudo-term-listp terms)
+           (pseudo-term-listp (keep-smt-assumptions terms)))
+  :hints (("Goal" :in-theory (enable keep-smt-assumptions))))
+
+;; sanity check
+(thm
+ (subsetp-equal (pseudo-term-listp (keep-smt-assumptions terms))
+                (pseudo-term-listp terms))
+ :hints (("Goal" :in-theory (enable keep-smt-assumptions))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Select a type for NODENUM.  Returns (mv erp type).
 ;;note: this will only be called when its expr doesn't have an obvious type
 ;;nodenum must either have a known type or be used in at least one choppable context

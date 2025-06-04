@@ -552,3 +552,165 @@
   ///
   (fty::deffixequiv fundef-list-to-fun-declon-list
     :args ((x fundef-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-nocallsp ((expr exprp))
+  :returns (yes/no booleanp)
+  :short "Check if an expression does not contain any function calls."
+  (expr-case
+   expr
+   :ident t
+   :const t
+   :arrsub (and (expr-nocallsp expr.arr)
+                (expr-nocallsp expr.sub))
+   :call nil
+   :member (expr-nocallsp expr.target)
+   :memberp (expr-nocallsp expr.target)
+   :postinc (expr-nocallsp expr.arg)
+   :postdec (expr-nocallsp expr.arg)
+   :preinc (expr-nocallsp expr.arg)
+   :predec (expr-nocallsp expr.arg)
+   :unary (expr-nocallsp expr.arg)
+   :cast (expr-nocallsp expr.arg)
+   :binary (and (expr-nocallsp expr.arg1)
+                (expr-nocallsp expr.arg2))
+   :cond (and (expr-nocallsp expr.test)
+              (expr-nocallsp expr.then)
+              (expr-nocallsp expr.else)))
+  :measure (expr-count expr)
+  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist expr-list-nocallsp (x)
+  :guard (expr-listp x)
+  :short "Check if a list of expressions does not contain any function calls."
+  (expr-nocallsp x)
+  :elementp-of-nil t
+  ///
+  (fty::deffixequiv expr-list-nocallsp
+    :args ((x expr-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define expr-option-nocallsp ((expr? expr-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional expression does not contain any function calls."
+  (expr-option-case
+   expr?
+   :some (expr-nocallsp expr?.val)
+   :none t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define initer-nocallsp ((initer initerp))
+  :returns (yes/no booleanp)
+  :short "Check if an initializer does not contain any function calls."
+  (initer-case
+   initer
+   :single (expr-nocallsp initer.get)
+   :list (expr-list-nocallsp initer.get))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define initer-option-nocallsp ((initer? initer-optionp))
+  :returns (yes/no booleanp)
+  :short "Check if an optional initializer does not contain any function calls."
+  (initer-option-case
+   initer?
+   :some (initer-nocallsp initer?.val)
+   :none t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define obj-declon-nocallsp ((declon obj-declonp))
+  :returns (yes/no booleanp)
+  :short "Check if an object declaration does not contain any function calls."
+  (initer-option-nocallsp (obj-declon->init? declon))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define label-nocallsp ((label labelp))
+  :returns (yes/no booleanp)
+  :short "Check if a label does not contain any function calls."
+  (label-case
+   label
+   :name t
+   :cas (expr-nocallsp label.get)
+   :default t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines stmts/blocks-nocallsp
+  :short "Check if statements, block items, and lists of block items
+          do not contain any function calls."
+
+  (define stmt-nocallsp ((stmt stmtp))
+    :returns (yes/no booleanp)
+    :parents (abstract-syntax-operations stmts/blocks-nocallsp)
+    :short "Check if a statement does not contain any function calls."
+    (stmt-case
+     stmt
+     :labeled (and (label-nocallsp stmt.label)
+                   (stmt-nocallsp stmt.body))
+     :compound (block-item-list-nocallsp stmt.items)
+     :expr (expr-nocallsp stmt.get)
+     :null t
+     :if (and (expr-nocallsp stmt.test)
+              (stmt-nocallsp stmt.then))
+     :ifelse (and (expr-nocallsp stmt.test)
+                  (stmt-nocallsp stmt.then)
+                  (stmt-nocallsp stmt.else))
+     :switch (and (expr-nocallsp stmt.ctrl)
+                  (stmt-nocallsp stmt.body))
+     :while (and (expr-nocallsp stmt.test)
+                 (stmt-nocallsp stmt.body))
+     :dowhile (and (stmt-nocallsp stmt.body)
+                   (expr-nocallsp stmt.test))
+     :for (and (expr-option-nocallsp stmt.init)
+               (expr-option-nocallsp stmt.test)
+               (expr-option-nocallsp stmt.next)
+               (stmt-nocallsp stmt.body))
+     :goto t
+     :continue t
+     :break t
+     :return (expr-option-nocallsp stmt.value))
+    :measure (stmt-count stmt))
+
+  (define block-item-nocallsp ((item block-itemp))
+    :returns (yes/no booleanp)
+    :parents (abstract-syntax-operations stmts/blocks-nocallsp)
+    :short "Check if a block item does not contain any function calls."
+    (block-item-case
+     item
+     :declon (obj-declon-nocallsp item.get)
+     :stmt (stmt-nocallsp item.get))
+    :measure (block-item-count item))
+
+  (define block-item-list-nocallsp ((items block-item-listp))
+    :returns (yes/no booleanp)
+    :parents (abstract-syntax-operations stmts/blocks-nocallsp)
+    :short "Check if a list of block items does not contain any function calls."
+    (or (endp items)
+        (and (block-item-nocallsp (car items))
+             (block-item-list-nocallsp (cdr items))))
+    :measure (block-item-list-count items))
+
+  :hints (("Goal" :in-theory (enable o-p o-finp o<)))
+
+  ///
+
+  (fty::deffixequiv-mutual stmts/blocks-nocallsp)
+
+  (std::deflist block-item-list-nocalls (x)
+    :guard (block-item-listp x)
+    :parents nil
+    (block-item-nocallsp x)
+    :elementp-of-nil t))

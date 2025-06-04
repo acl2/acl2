@@ -1,6 +1,7 @@
 ; RISC-V Library
 ;
 ; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,11 +13,16 @@
 
 (include-book "features")
 
+(include-book "kestrel/fty/ubyte4" :dir :system)
 (include-book "kestrel/fty/ubyte5" :dir :system)
 (include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte12" :dir :system)
 (include-book "kestrel/fty/ubyte20" :dir :system)
-(include-book "std/util/deffixer" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -234,7 +240,12 @@
   (xdoc::topstring
    (xdoc::p
     "The tags of the summands of this fixtype correspond to opcodes.
-     The components of each summand correspond to the non-opcode fields.")
+     The components of each summand correspond to the non-opcode fields.
+     Register indices always consist of 5 bits,
+     in order to designate the 32 registers of RV32I and RV64I;
+     for RV32E and RV64E, only the low four bits are used,
+     with the high bit needing to be 0 [ISA:3.2];
+     we enforce that in @(tsee instr-validp).")
    (xdoc::p
     "The @('OP-IMM') opcode corresponds to
      @(':op-imm') for non-shift instructions,
@@ -336,36 +347,78 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently our model of features only consists of one bit of information:
-     whether we are in 32-bit mode or in 64-bit mode;
-     more precisely, whether our base is RV32I (or RV32E) or RV64I (or RV64E).
-     For now we implicitly assume that the M extension is present;
-     we plan to add a choice about that in the @(see features)."))
+    "Certain instructions are only valid in RV32I/RV32E or RV64I/RV64E.")
+   (xdoc::p
+    "In RV32E/RV64E, register indices are only 4 bits.")
+   (xdoc::p
+    "Certain instructions are only valid with the M extension."))
   (b* (((feat feat) feat))
     (instr-case instr
-                :op-imm t
-                :op-imms32 (feat-32p feat)
-                :op-imms64 (feat-64p feat)
-                :op-imm-32 (feat-64p feat)
-                :op-imms-32 (feat-64p feat)
-                :lui t
-                :auipc t
-                :op t
-                :op-32 (feat-64p feat)
-                :jal t
-                :jalr t
-                :branch t
-                :load (load-funct-case instr.funct
-                                       :lb t
-                                       :lbu t
-                                       :lh t
-                                       :lhu t
-                                       :lw t
-                                       :lwu (feat-64p feat)
-                                       :ld (feat-64p feat))
-                :store (store-funct-case instr.funct
-                                         :sb t
-                                         :sh t
-                                         :sw t
-                                         :sd (feat-64p feat))))
+                :op-imm (implies (feat-embedp feat)
+                                 (and (ubyte4p instr.rd)
+                                      (ubyte4p instr.rs1)))
+                :op-imms32 (and (feat-32p feat)
+                                (implies (feat-embedp feat)
+                                         (and (ubyte4p instr.rd)
+                                              (ubyte4p instr.rs1))))
+                :op-imms64 (and (feat-64p feat)
+                                (implies (feat-embedp feat)
+                                         (and (ubyte4p instr.rd)
+                                              (ubyte4p instr.rs1))))
+                :op-imm-32 (and (feat-64p feat)
+                                (implies (feat-embedp feat)
+                                         (and (ubyte4p instr.rd)
+                                              (ubyte4p instr.rs1))))
+                :op-imms-32 (and (feat-64p feat)
+                                 (implies (feat-embedp feat)
+                                          (and (ubyte4p instr.rd)
+                                               (ubyte4p instr.rs1))))
+                :lui (implies (feat-embedp feat)
+                              (ubyte4p instr.rd))
+                :auipc (implies (feat-embedp feat)
+                                (ubyte4p instr.rd))
+                :op (and (implies (feat-embedp feat)
+                                  (and (ubyte4p instr.rd)
+                                       (ubyte4p instr.rs1)
+                                       (ubyte4p instr.rs2)))
+                         (implies (member-eq (op-funct-kind instr.funct)
+                                             '(:mul :mulh :mulhu :mulhsu
+                                               :div :divu :rem :remu))
+                                  (feat-mp feat)))
+                :op-32 (and (feat-64p feat)
+                            (implies (feat-embedp feat)
+                                     (and (ubyte4p instr.rd)
+                                          (ubyte4p instr.rs1)
+                                          (ubyte4p instr.rs2)))
+                            (implies (member-eq (op-32-funct-kind instr.funct)
+                                                '(:mulw
+                                                  :divw :divuw :remw :remuw))
+                                     (feat-mp feat)))
+                :jal (implies (feat-embedp feat)
+                              (ubyte4p instr.rd))
+                :jalr (implies (feat-embedp feat)
+                               (and (ubyte4p instr.rd)
+                                    (ubyte4p instr.rs1)))
+                :branch (implies (feat-embedp feat)
+                                 (and (ubyte4p instr.rs1)
+                                      (ubyte4p instr.rs2)))
+                :load (and (load-funct-case instr.funct
+                                            :lb t
+                                            :lbu t
+                                            :lh t
+                                            :lhu t
+                                            :lw t
+                                            :lwu (feat-64p feat)
+                                            :ld (feat-64p feat))
+                           (implies (feat-embedp feat)
+                                    (and (ubyte4p instr.rd)
+                                         (ubyte4p instr.rs1))))
+                :store (and (store-funct-case instr.funct
+                                              :sb t
+                                              :sh t
+                                              :sw t
+                                              :sd (feat-64p feat))
+                            (implies (feat-embedp feat)
+                                     (and (ubyte4p instr.rs1)
+                                          (ubyte4p instr.rs2))))))
   :hooks (:fix))

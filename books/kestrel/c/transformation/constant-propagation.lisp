@@ -22,7 +22,6 @@
 (include-book "../language/values")
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/langdef-mapping")
-(include-book "deftrans")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -210,7 +209,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "See (tsee union-env)."))
+     "See @(tsee union-env)."))
   :returns (block env-blockp)
   (if (omap::emptyp x)
       nil
@@ -562,6 +561,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: rewrite as a map?
 (defines const-prop-exprs/decls/stmts
   (define const-prop-expr
     ((expr exprp)
@@ -1401,7 +1401,7 @@
          ((mv spec env)
           (const-prop-decl-spec-list paramdecl.specs env))
          ((mv decl env)
-          (const-prop-paramdeclor paramdecl.declor env)))
+          (const-prop-param-declor paramdecl.declor env)))
       (mv (make-param-declon
             :specs spec
             :declor decl)
@@ -1425,27 +1425,27 @@
           env))
     :measure (param-declon-list-count paramdecls))
 
-  (define const-prop-paramdeclor
-    ((paramdeclor paramdeclorp)
+  (define const-prop-param-declor
+    ((paramdeclor param-declorp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::paramdeclor)."
-    :returns (mv (new-paramdeclor paramdeclorp)
+    :short "Propagate a constant through a @(see c$::param-declor)."
+    :returns (mv (new-paramdeclor param-declorp)
                  (new-env envp))
     (b* ((env (env-fix env)))
-      (paramdeclor-case
+      (param-declor-case
         paramdeclor
-        :declor (b* (((mv unwrap env)
-                      (const-prop-declor paramdeclor.unwrap env)))
-                  (mv (paramdeclor-declor unwrap) env))
-        :absdeclor (b* (((mv unwrap env)
-                         (const-prop-absdeclor paramdeclor.unwrap env)))
-                     (mv (paramdeclor-absdeclor unwrap) env))
-        :none (mv (paramdeclor-none) env)
+        :nonabstract (b* (((mv declor env)
+                           (const-prop-declor paramdeclor.declor env)))
+                       (mv (param-declor-nonabstract declor) env))
+        :abstract (b* (((mv unwrap env)
+                        (const-prop-absdeclor paramdeclor.declor env)))
+                    (mv (param-declor-abstract unwrap) env))
+        :none (mv (param-declor-none) env)
         :ambig (prog2$ (raise "Misusage error: ~x0."
-                              (paramdeclor-fix paramdeclor))
-                       (mv (paramdeclor-fix paramdeclor)
+                              (param-declor-fix paramdeclor))
+                       (mv (param-declor-fix paramdeclor)
                            env))))
-    :measure (paramdeclor-count paramdeclor))
+    :measure (param-declor-count paramdeclor))
 
   (define const-prop-tyname
     ((tyname tynamep)
@@ -1455,12 +1455,12 @@
                  (new-env envp))
     (b* ((env (env-fix env))
          ((tyname tyname) tyname)
-         ((mv specqual env)
-          (const-prop-spec/qual-list tyname.specqual env))
+         ((mv specquals env)
+          (const-prop-spec/qual-list tyname.specquals env))
          ((mv decl? env)
           (const-prop-absdeclor-option tyname.decl? env)))
       (mv (make-tyname
-            :specqual specqual
+            :specquals specquals
             :decl? decl?)
           env))
     :measure (tyname-count tyname))
@@ -1889,7 +1889,7 @@
           env))
     :measure (block-item-list-count items))
 
-  :hints (("Goal" :in-theory '(deftrans-measure-theory)))
+  :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

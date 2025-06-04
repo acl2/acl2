@@ -966,8 +966,8 @@
                    `(local ,form)
                  form)))
     form)
-  :parents (lifters)
-  :short "Lift a Java method to create a DAG, unrolling loops as needed."
+  :parents (axe-jvm axe-lifters)
+  :short "A tool to lift a Java/JVM method into a DAG, unrolling loops as needed."
   :args ((defconst-name
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
          (method-indicator
@@ -998,7 +998,7 @@
          (produce-function "Whether to produce a defun in addition to a DAG, a boolean.")
          (local "Whether to make the result of @('unroll-java-code') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-java-code') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-java-code') is not included by other books."))
   :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
-                "This event creates a @(see defconst) whose name is given by the @('defconst-name') argument."
+                "This event creates a @(tsee defconst) whose name is given by the @('defconst-name') argument."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))
 
 ;; Ensure all the rules needed by the unroller are included:

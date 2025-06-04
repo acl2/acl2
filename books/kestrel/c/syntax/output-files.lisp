@@ -12,6 +12,7 @@
 
 (include-book "files")
 (include-book "printer")
+(include-book "ascii-identifiers")
 
 (include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
@@ -77,10 +78,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define output-files-process-tunits (tunits (desc msgp))
-  :returns erp
-  :short "Process the input translation unit ensemble."
-  (b* (((reterr))
+(define output-files-process-const/arg (arg
+                                        (options symbol-alistp)
+                                        (progp booleanp)
+                                        (gcc booleanp)
+                                        (wrld plist-worldp))
+  :returns (mv erp (tunits transunit-ensemblep))
+  :short "Process the @(':const') or @('arg') input."
+  (b* (((reterr) (irr-transunit-ensemble))
+       (const-option (assoc-eq :const options))
+       ((erp tunits)
+        (if progp
+            (b* (((when const-option)
+                  (reterr (msg "The :CONST input must not be supplied ~
+                                to the programmatic interface."))))
+              (retok arg))
+          (b* (((unless const-option)
+                (reterr (msg "The :CONST input must be supplied, ~
+                              but it was not supplied.")))
+               (const (cdr const-option))
+               ((unless (symbolp const))
+                (reterr (msg "The :CONST input must be a symbol, ~
+                              but it is ~x0 instead."
+                             const)))
+               (tunits (acl2::constant-value const wrld)))
+            (retok tunits))))
+       (desc (if progp
+                 "the required (i.e. non-keyword-option) input"
+               (msg "the value of the ~x0 named constant, ~
+                       specified by the :CONST input,"
+                    (cdr const-option))))
        ((unless (transunit-ensemblep tunits))
         (reterr (msg "~@0 must be a translation unit ensemble, ~
                       but it is ~x1 instead."
@@ -88,8 +115,12 @@
        ((unless (transunit-ensemble-unambp tunits))
         (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
                       is ambiguous."
+                     tunits desc)))
+       ((unless (transunit-ensemble-aidentp tunits gcc))
+        (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
+                      contains non-all-ASCII identifiers."
                      tunits desc))))
-    (retok))
+    (retok tunits))
 
   ///
 
@@ -107,95 +138,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define output-files-process-inputs (arg
-                                     (args true-listp)
-                                     (progp booleanp)
-                                     (wrld plist-worldp))
-  :guard (implies (not progp) (not arg))
-  :returns (mv erp
-               (tunits
-                transunit-ensemblep
-                :hints
-                (("Goal"
-                  :in-theory
-                  (enable
-                   transunit-ensemblep-when-output-files-process-tunits))))
-               (path stringp)
-               (indent-size posp)
-               (paren-nested-conds booleanp))
-  :short "Process the inputs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If @('progp') is @('t'),
-     @('arg') is the required (i.e. non-keyword-option) input
-     of the macro that provides the programmatic interface;
-     if instead @('progp') is @('nil'), @('arg') is @('nil').
-     In all cases, @('args') are all the remaining inputs
-     of the (event or programmatic) macro.")
-   (xdoc::p
-    "If @('progp') is @('nil'),
-     the translation unit ensemble
-     is taken from the @(':const') input, which must be present.
-     If instead @('progp') is @('t'),
-     the translation unit ensemble or file set
-     is taken from the required input @('arg'),
-     and the @(':const') input must be absent.")
-   (xdoc::p
-    "The @('tunits') result of this function is the translation unit ensemble.
-     The other results are the homonymous inputs
-     (some are sub-inputs of the @(':printer-options') input).")
-   (xdoc::p
-    "If the @(':path') string is not @('/') but ends with @('/'),
-     we remove the ending @('/').
-     This is for uniformity when concatenating this
-     with the files specified in the @(':files') input."))
-  (b* (((reterr) (irr-transunit-ensemble) "" 1 nil)
-       ;; Check and obtain inputs.
-       ((mv erp extra options)
-        (partition-rest-and-keyword-args args *output-files-allowed-options*))
-       (inputs-desc (msg "~s0the options ~&1"
-                         (if progp
-                             "a file set or translation unit ensemble and "
-                           "")
-                         *output-files-allowed-options*))
-       ((when erp)
-        (reterr (msg "The inputs must be ~@0, ~
-                      but instead they are ~x1."
-                     inputs-desc
-                     args)))
-       ((when extra)
-        (reterr (msg "The inputs must be ~@0, ~
-                      but instead the extra inputs ~x1 were supplied."
-                     inputs-desc
-                     extra)))
-       ;; Process :CONST or ARG input.
-       (const-option (assoc-eq :const options))
-       ((erp tunits)
-        (b* (((reterr) (irr-transunit-ensemble)))
-          (if progp
-              (b* (((when const-option)
-                    (reterr (msg "The :CONST input must not be supplied ~
-                                  to the programmatic interface."))))
-                (retok arg))
-            (b* (((unless const-option)
-                  (reterr (msg "The :CONST input must be supplied, ~
-                                but it was not supplied.")))
-                 (const (cdr const-option))
-                 ((unless (symbolp const))
-                  (reterr (msg "The :CONST input must be a symbol, ~
-                                but it is ~x0 instead."
-                               const)))
-                 (tunits (acl2::constant-value const wrld)))
-              (retok tunits)))))
-       ((erp) (output-files-process-tunits
-               tunits
-               (if progp
-                   "the required (i.e. non-keyword-option) input"
-                 (msg "the value of the ~x0 named constant, ~
-                       specified by the :CONST input,"
-                      (cdr const-option)))))
-       ;; Process :PATH input.
+(define output-files-process-path ((options symbol-alistp))
+  :returns (mv erp (path stringp))
+  :short "Process the @(':path') input."
+  (b* (((reterr) "")
        (path-option (assoc-eq :path options))
        (path (if path-option
                  (cdr path-option)
@@ -212,8 +158,17 @@
                             (eql (car (last path-chars)) #\/))
                        (butlast path-chars 1)
                      path-chars))
-       (path (str::implode path-chars))
-       ;; Process :PRINTER-OPTIONS input.
+       (path (str::implode path-chars)))
+    (retok path)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define output-files-process-printer-options ((options symbol-alistp))
+  :returns (mv erp
+               (indent-size posp)
+               (paren-nested-conds booleanp))
+  :short "Process the @(':printer-options') input."
+  (b* (((reterr) 1 nil)
        (printer-options-option (assoc-eq :printer-options options))
        (printer-options (if printer-options-option
                             (cdr printer-options-option)
@@ -263,10 +218,101 @@
                       must be a boolean, ~
                       but it is ~x0 instead."
                      paren-nested-conds))))
+    (retok indent-size paren-nested-conds)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define output-files-process-gcc ((options symbol-alistp))
+  :returns (mv erp (gcc booleanp))
+  :short "Process the @(':gcc') input."
+  (b* (((reterr) nil)
+       (gcc-option (assoc-eq :gcc options))
+       (gcc (if gcc-option
+                (cdr gcc-option)
+              nil))
+       ((unless (booleanp gcc))
+        (reterr (msg "The :GCC input must be a boolean, ~
+                      but it is ~x0 instead."
+                     gcc))))
+    (retok gcc)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define output-files-process-inputs (arg
+                                     (args true-listp)
+                                     (progp booleanp)
+                                     (wrld plist-worldp))
+  :guard (implies (not progp) (not arg))
+  :returns (mv erp
+               (tunits
+                transunit-ensemblep
+                :hints
+                (("Goal"
+                  :in-theory
+                  (enable
+                   transunit-ensemblep-when-output-files-process-tunits))))
+               (path stringp)
+               (indent-size posp)
+               (paren-nested-conds booleanp)
+               (gcc booleanp))
+  :short "Process the inputs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If @('progp') is @('t'),
+     @('arg') is the required (i.e. non-keyword-option) input
+     of the macro that provides the programmatic interface;
+     if instead @('progp') is @('nil'), @('arg') is @('nil').
+     In all cases, @('args') are all the remaining inputs
+     of the (event or programmatic) macro.")
+   (xdoc::p
+    "If @('progp') is @('nil'),
+     the translation unit ensemble
+     is taken from the @(':const') input, which must be present.
+     If instead @('progp') is @('t'),
+     the translation unit ensemble or file set
+     is taken from the required input @('arg'),
+     and the @(':const') input must be absent.")
+   (xdoc::p
+    "The @('tunits') result of this function is the translation unit ensemble.
+     The other results are the homonymous inputs
+     (some are sub-inputs of the @(':printer-options') input).")
+   (xdoc::p
+    "If the @(':path') string is not @('/') but ends with @('/'),
+     we remove the ending @('/').
+     This is for uniformity when concatenating this
+     with the files specified in the @(':files') input."))
+  (b* (((reterr) (irr-transunit-ensemble) "" 1 nil nil)
+       ;; Check and obtain inputs.
+       ((mv erp extra options)
+        (partition-rest-and-keyword-args args *output-files-allowed-options*))
+       (inputs-desc (msg "~s0the options ~&1"
+                         (if progp
+                             "a file set or translation unit ensemble and "
+                           "")
+                         *output-files-allowed-options*))
+       ((when erp)
+        (reterr (msg "The inputs must be ~@0, ~
+                      but instead they are ~x1."
+                     inputs-desc
+                     args)))
+       ((when extra)
+        (reterr (msg "The inputs must be ~@0, ~
+                      but instead the extra inputs ~x1 were supplied."
+                     inputs-desc
+                     extra)))
+       ;; Process the inputs.
+       ((erp gcc) (output-files-process-gcc options))
+       ((erp tunits)
+        (output-files-process-const/arg arg options progp gcc wrld))
+       ((erp path) (output-files-process-path options))
+       ((erp indent-size paren-nested-conds)
+        (output-files-process-printer-options options)))
     (retok tunits
            path
            indent-size
-           paren-nested-conds))
+           paren-nested-conds
+           gcc))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp
                                            msgp
                                            character-alistp)))
@@ -337,7 +383,8 @@
        ((erp tunits
              path
              indent-size
-             paren-nested-conds)
+             paren-nested-conds
+             &) ; GCC flag only used in input processing
         (output-files-process-inputs arg args progp (w state)))
        ((erp state)
         (output-files-gen-files tunits
@@ -355,7 +402,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We set the flag @('progp) for the programmatic interface to @('nil')."))
+    "We set the flag @('progp') for the programmatic interface to @('nil')."))
   (b* (((mv erp state)
         (output-files-process-inputs-and-gen-files nil args nil state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
@@ -384,6 +431,7 @@
     "(output-files-prog tunits"
     "                   :path            ...  ; default \".\""
     "                   :printer-options ...  ; default nil"
+    "                   :gcc             ...  ; default nil"
     "  )")
    (xdoc::p
     "This is the same as @(tsee output-files),

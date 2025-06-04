@@ -38,7 +38,7 @@
 (include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/utilities/rational-printing" :dir :system)
 (include-book "dag-info")
-(include-book "kestrel/axe/util2" :dir :system) ; not strictly needed but brings in symbolic-list
+(include-book "util2") ; not strictly needed but brings in symbolic-list
 
 ;; If asked to create a theorem, this uses skip-proofs to introduce it.
 
@@ -199,7 +199,11 @@
             ;; rules is an explicit list of rules:
             (mv nil rules))))
        ;; Add the :extra-rules and remove the :remove-rules:
+       (unneeded-extra-rules (intersection-eq extra-rules base-rules))
+       (- (and unneeded-extra-rules (cw "Note: The following from the :extra-rules were already present: ~X01.~%" unneeded-extra-rules nil)))
        (rules (union-eq extra-rules base-rules))
+       (unneeded-remove-rules (set-difference-eq remove-rules base-rules))
+       (- (and unneeded-remove-rules (cw "Note: The following from the :remove-rules were not present and so need not be removed: ~X01.~%" unneeded-remove-rules nil)))
        (rules (set-difference-eq rules remove-rules))
        ;; Submit any needed defopener rules:
        (state (submit-events-quiet pre-events state))
@@ -376,7 +380,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
         `(local ,form)
       form))
   :parents (axe) ; or can we consider this a lifter?
-  :short "Open functions and unroll recursion in a spec."
+  :short "A tool to open functions and unroll recursions."
   :args ((defconst-name
            "The name of the constant to create.  This constant will represent the computation in DAG form.  A function may also created (its name is obtained by stripping the stars from the defconst name).")
          (term "The term to simplify.")

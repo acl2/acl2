@@ -13,13 +13,16 @@
 
 (include-book "assumptions")
 (include-book "read-and-write")
+(include-book "read-bytes-and-write-bytes")
+(include-book "regions")
 (include-book "parsers/parsed-executable-tools")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-(defund bytes-loaded-at-address-64 (bytes addr x86)
+(defund bytes-loaded-at-address-64 (bytes addr bvp x86)
   (declare (xargs :guard (and (acl2::all-unsigned-byte-p 8 bytes)
                               (true-listp bytes)
-                              (consp bytes))
+                              (consp bytes)
+                              (booleanp bvp))
                   :stobjs x86))
   (and ;; We'll base all addresses on the address of the text section
    ;; (we can calculate the relative offset of other things by
@@ -38,9 +41,11 @@
    ;; executable) is loaded into memory.
    ;; (TODO: What about more than 1 section?):
    ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-   (program-at addr
-               bytes
-               x86)))
+   (if bvp
+       ;; essentially the same as the below PROGRAM-AT claim:
+       ;; todo: huge arrays cause STP crashes (exclude these claims from SMT queries)?
+       (equal (read-bytes addr (len bytes) x86) bytes)
+     (program-at addr bytes x86))))
 
 ;; todo: add 64 to the name
 (defund addresses-of-subsequent-stack-slots-aux (num-stack-slots address)
@@ -100,7 +105,7 @@
 
      ;; The return address must be canonical because we will transfer
      ;; control to that address when doing the return:
-     (canonical-address-p (read 8 (rgfi *rsp* ,state-var) ,state-var))
+     (canonical-address-p (logext 64 (read 8 (rgfi *rsp* ,state-var) ,state-var)))
 
      ;; The stack slot contaning the return address must be canonical
      ;; because the stack pointer returns here when we pop the saved
@@ -120,6 +125,9 @@
   (declare (xargs :stobjs x86))
   (make-standard-state-assumptions-64 x86))
 
+;; todo: move (calls x86isa::cpuid-flag, which is non-executable):
+(in-theory (disable (:e feature-flag)))
+
 ;TODO: Show that there is a state that satisfies these assumptions
 ;TODO: Use this more
 ;TODO: Test this on a program which uses more than 1 stack slot
@@ -132,16 +140,19 @@
                                      text-offset
                                      offset-to-subroutine ;from the start of the text section
                                      stack-slots-needed
+                                     bvp
                                      x86)
   (declare (xargs :guard (and (consp text-section-bytes)
                               (true-listp text-section-bytes)
                               (acl2::all-unsigned-byte-p 8 text-section-bytes)
+                              (< (len text-section-bytes) (expt 2 48)) ; allow =?
                               (integerp offset-to-subroutine) ; natp?
-                              (integerp text-offset)
-                              (natp stack-slots-needed))
+                              (integerp text-offset) ; strengthen?
+                              (natp stack-slots-needed)
+                              (booleanp bvp))
                   :stobjs x86))
   (and (standard-state-assumption-64 x86)
-       (bytes-loaded-at-address-64 text-section-bytes text-offset x86)
+       (bytes-loaded-at-address-64 text-section-bytes text-offset bvp x86)
        ;; The program counter is at the start of the routine to lift:
        (equal (rip x86) (+ text-offset offset-to-subroutine))
 
@@ -152,10 +163,15 @@
        ;; The program is disjoint from the part of the stack that is written:
        (if (posp stack-slots-needed)
            ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-           (separate :r (len text-section-bytes) text-offset
-                 ;; Only a single stack slot is written
-                 ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                     :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86)))
+           (if bvp
+                ;; essentially the same as the below SEPARATE claim:
+               (disjoint-regionsp (len text-section-bytes) (bvchop 48 text-offset) ; todo: drop the 2 bvchops
+                                  (* 8 stack-slots-needed) (bvchop 48 (+ (* -8 stack-slots-needed) (rgfi *rsp* x86))))
+             (separate :r (len text-section-bytes) text-offset
+                       ;; Only a single stack slot is written
+                       ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
+                       :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rgfi *rsp* x86)))
+             )
          ;; Can't call separate here because (* 8 stack-slots-needed) = 0.
          t)))
 
@@ -163,6 +179,7 @@
                                        parsed-mach-o
                                        stack-slots-needed
                                        text-offset
+                                       bvp
                                        x86)
   (declare (xargs :stobjs x86
                   :verify-guards nil ;todo
@@ -174,6 +191,7 @@
                                   text-offset
                                   (- subroutine-address text-section-address)
                                   stack-slots-needed
+                                  bvp
                                   x86)))
 
 ;; TODO: The error below may not be thrown since this gets inserted as an assumption and simplified rather than being executed.
@@ -181,6 +199,7 @@
                                    parsed-executable
                                    stack-slots-needed
                                    text-offset
+                                   bvp
                                    x86)
   (declare (xargs :stobjs x86
                   :verify-guards nil ;todo
@@ -189,6 +208,7 @@
                                 text-offset
                                 (acl2::subroutine-address-within-text-section-pe-64 subroutine-name parsed-executable)
                                 stack-slots-needed
+                                bvp
                                 x86))
 
 ;; TODO: What should this go if the parsed-elf is bad (e.g., doesn't have a
@@ -197,11 +217,13 @@
                                     parsed-elf
                                     stack-slots-needed
                                     text-offset
+                                    bvp
                                     x86)
   (declare (xargs :guard (and (stringp subroutine-name)
                               (acl2::parsed-elfp parsed-elf) ; todo: import
                               (natp stack-slots-needed)
                               ;; text-offset is a term?
+                              (booleanp bvp)
                               )
                   :stobjs x86
                   :verify-guards nil ;todo, first do acl2::get-elf-code-address and acl2::subroutine-address-elf
@@ -213,4 +235,5 @@
                                   text-offset
                                   (- subroutine-address text-section-address)
                                   stack-slots-needed
+                                  bvp
                                   x86)))
