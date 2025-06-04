@@ -151,7 +151,7 @@
 
   ///
 
-  (defruled evenp-of-blocks-last-round
+  (defrule evenp-of-blocks-last-round
     (evenp (blocks-last-round blocks)))
 
   (defruled oldest-of-prefix-gt-newest-of-suffix-when-blocks-orderedp
