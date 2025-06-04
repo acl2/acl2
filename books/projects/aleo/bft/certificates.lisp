@@ -11,11 +11,9 @@
 
 (in-package "ALEOBFT")
 
-(include-book "addresses")
-(include-book "transactions")
+(include-book "proposals")
 
 (include-book "kestrel/fty/pos-set" :dir :system)
-(include-book "std/util/define-sk" :dir :system)
 
 (local (include-book "library-extensions/oset-theorems"))
 
@@ -33,17 +31,16 @@
   (xdoc::topstring
    (xdoc::p
     "Validators generate and exchange certificates,
-     which contain proposed transactions along with other information.
-     Certificates are the vertices of the DAG.")
+     which consist of proposals with endorsing signatures.
+     Certificates are the vertices of the DAG,
+     in the Narwhal part of AleoBFT.")
    (xdoc::p
-    "Certificates have a rich structure,
-     but we model only the information needed for our purposes.")
-   (xdoc::p
-    "In AleoBFT, there is a distinction between proposals and certificates,
-     with the latter being an extension of the former with endorsing signatures.
-     Currently we do not model proposals, but just certificates,
-     because we treat the Narwhal aspects of AleoBFT somewhat abstractly;
-     see @(tsee transitions-create)."))
+    "Beside defining certificates,
+     we also introduce operations on (sets of) certificates,
+     particularly to retrieve certificates from sets
+     according to author and/or round criteria.
+     Since DAGs are represented as sets in validator states,
+     these operations are usable (and in fact mainly used) on DAGs."))
   :order-subtopics t
   :default-parent t)
 
@@ -57,36 +54,51 @@
     "We model a certificate as consisting of:")
    (xdoc::ol
     (xdoc::li
-     "The address of the validator who authored the certificate.")
+     "A proposal.")
     (xdoc::li
-     "The round number of the certificate.")
-    (xdoc::li
-     "The transactions that the validator is proposing
-      for inclusion in the blockchain.")
-    (xdoc::li
-     "The addresses that, together with the previous round number,
-      identify the certificates from the previous round
-      that this certificate references;
-      these define the edges of the DAG.
-      It is a system invariant, proved elsewhere,
-      that certificates in DAGs are uniquely identified by
-      their author and round.")
-    (xdoc::li
-     "The addresses of the validators that endorsed this certificate,
+     "The addresses of the validators that endorsed the proposal,
       by signing it in addition to the author."))
    (xdoc::p
     "We do not model cryptographic signatures explicitly.
-     The presence of the author and endorser addresses in a certificate
-     models the fact that the author and endorsers signed the certificate
-     (more precisely, the proposal that the certificate extends;
-     but as explained in @(see certificates),
-     we do not model proposals explicitly)."))
-  ((author address)
-   (round pos)
-   (transactions transaction-list)
-   (previous address-set)
+     The presence of an endorser address in a certificate
+     models the fact that the validator with that address
+     endorsed the proposal by signing it."))
+  ((proposal proposal)
    (endorsers address-set))
   :pred certificatep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define certificate->author ((cert certificatep))
+  :returns (author addressp)
+  :short "Author of (the proposal in) a certificate."
+  (proposal->author (certificate->proposal cert))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define certificate->round ((cert certificatep))
+  :returns (round posp)
+  :short "Round number of (the proposal in) a certificate."
+  (proposal->round (certificate->proposal cert))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define certificate->transactions ((cert certificatep))
+  :returns (transactions transaction-listp)
+  :short "List of transactions of (the proposal in) a certificate."
+  (proposal->transactions (certificate->proposal cert))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define certificate->previous ((cert certificatep))
+  :returns (previous address-setp)
+  :short "Set of references to previous certificates
+          of (the proposal in) a certificate."
+  (proposal->previous (certificate->proposal cert))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -98,8 +110,8 @@
    (xdoc::p
     "These are the author and the endorsers,
      i.e. all the validators who signed the certificate."))
-  (b* (((certificate cert) cert))
-    (set::insert cert.author cert.endorsers))
+  (set::insert (certificate->author cert)
+               (certificate->endorsers cert))
   :hooks (:fix)
 
   ///
@@ -306,8 +318,8 @@
      according to the total ordering of the set."))
   (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
        ((certificate cert) (set::head certs))
-       ((when (and (equal cert.author (address-fix author))
-                   (equal cert.round (pos-fix round))))
+       ((when (and (equal (certificate->author cert) (address-fix author))
+                   (equal (certificate->round cert) (pos-fix round))))
         cert))
     (cert-with-author+round author round (set::tail certs)))
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
@@ -451,7 +463,7 @@
           the subset of certificates with a given author."
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs)))
-    (if (equal (address-fix author) cert.author)
+    (if (equal (address-fix author) (certificate->author cert))
         (set::insert (certificate-fix cert)
                      (certs-with-author author (set::tail certs)))
       (certs-with-author author (set::tail certs))))
@@ -584,7 +596,7 @@
           the subset of certificates with a given round."
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs)))
-    (if (equal (pos-fix round) cert.round)
+    (if (equal (pos-fix round) (certificate->round cert))
         (set::insert (certificate-fix cert)
                      (certs-with-round round (set::tail certs)))
       (certs-with-round round (set::tail certs))))
@@ -707,7 +719,7 @@
           the subset of certificates with author in a given set."
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs)))
-    (if (set::in cert.author
+    (if (set::in (certificate->author cert)
                  (address-set-fix authors))
         (set::insert (certificate-fix cert)
                      (certs-with-authors authors (set::tail certs)))
@@ -761,9 +773,9 @@
           with author in a given set and with a given round."
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs)))
-    (if (and (set::in cert.author
+    (if (and (set::in (certificate->author cert)
                       (address-set-fix authors))
-             (equal cert.round
+             (equal (certificate->round cert)
                     (pos-fix round)))
         (set::insert (certificate-fix cert)
                      (certs-with-authors+round authors

@@ -85,9 +85,10 @@
      Since each new version subsumes the previous ones as special cases,
      there is no need to keep the previous versions.")
    (xdoc::p
-    "The current version corresponds to the contents of "
+    "The current version essentially corresponds to the contents of "
     (xdoc::ahref "https://arxiv.org/abs/2504.16853" "this arXiv paper")
-    "."))
+    ", but the current version has undergone some improvements
+     since the paper was written."))
   :order-subtopics (library-extensions
                     definition
                     correctness))

@@ -320,9 +320,10 @@
                                       (dag certificate-setp))
     :returns (hist certificate-setp)
     (b* (((certificate cert) cert)
-         ((when (= cert.round 1)) (set::insert (certificate-fix cert) nil))
-         (prev-certs (certs-with-authors+round cert.previous
-                                               (1- cert.round)
+         ((when (= (certificate->round cert) 1))
+          (set::insert (certificate-fix cert) nil))
+         (prev-certs (certs-with-authors+round (certificate->previous cert)
+                                               (1- (certificate->round cert))
                                                dag))
          (prev-hist (certificate-set-causal-history prev-certs dag)))
       (set::insert (certificate-fix cert) prev-hist))
@@ -650,10 +651,10 @@
      any referenced predecessor certificates.
      We prove this in @('certificate-previous-in-dag-p-when-subset')."))
   (b* (((certificate cert) cert))
-    (or (= cert.round 1)
-        (set::subset cert.previous
+    (or (= (certificate->round cert) 1)
+        (set::subset (certificate->previous cert)
                      (cert-set->author-set
-                      (certs-with-round (1- cert.round) dag)))))
+                      (certs-with-round (1- (certificate->round cert)) dag)))))
   :guard-hints (("Goal" :in-theory (enable posp)))
 
   ///
