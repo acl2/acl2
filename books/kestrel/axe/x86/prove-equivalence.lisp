@@ -110,15 +110,15 @@
                                  print)
   :parents (acl2::axe-x86 acl2::axe-lifters)
   :short "A tool to prove two x86 binary functions equivalent."
-  :description "This runs @(see def-unrolled) twice, once for each executable, and then tries to prove the two resulting lifted computations equal using rewriting and SMT solving."
+  :description "This runs @(tsee def-unrolled) twice, once for each executable, and then tries to prove the two resulting lifted computations equal using rewriting and SMT solving."
   :args ((executable1 "The first executable.  Usually a string (a filename).")
-         (target1 "The target to lift in the first executable.  See the @(':target') option of @(see def-unrolled).")
-         (inputs1 "Information about the inputs of the first executable.  See the @(':inputs') option of @(see def-unrolled).  Corresponding inputs should have the same names in the @(':inputs2') below.")
-         (output1 "Which output to extract from the first executable.  See the @(':output') option of @(see def-unrolled).")
+         (target1 "The target to lift in the first executable.  See the @(':target') option of @(tsee def-unrolled).")
+         (inputs1 "Information about the inputs of the first executable.  See the @(':inputs') option of @(tsee def-unrolled).  Corresponding inputs should have the same names in the @(':inputs2') below.")
+         (output1 "Which output to extract from the first executable.  See the @(':output') option of @(tsee def-unrolled).")
          (executable2 "The second executable.  Usually a string (a filename).")
-         (target2 "The target to lift in the second executable.  See the @(':target') option of @(see def-unrolled).")
-         (inputs2 "Information about the inputs of the second executable.  See the @(':inputs') option of @(see def-unrolled).  Corresponding inputs should have the same names in the @(':inputs1') above.")
-         (output2 "Which output to extract from the second executable.  See the @(':output') option of @(see def-unrolled).")
+         (target2 "The target to lift in the second executable.  See the @(':target') option of @(tsee def-unrolled).")
+         (inputs2 "Information about the inputs of the second executable.  See the @(':inputs') option of @(tsee def-unrolled).  Corresponding inputs should have the same names in the @(':inputs1') above.")
+         (output2 "Which output to extract from the second executable.  See the @(':output') option of @(tsee def-unrolled).")
          (extra-rules "Extra rules to use during lifting.")
          (count-hits "Whether to count rewrite rule hits.")
          (print "Verbosity level.") ; todo values

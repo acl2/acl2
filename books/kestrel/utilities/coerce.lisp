@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function coerce
 ;
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/typed-lists-light/make-character-list" :dir :system))
 
 (defthm consp-of-coerce-of-list
   (equal (consp (coerce x 'list))
@@ -31,6 +32,26 @@
          (or (not (stringp str))
              (equal str ""))))
 
+(defthm coerce-of-make-character-list
+  (equal (coerce (make-character-list x) 'string)
+         (coerce x 'string))
+  :hints (("Goal" :use (:instance completion-of-coerce (y 'string)))))
+
+(defthmd equal-of-coerce-of-string
+  (implies (character-listp x) ; only in this one
+           (equal (equal (coerce x 'string) str)
+                  (and (stringp str)
+                       (equal x (coerce str 'list))))))
+
+;; No hyp but does have a call of make-character-list in the conclusion
+(defthmd equal-of-coerce-of-string-strong
+  (equal (equal (coerce x 'string) str)
+         (and (stringp str)
+              (equal (make-character-list x) (coerce str 'list))))
+  :hints (("Goal" :use ((:instance equal-of-coerce-of-string (x (make-character-list x)))
+                        coerce-of-make-character-list)
+           :in-theory (disable coerce-of-make-character-list))))
+
 (defthm equal-of-coerce-of-string-when-quotep
   (implies (and (syntaxp (quotep str))
                 (character-listp x))
@@ -38,6 +59,14 @@
                   (and (stringp str)
                        ;; the call to coerce here gets computed:
                        (equal x (coerce str 'list))))))
+
+(defthm equal-of-coerce-of-string-when-quotep-strong
+  (implies (syntaxp (quotep str))
+           (equal (equal (coerce x 'string) str)
+                  (and (stringp str)
+                       ;; the call to coerce here gets computed:
+                       (equal (make-character-list x) (coerce str 'list)))))
+  :hints (("Goal" :in-theory (enable equal-of-coerce-of-string-strong))))
 
 (defthm equal-of-coerce-of-list-when-quotep
   (implies (and (syntaxp (quotep chars))
@@ -85,27 +114,18 @@
            (equal (coerce (coerce x 'string) 'list)
                   x)))
 
+;; todo: enable
+(defthmd coerce-inverse-1-gen
+  (equal (coerce (coerce x 'string) 'list)
+         (make-character-list x))
+  :hints (("Goal" :use (:instance coerce-inverse-1-forced (x (make-character-list x))))))
+
 (local
   (defthm length-of-coerce-string-helper
     (implies (character-listp x)
              (equal (length (coerce x 'string))
                     (len x)))
     :hints (("Goal" :use (completion-of-coerce)))))
-
-;move
-(local
-  (defthm character-listp-of-make-character-list
-    (character-listp (make-character-list x))))
-
-;move
-(local
-  (defthm len-of-make-character-list
-    (equal (len (make-character-list x))
-           (len x))
-    :hints (("Goal" :in-theory (enable make-character-list)))))
-
-;move
-(local (in-theory (disable make-character-list)))
 
 (defthm length-of-coerce-string
   (equal (length (coerce x 'string))
