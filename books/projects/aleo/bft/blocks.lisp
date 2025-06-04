@@ -47,10 +47,10 @@
     "We model a block as consisting of
      a list of transactions and a round number.
      The round number is always even,
-     since blocks are only produced at even rounds,
-     but we do not capture that constraint in this fixtype."))
+     since blocks are only produced at even rounds."))
   ((transactions transaction-list)
-   (round pos))
+   (round pos :reqfix (if (evenp round) round 2)))
+  :require (evenp round)
   :pred blockp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -65,10 +65,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define blocks-ordered-even-p ((blocks block-listp))
+(define blocks-orderedp ((blocks block-listp))
   :returns (yes/no booleanp)
-  :short "Check if a list of blocks has
-          strictly increasing (right to left) even round numbers."
+  :short "Check if a list of blocks is ordered,
+          i.e. it has strictly increasing round numbers from right to left."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -76,28 +76,28 @@
      a list of blocks that models the blockchain as seen by the validator.
      Blocks go from right to left, i.e. the @(tsee car) is the newest block.")
    (xdoc::p
-    "Blocks are committed at even rounds,
-     using increasingly higher round numbers,
-     at most one block per (even) round.
-     So the blocks have even round numbers in stricly increasing order.
-     This predicate fomalizes these constraints on round numbers."))
+    "Blocks are committed at increasingly higher round numbers,
+     at most one block per round.
+     So the blocks have round numbers in stricly increasing order.
+     This predicate fomalizes this constraint on round numbers of blocks.")
+   (xdoc::p
+    "The fact that the round numbers are even is captured in @(tsee block)."))
   (b* (((when (endp blocks)) t)
-       (block (car blocks))
-       (round (block->round block))
-       ((unless (evenp round)) nil)
        ((when (endp (cdr blocks))) t)
-       ((unless (> round (block->round (cadr blocks)))) nil))
-    (blocks-ordered-even-p (cdr blocks)))
+       ((unless (> (block->round (car blocks))
+                   (block->round (cadr blocks))))
+        nil))
+    (blocks-orderedp (cdr blocks)))
   :hooks (:fix)
 
   ///
 
-  (defrule blocks-ordered-even-p-of-cdr
-    (implies (blocks-ordered-even-p blocks)
-             (blocks-ordered-even-p (cdr blocks))))
+  (defrule blocks-orderedp-of-cdr
+    (implies (blocks-orderedp blocks)
+             (blocks-orderedp (cdr blocks))))
 
-  (defruled newest-geq-oldest-when-blocks-ordered-even-p
-    (implies (and (blocks-ordered-even-p blocks)
+  (defruled newest-geq-oldest-when-blocks-orderedp
+    (implies (and (blocks-orderedp blocks)
                   (consp blocks))
              (>= (block->round (car blocks))
                  (block->round (car (last blocks)))))
@@ -107,29 +107,10 @@
     :induct t
     :enable last)
 
-  (defruled evenp-of-car-when-blocks-ordered-even-p
-    (implies (and (blocks-ordered-even-p blocks)
-                  (consp blocks))
-             (evenp (block->round (car blocks)))))
-
-  (defruled evenp-of-car-of-last-when-blocks-ordered-even-p
-    (implies (and (blocks-ordered-even-p blocks)
-                  (consp blocks))
-             (evenp (block->round (car (last blocks)))))
-    :induct t
-    :enable last)
-
-  (defruled evenp-of-nth-when-blocks-ordered-even-p
-    (implies (and (blocks-ordered-even-p blocks)
-                  (< (nfix i) (len blocks)))
-             (evenp (block->round (nth i blocks))))
-    :induct t
-    :enable (nth nfix len))
-
-  (defruled blocks-ordered-even-p-of-append
-    (equal (blocks-ordered-even-p (append blocks1 blocks2))
-           (and (blocks-ordered-even-p blocks1)
-                (blocks-ordered-even-p blocks2)
+  (defruled blocks-orderedp-of-append
+    (equal (blocks-orderedp (append blocks1 blocks2))
+           (and (blocks-orderedp blocks1)
+                (blocks-orderedp blocks2)
                 (or (endp blocks1)
                     (endp blocks2)
                     (>= (block->round (car (last blocks1)))
@@ -147,20 +128,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If @(tsee blocks-ordered-even-p) holds,
+    "If @(tsee blocks-orderedp) holds,
      block rounds are in strictly increading order from right to left.
      This function returns the latest, i.e. highest, round.
      If there are no blocks, this function returns 0.")
    (xdoc::p
     "Although it may seem natural
-     to add @(tsee blocks-ordered-even-p) to this function's guard,
+     to add @(tsee blocks-orderedp) to this function's guard,
      we deliberately avoid that, for the following reason.
      Adding that guard here requires adding it to other operations,
      particularly @(tsee active-committee-at-round).
      The latter is used to define system transistions,
      and is applied to blockchains of validators,
      which are just lists of blocks,
-     not necessarily satisfying @(tsee blocks-ordered-even-p).
+     not necessarily satisfying @(tsee blocks-orderedp).
      It is an invariant that they satisfy that predicate,
      but that invariant is proved after defining the transitions,
      and so it is not available when defining the transitions."))
@@ -172,16 +153,14 @@
   ///
 
   (defruled evenp-of-blocks-last-round
-    (implies (blocks-ordered-even-p blocks)
-             (evenp (blocks-last-round blocks)))
-    :enable evenp-of-car-when-blocks-ordered-even-p)
+    (evenp (blocks-last-round blocks)))
 
-  (defruled oldest-of-prefix-gt-newest-of-suffix-when-blocks-ordered-even-p
-    (implies (and (blocks-ordered-even-p (append blocks1 blocks2))
+  (defruled oldest-of-prefix-gt-newest-of-suffix-when-blocks-orderedp
+    (implies (and (blocks-orderedp (append blocks1 blocks2))
                   (consp blocks1))
              (> (block->round (car (last blocks1)))
                 (blocks-last-round blocks2)))
     :rule-classes ((:linear
                     :trigger-terms ((block->round (car (last blocks1)))
                                     (blocks-last-round blocks2))))
-    :enable blocks-ordered-even-p-of-append))
+    :enable blocks-orderedp-of-append))

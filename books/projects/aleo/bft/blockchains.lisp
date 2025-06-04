@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -71,6 +71,7 @@
                            (dag certificate-setp)
                            (blockchain block-listp)
                            (committed-certs certificate-setp))
+  :guard (certificate-list-evenp anchors)
   :returns (mv (new-blockchain block-listp)
                (new-committed-certs certificate-setp))
   :short "Extend the blockchain with one or more anchors."
@@ -227,31 +228,34 @@
   (defret blocks-last-round-of-extend-blockchain
     (equal (blocks-last-round new-blockchain)
            (certificate->round (car anchors)))
-    :hyp (consp anchors)
-    :hints (("Goal" :in-theory (enable blocks-last-round
-                                       consp-of-extend-blockchain))))
+    :hyp (and (consp anchors)
+              (certificate-list-evenp anchors))
+    :hints (("Goal"
+             :in-theory (enable blocks-last-round
+                                consp-of-extend-blockchain))))
   (in-theory (disable blocks-last-round-of-extend-blockchain))
 
-  (defret blocks-ordered-even-p-of-extend-blockchain
-    (blocks-ordered-even-p new-blockchain)
-    :hyp (and (certificates-ordered-even-p anchors)
-              (blocks-ordered-even-p blockchain)
+  (defret blocks-orderedp-of-extend-blockchain
+    (blocks-orderedp new-blockchain)
+    :hyp (and (certificate-list-orderedp anchors)
+              (certificate-list-evenp anchors)
+              (blocks-orderedp blockchain)
               (consp anchors)
               (> (certificate->round (car (last anchors)))
                  (blocks-last-round blockchain)))
     :hints (("Goal"
              :induct t
-             :in-theory (enable blocks-ordered-even-p
+             :in-theory (enable blocks-orderedp
                                 blocks-last-round
-                                certificates-ordered-even-p
+                                certificate-list-orderedp
                                 last))))
-  (in-theory (disable blocks-ordered-even-p-of-extend-blockchain))
+  (in-theory (disable blocks-orderedp-of-extend-blockchain))
 
   (defruled active-committee-at-round-of-extend-blockchain-no-change
     (b* (((mv new-blockchain &)
           (extend-blockchain anchors dag blockchain committed-certs)))
       (implies (and (block-listp blockchain)
-                    (blocks-ordered-even-p new-blockchain)
+                    (blocks-orderedp new-blockchain)
                     (active-committee-at-round round blockchain))
                (equal (active-committee-at-round round new-blockchain)
                       (active-committee-at-round round blockchain))))
@@ -272,7 +276,7 @@
     (b* (((mv new-blockchain &)
           (extend-blockchain anchors dag blockchain committed-certs)))
       (implies (and (block-listp blockchain)
-                    (blocks-ordered-even-p new-blockchain)
+                    (blocks-orderedp new-blockchain)
                     (or (zp previous-round)
                         (active-committee-at-round previous-round blockchain)))
                (equal (collect-anchors current-anchor
@@ -299,7 +303,7 @@
     (b* (((mv new-blockchain &)
           (extend-blockchain anchors dag blockchain committed-certs)))
       (implies (and (block-listp blockchain)
-                    (blocks-ordered-even-p new-blockchain)
+                    (blocks-orderedp new-blockchain)
                     (active-committee-at-round (certificate->round last-anchor)
                                                blockchain))
                (equal (collect-all-anchors last-anchor dag new-blockchain)
@@ -312,7 +316,7 @@
     (b* (((mv new-blockchain &)
           (extend-blockchain anchors dag blockchain committed-certs)))
       (implies (and (block-listp blockchain)
-                    (blocks-ordered-even-p new-blockchain))
+                    (blocks-orderedp new-blockchain))
                (implies (dag-has-committees-p dag blockchain)
                         (dag-has-committees-p dag new-blockchain))))
     :enable (dag-has-committees-p
@@ -323,7 +327,7 @@
     (b* (((mv new-blockchain &)
           (extend-blockchain anchors dag blockchain committed-certs)))
       (implies (and (block-listp blockchain)
-                    (blocks-ordered-even-p new-blockchain))
+                    (blocks-orderedp new-blockchain))
                (implies (and (dag-in-committees-p dag blockchain)
                              (dag-has-committees-p dag blockchain))
                         (dag-in-committees-p dag new-blockchain))))
@@ -389,6 +393,7 @@
 
 (define calculate-blockchain ((anchors certificate-listp)
                               (dag certificate-setp))
+  :guard (certificate-list-evenp anchors)
   :returns (blockchain block-listp)
   :short "Calculate a blockchain from a sequence of anchors and a DAG."
   :long

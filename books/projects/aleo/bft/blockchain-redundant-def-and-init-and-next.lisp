@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -57,13 +57,16 @@
   (equal (validator-state->blockchain vstate)
          (calculate-blockchain (committed-anchors vstate)
                                (validator-state->dag vstate)))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable certificate-list-orderedp-of-committed-anchors)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk blockchain-redundant-p ((systate system-statep))
   :guard (and (last-blockchain-round-p systate)
-              (ordered-even-p systate)
+              (ordered-blockchain-p systate)
               (last-anchor-present-p systate))
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
@@ -76,7 +79,7 @@
   :guard-hints
   (("Goal" :in-theory (enable last-anchor-present-p-necc
                               evenp-of-blocks-last-round
-                              ordered-even-p-necc
+                              ordered-blockchain-p-necc
                               last-blockchain-round-p-necc)))
   ///
   (fty::deffixequiv-sk blockchain-redundant-p
@@ -275,7 +278,7 @@
 
   (defruled validator-blockchain-redundant-p-of-commit-next-same
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -304,7 +307,7 @@
 
   (defruled validator-blockchain-redundant-p-of-commit-next-diff
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -323,7 +326,7 @@
 
   (defruled validator-blockchain-redundant-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -342,7 +345,7 @@
   (defruled blockchain-redundant-p-of-commit-next
     (implies (and (blockchain-redundant-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -362,7 +365,7 @@
                   (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-records-p systate)
                   (no-self-endorsed-p systate)
                   (signer-quorum-p systate)

@@ -16,8 +16,8 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "library-extensions/oset-theorems"))
 (local (include-book "library-extensions/omap-theorems"))
+(local (include-book "library-extensions/oset-theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
@@ -49,7 +49,7 @@
      a finite map from validator addresses to their bonded stake,
      the latter expressed as a positive integer
      whose exact units are irrelevant (cf. @(tsee transaction)).
-     We introduce a fixtype to wrap that,
+     We introduce a fixtype to wrap the finite map,
      for greater abstraction and extensibility.")
    (xdoc::p
     "The genesis committee is arbitrary,
@@ -99,24 +99,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate
-  ()
+(fty::defomap address-pos-map
+  :short "Fixtype of maps from addresses to positive integers."
+  :key-type address
+  :val-type pos
+  :pred address-pos-mapp
 
-  (set-induction-depth-limit 1)
+  ///
 
-  (fty::defomap address-pos-map
-    :short "Fixtype of maps from addresses to positive integers."
-    :key-type address
-    :val-type pos
-    :pred address-pos-mapp
-
-    ///
-
-    (defrule address-setp-of-keys-when-address-pos-mapp
-      (implies (address-pos-mapp map)
-               (address-setp (omap::keys map)))
-      :induct t
-      :enable omap::keys)))
+  (defruled address-setp-of-keys-when-address-pos-mapp
+    (implies (address-pos-mapp map)
+             (address-setp (omap::keys map)))
+    :induct t
+    :enable omap::keys))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -569,15 +564,13 @@
                        (genesis-committee))))
 
      (defruled bonded-committee-at-round-loop-of-round-leq-2
-       (implies (and (blocks-ordered-even-p blocks)
-                     (<= (pos-fix round) 2))
+       (implies (<= (pos-fix round) 2)
                 (equal (bonded-committee-at-round-loop round blocks)
                        (genesis-committee)))
-       :induct t
-       :hints ('(:use evenp-of-car-when-blocks-ordered-even-p)))
+       :induct t)
 
      (defruled bonded-committee-at-round-loop-of-append-no-change
-       (implies (and (blocks-ordered-even-p (append blocks1 blocks))
+       (implies (and (blocks-orderedp (append blocks1 blocks))
                      (or (endp blocks1)
                          (<= (pos-fix round)
                              (block->round (car (last blocks1))))))
@@ -585,9 +578,9 @@
                                                        (append blocks1 blocks))
                        (bonded-committee-at-round-loop round blocks)))
        :induct t
-       :enable (blocks-ordered-even-p-of-append
+       :enable (blocks-orderedp-of-append
                 last)
-       :hints ('(:use (:instance newest-geq-oldest-when-blocks-ordered-even-p
+       :hints ('(:use (:instance newest-geq-oldest-when-blocks-orderedp
                                  (blocks blocks1)))))))
 
   ///
@@ -600,23 +593,23 @@
     :enable bonded-committee-at-round-loop-when-no-blocks)
 
   (defruled bonded-committee-at-round-of-round-leq-2
-    (implies (and (blocks-ordered-even-p blocks)
+    (implies (and (blocks-orderedp blocks)
                   (<= (pos-fix round) 2))
              (equal (bonded-committee-at-round round blocks)
                     (genesis-committee)))
     :enable bonded-committee-at-round-loop-of-round-leq-2)
 
   (defruled bonded-committee-at-round-of-append-no-change
-    (implies (and (blocks-ordered-even-p (append blocks1 blocks))
+    (implies (and (blocks-orderedp (append blocks1 blocks))
                   (bonded-committee-at-round round blocks))
              (equal (bonded-committee-at-round round
                                                (append blocks1 blocks))
                     (bonded-committee-at-round round blocks)))
     :enable (blocks-last-round
-             blocks-ordered-even-p-of-append
+             blocks-orderedp-of-append
              bonded-committee-at-round-loop-of-append-no-change
              bonded-committee-at-round-loop-of-round-leq-2)
-    :hints ('(:use ((:instance newest-geq-oldest-when-blocks-ordered-even-p
+    :hints ('(:use ((:instance newest-geq-oldest-when-blocks-orderedp
                                (blocks blocks1))))))
 
   (defruled bonded-committee-at-earlier-round-when-at-later-round
@@ -722,7 +715,7 @@
     :enable bonded-committee-at-round-when-no-blocks)
 
   (defruled active-committee-at-round-of-round-leq-2+lookback
-    (implies (and (blocks-ordered-even-p blocks)
+    (implies (and (blocks-orderedp blocks)
                   (<= (pos-fix round) (+ 2 (lookback))))
              (equal (active-committee-at-round round blocks)
                     (genesis-committee)))
@@ -730,7 +723,7 @@
              posp))
 
   (defruled active-committee-at-round-of-append-no-change
-    (implies (and (blocks-ordered-even-p (append blocks1 blocks))
+    (implies (and (blocks-orderedp (append blocks1 blocks))
                   (active-committee-at-round round blocks))
              (equal (active-committee-at-round round
                                                (append blocks1 blocks))

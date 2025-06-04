@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -281,7 +281,7 @@
 
   (defruled validator-committed-redundant-p-of-commit-next-same
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -310,7 +310,7 @@
              last-blockchain-round-p-necc
              certificate->author-of-last-anchor
              certificate->round-of-last-anchor
-             ordered-even-p-necc
+             ordered-blockchain-p-necc
              evenp-of-blocks-last-round
              evenp-lemma
              set::expensive-rules)
@@ -342,7 +342,7 @@
 
   (defruled validator-committed-redundant-p-of-commit-next-diff
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (set::in val (correct-addresses systate))
                   (commit-possiblep val1 systate)
@@ -359,7 +359,7 @@
 
   (defruled validator-committed-redundant-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -377,7 +377,7 @@
   (defruled committed-redundant-p-of-commit-next
     (implies (and (committed-redundant-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -396,7 +396,7 @@
                   (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-records-p systate)
                   (no-self-endorsed-p systate)
                   (signer-quorum-p systate)

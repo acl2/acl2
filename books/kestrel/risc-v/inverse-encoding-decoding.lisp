@@ -14,6 +14,8 @@
 (include-book "encoding")
 (include-book "decoding")
 
+(local (include-book "library-extensions"))
+
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "kestrel/fty/ubyte3-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte7-ihs-theorems" :dir :system))
@@ -129,84 +131,84 @@
   :short "Theorems about @(tsee get-rd) applied to
           the encoding of instructions."
 
-  (defruled get-rd-of-encode-instr-op-imm
+  (defruled get-rd-of-encode-of-instr-op-imm
     (equal (get-rd (encode (instr-op-imm funct rd rs1 imm) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-op-imms32
+  (defruled get-rd-of-encode-of-instr-op-imms32
     (equal (get-rd (encode (instr-op-imms32 funct rd rs1 imm) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-op-imms64
+  (defruled get-rd-of-encode-of-instr-op-imms64
     (equal (get-rd (encode (instr-op-imms64 funct rd rs1 imm) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-op-imm-32
+  (defruled get-rd-of-encode-of-instr-op-imm-32
     (equal (get-rd (encode (instr-op-imm-32 funct rd rs1 imm) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-op-imms-32
+  (defruled get-rd-of-encode-of-instr-op-imms-32
     (equal (get-rd (encode (instr-op-imms-32 funct rd rs1 imm) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-lui
+  (defruled get-rd-of-encode-of-instr-lui
     (equal (get-rd (encode (instr-lui rd imm) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-auipc
+  (defruled get-rd-of-encode-of-instr-auipc
     (equal (get-rd (encode (instr-auipc rd imm) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-op
+  (defruled get-rd-of-encode-of-instr-op
     (equal (get-rd (encode (instr-op funct rd rs1 rs2) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-op-32
+  (defruled get-rd-of-encode-of-instr-op-32
     (equal (get-rd (encode (instr-op-32 funct rd rs1 rs2) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-jal
+  (defruled get-rd-of-encode-of-instr-jal
     (equal (get-rd (encode (instr-jal rd imm) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-jalr
+  (defruled get-rd-of-encode-of-instr-jalr
     (equal (get-rd (encode (instr-jalr rd rs1 imm) feat))
            (ubyte5-fix rd))
     :enable (encode
              get-rd
              ubyte5-fix))
 
-  (defruled get-rd-of-encode-instr-load
+  (defruled get-rd-of-encode-of-instr-load
     (equal (get-rd (encode (instr-load funct rd rs1 imm) feat))
            (ubyte5-fix rd))
     :enable (encode
@@ -219,77 +221,77 @@
   :short "Theorems about @(tsee get-rs1) applied to
           the encoding of instructions."
 
-  (defruled get-rs1-of-encode-instr-op-imm
+  (defruled get-rs1-of-encode-of-instr-op-imm
     (equal (get-rs1 (encode (instr-op-imm funct rd rs1 imm) feat))
            (ubyte5-fix rs1))
     :enable (encode
              get-rs1
              ubyte5-fix))
 
-  (defruled get-rs1-of-encode-instr-op-imms32
+  (defruled get-rs1-of-encode-of-instr-op-imms32
     (equal (get-rs1 (encode (instr-op-imms32 funct rd rs1 imm) feat))
            (ubyte5-fix rs1))
     :enable (encode
              get-rs1
              ubyte5-fix))
 
-  (defruled get-rs1-of-encode-instr-op-imms64
+  (defruled get-rs1-of-encode-of-instr-op-imms64
     (equal (get-rs1 (encode (instr-op-imms64 funct rd rs1 imm) feat))
            (ubyte5-fix rs1))
     :enable (encode
              get-rs1
              ubyte5-fix))
 
-  (defruled get-rs1-of-encode-instr-op-imm-32
+  (defruled get-rs1-of-encode-of-instr-op-imm-32
     (equal (get-rs1 (encode (instr-op-imm-32 funct rd rs1 imm) feat))
            (ubyte5-fix rs1))
     :enable (encode
              get-rs1
              ubyte5-fix))
 
-  (defruled get-rs1-of-encode-instr-op-imms-32
+  (defruled get-rs1-of-encode-of-instr-op-imms-32
     (equal (get-rs1 (encode (instr-op-imms-32 funct rd rs1 imm) feat))
            (ubyte5-fix rs1))
     :enable (encode
              get-rs1
              ubyte5-fix))
 
-  (defruled get-rs1-of-encode-instr-op
+  (defruled get-rs1-of-encode-of-instr-op
     (equal (get-rs1 (encode (instr-op funct rd rs1 rs2) feat))
            (ubyte5-fix rs1))
     :enable (encode
              get-rs1
              ubyte5-fix))
 
-  (defruled get-rs1-of-encode-instr-op-32
+  (defruled get-rs1-of-encode-of-instr-op-32
     (equal (get-rs1 (encode (instr-op-32 funct rd rs1 rs2) feat))
            (ubyte5-fix rs1))
     :enable (encode
              get-rs1
              ubyte5-fix))
 
-  (defruled get-rs1-of-encode-instr-jalr
+  (defruled get-rs1-of-encode-of-instr-jalr
     (equal (get-rs1 (encode (instr-jalr rd rs1 imm) feat))
            (ubyte5-fix rs1))
     :enable (encode
              get-rs1
              ubyte5-fix))
 
-  (defruled get-rs1-of-encode-instr-branch
+  (defruled get-rs1-of-encode-of-instr-branch
     (equal (get-rs1 (encode (instr-branch funct rs1 rs2 imm) feat))
            (ubyte5-fix rs1))
     :enable (encode
              get-rs1
              ubyte5-fix))
 
-  (defruled get-rs1-of-encode-instr-load
+  (defruled get-rs1-of-encode-of-instr-load
     (equal (get-rs1 (encode (instr-load funct rd rs1 imm) feat))
            (ubyte5-fix rs1))
     :enable (encode
              get-rs1
              ubyte5-fix))
 
-  (defruled get-rs1-of-encode-instr-store
+  (defruled get-rs1-of-encode-of-instr-store
     (equal (get-rs1 (encode (instr-store funct rs1 rs2 imm) feat))
            (ubyte5-fix rs1))
     :enable (encode
@@ -302,28 +304,28 @@
   :short "Theorems about @(tsee get-rs2) applied to
           the encoding of instructions."
 
-  (defruled get-rs2-of-encode-instr-op
+  (defruled get-rs2-of-encode-of-instr-op
     (equal (get-rs2 (encode (instr-op funct rd rs1 rs2) feat))
            (ubyte5-fix rs2))
     :enable (encode
              get-rs2
              ubyte5-fix))
 
-  (defruled get-rs2-of-encode-instr-op-32
+  (defruled get-rs2-of-encode-of-instr-op-32
     (equal (get-rs2 (encode (instr-op-32 funct rd rs1 rs2) feat))
            (ubyte5-fix rs2))
     :enable (encode
              get-rs2
              ubyte5-fix))
 
-  (defruled get-rs2-of-encode-instr-branch
+  (defruled get-rs2-of-encode-of-instr-branch
     (equal (get-rs2 (encode (instr-branch funct rs1 rs2 imm) feat))
            (ubyte5-fix rs2))
     :enable (encode
              get-rs2
              ubyte5-fix))
 
-  (defruled get-rs2-of-encode-instr-store
+  (defruled get-rs2-of-encode-of-instr-store
     (equal (get-rs2 (encode (instr-store funct rs1 rs2 imm) feat))
            (ubyte5-fix rs2))
     :enable (encode
@@ -332,65 +334,65 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection get-funct3-of-encode-instr
+(defsection get-funct3-of-encode-of-instr
   :short "Theorems about @(tsee get-funct3) applied to
           the encoding of instructions."
 
-  (defruled get-funct3-of-encode-instr-op-imm
+  (defruled get-funct3-of-encode-of-instr-op-imm
     (equal (get-funct3 (encode (instr-op-imm funct rd rs1 imm) feat))
            (encode-op-imm-funct funct))
     :enable (encode
              get-funct3))
 
-  (defruled get-funct3-of-encode-instr-op-imms32
+  (defruled get-funct3-of-encode-of-instr-op-imms32
     (equal (get-funct3 (encode (instr-op-imms32 funct rd rs1 imm) feat))
            (mv-nth 0 (encode-op-imms32-funct funct)))
     :enable (encode
              get-funct3))
 
-  (defruled get-funct3-of-encode-instr-op-imms64
+  (defruled get-funct3-of-encode-of-instr-op-imms64
     (equal (get-funct3 (encode (instr-op-imms64 funct rd rs1 imm) feat))
            (mv-nth 0 (encode-op-imms64-funct funct)))
     :enable (encode
              get-funct3))
 
-  (defruled get-funct3-of-encode-instr-op-imm-32
+  (defruled get-funct3-of-encode-of-instr-op-imm-32
     (equal (get-funct3 (encode (instr-op-imm-32 funct rd rs1 imm) feat))
            (encode-op-imm-32-funct funct))
     :enable (encode
              get-funct3))
 
-  (defruled get-funct3-of-encode-instr-op-imms-32
+  (defruled get-funct3-of-encode-of-instr-op-imms-32
     (equal (get-funct3 (encode (instr-op-imms-32 funct rd rs1 imm) feat))
            (mv-nth 0 (encode-op-imms-32-funct funct)))
     :enable (encode
              get-funct3))
 
-  (defruled get-funct3-of-encode-instr-op
+  (defruled get-funct3-of-encode-of-instr-op
     (equal (get-funct3 (encode (instr-op funct rd rs1 rs2) feat))
            (mv-nth 0 (encode-op-funct funct)))
     :enable (encode
              get-funct3))
 
-  (defruled get-funct3-of-encode-instr-op-32
+  (defruled get-funct3-of-encode-of-instr-op-32
     (equal (get-funct3 (encode (instr-op-32 funct rd rs1 rs2) feat))
            (mv-nth 0 (encode-op-32-funct funct)))
     :enable (encode
              get-funct3))
 
-  (defruled get-funct3-of-encode-instr-branch
+  (defruled get-funct3-of-encode-of-instr-branch
     (equal (get-funct3 (encode (instr-branch funct rs1 rs2 imm) feat))
            (encode-branch-funct funct))
     :enable (encode
              get-funct3))
 
-  (defruled get-funct3-of-encode-instr-load
+  (defruled get-funct3-of-encode-of-instr-load
     (equal (get-funct3 (encode (instr-load funct rd rs1 imm) feat))
            (encode-load-funct funct feat))
     :enable (encode
              get-funct3))
 
-  (defruled get-funct3-of-encode-instr-store
+  (defruled get-funct3-of-encode-of-instr-store
     (equal (get-funct3 (encode (instr-store funct rs1 rs2 imm) feat))
            (encode-store-funct funct feat))
     :enable (encode
@@ -398,17 +400,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection get-funct7-of-encode-instr
+(defsection get-funct7-of-encode-of-instr
   :short "Theorems about @(tsee get-funct7) applied to
           the encoding of instructions."
 
-  (defruled get-funct7-of-encode-instr-op
+  (defruled get-funct7-of-encode-of-instr-op
     (equal (get-funct7 (encode (instr-op funct rd rs1 rs2) feat))
            (mv-nth 1 (encode-op-funct funct)))
     :enable (encode
              get-funct7))
 
-  (defruled get-funct7-of-encode-instr-op-32
+  (defruled get-funct7-of-encode-of-instr-op-32
     (equal (get-funct7 (encode (instr-op-32 funct rd rs1 rs2) feat))
            (mv-nth 1 (encode-op-32-funct funct)))
     :enable (encode
@@ -416,29 +418,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection get-imm-itype-of-encode-instr
+(defsection get-imm-itype-of-encode-of-instr
   :short "Theorems about @(tsee get-imm-itype) applied to
           the encoding of instructions."
 
-  (defruled get-imm-itype-of-encode-instr-op-imm
+  (defruled get-imm-itype-of-encode-of-instr-op-imm
     (equal (get-imm-itype (encode (instr-op-imm funct rd rs1 imm) feat))
            (ubyte12-fix imm))
     :enable (get-imm-itype
              encode))
 
-  (defruled get-imm-itype-of-encode-instr-op-imm-32
+  (defruled get-imm-itype-of-encode-of-instr-op-imms32
+    (equal (get-imm-itype (encode (instr-op-imms32 funct rd rs1 imm) feat))
+           (logappn 5 (ubyte5-fix imm)
+                    7 (mv-nth 1 (encode-op-imms32-funct funct))))
+    :enable (get-imm-itype
+             encode))
+
+  (defruled get-imm-itype-of-encode-of-instr-op-imms64
+    (equal (get-imm-itype (encode (instr-op-imms64 funct rd rs1 imm) feat))
+           (logappn 6 (ubyte6-fix imm)
+                    6 (mv-nth 1 (encode-op-imms64-funct funct))))
+    :enable (get-imm-itype
+             encode))
+
+  (defruled get-imm-itype-of-encode-of-instr-op-imm-32
     (equal (get-imm-itype (encode (instr-op-imm-32 funct rd rs1 imm) feat))
            (ubyte12-fix imm))
     :enable (get-imm-itype
              encode))
 
-  (defruled get-imm-itype-of-encode-instr-jalr
+  (defruled get-imm-itype-of-encode-of-instr-op-imms-32
+    (equal (get-imm-itype (encode (instr-op-imms-32 funct rd rs1 imm) feat))
+           (logappn 5 (ubyte5-fix imm)
+                    1 0
+                    6 (mv-nth 1 (encode-op-imms-32-funct funct))))
+    :enable (get-imm-itype
+             encode))
+
+  (defruled get-imm-itype-of-encode-of-instr-jalr
     (equal (get-imm-itype (encode (instr-jalr rd rs1 imm) feat))
            (ubyte12-fix imm))
     :enable (get-imm-itype
              encode))
 
-  (defruled get-imm-itype-of-encode-instr-load
+  (defruled get-imm-itype-of-encode-of-instr-load
     (equal (get-imm-itype (encode (instr-load funct rd rs1 imm) feat))
            (ubyte12-fix imm))
     :enable (get-imm-itype
@@ -446,11 +470,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection get-imm-stype-of-encode-instr
+(defsection get-imm-stype-of-encode-of-instr
   :short "Theorems about @(tsee get-imm-stype) applied to
           the encoding of instructions."
 
-  (defruled get-imm-stype-of-encode-instr-store
+  (defruled get-imm-stype-of-encode-of-instr-store
     (equal (get-imm-stype (encode (instr-store funct rs1 rs2 imm) feat))
            (ubyte12-fix imm))
     :use (:instance lemma (imm (ubyte12-fix imm)))
@@ -464,17 +488,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection get-imm-utype-of-encode-instr
+(defsection get-imm-btype-of-encode-of-instr
+  :short "Theorems about @(tsee get-imm-btype) applied to
+          the encoding of instructions."
+
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (defrulel logbit-11-to-logtail-11-when-ubyte12p
+    (implies (ubyte12p x)
+             (equal (logbit 11 x)
+                    (logtail 11 x)))
+    :enable (logtail
+             bool->bit
+             logbitp
+             ubyte12p
+             unsigned-byte-p))
+
+  (defrulel logapp-6-logtail-4-logtail-10
+    (implies (integerp x)
+             (equal (logapp 6 (logtail 4 x) (logtail 10 x))
+                    (logtail 4 x)))
+    :enable (logapp
+             logtail
+             loghead))
+
+  (defruled get-imm-btype-of-encode-of-instr-branch
+    (equal (get-imm-btype (encode (instr-branch funct rs1 rs2 imm) feat))
+           (ubyte12-fix imm))
+    :use (:instance lemma (imm (ubyte12-fix imm)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (ubyte12p imm)
+                (equal (get-imm-btype
+                        (encode (instr-branch funct rs1 rs2 imm) feat))
+                       imm))
+       :enable (get-imm-btype
+                encode
+                logapp-1-of-logbit-logtail)
+       :disable bitops::logbit-to-logbitp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-imm-utype-of-encode-of-instr
   :short "Theorems about @(tsee get-imm-utype) applied to
           the encoding of instructions."
 
-  (defruled get-imm-utype-of-encode-instr-lui
+  (defruled get-imm-utype-of-encode-of-instr-lui
     (equal (get-imm-utype (encode (instr-lui rd imm) feat))
            (ubyte20-fix imm))
     :enable (get-imm-utype
              encode))
 
-  (defruled get-imm-ubyte-of-encode-instr-auipc
+  (defruled get-imm-ubyte-of-encode-of-instr-auipc
     (equal (get-imm-utype (encode (instr-auipc rd imm) feat))
            (ubyte20-fix imm))
     :enable (get-imm-utype
@@ -482,34 +547,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection decode-rtype-of-encode-instr
-  :short "Theorems about @(tsee decode-rtype) applied to
+(defsection get-imm-jtype-of-encode-of-instr
+  :short "Theorems about @(tsee get-imm-jtype) applied to
           the encoding of instructions."
 
-  (defruled encode-rtype-of-encode-instr-op
-    (equal (decode-rtype (encode (instr-op funct rd rs1 rs2) feat))
+  (local (include-book "arithmetic-5/top" :dir :system))
+
+  (defrulel logbit-19-to-logtail-19-when-ubyte20p
+    (implies (ubyte20p x)
+             (equal (logbit 19 x)
+                    (logtail 19 x)))
+    :enable (logtail
+             bool->bit
+             logbitp
+             ubyte20p
+             unsigned-byte-p))
+
+  (defrulel logapp-8-logtail-11-logtail-19
+    (implies (integerp x)
+             (equal (logapp 8 (logtail 11 x) (logtail 19 x))
+                    (logtail 11 x)))
+    :enable (logapp
+             logtail
+             loghead))
+
+  (defruled get-imm-jtype-of-encode-of-instr-jal
+    (equal (get-imm-jtype (encode (instr-jal rd imm) feat))
+           (ubyte20-fix imm))
+    :use (:instance lemma (imm (ubyte20-fix imm)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (ubyte20p imm)
+                (equal (get-imm-jtype (encode (instr-jal rd imm) feat))
+                       imm))
+       :enable (get-imm-jtype
+                encode
+                logapp-1-of-logbit-logtail)
+       :disable bitops::logbit-to-logbitp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-fields-rtype-of-encode-of-instr
+  :short "Theorems about @(tsee get-fields-rtype) applied to
+          the encoding of instructions."
+
+  (defruled get-fields-rtype-of-encode-of-instr-op
+    (equal (get-fields-rtype (encode (instr-op funct rd rs1 rs2) feat))
            (mv (mv-nth 0 (encode-op-funct funct))
                (mv-nth 1 (encode-op-funct funct))
                (ubyte5-fix rd)
                (ubyte5-fix rs1)
                (ubyte5-fix rs2)))
-    :enable (decode-rtype
-             get-funct3-of-encode-instr-op
-             get-funct7-of-encode-instr-op
-             get-rd-of-encode-instr-op
-             get-rs1-of-encode-instr-op
-             get-rs2-of-encode-instr-op))
+    :enable (get-fields-rtype
+             get-funct3-of-encode-of-instr-op
+             get-funct7-of-encode-of-instr-op
+             get-rd-of-encode-of-instr-op
+             get-rs1-of-encode-of-instr-op
+             get-rs2-of-encode-of-instr-op))
 
-  (defruled encode-rtype-of-encode-instr-op-32
-    (equal (decode-rtype (encode (instr-op-32 funct rd rs1 rs2) feat))
+  (defruled get-fields-rtype-of-encode-of-instr-op-32
+    (equal (get-fields-rtype (encode (instr-op-32 funct rd rs1 rs2) feat))
            (mv (mv-nth 0 (encode-op-32-funct funct))
                (mv-nth 1 (encode-op-32-funct funct))
                (ubyte5-fix rd)
                (ubyte5-fix rs1)
                (ubyte5-fix rs2)))
-    :enable (decode-rtype
-             get-funct3-of-encode-instr-op-32
-             get-funct7-of-encode-instr-op-32
-             get-rd-of-encode-instr-op-32
-             get-rs1-of-encode-instr-op-32
-             get-rs2-of-encode-instr-op-32)))
+    :enable (get-fields-rtype
+             get-funct3-of-encode-of-instr-op-32
+             get-funct7-of-encode-of-instr-op-32
+             get-rd-of-encode-of-instr-op-32
+             get-rs1-of-encode-of-instr-op-32
+             get-rs2-of-encode-of-instr-op-32)))

@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -141,7 +141,7 @@
   (defruled lists-noforkp-of-blockchain-of-commit-next
     (implies (and (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -209,7 +209,7 @@
   (defruled nonforking-blockchains-p-of-commit-next
     (implies (and (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -232,7 +232,7 @@
     (implies (and (nonforking-blockchains-p systate)
                   (backward-closed-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
                   (signer-quorum-p systate)

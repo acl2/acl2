@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT")
 
-(include-book "ordered-even-blocks")
+(include-book "ordered-blockchain")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -299,7 +299,7 @@
 
   (defruled validator-signer-quorum-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (set::in val1 (correct-addresses systate))
                   (set::in cert
                            (validator-state->dag
@@ -315,10 +315,10 @@
     :enable (validator-signer-quorum-p
              validator-state->blockchain-of-commit-next
              active-committee-at-round-of-extend-blockchain-no-change
-             blocks-ordered-even-p-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             blocks-orderedp-of-extend-blockchain
+             certificate-list-orderedp-of-collect-anchors
              commit-possiblep
-             ordered-even-p-necc-fixing
+             ordered-blockchain-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing
              posp
@@ -328,7 +328,7 @@
   (defruled signer-quorum-p-of-commit-next
     (implies (and (signer-quorum-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (commit-possiblep val systate)
                   (addressp val))
              (signer-quorum-p (commit-next val systate)))
@@ -341,7 +341,7 @@
   (defruled signer-quorum-p-of-event-next
     (implies (and (signer-quorum-p systate)
                   (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (event-possiblep event systate))
              (signer-quorum-p (event-next event systate)))
     :enable (event-possiblep
@@ -353,7 +353,7 @@
   :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
                 (last-blockchain-round-p systate)
-                (ordered-even-p systate)
+                (ordered-blockchain-p systate)
                 (signer-quorum-p systate))
            (signer-quorum-p (events-next events systate)))
   :induct t
@@ -368,13 +368,13 @@
            (signer-quorum-p systate))
   :enable (system-state-reachablep
            signer-quorum-p-when-init
-           ordered-even-p-when-init
+           ordered-blockchain-p-when-init
            last-blockchain-round-p-when-init)
   :prep-lemmas
   ((defrule lemma
      (implies (and (system-state-reachable-from-p systate from)
                    (last-blockchain-round-p from)
-                   (ordered-even-p from)
+                   (ordered-blockchain-p from)
                    (signer-quorum-p from))
               (signer-quorum-p systate))
      :use (:instance
