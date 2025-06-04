@@ -94,6 +94,8 @@
 
 (local (in-theory (disable intersection-equal)))
 
+(local (in-theory (disable acl2::append-of-cons-arg1 acl2::append-of-cons))) ; bad?
+
 (in-theory (disable str::coerce-to-list-removal)) ;todo
 
 (acl2::ensure-rules-known (unroller-rules32))
@@ -552,13 +554,23 @@
                            ;; (:e new-normal-form-rules64)
                     )))
 
+;(defthm symbol-listp-of-new-normal-form-rules64 (symbol-listp (new-normal-form-rules64)))
+;(defthm symbol-listp-of-read-and-write-rules-bv (symbol-listp (read-and-write-rules-bv)))
+
+;(local (in-theory (disable (:e read-and-write-rules-bv) read-and-write-rules-bv)))
+;(local (in-theory (disable (:e new-normal-form-rules64) new-normal-form-rules64)))
+;(local (in-theory (disable (:e constant-opener-rules) constant-opener-rules)))
+
+;(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+
 ;; Returns (mv erp assumptions assumption-rules state)
-(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
+(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
                               (booleanp 64-bitp)
                               (acl2::count-hits-argp count-hits)
+                              (booleanp bvp)
                               (acl2::ilks-plist-worldp (w state)))
                   :stobjs state))
   (b* ((- (cw "(Simplifying assumptions...~%"))
@@ -570,7 +582,8 @@
                                    (assumption-simplification-rules)
                                    (if 64-bitp
                                        ;; needed to match the normal forms used during lifting:
-                                       (new-normal-form-rules64)
+                                       (append (new-normal-form-rules64)
+                                               (if bvp (read-and-write-rules-bv) nil))
                                      nil ; todo: why not use (new-normal-form-rules32)?
                                      ))
                            remove-assumption-rules))
@@ -756,7 +769,7 @@
                  ((mv erp assumptions assumption-rules state)
                   (if extra-assumptions
                       ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
+                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state)
                     (mv nil assumptions nil state)))
                  ((when erp) (mv erp nil nil nil nil state)))
               (mv nil assumptions
@@ -866,7 +879,7 @@
                ;; others, because opening things like read64 involves testing
                ;; canonical-addressp (which we know from other assumptions is true):
                ((mv erp assumptions assumption-rules state)
-                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state))
+                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state))
                ((when erp) (mv erp nil nil nil nil state)))
             (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))
        ((when erp)
@@ -1213,7 +1226,7 @@
                                   (produce-theorem 'nil)
                                   (prove-theorem 'nil)
                                   (restrict-theory 't)       ;todo: deprecate
-                                  (bvp 'nil)
+                                  (bvp 't)
                                   )
   `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
     (def-unrolled-fn

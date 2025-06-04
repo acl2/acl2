@@ -427,14 +427,16 @@
                               (booleanp firstp))))
   (if (endp darg-lists)
       nil
-    (prog2$ (if (member-eq fn fns-to-elide)
+    (let ((darg-list (first darg-lists)))
+      (prog2$ (if (member-eq fn fns-to-elide)
+                  ;; todo: only elide if some darg in darg-list is a large constant
+                  (if firstp
+                      (cw "((~x0 ...)~%" fn)
+                    (cw " (~x0 ...)~%" fn))
                 (if firstp
-                    (cw "((~x0 ...)~%" fn)
-                  (cw " (~x0 ...)~%" fn))
-              (if firstp
-                  (cw "(~y0" (cons fn (first darg-lists)))
-                (cw " ~y0" (cons fn (first darg-lists)))))
-            (print-fn-applications-on-darg-lists fn (rest darg-lists) fns-to-elide nil))))
+                    (cw "(~y0" (cons fn darg-list))
+                  (cw " ~y0" (cons fn darg-list))))
+              (print-fn-applications-on-darg-lists fn (rest darg-lists) fns-to-elide nil)))))
 
 ;; (defun print-refined-assumption-alist-entry-elided (entry fns-to-elide firstp)
 ;;   (declare (xargs :guard (and (refined-assumption-alist-entryp entry)
