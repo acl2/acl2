@@ -28,6 +28,7 @@
 (include-book "certificate-in-author")
 (include-book "proposed-author-in-committee")
 (include-book "proposed-endorser-in-committee")
+(include-book "dag-signer-in-committee")
 (include-book "signer-quorum")
 (include-book "proposed-round1-no-previous")
 (include-book "endorsed-round1-no-previous")
@@ -80,6 +81,7 @@
                     certificate-in-author
                     proposed-author-in-committee
                     proposed-endorser-in-committee
+                    dag-signer-in-committee
                     signer-quorum
                     proposed-round1-no-previous
                     endorsed-round1-no-previous
