@@ -25,6 +25,7 @@
 (include-book "true-list-listp")
 
 (include-book "character-list-listp")
+(include-book "make-character-list")
 (include-book "string-list-listp")
 
 (include-book "all-true-listp")

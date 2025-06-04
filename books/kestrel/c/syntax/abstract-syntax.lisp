@@ -2367,7 +2367,7 @@
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>type-name</i> in the grammar in [C17]."))
-    ((specqual spec/qual-list)
+    ((specquals spec/qual-list)
      (decl? absdeclor-option))
     :pred tynamep
     :measure (two-nats-measure (acl2-count x) 4))

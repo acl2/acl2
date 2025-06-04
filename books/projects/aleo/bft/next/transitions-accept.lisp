@@ -122,7 +122,7 @@
        ((unless commtt) nil)
        (signers (certificate->signers cert))
        ((unless (set::subset signers (committee-members commtt))) nil)
-       ((unless (>= (committee-members-stake signers commtt)
+       ((unless (>= (validators-stake signers commtt)
                     (committee-quorum-stake commtt)))
         nil)
        ((unless (set::emptyp

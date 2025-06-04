@@ -637,7 +637,7 @@
      and must form a supported sequence."))
   (b* (((reterr) (c::tyname (c::tyspecseq-void) (c::obj-adeclor-none)))
        ((tyname tyname) tyname)
-       ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specqual))
+       ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specquals))
        ((when (not okp))
         (reterr (msg "Unsupported specifiers and qualifiers ~
                       in type name ~x0."

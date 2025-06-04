@@ -136,7 +136,7 @@ core function."))
    (xdoc::p "3. Lift the R1CS into logic.  This is done by calling @('lift-r1cs') (or a specialized variant of it, like @('lift-semaphore-r1cs') or  @('lift-zcash-r1cs').  It is often largely automatic.")
 
    (xdoc::&&
-    (xdoc::p "4. Invoke the Axe Prover.  This is done by calling @(see r1cs::verify-r1cs) (or a variant of it, like @(see zksemaphore::verify-semaphore-r1cs) or @(see zcash::verify-zcash-r1cs)).  You pass it:")
+    (xdoc::p "4. Invoke the Axe Prover.  This is done by calling @(tsee r1cs::verify-r1cs) (or a variant of it, like @(tsee zksemaphore::verify-semaphore-r1cs) or @(tsee zcash::verify-zcash-r1cs)).  You pass it:")
 
     (xdoc::ul-from-string
      "The R1CS

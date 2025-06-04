@@ -263,7 +263,7 @@
      We must also ensure that there are no type qualifiers,
      which are not supported in the formal semantics."))
   (b* (((tyname tyname) tyname)
-       ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specqual)))
+       ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specquals)))
     (and okp
          (type-spec-list-integer-formalp tyspecs)
          (not tyname.decl?)))

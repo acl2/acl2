@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -207,7 +207,8 @@
                        evenp
                        active-committee-at-previous-round-when-at-round
                        active-committee-at-previous3-round-when-at-round
-                       certificate->round-of-cert-with-author+round)))
+                       certificate->round-of-cert-with-author+round
+                       certificate-list-orderedp-of-collect-anchors)))
   :hooks (:fix)
 
   ///

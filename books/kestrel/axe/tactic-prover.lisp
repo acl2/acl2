@@ -28,6 +28,7 @@
 (include-book "rewriter") ; for simp-dag and simplify-terms-repeatedly
 ;(include-book "dag-size")
 (include-book "make-term-into-dag-basic")
+(include-book "make-term-into-dag-simple")
 ;(include-book "equivalent-dags")
 (include-book "sweep-and-merge-support")
 (include-book "find-probable-facts-simple")

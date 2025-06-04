@@ -51,7 +51,7 @@
                                 (and commtt
                                      (set::subset (certificate->signers cert)
                                                   (committee-members commtt))
-                                     (>= (committee-members-stake
+                                     (>= (validators-stake
                                           (certificate->signers cert) commtt)
                                          (committee-quorum-stake commtt))))))))
 
@@ -88,16 +88,10 @@
      that author and endorsers are members of the committee,
      it is an invariant that they are, as proved in
      @(see proposed-author-in-committee) and
-     @(see proposed-endorser-in-committee).
-     Another slight difference is that
-     @(tsee certify-possiblep) uses @(tsee committee-validators-stake),
-     while the invariant uses @(tsee committee-members-stake);
-     but since author and endorsers are in the committee,
-     the two are equal, as proved in @(tsee committee-validators-stake).")
+     @(see proposed-endorser-in-committee).")
    (xdoc::p
     "An @('accept') transition is simpler,
-     because it explicitly checks that the signers are in the committee
-     and it uses @(tsee committee-members-stake).")
+     because it explicitly checks that the signers are in the committee.")
    (xdoc::p
     "For @('commit'), since the blockchain is extended,
      we need to use @(tsee active-committee-at-round-of-commit-next)
@@ -144,7 +138,6 @@
              certify-possiblep
              certificate->author
              certificate->round
-             committee-validators-stake-to-committee-members-stake
              certificate->signers
              omap::assoc-to-in-of-keys
              omap::lookup))

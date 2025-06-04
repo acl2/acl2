@@ -22,7 +22,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ ordered-even-blocks
+(defxdoc+ ordered-blockchain
   :parents (correctness)
   :short "Invariant that blocks in validators' blockchains
           have strictly increasing, even round numbers."
@@ -38,55 +38,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk ordered-even-p ((systate system-statep))
+(define-sk ordered-blockchain-p ((systate system-statep))
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           the blockchain of every correct validator has
           strictly increasing, even round numbers."
   (forall (val)
           (implies (set::in val (correct-addresses systate))
-                   (blocks-ordered-even-p
+                   (blocks-orderedp
                     (validator-state->blockchain
                      (get-validator-state val systate)))))
 
   ///
 
-  (fty::deffixequiv-sk ordered-even-p
+  (fty::deffixequiv-sk ordered-blockchain-p
     :args ((systate system-statep)))
 
-  (defruled ordered-even-p-necc-fixing
-    (implies (and (ordered-even-p systate)
+  (defruled ordered-blockchain-p-necc-fixing
+    (implies (and (ordered-blockchain-p systate)
                   (set::in (address-fix val) (correct-addresses systate)))
-             (blocks-ordered-even-p
+             (blocks-orderedp
               (validator-state->blockchain
                (get-validator-state val systate))))
-    :use (:instance ordered-even-p-necc (val (address-fix val))))
+    :use (:instance ordered-blockchain-p-necc (val (address-fix val))))
 
-  (defruled evenp-of-last-when-ordered-even-p
-    (implies (and (ordered-even-p systate)
+  (defruled evenp-of-last-when-ordered-blockchain-p
+    (implies (and (ordered-blockchain-p systate)
                   (last-blockchain-round-p systate)
                   (set::in val (correct-addresses systate)))
              (evenp (validator-state->last
                      (get-validator-state val systate))))
     :enable (evenp-of-blocks-last-round
              last-blockchain-round-p-necc)
-    :disable ordered-even-p))
+    :disable ordered-blockchain-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled ordered-even-p-when-init
+(defruled ordered-blockchain-p-when-init
   :short "Establishment of the invariant:
           the invariant holds in any initial system state."
   (implies (system-initp systate)
-           (ordered-even-p systate))
-  :enable (ordered-even-p
+           (ordered-blockchain-p systate))
+  :enable (ordered-blockchain-p
            system-initp
            system-validators-initp-necc
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection ordered-even-p-of-next
+(defsection ordered-blockchain-p-of-next
   :short "Preservation of the invariant:
           if the invariant holds in a system state,
           it also holds in the next system state."
@@ -112,80 +112,80 @@
      of the aforementioned theorems
      about @(tsee extend-blockchain) and @(tsee collect-anchors)."))
 
-  (defruled ordered-even-p-of-create-next
-    (implies (ordered-even-p systate)
-             (ordered-even-p (create-next cert systate)))
-    :enable (ordered-even-p
-             ordered-even-p-necc))
+  (defruled ordered-blockchain-p-of-create-next
+    (implies (ordered-blockchain-p systate)
+             (ordered-blockchain-p (create-next cert systate)))
+    :enable (ordered-blockchain-p
+             ordered-blockchain-p-necc))
 
-  (defruled ordered-even-p-of-accept-next
-    (implies (and (ordered-even-p systate)
+  (defruled ordered-blockchain-p-of-accept-next
+    (implies (and (ordered-blockchain-p systate)
                   (accept-possiblep msg systate))
-             (ordered-even-p (accept-next msg systate)))
-    :enable (ordered-even-p
-             ordered-even-p-necc))
+             (ordered-blockchain-p (accept-next msg systate)))
+    :enable (ordered-blockchain-p
+             ordered-blockchain-p-necc))
 
-  (defruled ordered-even-p-of-advance-next
-    (implies (and (ordered-even-p systate)
+  (defruled ordered-blockchain-p-of-advance-next
+    (implies (and (ordered-blockchain-p systate)
                   (advance-possiblep val systate))
-             (ordered-even-p (advance-next val systate)))
-    :enable (ordered-even-p
-             ordered-even-p-necc))
+             (ordered-blockchain-p (advance-next val systate)))
+    :enable (ordered-blockchain-p
+             ordered-blockchain-p-necc))
 
-  (defruled ordered-even-p-of-commit-next
-    (implies (and (ordered-even-p systate)
+  (defruled ordered-blockchain-p-of-commit-next
+    (implies (and (ordered-blockchain-p systate)
                   (last-blockchain-round-p systate)
                   (commit-possiblep val systate))
-             (ordered-even-p (commit-next val systate)))
-    :enable (ordered-even-p
-             ordered-even-p-necc-fixing
+             (ordered-blockchain-p (commit-next val systate)))
+    :enable (ordered-blockchain-p
+             ordered-blockchain-p-necc-fixing
              last-blockchain-round-p-necc-fixing
              validator-state->blockchain-of-commit-next
-             blocks-ordered-even-p-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             blocks-orderedp-of-extend-blockchain
+             certificate-list-orderedp-of-collect-anchors
              collect-anchors-above-last-committed-round
              commit-possiblep
              pos-fix
              posp
              evenp))
 
-  (defruled ordered-even-p-of-event-next
-    (implies (and (ordered-even-p systate)
+  (defruled ordered-blockchain-p-of-event-next
+    (implies (and (ordered-blockchain-p systate)
                   (last-blockchain-round-p systate)
                   (event-possiblep event systate))
-             (ordered-even-p (event-next event systate)))
+             (ordered-blockchain-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled ordered-even-p-of-events-next
+(defruled ordered-blockchain-p-of-events-next
   :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
                 (last-blockchain-round-p systate)
-                (ordered-even-p systate))
-           (ordered-even-p (events-next events systate)))
+                (ordered-blockchain-p systate))
+           (ordered-blockchain-p (events-next events systate)))
   :induct t
   :enable (events-possiblep
            events-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled ordered-even-p-when-reachable
+(defruled ordered-blockchain-p-when-reachable
   :short "The invariant holds in every reachable state."
   (implies (system-state-reachablep systate)
-           (ordered-even-p systate))
+           (ordered-blockchain-p systate))
   :enable (system-state-reachablep
-           ordered-even-p-when-init
+           ordered-blockchain-p-when-init
            last-blockchain-round-p-when-init)
   :prep-lemmas
   ((defrule lemma
      (implies (and (system-state-reachable-from-p systate from)
                    (last-blockchain-round-p from)
-                   (ordered-even-p from))
-              (ordered-even-p systate))
+                   (ordered-blockchain-p from))
+              (ordered-blockchain-p systate))
      :use (:instance
-           ordered-even-p-of-events-next
+           ordered-blockchain-p-of-events-next
            (events (system-state-reachable-from-p-witness systate from))
            (systate from))
      :enable system-state-reachable-from-p)))
