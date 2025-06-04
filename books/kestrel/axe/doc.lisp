@@ -52,11 +52,11 @@ See <a href=\"https://www.kestrel.edu/research/axe/\">the Axe webpage</a> for mo
   (xdoc::topparas
    "The Axe toolkit provides several tools for lifting code into logic.  Currently, Axe can lift JVM bytecode, x86 binaries, and rank-1 constraint systems.
 
-   For lifting JVM bytecode, four lifters are available.  For code that is unrollable, use @(see unroll-java-code) (or try the more experimental @(see unroll-java-code2), for compositional lifting).  When loops cannot be unrolled and so must be lifted into recursive functions, use @('lift-java-code') (or try the more experimental @('lift-java-code2'), for compositional lifting).
+   For lifting JVM bytecode, four lifters are available.  For code that is unrollable, use @(tsee unroll-java-code) (or try the more experimental @(tsee unroll-java-code2), for compositional lifting).  When loops cannot be unrolled and so must be lifted into recursive functions, use @('lift-java-code') (or try the more experimental @('lift-java-code2'), for compositional lifting).
 
    For lifting x86 binaries, two lifters are available.  For code that is unrollable, use @('x::def-unrolled') (still experimental).  When loops cannot be unrolled and so must be lifted into recursive functions, try @('x::lift-subroutine') (very experimental).
 
-   For lifting rank-1 constraint systems, use @(see r1cs::lift-r1cs) or one of its variants."
+   For lifting rank-1 constraint systems, use @(tsee r1cs::lift-r1cs) or one of its variants."
    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,7 +132,7 @@ See <a href=\"https://www.kestrel.edu/research/axe/\">the Axe webpage</a> for mo
   :parents (axe-core)
   :short "An SMT solver used by the Axe toolkit."
   :long (xdoc::topparas "STP is an SMT solver available <a href='https://github.com/stp/stp'>here</a>.
-  It is used by several tools in the @(see Axe) toolkit.  See @(see build::cert_param) for
+  It is used by several tools in the @(see Axe) toolkit.  See @(tsee build::cert_param) for
 information on suppressing attempts to use STP during builds.
 
 Different versions of STP support different option syntax, especially for the max conflicts option, so you might need to set the environment variable @('ACL2_STP_VARIETY').  The default (equivalent to a setting of \"2\") should work with the latest STP (as of September, 2023) and with other versions that use the option @('--max-num-confl') (note the dashes).  For older STP versions that use the option @('--max_num_confl') (note the underscores), set @('ACL2_STP_VARIETY') to \"1\".  For very old versions of STP that only support the use of @('-g') for the max conflicts option, set @('ACL2_STP_VARIETY') to \"0\".

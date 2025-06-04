@@ -29,9 +29,9 @@
        ((mv erp dag2) (dag-or-term-to-dag-basic dag-or-term2 wrld))
        ((when erp) (mv erp nil))
        (vars1 (dag-vars dag1)) ; todo: use a sort that does better with numbered vars
-       (- (cw "Variables in DAG1: ~x0~%." vars1))
+       ;; (- (cw "Variables in DAG1: ~x0~%." vars1))
        (vars2 (dag-vars dag2))
-       (- (cw "Variables in DAG2: ~x0~%." vars2))
+       ;; (- (cw "Variables in DAG2: ~x0~%." vars2))
        (dag1-only-vars (set-difference-eq vars1 vars2)) ;todo: optimize since sorted
        (dag2-only-vars (set-difference-eq vars2 vars1)) ;todo: optimize since sorted
        (- (and dag1-only-vars
