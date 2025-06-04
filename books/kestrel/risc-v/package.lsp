@@ -21,6 +21,7 @@
                                              pi
                                              step))
                         '(bool
+                          bool->bit
                           defxdoc+
                           impossible
                           lifix
@@ -29,6 +30,7 @@
                           logbit
                           logext
                           loghead
+                          logtail
                           nat
                           nat-list
                           pos-fix

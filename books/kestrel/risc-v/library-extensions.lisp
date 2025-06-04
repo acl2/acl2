@@ -106,4 +106,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule loghead-of-1-of-logbit
+  (equal (loghead 1 (logbit i x))
+         (logbit i x))
+  :enable bool->bit
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled logapp-1-of-logbit-logtail
+  (implies (and (natp i)
+                (equal j (1+ i))
+                (integerp x))
+           (equal (logapp 1 (logbit i x) (logtail j x))
+                  (logtail i x)))
+  :cases ((logbitp i x))
+  :enable (logtail
+           logapp
+           ifix
+           logbitp
+           fix
+           oddp
+           evenp)
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable loghead logext))
