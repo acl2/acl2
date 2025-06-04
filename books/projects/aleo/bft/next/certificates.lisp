@@ -1596,10 +1596,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk cert-sets-unequivp ((certs1 certificate-setp)
-                               (certs2 certificate-setp))
+(define-sk cert-sets-prop-unequivp ((certs1 certificate-setp)
+                                    (certs2 certificate-setp))
   :returns (yes/no booleanp)
-  :short "Check if two sets of certificates are unequivocal."
+  :short "Check if two sets of certificates have unequivocal proposals."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1627,7 +1627,7 @@
 
   ///
 
-  (fty::deffixequiv-sk cert-sets-unequivp
+  (fty::deffixequiv-sk cert-sets-prop-unequivp
     :args ((certs1 certificate-setp) (certs2 certificate-setp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

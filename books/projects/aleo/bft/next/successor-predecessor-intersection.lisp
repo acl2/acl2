@@ -56,7 +56,7 @@
      such that @($B_1$) and @($B_2$) contain the same proposal,
      but possibly different endorsers.
      This matches the notion of non-equivocation
-     expressed by @(tsee cert-sets-unequivp):
+     expressed by @(tsee cert-sets-prop-unequivp):
      as explained there, AleoBFT guarantees
      the non-equivocation of proposals in DAGs,
      but not necessarily of whole certificates.")
@@ -289,13 +289,13 @@
                     (certificate->proposal pred?)))
     :hyp (and (certificate-setp dag1)
               (certificate-setp dag2)
-              (cert-sets-unequivp dag1 dag2)
+              (cert-sets-prop-unequivp dag1 dag2)
               (equal (certificate->round cert2)
                      (+ 2 (certificate->round cert1))))
     :hints
     (("Goal"
       :in-theory (disable pick-successor+predecessor)
-      :use (:instance cert-sets-unequivp-necc
+      :use (:instance cert-sets-prop-unequivp-necc
                       (certs1 dag1)
                       (certs2 dag2)
                       (cert1 (mv-nth 0 (pick-successor+predecessor
