@@ -14,6 +14,8 @@
 (include-book "encoding")
 (include-book "decoding")
 
+(local (include-book "library-extensions"))
+
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "kestrel/fty/ubyte3-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte7-ihs-theorems" :dir :system))
@@ -483,6 +485,43 @@
                        imm))
        :enable (get-imm-stype
                 encode)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-imm-btype-of-encode-of-instr
+  :short "Theorems about @(tsee get-imm-btype) applied to
+          the encoding of instructions."
+
+  (defrulel logbit-11-to-logtail-11-when-ubyte12p
+    (implies (ubyte12p x)
+             (equal (logbit 11 x)
+                    (logtail 11 x)))
+    :enable (logtail
+             bool->bit
+             logbitp
+             ubyte12p
+             unsigned-byte-p)
+    :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+  (defrulel logapp-6-logtail-4-logtail-10
+    (implies (integerp x)
+             (equal (logapp 6 (logtail 4 x) (logtail 10 x))
+                    (logtail 4 x)))
+    :enable (logapp
+             logtail
+             loghead)
+    :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+  (defruled get-imm-btype-of-instr-branch
+    (implies (ubyte12p imm)
+             (equal (get-imm-btype (encode (instr-branch funct rs1 rs2 imm) feat))
+                    imm))
+    :enable (get-imm-btype
+             encode
+             logbit-11-to-logtail-11-when-ubyte12p
+             logapp-1-of-logbit-logtail
+             logapp-6-logtail-4-logtail-10)
+    :disable bitops::logbit-to-logbitp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
