@@ -718,3 +718,67 @@
              get-rd-of-encode-of-instr-load
              get-rs1-of-encode-of-instr-load
              get-imm-itype-of-encode-of-instr-load)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-fields-stype-of-encode-of-instr
+  :short "Theorems about @(tsee get-fields-stype) applied to
+          the encoding of instructions."
+
+  (defruled get-fields-stype-of-encode-of-instr-store
+    (equal (get-fields-stype (encode (instr-store funct rs1 rs2 imm) feat))
+           (mv (encode-store-funct funct feat)
+               (ubyte5-fix rs1)
+               (ubyte5-fix rs2)
+               (ubyte12-fix imm)))
+    :enable (get-fields-stype
+             get-funct3-of-encode-of-instr-store
+             get-rs1-of-encode-of-instr-store
+             get-rs2-of-encode-of-instr-store
+             get-imm-stype-of-encode-of-instr-store)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-fields-utype-of-encode-of-instr
+  :short "Theorems about @(tsee get-fields-utype) applied to
+          the encoding of instructions."
+
+  (defruled get-fields-utype-of-encode-of-instr-lui
+    (equal (get-fields-utype (encode (instr-lui rd imm) feat))
+           (mv (ubyte5-fix rd)
+               (ubyte20-fix imm)))
+    :enable (get-fields-utype
+             get-rd-of-encode-of-instr-lui
+             get-imm-utype-of-encode-of-instr-lui)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-fields-btype-of-encode-of-instr
+  :short "Theorems about @(tsee get-fields-btype) applied to
+          the encoding of instructions."
+
+  (defruled get-fields-btype-of-encode-of-instr-branch
+    (equal (get-fields-btype (encode (instr-branch funct rs1 rs2 imm) feat))
+           (mv (encode-branch-funct funct)
+               (ubyte5-fix rs1)
+               (ubyte5-fix rs2)
+               (ubyte12-fix imm)))
+    :enable (get-fields-btype
+             get-funct3-of-encode-of-instr-branch
+             get-rs1-of-encode-of-instr-branch
+             get-rs2-of-encode-of-instr-branch
+             get-imm-btype-of-encode-of-instr-branch)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-fields-jtype-of-encode-of-instr
+  :short "Theorems about @(tsee get-fields-utype) applied to
+          the encoding of instructions."
+
+  (defruled get-fields-jtype-of-encode-of-instr-jal
+    (equal (get-fields-jtype (encode (instr-jal rd imm) feat))
+           (mv (ubyte5-fix rd)
+               (ubyte20-fix imm)))
+    :enable (get-fields-jtype
+             get-rd-of-encode-of-instr-jal
+             get-imm-jtype-of-encode-of-instr-jal)))
