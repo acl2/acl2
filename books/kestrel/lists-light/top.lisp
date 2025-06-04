@@ -1,6 +1,6 @@
 ; Top-level book for the lightweight-lists library.
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -64,6 +64,7 @@
 (include-book "repeat-tail")
 (include-book "subrange-def")
 (include-book "subrange")
+(include-book "subseq-list")
 (include-book "subsequencep-equal")
 (include-book "update-nth2")
 (include-book "last-elem")
