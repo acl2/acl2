@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ signer-quorum
+(defxdoc+ dag-signer-quorum
   :parents (correctness)
   :short "Invariant that each certificate in the DAG of a validator
           has signers that form a quorum in the committee."
@@ -37,7 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk signer-quorum-p ((systate system-statep))
+(define-sk dag-signer-quorum-p ((systate system-statep))
   :returns (yes/no booleanp)
   :short "Definition of the invariant."
   (forall (val cert)
@@ -57,23 +57,23 @@
 
   ///
 
-  (fty::deffixequiv-sk signer-quorum-p
+  (fty::deffixequiv-sk dag-signer-quorum-p
     :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled signer-quorum-p-when-init
+(defruled dag-signer-quorum-p-when-init
   :short "Establishment of the invariant in the initial states."
   (implies (system-initp systate)
-           (signer-quorum-p systate))
-  :enable (signer-quorum-p
+           (dag-signer-quorum-p systate))
+  :enable (dag-signer-quorum-p
            system-initp
            system-validators-initp-necc
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection signer-quorum-p-of-next
+(defsection dag-signer-quorum-p-of-next
   :short "Preservation of the invariant by single transitions."
   :long
   (xdoc::topstring
@@ -97,42 +97,42 @@
      we need to use @(tsee active-committee-at-round-of-commit-next)
      to show that the applicable committee does not change."))
 
-  (defruled signer-quorum-p-of-propose-next
-    (implies (signer-quorum-p systate)
-             (signer-quorum-p (propose-next prop dests systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc))
+  (defruled dag-signer-quorum-p-of-propose-next
+    (implies (dag-signer-quorum-p systate)
+             (dag-signer-quorum-p (propose-next prop dests systate)))
+    :enable (dag-signer-quorum-p
+             dag-signer-quorum-p-necc))
 
-  (defruled signer-quorum-p-of-endorse-next
-    (implies (signer-quorum-p systate)
-             (signer-quorum-p (endorse-next prop endor systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc))
+  (defruled dag-signer-quorum-p-of-endorse-next
+    (implies (dag-signer-quorum-p systate)
+             (dag-signer-quorum-p (endorse-next prop endor systate)))
+    :enable (dag-signer-quorum-p
+             dag-signer-quorum-p-necc))
 
-  (defruled signer-quorum-p-of-augment-next
+  (defruled dag-signer-quorum-p-of-augment-next
     (implies (and (augment-possiblep prop endor systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (augment-next prop endor systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc))
+                  (dag-signer-quorum-p systate))
+             (dag-signer-quorum-p (augment-next prop endor systate)))
+    :enable (dag-signer-quorum-p
+             dag-signer-quorum-p-necc))
 
-  (defruled signer-quorum-p-of-certify-next
+  (defruled dag-signer-quorum-p-of-certify-next
     (implies (and (certify-possiblep cert dests systate)
                   (proposed-author-in-committee-p systate)
                   (proposed-endorser-in-committee-p systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (certify-next cert dests systate)))
-    :use ((:instance signer-quorum-p-necc
-                     (val (mv-nth 0 (signer-quorum-p-witness
+                  (dag-signer-quorum-p systate))
+             (dag-signer-quorum-p (certify-next cert dests systate)))
+    :use ((:instance dag-signer-quorum-p-necc
+                     (val (mv-nth 0 (dag-signer-quorum-p-witness
                                      (certify-next cert dests systate))))
-                     (cert (mv-nth 1 (signer-quorum-p-witness
+                     (cert (mv-nth 1 (dag-signer-quorum-p-witness
                                       (certify-next cert dests systate)))))
           (:instance proposed-endorser-in-committee-p-necc
-                     (val (mv-nth 0 (signer-quorum-p-witness
+                     (val (mv-nth 0 (dag-signer-quorum-p-witness
                                      (certify-next cert dests systate))))
                      (prop (certificate->proposal cert))))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc
+    :enable (dag-signer-quorum-p
+             dag-signer-quorum-p-necc
              proposed-author-in-committee-p-necc
              validator-state->dag-of-certify-next
              certify-possiblep
@@ -142,72 +142,72 @@
              omap::assoc-to-in-of-keys
              omap::lookup))
 
-  (defruled signer-quorum-p-of-accept-next
+  (defruled dag-signer-quorum-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (accept-next val cert systate)))
-    :use (:instance signer-quorum-p-necc
-                    (val (mv-nth 0 (signer-quorum-p-witness
+                  (dag-signer-quorum-p systate))
+             (dag-signer-quorum-p (accept-next val cert systate)))
+    :use (:instance dag-signer-quorum-p-necc
+                    (val (mv-nth 0 (dag-signer-quorum-p-witness
                                     (accept-next val cert systate))))
-                    (cert (mv-nth 1 (signer-quorum-p-witness
+                    (cert (mv-nth 1 (dag-signer-quorum-p-witness
                                      (accept-next val cert systate)))))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc
+    :enable (dag-signer-quorum-p
+             dag-signer-quorum-p-necc
              accept-possiblep
              validator-state->dag-of-accept-next
              certificate->round))
 
-  (defruled signer-quorum-p-of-advance-next
+  (defruled dag-signer-quorum-p-of-advance-next
     (implies (and (advance-possiblep val systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (advance-next val systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc))
+                  (dag-signer-quorum-p systate))
+             (dag-signer-quorum-p (advance-next val systate)))
+    :enable (dag-signer-quorum-p
+             dag-signer-quorum-p-necc))
 
-  (defruled signer-quorum-p-of-commit-next
+  (defruled dag-signer-quorum-p-of-commit-next
     (implies (and (commit-possiblep val systate)
                   (last-blockchain-round-p systate)
                   (ordered-blockchain-p systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (commit-next val systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc
+                  (dag-signer-quorum-p systate))
+             (dag-signer-quorum-p (commit-next val systate)))
+    :enable (dag-signer-quorum-p
+             dag-signer-quorum-p-necc
              active-committee-at-round-of-commit-next))
 
-  (defruled signer-quorum-p-of-event-next
+  (defruled dag-signer-quorum-p-of-event-next
     (implies (and (event-possiblep event systate)
                   (last-blockchain-round-p systate)
                   (ordered-blockchain-p systate)
                   (proposed-author-in-committee-p systate)
                   (proposed-endorser-in-committee-p systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (event-next event systate)))
+                  (dag-signer-quorum-p systate))
+             (dag-signer-quorum-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled signer-quorum-p-of-events-next
+(defruled dag-signer-quorum-p-of-events-next
   :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
                 (last-blockchain-round-p systate)
                 (ordered-blockchain-p systate)
                 (proposed-author-in-committee-p systate)
                 (proposed-endorser-in-committee-p systate)
-                (signer-quorum-p systate))
-           (signer-quorum-p (events-next events systate)))
+                (dag-signer-quorum-p systate))
+           (dag-signer-quorum-p (events-next events systate)))
   :induct t
   :enable (events-possiblep
            events-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled signer-quorum-p-when-reachable
+(defruled dag-signer-quorum-p-when-reachable
   :short "The invariant holds in every reachable state."
   (implies (system-state-reachablep systate)
-           (signer-quorum-p systate))
+           (dag-signer-quorum-p systate))
   :enable (system-state-reachablep
-           signer-quorum-p-when-init
+           dag-signer-quorum-p-when-init
            last-blockchain-round-p-when-init
            ordered-blockchain-p-when-init
            proposed-author-in-committee-p-when-init
@@ -219,10 +219,10 @@
                    (ordered-blockchain-p from)
                    (proposed-author-in-committee-p from)
                    (proposed-endorser-in-committee-p from)
-                   (signer-quorum-p from))
-              (signer-quorum-p systate))
+                   (dag-signer-quorum-p from))
+              (dag-signer-quorum-p systate))
      :use (:instance
-           signer-quorum-p-of-events-next
+           dag-signer-quorum-p-of-events-next
            (events (system-state-reachable-from-p-witness systate from))
            (systate from))
      :enable system-state-reachable-from-p)))

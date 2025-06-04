@@ -29,7 +29,7 @@
 (include-book "proposed-author-in-committee")
 (include-book "proposed-endorser-in-committee")
 (include-book "dag-signer-in-committee")
-(include-book "signer-quorum")
+(include-book "dag-signer-quorum")
 (include-book "proposed-round1-no-previous")
 (include-book "endorsed-round1-no-previous")
 (include-book "proposed-previous-closed")
@@ -82,7 +82,7 @@
                     proposed-author-in-committee
                     proposed-endorser-in-committee
                     dag-signer-in-committee
-                    signer-quorum
+                    dag-signer-quorum
                     proposed-round1-no-previous
                     endorsed-round1-no-previous
                     proposed-previous-closed
