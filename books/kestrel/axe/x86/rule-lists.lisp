@@ -47,7 +47,7 @@
 (acl2::defconst-computed-simple *signed-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::iwp-defs (w state)) "$INLINE"))
 
 ;; Most of these are just names of functions to open
-(defun instruction-rules ()
+(defund instruction-rules ()
   (declare (xargs :guard t))
   (append '(x86isa::gpr-arith/logic-spec-1 ;; dispatches based on operation
             x86isa::gpr-arith/logic-spec-2 ;; dispatches based on operation
@@ -201,7 +201,7 @@
                                   x86isa::x86-cwd/cdq/cqo))))
 
 ;; todo: can we just use list-rules?
-(defun list-rules-x86 ()
+(defund list-rules-x86 ()
   (declare (xargs :guard t))
   '(atom ;open to expose consp
     car-cons
@@ -219,7 +219,7 @@
 
 ;; For 64-bit mode and low-level 32-bit mode proofs.
 ;; When using these, also include (read-rules) and (write-rules).
-(defun linear-memory-rules ()
+(defund linear-memory-rules ()
   (declare (xargs :guard t))
   '(;; Rules about reads:
 
@@ -333,7 +333,7 @@
 ;;     ))
 
 ;todo: some are only needed with the new normal forms
-(defun read-rules ()
+(defund read-rules ()
   (declare (xargs :guard t))
   '(unsigned-byte-p-of-read
     integerp-of-read
@@ -657,7 +657,7 @@
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
 ;; to XW, WRITE, and SET-FLAG (todo: update this comment).
-(defun state-rules ()
+(defund state-rules ()
   (declare (xargs :guard t))
   '(
     ;x86isa::x86p-set-flag
@@ -880,7 +880,7 @@
     ;; mv-nth-1-of-rb-1-of-set-rip
     ))
 
-(defun decoding-and-dispatch-rules ()
+(defund decoding-and-dispatch-rules ()
   (declare (xargs :guard t))
   '(x86isa::two-byte-opcode-execute ;todo: restrict to constants?  ;big case split
     x86isa::64-bit-mode-one-byte-opcode-modr/m-p-rewrite-quotep ; axe can't eval this
@@ -1000,7 +1000,7 @@
     x86isa::vex-0f-execute
 ))
 
-(defun x86-type-rules ()
+(defund x86-type-rules ()
   (declare (xargs :guard t))
   '(x86isa::unsigned-byte-p-of-cf-spec8
     x86isa::unsigned-byte-p-of-cf-spec16
@@ -1237,7 +1237,7 @@
     acl2::rotate-right-constant-opener))
 
 ;todo: classify these
-(defun x86-bv-rules ()
+(defund x86-bv-rules ()
   (declare (xargs :guard t))
   '( ;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
@@ -1263,7 +1263,7 @@
     ))
 
 ;; ;not used?
-;; (defun canonical-address-rules ()
+;; (defund canonical-address-rules ()
 ;;  (declare (xargs :guard t))
 ;;   '(x86isa::not-member-p-canonical-address-listp ;drop the not and strengthen?
 ;;     x86isa::subset-p-two-create-canonical-address-lists-general ;strengthen?
@@ -1277,7 +1277,7 @@
 ;;     x86isa::i48-when-canonical-address-p))
 
 ;; These are about if but are not 'if lifting' rules.
-(defun if-rules ()
+(defund if-rules ()
   (declare (xargs :guard t))
   '(acl2::if-nil-t
     acl2::if-of-t-and-nil-becomes-bool-fix
@@ -1324,7 +1324,7 @@
 
 ;these help with conditional branches
 ;but see if-lifting strategies below for ifs on state transformers.
-(defun if-lifting-rules ()
+(defund if-lifting-rules ()
   (declare (xargs :guard t))
   '(x86isa::app-view-of-if
     ;x86isa::program-at-of-if
@@ -1377,7 +1377,7 @@
 ;;   xr-of-if ; too much?  need ms
 ;;   x86isa::alignment-checking-enabled-p-of-if
 
-(defun simple-opener-rules ()
+(defund simple-opener-rules ()
   (declare (xargs :guard t))
   '(; 64-bit-modep ; using rules about this instead, since this is no longer just true
     ))
@@ -1385,7 +1385,7 @@
 ;; These open the branch conditions, without trying to make the expressions nice.
 ;; Instead, consider adding more rules like jle-condition-rewrite-1.
 ;; TODO: Some of these are only for 64 or only for 32 bit mode?
-;; (defun branch-condition-openers ()
+;; (defund branch-condition-openers ()
 ;;  (declare (xargs :guard t))
 ;;   '(jo-condition
 ;;     jno-condition
@@ -1493,7 +1493,7 @@
     in-regionp-constant-opener
     disjoint-regionsp-constant-opener))
 
-(defun get-prefixes-openers ()
+(defund get-prefixes-openers ()
   (declare (xargs :guard t))
   '(x86isa::get-prefixes-base-1
     ;; x86isa::get-prefixes-base-2 ; error case
@@ -1517,7 +1517,7 @@
 (set-axe-rule-priority x86isa::get-prefixes-base-1 1) ; try late (unusual case)
 
 ;todo: separate out the 64-bit rules
-(defun segment-base-and-bounds-rules-general ()
+(defund segment-base-and-bounds-rules-general ()
   (declare (xargs :guard t))
   '(x86isa::segment-base-and-bounds-of-xw ; needed?
     segment-base-and-bounds-of-set-flag
@@ -1527,7 +1527,7 @@
     integerp-of-mv-nth-0-of-segment-base-and-bounds-gen
     ))
 
-(defun segment-base-and-bounds-rules-64 ()
+(defund segment-base-and-bounds-rules-64 ()
   (declare (xargs :guard t))
   '(segment-base-and-bounds-of-set-rip
     segment-base-and-bounds-of-set-rsp
@@ -1552,7 +1552,7 @@
     segment-base-and-bounds-of-write
     ))
 
-(defun segment-base-and-bounds-rules-32 ()
+(defund segment-base-and-bounds-rules-32 ()
   (declare (xargs :guard t))
   '(segment-base-and-bounds-of-set-eip
     segment-base-and-bounds-of-set-eax
@@ -1565,7 +1565,7 @@
     segment-base-and-bounds-of-write-byte-to-segment))
 
 ;; are these only for making failures clearer?
-(defun get-prefixes-rules64 ()
+(defund get-prefixes-rules64 ()
   (declare (xargs :guard t))
   '(mv-nth-0-of-get-prefixes-of-set-rip
     mv-nth-0-of-get-prefixes-of-set-rax
@@ -1582,7 +1582,7 @@
     mv-nth-1-of-get-prefixes-of-set-rsp
     mv-nth-1-of-get-prefixes-of-set-rbp))
 
-(defun float-rules ()
+(defund float-rules ()
   (declare (xargs :guard t))
   '(is-nan-intro ; targets an IF
     is-nan-intro-from-boolif
@@ -1795,7 +1795,7 @@
     ;; acl2::bvminus-of-+-arg3
     acl2::bvminus-of-+-cancel-arg3))
 
-(defun separate-rules ()
+(defund separate-rules ()
   (declare (xargs :guard t))
   '(x86isa::separate-normalize-r-w-x-1
     x86isa::separate-normalize-r-w-x-2
@@ -1842,7 +1842,7 @@
 
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
-(defun lifter-rules-common ()
+(defund lifter-rules-common ()
   (declare (xargs :guard t))
   (append (symbolic-execution-rules)
           (read-over-write-rules) ; todo: don't use all these
@@ -2460,7 +2460,7 @@
 
 ;; Used in both versions of the lifter
 ;; TODO: Split into 32-bit and 64-bit rules:
-(defun assumption-simplification-rules ()
+(defund assumption-simplification-rules ()
   (declare (xargs :guard t))
   (append
    '(standard-state-assumption
@@ -2573,7 +2573,7 @@
 ;move?
 ;todo: most of these are not myif rules
 ;; only used in loop-lifter
-(defun myif-rules ()
+(defund myif-rules ()
   (declare (xargs :guard t))
   (append '(acl2::myif-same-branches ;add to lifter-rules?
             acl2::myif-of-t-and-nil-when-booleanp
@@ -2612,7 +2612,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: move some of these to lifter-rules-common
-(defun lifter-rules32 ()
+(defund lifter-rules32 ()
   (declare (xargs :guard t))
   (set-difference-equal
    (append (lifter-rules-common)
@@ -2710,7 +2710,7 @@
      acl2::bvminus-of-+-arg2
      acl2::bvminus-of-+-arg3)))
 
-(defun new-memory-rules32 ()
+(defund new-memory-rules32 ()
   (declare (xargs :guard t))
   '(;; Rules to introduce read-from-segment:
     mv-nth-1-of-rme08-becomes-read-from-segment
@@ -2851,7 +2851,7 @@
 
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 ;; todo: restrict this to memory stuff?
-(defun new-normal-form-rules32 ()
+(defund new-normal-form-rules32 ()
   (declare (xargs :guard t))
   (append
   '(;; Introduce register writers:
@@ -3459,7 +3459,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Used by the unroller and loop-lifter.
-(defun lifter-rules64 ()
+(defund lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules-common)
           (if-lowering-rules64)
@@ -4686,7 +4686,7 @@
 
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
-(defun low-level-rules-32 ()
+(defund low-level-rules-32 ()
     (declare (xargs :guard t))
   (append (linear-memory-rules)
           (read-rules)
@@ -4827,7 +4827,7 @@
 ;; ;;             code-segment-assumptions32-of-write-to-segment-of-ss
 ;;             )
 
-(defun debug-rules-common ()
+(defund debug-rules-common ()
   (declare (xargs :guard t))
   '(run-until-stack-shorter-than-opener
     not-mv-nth-0-of-wme-size ;gets rid of error branch
@@ -4837,7 +4837,7 @@
     wb-becomes-write-when-app-view
     ))
 
-(defun debug-rules32 ()
+(defund debug-rules32 ()
   (declare (xargs :guard t))
   (append (debug-rules-common)
           (step-opener-rules32)
@@ -4845,7 +4845,7 @@
             mv-nth-1-of-add-to-*sp-gen
             )))
 
-(defun debug-rules64 ()
+(defund debug-rules64 ()
   (declare (xargs :guard t))
   (append (debug-rules-common)
           (step-opener-rules64)
@@ -4862,7 +4862,7 @@
 ;; TODO: Push many of these tester rules back into more fundamental rule sets
 
 ;; these are used both for lifting and proving
-(defun extra-tester-rules ()
+(defund extra-tester-rules ()
   (declare (xargs :guard t))
   (append '(acl2::integerp-of-expt
             acl2::integerp-of-*                 ; for array index calcs
@@ -4987,7 +4987,7 @@
           (acl2::type-rules)))
 
 ;; beyond what def-unrolled uses
-(defun extra-tester-lifting-rules ()
+(defund extra-tester-lifting-rules ()
   (declare (xargs :guard t))
   (append ;(new-normal-form-rules64) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
           (extra-tester-rules)
@@ -5104,7 +5104,7 @@
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
             )))
 
-(defun tester-proof-rules ()
+(defund tester-proof-rules ()
   (declare (xargs :guard t))
   (append '(;;myif-of-sub-zf-spec32-arg2
             ;;myif-of-sub-zf-spec32-arg3
@@ -5167,7 +5167,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun extra-loop-lifter-rules ()
+(defund extra-loop-lifter-rules ()
   (declare (xargs :guard t))
   (append ;or put these in symbolic-execution-rules-loop ?:
    '(stack-height-increased-wrt
@@ -5226,7 +5226,7 @@
    ))
 
 ;; For the loop lifter
-(defun symbolic-execution-rules-loop-lifter ()
+(defund symbolic-execution-rules-loop-lifter ()
   (declare (xargs :guard t))
   '(;;run-until-exit-segment-or-hit-loop-header-opener-1
     run-until-exit-segment-or-hit-loop-header-opener-2
@@ -5238,7 +5238,7 @@
     run-until-exit-segment-or-hit-loop-header-of-if))
 
 ;; Eventually we may add these rules about read to extra-loop-lifter-rules.
-(defun loop-lifter-invariant-preservation-rules ()
+(defund loop-lifter-invariant-preservation-rules ()
   (declare (xargs :guard t))
   (append (extra-loop-lifter-rules)
           '(;; mv-nth-1-of-rb-becomes-read
@@ -5251,7 +5251,7 @@
             )))
 
 ;todo: add more?
-(defun loop-lifter-state-component-extraction-rules ()
+(defund loop-lifter-state-component-extraction-rules ()
   (declare (xargs :guard t))
   '(acl2::integerp-of-+
     x86isa::x86-elem-fix
@@ -5303,14 +5303,14 @@
 
 ;; Can't really use the new, nicer normal forms for readers and writers, since
 ;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
-(defun loop-lifter-rules32 ()
+(defund loop-lifter-rules32 ()
   (declare (xargs :guard t))
   (append (lifter-rules32)
           (old-normal-form-rules)))
 
 ;; Can't really use the new, nicer normal forms for readers and writers, since
 ;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
-(defun loop-lifter-rules64 ()
+(defund loop-lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules64)
           (old-normal-form-rules) ;;(new-normal-form-rules64); todo, but we'd have to change the loop-lifter significantly
