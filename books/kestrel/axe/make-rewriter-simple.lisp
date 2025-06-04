@@ -629,7 +629,7 @@
        (include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
        (include-book "kestrel/axe/dag-info" :dir :system) ; for print-dag-info
        (include-book "kestrel/axe/pure-dags" :dir :system) ; for dag-is-purep-aux
-       (include-book "kestrel/axe/dag-or-term-to-dag-simple" :dir :system)
+       ;; (include-book "kestrel/axe/dag-or-term-to-dag-simple" :dir :system)
        ,@(and smtp '((include-book "kestrel/axe/prove-with-stp" :dir :system)))
 
        (encapsulate ()
@@ -683,6 +683,7 @@
                                     alistp
                                     ;;axe-rule-hypp-when-simple ; caused case splits
                                     assoc-equal
+                                    ilks-plist-worldp
                                     ;; for the smtp variant:
                                     w)))
 
@@ -6147,8 +6148,7 @@
                                     (not (myquotep dag-or-quotep)) ; got a dag
                                     )
                                (and (pseudo-dagp dag-or-quotep)
-                                    (<= (len dag-or-quotep)
-                                        *max-1d-array-length*) ;; todo
+                                    (<= (len dag-or-quotep) *max-1d-array-length*) ;; todo
                                     ))))
            :hints (("Goal" :do-not '(generalize eliminate-destructors)
                     :in-theory (e/d (,simplify-dag-name
@@ -6413,8 +6413,7 @@
                                       monitored-symbols
                                       fns-to-elide
                                       ;; todo: add context array and other args?
-                                      ,@maybe-state
-                                      )
+                                      ,@maybe-state)
            (declare (xargs :guard (and (pseudo-termp term)
                                        (pseudo-term-listp assumptions)
                                        (rule-alistp rule-alist)
@@ -6555,7 +6554,8 @@
                       ,call-of-simplify-term
                       (implies (not erp)
                                (and (or (myquotep dag-or-quotep)
-                                        (pseudo-dagp dag-or-quotep))
+                                        (and (pseudo-dagp dag-or-quotep)
+                                             (<= (len dag-or-quotep) *max-1d-array-length*)))
                                     ,@maybe-w-unchanged))))
            :hints (("Goal" :in-theory (e/d (,simplify-term-name
                                             axe-treep-when-pseudo-termp
@@ -6570,8 +6570,50 @@
                                             wf-rewrite-stobj2p)
                                            (natp wf-rewrite-stobj2p-conjuncts)))))
 
-         (defthm ,(pack$ 'consp-of-cdr-of-mv-nth-1-of- simplify-term-name '-when-quotep)
-           (implies (and (equal 'quote (car (mv-nth 1 ,call-of-simplify-term)))
+         ;; Uses myquotep as the normal form.
+         ;drop?
+         ;; (defthm ,(pack$ 'consp-of-cdr-of-mv-nth-1-of- simplify-term-name '-when-quotep)
+         ;;   (implies (and (myquotep (mv-nth 1 ,call-of-simplify-term))
+         ;;                 (not (mv-nth 0 ,call-of-simplify-term)) ; no error
+         ;;                 (pseudo-termp term)
+         ;;                 (pseudo-term-listp assumptions)
+         ;;                 (rule-alistp rule-alist)
+         ;;                 (interpreted-function-alistp interpreted-function-alist)
+         ;;                 ;; (symbol-listp monitored-symbols)
+         ;;                 ;; (symbol-listp fns-to-elide)
+         ;;                 ;; (booleanp memoizep)
+         ;;                 ;; (print-levelp print)
+         ;;                 ;; (normalize-xors-optionp normalize-xors)
+         ;;                 ;; (count-hits-argp count-hits)
+         ;;                 ;; (symbol-listp known-booleans)
+         ;;                 (rule-limitsp limits))
+         ;;            (consp (cdr (mv-nth 1 ,call-of-simplify-term))))
+         ;;   :hints (("Goal" :use ,(pack$ simplify-term-name '-return-type)
+         ;;            :in-theory (disable ,(pack$ simplify-term-name '-return-type)))))
+
+         ;; Uses myquotep as the normal form.
+         (defthm ,(pack$ 'quotep-of-mv-nth-1-of- simplify-term-name '-when-quotep)
+           (implies (and (not (mv-nth 0 ,call-of-simplify-term)) ; no error
+                         (pseudo-termp term)
+                         (pseudo-term-listp assumptions)
+                         (rule-alistp rule-alist)
+                         (interpreted-function-alistp interpreted-function-alist)
+                         ;; (symbol-listp monitored-symbols)
+                         ;; (symbol-listp fns-to-elide)
+                         ;; (booleanp memoizep)
+                         ;; (print-levelp print)
+                         ;; (normalize-xors-optionp normalize-xors)
+                         ;; (count-hits-argp count-hits)
+                         ;; (symbol-listp known-booleans)
+                         (rule-limitsp limits))
+                    (equal (quotep (mv-nth 1 ,call-of-simplify-term))
+                           (myquotep (mv-nth 1 ,call-of-simplify-term))))
+           :hints (("Goal" :use ,(pack$ simplify-term-name '-return-type)
+                    :in-theory (disable ,(pack$ simplify-term-name '-return-type)))))
+
+         ;; Uses myquotep as the normal form.
+         (defthm ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)
+           (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-term))) ;not a constant
                          (not (mv-nth 0 ,call-of-simplify-term)) ; no error
                          (pseudo-termp term)
                          (pseudo-term-listp assumptions)
@@ -6585,32 +6627,14 @@
                          ;; (count-hits-argp count-hits)
                          ;; (symbol-listp known-booleans)
                          (rule-limitsp limits))
-                    (consp (cdr (mv-nth 1 ,call-of-simplify-term))))
+                    (and (pseudo-dagp (mv-nth 1 ,call-of-simplify-term))
+                         (<= (len (mv-nth 1 ,call-of-simplify-term)) *max-1d-array-length*)))
            :hints (("Goal" :use ,(pack$ simplify-term-name '-return-type)
                     :in-theory (disable ,(pack$ simplify-term-name '-return-type)))))
 
-         (defthm ,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name)
-           (implies (and (not (mv-nth 0 ,call-of-simplify-term)) ; no error
-                         (not (quotep (mv-nth 1 ,call-of-simplify-term))) ;not a constant
-                         (pseudo-termp term)
-                         (pseudo-term-listp assumptions)
-                         (rule-alistp rule-alist)
-                         (interpreted-function-alistp interpreted-function-alist)
-                         ;; (symbol-listp monitored-symbols)
-                         ;; (symbol-listp fns-to-elide)
-                         ;; (booleanp memoizep)
-                         ;; (print-levelp print)
-                         ;; (normalize-xors-optionp normalize-xors)
-                         ;; (count-hits-argp count-hits)
-                         ;; (symbol-listp known-booleans)
-                         (rule-limitsp limits))
-                    (pseudo-dagp (mv-nth 1 ,call-of-simplify-term)))
-           :hints (("Goal" :use ,(pack$ simplify-term-name '-return-type)
-                    :in-theory (disable ,(pack$ simplify-term-name '-return-type)))))
-
+         ;; Uses myquotep as the normal form.
          (defthm ,(pack$ 'myquotep-of-mv-nth-1-of- simplify-term-name)
            (implies (and (not (mv-nth 0 ,call-of-simplify-term)) ; no error
-                         (not (pseudo-dagp (mv-nth 1 ,call-of-simplify-term))) ;not a dag
                          (pseudo-termp term)
                          (pseudo-term-listp assumptions)
                          (rule-alistp rule-alist)
@@ -6623,7 +6647,8 @@
                          ;; (count-hits-argp count-hits)
                          ;; (symbol-listp known-booleans)
                          (rule-limitsp limits))
-                    (myquotep (mv-nth 1 ,call-of-simplify-term)))
+                    (equal (pseudo-dagp (mv-nth 1 ,call-of-simplify-term))
+                           (not (myquotep (mv-nth 1 ,call-of-simplify-term)))))
            :hints (("Goal" :use ,(pack$ simplify-term-name '-return-type)
                     :in-theory (disable ,(pack$ simplify-term-name '-return-type)))))
 
@@ -6775,7 +6800,7 @@
          ;; Returns (mv erp event ,@maybe-state).
          ;; TODO: Perhaps add an option to take a rule-alist, or a sequence of rule-alists.
          (defund ,def-simplified-fn-core-name (defconst-name ; the name of the constant to create
-                                               dag
+                                               dag-or-term
                                                assumptions
                                                rules
                                                interpreted-function-alist
@@ -6790,7 +6815,8 @@
                                                state ; This one always takes state, even in the non-smt variant
                                                )
            (declare (xargs :guard (and (symbolp defconst-name)
-                                       (pseudo-dagp dag)
+                                       (or (pseudo-dagp dag-or-term)
+                                           (pseudo-termp dag-or-term))
                                        (pseudo-term-listp assumptions)
                                        (symbol-listp rules)
                                        (interpreted-function-alistp interpreted-function-alist)
@@ -6815,22 +6841,40 @@
                 (known-booleans (known-booleans (w state)))
                 ((mv erp rule-alist) (make-rule-alist rules (w state)))
                 ((when erp) (mv erp nil state))
-                ;; Simplify the DAG:
-                ((mv erp dag-or-quotep & ,@maybe-state) ; todo: use the limits?
-                 (,simplify-dag-name dag
-                                     assumptions
-                                     rule-alist
-                                     interpreted-function-alist
-                                     known-booleans
-                                     normalize-xors
-                                     limits
-                                     memoizep
-                                     count-hits
-                                     print
-                                     monitored-symbols
-                                     fns-to-elide
-                                     ,@maybe-state
-                                     ))
+                ;; Simplify the DAG or term:
+                ((mv erp dag-or-quotep ,@maybe-state) ; todo: use the limits?
+                 (if (pseudo-dagp dag-or-term) ; todo: cheaper test!
+                     (mv-let (erp dag-or-quotep limits ,@maybe-state)
+                       (,simplify-dag-name dag-or-term
+                                           assumptions
+                                           rule-alist
+                                           interpreted-function-alist
+                                           known-booleans
+                                           normalize-xors
+                                           limits
+                                           memoizep
+                                           count-hits
+                                           print
+                                           monitored-symbols
+                                           fns-to-elide
+                                           ,@maybe-state)
+                       (declare (ignore limits)) ; use somehow?
+                       (mv erp dag-or-quotep ,@maybe-state))
+                   ;; Seems best to operate on the term, instead of converting to a DAG first, since
+                   ;; rewriting the term will use full context information.
+                   (,simplify-term-name dag-or-term
+                                        assumptions
+                                        rule-alist
+                                        interpreted-function-alist
+                                        known-booleans
+                                        normalize-xors
+                                        limits
+                                        memoizep
+                                        count-hits
+                                        print
+                                        monitored-symbols
+                                        fns-to-elide
+                                        ,@maybe-state)))
                 ((when erp) (mv erp nil state))
                 ((mv end-time state) (get-real-time state))
                 ;; Print info about the DAG:
@@ -6892,10 +6936,13 @@
                  (mv nil '(value-triple :invisible) state))
                 ;; Translate the assumptions:
                 (assumptions (translate-terms assumptions ',def-simplified-fn-name (w state)))
-                ;; Ensure we have a dag (if a term, translate and convert to dag):
-                ((mv erp dag) (dag-or-term-to-dag-simple dag-or-term (w state)))
-                ((when erp) (mv erp nil state)))
-             (,def-simplified-fn-core-name defconst-name dag assumptions rules interpreted-function-alist normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide whole-form state)))
+                ;; Translates, if a term:
+                (dag-or-term
+                  (if (pseudo-dagp dag-or-term)
+                      dag-or-term
+                    ;; it's a term, so translate it:
+                    (translate-term dag-or-term ',def-simplified-fn-name (w state)))))
+             (,def-simplified-fn-core-name defconst-name dag-or-term assumptions rules interpreted-function-alist normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide whole-form state)))
 
          ;; A utility to simplify a DAG or term and create a constant to hold the resulting DAG.
          ;; Creates a constant named DEFCONST-NAME, whose value is a DAG representing the simplified form of DAG-OR-TERM.
@@ -6916,7 +6963,7 @@
                                                 (monitor 'nil)
                                                 (fns-to-elide 'nil))
            `(make-event-quiet (,',def-simplified-fn-name ',defconst-name ,dag-or-term ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitor ,fns-to-elide ',whole-form state)))
-         )) ; end of the generated encapsulate and progn
+         )) ; end generated encapsulate and progn
     ))
 
 ;; Makes a version of the (simple) Axe Rewriter, given an evaluator, a syntaxp evaluator, and an axe-bind-free evaluator.

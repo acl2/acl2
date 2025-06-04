@@ -16,7 +16,7 @@
 
 (include-book "prune-term")
 (include-book "dag-size-fast")
-;(include-book "make-term-into-dag-simple")
+(include-book "make-term-into-dag-simple")
 ;(include-book "kestrel/utilities/real-time-since" :dir :system)
 ;(include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
