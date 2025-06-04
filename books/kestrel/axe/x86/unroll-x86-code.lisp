@@ -1213,7 +1213,7 @@
                                   (produce-theorem 'nil)
                                   (prove-theorem 'nil)
                                   (restrict-theory 't)       ;todo: deprecate
-                                  (bvp 'nil)
+                                  (bvp 't)
                                   )
   `(,(if (acl2::print-level-at-least-tp print) 'make-event 'acl2::make-event-quiet)
     (def-unrolled-fn
