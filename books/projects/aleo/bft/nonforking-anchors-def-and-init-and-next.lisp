@@ -455,7 +455,6 @@
              certificate->author-of-last-anchor
              certificate->round-of-last-anchor
              last-blockchain-round-p-necc
-             evenp-of-blocks-last-round
              ordered-blockchain-p-necc)
     :expand (committed-anchors (get-validator-state val0 systate))
     :use (:instance collect-all-anchors-to-append-of-collect-anchors-dags
@@ -578,7 +577,6 @@
              dag-omni-paths-p-when-commit-possiblep
              certificate->round-of-last-anchor
              last-blockchain-round-p-necc
-             evenp-of-blocks-last-round
              ordered-blockchain-p-necc
              cert-with-author+round-element)
     :expand (committed-anchors (get-validator-state val0 systate))

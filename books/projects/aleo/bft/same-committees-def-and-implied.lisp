@@ -342,8 +342,7 @@
    (xdoc::p
     "The theorem says that the trimming of the longer blockchain
      reduces to the shorter blockchain."))
-  (implies (and (blocks-orderedp blocks1)
-                (blocks-orderedp blocks2)
+  (implies (and (blocks-orderedp blocks2)
                 (< (len blocks1) (len blocks2))
                 (equal blocks1
                        (nthcdr (- (len blocks2)
@@ -392,8 +391,7 @@
    (xdoc::p
     "The theorem says that the trimming of the shorter blockchain
      reduces to the shorter blockchain."))
-  (implies (and (blocks-orderedp blocks1)
-                (blocks-orderedp blocks2)
+  (implies (and (blocks-orderedp blocks2)
                 (< (len blocks1) (len blocks2))
                 (equal blocks1
                        (nthcdr (- (len blocks2)
@@ -451,8 +449,7 @@
    (xdoc::p
     "This proof, and its hints, is a bit more complex than ideal.
      Perhaps it can be simplified and streamlined a bit."))
-  (implies (and (blocks-orderedp blocks1)
-                (blocks-orderedp blocks2)
+  (implies (and (blocks-orderedp blocks2)
                 (< (len blocks1) (len blocks2))
                 (equal blocks1
                        (nthcdr (- (len blocks2)
@@ -484,8 +481,7 @@
            blocks-last-round)
   :prep-lemmas
   ((defruled lemma
-     (implies (and (blocks-orderedp blocks1)
-                   (blocks-orderedp blocks2)
+     (implies (and (blocks-orderedp blocks2)
                    (< (len blocks1) (len blocks2))
                    (equal blocks1
                           (nthcdr (- (len blocks2)
@@ -524,8 +520,7 @@
     "Transferring the proof to active committees is easy,
      because those are defined in terms of bonded committees.
      The theorem formulation is the same."))
-  (implies (and (blocks-orderedp blocks1)
-                (blocks-orderedp blocks2)
+  (implies (and (blocks-orderedp blocks2)
                 (< (len blocks1) (len blocks2))
                 (equal blocks1
                        (nthcdr (- (len blocks2)

@@ -78,7 +78,6 @@
                     (get-validator-state val systate))))
   :guard-hints
   (("Goal" :in-theory (enable last-anchor-present-p-necc
-                              evenp-of-blocks-last-round
                               ordered-blockchain-p-necc
                               last-blockchain-round-p-necc)))
   ///
