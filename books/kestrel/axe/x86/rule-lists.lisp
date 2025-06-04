@@ -1750,8 +1750,27 @@
   '(run-until-return ; we always open this, to expose run-until-stack-shorter-than
     run-until-stack-shorter-than-opener-axe ; not for IFs
     run-until-stack-shorter-than-base-axe ; not for IFs
-    stack-shorter-thanp
     run-until-stack-shorter-than-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    stack-shorter-thanp
+
+    ;; new scheme:
+    run-until-return32
+    run-until-return64
+    run-until-rsp-is-opener-axe ; not for IFs
+    run-until-rsp-is-base-axe ; not for IFs
+    run-until-rsp-is-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    acl2::equal-of-+-cancel-2
+
+    ;; newer scheme:
+    run-until-return3
+    run-until-rsp-is-above-opener-axe ; not for IFs
+    run-until-rsp-is-above-base-axe ; not for IFs
+    run-until-rsp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    rsp-is-abovep
+    acl2::bvminus-of-bvplus-same-arg2 ; more like this?
+    ;; acl2::bvminus-of-+-arg2 ; disabled later due to problems?
+    ;; acl2::bvminus-of-+-arg3
+    acl2::bvminus-of-+-cancel-arg3
     ))
 
 ;; Extra rules to support the :stop-pcs option:
@@ -1762,7 +1781,25 @@
     run-until-stack-shorter-than-or-reach-pc-base-axe ; not for IFs
     ;; stack-shorter-thanp
     run-until-stack-shorter-than-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
-    ))
+
+    ;; new scheme:
+    run-until-return-or-reach-pc32
+    run-until-return-or-reach-pc64
+    run-until-rsp-is-or-reach-pc-opener-axe ; not for IFs
+    run-until-rsp-is-or-reach-pc-base-axe ; not for IFs
+    ;; stack-shorter-thanp
+    run-until-rsp-is-or-reach-pc-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+
+    ;;newer-scheme:
+    run-until-return-or-reach-pc3
+    run-until-rsp-is-above-or-reach-pc-opener-axe
+    run-until-rsp-is-above-or-reach-pc-base-axe
+    run-until-rsp-is-above-or-reach-pc-of-if-arg2
+    rsp-is-abovep
+    acl2::bvminus-of-bvplus-same-arg2
+    ;; acl2::bvminus-of-+-arg2 ; disabled later due to problems?
+    ;; acl2::bvminus-of-+-arg3
+    acl2::bvminus-of-+-cancel-arg3))
 
 (defun separate-rules ()
   (declare (xargs :guard t))

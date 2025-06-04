@@ -13,18 +13,14 @@
 
 ;TODO: Use x86isa package?
 
-(include-book "projects/x86isa/machine/x86" :dir :system)
+(include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute
 (include-book "misc/defpun" :dir :system)
-
-;; An alias that's in the x86isa package
-(defmacro defpun (&rest args)
-  `(acl2::defpun ,@args))
 
 ;; Tests whether the stack is shorter than it was when the RSP was OLD-RSP.  Recall
 ;; that the stack grows downward, so a larger RSP means a shorter stack.
 (defun stack-shorter-thanp (old-rsp x86)
   (declare (xargs :stobjs x86
-                  :guard (natp old-rsp))) ;tighten?
+                  :guard (natp old-rsp))) ;tighten? ; todo: this is actually a signed-byte 64?!  we can use > because the canonical block is contiguous using a signed-byte 64 representation
   (> (rgfi *rsp* x86)
      old-rsp))
 
@@ -65,7 +61,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; For debugging
+;; For debugging, or lifting just a segment of code
 
 ;; What should we do about faults?
 ;; TODO: How to get defpun to work with a stobj?
@@ -100,5 +96,3 @@
 ;; TODO: Try to use defun here (but may need a stobj declare on run-until-stack-shorter-than-or-reach-pc)
   (declare (xargs :stobjs x86))
   (run-until-stack-shorter-than-or-reach-pc (xr :rgf *rsp* x86) stop-pcs x86))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

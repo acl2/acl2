@@ -783,12 +783,21 @@
            (consp (drop-non-supporters-array-with-name dag-array-name dag-array top-nodenum print)))
   :hints (("Goal" :in-theory (enable drop-non-supporters-array-with-name))))
 
-(defthm <=-of-len-of-drop-non-supporters-array-with-name
+(defthm <=-of-len-of-drop-non-supporters-array-with-name-linear
   (implies (natp top-nodenum)
            (<= (len (drop-non-supporters-array-with-name dag-array-name dag-array top-nodenum print))
                (+ 1 top-nodenum)))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable DROP-NON-SUPPORTERS-ARRAY-WITH-NAME))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable drop-non-supporters-array-with-name))))
+
+(defthm <=-of-len-of-drop-non-supporters-array-with-name
+  (implies (and (<= (+ 1 top-nodenum) bound)
+                (natp top-nodenum)
+                (integerp bound))
+           (<= (len (drop-non-supporters-array-with-name dag-array-name dag-array top-nodenum print))
+               bound))
+  :hints (("Goal" :use <=-of-len-of-drop-non-supporters-array-with-name-linear
+           :in-theory (disable <=-of-len-of-drop-non-supporters-array-with-name-linear))))
 
 (defthm <-of-len-of-drop-non-supporters-array-with-name
   (implies (and (< (+ 1 top-nodenum) bound)

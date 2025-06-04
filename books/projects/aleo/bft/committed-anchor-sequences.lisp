@@ -84,6 +84,24 @@
                     (last-anchor vstate)))
     :enable car-of-collect-all-anchors)
 
+  (defret certificate-list-evenp-of-committed-anchors
+    (certificate-list-evenp anchors)
+    :hyp (and (evenp (validator-state->last vstate))
+              (or (equal (validator-state->last vstate) 0)
+                  (last-anchor vstate)))
+    :hints (("Goal" :in-theory (enable certificate->round-of-last-anchor))))
+
+  (defret certificate-list-orderedp-of-committed-anchors
+    (certificate-list-orderedp anchors)
+    :hyp (and (evenp (validator-state->last vstate))
+              (or (equal (validator-state->last vstate) 0)
+                  (last-anchor vstate)))
+    :hints
+    (("Goal"
+      :in-theory (enable certificate-list-orderedp-of-collect-all-anchors
+                         certificate->round-of-last-anchor))))
+  (in-theory (disable certificate-list-orderedp-of-committed-anchors))
+
   (defret certificates-dag-paths-p-of-committed-anchors
     (certificates-dag-paths-p anchors (validator-state->dag vstate))
     :hyp (or (equal (validator-state->last vstate) 0)
@@ -256,7 +274,7 @@
 
   (defruled committed-anchors-of-commit-next-last-not-0
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -289,15 +307,15 @@
              validator-state->blockchain-of-commit-next
              last-anchor-of-commit-next
              collect-all-anchors-of-extend-blockchain-no-change
-             blocks-ordered-even-p-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             blocks-orderedp-of-extend-blockchain
+             certificate-list-orderedp-of-collect-anchors
              commit-possiblep
              evenp-of-1-less-when-not-evenp
              evenp-of-3-less-when-not-evenp
              active-committee-at-previous-round-when-at-round
              evenp-of-blocks-last-round
              posp
-             ordered-even-p-necc
+             ordered-blockchain-p-necc
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc
              dag-has-committees-p-when-signer-quorum-p
@@ -330,7 +348,7 @@
 
   (defruled committed-anchors-of-commit-next-last-0
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -367,9 +385,9 @@
              collect-all-anchors
              pos-fix
              collect-anchors-of-extend-blockchain-no-change
-             ordered-even-p-necc
-             blocks-ordered-even-p-of-extend-blockchain
-             certificates-ordered-even-p-of-collect-anchors
+             ordered-blockchain-p-necc
+             blocks-orderedp-of-extend-blockchain
+             certificate-list-orderedp-of-collect-anchors
              evenp
              posp
              collect-anchors-above-last-committed-round
@@ -378,7 +396,7 @@
 
   (defruled committed-anchors-of-commit-next-other-val
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -398,7 +416,7 @@
 
   (defruled committed-anchors-of-commit-next
     (implies (and (last-blockchain-round-p systate)
-                  (ordered-even-p systate)
+                  (ordered-blockchain-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
@@ -461,7 +479,7 @@
      does not affect the computation of the committees,
      and thus of the anchor sequence."))
   (implies (and (last-blockchain-round-p systate)
-                (ordered-even-p systate)
+                (ordered-blockchain-p systate)
                 (signer-quorum-p systate)
                 (unequivocal-dags-p systate)
                 (last-anchor-present-p systate)
@@ -489,9 +507,9 @@
            validator-state->dag-of-commit-next
            last-anchor-of-commit-next
            collect-all-anchors-of-extend-blockchain-no-change
-           ordered-even-p-necc
-           blocks-ordered-even-p-of-extend-blockchain
-           certificates-ordered-even-p-of-collect-anchors
+           ordered-blockchain-p-necc
+           blocks-orderedp-of-extend-blockchain
+           certificate-list-orderedp-of-collect-anchors
            certificate->round-of-cert-with-author+round
            evenp-of-1-less-when-not-evenp
            evenp-of-3-less-when-not-evenp

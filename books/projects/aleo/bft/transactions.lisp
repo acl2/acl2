@@ -82,5 +82,4 @@
   :elt-type transaction
   :true-listp t
   :elementp-of-nil nil
-  :pred transaction-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred transaction-listp)
