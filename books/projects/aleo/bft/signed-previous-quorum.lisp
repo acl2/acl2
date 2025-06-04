@@ -89,15 +89,16 @@
      we equivalently check the non-emptiness of the previous references."))
   (b* (((validator-state vstate) vstate)
        ((certificate cert) cert))
-    (if (= cert.round 1)
-        (set::emptyp cert.previous)
+    (if (= (certificate->round cert) 1)
+        (set::emptyp (certificate->previous cert))
       (b* ((commtt
-            (active-committee-at-round (1- cert.round) vstate.blockchain)))
+            (active-committee-at-round (1- (certificate->round cert))
+                                       vstate.blockchain)))
         (and commtt
-             (not (set::emptyp cert.previous))
-             (set::subset cert.previous
+             (not (set::emptyp (certificate->previous cert)))
+             (set::subset (certificate->previous cert)
                           (committee-members commtt))
-             (>= (committee-members-stake cert.previous commtt)
+             (>= (committee-members-stake (certificate->previous cert) commtt)
                  (committee-quorum-stake commtt))))))
   :guard-hints (("Goal" :in-theory (enable posp)))
   :hooks (:fix))
