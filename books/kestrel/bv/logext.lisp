@@ -45,11 +45,18 @@
                   0))
   :hints (("Goal" :in-theory (enable logext logbitp))))
 
+(defthm logext-when-size-not-posp
+  (implies (not (posp size))
+           (equal (logext size x)
+                  (logext 1 x)))
+  :hints (("Goal" :in-theory (enable logext getbit slice))))
+
 (defthm logext-of-bvchop-same
-  (implies (posp size)
-           (equal (logext size (bvchop size x))
-                  (logext size x)))
-  :hints (("Goal" :cases ((integerp size))
+  (equal (logext size (bvchop size x))
+         (if (posp size)
+             (logext size x)
+           0))
+  :hints (("Goal" :cases ((posp size))
            :in-theory (enable logext))))
 
 ;; (thm
@@ -292,11 +299,7 @@
                     (bvchop (+ -1 size) x))))
   :hints (("Goal" :in-theory (enable logext))))
 
-(defthm logext-when-size-not-posp
-  (implies (not (posp n))
-           (equal (logext n x)
-                  (logext 1 x)))
-  :hints (("Goal" :in-theory (enable logext getbit slice))))
+
 
 ;todo: prove without opening up so much stuff
 (defthm equal-of-0-and-bvchop
@@ -502,13 +505,14 @@
                   (+ -1 (expt 2 (+ -1 size))))))
 
 (defthmd equal-of-logext-and-logext
-  (implies (posp size)
-           (equal (equal (logext size x) (logext size y))
-                  (equal (bvchop size x) (bvchop size y))))
-  :hints (("Goal" :use ((:instance bvchop-of-logext-same (x x))
-                        (:instance bvchop-of-logext-same (x y))
-                        (:instance logext-of-bvchop-same (x x))
-                        (:instance logext-of-bvchop-same (x y)))
+  (equal (equal (logext size x) (logext size y))
+         (if (posp size)
+             (equal (bvchop size x) (bvchop size y))
+           (equal (bvchop 1 x) (bvchop 1 y))))
+  :hints (("Goal" :use ((:instance bvchop-of-logext-same (size (if (posp size) size 1)) (x x))
+                        (:instance bvchop-of-logext-same (size (if (posp size) size 1)) (x y))
+                        (:instance logext-of-bvchop-same (size (if (posp size) size 1)) (x x))
+                        (:instance logext-of-bvchop-same (size (if (posp size) size 1)) (x y)))
            :in-theory (disable bvchop-of-logext-same
                                logext-of-bvchop-same
                                logext-of-bvchop-smaller
@@ -516,16 +520,14 @@
 
 (defthm logext-of-+-of-logext-arg1
   (implies (and (integerp x)
-                (integerp y)
-                (posp size))
+                (integerp y))
            (equal (logext size (+ (logext size x) y))
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
 (defthm logext-of-+-of-logext-arg2
   (implies (and (integerp x)
-                (integerp y)
-                (posp size))
+                (integerp y))
            (equal (logext size (+ x (logext size y)))
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
