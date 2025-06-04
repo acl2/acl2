@@ -380,6 +380,12 @@
     :enable (encode
              get-funct3))
 
+  (defruled get-funct3-of-encode-of-instr-jalr
+    (equal (get-funct3 (encode (instr-jalr rd rs1 imm) feat))
+           0)
+    :enable (encode
+             get-funct3))
+
   (defruled get-funct3-of-encode-of-instr-branch
     (equal (get-funct3 (encode (instr-branch funct rs1 rs2 imm) feat))
            (encode-branch-funct funct))
@@ -618,3 +624,97 @@
              get-rd-of-encode-of-instr-op-32
              get-rs1-of-encode-of-instr-op-32
              get-rs2-of-encode-of-instr-op-32)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection get-fields-itype-of-encode-of-instr
+  :short "Theorems about @(tsee get-fields-itype) applied to
+          the encoding of instructions."
+
+  (defruled get-fields-itype-of-encode-of-instr-op-imm
+    (equal (get-fields-itype (encode (instr-op-imm funct rd rs1 imm) feat))
+           (mv (encode-op-imm-funct funct)
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (ubyte12-fix imm)))
+    :enable (get-fields-itype
+             get-funct3-of-encode-of-instr-op-imm
+             get-rd-of-encode-of-instr-op-imm
+             get-rs1-of-encode-of-instr-op-imm
+             get-imm-itype-of-encode-of-instr-op-imm))
+
+  (defruled get-fields-itype-of-encode-of-instr-op-imms32
+    (equal (get-fields-itype (encode (instr-op-imms32 funct rd rs1 imm) feat))
+           (mv (mv-nth 0 (encode-op-imms32-funct funct))
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (logappn 5 (ubyte5-fix imm)
+                        7 (mv-nth 1 (encode-op-imms32-funct funct)))))
+    :enable (get-fields-itype
+             get-funct3-of-encode-of-instr-op-imms32
+             get-rd-of-encode-of-instr-op-imms32
+             get-rs1-of-encode-of-instr-op-imms32
+             get-imm-itype-of-encode-of-instr-op-imms32))
+
+  (defruled get-fields-itype-of-encode-of-instr-op-imms64
+    (equal (get-fields-itype (encode (instr-op-imms64 funct rd rs1 imm) feat))
+           (mv (mv-nth 0 (encode-op-imms64-funct funct))
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (logappn 6 (ubyte6-fix imm)
+                        6 (mv-nth 1 (encode-op-imms64-funct funct)))))
+    :enable (get-fields-itype
+             get-funct3-of-encode-of-instr-op-imms64
+             get-rd-of-encode-of-instr-op-imms64
+             get-rs1-of-encode-of-instr-op-imms64
+             get-imm-itype-of-encode-of-instr-op-imms64))
+
+  (defruled get-fields-itype-of-encode-of-instr-op-imm-32
+    (equal (get-fields-itype (encode (instr-op-imm-32 funct rd rs1 imm) feat))
+           (mv (encode-op-imm-32-funct funct)
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (ubyte12-fix imm)))
+    :enable (get-fields-itype
+             get-funct3-of-encode-of-instr-op-imm-32
+             get-rd-of-encode-of-instr-op-imm-32
+             get-rs1-of-encode-of-instr-op-imm-32
+             get-imm-itype-of-encode-of-instr-op-imm-32))
+
+  (defruled get-fields-itype-of-encode-of-instr-op-imms-32
+    (equal (get-fields-itype (encode (instr-op-imms-32 funct rd rs1 imm) feat))
+           (mv (mv-nth 0 (encode-op-imms-32-funct funct))
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (logappn 5 (ubyte5-fix imm)
+                        1 0
+                        6 (mv-nth 1 (encode-op-imms-32-funct funct)))))
+    :enable (get-fields-itype
+             get-funct3-of-encode-of-instr-op-imms-32
+             get-rd-of-encode-of-instr-op-imms-32
+             get-rs1-of-encode-of-instr-op-imms-32
+             get-imm-itype-of-encode-of-instr-op-imms-32))
+
+  (defruled get-fields-itype-of-encode-of-instr-jalr
+    (equal (get-fields-itype (encode (instr-jalr rd rs1 imm) feat))
+           (mv 0
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (ubyte12-fix imm)))
+    :enable (get-fields-itype
+             get-funct3-of-encode-of-instr-jalr
+             get-rd-of-encode-of-instr-jalr
+             get-rs1-of-encode-of-instr-jalr
+             get-imm-itype-of-encode-of-instr-jalr))
+
+  (defruled get-fields-itype-of-encode-of-instr-load
+    (equal (get-fields-itype (encode (instr-load funct rd rs1 imm) feat))
+           (mv (encode-load-funct funct feat)
+               (ubyte5-fix rd)
+               (ubyte5-fix rs1)
+               (ubyte12-fix imm)))
+    :enable (get-fields-itype
+             get-funct3-of-encode-of-instr-load
+             get-rd-of-encode-of-instr-load
+             get-rs1-of-encode-of-instr-load
+             get-imm-itype-of-encode-of-instr-load)))
