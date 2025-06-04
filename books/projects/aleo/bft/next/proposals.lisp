@@ -63,7 +63,7 @@
     (xdoc::li
      "The addresses that, together with the previous round number,
       identify the certificates from the previous round
-      that this certificate references.
+      that this proposal references.
       When the proposal is turned into a certificate,
       these define the edges of the DAG.
       It is a system invariant, proved elsewhere,
