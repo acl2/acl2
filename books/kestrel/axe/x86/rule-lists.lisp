@@ -418,9 +418,15 @@
     in-regionp-of-bvchop-arg1
     in-regionp-of-bvchop-arg3
     ;; Seems ok to always have these on: ; todo: add more
-    disjoint-regionsp-cancel-2-1
+    disjoint-regionsp-cancel-1-1+
+    disjoint-regionsp-cancel-1+-1
+    disjoint-regionsp-cancel-1+-1+
     disjoint-regionsp-cancel-1-2
+    disjoint-regionsp-cancel-2-1
+    disjoint-regionsp-cancel-1+-2
+    disjoint-regionsp-cancel-2-1+
     disjoint-regionsp-cancel-2-2
+    disjoint-regionsp-of-bvplus-of-constant-and-constant
     subregionp-cancel-1-1
     subregionp-cancel-1+-1
     subregionp-cancel-1-1+
