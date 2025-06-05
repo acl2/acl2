@@ -43,14 +43,14 @@
     " of PFCSes includes an ACL2 function @(tsee sesem-definition)
      to turn a deeply embedded PFCS definition
      into a shallowly embedded PFCS definition.
-     The two must and can be related formally:
+     The two are formally related:
      the satisfaction of the deeply embedded definition
      is equivalent to the satisfaction of the shallowly embedded one.")
    (xdoc::p
     "Here we explicate this formal relation,
      via ACL2 code that maps a deeply embedded PFCS definition
-     not only to a shallowly embedded version of it,
-     but also to a theorem that relates the two.
+     to a shallowly embedded version of it,
+     along with a theorem that relates the two.
      This is a form of lifting:
      a deeply embedded definition is lifted to a shallowly embedded one.
      The latter is easier to reason about,
