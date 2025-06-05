@@ -18,21 +18,21 @@
 (include-book "kestrel/x86/regions" :dir :system)
 
 (defthm read-byte-of-write-byte-when-disjoint-1
-  (implies (and (disjoint-regionsp len1 start1 len2 start2)
-                (in-regionp ad1 len1 start1)
-                (in-regionp ad2 len2 start2))
+  (implies (and (disjoint-regions48p len1 start1 len2 start2)
+                (in-region48p ad1 len1 start1)
+                (in-region48p ad2 len2 start2))
            (equal (read-byte ad1 (write-byte ad2 val x86))
                   (read-byte ad1 x86))))
 
 (defthm read-byte-of-write-byte-when-disjoint-2
-  (implies (and (disjoint-regionsp len1 start1 len2 start2)
-                (in-regionp ad2 len1 start1)
-                (in-regionp ad1 len2 start2))
+  (implies (and (disjoint-regions48p len1 start1 len2 start2)
+                (in-region48p ad2 len1 start1)
+                (in-region48p ad1 len2 start2))
            (equal (read-byte ad1 (write-byte ad2 val x86))
                   (read-byte ad1 x86))))
 
 (defthm read-byte-of-write-when-disjoint
-  (implies (and (disjoint-regionsp 1 ad1 n2 ad2)
+  (implies (and (disjoint-regions48p 1 ad1 n2 ad2)
                 (< n2 (expt 2 48)) ; what if = ?
                 (integerp n2)
                 ;; (integerp ad1)
@@ -40,10 +40,10 @@
                 )
            (equal (read-byte ad1 (write n2 ad2 val x86))
                   (read-byte ad1 x86)))
-  :hints (("Goal" :in-theory (enable disjoint-regionsp bvlt))))
+  :hints (("Goal" :in-theory (enable disjoint-regions48p bvlt))))
 
 (defthm read-byte-of-write-when-disjoint-alt
-  (implies (and (disjoint-regionsp n2 ad2 1 ad1)
+  (implies (and (disjoint-regions48p n2 ad2 1 ad1)
                 (< n2 (expt 2 48)) ; what if = ?
                 (integerp n2)
                 ;; (integerp ad1)
@@ -52,16 +52,16 @@
            (equal (read-byte ad1 (write n2 ad2 val x86))
                   (read-byte ad1 x86)))
   :hints (("Goal" :use (:instance read-byte-of-write-when-disjoint)
-           :in-theory (e/d (disjoint-regionsp-symmetric)
+           :in-theory (e/d (disjoint-regions48p-symmetric)
                            (read-byte-of-write-when-disjoint
                             READ-BYTE-OF-WRITE-BOTH ; for speed
                             )))))
 
 ;todo: make an alt verion
 (defthm read-byte-of-write-when-disjoint-gen
-  (implies (and (disjoint-regionsp len1 start1 len2 start2)
-                (subregionp 1 ad1 len1 start1) ; or use in-regionp?
-                (subregionp n2 ad2 len2 start2)
+  (implies (and (disjoint-regions48p len1 start1 len2 start2)
+                (subregion48p 1 ad1 len1 start1) ; or use in-region48p?
+                (subregion48p n2 ad2 len2 start2)
 ;                (< n2 (expt 2 48)) ; what if = ?
  ;               (integerp n2)
                 ;; (integerp ad1)
@@ -84,22 +84,22 @@
                 ;; (INTEGERP AD2)
                 )
            (EQUAL (READ-BYTE AD1 (WRITE N AD2 VAL X86))
-                  (IF (in-regionp ad1 n ad2)
+                  (IF (in-region48p ad1 n ad2)
                       (SLICE (+ 7 (* 8 (BVMINUS 48 AD1 AD2)))
                              (* 8 (BVMINUS 48 AD1 AD2))
                              VAL)
                     (READ-BYTE AD1 X86))))
-  :hints (("Goal" :in-theory (enable in-regionp bvlt))))
+  :hints (("Goal" :in-theory (enable in-region48p bvlt))))
 
 (in-theory (disable READ-BYTE-OF-WRITE-BOTH))
 
-;todo: in-regionp is subregionp of size 1
+;todo: in-region48p is subregion48p of size 1
 
 ;slow
-(defthm not-in-regionp-when-disjoint-regionsp
-  (implies (and (disjoint-regionsp len1 start1 len2 start2)
-                (in-regionp ad1 len1 start1)
-                (subregionp rlen rad len2 start2)
+(defthm not-in-regionp-when-disjoint-regions48p
+  (implies (and (disjoint-regions48p len1 start1 len2 start2)
+                (in-region48p ad1 len1 start1)
+                (subregion48p rlen rad len2 start2)
                 ;; (integerp ad1)
                 ;; (integerp rad)
                 ;; (integerp start1)
@@ -107,16 +107,16 @@
                 (unsigned-byte-p '48 len1)
                 (unsigned-byte-p '48 len2)
                 (unsigned-byte-p '48 rlen))
-           (not (in-regionp ad1 rlen rad)))
-  :hints (("Goal" :in-theory (enable disjoint-regionsp
-                                     subregionp
-                                     in-regionp
+           (not (in-region48p ad1 rlen rad)))
+  :hints (("Goal" :in-theory (enable disjoint-regions48p
+                                     subregion48p
+                                     in-region48p
                                      bvlt bvminus BVUMINUS bvplus
                                      acl2::bvchop-of-sum-cases))))
 
 ;move
-(defthm subregionp-one-smaller
-  (implies (and (subregionp len1 ad1 len2 ad2)
+(defthm subregion48p-one-smaller
+  (implies (and (subregion48p len1 ad1 len2 ad2)
                 (unsigned-byte-p 48 len1)
                 (integerp ad1) ; drop?
   ;              (unsigned-byte-p 48 ad1)
@@ -124,13 +124,13 @@
                 ;(unsigned-byte-p 48 ad2)
                 (integerp ad2) ; drop?
                 )
-           (subregionp (+ -1 len1) (+ 1 ad1) len2 ad2))
-  :hints (("Goal" :in-theory (enable subregionp in-regionp
+           (subregion48p (+ -1 len1) (+ 1 ad1) len2 ad2))
+  :hints (("Goal" :in-theory (enable subregion48p in-region48p
                                      bvlt bvminus BVUMINUS bvplus
                                      acl2::bvchop-of-sum-cases))))
 
-(defthm read-of-write-when-disjoint-regionsp
-  (implies (and (disjoint-regionsp n1 ad1 n2 ad2)
+(defthm read-of-write-when-disjoint-regions48p
+  (implies (and (disjoint-regions48p n1 ad1 n2 ad2)
                 (integerp ad1)
                 (integerp ad2)
                 (unsigned-byte-p 48 n1)
@@ -139,10 +139,10 @@
                   (read n1 ad1 x86)))
   :hints (("Goal" :in-theory (enable read write))))
 
-(defthm read-of-write-when-disjoint-regionsp-gen
-  (implies (and (disjoint-regionsp len1 start1 len2 start2) ; free vars
-                (subregionp n1 ad1 len1 start1)
-                (subregionp n2 ad2 len2 start2)
+(defthm read-of-write-when-disjoint-regions48p-gen
+  (implies (and (disjoint-regions48p len1 start1 len2 start2) ; free vars
+                (subregion48p n1 ad1 len1 start1)
+                (subregion48p n2 ad2 len2 start2)
                 (integerp ad1)
                 (integerp ad2)
                 (integerp start1)
@@ -155,10 +155,10 @@
                   (read n1 ad1 x86)))
   :hints (("Goal" :in-theory (enable read write))))
 
-(defthm read-of-write-when-disjoint-regionsp-gen-alt
-  (implies (and (disjoint-regionsp len2 start2 len1 start1)
-                (subregionp n1 ad1 len1 start1)
-                (subregionp n2 ad2 len2 start2)
+(defthm read-of-write-when-disjoint-regions48p-gen-alt
+  (implies (and (disjoint-regions48p len2 start2 len1 start1)
+                (subregion48p n1 ad1 len1 start1)
+                (subregion48p n2 ad2 len2 start2)
                 (integerp ad1)
                 (integerp ad2)
                 (integerp start1)
@@ -169,8 +169,8 @@
                 (unsigned-byte-p '48 n2))
            (equal (read n1 ad1 (write n2 ad2 val x86))
                   (read n1 ad1 x86)))
-  :hints (("Goal" :use (:instance read-of-write-when-disjoint-regionsp-gen)
-           :in-theory '(disjoint-regionsp-symmetric))))
+  :hints (("Goal" :use (:instance read-of-write-when-disjoint-regions48p-gen)
+           :in-theory '(disjoint-regions48p-symmetric))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -254,9 +254,9 @@
 
 ;; similar to the rule about program-at
 ;; maybe it's better to use read-bytes since that one takes a list of bytes whereas this one takes a huge chunk (BV)
-(defthmd read-when-equal-of-read-and-subregionp
+(defthmd read-when-equal-of-read-and-subregion48p
   (implies (and (equal freeval (read n2 ad2 x86)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
-                (subregionp n1 ad1 n2 ad2)
+                (subregion48p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep freeval)) ; maybe uncomment
 ;                (unsigned-byte-p 48 n1)
                 (natp n1)
@@ -293,9 +293,9 @@
            ;(read-induct-two-sizes n1 ad1 ad2 x86)
            :in-theory (e/d ((:i read)
                             bvplus ;bvuminus acl2::bvchop-of-sum-cases
-                            subregionp
+                            subregion48p
                             bvlt
-                            in-regionp read-becomes-read-byte
+                            in-region48p read-becomes-read-byte
                             ifix)
                            (;distributivity
                             acl2::+-of-minus-constant-version ; fixme disable
@@ -303,9 +303,9 @@
                             )))))
 
 ;; commutes the first hyp (freeval may not be a constant)
-(defthmd read-when-equal-of-read-and-subregionp-alt
+(defthmd read-when-equal-of-read-and-subregion48p-alt
   (implies (and (equal (read n2 ad2 x86) freeval) ; lots of free vars here ; note that refine-assumptions...
-                (subregionp n1 ad1 n2 ad2)
+                (subregion48p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep freeval)) ; maybe uncomment
 ;                (unsigned-byte-p 48 n1)
                 (natp n1)
@@ -320,8 +320,8 @@
                     (acl2::slice (+ 7 (* 8 (+ -1 n1)) (* 8 diff))
                                  (* 8 diff)
                                  freeval))))
-  :hints (("Goal" :use (read-when-equal-of-read-and-subregionp)
-           :in-theory (disable read-when-equal-of-read-and-subregionp))))
+  :hints (("Goal" :use (read-when-equal-of-read-and-subregion48p)
+           :in-theory (disable read-when-equal-of-read-and-subregion48p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -350,9 +350,9 @@
            ;(read-induct-two-sizes len ad1 ad2 x86)
            :in-theory (enable read-bytes))))
 
-(defthm read-when-equal-of-read-bytes-and-subregionp
+(defthm read-when-equal-of-read-bytes-and-subregion48p
   (implies (and (equal bytes (read-bytes ad2 n2 x86)) ; lots of free vars here ; note that refine-assumptions... puts the constant first
-                (subregionp n1 ad1 n2 ad2)
+                (subregion48p n1 ad1 n2 ad2)
                 ;; (syntaxp (quotep bytes)) ; maybe uncomment
 ;                (unsigned-byte-p 48 n1)
                 (natp n1)
@@ -386,9 +386,9 @@
            ;(read-induct-two-sizes n1 ad1 ad2 x86)
            :in-theory (e/d ((:i read)
                             bvplus ;bvuminus acl2::bvchop-of-sum-cases
-                            subregionp
+                            subregion48p
                             bvlt
-                            in-regionp read-becomes-read-byte
+                            in-region48p read-becomes-read-byte
                             ifix
                             acl2::bvchop-of-sum-cases
                             )
@@ -401,8 +401,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; could prove by turning read-bytes into unpack of read?
-(defthm read-bytes-of-write-when-disjoint-regionsp
-  (implies (and (disjoint-regionsp n1 ad1 n2 ad2)
+(defthm read-bytes-of-write-when-disjoint-regions48p
+  (implies (and (disjoint-regions48p n1 ad1 n2 ad2)
                 (integerp ad1)
                 (integerp ad2)
                 (unsigned-byte-p 48 n1)
@@ -411,8 +411,8 @@
                   (read-bytes ad1 n1 x86)))
   :hints (("Goal" :in-theory (enable read-bytes write))))
 
-(defthm read-bytes-of-write-when-disjoint-regionsp-alt
-  (implies (and (disjoint-regionsp n2 ad2 n1 ad1)
+(defthm read-bytes-of-write-when-disjoint-regions48p-alt
+  (implies (and (disjoint-regions48p n2 ad2 n1 ad1)
                 (integerp ad1)
                 (integerp ad2)
                 (unsigned-byte-p 48 n1)
@@ -421,10 +421,10 @@
                   (read-bytes ad1 n1 x86)))
   :hints (("Goal" :in-theory (enable read-bytes write))))
 
-(defthm read-bytes-of-write-when-disjoint-regionsp-gen
-  (implies (and (disjoint-regionsp len1 start1 len2 start2) ; free vars
-                (subregionp n1 ad1 len1 start1)
-                (subregionp n2 ad2 len2 start2)
+(defthm read-bytes-of-write-when-disjoint-regions48p-gen
+  (implies (and (disjoint-regions48p len1 start1 len2 start2) ; free vars
+                (subregion48p n1 ad1 len1 start1)
+                (subregion48p n2 ad2 len2 start2)
                 (integerp ad1)
                 (integerp ad2)
                 (integerp start1)
@@ -436,10 +436,10 @@
            (equal (read-bytes ad1 n1 (write n2 ad2 val x86))
                   (read-bytes ad1 n1 x86))))
 
-(defthm read-bytes-of-write-when-disjoint-regionsp-gen-alt
-  (implies (and (disjoint-regionsp len2 start2 len1 start1) ; free vars
-                (subregionp n1 ad1 len1 start1)
-                (subregionp n2 ad2 len2 start2)
+(defthm read-bytes-of-write-when-disjoint-regions48p-gen-alt
+  (implies (and (disjoint-regions48p len2 start2 len1 start1) ; free vars
+                (subregion48p n1 ad1 len1 start1)
+                (subregion48p n2 ad2 len2 start2)
                 (integerp ad1)
                 (integerp ad2)
                 (integerp start1)
@@ -454,8 +454,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;; (defthm read-of-write-when-subregionp
-;;   (implies (and (subregionp n1 ad1 n2 ad2)
+;; (defthm read-of-write-when-subregion48p
+;;   (implies (and (subregion48p n1 ad1 n2 ad2)
 ;;                 (unsigned-byte-p 48 n2)
 ;;                 (integerp n1)
 ;;                 (integerp ad1)
@@ -464,5 +464,5 @@
 ;;                   (slice (+ -1 (* 8 (+ n1 (bvminus 48 ad1 ad2))))
 ;;                          (* 8 (bvminus 48 ad1 ad2))
 ;;                          val)))
-;;   :hints (("Goal" :in-theory (enable subregionp in-regionp bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases)))
+;;   :hints (("Goal" :in-theory (enable subregion48p in-region48p bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases)))
 ;; )

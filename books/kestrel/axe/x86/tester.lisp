@@ -76,7 +76,7 @@
              ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
              ;; The constant data is disjoint from the part of the stack that is written:
              (if bvp
-                 (disjoint-regionsp (len section-bytes) section-start
+                 (disjoint-regions48p (len section-bytes) section-start
                                     ;; Only a single stack slot is written
                                     ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
                                     (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rsp x86)))
@@ -120,7 +120,7 @@
          ;; The section is disjoint from the part of the stack that we expect to be written:
          (if (posp stack-slots-needed) ; should be resolved, because separate requires but numbers to be positive
              (if bvp
-                 (disjoint-regionsp (len section-bytes) (bvchop 48 section-start)
+                 (disjoint-regions48p (len section-bytes) (bvchop 48 section-start)
                                     (* 8 stack-slots-needed) (bvchop 48 (+ (* -8 stack-slots-needed)
                                                                            (rsp x86))))
                (separate :r (len section-bytes) section-start
