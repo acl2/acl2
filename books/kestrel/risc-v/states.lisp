@@ -918,62 +918,130 @@
 
 (define stat-rv32i-p (x)
   :returns (yes/no booleanp)
-  :short "Recognizer of RV32I states."
+  :short "Recognizer of RV32I(M) states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These only depend on the base,
+     not on the M extension or the endianness."))
   (and (statp x)
-       (stat-validp x (feat-rv32i))))
+       (stat-validp x (feat-rv32i-le)))
+
+  ///
+
+  (defruled stat-rv32i-p-alt-def-be
+    (equal (stat-rv32i-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv32i-be))))
+    :enable stat-validp)
+
+  (defruled stat-rv32i-p-alt-def-m-le
+    (equal (stat-rv32i-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv32im-le))))
+    :enable stat-validp)
+
+  (defruled stat-rv32i-p-alt-def-m-be
+    (equal (stat-rv32i-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv32im-be))))
+    :enable stat-validp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stat-rv64i-p (x)
   :returns (yes/no booleanp)
-  :short "Recognizer of RV64I states."
+  :short "Recognizer of RV64I(M) states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These only depend on the base,
+     not on the M extension or the endianness."))
   (and (statp x)
-       (stat-validp x (feat-rv64i))))
+       (stat-validp x (feat-rv64i-le)))
+
+  ///
+
+  (defruled stat-rv64i-p-alt-def-be
+    (equal (stat-rv64i-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv64i-be))))
+    :enable stat-validp)
+
+  (defruled stat-rv64i-p-alt-def-m-le
+    (equal (stat-rv64i-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv64im-le))))
+    :enable stat-validp)
+
+  (defruled stat-rv64i-p-alt-def-m-be
+    (equal (stat-rv64i-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv64im-be))))
+    :enable stat-validp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stat-rv32e-p (x)
   :returns (yes/no booleanp)
   :short "Recognizer of RV32E states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These only depend on the base,
+     not on the M extension or the endianness."))
   (and (statp x)
-       (stat-validp x (feat-rv32e))))
+       (stat-validp x (feat-rv32e-le)))
+
+  ///
+
+  (defruled stat-rv32e-p-alt-def-be
+    (equal (stat-rv32e-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv32e-be))))
+    :enable stat-validp)
+
+  (defruled stat-rv32e-p-alt-def-m-le
+    (equal (stat-rv32e-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv32em-le))))
+    :enable stat-validp)
+
+  (defruled stat-rv32e-p-alt-def-m-be
+    (equal (stat-rv32e-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv32em-be))))
+    :enable stat-validp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stat-rv64e-p (x)
   :returns (yes/no booleanp)
   :short "Recognizer of RV64E states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These only depend on the base,
+     not on the M extension or the endianness."))
   (and (statp x)
-       (stat-validp x (feat-rv64e))))
+       (stat-validp x (feat-rv64e-be)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(define stat-rv32im-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognizer of RV32IM states."
-  (and (statp x)
-       (stat-validp x (feat-rv32im))))
+  (defruled stat-rv64e-p-alt-def-be
+    (equal (stat-rv64e-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv64e-be))))
+    :enable stat-validp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (defruled stat-rv64e-p-alt-def-m-le
+    (equal (stat-rv64e-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv64em-le))))
+    :enable stat-validp)
 
-(define stat-rv64im-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognizer of RV64IM states."
-  (and (statp x)
-       (stat-validp x (feat-rv64im))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stat-rv32em-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognizer of RV32EM states."
-  (and (statp x)
-       (stat-validp x (feat-rv32em))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stat-rv64em-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognizer of RV64EM states."
-  (and (statp x)
-       (stat-validp x (feat-rv64em))))
+  (defruled stat-rv64e-p-alt-def-m-be
+    (equal (stat-rv64e-p x)
+           (and (statp x)
+                (stat-validp x (feat-rv64em-be))))
+    :enable stat-validp))
