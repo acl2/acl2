@@ -5,7 +5,8 @@
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,6 +58,7 @@
   :untranslate t
   :well-formed t
   :closed t
+
   ///
 
   (defruled ascii-only-*grammar*
