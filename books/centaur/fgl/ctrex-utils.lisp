@@ -1891,7 +1891,7 @@
            (assigns new-assigns)
            (sts new-sts)
            (look (hons-get equiv.equivalence assigns))
-           ((unless (and look (cdr look)))
+           ((unless (and look (cgraph-value->val (cdr look))))
             (mv class edges assigns sts))
            (class (cons equiv.other class))
            (outedges (cdr (hons-get equiv.other (cgraph-fix cgraph))))
