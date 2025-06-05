@@ -363,7 +363,11 @@
     trim-of-read
     slice-of-read
     svblt-of-read-trim-arg2
-    svblt-of-read-trim-arg3))
+    svblt-of-read-trim-arg3
+
+    ;; we will just unroll read-chunks (at least for now):
+    read-chunks-base
+    read-chunks-unroll))
 
 ;todo: some are only needed with the new normal forms
 (defund write-rules ()
@@ -414,8 +418,15 @@
     in-regionp-of-bvchop-arg1
     in-regionp-of-bvchop-arg3
     ;; Seems ok to always have these on: ; todo: add more
+    disjoint-regionsp-cancel-1-1+
+    disjoint-regionsp-cancel-1+-1
+    disjoint-regionsp-cancel-1+-1+
     disjoint-regionsp-cancel-1-2
+    disjoint-regionsp-cancel-2-1
+    disjoint-regionsp-cancel-1+-2
+    disjoint-regionsp-cancel-2-1+
     disjoint-regionsp-cancel-2-2
+    disjoint-regionsp-of-bvplus-of-constant-and-constant
     subregionp-cancel-1-1
     subregionp-cancel-1+-1
     subregionp-cancel-1-1+
@@ -450,7 +461,7 @@
   (declare (xargs :guard t))
   '(read-of-write-when-disjoint-regionsp-gen
     read-of-write-when-disjoint-regionsp-gen-alt
-    read-of-write-when-disjoint-regionsp ; or different regions with the same base address?
+    read-of-write-when-disjoint-regionsp ; for different regions with the same base address?
     subregionp-of-+-arg2
     subregionp-of-+-arg4
     disjoint-regionsp-of-+-arg2
@@ -1883,6 +1894,7 @@
           (bitops-rules)
           (acl2::if-becomes-bvif-rules)
           (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
+          '(acl2::len-of-cons acl2::nth-of-cons-constant-version) ; add to list-to-bv-array-rules?
           *unsigned-choppers* ;; these are just logead, aka bvchop
           *signed-choppers* ;; these are just logext
           *unsigned-recognizers* ;; these are just unsigned-byte-p
@@ -3779,6 +3791,24 @@
     ;; read-byte-of-set-rbp
     ;; read-byte-of-set-undef
     ;; read-byte-of-set-mxcsr
+
+    read-chunks-of-set-rip
+    read-chunks-of-set-rax
+    read-chunks-of-set-rbx
+    read-chunks-of-set-rcx
+    read-chunks-of-set-rdx
+    read-chunks-of-set-rsi
+    read-chunks-of-set-rdi
+    read-chunks-of-set-r8
+    read-chunks-of-set-r9
+    read-chunks-of-set-r10
+    read-chunks-of-set-r11
+    read-chunks-of-set-r12
+    read-chunks-of-set-r13
+    read-chunks-of-set-r14
+    read-chunks-of-set-r15
+    read-chunks-of-set-rsp
+    read-chunks-of-set-rbp
 
     get-flag-of-set-rip
     get-flag-of-set-rax

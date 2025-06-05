@@ -72,6 +72,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm read-chunks-of-xw-irrel
+  (implies (not (equal fld :mem))
+           (equal (read-chunks addr count bytes-per-chunk (xw fld index val x86))
+                  (read-chunks addr count bytes-per-chunk x86)))
+  :hints (("Goal" :in-theory (enable read-chunks))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; todo: name -irrel
 (defthm xr-of-write-when-not-mem
   (implies (not (equal :mem fld))
@@ -321,6 +329,34 @@
 ;(defthm read-byte-of-set-ms (equal (read-byte addr (set-ms val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-ms))))
 ;(defthm read-byte-of-set-fault (equal (read-byte addr (set-fault val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-fault))))
 (defthm read-byte-of-!rflags (equal (read-byte addr (!rflags v x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable read))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: or will we always unroll it?
+(defthm read-chunks-of-set-rip (equal (read-chunks addr len numbytes (set-rip rip x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-rip))))
+(defthm read-chunks-of-set-rax (equal (read-chunks addr len numbytes (set-rax val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-rax))))
+(defthm read-chunks-of-set-rbx (equal (read-chunks addr len numbytes (set-rbx val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-rbx))))
+(defthm read-chunks-of-set-rcx (equal (read-chunks addr len numbytes (set-rcx val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-rcx))))
+(defthm read-chunks-of-set-rdx (equal (read-chunks addr len numbytes (set-rdx val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-rdx))))
+(defthm read-chunks-of-set-rsi (equal (read-chunks addr len numbytes (set-rsi val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-rsi))))
+(defthm read-chunks-of-set-rdi (equal (read-chunks addr len numbytes (set-rdi val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-rdi))))
+(defthm read-chunks-of-set-r8 (equal (read-chunks addr len numbytes (set-r8 val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-r8))))
+(defthm read-chunks-of-set-r9 (equal (read-chunks addr len numbytes (set-r9 val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-r9))))
+(defthm read-chunks-of-set-r10 (equal (read-chunks addr len numbytes (set-r10 val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-r10))))
+(defthm read-chunks-of-set-r11 (equal (read-chunks addr len numbytes (set-r11 val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-r11))))
+(defthm read-chunks-of-set-r12 (equal (read-chunks addr len numbytes (set-r12 val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-r12))))
+(defthm read-chunks-of-set-r13 (equal (read-chunks addr len numbytes (set-r13 val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-r13))))
+(defthm read-chunks-of-set-r14 (equal (read-chunks addr len numbytes (set-r14 val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-r14))))
+(defthm read-chunks-of-set-r15 (equal (read-chunks addr len numbytes (set-r15 val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-r15))))
+(defthm read-chunks-of-set-rsp (equal (read-chunks addr len numbytes (set-rsp val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-rsp))))
+(defthm read-chunks-of-set-rbp (equal (read-chunks addr len numbytes (set-rbp val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-rbp))))
+
+;; todo: are we considering READ to be a 64-bit notion, or should this be moved?
+(defthm read-chunks-of-set-undef (equal (read-chunks addr len numbytes (set-undef val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm read-chunks-of-set-mxcsr (equal (read-chunks addr len numbytes (set-mxcsr val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+;(defthm read-chunks-of-set-ms (equal (read-chunks addr len numbytes (set-ms val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-ms))))
+;(defthm read-chunks-of-set-fault (equal (read-chunks addr len numbytes (set-fault val x86)) (read-chunks addr len numbytes x86)) :hints (("Goal" :in-theory (enable set-fault))))
+(defthm read-chunks-of-!rflags (equal (read-chunks addr len numbytes (!rflags v x86)) (read-chunks addr len numbytes x86)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
