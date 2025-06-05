@@ -505,7 +505,7 @@ any).  This allows all functions that were added using
                  (:flags          . (interp-flags-p flags))
                  (:next-fgarray   . (natp next-fgarray))
                  (:cgraph         . (cgraph-p cgraph))
-                 (:cgraph-memo    . (cgraph-alist-p cgraph-memo))
+                 (:cgraph-memo    . (cgraph-memo-p cgraph-memo))
                  (:cgraph-index   . (natp cgraph-index))
                  (:user-scratch   . (obj-alist-p user-scratch))
                  (:trace-scratch  . t)

@@ -49,11 +49,12 @@
 
 (fty::defbitstruct interp-flags
   ((intro-bvars booleanp :default t)
-   (intro-synvars booleanp :default t)
-   (simplify-logic booleanp :default t)
+   ;; (intro-synvars booleanp :default t)
+   ;; (simplify-logic booleanp :default t)
    (trace-rewrites booleanp :default nil)
    (make-ites booleanp :default nil)
-   (branch-on-ifs booleanp :default t)))
+   (branch-on-ifs booleanp :default t)
+   (hide          booleanp :default nil)))
 
 (local (defthm unsigned-byte-p-of-flags
          (implies (interp-flags-p flags)
@@ -119,7 +120,7 @@
 
     ;; no logical significance
     (cgraph :type (satisfies cgraph-p) :initially nil :fix cgraph-fix)
-    (cgraph-memo :type (satisfies cgraph-alist-p) :initially nil :fix cgraph-alist-fix)
+    (cgraph-memo :type (satisfies cgraph-memo-p) :initially nil :fix cgraph-memo-fix)
     (cgraph-index :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
     (ctrex-env :type env$)
     (sat-ctrex :type bitarr)
@@ -441,6 +442,15 @@
   (stobj-let ((stack (interp-st->stack interp-st)))
              (obj)
              (stack-nth-scratch n stack)
+             obj))
+
+(define interp-st-nth-scratch-kind ((n natp) interp-st)
+  :enabled t :hooks nil
+  :inline t
+  :guard (< n (interp-st-full-scratch-len interp-st))
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (obj)
+             (stack-nth-scratch-kind n stack)
              obj))
 
 
