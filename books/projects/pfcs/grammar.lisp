@@ -1,11 +1,12 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; modifications Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -14,12 +15,12 @@
 (include-book "projects/abnf/grammar-definer/defgrammar" :dir :system)
 (include-book "projects/abnf/grammar-definer/deftreeops" :dir :system)
 (include-book "projects/abnf/operations/in-terminal-set" :dir :system)
-
-; These may speed things up.
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-
 (include-book "tools/rulesets" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ; (depends-on "grammar.abnf")
 
@@ -57,6 +58,7 @@
   :untranslate t
   :well-formed t
   :closed t
+
   ///
 
   (defruled ascii-only-*grammar*
@@ -133,7 +135,8 @@
 
   (defrule abnf-tree-listp-when-abnf-tree-list-with-root-p
     (implies (abnf-tree-list-with-root-p trees rulename) ; free var RULENAME
-             (abnf::tree-listp trees))))
+             (abnf::tree-listp trees))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,4 +156,5 @@
                                  :rulename? (abnf::rulename (car rulenames))
                                  :branches (list (list tree)))
                                 (cdr rulenames))))
+    :guard-hints (("Goal" :in-theory (enable string-listp)))
     :hooks (:fix)))
