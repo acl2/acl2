@@ -1,7 +1,7 @@
 ; Assumptions for x86 proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
 ;; Not sure where this should go:
 (in-theory (disable bitops::signed-byte-p-induct))
 
-;; Returns a list of terms over STATE-VAR
+;; Returns a list of (untranslated) terms over STATE-VAR.
 (defund make-standard-state-assumptions-fn (state-var)
   (declare (xargs :guard (symbolp state-var)))
   `(;; The x86 state is well-formed:
