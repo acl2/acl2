@@ -26,7 +26,7 @@
 
 (close-theory)
 
-(set-enforce-redundancy t)
+(set-enforce-redundancy acl2::t)
 
 (defthm c$type
   (implies (force (simple$prop))
