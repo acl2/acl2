@@ -377,6 +377,11 @@
                 (disjoint-regionsp len1 0 len2 y))
          :hints (("Goal" :in-theory (enable disjoint-regionsp))))
 
+      (defthm disjoint-regionsp-cancel-2-1
+        (equal (disjoint-regionsp len1 (bvplus ,num-address-bits y x) len2 x)
+               (disjoint-regionsp len1 y len2 0))
+         :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
        (defthm disjoint-regionsp-cancel-1-1+
          (equal (disjoint-regionsp len1 x len2 (bvplus ,num-address-bits x y))
                 (disjoint-regionsp len1 0 len2 y))

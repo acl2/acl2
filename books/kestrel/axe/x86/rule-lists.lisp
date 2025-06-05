@@ -418,6 +418,7 @@
     in-regionp-of-bvchop-arg1
     in-regionp-of-bvchop-arg3
     ;; Seems ok to always have these on: ; todo: add more
+    disjoint-regionsp-cancel-2-1
     disjoint-regionsp-cancel-1-2
     disjoint-regionsp-cancel-2-2
     subregionp-cancel-1-1
@@ -454,7 +455,7 @@
   (declare (xargs :guard t))
   '(read-of-write-when-disjoint-regionsp-gen
     read-of-write-when-disjoint-regionsp-gen-alt
-    read-of-write-when-disjoint-regionsp ; or different regions with the same base address?
+    read-of-write-when-disjoint-regionsp ; for different regions with the same base address?
     subregionp-of-+-arg2
     subregionp-of-+-arg4
     disjoint-regionsp-of-+-arg2
