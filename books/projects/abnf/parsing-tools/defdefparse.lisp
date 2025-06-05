@@ -1171,13 +1171,15 @@
             ((mv trees input) (,parse-repetition input)))
          (mv (cons tree trees) input))
        :measure (len input)
+       :hints (("Goal" :in-theory (enable o< o-finp)))
        :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-repetition)
                                  parse-repetition)
          (<= (len rest-input)
              (len input))
-         :rule-classes :linear))))
+         :rule-classes :linear
+         :hints (("Goal" :induct t))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
