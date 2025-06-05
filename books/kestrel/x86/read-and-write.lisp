@@ -3405,6 +3405,6 @@
   (if (zp count)
       nil
     (cons (read bytes-per-chunk addr x86)
-          (read-chunks (bvplus 48 1 addr) (+ -1 count) bytes-per-chunk x86))))
+          (read-chunks (bvplus 48 bytes-per-chunk addr) (+ -1 count) bytes-per-chunk x86))))
 
 (defopeners read-chunks)
