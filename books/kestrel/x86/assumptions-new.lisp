@@ -274,18 +274,18 @@
 (local (in-theory (disable assoc-equal symbol-alistp))) ;todo
 
 ;; Generate all the assumptions for an ELF64 file, whether relative or
-;; absolute.  Returns (mv erp assumptions assumption-vars) where assumptions is a list of terms.
-;; Do not inclue assumptions about the inputs.  TODO: Should it?
-(defun assumptions-elf64-new (target
-                              relp ; rename position-independentp?
-                              stack-slots-needed
-                              state-var
-                              base-var ; only used if relp
-                              inputs
-                              type-assumptions-for-array-varsp
-                              disjoint-chunk-addresses-and-lens
-                              bvp
-                              parsed-elf)
+;; absolute.  Returns (mv erp assumptions assumption-vars) where assumptions is
+;; a list of (untranslated) terms.
+(defund assumptions-elf64-new (target
+                               relp ; rename position-independentp?
+                               stack-slots-needed
+                               state-var
+                               base-var ; only used if relp
+                               inputs
+                               type-assumptions-for-array-varsp
+                               disjoint-chunk-addresses-and-lens
+                               bvp
+                               parsed-elf)
   (declare (xargs :guard (and (lifter-targetp target)
                               (booleanp relp)
                               (natp stack-slots-needed)
@@ -327,7 +327,7 @@
           ;;todo: check that there is at least one LOAD section:
           (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes (len bytes) bvp nil)))
        ((when erp) (mv erp nil nil))
-       ;; currently, we only assume the inputs are disjoint from the text section (an input might very well be in a data section!):
+       ;; currently, we only assume the inputs are disjoint from the text section (an input to the function being lifted may very well be in a data section or in the stack!):
        (code-address (acl2::get-elf-code-address parsed-elf)) ; todo: what if there are segments but no sections?!
        ((when (not (natp code-address))) ; impossible
         (mv :bad-code-addres nil nil))
@@ -375,7 +375,7 @@
             ;; because the stack pointer returns here when we do the return:
             (canonical-address-p (+ 8 (rsp ,state-var)))
 
-            ;; The program counter is at the start of the routine to lift:
+            ;; The program counter is at the start of the code to lift:
             (equal (rip ,state-var) ,target-address-term))
           (if (posp stack-slots-needed)
               `(;;add to make-standard-state-assumptions-64-fn?
