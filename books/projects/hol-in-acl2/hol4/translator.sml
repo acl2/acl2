@@ -5,8 +5,9 @@
 (*          See the LICENSE file distributed with ACL2.                      *)
 (*---------------------------------------------------------------------------*)
 
-open HOLsexp;
-open List;
+open HOLsexp List;
+
+val ERR = Feedback.mk_HOL_ERR "HOL-->ACL2";
 
 (*---------------------------------------------------------------------------*)
 (* Types                                                                     *)
@@ -41,7 +42,11 @@ fun ty_sexp ty =
     | (s,args) => Cons(Symbol(tyop_dict s),List (map ty_sexp args))
 ;
 
-map ty_sexp [bool, alpha --> beta, bool --> alpha --> beta];
+(*---------------------------------------------------------------------------*)
+(* example type s-expressions                                                *)
+(*---------------------------------------------------------------------------*)
+
+map ty_sexp [bool, alpha --> beta, bool --> alpha --> beta, ``:num list``];
 
 (*---------------------------------------------------------------------------*)
 (* Terms                                                                     *)
@@ -86,6 +91,41 @@ val builtin_const_map =
    (“(<):num->num->bool”, "hp<")
   ];
 
+fun lookup_const_name c = total (op_assoc same_const c) builtin_const_map;
+
+fun mk_typ ty = Cons(Symbol "typ", List [ty_sexp ty])
+
+(*---------------------------------------------------------------------------*)
+(* Nullary polymorphic constructors need special treatment to find the type  *)
+(* argument. TODO: think about what happens when the generic type has >1     *)
+(* type variables in it.                                                     *)
+(*---------------------------------------------------------------------------*)
+
+fun const_sexp c =
+  let val {Name,Ty,Thy} = dest_thy_const c
+      val generic_const = prim_mk_const{Name=Name,Thy=Thy}
+      val is_ground = null o type_vars_in_term
+  in case lookup_const_name c
+      of NONE => Cons(Symbol Name, List [mk_typ Ty])
+       | SOME acl2_name =>
+           let val tylist =
+               if is_ground generic_const then
+	          [] else
+               if same_const c listSyntax.nil_tm then
+                  [mk_typ (listSyntax.dest_list_type Ty)] else
+               if same_const c optionSyntax.none_tm then
+                  [mk_typ (optionSyntax.dest_option Ty)]
+               else [mk_typ Ty]
+           in
+              Cons(Symbol acl2_name, List tylist)
+           end
+  end
+
+(*---------------------------------------------------------------------------*)
+(* NB: 0 is a constant but needs to be treated as a literal, so the          *)
+(* "is_numeral" check has to come before the "is_const" check.               *)
+(*---------------------------------------------------------------------------*)
+
 fun tm_sexp t =
   if is_var t then
      Symbol (fst(dest_var t)) else
@@ -93,39 +133,22 @@ fun tm_sexp t =
      let open numSyntax
          val n = dest_numeral t
          val ns = Arbnum.toString n
-     in List[Symbol "hp-num", Symbol ns]
-     end
-  else
+     in List [Symbol "hp-num", Symbol ns]
+     end else
+  if is_const t then
+     const_sexp t else
   let val (f,args) = strip_comb t
-  in if is_var f then
+  in if is_abs f then String "<!!lambda abstraction!!>"
+     else
+     (* args are non-null at this point *)
+     if is_var f then
         Cons(Symbol "hap*", List (map tm_sexp (f::args))) else
      if is_const f then
         let val {Name,Thy,Ty} = dest_thy_const f
-        in
-         case total (op_assoc same_const f) builtin_const_map
-          of NONE =>
-             let val tysexp = Cons(Symbol"typ", List [ty_sexp Ty])
-                 val f_sexp = Cons(Symbol Name, List [tysexp])
-             in
-                Cons(Symbol "hap*", List (f_sexp::map tm_sexp args))
-             end
-           | SOME "hp-nil" =>
-             let val argty = listSyntax.dest_list_type Ty
-                 val tysexp = Cons(Symbol"typ", List [ty_sexp argty])
-             in
-                Cons(Symbol "hp-nil", List [tysexp])
-             end
-           | SOME "hp-none" =>
-             let val argty = optionSyntax.dest_option Ty
-                 val tysexp = Cons(Symbol"typ", List [ty_sexp argty])
-             in
-                Cons(Symbol "hp-none", List [tysexp])
-             end
-           | SOME acl2_name => Cons(Symbol acl2_name, List (map tm_sexp args))
+        in case lookup_const_name f
+            of NONE => Cons(Symbol "hap*", List (map tm_sexp (f::args)))
+             | SOME acl2_name => Cons(Symbol acl2_name, List (map tm_sexp args))
         end
-     else
-     if is_abs f then
-        String "<!!lambda abstraction!!>"
      else
      String "<!unexpected term structure!>"
   end
@@ -143,6 +166,44 @@ fun fns_entry c =
    let val {Name,Thy,Ty} = dest_thy_const c
    in List [Symbol Name, ty_sexp Ty]
    end
+
+fun list_mk_forall_sexp vs sexp =
+  if null vs then
+     sexp
+  else Cons(Symbol":forall", List [List (map bvar_sexp vs), sexp])
+
+fun list_mk_forall_term vs = list_mk_forall_sexp vs o tm_sexp
+
+(*---------------------------------------------------------------------------*)
+(* Theorems come with a name                                                 *)
+(*---------------------------------------------------------------------------*)
+
+Definition THM_def:
+  THM (x:bool) (y:bool) = y
+End
+
+fun mk_named_thm name thm =
+ let val v = mk_var(name,bool)
+ in
+   THM_def |> SPEC v |> SPEC (concl thm) |> GSYM |> C EQ_MP thm
+ end
+
+fun dest_named_thm thm =
+ let val (c,[v,th]) = strip_comb $ concl thm
+ in if same_const ``THM`` c then
+       (fst $ dest_var v,th)
+    else failwith ""
+ end
+ handle _ => failwith "dest_named_thm";
+
+fun thm_sexp thm =
+ let val (name,tm) = dest_named_thm thm
+     val (vs,body) = strip_forall tm
+ in (name,
+     Cons (Symbol "defhol",
+           List [Cons(Symbol ":name", Symbol name),
+                 Cons(Symbol ":thm",  list_mk_forall_term vs body)]))
+ end
 
 (*---------------------------------------------------------------------------*)
 (* Constant specifications require the defined constants to be supplied      *)
@@ -173,24 +234,18 @@ fun spec_sexp thm =
      val {Name,...} = dest_thy_const(hd fns)
      val (vs,(left,right)) = (I##dest_eq) $ strip_forall tm
      val bare_def = Cons(Symbol"equal", List (map tm_sexp[left,right]))
-     val qdef =
-         if null vs then
-            bare_def
-         else Cons(Symbol":forall", List[List (map bvar_sexp vs), bare_def])
  in
    (Name,
     Cons (Symbol "defhol",
-          List [Cons(Symbol ":fns",   List (map fns_entry fns)),
-                Cons(Symbol ":defs",  List [qdef])]))
+          List [Cons(Symbol ":fns", List (map fns_entry fns)),
+                Cons(Symbol ":defs",List [list_mk_forall_sexp vs bare_def])]))
  end
 
 (*---------------------------------------------------------------------------*)
 (* Definitions. A definition is a list of equations (clauses). A definition  *)
-(* can also be a mutual recursion, introducing a list of constants;          *)
-(* similarly a definition can be a constant specification. So a definition   *)
-(* renders down into a list of constants paired with a list of clauses.      *)
-(* TODO: since a constant specification need not be equational, we make it   *)
-(* into one, i.e., |- <spec> transforms to |- <spec> = T                     *)
+(* can also be a mutual recursion, introducing a list of constants.          *)
+(* So a definition renders down into a list of constants paired with a list  *)
+(* of clauses.                                                               *)
 (*---------------------------------------------------------------------------*)
 
 fun dest_clause_body tm = (strip_comb##I) (dest_eq tm)
@@ -221,10 +276,7 @@ fun clause_sexp (vs,((chd,args),r)) =
      val lhs_sexp = Cons(Symbol"hap*", List (chd_sexp::map tm_sexp args))
      val bare_def = Cons(Symbol"equal", List [lhs_sexp, tm_sexp r])
   in
-    if null vs then
-        bare_def
-    else
-      Cons(Symbol":forall", List[List (map bvar_sexp vs), bare_def])
+    list_mk_forall_sexp vs bare_def
   end
 
 fun def_sexp th =
@@ -235,9 +287,16 @@ fun def_sexp th =
            List [Cons(Symbol ":fns",   List (map fns_entry fns)),
                  Cons(Symbol ":defs",  List (map clause_sexp defs))]))
  end
- handle _ => ("<unknown>", Symbol "<unexpected definition syntax>")
+ handle _ => raise ERR "def_sexp" "";
 
-fun hol_sexp thm = spec_sexp thm handle HOL_ERR _ => def_sexp thm;
+(*---------------------------------------------------------------------------*)
+(* Decide between the kinds of declaration being made.                       *)
+(*---------------------------------------------------------------------------*)
+
+fun hol_sexp thm =
+  def_sexp thm handle HOL_ERR _ =>
+  thm_sexp thm handle HOL_ERR _ =>
+  spec_sexp thm handle HOL_ERR _ => ("ERROR", Symbol "!<unknown construct>!");
 
 (*---------------------------------------------------------------------------*)
 (* Prettyprinting for ACL2 defhol form. Adapted from                         *)
@@ -273,21 +332,39 @@ fun pp_sexp t =
          end
  end
 
+(*---------------------------------------------------------------------------*)
+(* This taking apart of sexps and adding a little bit more formatting is     *)
+(* only for presentation purposes and could be dropped.                      *)
+(*---------------------------------------------------------------------------*)
+
 fun pp_acl2 s =
   let open HOLPP HOLsexp_dtype
-      fun dest_defhol s =
+      fun dest_def_sexp s =
           let val Cons(Symbol"defhol", Cons(fns_elt, Cons(defs_elt, Symbol"nil"))) = s
               val Cons(Symbol":fns", fns) = fns_elt
               val Cons(Symbol":defs", defs) = defs_elt
           in (fns,defs)
           end
-  in case total dest_defhol s
-      of NONE => pp_sexp s
-       | SOME(fns,defs) =>
+      fun dest_named_thm_sexp s =
+          let val Cons(Symbol"defhol", Cons(name_elt, Cons(thm_elt, Symbol"nil"))) = s
+              val Cons(Symbol":name", Symbol n) = name_elt
+              val Cons(Symbol":thm", thm) = thm_elt
+          in (n,thm)
+          end
+  in case total dest_def_sexp s
+      of SOME(fns,defs) =>
           block CONSISTENT 3 (
               [add_string "(defhol", add_newline,
                add_string ":fns ", block CONSISTENT 1 [pp_sexp fns], add_newline,
                add_string ":defs ", block CONSISTENT 1 [pp_sexp defs], add_string ")"])
+       | NONE =>
+     case total dest_named_thm_sexp s
+       of SOME(name,thm) =>
+          block CONSISTENT 3 (
+              [add_string "(defhol", add_newline,
+               add_string ":name ", block CONSISTENT 1 [pp_sexp (Symbol name)], add_newline,
+               add_string ":thm ", block CONSISTENT 1 [pp_sexp thm], add_string ")"])
+        | NONE => pp_sexp s
   end
 
 (*---------------------------------------------------------------------------*)
@@ -345,10 +422,14 @@ val thms =  (* following ex1.lisp plus a few others *)
    OPTION_MAP_DEF,
    list_case_def,
    list_size_def,
+   MAP,
    FOLDR,
    FOLDL,
    mk_spec [``(DIV)``, ``(MOD)``] DIVISION_FOR_ACL2,
-   Even_Odd_def
+   Even_Odd_def,
+   EXP,
+   mk_named_thm "MAP_ID_I" MAP_ID_I,
+   mk_named_thm "MAP_o" MAP_o
   ];
 
 val acl2_defs = map hol_sexp thms
@@ -374,6 +455,7 @@ val thms =
       ∀a0 a1 v f. list_CASE (a0::a1) v f = f a0 a1,
     ⊢ (∀f. list_size f [] = 0) ∧
       ∀f a0 a1. list_size f (a0::a1) = 1 + (f a0 + list_size f a1),
+    ⊢ (∀f. MAP f [] = []) ∧ ∀f h t. MAP f (h::t) = f h::MAP f t,
     ⊢ (∀f e. FOLDR f e [] = e) ∧
       ∀f e x l. FOLDR f e (x::l) = f x (FOLDR f e l),
     ⊢ (∀f e. FOLDL f e [] = e) ∧
@@ -383,7 +465,10 @@ val thms =
     ⊢ (Even 0 ⇔ T) ∧
       (∀n. Even (SUC n) ⇔ Odd n) ∧
       (Odd 0 ⇔ F) ∧
-      (∀n. Odd (SUC n) ⇔ Even n)
+      (∀n. Odd (SUC n) ⇔ Even n),
+    ⊢ (∀m. m ** 0 = 1) ∧ ∀m n. m ** SUC n = m * m ** n,
+    ⊢ THM MAP_ID_I (MAP I = I),
+    ⊢ THM MAP_o (∀f g. MAP (f ∘ g) = MAP f ∘ MAP g)
     ]: thm list
 
 
@@ -512,6 +597,20 @@ val acl2_defs =
               (hap*
                (list_size (typ (:arrow* (:arrow* a :num) (:list a) :num))) f
                a1)))))))),
+    ("MAP",
+     (defhol
+        :fns ((map (:arrow* (:arrow* a b) (:list a) (:list b))))
+        :defs ((:forall ((f (:arrow* a b)))
+           (equal
+            (hap* (map (typ (:arrow* (:arrow* a b) (:list a) (:list b)))) f
+             (hp-nil (typ a))) (hp-nil (typ b))))
+          (:forall ((f (:arrow* a b)) (h a) (t (:list a)))
+           (equal
+            (hap* (map (typ (:arrow* (:arrow* a b) (:list a) (:list b)))) f
+             (hp-cons h t))
+            (hp-cons (hap* f h)
+             (hap* (map (typ (:arrow* (:arrow* a b) (:list a) (:list b)))) f
+              t))))))),
     ("FOLDR",
      (defhol
         :fns ((foldr (:arrow* (:arrow* a b b) b (:list a) b)))
@@ -567,6 +666,37 @@ val acl2_defs =
            (equal
             (hap* (odd (typ (:arrow* :num :bool)))
              (hap* (suc (typ (:arrow* :num :num))) n))
-            (hap* (even (typ (:arrow* :num :bool))) n))))))]:
+            (hap* (even (typ (:arrow* :num :bool))) n)))))),
+    ("EXP",
+     (defhol
+        :fns ((exp (:arrow* :num :num :num)))
+        :defs ((:forall ((m :num))
+           (equal (hap* (exp (typ (:arrow* :num :num :num))) m (hp-num 0))
+            (hp-num 1)))
+          (:forall ((m :num) (n :num))
+           (equal
+            (hap* (exp (typ (:arrow* :num :num :num))) m
+             (hap* (suc (typ (:arrow* :num :num))) n))
+            (hp* m (hap* (exp (typ (:arrow* :num :num :num))) m n))))))),
+    ("MAP_ID_I",
+     (defhol
+        :name map_id_i
+        :thm (hp=
+          (hap* (map (typ (:arrow* (:arrow* a a) (:list a) (:list a))))
+           (i (typ (:arrow* a a)))) (i (typ (:arrow* (:list a) (:list a))))))),
+    ("MAP_o",
+     (defhol
+        :name map_o
+        :thm (:forall ((f (:arrow* b c)) (g (:arrow* a b)))
+          (hp=
+           (hap* (map (typ (:arrow* (:arrow* a c) (:list a) (:list c))))
+            (hap* (o (typ (:arrow* (:arrow* b c) (:arrow* a b) a c))) f g))
+           (hap*
+            (o
+             (typ
+              (:arrow* (:arrow* (:list b) (:list c))
+               (:arrow* (:list a) (:list b)) (:list a) (:list c))))
+            (hap* (map (typ (:arrow* (:arrow* b c) (:list b) (:list c)))) f)
+            (hap* (map (typ (:arrow* (:arrow* a b) (:list a) (:list b)))) g))))))]:
    (string * t) list
 *)

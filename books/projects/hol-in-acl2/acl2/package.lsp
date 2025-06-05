@@ -20,10 +20,13 @@
     *hp-0* *hp-1*
 ; From ../utilities/alist-subsetp.lisp:
     alist-subsetp
-; Other basic ACL2 symbols:
-    defthm set-enforce-redundancy
-    implies not and or t nil
-    force type))
+; Other basic ACL2 symbols etc.:
+    defthm defthmd defgoal set-enforce-redundancy
+    implies not and or
+    force type enable disable e/d
+; But we deliberately avoid importing t and nil, so that they can be used as
+; variable names.
+    ))
 
 (defpkg "HOL"
   *hol-symbols*)
