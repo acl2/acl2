@@ -371,16 +371,7 @@
 
        (theory-invariant (incompatible (:rewrite disjoint-regionsp-of-+-arg4) (:definition bvplus)))
 
-      ;;more?
-       (defthm disjoint-regionsp-cancel-1-2
-         (equal (disjoint-regionsp len1 x len2 (bvplus ,num-address-bits y x))
-                (disjoint-regionsp len1 0 len2 y))
-         :hints (("Goal" :in-theory (enable disjoint-regionsp))))
-
-      (defthm disjoint-regionsp-cancel-2-1
-        (equal (disjoint-regionsp len1 (bvplus ,num-address-bits y x) len2 x)
-               (disjoint-regionsp len1 y len2 0))
-         :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+      ;; todo: more, or make a general cancellation rule (add the negation of the term to be cancelled):
 
        (defthm disjoint-regionsp-cancel-1-1+
          (equal (disjoint-regionsp len1 x len2 (bvplus ,num-address-bits x y))
@@ -395,6 +386,16 @@
        (defthm disjoint-regionsp-cancel-1+-1+
          (equal (disjoint-regionsp len1 (bvplus ,num-address-bits x z) len2 (bvplus ,num-address-bits x y))
                 (disjoint-regionsp len1 z len2 y))
+         :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+       (defthm disjoint-regionsp-cancel-1-2
+         (equal (disjoint-regionsp len1 x len2 (bvplus ,num-address-bits y x))
+                (disjoint-regionsp len1 0 len2 y))
+         :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+      (defthm disjoint-regionsp-cancel-2-1
+        (equal (disjoint-regionsp len1 (bvplus ,num-address-bits y x) len2 x)
+               (disjoint-regionsp len1 y len2 0))
          :hints (("Goal" :in-theory (enable disjoint-regionsp))))
 
        (defthm disjoint-regionsp-cancel-1+-2
