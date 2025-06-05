@@ -549,8 +549,7 @@
    (xdoc::p
     "The memory address is the one of the first byte;
      we read that, and the subsequent byte.
-     For now we only support little endian memory,
-     so the first byte is the lowest one.")
+     We form the 16-bit halfword based on endianness.")
    (xdoc::p
     "As in @(tsee read-memory-unsigned8),
      we let the address be any integer.
@@ -559,8 +558,11 @@
      then @('addr + 1') wraps around to address 0."))
   (b* ((b0 (read-memory-unsigned8 addr stat feat))
        (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat)))
-    (logappn 8 b0
-             8 b1))
+    (cond ((feat-little-endianp feat) (logappn 8 b0
+                                               8 b1))
+          ((feat-big-endianp feat) (logappn 8 b1
+                                            8 b0))
+          (t (impossible))))
   :hooks (:fix)
 
   ///
@@ -585,8 +587,7 @@
    (xdoc::p
     "The memory address is the one of the first byte;
      we read that, and the subsequent bytes.
-     For now we only support little endian memory,
-     so the first byte is the lowest one.")
+     We form the 32-bit word based on endianness.")
    (xdoc::p
     "As in @(tsee read-memory-unsigned8),
      we let the address be any integer.
@@ -597,10 +598,15 @@
        (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
        (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
        (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat)))
-    (logappn 8 b0
-             8 b1
-             8 b2
-             8 b3))
+    (cond ((feat-little-endianp feat) (logappn 8 b0
+                                               8 b1
+                                               8 b2
+                                               8 b3))
+          ((feat-big-endianp feat) (logappn 8 b3
+                                            8 b2
+                                            8 b1
+                                            8 b0))
+          (t (impossible))))
   :hooks (:fix)
 
   ///
@@ -625,8 +631,7 @@
    (xdoc::p
     "The memory address is the one of the first byte;
      we read that, and the subsequent bytes.
-     For now we only support little endian memory,
-     so the first byte is the lowest one.")
+     We form the 64-bit doubleword based on endianness.")
    (xdoc::p
     "As in @(tsee read-memory-unsigned8),
      we let the address be any integer.
@@ -641,14 +646,23 @@
        (b5 (read-memory-unsigned8 (+ (lifix addr) 5) stat feat))
        (b6 (read-memory-unsigned8 (+ (lifix addr) 6) stat feat))
        (b7 (read-memory-unsigned8 (+ (lifix addr) 7) stat feat)))
-    (logappn 8 b0
-             8 b1
-             8 b2
-             8 b3
-             8 b4
-             8 b5
-             8 b6
-             8 b7))
+    (cond ((feat-little-endianp feat) (logappn 8 b0
+                                               8 b1
+                                               8 b2
+                                               8 b3
+                                               8 b4
+                                               8 b5
+                                               8 b6
+                                               8 b7))
+          ((feat-big-endianp feat) (logappn 8 b7
+                                            8 b6
+                                            8 b5
+                                            8 b4
+                                            8 b3
+                                            8 b2
+                                            8 b1
+                                            8 b0))
+          (t (impossible))))
   :hooks (:fix)
 
   ///
@@ -705,8 +719,7 @@
    (xdoc::p
     "The memory address is the one of the first byte;
      we write that, and the subsequent byte.
-     For now we only support little endian memory,
-     so the first byte is the lowest one.")
+     We write the bytes according to endianness.")
    (xdoc::p
     "As in @(tsee write-memory-unsigned8),
      we let the address be any integer.
@@ -716,8 +729,12 @@
   (b* ((val (ubyte16-fix val))
        (b0 (part-select val :low 0 :width 8))
        (b1 (part-select val :low 8 :width 8))
-       (stat (write-memory-unsigned8 addr b0 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 1) b1 stat feat)))
+       ((mv 1st-byte 2nd-byte)
+        (if (feat-little-endianp feat)
+            (mv b0 b1)
+          (mv b1 b0)))
+       (stat (write-memory-unsigned8 addr 1st-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 1) 2nd-byte stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -744,8 +761,7 @@
    (xdoc::p
     "The memory address is the one of the first byte;
      we write that, and the subsequent bytes.
-     For now we only support little endian memory,
-     so the first byte is the lowest one.")
+     We write the bytes according to endianness.")
    (xdoc::p
     "As in @(tsee write-memory-unsigned8),
      we let the address be any integer.
@@ -757,10 +773,14 @@
        (b1 (part-select val :low 8 :width 8))
        (b2 (part-select val :low 16 :width 8))
        (b3 (part-select val :low 24 :width 8))
-       (stat (write-memory-unsigned8 addr b0 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 1) b1 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 2) b2 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 3) b3 stat feat)))
+       ((mv 1st-byte 2nd-byte 3rd-byte 4th-byte)
+        (if (feat-little-endianp feat)
+            (mv b0 b1 b2 b3)
+          (mv b3 b2 b1 b0)))
+       (stat (write-memory-unsigned8 addr 1st-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 1) 2nd-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 2) 3rd-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 3) 4th-byte stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
@@ -787,8 +807,7 @@
    (xdoc::p
     "The memory address is the one of the first byte;
      we write that, and the subsequent bytes.
-     For now we only support little endian memory,
-     so the first byte is the lowest one.")
+     We write the bytes according to endianness.")
    (xdoc::p
     "As in @(tsee write-memory-unsigned8),
      we let the address be any integer.
@@ -804,14 +823,19 @@
        (b5 (part-select val :low 40 :width 8))
        (b6 (part-select val :low 48 :width 8))
        (b7 (part-select val :low 56 :width 8))
-       (stat (write-memory-unsigned8 addr b0 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 1) b1 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 2) b2 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 3) b3 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 4) b4 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 5) b5 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 6) b6 stat feat))
-       (stat (write-memory-unsigned8 (+ (lifix addr) 7) b7 stat feat)))
+       ((mv 1st-byte 2nd-byte 3rd-byte 4th-byte
+            5th-byte 6th-byte 7th-byte 8th-byte)
+        (if (feat-little-endianp feat)
+            (mv b0 b1 b2 b3 b4 b5 b6 b7)
+          (mv b7 b6 b5 b4 b3 b2 b1 b0)))
+       (stat (write-memory-unsigned8 addr 1st-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 1) 2nd-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 2) 3rd-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 3) 4th-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 4) 5th-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 5) 6th-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 6) 7th-byte stat feat))
+       (stat (write-memory-unsigned8 (+ (lifix addr) 7) 8th-byte stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p
                                            unsigned-byte-p
