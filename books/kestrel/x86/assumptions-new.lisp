@@ -351,7 +351,8 @@
           (make-standard-state-assumptions-fn state-var)
           (if relp
               `(;(integerp ,base-var)
-                (canonical-address-p$inline ,base-var))
+                (canonical-address-p$inline ,base-var) ; todo: do we need this, given that we have assumptions for all the segments?
+                )
             nil)
           `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
             ;; Alignment checking is turned off:
