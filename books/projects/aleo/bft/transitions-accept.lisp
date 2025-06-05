@@ -148,7 +148,8 @@
         nil)
        ((validator-state vstate) (get-validator-state dest systate))
        ((certificate cert) (message->certificate msg))
-       (commtt (active-committee-at-round cert.round vstate.blockchain))
+       (commtt (active-committee-at-round (certificate->round cert)
+                                          vstate.blockchain))
        ((unless commtt)
         nil)
        (signers (certificate->signers cert))
@@ -157,11 +158,12 @@
        ((unless (>= (committee-members-stake signers commtt)
                     (committee-quorum-stake commtt)))
         nil)
-       ((when (= cert.round 1))
+       ((when (= (certificate->round cert) 1))
         t)
-       ((unless (set::subset cert.previous
+       ((unless (set::subset (certificate->previous cert)
                              (cert-set->author-set
-                              (certs-with-round (1- cert.round) vstate.dag))))
+                              (certs-with-round (1- (certificate->round cert))
+                                                vstate.dag))))
         nil))
     t)
   :guard-hints (("Goal" :in-theory (enable posp)))
@@ -189,8 +191,9 @@
        (dest (message->destination msg))
        ((validator-state vstate) (get-validator-state dest systate))
        (new-dag (set::insert cert vstate.dag))
-       (new-endorsed (set::delete (make-address+pos :address cert.author
-                                                    :pos cert.round)
+       (new-endorsed (set::delete (make-address+pos
+                                   :address (certificate->author cert)
+                                   :pos (certificate->round cert))
                                   vstate.endorsed))
        (new-vstate (change-validator-state vstate
                                            :dag new-dag

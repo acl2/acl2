@@ -21,23 +21,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ signer-quorum
+(defxdoc+ dag-signer-in-committee
   :parents (correctness)
-  :short "Invariant that each certificate in the DAG of a validator
-          has signers that form a quorum in the committee."
+  :short "Invariant that each signer of each certificate in a DAG is
+          in the active committee at the round of the certificate."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Certificates are added to DAGs by @('certify') and @('accept') events.
-     In both cases, the validator checks that
-     the active committee for the certificate's round can be calculated,
-     and that the signers form a quorum in that committee."))
+    "Certificates are added to DAGs by @('certify') and @('accept') events.")
+   (xdoc::p
+    "A @('certify') event creates the certificate from a pending proposal,
+     whose author and endorsers are in the committee,
+     as proved in @(see proposed-author-in-committee)
+     and @(see proposed-endorser-in-committee).")
+   (xdoc::p
+    "In an @('accept') event, the accepting validator
+     explicitly checks that the signers are in the committee."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk signer-quorum-p ((systate system-statep))
+(define-sk dag-signer-in-committee-p ((systate system-statep))
   :returns (yes/no booleanp)
   :short "Definition of the invariant."
   (forall (val cert)
@@ -49,31 +54,29 @@
                                             (certificate->round cert)
                                             vstate.blockchain)))
                                 (and commtt
-                                     (set::subset (certificate->signers cert)
-                                                  (committee-members commtt))
-                                     (>= (validators-stake
-                                          (certificate->signers cert) commtt)
-                                         (committee-quorum-stake commtt))))))))
+                                     (set::subset
+                                      (certificate->signers cert)
+                                      (committee-members commtt))))))))
 
   ///
 
-  (fty::deffixequiv-sk signer-quorum-p
+  (fty::deffixequiv-sk dag-signer-in-committee-p
     :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled signer-quorum-p-when-init
+(defruled dag-signer-in-committee-p-when-init
   :short "Establishment of the invariant in the initial states."
   (implies (system-initp systate)
-           (signer-quorum-p systate))
-  :enable (signer-quorum-p
+           (dag-signer-in-committee-p systate))
+  :enable (dag-signer-in-committee-p
            system-initp
            system-validators-initp-necc
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection signer-quorum-p-of-next
+(defsection dag-signer-in-committee-p-of-next
   :short "Preservation of the invariant by single transitions."
   :long
   (xdoc::topstring
@@ -82,8 +85,7 @@
      are @('certify') and @('accept').")
    (xdoc::p
     "A @('certify') transition happens only if
-     the validator can calculate the committee
-     and the stake of the author and endorsers meets the quorum stake.
+     the validator can calculate the committee.
      Although @(tsee certify-possiblep) does not explicitly check
      that author and endorsers are members of the committee,
      it is an invariant that they are, as proved in
@@ -97,42 +99,42 @@
      we need to use @(tsee active-committee-at-round-of-commit-next)
      to show that the applicable committee does not change."))
 
-  (defruled signer-quorum-p-of-propose-next
-    (implies (signer-quorum-p systate)
-             (signer-quorum-p (propose-next prop dests systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc))
+  (defruled dag-signer-in-committee-p-of-propose-next
+    (implies (dag-signer-in-committee-p systate)
+             (dag-signer-in-committee-p (propose-next prop dests systate)))
+    :enable (dag-signer-in-committee-p
+             dag-signer-in-committee-p-necc))
 
-  (defruled signer-quorum-p-of-endorse-next
-    (implies (signer-quorum-p systate)
-             (signer-quorum-p (endorse-next prop endor systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc))
+  (defruled dag-signer-in-committee-p-of-endorse-next
+    (implies (dag-signer-in-committee-p systate)
+             (dag-signer-in-committee-p (endorse-next prop endor systate)))
+    :enable (dag-signer-in-committee-p
+             dag-signer-in-committee-p-necc))
 
-  (defruled signer-quorum-p-of-augment-next
+  (defruled dag-signer-in-committee-p-of-augment-next
     (implies (and (augment-possiblep prop endor systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (augment-next prop endor systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc))
+                  (dag-signer-in-committee-p systate))
+             (dag-signer-in-committee-p (augment-next prop endor systate)))
+    :enable (dag-signer-in-committee-p
+             dag-signer-in-committee-p-necc))
 
-  (defruled signer-quorum-p-of-certify-next
+  (defruled dag-signer-in-committee-p-of-certify-next
     (implies (and (certify-possiblep cert dests systate)
                   (proposed-author-in-committee-p systate)
                   (proposed-endorser-in-committee-p systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (certify-next cert dests systate)))
-    :use ((:instance signer-quorum-p-necc
-                     (val (mv-nth 0 (signer-quorum-p-witness
+                  (dag-signer-in-committee-p systate))
+             (dag-signer-in-committee-p (certify-next cert dests systate)))
+    :use ((:instance dag-signer-in-committee-p-necc
+                     (val (mv-nth 0 (dag-signer-in-committee-p-witness
                                      (certify-next cert dests systate))))
-                     (cert (mv-nth 1 (signer-quorum-p-witness
+                     (cert (mv-nth 1 (dag-signer-in-committee-p-witness
                                       (certify-next cert dests systate)))))
           (:instance proposed-endorser-in-committee-p-necc
-                     (val (mv-nth 0 (signer-quorum-p-witness
+                     (val (mv-nth 0 (dag-signer-in-committee-p-witness
                                      (certify-next cert dests systate))))
                      (prop (certificate->proposal cert))))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc
+    :enable (dag-signer-in-committee-p
+             dag-signer-in-committee-p-necc
              proposed-author-in-committee-p-necc
              validator-state->dag-of-certify-next
              certify-possiblep
@@ -142,72 +144,72 @@
              omap::assoc-to-in-of-keys
              omap::lookup))
 
-  (defruled signer-quorum-p-of-accept-next
+  (defruled dag-signer-in-committee-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (accept-next val cert systate)))
-    :use (:instance signer-quorum-p-necc
-                    (val (mv-nth 0 (signer-quorum-p-witness
+                  (dag-signer-in-committee-p systate))
+             (dag-signer-in-committee-p (accept-next val cert systate)))
+    :use (:instance dag-signer-in-committee-p-necc
+                    (val (mv-nth 0 (dag-signer-in-committee-p-witness
                                     (accept-next val cert systate))))
-                    (cert (mv-nth 1 (signer-quorum-p-witness
+                    (cert (mv-nth 1 (dag-signer-in-committee-p-witness
                                      (accept-next val cert systate)))))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc
+    :enable (dag-signer-in-committee-p
+             dag-signer-in-committee-p-necc
              accept-possiblep
              validator-state->dag-of-accept-next
              certificate->round))
 
-  (defruled signer-quorum-p-of-advance-next
+  (defruled dag-signer-in-committee-p-of-advance-next
     (implies (and (advance-possiblep val systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (advance-next val systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc))
+                  (dag-signer-in-committee-p systate))
+             (dag-signer-in-committee-p (advance-next val systate)))
+    :enable (dag-signer-in-committee-p
+             dag-signer-in-committee-p-necc))
 
-  (defruled signer-quorum-p-of-commit-next
+  (defruled dag-signer-in-committee-p-of-commit-next
     (implies (and (commit-possiblep val systate)
                   (last-blockchain-round-p systate)
                   (ordered-blockchain-p systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (commit-next val systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc
+                  (dag-signer-in-committee-p systate))
+             (dag-signer-in-committee-p (commit-next val systate)))
+    :enable (dag-signer-in-committee-p
+             dag-signer-in-committee-p-necc
              active-committee-at-round-of-commit-next))
 
-  (defruled signer-quorum-p-of-event-next
+  (defruled dag-signer-in-committee-p-of-event-next
     (implies (and (event-possiblep event systate)
                   (last-blockchain-round-p systate)
                   (ordered-blockchain-p systate)
                   (proposed-author-in-committee-p systate)
                   (proposed-endorser-in-committee-p systate)
-                  (signer-quorum-p systate))
-             (signer-quorum-p (event-next event systate)))
+                  (dag-signer-in-committee-p systate))
+             (dag-signer-in-committee-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled signer-quorum-p-of-events-next
+(defruled dag-signer-in-committee-p-of-events-next
   :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
                 (last-blockchain-round-p systate)
                 (ordered-blockchain-p systate)
                 (proposed-author-in-committee-p systate)
                 (proposed-endorser-in-committee-p systate)
-                (signer-quorum-p systate))
-           (signer-quorum-p (events-next events systate)))
+                (dag-signer-in-committee-p systate))
+           (dag-signer-in-committee-p (events-next events systate)))
   :induct t
   :enable (events-possiblep
            events-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled signer-quorum-p-when-reachable
+(defruled dag-signer-in-committee-p-when-reachable
   :short "The invariant holds in every reachable state."
   (implies (system-state-reachablep systate)
-           (signer-quorum-p systate))
+           (dag-signer-in-committee-p systate))
   :enable (system-state-reachablep
-           signer-quorum-p-when-init
+           dag-signer-in-committee-p-when-init
            last-blockchain-round-p-when-init
            ordered-blockchain-p-when-init
            proposed-author-in-committee-p-when-init
@@ -219,10 +221,10 @@
                    (ordered-blockchain-p from)
                    (proposed-author-in-committee-p from)
                    (proposed-endorser-in-committee-p from)
-                   (signer-quorum-p from))
-              (signer-quorum-p systate))
+                   (dag-signer-in-committee-p from))
+              (dag-signer-in-committee-p systate))
      :use (:instance
-           signer-quorum-p-of-events-next
+           dag-signer-in-committee-p-of-events-next
            (events (system-state-reachable-from-p-witness systate from))
            (systate from))
      :enable system-state-reachable-from-p)))

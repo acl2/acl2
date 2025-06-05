@@ -371,11 +371,7 @@
 
        (theory-invariant (incompatible (:rewrite disjoint-regionsp-of-+-arg4) (:definition bvplus)))
 
-;more
-       (defthm disjoint-regionsp-cancel-1-2
-         (equal (disjoint-regionsp len1 x len2 (bvplus ,num-address-bits y x))
-                (disjoint-regionsp len1 0 len2 y))
-         :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+      ;; todo: more, or make a general cancellation rule (add the negation of the term to be cancelled):
 
        (defthm disjoint-regionsp-cancel-1-1+
          (equal (disjoint-regionsp len1 x len2 (bvplus ,num-address-bits x y))
@@ -392,6 +388,16 @@
                 (disjoint-regionsp len1 z len2 y))
          :hints (("Goal" :in-theory (enable disjoint-regionsp))))
 
+       (defthm disjoint-regionsp-cancel-1-2
+         (equal (disjoint-regionsp len1 x len2 (bvplus ,num-address-bits y x))
+                (disjoint-regionsp len1 0 len2 y))
+         :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+      (defthm disjoint-regionsp-cancel-2-1
+        (equal (disjoint-regionsp len1 (bvplus ,num-address-bits y x) len2 x)
+               (disjoint-regionsp len1 y len2 0))
+         :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
        (defthm disjoint-regionsp-cancel-1+-2
          (equal (disjoint-regionsp len1 (bvplus ,num-address-bits x z) len2 (bvplus ,num-address-bits y x))
                 (disjoint-regionsp len1 z len2 y))
@@ -406,6 +412,21 @@
          (equal (disjoint-regionsp len1 (bvplus ,num-address-bits z x) len2 (bvplus ,num-address-bits y x))
                 (disjoint-regionsp len1 z len2 y))
          :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+      ;; todo: more like this?
+      (defthm disjoint-regionsp-of-bvplus-of-constant-and-constant
+        (implies (syntaxp (and (quotep k1)
+                               (quotep k2)))
+                 (equal (disjoint-regionsp len1 (bvplus ,num-address-bits k1 x) len2 k2)
+                        (disjoint-regionsp len1 x len2 (bvminus ,num-address-bits k2 k1))))
+         :hints (("Goal" :in-theory (enable disjoint-regionsp))))
+
+      (defthm disjoint-regionsp-of-1-and-1
+        (equal (disjoint-regionsp 1 x 1 y)
+               (not (equal (bvchop ,num-address-bits x)
+                           (bvchop ,num-address-bits y))))
+        :hints (("Goal" :in-theory (e/d (disjoint-regionsp)
+                                        (acl2::bvminus-becomes-bvplus-of-bvuminus)))))
 
        ;; todo: show that this reduces to a more familiar notion in the non-wrap-around case
        ;; todo: use defun-sk to show correctness

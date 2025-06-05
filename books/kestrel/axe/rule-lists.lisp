@@ -1988,7 +1988,8 @@
     bv-array-read-when-all-same-axe
     bv-array-read-of-bvmult-discard-vals
     bv-array-read-of-bvplus-of-bvmult-discard-vals
-    bv-array-read-of-+-of-constant-shorten ; for when we have + for the index (but we may prefer a bvplus) ; todo: make a bvplus version
+    bv-array-read-of-+-of-constant-shorten ; for an index that is a +
+    bv-array-read-of-bvplus-of-constant-no-wrap ; for an index that is a bvplus
     ))
 
 (defun bvplus-rules ()

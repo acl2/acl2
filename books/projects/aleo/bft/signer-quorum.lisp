@@ -67,7 +67,8 @@
      The guard ensures that the validator can calculate the committee."))
   (b* (((validator-state vstate) vstate)
        ((certificate cert) cert)
-       (commtt (active-committee-at-round cert.round vstate.blockchain)))
+       (commtt (active-committee-at-round (certificate->round cert)
+                                          vstate.blockchain)))
     (and commtt
          (set::subset (certificate->signers cert)
                       (committee-members commtt))

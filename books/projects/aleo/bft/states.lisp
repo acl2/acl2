@@ -14,6 +14,7 @@
 (include-book "addresses")
 (include-book "transactions")
 (include-book "blocks")
+(include-book "proposals")
 (include-book "certificates")
 (include-book "validator-states")
 (include-book "messages")
@@ -34,6 +35,7 @@
   :order-subtopics (addresses
                     transactions
                     blocks
+                    proposals
                     certificates
                     validator-states
                     messages

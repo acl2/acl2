@@ -28,7 +28,8 @@
 (include-book "certificate-in-author")
 (include-book "proposed-author-in-committee")
 (include-book "proposed-endorser-in-committee")
-(include-book "signer-quorum")
+(include-book "dag-signer-in-committee")
+(include-book "dag-signer-quorum")
 (include-book "proposed-round1-no-previous")
 (include-book "endorsed-round1-no-previous")
 (include-book "proposed-previous-closed")
@@ -45,6 +46,7 @@
 (include-book "last-anchor-present")
 (include-book "last-anchor-init-and-next")
 (include-book "last-anchor-voters")
+(include-book "successor-predecessor-intersection")
 (include-book "fault-tolerance")
 (include-book "quorum-intersection")
 (include-book "nonforking-blockchains-def-and-init")
@@ -80,7 +82,8 @@
                     certificate-in-author
                     proposed-author-in-committee
                     proposed-endorser-in-committee
-                    signer-quorum
+                    dag-signer-in-committee
+                    dag-signer-quorum
                     proposed-round1-no-previous
                     endorsed-round1-no-previous
                     proposed-previous-closed
@@ -97,6 +100,7 @@
                     last-anchor-present
                     last-anchor-init-and-next
                     last-anchor-voters
+                    successor-predecessor-intersection
                     fault-tolerance
                     quorum-intersection
                     nonforking-blockchains-def-and-init
