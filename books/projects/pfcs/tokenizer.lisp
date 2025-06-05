@@ -35,8 +35,7 @@
   (xdoc::topstring
    (xdoc::p
     "Does not look at details of the internal structure."))
-  (and (abnf::treep tree)
-       (abnf::tree-case tree :nonleaf)
+  (and (abnf::tree-case tree :nonleaf)
        (equal (abnf::tree-nonleaf->rulename? tree)
               (abnf::rulename rulename-string))))
 
