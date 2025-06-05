@@ -17,6 +17,7 @@
 ;; These could be added to books/projects/x86isa:
 (include-book "linear-memory")
 (include-book "canonical")
+(include-book "canonical-unsigned")
 (include-book "state")
 
 
