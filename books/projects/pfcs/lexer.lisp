@@ -257,8 +257,7 @@
     (implies (not (reserrp trees))
              (< (len rest-input)
                 (len input)))
-    :rule-classes :linear)
-  )
+    :rule-classes :linear))
 
 (defparse-pfcs-rulename "numeral")
 
