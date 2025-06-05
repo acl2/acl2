@@ -23,7 +23,7 @@
   (xdoc::topstring
    (xdoc::p
     "A named relation denotes
-     a predicate over the cartesian product of the prime field;
+     a predicate over a cartesian product of the prime field;
      the number of factors of the cartesian product
      is the arity of the relation.
      The predicate holds exactly on the tuples of prime field elements
