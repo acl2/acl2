@@ -14,12 +14,12 @@
 (include-book "projects/abnf/grammar-definer/defgrammar" :dir :system)
 (include-book "projects/abnf/grammar-definer/deftreeops" :dir :system)
 (include-book "projects/abnf/operations/in-terminal-set" :dir :system)
-
-; These may speed things up.
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-
 (include-book "tools/rulesets" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ; (depends-on "grammar.abnf")
 
@@ -133,7 +133,8 @@
 
   (defrule abnf-tree-listp-when-abnf-tree-list-with-root-p
     (implies (abnf-tree-list-with-root-p trees rulename) ; free var RULENAME
-             (abnf::tree-listp trees))))
+             (abnf::tree-listp trees))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -153,4 +154,5 @@
                                  :rulename? (abnf::rulename (car rulenames))
                                  :branches (list (list tree)))
                                 (cdr rulenames))))
+    :guard-hints (("Goal" :in-theory (enable string-listp)))
     :hooks (:fix)))
