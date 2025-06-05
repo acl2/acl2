@@ -60,6 +60,6 @@
   (if (and (consp term)
            (eq :eval (car term)))
       ;; Evaluate TERM:
-      `(make-event (defthm-axe-fn ',name ,(cadr term) ',rules ',rule-lists ',remove-rules ',counter-example ,monitor ',rule-classes ',print state))
+      `(make-event (defthm-axe-fn ',name ,(cadr term) ,rules ,rule-lists ,remove-rules ',counter-example ,monitor ',rule-classes ',print state))
     ;; Don't evaluate TERM:
-    `(make-event (defthm-axe-fn ',name ',term ',rules ',rule-lists ',remove-rules ',counter-example ,monitor ',rule-classes ',print state))))
+    `(make-event (defthm-axe-fn ',name ',term ,rules ,rule-lists ,remove-rules ',counter-example ,monitor ',rule-classes ',print state))))
