@@ -1,9 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; modifications Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
@@ -209,4 +209,3 @@
   :short "Fixtype of errors and PFCS systems."
   :ok system
   :pred system-resultp)
-

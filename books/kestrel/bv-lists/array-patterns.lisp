@@ -172,12 +172,12 @@
                               (quotep data)
                               (quotep index-width)
                               (quotep len)))
-                (< x (- (expt 2 index-width) k)) ; the bvplus does no chopping
-                (< x (- len k)) ; the array access is in bounds
+                (< index (- (expt 2 index-width) k)) ; the bvplus does no chopping
+                (< index (- len k)) ; the array access is in bounds
                 (natp index-width)
                 (natp k)
-                (natp x))
-           (equal (bv-array-read element-size len (bvplus index-width k x) data)
+                (natp index))
+           (equal (bv-array-read element-size len (bvplus index-width k index) data)
                   ;; The nthcdr here gets computed to give a smaller array:
-                  (bv-array-read element-size (- len k) x (nthcdr k data))))
+                  (bv-array-read element-size (- len k) index (nthcdr k data))))
   :hints (("Goal" :in-theory (enable bv-array-read bvplus unsigned-byte-p))))

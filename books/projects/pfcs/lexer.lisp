@@ -1,9 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; modifications Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
@@ -46,7 +46,7 @@
    (xdoc::p
     "The lexer consists of a collection of lexing functions,
      each of which takes a list of natural numbers as input,
-     which represents the Unicode codepoints of characters that remain 
+     which represents the Unicode codepoints of characters that remain
      to lex in the PFCS definition being lexed.
      Each function returns two results:
      the first result is either an error

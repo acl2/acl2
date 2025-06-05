@@ -3549,9 +3549,10 @@ off looking at the source code.</p>")
             :do-not-induct t)))
 
   (defthm cancel-loghead-under-logext
-    (implies (posp sz)
-             (equal (logext sz (loghead sz x))
-                    (logext sz x)))
+    (implies (and (posp m)
+                  (<= m (nfix n)))
+             (equal (logext m (loghead n x))
+                    (logext m x)))
     :hints (("goal" :in-theory (enable* ihsext-inductions
                                         ihsext-recursive-redefs
                                         posp))))
@@ -4125,6 +4126,3 @@ off looking at the source code.</p>")
              (equal (logcdr (+ a b))
                     (+ (logcdr a) (logcdr b)
                        (b-and (logcar a) (logcar b)))))))
-
-
-
