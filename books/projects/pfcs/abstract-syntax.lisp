@@ -37,7 +37,11 @@
      which may be conjoined with equality constraints.
      A system of constraints is a collection of named relations,
      which are hierarchically organized,
-     and of constraints that may reference the relations."))
+     and of constraints that may reference the relations.")
+   (xdoc::p
+    "The abstract syntax is derived from the "
+    (xdoc::seetopic "grammar" "ABNF grammar")
+    " in a straightforward way."))
   :order-subtopics t
   :default-parent t)
 
@@ -91,6 +95,8 @@
   :pred expression-listp
   :prepwork ((local (in-theory (enable nfix)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult expression-list-result
   :short "Fixtype of errors and lists of PFCS expressions."
   :ok expression-list
@@ -115,6 +121,8 @@
               (args expression-list)))
   :pred constraintp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult constraint-result
   :short "Fixtype of errors and PFCS constraints."
   :ok constraint
@@ -130,6 +138,8 @@
   :elementp-of-nil nil
   :pred constraint-listp
   :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult constraint-list-result
   :short "Fixtype of errors and lists of PFCS constraints."
@@ -159,6 +169,8 @@
   :tag :definition
   :pred definitionp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult definition-result
   :short "Fixtype of errors and PFCS definitions."
   :ok definition
@@ -187,6 +199,8 @@
            (definition-list-fix (rev defs)))
     :enable definition-list-fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult definition-list-result
   :short "Fixtype of errors and lists of PFCS definitions."
   :ok definition-list
@@ -204,6 +218,8 @@
    (constraints constraint-list))
   :tag :system ; added to get the defresult to certify
   :pred systemp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult system-result
   :short "Fixtype of errors and PFCS systems."
