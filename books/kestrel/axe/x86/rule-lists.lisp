@@ -1901,6 +1901,11 @@
     ;; x86isa::canonical-address-p-of-if
     ))
 
+(defund canonical-rules-non-bv ()
+  (declare (xargs :guard t))
+  '(canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop
+    ))
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defund lifter-rules-common ()
