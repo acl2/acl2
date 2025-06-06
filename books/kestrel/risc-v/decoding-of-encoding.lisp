@@ -31,9 +31,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ inverse-encoding-decoding
+(defxdoc+ decoding-of-encoding
   :parents (encoding decoding)
-  :short "Theorems about encoding and decoding being inverses."
+  :short "Theorems about decoding applied to encoding."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that decoding is left inverse of encoding over valid instructions:
+     encoding a valid instruction and then decoding it
+     yields the original instruction.
+     As a consequence, encoding is injective over valid instructions:
+     if two different instructions were encoded in the same way,
+     the decoder would have to restore both from the same encoding,
+     which is impossible since decoding is a function."))
   :default-parent t
   :order-subtopics t)
 
@@ -948,7 +958,7 @@
   (xdoc::topstring
    (xdoc::p
     "That is, decoding is left inverse of encoding,
-     and encoding is right inverse of decoding."))
+     over valid instructions."))
   (implies (instr-validp instr feat)
            (equal (decode (encode instr feat) feat)
                   (instr-fix instr)))

@@ -15,6 +15,7 @@
 
 (local (include-book "library-extensions"))
 
+(local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

@@ -62,6 +62,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum feat-endian
+  :short "Fixtype of RISC-V feature choices for endianness."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Although instruction encodings are always in little endian [ISA:1.5.1],
+     data loaded/stored from/to memory may be little or big endian [ISA:2.6].
+     This choice is ``byte-address invariant'' [ISA:2.6],
+     i.e. it does not depend on the address;
+     so there is just one choice for the whole memory."))
+  (:little ())
+  (:big ())
+  :pred feat-endianp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod feat
   :short "Fixtype of RISC-V feature choices."
   :long
@@ -72,10 +88,13 @@
     (xdoc::li
      "The base.")
     (xdoc::li
+     "The endianness.")
+    (xdoc::li
      "Whether the M extension [ISA:13] is present or not."))
    (xdoc::p
     "More features will be added later."))
   ((base feat-base)
+   (endian feat-endian)
    (m bool))
   :pred featp)
 
@@ -123,6 +142,37 @@
   (or (feat-base-case (feat->base feat) :rv32e)
       (feat-base-case (feat->base feat) :rv64e))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-little-endianp ((feat featp))
+  :returns (yes/no booleanp)
+  :short "Check if the features indicate little endian."
+  (feat-endian-case (feat->endian feat) :little)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-big-endianp ((feat featp))
+  :returns (yes/no booleanp)
+  :short "Check if the features indicate bit endian."
+  (feat-endian-case (feat->endian feat) :big)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled feat-little-or-big-endianp
+  :parents (feat-little-endianp feat-big-endianp)
+  :short "One of @(tsee feat-little-endianp) and @(tsee feat-big-endianp)
+          always holds."
+  (or (feat-little-endianp feat)
+      (feat-big-endianp feat))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((feat-little-endianp feat)
+                                                    (feat-big-endianp feat))))
+  :enable (feat-little-endianp feat-big-endianp))
+
+(in-theory (enable (:forward-chaining feat-little-or-big-endianp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -193,64 +243,144 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define feat-rv32i ()
+(define feat-rv32i-le ()
   :returns (feat featp)
-  :short "Features for RV32I."
+  :short "Features for RV32I, with little endian memory."
   (make-feat :base (feat-base-rv32i)
+             :endian (feat-endian-little)
              :m nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
-(define feat-rv64i ()
+(define feat-rv32i-be ()
   :returns (feat featp)
-  :short "Features for RV64I."
-  (make-feat :base (feat-base-rv64i)
-             :m nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define feat-rv32e ()
-  :returns (feat featp)
-  :short "Features for RV32E."
-  (make-feat :base (feat-base-rv32e)
-             :m nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define feat-rv64e ()
-  :returns (feat featp)
-  :short "Features for RV64E."
-  (make-feat :base (feat-base-rv64e)
-             :m nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define feat-rv32im ()
-  :returns (feat featp)
-  :short "Features for RV32IM."
+  :short "Features for RV32I, with big endian memory."
   (make-feat :base (feat-base-rv32i)
-             :m t))
+             :endian (feat-endian-big)
+             :m nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define feat-rv64im ()
+(define feat-rv64i-le ()
   :returns (feat featp)
-  :short "Features for RV64IM."
+  :short "Features for RV64I, with little endian memory."
   (make-feat :base (feat-base-rv64i)
-             :m t))
+             :endian (feat-endian-little)
+             :m nil))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv64i-be ()
+  :returns (feat featp)
+  :short "Features for RV64I, with big endian memory."
+  (make-feat :base (feat-base-rv64i)
+             :endian (feat-endian-big)
+             :m nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define feat-rv32em ()
+(define feat-rv32e-le ()
   :returns (feat featp)
-  :short "Features for RV32EM."
+  :short "Features for RV32E, with little endian memory."
   (make-feat :base (feat-base-rv32e)
+             :endian (feat-endian-little)
+             :m nil))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv32e-be ()
+  :returns (feat featp)
+  :short "Features for RV32E, with big endian memory."
+  (make-feat :base (feat-base-rv32e)
+             :endian (feat-endian-big)
+             :m nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv64e-le ()
+  :returns (feat featp)
+  :short "Features for RV64E, with little endian memory."
+  (make-feat :base (feat-base-rv64e)
+             :endian (feat-endian-little)
+             :m nil))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv64e-be ()
+  :returns (feat featp)
+  :short "Features for RV64E, with big endian memory."
+  (make-feat :base (feat-base-rv64e)
+             :endian (feat-endian-big)
+             :m nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv32im-le ()
+  :returns (feat featp)
+  :short "Features for RV32IM, with little endian memory."
+  (make-feat :base (feat-base-rv32i)
+             :endian (feat-endian-little)
+             :m t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv32im-be ()
+  :returns (feat featp)
+  :short "Features for RV32IM, with big endian memory."
+  (make-feat :base (feat-base-rv32i)
+             :endian (feat-endian-big)
              :m t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define feat-rv64em ()
+(define feat-rv64im-le ()
   :returns (feat featp)
-  :short "Features for RV64EM."
+  :short "Features for RV64IM, with little endian memory."
+  (make-feat :base (feat-base-rv64i)
+             :endian (feat-endian-little)
+             :m t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv64im-be ()
+  :returns (feat featp)
+  :short "Features for RV64IM, with big endian memory."
+  (make-feat :base (feat-base-rv64i)
+             :endian (feat-endian-big)
+             :m t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv32em-le ()
+  :returns (feat featp)
+  :short "Features for RV32EM, with little endian memory."
+  (make-feat :base (feat-base-rv32e)
+             :endian (feat-endian-little)
+             :m t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv32em-be ()
+  :returns (feat featp)
+  :short "Features for RV32EM, with big endian memory."
+  (make-feat :base (feat-base-rv32e)
+             :endian (feat-endian-big)
+             :m t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv64em-le ()
+  :returns (feat featp)
+  :short "Features for RV64EM, with little endian memory."
   (make-feat :base (feat-base-rv64e)
+             :endian (feat-endian-little)
+             :m t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define feat-rv64em-be ()
+  :returns (feat featp)
+  :short "Features for RV64EM, with big endian memory."
+  (make-feat :base (feat-base-rv64e)
+             :endian (feat-endian-big)
              :m t))
