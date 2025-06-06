@@ -97,6 +97,7 @@
                                    (:prop . ,prop)
                                    (:typed-fns . nil)
                                    (:axioms . nil)
+                                   (:theorems . nil)
                                    (:hta-name . ,hta-name)
                                    (:hta-keys . ,hta-keys))
                                  :clear)))))))
@@ -132,7 +133,7 @@
   (packn-pos (list sym index)
              sym))
 
-(defun hol-axiom (hol-name args arg-types def tbl)
+(defun hol-axiom (hol-name args arg-types def tbl thmp)
   (declare (xargs :guard (and (symbolp hol-name)
                               (true-listp args)
                               (true-listp arg-types))))
@@ -149,9 +150,11 @@
                            (alist-subsetp (,hta-name) hol::hta)
                            (force (,prop)))
                    `(force (,prop)))
-                ,def))))
+                ,(if thmp
+                     `(equal ,def (hp-true))
+                   def)))))
 
-(defun hol-axioms (hol-name defs tbl index acc)
+(defun hol-axioms (hol-name defs tbl index thmp acc)
 
 ; Index is a natural number to be used as a suffix on hol-name, when there is
 ; more than one member of defs.  Otherwise flg is nil.
@@ -176,20 +179,24 @@
                  (t
                   (hol-axioms hol-name (cdr defs) tbl
                               (and index (1+ index))
+                              thmp
                               (cons (hol-axiom hol-name-1
                                                (strip-cars pairs)
                                                (strip-cadrs pairs)
                                                formula
-                                               tbl)
+                                               tbl
+                                               thmp)
                                     acc)))))
                (&
                 (hol-axioms hol-name (cdr defs) tbl
                             (and index (1+ index))
+                            thmp
                             (cons (hol-axiom hol-name-1
                                              nil
                                              nil
                                              def
-                                             tbl)
+                                             tbl
+                                             thmp)
                                   acc))))))))
 
 (defun check-hol-term (fn-lst def hta-keys ctx wrld state)
@@ -269,25 +276,56 @@
     :check-expansion t
     :expansion? (value-triple nil)))
 
-(defmacro defhol (&key fns defs)
-  (let ((hol-name (prefix-symbol "HOL{"
-                                 (suffix-symbol "}" (caar fns)))))
-    `(progn (check-hol-fns-types-event ,fns defhol)
-            (check-hol-terms-event ,(strip-cars fns) defhol ,defs)
-            (table :hol-theory
-                   :typed-fns
-                   (append ',fns
-                           (cdr (assoc-eq :typed-fns
-                                          (table-alist :hol-theory world)))))
-            (table :hol-theory
-                   :axioms
-                   (let ((tbl (table-alist :hol-theory world)))
-                     (hol-axioms ',hol-name
-                                 ',defs
-                                 tbl
-                                 ,(if (cdr defs) 0 nil)
-                                 (cdr (assoc-eq :axioms tbl)))))
-            (value-triple ',(if (consp fns) fns (car fns))))))
+(defun hol-name (sym)
+  (declare (xargs :guard (symbolp sym)))
+  (prefix-symbol "HOL{" (suffix-symbol "}" sym)))
+
+(defmacro defhol (&key fns defs thm goal name)
+  (declare (xargs :guard
+                  (cond (fns (and defs
+                                  (not thm)
+                                  (not goal)
+                                  (not name)))
+                        (t (and (not defs)
+                                (iff thm (not goal)) ; exactly one of thm, goal
+                                name)))))
+  (let ((hol-name (hol-name (or name (caar fns)))))
+    (cond
+     (thm
+      (let ((key :theorems))
+        `(table :hol-theory
+                ,key
+                (let ((tbl (table-alist :hol-theory world)))
+                  (hol-axioms ',hol-name
+                              '(,thm)
+                              tbl
+                              nil
+                              t
+                              (cdr (assoc-eq ,key tbl)))))))
+     (goal
+      (let ((key :goals))
+        `(table :hol-theory
+                ,key
+                (let ((tbl (table-alist :hol-theory world)))
+                  (acons ',hol-name ',goal (cdr (assoc-eq ,key tbl)))))))
+     (t
+      `(progn (check-hol-fns-types-event ,fns defhol)
+              (check-hol-terms-event ,(strip-cars fns) defhol ,defs)
+              (table :hol-theory
+                     :typed-fns
+                     (append ',fns
+                             (cdr (assoc-eq :typed-fns
+                                            (table-alist :hol-theory world)))))
+              (table :hol-theory
+                     :axioms
+                     (let ((tbl (table-alist :hol-theory world)))
+                       (hol-axioms ',hol-name
+                                   ',defs
+                                   tbl
+                                   ,(if (cdr defs) 0 nil)
+                                   nil
+                                   (cdr (assoc-eq :axioms tbl)))))
+              (value-triple ',(if (consp fns) fns (car fns))))))))
 
 (defun close-theory-sigs/types (hta-name typed-fns prop sigs type-thms)
   (declare (xargs :guard (and (symbol-alistp typed-fns)
@@ -322,10 +360,11 @@
         (t (cons `(local (defun ,(caar typed-fns) (x) x))
                  (close-theory-locals (cdr typed-fns))))))
 
-(defun close-theory-encapsulate (prop hta-name typed-fns axioms)
+(defun close-theory-encapsulate (prop hta-name typed-fns axioms theorems)
   (declare (xargs :guard (and (and (symbol-alistp typed-fns)
                                    (doublet-listp typed-fns)
-                                   (alistp axioms)))
+                                   (alistp axioms)
+                                   (alistp theorems)))
                   :verify-guards nil))
   (mv-let (sigs types)
     (close-theory-sigs/types hta-name typed-fns prop nil nil)
@@ -333,7 +372,8 @@
        (local (defun ,prop () nil))
        ,@(close-theory-locals typed-fns)
        ,@types
-       ,@axioms)))
+       ,@axioms
+       ,@theorems)))
 
 (local
  (defthm true-listp-mv-nth-1-close-theory-sigs/types
@@ -354,7 +394,9 @@
          (typed-fns (reverse (true-list-fix ; for guard
                               (cdr (hons-assoc-equal :typed-fns tbl)))))
          (axioms (reverse (true-list-fix ; for guard
-                           (cdr (hons-assoc-equal :axioms tbl))))))
+                           (cdr (hons-assoc-equal :axioms tbl)))))
+         (theorems (reverse (true-list-fix ; for guard
+                             (cdr (hons-assoc-equal :theorems tbl))))))
     (cond ((null tbl)
            (er soft ctx
                "There is no theory to close."))
@@ -374,13 +416,17 @@
                "The :AXIOMS entry in the :HOL-THEORY table is ~x0, which ~
                 is not a symbol-alistp!"
                axioms))
-          (t (value `(progn ,(close-theory-encapsulate
-                              (cdr (hons-assoc-equal :prop tbl))
-                              hta-name
-                              typed-fns
-                              axioms)
-                            (table :hol-axioms ',name ',axioms)
-                            (table :hol-theory nil nil :clear)))))))
+          ((not (alistp theorems))
+           (er soft ctx
+               "The :THEOREME entry in the :HOL-THEORY table is ~x0, which ~
+                is not a symbol-alistp!"
+               theorems))
+          (t (value (close-theory-encapsulate
+                     (cdr (hons-assoc-equal :prop tbl))
+                     hta-name
+                     typed-fns
+                     axioms
+                     theorems))))))
 
 (defmacro close-theory (&key verbose)
   (let ((form `(make-event (close-theory-fn 'close-theory state))))
@@ -389,3 +435,48 @@
       `(with-output :off :all! :on error
          ,form))))
 
+(defun defgoal-form (name wrld)
+  (declare (xargs :mode :program))
+  (let* ((tbl (table-alist :hol-theory wrld))
+         (goals (cdr (assoc-eq :goals tbl)))
+         (hol-name (hol-name name))
+         (body (cdr (assoc-eq hol-name goals))))
+    (and body
+         (case-match body
+           ((':forall pairs formula)
+            (cond
+             ((not (and (symbol-alistp pairs)
+                        (doublet-listp pairs)))
+              (er acl2::hard 'defgoal
+                  "Illegal pairs for name ~x0: ~x1"
+                  name pairs))
+             (t
+              (hol-axiom hol-name
+                         (strip-cars pairs)
+                         (strip-cadrs pairs)
+                         formula
+                         (table-alist :hol-theory wrld)
+                         t))))
+           (&
+            (hol-axiom (hol-name name)
+                       nil
+                       nil
+                       body
+                       (table-alist :hol-theory wrld)
+                       t))))))
+
+(defmacro defgoal (name body &rest rest)
+  `(make-event
+    (let ((form (defgoal-form ',name (w state))))
+      (cond
+       ((null form)
+        (er acl2::soft 'defgoal
+            "There is no goal associated with the name, ~x0."
+            ',name))
+       ((not (equal ',body (caddr form)))
+        (er acl2::soft 'defgoal
+            "MISMATCH: The body of the defgoal form submitted ~
+             for the name ~x0 was~|~x1~|but the expected body was ~x2."
+            ',name ',body (caddr form)))
+       (t
+        (value (list* 'defthm (cadr form) ',body ',rest)))))))

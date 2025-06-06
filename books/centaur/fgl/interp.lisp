@@ -662,19 +662,21 @@
 
 
 ;; Used in merge-branches to recognize a branch on which we can unify some
-;; function.  BOZO We might want to try more than one function for some objects
-;; -- e.g. for :g-integer we could do both int and intcons, for concrete values
-;; that are conses we could do both concrete and bool, etc.  Ideally we'd try
-;; all the functions that the argument could unify with.
-(define fgl-fncall-object->fn ((x fgl-object-p))
-  :returns (fn pseudo-fnsym-p) ;; nil if didn't match
+;; function.
+(fty::deflist pseudo-fnsymlist :elt-type pseudo-fnsym :true-listp t :elementp-of-nil t)
+
+(define fgl-fncall-object->fns ((x fgl-object-p))
+  :returns (fn pseudo-fnsymlist-p) ;; nil if didn't match
   (fgl-object-case x
-    :g-boolean 'bool
-    :g-integer 'int
-    :g-concrete 'concrete
-    :g-apply x.fn
-    :g-cons 'cons
-    :g-ite 'if
+    :g-boolean '(bool)
+    :g-integer '(int)
+    :g-concrete (cond ((consp x.val) '(cons concrete))
+                      ((booleanp x.val) '(bool concrete))
+                      ((integerp x.val) '(int concrete))
+                      (t '(concrete)))
+    :g-apply (list x.fn)
+    :g-cons '(cons)
+    :g-ite '(if)
     :otherwise nil))
 
 
@@ -1613,7 +1615,7 @@
                    (& '(:use fgl-ev-meta-extract-global-badguy)))))))
 
 
-(define interp-st-branch-merge-rules ((fn pseudo-fnsym-p) interp-st state)
+(define interp-st-branch-merge-fn-rules ((fn pseudo-fnsym-p) interp-st state)
   :returns (mv (rules fgl-rulelist-p) new-interp-st)
   (b* (((mv err rules) (fgl-branch-merge-rules fn (w state)))
        ((when err)
@@ -1673,17 +1675,50 @@
                    (& '(:use fgl-ev-meta-extract-global-badguy)))))))
 
 
-(define interp-st-if-rules ((thenfn pseudo-fnsym-p) (elsefn pseudo-fnsym-p) interp-st state)
+(define interp-st-branch-merge-fnlist-rules ((fns pseudo-fnsymlist-p) interp-st state)
+  :returns (mv (rules fgl-rulelist-p) new-interp-st)
+  :prepwork ((local (defthm true-listp-when-fgl-rulelist-p
+                      (implies (fgl-rulelist-p x) (true-listp x))))
+             (local (defthm fgl-rulelist-p-of-append
+                      (implies (and (fgl-rulelist-p x)
+                                    (fgl-rulelist-p y))
+                               (fgl-rulelist-p (append x y)))
+                      :hints(("Goal" :in-theory (enable fgl-rulelist-p))))))
+  (b* (((when (atom fns)) (mv nil interp-st))
+       ((mv rules1 interp-st) (interp-st-branch-merge-fn-rules (car fns) interp-st state))
+       ((mv rules2 interp-st) (interp-st-branch-merge-fnlist-rules (cdr fns) interp-st state)))
+    (mv (append rules1 rules2) interp-st))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :errmsg)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
+
+
+  (defret fgl-good-fgl-rules-p-of-<fn>
+    (implies (and (fgl-ev-meta-extract-global-facts :state st)
+                  (equal (w st) (w state)))
+             (fgl-good-fgl-rules-p rules))))
+
+
+
+
+(define interp-st-if-rules ((thenfns pseudo-fnsymlist-p) (elsefns pseudo-fnsymlist-p) interp-st state)
   :returns (mv (then-rules fgl-rulelist-p)
                (else-rules fgl-rulelist-p)
                (if-rules fgl-rulelist-p)
                new-interp-st)
-  (b* (((mv then-rules interp-st) (if (pseudo-fnsym-fix thenfn)
-                                      (interp-st-branch-merge-rules thenfn interp-st state)
-                                    (mv nil interp-st)))
-       ((mv else-rules interp-st) (if (pseudo-fnsym-fix elsefn)
-                                      (interp-st-branch-merge-rules elsefn interp-st state)
-                                    (mv nil interp-st)))
+  (b* (((mv then-rules interp-st) (interp-st-branch-merge-fnlist-rules thenfns interp-st state))
+       ((mv else-rules interp-st) (interp-st-branch-merge-fnlist-rules elsefns interp-st state))
        ((mv if-rules interp-st) (interp-st-function-rules 'if interp-st state)))
     (mv then-rules else-rules if-rules interp-st))
   ///
@@ -3665,6 +3700,8 @@
                        ((fgl-interp-recursive-call args)
                         (fgl-interp-arglist x.args argcontexts interp-st state))
 
+                       ((when (interp-flags->hide (interp-st->flags interp-st)))
+                        (mv (g-apply x.fn args) interp-st state))
                        ;; ((when err)
                        ;;  (mv nil interp-st state))
                        )
@@ -3741,7 +3778,24 @@
 
           ((fgl-interp-obj 1)
            (fgl-interp-fgl-interp-obj (first args)
-                                     interp-st state))))
+                                      interp-st state))
+
+          ((fgl-hide 1)
+           (b* ((flags (interp-st->flags interp-st))
+                (new-flags (!interp-flags->hide t flags))
+                ((interp-st-bind
+                  (flags new-flags flags))
+                 ((fgl-interp-value val)
+                  (fgl-interp-term-top (first args) interp-st state))))
+             (fgl-interp-value val)))
+
+          ((trigger-constraints 1)
+           (b* (((interp-st-bind
+                  (equiv-contexts (fgl-interp-test-equiv-contexts (interp-st->equiv-contexts interp-st))))
+                 ((fgl-interp-recursive-call val)
+                  (fgl-interp-term-equivs (first args) interp-st state)))
+                ((fgl-interp-value) (fgl-interp-add-constraints val interp-st state)))
+             (fgl-interp-value nil)))))
 
       (define fgl-interp-arglist ((args pseudo-term-listp)
                                   (argcontexts equiv-argcontexts-p)
@@ -5006,14 +5060,14 @@
                                                             (mv enabledp pathcond))
                                                           (fgl-interp-value enabledp)))
 
-             (flags (interp-st->flags interp-st))
-             (new-flags  (!interp-flags->intro-synvars
-                          t
-                          ;; (!interp-flags->intro-bvars
-                          ;;  nil
-                           (!interp-flags->simplify-logic nil flags)))
+             ;; (flags (interp-st->flags interp-st))
+             ;; (new-flags  (!interp-flags->intro-synvars
+             ;;              t
+             ;;              ;; (!interp-flags->intro-bvars
+             ;;              ;;  nil
+             ;;               (!interp-flags->simplify-logic nil flags)))
              ((interp-st-bind
-               (flags new-flags flags)
+               ;; (flags new-flags flags)
                (reclimit (1- reclimit) reclimit)
                (equiv-contexts '(iff)))
               ((fgl-interp-value)
@@ -5114,11 +5168,11 @@
 
              (thenval (fgl-object-fix thenval))
              (elseval (fgl-object-fix elseval))
-             (thenfn (fgl-fncall-object->fn thenval))
-             (elsefn (fgl-fncall-object->fn elseval))
+             (thenfns (fgl-fncall-object->fns thenval))
+             (elsefns (fgl-fncall-object->fns elseval))
 
              ((mv then-rules else-rules if-rules interp-st)
-              (interp-st-if-rules thenfn elsefn interp-st state))
+              (interp-st-if-rules thenfns elsefns interp-st state))
 
 
              (interp-st (interp-st-push-scratch-fgl-obj elseval interp-st))
@@ -7176,6 +7230,25 @@
                 contexts obj x alist)))
     :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
 
+  (defthm fgl-ev-context-equiv-forall-extensions-of-fgl-hide-term
+    (b* (((pseudo-term-fncall x)))
+      (implies (and (pseudo-term-case x :fncall)
+                    (equal x.fn 'fgl-hide)
+                    (fgl-ev-context-equiv-forall-extensions
+                     contexts obj (car x.args)
+                     alist))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts obj x alist)))
+    :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
+
+  (defthm fgl-ev-context-equiv-forall-extensions-of-trigger-constraints-term
+    (b* (((pseudo-term-fncall x)))
+      (implies (and (pseudo-term-case x :fncall)
+                    (equal x.fn 'trigger-constraints))
+               (fgl-ev-context-equiv-forall-extensions
+                contexts nil x alist)))
+    :hints ((acl2::witness :ruleset fgl-ev-context-equiv-forall)))
+
   (local (defthm lookup-in-fgl-object-bindings-ev
            (iff (hons-assoc-equal k (fgl-object-bindings-concretize x env))
                 (hons-assoc-equal k (fgl-object-bindings-fix x)))
@@ -7215,14 +7288,14 @@
                            (car args)))
     :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
 
-  (defthm fgl-ev-equiv-of-assume-call
-    (implies (member (pseudo-fnsym-fix fn) '(assume syntax-interp-fn fgl-interp-obj))
+  (defthm fgl-ev-equiv-of-syntax-interp-call
+    (implies (member (pseudo-fnsym-fix fn) '(syntax-interp-fn fgl-interp-obj))
              (fgl-ev-equiv (pseudo-term-fncall fn args)
                            nil))
     :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
 
   (defthm fgl-ev-equiv-of-narrow-equiv-call
-    (implies (member (pseudo-fnsym-fix fn) '(narrow-equiv fgl-time-fn))
+    (implies (member (pseudo-fnsym-fix fn) '(assume narrow-equiv fgl-time-fn))
              (fgl-ev-equiv (pseudo-term-fncall fn args)
                            (second args)))
     :hints(("Goal" :in-theory (enable fgl-ev-equiv))))
@@ -9966,8 +10039,14 @@
                    (fgl-object-eval xobj env new-logicman)
                    `(if ,x 't 'nil) eval-alist)))
 
-                ((or (:fnname fgl-interp-assume)
-                     (:fnname fgl-interp-fgl-interp-obj))
+                ((:fnname fgl-interp-assume)
+                 (:add-concl
+                  (fgl-ev-context-equiv-forall-extensions
+                   (interp-st->equiv-contexts interp-st)
+                   (fgl-object-eval ans env new-logicman)
+                   x eval-alist)))
+                
+                ((:fnname fgl-interp-fgl-interp-obj)
                  (:add-concl
                   (fgl-ev-context-equiv-forall-extensions
                    (interp-st->equiv-contexts interp-st)

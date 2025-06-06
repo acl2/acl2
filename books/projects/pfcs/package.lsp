@@ -21,6 +21,7 @@
 
 (defpkg "PFCS" (append (set-difference-eq *std-pkg-symbols*
                                           '(eval
+                                            parse-integer
                                             proof-tree))
                        '(boolean-resultp
                          character-list-resultp
