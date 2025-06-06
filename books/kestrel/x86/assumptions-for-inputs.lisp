@@ -12,7 +12,7 @@
 (in-package "X")
 
 (include-book "portcullis")
-(include-book "regions") ; since this book knows about disjoint-regionsp
+(include-book "regions") ; since this book knows about disjoint-regions48p
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/map-symbol-name" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
@@ -99,7 +99,7 @@
            (this-len (cdr pair)))
       (cons `(separate :r ,len ,address
                        :r ,this-len ,this-address)
-            (cons `(disjoint-regionsp ,len ,address
+            (cons `(disjoint-regions48p ,len ,address
                                       ,this-len ,this-address)
                   (make-separate-claims address len (rest addresses-and-lens)))))))
 
@@ -246,7 +246,7 @@
                         (separate :r ,numbytes ,pointer-name
                                   :r ,stack-byte-count
                                   (+ ,(- stack-byte-count) (rsp x86)))
-                        (disjoint-regionsp ,numbytes ,pointer-name
+                        (disjoint-regions48p ,numbytes ,pointer-name
                                            ,stack-byte-count
                                            (+ ,(- stack-byte-count) (rsp x86)))
                         ;; The input is disjoint from the code:
@@ -255,7 +255,7 @@
                         ;; todo: reorder args?
                         (separate :r 8 (rsp x86)
                                   :r ,numbytes ,pointer-name)
-                        (disjoint-regionsp 8 (rsp x86)
+                        (disjoint-regions48p 8 (rsp x86)
                                            ,numbytes ,pointer-name))
                       ;; will be reversed later:
                       (list input-name pointer-name))))
@@ -281,7 +281,7 @@
                                 (separate :r ,numbytes ,pointer-name
                                           :r ,stack-byte-count
                                           (+ ,(- stack-byte-count) (rsp x86)))
-                                (disjoint-regionsp ,numbytes ,pointer-name
+                                (disjoint-regions48p ,numbytes ,pointer-name
                                                    ,stack-byte-count
                                                    (+ ,(- stack-byte-count) (rsp x86)))
                                 ;; The input is disjoint from the code:
@@ -290,7 +290,7 @@
                                 ;; todo: reorder args?
                                 (separate :r 8 (rsp x86)
                                           :r ,numbytes ,pointer-name)
-                                (disjoint-regionsp 8 (rsp x86)
+                                (disjoint-regions48p 8 (rsp x86)
                                                    ,numbytes ,pointer-name)))
                       ;; will be reversed later:
                       (append input-assumption-vars-rev (list pointer-name))))

@@ -55,5 +55,4 @@
 (include-book "separate")
 (include-book "support")
 
-(include-book "make-memory-region-machinery") ; todo: move out (and change package?)
 (include-book "regions")
