@@ -1851,6 +1851,56 @@
     acl2::equal-of-+-and-+-cancel-constants
     ))
 
+(defund canonical-rules-non-bv ()
+  (declare (xargs :guard t))
+  '(booleanp-of-canonical-address-p
+    x86isa::canonical-address-p-of-logext-48
+    x86isa::logext-48-does-nothing-when-canonical-address-p
+    ;; x86isa::create-canonical-address-list-1
+    ;; x86isa::canonical-address-listp-of-cons
+    ;; x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
+    ;; x86isa::member-p-of-create-canonical-address-list-same
+    ;; x86isa::canonical-address-listp-create-canonical-address-list
+    ;; x86isa::pos-and-create-canonical-address-list
+    ;; x86isa::car-create-canonical-address-list
+    x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
+    ;;will axe try all free variable matches?
+    ;; x86isa::canonical-address-p-between-special1
+    ;; x86isa::canonical-address-p-between-special2
+    ;; x86isa::canonical-address-p-between-special3
+    ;; x86isa::canonical-address-p-between-special4
+    x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
+    x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
+    ;; x86isa::member-p-canonical-address-listp
+    ;; x86isa::true-listp-create-canonical-address-list
+    ;; x86isa::len-of-create-canonical-address-list
+    x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
+    x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
+    ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
+    ;; x86isa::subset-p-two-create-canonical-address-lists-same-base-address
+    x86isa::canonical-address-p-of-logext-64
+    ;; x86isa::no-duplicates-p-create-canonical-address-list
+    ;; x86isa::not-member-p-canonical-address-listp-when-disjoint-p
+    ;; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
+    ;; <-when-canonical-address-p
+    ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
+    x86isa::write-canonical-address-to-memory
+    ;; x86isa::canonical-address-listp-of-cdr
+    ;; x86isa::car-create-canonical-address-list
+    ;; x86isa::cdr-create-canonical-address-list
+    ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
+    ;; signed-byte-p-when-between-canonical-addresses
+    x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
+    ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
+    ;;         canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
+    ;;         canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
+    ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
+    ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
+    x86isa::canonical-address-p-of-i48
+    x86isa::i48-when-canonical-address-p
+    ;; x86isa::canonical-address-p-of-if
+    ))
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defund lifter-rules-common ()
@@ -1895,6 +1945,7 @@
           (acl2::if-becomes-bvif-rules)
           (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
           '(acl2::len-of-cons acl2::nth-of-cons-constant-version) ; add to list-to-bv-array-rules?
+          (canonical-rules-non-bv) ; todo
           *unsigned-choppers* ;; these are just logead, aka bvchop
           *signed-choppers* ;; these are just logext
           *unsigned-recognizers* ;; these are just unsigned-byte-p
@@ -1959,7 +2010,7 @@
 
             poor-mans-quotep-constant-opener
 
-            booleanp-of-canonical-address-p
+
 
             the-check
             ;; get-prefixes:
@@ -1970,31 +2021,14 @@
 
             ;x86isa::mv-nth-of-cons ;mv-nth ;or do mv-nth of cons.  rules like rb-in-terms-of-nth-and-pos-eric target mv-nth
 
-            x86isa::canonical-address-p-of-logext-48
-            x86isa::logext-48-does-nothing-when-canonical-address-p
 
-;            x86isa::create-canonical-address-list-1
-
-;            x86isa::canonical-address-listp-of-cons
-;            x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
-;            x86isa::member-p-of-create-canonical-address-list-same
-;            x86isa::canonical-address-listp-create-canonical-address-list
-;            x86isa::pos-and-create-canonical-address-list
 
             inverse-of-+
             x86isa::combine-bytes-when-singleton
 
             x86isa::get-one-byte-prefix-array-code-rewrite-quotep ;;get-one-byte-prefix-array-code ;this is applied to a constant (the function is gross because it uses an array)
-;            x86isa::car-create-canonical-address-list
-            x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
-            ;;will axe try all free variable matches?
-            ;; x86isa::canonical-address-p-between-special1
-            ;; x86isa::canonical-address-p-between-special2
-            ;; x86isa::canonical-address-p-between-special3
-            ;; x86isa::canonical-address-p-between-special4
-            x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
 
-            ;; some of these can be needed for x86isa::canonical-address-p-between:
+            ;; some of these can be needed for x86isa::canonical-address-p-between: ; move to canonical-rules-non-bv?
             acl2::<-of-+-cancel-1-2
             acl2::<-of-+-cancel-2-1
             acl2::<-of-+-cancel-2-2
@@ -2010,12 +2044,10 @@
 
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
-            x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
             acl2::integerp-when-signed-byte-p
 
             ;; acl2::acl2-numberp-when-signed-byte-p
 
-;            x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
             acl2::ash-negative-becomes-slice-axe ; move?
 
@@ -2042,16 +2074,13 @@
             ;x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             ;x86isa::program-at-wb-disjoint ;drop?
 ;            strip-cars-of-create-addr-bytes-alist
-;            x86isa::true-listp-create-canonical-address-list
-;            x86isa::len-of-create-canonical-address-list
 ;            len-of-byte-ify ;can we drop the integerp hyp?
 
-            x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
+
             ;x86isa::xr-wb-in-app-view ;targets xr-of-mv-nth-1-of-wb
             x86isa::x86-decode-sib-p               ;restrict to ground terms?
             x86isa::x86-operand-to-reg/mem         ;shilpi leaves this enabled
             x86isa::mv-nth-becomes-nth-when-constants
-            x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
             acl2::distributivity-of-minus-over-+
             acl2::commutativity-2-of-+-when-constant
 
@@ -2076,10 +2105,7 @@
             ;x86isa::mv-nth-1-rb-xw-undef
 
             ;; x86isa::rb-wb-disjoint-eric
-;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
             ;; x86isa::rb-wb-subset
-;            x86isa::subset-p-two-create-canonical-address-lists-same-base-address
-            x86isa::canonical-address-p-of-logext-64
             ;;x86isa::xw-xw-intra-array-field-shadow-writes
             ;;x86isa::xw-xw-intra-simple-field-shadow-writes
             x86isa::xw-xw-shadow-writes
@@ -2087,7 +2113,6 @@
             x86isa::xw-xw-intra-field-arrange-writes ;axe puts in a loop-stopper hyp
 ;            assoc-list-of-rev-of-create-addr-bytes-alist
 ;            true-listp-of-byte-ify
-;            x86isa::no-duplicates-p-create-canonical-address-list
             ;acl2::slice-becomes-bvchop
             ;acl2::bvchop-of-bvchop
             ;acl2::bvchop-of-bvplus
@@ -2127,24 +2152,16 @@
 
             x86isa::disjoint-p-cons-1 ;restrict to a singleton?
             ;x86isa::disjoint-p-nil-1
-;            x86isa::not-member-p-canonical-address-listp-when-disjoint-p
-; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
             ;acl2::bvplus-combine-constants
             x86isa::<-of-logext-and-bvplus-of-constant
-;<-when-canonical-address-p
 
             ;acl2::logext-of-bvplus-64 ; a bit scary (instead, see todo #1 above)
 
-;            x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
-            x86isa::write-canonical-address-to-memory
-;            x86isa::canonical-address-listp-of-cdr
-;            x86isa::car-create-canonical-address-list
-;            x86isa::cdr-create-canonical-address-list
             x86isa::combine-bytes-unroll
             x86isa::combine-bytes-base
             x86isa::if-of-xr-app-view
-;            x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
+
 
 ;            x86isa::set-flag-undefined$inline ;trying this..
 ;            x86isa::xr-set-flag-undefined
@@ -2152,15 +2169,11 @@
 ;xr-rgf-mv-nth-2-rb
 ;xr-app-view-mv-nth-2-rb
 
-;signed-byte-p-when-between-canonical-addresses
+
 ;            x86isa::x86p-of-set-flag-undefined-eric ;x86p-of-set-flag-undefined ;drop?
 ;            x86isa::rb-set-flag-undefined-in-app-view ;drop?
 
             x86isa::<-of-logext-and-+-of-constant
-            x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
-            ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
-;                    canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
-;                    canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
             ;;signed-byte-p-of-+-between
 
             acl2::logext-of-+-of-constant
@@ -2184,8 +2197,6 @@
             acl2::bvmult-of-bvcat-of-0
             acl2::bvmult-of-bvchop-arg3
 
-;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
-;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk-pos ;only needed for pe file?
 
             acl2::bvplus-of-unary-minus
@@ -2200,10 +2211,9 @@
             ;x86isa::64-bit-modep-of-mv-nth-1-of-wb
 
             ;;todo: include all of the lifter rules:
-            x86isa::canonical-address-p-of-i48
-            x86isa::i48-when-canonical-address-p
+
             x86isa::select-address-size$inline
-            ;x86isa::canonical-address-p-of-if
+
 
             cf-spec64-when-unsigned-byte-p
 
