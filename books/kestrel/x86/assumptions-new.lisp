@@ -21,8 +21,15 @@
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/lists-light/reverse" :dir :system))
 
-(local (in-theory (disable acl2::reverse-becomes-reverse-list-gen acl2::reverse-becomes-reverse-list acl2::reverse-removal acl2::revappend-removal))) ; todo
+(local (in-theory (disable acl2::reverse-becomes-reverse-list-gen
+                           acl2::reverse-becomes-reverse-list
+                           acl2::reverse-removal
+                           acl2::revappend-removal
+                           assoc-equal
+                           symbol-alistp
+                           ))) ; todo
 
 (local
   (defthm true-listp-when-byte-listp
@@ -44,11 +51,13 @@
     :hints (("Goal" :in-theory (enable acl2::byte-listp acl2::repeat)))))
 
 ;; Result is untranslated
-(defun symbolic-add-constant (constant term)
+(defund symbolic-add-constant (constant term)
   (declare (xargs :guard (integerp constant)))
   (if (= 0 constant)
       term
     `(+ ',constant ,term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions).
 ;; Generates assumptions asserting that a chunk of data has been loaded into memory (e.g., a section or segment of the executable).
@@ -130,11 +139,11 @@
                     nil))))))))
 
 ;;might relax this
-(defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-memory-chunk
-  (implies (and (pseudo-termp state-var)
-                (pseudo-termp base-var))
-           (pseudo-term-listp (mv-nth 1 (assumptions-for-memory-chunk addr bytes relp state-var base-var stack-slots-needed bvp))))
-  :hints (("Goal" :in-theory (enable assumptions-for-memory-chunk))))
+;; (defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-memory-chunk
+;;   (implies (and (pseudo-termp state-var)
+;;                 (pseudo-termp base-var))
+;;            (pseudo-term-listp (mv-nth 1 (assumptions-for-memory-chunk addr bytes relp state-var base-var stack-slots-needed bvp))))
+;;   :hints (("Goal" :in-theory (enable assumptions-for-memory-chunk))))
 
 (defthm true-listp-of-mv-nth-1-of-assumptions-for-memory-chunk
   (true-listp (mv-nth 1 (assumptions-for-memory-chunk addr bytes relp state-var base-var stack-slots-needed bvp)))
@@ -180,11 +189,17 @@
                       bytes)))
           (assumptions-for-memory-chunk vaddr bytes relp state-var base-var stack-slots-needed bvp))))))
 
-(defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-elf64-segment
-  (implies (and (symbolp state-var)
-                (symbolp base-var))
-           (pseudo-term-listp (mv-nth 1 (assumptions-for-elf64-segment program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp))))
+;; (defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-elf64-segment
+;;   (implies (and (symbolp state-var)
+;;                 (symbolp base-var))
+;;            (pseudo-term-listp (mv-nth 1 (assumptions-for-elf64-segment program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp))))
+;;   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segment))))
+
+(defthm true-listp-of-mv-nth-1-of-assumptions-for-elf64-segment
+  (true-listp (mv-nth 1 (assumptions-for-elf64-segment program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp)))
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segment))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions).
 ;; TODO: Check for contradiction due to overlap of segments (after perhaps adding zeros at the end)
@@ -197,7 +212,7 @@
                               (acl2::byte-listp bytes)
                               (equal bytes-len (len bytes))
                               (booleanp bvp)
-                              (pseudo-term-listp acc))
+                              (true-listp acc))
                   :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
                                                            acl2::true-listp-when-pseudo-term-listp-2)))))
   (if (endp program-header-table)
@@ -211,24 +226,26 @@
                                       (revappend assumptions acc) ; since they will be reversed again at the end
                                       ))))
 
-(defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-elf64-segments
-  (implies (and (acl2::elf-program-header-tablep program-header-table)
-                (booleanp relp)
-                (symbolp state-var)
-                (symbolp base-var)
-                (natp stack-slots-needed)
-                (acl2::byte-listp bytes)
-                (equal bytes-len (len bytes))
-                (pseudo-term-listp acc))
-           (pseudo-term-listp (mv-nth 1 (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes bytes-len bvp acc))))
+;; (defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-elf64-segments
+;;   (implies (and (acl2::elf-program-header-tablep program-header-table)
+;;                 (booleanp relp)
+;;                 (symbolp state-var)
+;;                 (symbolp base-var)
+;;                 (natp stack-slots-needed)
+;;                 (acl2::byte-listp bytes)
+;;                 (equal bytes-len (len bytes))
+;;                 (pseudo-term-listp acc))
+;;            (pseudo-term-listp (mv-nth 1 (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes bytes-len bvp acc))))
+;;   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segments))))
+
+(defthm true-listp-of-mv-nth-1-of-assumptions-for-elf64-segments
+  (implies (true-listp acc)
+           (true-listp (mv-nth 1 (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes bytes-len bvp acc))))
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segments))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (include-book "kestrel/lists-light/reverse" :dir :system))
-
 (local (in-theory (disable x86isa::byte-listp-becomes-all-unsigned-byte-p ; todo
-                           acl2::get-elf-section-address ; todo
                            )))
 
 ;; Returns (mv erp ASSUMPTIONS), where ASSUMPTIONS is a list of terms over the variables STATE-VAR and (perhaps BASE-VAR).
@@ -270,8 +287,6 @@
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-sections-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local (in-theory (disable assoc-equal symbol-alistp))) ;todo
 
 ;; Generate all the assumptions for an ELF64 file, whether relative or
 ;; absolute.  Returns (mv erp assumptions assumption-vars) where assumptions is
@@ -388,6 +403,10 @@
           input-assumptions)
         input-assumption-vars)))
 
+(defthm true-list-of-mv-nth-1-of-assumptions-elf64-new
+  (true-listp (mv-nth 1 (assumptions-elf64-new target relp stack-slots-needed state-var base-var inputs type-assumptions-for-array-varsp disjoint-chunk-addresses-and-lens bvp parsed-elf)))
+  :hints (("Goal" :in-theory (enable assumptions-elf64-new))))
+
 ;; not true due to make-standard-state-assumptions-64-fn
 ;; (thm
 ;;   (implies (and (lifter-targetp target)
@@ -401,8 +420,9 @@
 ;;                                                               state-var
 ;;                                                               parsed-elf)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp maybe-extended-bases-and-lens).
+;; Returns (mv erp maybe-extended-acc).
 (defun elf64-segment-address-and-len (program-header-table-entry relp base-var bytes-len acc)
   (declare (xargs :guard (and (alistp program-header-table-entry)
                               (booleanp relp)

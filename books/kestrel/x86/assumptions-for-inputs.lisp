@@ -314,7 +314,7 @@
 
 ;; Returns (mv assumptions input-assumption-vars).
 ;; might have extra, unneeded items in state-components
-(defun input-assumptions-and-vars (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc)
+(defund input-assumptions-and-vars (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc)
   (declare (xargs :guard (and (names-and-typesp input-names-and-types)
                               (true-listp state-components)
                               (natp stack-slots)
@@ -341,3 +341,15 @@
                                   ))))
 
 ;; Example: (input-assumptions-and-vars '((v1 :u32*) (v2 :u32*)) '((rdi x86) (rsi x86)))
+
+(defthm true-listp-of-mv-nth-0-of-input-assumptions-and-vars-type
+  (implies (true-listp assumptions-acc)
+           (true-listp (mv-nth 0 (input-assumptions-and-vars input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable input-assumptions-and-vars))))
+
+(defthm true-listp-of-mv-nth-1-of-input-assumptions-and-vars-type
+  (implies (true-listp vars-acc)
+           (true-listp (mv-nth 1 (input-assumptions-and-vars input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc))))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable input-assumptions-and-vars))))
