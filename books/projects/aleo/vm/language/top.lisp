@@ -11,7 +11,7 @@
 
 (in-package "ALEOVM")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "grammar")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
