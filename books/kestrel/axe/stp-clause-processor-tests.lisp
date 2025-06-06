@@ -1,7 +1,7 @@
 ; Tests of the STP clause processor
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -50,9 +50,10 @@
 
 ;; (defthm-with-stp-clause-processor mytest (not (not (equal (bvplus 32 x y) (bvplus 33 y x)))))
 
+;; todo: get this to work:
 ;; (defthm mytest
 ;;   (implies (equal 0 x) (equal (bvplus 32 x 0) 0))
-;;   :hints (("Goal" :clause-processor (stp-clause-processor clause nil state))))
+;;   :hints (("Goal" :clause-processor (stp-clause-processor clause '((:must-prove . t)) state))))
 
 ;; Proof should fail but no hard error:
 (must-fail

@@ -17,10 +17,10 @@
 ;Attempts to prove CLAUSE using STP.
 ;Returns (mv erp clauses state) where clauses is nil if STP proved the goal and
 ;otherwise is a singleton set containing the original clause (indicating that
-;no change was made).  TODO: What is the format of the hint?
+;no change was made).
 (defun stp-clause-processor (clause hint state)
   (declare (xargs :guard (and (pseudo-term-listp clause)
-                              (alistp hint))
+                              (symbol-alistp hint))
                   :stobjs state))
   (b* (;; Get and check options:
        (hint-keys (strip-cars hint))
@@ -77,8 +77,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Check whether STP alone can prove a theorem
-;; TODO: Pass in the rest of the options (and the rest of the things that defthm takes)
+;; A tool to prove a theorem using STP alone.
+;; TODO: Pass in the rest of the options in the hint (and the rest of the things that defthm takes)
+;; TODO: At least handle IMPLIES specially
 (defmacro defthm-with-stp-clause-processor (name term)
   `(defthm ,name ,term
      :hints (("Goal" :clause-processor (stp-clause-processor clause '((:must-prove . t)) state)))))
