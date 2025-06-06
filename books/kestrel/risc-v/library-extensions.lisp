@@ -28,22 +28,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule logext-of-loghead
-  (implies (and (posp size)
-                (posp size1)
-                (<= size1 size))
-           (equal (logext size1 (loghead size i))
-                  (logext size1 i)))
-  :enable (logbitp
-           oddp
-           evenp
-           ifix
-           nfix
-           fix)
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruled logext-of-logext-plus-logext
   (equal (logext n (+ (logext n x) (logext n y)))
          (logext n (+ (ifix x) (ifix y))))

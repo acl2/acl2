@@ -36,6 +36,7 @@ val thms =
       ∀a0 a1 v f. list_CASE (a0::a1) v f = f a0 a1,
     ⊢ (∀f. list_size f [] = 0) ∧
       ∀f a0 a1. list_size f (a0::a1) = 1 + (f a0 + list_size f a1),
+    ⊢ (∀f. MAP f [] = []) ∧ ∀f h t. MAP f (h::t) = f h::MAP f t,
     ⊢ (∀f e. FOLDR f e [] = e) ∧
       ∀f e x l. FOLDR f e (x::l) = f x (FOLDR f e l),
     ⊢ (∀f e. FOLDL f e [] = e) ∧
@@ -45,7 +46,10 @@ val thms =
     ⊢ (Even 0 ⇔ T) ∧
       (∀n. Even (SUC n) ⇔ Odd n) ∧
       (Odd 0 ⇔ F) ∧
-      (∀n. Odd (SUC n) ⇔ Even n)
+      (∀n. Odd (SUC n) ⇔ Even n),
+    ⊢ (∀m. m ** 0 = 1) ∧ ∀m n. m ** SUC n = m * m ** n,
+    ⊢ THM MAP_ID_I (MAP I = I),
+    ⊢ THM MAP_o (∀f g. MAP (f ∘ g) = MAP f ∘ MAP g)
     ]: thm list
 |#
 
@@ -205,6 +209,21 @@ val thms =
           (list_size (typ (:arrow* (:arrow* a :num) (:list a) :num))) f
           a1)))))))
 ;  ),
+; ("MAP",
+(defhol
+   :fns ((map (:arrow* (:arrow* a b) (:list a) (:list b))))
+   :defs ((:forall ((f (:arrow* a b)))
+      (equal
+       (hap* (map (typ (:arrow* (:arrow* a b) (:list a) (:list b)))) f
+        (hp-nil (typ a))) (hp-nil (typ b))))
+     (:forall ((f (:arrow* a b)) (h a) (t (:list a)))
+      (equal
+       (hap* (map (typ (:arrow* (:arrow* a b) (:list a) (:list b)))) f
+        (hp-cons h t))
+       (hp-cons (hap* f h)
+        (hap* (map (typ (:arrow* (:arrow* a b) (:list a) (:list b)))) f
+         t))))))
+;  ),
 ; ("FOLDR",
 (defhol
    :fns ((foldr (:arrow* (:arrow* a b b) b (:list a) b)))
@@ -264,13 +283,61 @@ val thms =
        (hap* (odd (typ (:arrow* :num :bool)))
         (hap* (suc (typ (:arrow* :num :num))) n))
        (hap* (even (typ (:arrow* :num :bool))) n)))))
+;  )
+; ("EXP",
+(defhol
+   :fns ((exp (:arrow* :num :num :num)))
+   :defs ((:forall ((m :num))
+      (equal (hap* (exp (typ (:arrow* :num :num :num))) m (hp-num 0))
+       (hp-num 1)))
+     (:forall ((m :num) (n :num))
+      (equal
+       (hap* (exp (typ (:arrow* :num :num :num))) m
+        (hap* (suc (typ (:arrow* :num :num))) n))
+       (hp* m (hap* (exp (typ (:arrow* :num :num :num))) m n))))))
+;  ),
+; ("MAP_ID_I",
+(defhol
+   :name map_id_i
+   :thm (hp=
+     (hap* (map (typ (:arrow* (:arrow* a a) (:list a) (:list a))))
+      (i (typ (:arrow* a a)))) (i (typ (:arrow* (:list a) (:list a))))))
+;  ),
+; ("MAP_o",
+(defhol
+   :name map_o
+   :thm (:forall ((f (:arrow* b c)) (g (:arrow* a b)))
+     (hp=
+      (hap* (map (typ (:arrow* (:arrow* a c) (:list a) (:list c))))
+       (hap* (o (typ (:arrow* (:arrow* b c) (:arrow* a b) a c))) f g))
+      (hap*
+       (o
+        (typ
+         (:arrow* (:arrow* (:list b) (:list c))
+          (:arrow* (:list a) (:list b)) (:list a) (:list c))))
+       (hap* (map (typ (:arrow* (:arrow* b c) (:list b) (:list c)))) f)
+       (hap* (map (typ (:arrow* (:arrow* a b) (:list a) (:list b)))) g)))))
 ;  )]
+
+;;; Added manually; see defgoal form for fst-comma at the end, which
+;;; corresponds to the defhol form just below.
+
+; FST (x,y) = x
+
+(defhol
+   :name fst-comma
+   :goal (:forall
+          ((x a) (y b))
+          (hp= (hap*
+                (fst (typ (:arrow* (:hash a b) a)))
+                (hap* (comma (typ (:arrow* a b (:hash a b)))) x y))
+               x)))
 
 (close-theory)
 
-(set-enforce-redundancy t)
+(set-enforce-redundancy acl2::t)
 
-; From (table :hol-axioms 'ex1):
+; From (table :hol-theory 'ex1):
 
 (DEFTHM HOL{SUC}
   (IMPLIES (AND (HPP M HTA)
@@ -574,5 +641,111 @@ val thms =
                        (HAP* (MOD (TYP (:ARROW* :NUM :NUM :NUM))) K N)))
              (HP< (HAP* (MOD (TYP (:ARROW* :NUM :NUM :NUM))) K N) N)))
     (HP-TRUE))))
+(DEFTHM HOL{MAP}0
+  (IMPLIES (AND (HPP F HTA)
+                (EQUAL (HP-TYPE F) (TYP (:ARROW* A B)))
+                (ALIST-SUBSETP (EX1$HTA) HTA)
+                (FORCE (EX1$PROP)))
+           (EQUAL (HAP* (MAP (TYP (:ARROW* (:ARROW* A B)
+                                           (:LIST A)
+                                           (:LIST B))))
+                        F
+                        (HP-NIL (TYP A)))
+                  (HP-NIL (TYP B)))))
+(DEFTHM HOL{MAP}1
+  (IMPLIES (AND (HPP F HTA)
+                (EQUAL (HP-TYPE F) (TYP (:ARROW* A B)))
+                (HPP H HTA)
+                (EQUAL (HP-TYPE H) (TYP A))
+                (HPP T HTA)
+                (EQUAL (HP-TYPE T) (TYP (:LIST A)))
+                (ALIST-SUBSETP (EX1$HTA) HTA)
+                (FORCE (EX1$PROP)))
+           (EQUAL (HAP* (MAP (TYP (:ARROW* (:ARROW* A B)
+                                           (:LIST A)
+                                           (:LIST B))))
+                        F
+                        (HP-CONS H T))
+                  (HP-CONS (HAP* F H)
+                           (HAP* (MAP (TYP (:ARROW* (:ARROW* A B)
+                                                    (:LIST A)
+                                                    (:LIST B))))
+                                 F
+                                 T)))))
+(DEFTHM HOL{EXP}0
+  (IMPLIES (AND (HPP M HTA)
+                (EQUAL (HP-TYPE M) (TYP :NUM))
+                (ALIST-SUBSETP (EX1$HTA) HTA)
+                (FORCE (EX1$PROP)))
+           (EQUAL (HAP* (EXP (TYP (:ARROW* :NUM :NUM :NUM)))
+                        M (HP-NUM 0))
+                  (HP-NUM 1))))
+(DEFTHM HOL{EXP}1
+  (IMPLIES (AND (HPP M HTA)
+                (EQUAL (HP-TYPE M) (TYP :NUM))
+                (HPP N HTA)
+                (EQUAL (HP-TYPE N) (TYP :NUM))
+                (ALIST-SUBSETP (EX1$HTA) HTA)
+                (FORCE (EX1$PROP)))
+           (EQUAL (HAP* (EXP (TYP (:ARROW* :NUM :NUM :NUM)))
+                        M
+                        (HAP* (SUC (TYP (:ARROW* :NUM :NUM)))
+                              N))
+                  (HP* M
+                       (HAP* (EXP (TYP (:ARROW* :NUM :NUM :NUM)))
+                             M N)))))
+(DEFTHM HOL{MAP_ID_I}
+  (IMPLIES (FORCE (EX1$PROP))
+           (EQUAL (HP= (HAP* (MAP (TYP (:ARROW* (:ARROW* A A)
+                                                (:LIST A)
+                                                (:LIST A))))
+                             (I (TYP (:ARROW* A A))))
+                       (I (TYP (:ARROW* (:LIST A) (:LIST A)))))
+                  (HP-TRUE))))
+(DEFTHM HOL{MAP_O}
+  (IMPLIES
+   (AND (HPP F HTA)
+        (EQUAL (HP-TYPE F) (TYP (:ARROW* B C)))
+        (HPP G HTA)
+        (EQUAL (HP-TYPE G) (TYP (:ARROW* A B)))
+        (ALIST-SUBSETP (EX1$HTA) HTA)
+        (FORCE (EX1$PROP)))
+   (EQUAL (HP= (HAP* (MAP (TYP (:ARROW* (:ARROW* A C)
+                                        (:LIST A)
+                                        (:LIST C))))
+                     (HAP* (O (TYP (:ARROW* (:ARROW* B C)
+                                            (:ARROW* A B)
+                                            A
+                                            C)))
+                           F
+                           G))
+               (HAP* (O (TYP (:ARROW* (:ARROW* (:LIST B) (:LIST C))
+                                      (:ARROW* (:LIST A) (:LIST B))
+                                      (:LIST A)
+                                      (:LIST C))))
+                     (HAP* (MAP (TYP (:ARROW* (:ARROW* B C)
+                                              (:LIST B)
+                                              (:LIST C))))
+                           F)
+                     (HAP* (MAP (TYP (:ARROW* (:ARROW* A B)
+                                              (:LIST A)
+                                              (:LIST B))))
+                           G)))
+          (HP-TRUE))))
 
+(set-enforce-redundancy acl2::nil)
 
+(defgoal fst-comma ; generates (DEFTHM HOL{FST-COMMA} ...):
+  (implies
+   (and (hpp x hta)
+        (equal (hp-type x) (typ a))
+        (hpp y hta)
+        (equal (hp-type y) (typ b))
+        (alist-subsetp (hol::ex1$hta) hta)
+        (force (hol::ex1$prop)))
+   (equal (hp= (hap*
+                (hol::fst (typ (:arrow* (:hash a b) a)))
+                (hap* (hol::comma (typ (:arrow* a b (:hash a b)))) x y))
+               x)
+          (hp-true)))
+  :hints (("Goal" :in-theory (disable hp-comma))))

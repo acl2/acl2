@@ -1,9 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; Copyright (C) 2024 Aleo Systems Inc. (https://www.aleo.org)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
@@ -23,7 +23,7 @@
   (xdoc::topstring
    (xdoc::p
     "A named relation denotes
-     a predicate over the cartesian product of the prime field;
+     a predicate over a cartesian product of the prime field;
      the number of factors of the cartesian product
      is the arity of the relation.
      The predicate holds exactly on the tuples of prime field elements

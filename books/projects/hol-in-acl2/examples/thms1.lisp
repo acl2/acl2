@@ -2,6 +2,10 @@
 ; Written by Matt Kaufmann and Konrad Slind
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
+; This book gives an example of a theorem that can be proved about translations
+; of HOL functions.  It is essentially superseded by the corresponding defhol
+; and defgoal forms in ex1.lisp.
+
 (in-package "ZF")
 
 (include-book "ex1")

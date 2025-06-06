@@ -1,9 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; modifications Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
@@ -37,7 +37,11 @@
      which may be conjoined with equality constraints.
      A system of constraints is a collection of named relations,
      which are hierarchically organized,
-     and of constraints that may reference the relations."))
+     and of constraints that may reference the relations.")
+   (xdoc::p
+    "The abstract syntax is derived from the "
+    (xdoc::seetopic "grammar" "ABNF grammar")
+    " in a straightforward way."))
   :order-subtopics t
   :default-parent t)
 
@@ -91,6 +95,8 @@
   :pred expression-listp
   :prepwork ((local (in-theory (enable nfix)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult expression-list-result
   :short "Fixtype of errors and lists of PFCS expressions."
   :ok expression-list
@@ -115,6 +121,8 @@
               (args expression-list)))
   :pred constraintp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult constraint-result
   :short "Fixtype of errors and PFCS constraints."
   :ok constraint
@@ -130,6 +138,8 @@
   :elementp-of-nil nil
   :pred constraint-listp
   :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult constraint-list-result
   :short "Fixtype of errors and lists of PFCS constraints."
@@ -159,6 +169,8 @@
   :tag :definition
   :pred definitionp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult definition-result
   :short "Fixtype of errors and PFCS definitions."
   :ok definition
@@ -187,6 +199,8 @@
            (definition-list-fix (rev defs)))
     :enable definition-list-fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult definition-list-result
   :short "Fixtype of errors and lists of PFCS definitions."
   :ok definition-list
@@ -205,8 +219,9 @@
   :tag :system ; added to get the defresult to certify
   :pred systemp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defresult system-result
   :short "Fixtype of errors and PFCS systems."
   :ok system
   :pred system-resultp)
-
