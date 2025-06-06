@@ -56,6 +56,18 @@
                         (and (fgl-object-bindings-p x)
                              (interp-st-bfr-listp (fgl-object-bindings-bfrlist x))))
 
+(fancy-ev-add-primitive interp-st-eval-object-bindings-under-counterexample
+                        (and (fgl-object-bindings-p x)
+                             (interp-st-bfr-listp (fgl-object-bindings-bfrlist x))))
+
+(fancy-ev-add-primitive interp-st-eval-objectlist-under-counterexample
+                        (and (fgl-objectlist-p x)
+                             (interp-st-bfr-listp (fgl-objectlist-bfrlist x))))
+
+(fancy-ev-add-primitive interp-st-eval-object-under-counterexample
+                        (and (fgl-object-p x)
+                             (interp-st-bfr-listp (fgl-object-bfrlist x))))
+
 (fancy-ev-add-primitive interp-st-counterex-stack-bindings/print-errors t)
 
 (fancy-ev-add-primitive interp-st-counterex-value
