@@ -11,7 +11,7 @@
 
 (in-package "ALEOVM")
 
-(include-book "grammar")
+(include-book "concrete-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,4 +22,5 @@
   (xdoc::topstring
    (xdoc::p
     "We provide a formalization of the AleoVM language.
-     This formalization is work in progress.")))
+     This formalization is work in progress."))
+  :order-subtopics (concrete-syntax))
