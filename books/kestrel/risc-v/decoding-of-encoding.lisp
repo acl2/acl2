@@ -514,9 +514,9 @@
 
   (local (include-book "arithmetic-5/top" :dir :system))
 
-  (defrulel logbit-11-to-logtail-11-when-ubyte12p
+  (defrulel bool->bit-logbitp-11-to-logtail-11-when-ubyte12p
     (implies (ubyte12p x)
-             (equal (logbit 11 x)
+             (equal (bool->bit (logbitp 11 x))
                     (logtail 11 x)))
     :enable (logtail
              bool->bit
@@ -535,7 +535,8 @@
                         (encode (instr-branch funct rs1 rs2 imm) feat))
                        imm))
        :enable (get-imm-btype
-                encode)))))
+                encode
+                loghead-of-1-when-bitp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -563,9 +564,9 @@
 
   (local (include-book "arithmetic-5/top" :dir :system))
 
-  (defrulel logbit-19-to-logtail-19-when-ubyte20p
+  (defrulel bool->bit-logbitp-19-to-logtail-19-when-ubyte20p
     (implies (ubyte20p x)
-             (equal (logbit 19 x)
+             (equal (bool->bit (logbitp 19 x))
                     (logtail 19 x)))
     :enable (logtail
              bool->bit
@@ -583,7 +584,8 @@
                 (equal (get-imm-jtype (encode (instr-jal rd imm) feat))
                        imm))
        :enable (get-imm-jtype
-                encode)))))
+                encode
+                loghead-of-1-when-bitp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

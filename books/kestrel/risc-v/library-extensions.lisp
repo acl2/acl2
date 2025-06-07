@@ -29,6 +29,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule bitp-of-bool->bit
+  (bitp (bool->bit x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled logext-of-logext-plus-logext
   (equal (logext n (+ (logext n x) (logext n y)))
          (logext n (+ (ifix x) (ifix y))))
@@ -91,10 +96,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule loghead-of-1-of-bool->bit-logbitp
-  (equal (loghead 1 (bool->bit (logbitp i x)))
-         (logbit i x))
-  :enable bool->bit
+(defruled loghead-of-1-when-bitp
+  (implies (bitp b)
+           (equal (loghead 1 b)
+                  b))
   :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
