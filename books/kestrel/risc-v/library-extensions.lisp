@@ -116,4 +116,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule logapp-m-of-logtail-n-and-logtail-p-when-p-is-m+n
+  (implies (and (natp m)
+                (natp n)
+                (natp p)
+                (equal p (+ m n)))
+           (equal (logapp m (logtail n x) (logtail p x))
+                  (logtail n x)))
+  :enable (logapp
+           logtail
+           loghead
+           ifix)
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)
+               (include-book "centaur/bitops/ihs-extensions" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable loghead logext))
