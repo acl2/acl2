@@ -535,9 +535,7 @@
                         (encode (instr-branch funct rs1 rs2 imm) feat))
                        imm))
        :enable (get-imm-btype
-                encode
-                logapp-1-of-logbit-logtail)
-       :disable bitops::logbit-to-logbitp))))
+                encode)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -585,9 +583,7 @@
                 (equal (get-imm-jtype (encode (instr-jal rd imm) feat))
                        imm))
        :enable (get-imm-jtype
-                encode
-                logapp-1-of-logbit-logtail)
-       :disable bitops::logbit-to-logbitp))))
+                encode)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
