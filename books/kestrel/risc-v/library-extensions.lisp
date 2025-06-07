@@ -91,14 +91,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule loghead-of-1-of-logbit
-  (equal (loghead 1 (logbit i x))
-         (logbit i x))
-  :enable bool->bit
-  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule loghead-of-1-of-bool->bit-logbitp
   (equal (loghead 1 (bool->bit (logbitp i x)))
          (logbit i x))
