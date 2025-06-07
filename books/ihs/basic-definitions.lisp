@@ -413,7 +413,13 @@ bit arbitrary but generally leads to nice lemmas.</p>"
        :exec
        (the unsigned-byte
             (logand i (the unsigned-byte
-                           (1- (the unsigned-byte (ash 1 size))))))))
+                           (1- (the unsigned-byte (ash 1 size)))))))
+
+  ///
+
+  (defthmd loghead-of-ifix
+    (equal (loghead size (ifix i))
+           (loghead size i))))
 
 (define logtail
   :short "@('(logtail pos i)') returns the high-order part of @('i'), starting
@@ -523,7 +529,13 @@ function that is optimized for better performance.</p>"
     (logapp size-1 i
             (if (logbitp size-1 i)
                 -1
-              0))))
+              0)))
+
+  ///
+
+  (defthmd logext-of-ifix
+    (equal (logext size (ifix i))
+           (logext size i))))
 
 (define logrev1
   :parents (logrev)
