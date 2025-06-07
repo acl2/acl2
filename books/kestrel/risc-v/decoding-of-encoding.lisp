@@ -500,7 +500,8 @@
     :prep-lemmas
     ((defruled lemma
        (implies (ubyte12p imm)
-                (equal (get-imm-stype (encode (instr-store funct rs1 rs2 imm) feat))
+                (equal (get-imm-stype (encode (instr-store funct rs1 rs2 imm)
+                                              feat))
                        imm))
        :enable (get-imm-stype
                 encode)))))
