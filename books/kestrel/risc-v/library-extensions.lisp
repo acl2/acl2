@@ -107,24 +107,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled logapp-1-of-logbit-logtail
-  (implies (and (natp i)
-                (equal j (1+ i))
-                (integerp x))
-           (equal (logapp 1 (logbit i x) (logtail j x))
-                  (logtail i x)))
-  :cases ((logbitp i x))
-  :enable (logtail
-           logapp
-           ifix
-           logbitp
-           fix
-           oddp
-           evenp)
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule logapp-1-of-bool->bit-logbitp-and-logtail
   (implies (and (natp i)
                 (equal j (1+ i))
