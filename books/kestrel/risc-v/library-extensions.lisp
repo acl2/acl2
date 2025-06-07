@@ -12,6 +12,7 @@
 (in-package "RISCV")
 
 (include-book "ihs/basic-definitions" :dir :system)
+(include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -116,6 +117,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule logapp-1-of-bool->bit-logbitp-and-logtail
+  (implies (and (natp i)
+                (equal j (1+ i))
+                (integerp x))
+           (equal (logapp 1 (bool->bit (logbitp i x)) (logtail j x))
+                  (logtail i x)))
+  :cases ((logbitp i x))
+  :enable (logtail
+           logapp
+           logbitp
+           ifix
+           fix
+           oddp
+           evenp)
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)
+               (include-book "arithmetic-5/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule logapp-m-of-logtail-n-and-logtail-p-when-p-is-m+n
   (implies (and (natp m)
                 (natp n)
@@ -127,8 +147,8 @@
            logtail
            loghead
            ifix)
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)
-               (include-book "centaur/bitops/ihs-extensions" :dir :system)))
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)
+               (include-book "arithmetic-5/top" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
