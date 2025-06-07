@@ -99,6 +99,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule loghead-of-1-of-bool->bit-logbitp
+  (equal (loghead 1 (bool->bit (logbitp i x)))
+         (logbit i x))
+  :enable bool->bit
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled logapp-1-of-logbit-logtail
   (implies (and (natp i)
                 (equal j (1+ i))
