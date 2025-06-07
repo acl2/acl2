@@ -524,14 +524,6 @@
              ubyte12p
              unsigned-byte-p))
 
-  (defrulel logapp-6-logtail-4-logtail-10
-    (implies (integerp x)
-             (equal (logapp 6 (logtail 4 x) (logtail 10 x))
-                    (logtail 4 x)))
-    :enable (logapp
-             logtail
-             loghead))
-
   (defruled get-imm-btype-of-encode-of-instr-branch
     (equal (get-imm-btype (encode (instr-branch funct rs1 rs2 imm) feat))
            (ubyte12-fix imm))
@@ -582,14 +574,6 @@
              logbitp
              ubyte20p
              unsigned-byte-p))
-
-  (defrulel logapp-8-logtail-11-logtail-19
-    (implies (integerp x)
-             (equal (logapp 8 (logtail 11 x) (logtail 19 x))
-                    (logtail 11 x)))
-    :enable (logapp
-             logtail
-             loghead))
 
   (defruled get-imm-jtype-of-encode-of-instr-jal
     (equal (get-imm-jtype (encode (instr-jal rd imm) feat))
