@@ -15,8 +15,9 @@
 (include-book "abstract-syntax")
 (include-book "well-formedness")
 (include-book "semantics")
-(include-book "parser-interface")
+(include-book "semantics-shallow")
 (include-book "proof-support")
+(include-book "parser-interface")
 (include-book "lifting")
 (include-book "r1cs-subset")
 (include-book "r1cs-bridge")
@@ -66,16 +67,22 @@
       verification, analysis, transformation, and synthesis."))
    (xdoc::p
     "Currently this library contains
-     a concrete syntax of PFCSes and a parser to CSTs (concrete syntax trees),
+     a concrete syntax of PFCSes and
+     with a parser to CSTs (concrete syntax trees),
      an abstract syntax of PFCSes
-     and an abstractor from CSTs to ASTs (abstract syntax trees),
-     parser interface functions to generate ASTs from strings,
-     some operations on the abstract syntax,
+     with operations on the abstract syntax trees
+     and with an abstractor from CSTs to ASTs (abstract syntax trees),
      a notion of well-formedness,
-     a semantics expressed as a shallow embedding,
-     a semantics expressed as a deep embedding,
-     and some tools to support proofs about PFCSes;
+     a semantics defined as a deep embedding,
+     a parser interface functions to generate abstract syntax
+     from strings written in the concrete syntax,
+     some tools to support proofs about PFCSes,
+     and a lifter to turn abstract syntax
+     into shallowly embedded PFCSes;
      see the documentation of these artifacts for more information.
+     The library also includes a characterization of
+     PFCSes that only use R!CS constraints,
+     and a translator from R1CSes to PFCSes.
      This library also includes some examples.
      This library is a work in progress;
      it is expected that it will be extended
@@ -94,8 +101,9 @@
                     abstract-syntax
                     well-formedness
                     semantics
-                    parser-interface
+                    semantics-shallow
                     proof-support
+                    parser-interface
                     lifting
                     r1cs-subset
                     r1cs-bridge))

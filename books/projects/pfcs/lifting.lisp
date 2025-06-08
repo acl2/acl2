@@ -11,8 +11,8 @@
 
 (in-package "PFCS")
 
-(include-book "semantics-shallow")
 (include-book "proof-support")
+(include-book "semantics-shallow")
 
 (include-book "std/system/table-alist-plus" :dir :system)
 
@@ -38,8 +38,7 @@
   (xdoc::topstring
    (xdoc::p
     "The "
-    (xdoc::seetopic "semantics-shallowly-embedded"
-                    "shallowly embedded semantics")
+    (xdoc::seetopic "semantics-shallow" "shallowly embedded semantics")
     " of PFCSes includes an ACL2 function @(tsee sesem-definition)
      to turn a deeply embedded PFCS definition
      into a shallowly embedded PFCS definition.

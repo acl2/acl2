@@ -44,14 +44,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ semantics-shallowly-embedded
+(defxdoc+ semantics-shallow
   :parents (semantics)
   :short "Shallowly embedded semantics of PFCSes."
   :long
   (xdoc::topstring
    (xdoc::p
     "The semantics informally described in @(see semantics)
-     can be formalized in a shallowly embedded way,
+     can be also formalized in a shallowly embedded way,
      by defining ACL2 functions that turn expressions and constraints
      into ACL2 terms and functions that express the semantics.")
    (xdoc::p
