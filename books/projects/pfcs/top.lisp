@@ -13,10 +13,10 @@
 
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
+(include-book "well-formedness")
 
 (include-book "parser-interface")
 
-(include-book "well-formedness")
 (include-book "semantics")
 (include-book "proof-support")
 (include-book "lifting")
@@ -94,4 +94,7 @@
     " and is related to the "
     (xdoc::seetopic "r1cs::r1cs" "R1CS library")
     ", both in the community books."))
-  :order-subtopics t)
+  :order-subtopics (concrete-syntax
+                    abstract-syntax
+                    well-formedness
+                    t))

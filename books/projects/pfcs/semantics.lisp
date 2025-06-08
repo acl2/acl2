@@ -45,4 +45,5 @@
    (xdoc::p
     "We formalize this as a deeply embedded semantics
      and as a shallowly embedded semantics."))
-  :order-subtopics t)
+  :order-subtopics (semantics-deep
+                    semantics-shallow))
