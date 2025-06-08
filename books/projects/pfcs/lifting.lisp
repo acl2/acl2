@@ -65,6 +65,10 @@
 (define current-package+ (state)
   :returns (package stringp)
   :short "Logic-friendly wrapper of the built-in @(tsee current-package)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This belongs to a more general library."))
   (b* ((package (current-package state))
        ((unless (and (stringp package)
                      (not (equal package ""))))
@@ -414,7 +418,8 @@
      with its lookup in the witness term of the @(tsee defun-sk)."))
   (cond ((set::emptyp free) nil)
         (t (b* ((var (set::head free)))
-             (cons `(,(name-to-symbol var state) (cdr (omap::assoc ,var ,witness)))
+             (cons `(,(name-to-symbol var state)
+                     (cdr (omap::assoc ,var ,witness)))
                    (lift-thm-free-inst (set::tail free) witness state)))))
   :prepwork ((local (in-theory (enable doublet-listp length len)))))
 
