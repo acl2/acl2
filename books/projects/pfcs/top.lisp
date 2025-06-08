@@ -16,9 +16,6 @@
 
 (include-book "parser-interface")
 
-(include-book "abstract-syntax-operations")
-(include-book "indexed-names")
-(include-book "convenience-constructors")
 (include-book "well-formedness")
 (include-book "semantics")
 (include-book "proof-support")
