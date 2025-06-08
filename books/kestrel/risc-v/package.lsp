@@ -22,6 +22,7 @@
                                              step))
                         '(bool
                           bool->bit
+                          define-sk
                           defxdoc+
                           impossible
                           lifix
