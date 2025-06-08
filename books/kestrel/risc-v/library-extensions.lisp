@@ -137,6 +137,36 @@
   :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)
                (include-book "arithmetic-5/top" :dir :system)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule logapp-m-of-bound-logtail-n-and-logtail-p-when-p-is-m+n
+  (implies (and (equal bound (loghead m (logtail n x)))
+                (natp m)
+                (natp n)
+                (natp p)
+                (equal p (+ m n)))
+           (equal (logapp m bound (logtail p x))
+                  (logtail n x)))
+  :use logapp-m-of-logtail-n-and-logtail-p-when-p-is-m+n
+  :disable logapp-m-of-logtail-n-and-logtail-p-when-p-is-m+n
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)
+               (include-book "arithmetic-5/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule logapp-m-of-logtail-n-and-bound-logtail-p-when-p-is-m+n
+  (implies (and (equal bound (logtail p x))
+                (natp m)
+                (natp n)
+                (natp p)
+                (equal p (+ m n)))
+           (equal (logapp m (logtail n x) bound)
+                  (logtail n x)))
+  :use logapp-m-of-logtail-n-and-logtail-p-when-p-is-m+n
+  :disable logapp-m-of-logtail-n-and-logtail-p-when-p-is-m+n
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)
+               (include-book "arithmetic-5/top" :dir :system)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule bool->bit-logbitp-to-logtail-when-unsigned-byte-p
