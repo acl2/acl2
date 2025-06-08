@@ -16,6 +16,7 @@
 (include-book "encoding")
 (include-book "decoding")
 (include-book "decoding-of-encoding")
+(include-book "encoding-of-decoding")
 (include-book "states")
 (include-book "reads-over-writes")
 (include-book "semantics")
