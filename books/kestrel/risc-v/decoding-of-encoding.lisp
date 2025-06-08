@@ -771,7 +771,8 @@
 
   (defruled decode-of-encode-of-instr-op-imm
     (implies (instr-validp (instr-op-imm funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imm funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imm funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imm funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imm
@@ -781,7 +782,8 @@
 
   (defruled decode-of-encode-of-instr-op-imms32
     (implies (instr-validp (instr-op-imms32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms32 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imms32 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imms32 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imms32
@@ -793,7 +795,8 @@
 
   (defruled decode-of-encode-of-instr-op-imms64
     (implies (instr-validp (instr-op-imms64 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms64 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imms64 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imms64 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imms64
@@ -803,7 +806,8 @@
 
   (defruled decode-of-encode-of-instr-op-imm-32
     (implies (instr-validp (instr-op-imm-32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imm-32 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imm-32 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imm-32 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imm-32
@@ -814,7 +818,8 @@
 
   (defruled decode-of-encode-of-instr-op-imms-32
     (implies (instr-validp (instr-op-imms-32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms-32 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imms-32 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imms-32 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imms-32
