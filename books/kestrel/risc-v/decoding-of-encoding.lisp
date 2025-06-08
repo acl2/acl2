@@ -512,18 +512,6 @@
   :short "Theorems about @(tsee get-imm-btype) applied to
           the encoding of different instructions."
 
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (defrulel bool->bit-logbitp-11-to-logtail-11-when-ubyte12p
-    (implies (ubyte12p x)
-             (equal (bool->bit (logbitp 11 x))
-                    (logtail 11 x)))
-    :enable (logtail
-             bool->bit
-             logbitp
-             ubyte12p
-             unsigned-byte-p))
-
   (defruled get-imm-btype-of-encode-of-instr-branch
     (equal (get-imm-btype (encode (instr-branch funct rs1 rs2 imm) feat))
            (ubyte12-fix imm))
@@ -561,18 +549,6 @@
 (defsection get-imm-jtype-of-encode-of-instr
   :short "Theorems about @(tsee get-imm-jtype) applied to
           the encoding of different instructions."
-
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (defrulel bool->bit-logbitp-19-to-logtail-19-when-ubyte20p
-    (implies (ubyte20p x)
-             (equal (bool->bit (logbitp 19 x))
-                    (logtail 19 x)))
-    :enable (logtail
-             bool->bit
-             logbitp
-             ubyte20p
-             unsigned-byte-p))
 
   (defruled get-imm-jtype-of-encode-of-instr-jal
     (equal (get-imm-jtype (encode (instr-jal rd imm) feat))
