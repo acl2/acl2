@@ -72,9 +72,6 @@
                             4)
                  131)))
 
-; (local (include-book "arithmetic/top-with-meta" :dir :system))
-(local (include-book "arithmetic-5/top" :dir :system))
-
 ; Theorem generalizing the example just above:
 (defthm eval-poly-sum-polys
   (equal (eval-poly (sum-polys x y) v)
