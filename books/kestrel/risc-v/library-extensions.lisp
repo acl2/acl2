@@ -139,4 +139,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule bool->bit-logbitp-to-logtail-when-unsigned-byte-p
+  (implies (unsigned-byte-p (1+ size) x)
+           (equal (bool->bit (logbitp size x))
+                  (logtail size x)))
+  :enable (logtail
+           bool->bit
+           logbitp
+           unsigned-byte-p
+           nfix)
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)
+               (include-book "arithmetic-5/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable loghead logext))
