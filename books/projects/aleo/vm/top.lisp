@@ -32,4 +32,5 @@
      The off-chain execution results in a zero-knowledge proof
      that is verified on chain;
      the on-chain execution happens after the proof is verified,
-     via a `futures' mechanism.")))
+     via a `futures' mechanism."))
+  :order-subtopics (language))
