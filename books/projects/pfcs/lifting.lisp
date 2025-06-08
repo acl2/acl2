@@ -20,6 +20,7 @@
 
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/lists/union" :dir :system))
 (local (include-book "std/system/w" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
@@ -226,13 +227,21 @@
 
 (define lift-rel-name ((name stringp) state)
   :returns (sym symbolp)
-  :short "Turn a PFCS relation name into an ACL2 symbol."
+  :short "Lift a PFCS relation name to an ACL2 symbol."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we just use the same mapping as variables,
-     but we plan to change this to use the lifting table."))
-  (lift-var-name name state))
+    "The symbol is the lifted predicate name,
+     which we retrieve from the table of lifted PFCSes.
+     If it is not in the table,
+     which happens when we are lifting the PFCS definition of the relation,
+     for now we use the same mapping as for the variables."))
+  (b* ((tab (table-alist+ 'lift-table (w state)))
+       (info (cdr (assoc-equal name tab)))
+       ((when (not info)) (lift-var-name name state))
+       ((unless (lift-infop info))
+        (raise "Internal error: ~x0 has the wrong type." info)))
+    (lift-info->name info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -995,15 +1004,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-table-add ((def definitionp) (hyps true-listp))
+(define lift-table-add ((def definitionp) (hyps true-listp) state)
   :returns (even pseudo-event-formp)
   :short "Event to update the table of lifted PFCSes."
   :long
   (xdoc::topstring
    (xdoc::p
     "This adds an entry to the table for the definition passed as argument."))
-  (b* ((info (make-lift-info :def def :hyps hyps)))
-    `(table lift-table ,(definition->name def) ',info)))
+  (b* ((name (definition->name def))
+       (info (make-lift-info :name (lift-rel-name name state)
+                             :def def
+                             :hyps hyps)))
+    `(table lift-table ,name ',info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1026,7 +1038,7 @@
                                           constr-to-def-sat-lemmas
                                           prime
                                           state))
-       (event-table (lift-table-add def def-hyps)))
+       (event-table (lift-table-add def def-hyps state)))
     `(encapsulate ()
        ,event-fn
        ,event-def-sat
