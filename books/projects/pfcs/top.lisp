@@ -15,10 +15,9 @@
 (include-book "abstract-syntax")
 (include-book "well-formedness")
 (include-book "semantics")
-(include-book "semantics-shallow")
 (include-book "proof-support")
-(include-book "parser-interface")
 (include-book "lifting")
+(include-book "parser-interface")
 (include-book "r1cs-subset")
 (include-book "r1cs-bridge")
 
@@ -101,9 +100,8 @@
                     abstract-syntax
                     well-formedness
                     semantics
-                    semantics-shallow
                     proof-support
-                    parser-interface
                     lifting
+                    parser-interface
                     r1cs-subset
                     r1cs-bridge))
