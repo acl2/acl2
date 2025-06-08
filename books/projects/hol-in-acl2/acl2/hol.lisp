@@ -21,6 +21,7 @@
 ; Here is an example.
 
 (defun hta0 () ; example of hta (i.e., hol type alist)
+  (declare (xargs :guard t))
   (acons :num (omega)
          (acons :bool (pair t nil)
                 nil)))
@@ -40,7 +41,7 @@
 ; groundp is nil, variables (non-keyword symbols) are allowed; otherwise they
 ; are not.  Hta is a hol type-alist, mapping keywords to sets.
 
-  (declare (xargs :guard (symbol-alistp hta)))
+  (declare (xargs :guard t))
   (cond
    ((keywordp type)
     (and (assoc-hta type hta)
@@ -72,11 +73,9 @@
 ; function by returning the empty set, 0, if type is ill-formed with respect to
 ; hta.
 
-  (declare (xargs :guard (and (symbol-alistp hta)
-                              (hol-typep type hta t))))
+  (declare (xargs :guard (hol-typep type hta t)))
   (cond
-   ((not (mbt (and (symbol-alistp hta)
-                   (hol-typep type hta t))))
+   ((not (mbt (hol-typep type hta t)))
     0)
    ((atom type) ; (keywordp type)
     (let ((pair (assoc-hta type hta)))
@@ -118,8 +117,7 @@
 ; This function recognizes when x is a hol value of the given hol ground type
 ; with respect to a give association of atomic type names with sets.
 
-  (declare (xargs :guard (and (symbol-alistp hta)
-                              (hol-typep type hta t))))
+  (declare (xargs :guard (hol-typep type hta t)))
   (in x (hol-type-eval type hta)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -130,7 +128,7 @@
 ; and whose car is a hol value of that type.
 
 (defun hpp (p hta)
-  (declare (xargs :guard (symbol-alistp hta)))
+  (declare (xargs :guard t))
   (and (consp p)
        (hol-typep (cdr p) hta t)
        (hol-valuep (car p) (cdr p) hta)))
@@ -145,7 +143,7 @@
   `(cons ,value ,type))
 
 (defun hp-listp (x hta)
-  (declare (xargs :guard (symbol-alistp hta)))
+  (declare (xargs :guard t))
   (cond ((atom x) (null x))
         (t (and (hpp (car x) hta)
                 (hp-listp (cdr x) hta)))))
