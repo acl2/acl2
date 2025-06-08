@@ -119,18 +119,24 @@
   (xdoc::topstring
    (xdoc::p
     "These are stored in the @(see lift-table).
-     For each lifted PFCS definition,
-     we store the abstract syntax of the definition
-     and a list of terms used as hypotheses in generated theorems.
-     Each term in the list says that
-     looking up a certain PFCS definition by name
-     yields the expected abstract syntax of the definition;
-     there is one such term
-     for the PFCS definition that this information refers to,
-     and one such term for each PFCS definition
-     directly or indirectly called by
-     the PFCS definition that this information refers to."))
-  ((def definition)
+     For each lifted PFCS definition, we store:")
+   (xdoc::ul
+    (xdoc::li
+     "The name of the predicate that represents the lifted definition.")
+    (xdoc::li
+     "The abstract syntax tree of the definition.")
+    (xdoc::li
+     "A list of terms used as hypotheses in generated theorems
+      Each term in the list says that
+      looking up a certain PFCS definition by name
+      yields the expected abstract syntax of the definition;
+      there is one such term
+      for the PFCS definition that this information refers to,
+      and one such term for each PFCS definition
+      directly or indirectly called by
+      the PFCS definition that this information refers to.")))
+  ((name symbol)
+   (def definition)
    (hyps true-list))
   :pred lift-infop)
 
