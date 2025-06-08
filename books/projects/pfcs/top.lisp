@@ -14,7 +14,7 @@
 (include-book "concrete-syntax")
 
 (include-book "abstract-syntax")
-(include-book "syntax-abstraction")
+
 (include-book "parser-interface")
 
 (include-book "abstract-syntax-operations")
