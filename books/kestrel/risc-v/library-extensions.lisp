@@ -17,18 +17,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule loghead-of-ifix
-  (equal (loghead size (ifix i))
-         (loghead size i)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule logext-of-ifix
-  (equal (logext size (ifix i))
-         (logext size i)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrule bitp-of-bool->bit
   (bitp (bool->bit x)))
 
