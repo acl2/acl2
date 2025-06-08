@@ -195,4 +195,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule logapp-of-bound-loghead-n-and-logtail
+  (implies (equal bound (loghead n x))
+           (equal (logapp n bound (logtail n x))
+                  (ifix x)))
+  :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable loghead logext))
