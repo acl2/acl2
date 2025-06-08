@@ -48,8 +48,7 @@
      This amounts to lifting deeply embedded PFCSes
      into a shallowly embedded representation of them.")
    (xdoc::p
-    "Here we define these ACL2 functions,
-     whose prefix @('sesem') stands for `shallowly embedded semantics'.
+    "Here we define these ACL2 functions.
      We also provide an event macro to turn
      a deeply embedded PFCS definition
      to a shallowly embedded version of it,
@@ -160,7 +159,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-expression ((expr expressionp) (prime symbolp) state)
+(define lift-expression ((expr expressionp) (prime symbolp) state)
   :returns term
   :short "Shallowly embedded semantics of expressions."
   :long
@@ -183,32 +182,32 @@
    expr
    :const `(mod ,expr.value ,prime)
    :var (lift-var-name expr.name state)
-   :add `(add ,(sesem-expression expr.arg1 prime state)
-              ,(sesem-expression expr.arg2 prime state)
+   :add `(add ,(lift-expression expr.arg1 prime state)
+              ,(lift-expression expr.arg2 prime state)
               ,prime)
-   :mul `(mul ,(sesem-expression expr.arg1 prime state)
-              ,(sesem-expression expr.arg2 prime state)
+   :mul `(mul ,(lift-expression expr.arg1 prime state)
+              ,(lift-expression expr.arg2 prime state)
               ,prime))
   :measure (expression-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-expression-list ((exprs expression-listp) (prime symbolp) state)
+(define lift-expression-list ((exprs expression-listp) (prime symbolp) state)
   :returns (terms true-listp)
   :short "Shallowly embedded semantics of lists of expressions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This lifts @(tsee sesem-expression) to lists.
+    "This lifts @(tsee lift-expression) to lists.
      We obtain a list of terms."))
   (cond ((endp exprs) nil)
-        (t (cons (sesem-expression (car exprs) prime state)
-                 (sesem-expression-list (cdr exprs) prime state)))))
+        (t (cons (lift-expression (car exprs) prime state)
+                 (lift-expression-list (cdr exprs) prime state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-constraint ((constr constraintp) (prime symbolp) state)
+(define lift-constraint ((constr constraintp) (prime symbolp) state)
   :returns term
   :short "Shallowly embedded semantics of a constraint."
   :long
@@ -221,40 +220,40 @@
      Note that we include the variable for the prime."))
   (constraint-case
    constr
-   :equal `(equal ,(sesem-expression constr.left prime state)
-                  ,(sesem-expression constr.right prime state))
+   :equal `(equal ,(lift-expression constr.left prime state)
+                  ,(lift-expression constr.right prime state))
    :relation `(,(lift-rel-name constr.name state)
-               ,@(sesem-expression-list constr.args prime state)
+               ,@(lift-expression-list constr.args prime state)
                ,prime)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-constraint-list ((constrs constraint-listp) (prime symbolp) state)
+(define lift-constraint-list ((constrs constraint-listp) (prime symbolp) state)
   :returns (terms true-listp)
   :short "Shallowly embedded semantics of a list of constraints."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This lifts @(tsee sesem-constraint) to lists.
+    "This lifts @(tsee lift-constraint) to lists.
      We obtain a list of terms."))
   (cond ((endp constrs) nil)
-        (t (cons (sesem-constraint (car constrs) prime state)
-                 (sesem-constraint-list (cdr constrs) prime state)))))
+        (t (cons (lift-constraint (car constrs) prime state)
+                 (lift-constraint-list (cdr constrs) prime state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-gen-fep-terms ((vars symbol-listp) (prime symbolp))
+(define lift-gen-fep-terms ((vars symbol-listp) (prime symbolp))
   :returns (terms pseudo-term-listp :hyp :guard)
   :short "Generate a list of terms @('(fep x1 p)'), ..., @('(fep xn p)')
           from a list of variables @('x1'), ..., @('xn')."
   (cond ((endp vars) nil)
         (t (cons `(fep ,(car vars) ,prime)
-                 (sesem-gen-fep-terms (cdr vars) prime))))
+                 (lift-gen-fep-terms (cdr vars) prime))))
   :prepwork ((local (in-theory (enable pseudo-termp pseudo-term-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-definition ((def definitionp) (prime symbolp) state)
+(define lift-definition ((def definitionp) (prime symbolp) state)
   :returns (event pseudo-event-formp)
   :short "Shallowly embedded semantics of a definition."
   :long
@@ -279,16 +278,16 @@
        (free (definition-free-vars def))
        (quant (lift-var-name-set-to-list free state))
        (para (lift-var-name-list def.para state))
-       (body `(and ,@(sesem-constraint-list def.body prime state))))
+       (body `(and ,@(lift-constraint-list def.body prime state))))
     (if free
         `(defund-sk ,pred-name (,@para ,prime)
-           (exists (,@quant) (and ,@(sesem-gen-fep-terms quant prime) ,body)))
+           (exists (,@quant) (and ,@(lift-gen-fep-terms quant prime) ,body)))
       `(defund ,pred-name (,@para ,prime)
          ,body))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define sesem-definition-list ((defs definition-listp) (prime symbolp) state)
+(define lift-definition-list ((defs definition-listp) (prime symbolp) state)
   :returns (events pseudo-event-form-listp)
   :short "Shallowly embedded semanics of a list of definitions."
   :long
@@ -296,8 +295,8 @@
    (xdoc::p
     "This is the list of events generated from the definitions."))
   (cond ((endp defs) nil)
-        (t (cons (sesem-definition (car defs) prime state)
-                 (sesem-definition-list (cdr defs) prime state)))))
+        (t (cons (lift-definition (car defs) prime state)
+                 (lift-definition-list (cdr defs) prime state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -682,7 +681,7 @@
   (xdoc::topstring
    (xdoc::p
     "Given a PFCS definition,
-     @(tsee sesem-definition) generates a shallowly embedded version of it.
+     @(tsee lift-definition) generates a shallowly embedded version of it.
      Here we define a theorem connecting that shallowly embedded version
      to the deeply embedded semantics of the definition.")
    (xdoc::p
@@ -755,7 +754,7 @@
         (mv
          `(defruled ,thm-name
             (implies (and ,@def-hyps
-                          ,@(sesem-gen-fep-terms para prime)
+                          ,@(lift-gen-fep-terms para prime)
                           (primep ,prime))
                      (equal (definition-satp
                               ,def.name defs (list ,@para) ,prime)
@@ -827,7 +826,7 @@
     (mv
      `(defruled ,thm-name
         (implies (and ,@def-hyps
-                      ,@(sesem-gen-fep-terms para prime)
+                      ,@(lift-gen-fep-terms para prime)
                       (primep ,prime))
                  (equal (definition-satp ,def.name defs (list ,@para) ,prime)
                         (,pred-name ,@para ,prime)))
@@ -839,7 +838,7 @@
 
         ((defruled only-if-direction
            (implies (and ,@def-hyps
-                         ,@(sesem-gen-fep-terms para prime)
+                         ,@(lift-gen-fep-terms para prime)
                          (primep ,prime))
                     (implies (definition-satp
                                ,def.name defs (list ,@para) ,prime)
@@ -913,7 +912,7 @@
 
          (defruled if-direction
            (implies (and ,@def-hyps
-                         ,@(sesem-gen-fep-terms para prime)
+                         ,@(lift-gen-fep-terms para prime)
                          (primep ,prime))
                     (implies (,pred-name ,@para ,prime)
                              (definition-satp
@@ -1007,7 +1006,7 @@
   :short "Lift a deeply embedded PFCS definition
           to a shallowly embedded PFCS definition
           with a theorem relating the two."
-  (b* ((event-fn (sesem-definition def prime state))
+  (b* ((event-fn (lift-definition def prime state))
        ((mv event-def-sat def-sat-lemma)
         (lift-thm-definition-satp-specialized-lemma def state))
        ((mv event-constr-sat constr-sat-lemma)
