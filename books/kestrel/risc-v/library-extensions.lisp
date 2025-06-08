@@ -153,4 +153,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule unsigned-byte-p-size-when-logtail-size-is-zero
+  (implies (and (integerp x)
+                (posp size)
+                (equal (logtail size x) 0))
+           (unsigned-byte-p size x))
+  :enable (unsigned-byte-p
+           integer-range-p
+           logtail)
+  :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable loghead logext))
