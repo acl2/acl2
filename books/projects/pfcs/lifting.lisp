@@ -82,9 +82,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-name-to-symbol ((name stringp) state)
+(define lift-var-name ((name stringp) state)
   :returns (sym symbolp)
-  :short "Turn a PFCS variable name into an ACL2 symbol."
+  :short "Lift a PFCS variable name to an ACL2 symbol."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -108,12 +108,12 @@
      which cannot be used as an ACL2 name.
      In the future, we may make this mapping more robust."))
   (b* ((chars (str::explode name))
-       (new-chars (var-name-to-symbol-aux chars))
+       (new-chars (lift-var-name-aux chars))
        (new-string (str::implode new-chars)))
     (intern$ new-string (current-package+ state)))
 
   :prepwork
-  ((define var-name-to-symbol-aux ((chars character-listp))
+  ((define lift-var-name-aux ((chars character-listp))
      :returns (new-chars character-listp)
      :parents nil
      (b* (((when (endp chars)) nil)
@@ -121,34 +121,34 @@
           (new-char (if (equal char #\_)
                         #\-
                       (str::upcase-char char)))
-          (new-chars (var-name-to-symbol-aux (cdr chars))))
+          (new-chars (lift-var-name-aux (cdr chars))))
        (cons new-char new-chars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection var-name-list-to-symbol-list (x state)
+(std::defprojection lift-var-name-list (x state)
   :guard (string-listp x)
   :returns (symbols symbol-listp)
-  :short "Turn a list of PFCS variable names into a list of ACL2 symbols."
-  (var-name-to-symbol x state))
+  :short "Lift a list of PFCS variable names to a list of ACL2 symbols."
+  (lift-var-name x state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define var-name-set-to-symbol-list ((names string-setp) state)
+(define lift-var-name-set-to-list ((names string-setp) state)
   :returns (syms symbol-listp)
-  :short "Turn a set of PFCS variable names into a lists of ACL2 symbols."
+  :short "Lift a set of PFCS variable names to a list of ACL2 symbols."
   :long
   (xdoc::topstring
    (xdoc::p
     "The order of the list is according to
      the total order that osets are based on."))
   (cond ((set::emptyp names) nil)
-        (t (cons (var-name-to-symbol (set::head names) state)
-                 (var-name-set-to-symbol-list (set::tail names) state)))))
+        (t (cons (lift-var-name (set::head names) state)
+                 (lift-var-name-set-to-list (set::tail names) state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define rel-name-to-symbol ((name stringp) state)
+(define lift-rel-name ((name stringp) state)
   :returns (sym symbolp)
   :short "Turn a PFCS relation name into an ACL2 symbol."
   :long
@@ -156,7 +156,7 @@
    (xdoc::p
     "For now we just use the same mapping as variables,
      but we plan to change this to use the lifting table."))
-  (var-name-to-symbol name state))
+  (lift-var-name name state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -174,7 +174,7 @@
    (xdoc::p
     "A constant is mapped to itself, reduced modulo the prime.")
    (xdoc::p
-    "A variable is mapped to a symbol, according to @(tsee var-name-to-symbol).")
+    "A variable is mapped to a symbol, according to @(tsee lift-var-name).")
    (xdoc::p
     "Additions and multiplications are mapped to calls of
      the corresponding prime field operations applied to
@@ -182,7 +182,7 @@
   (expression-case
    expr
    :const `(mod ,expr.value ,prime)
-   :var (var-name-to-symbol expr.name state)
+   :var (lift-var-name expr.name state)
    :add `(add ,(sesem-expression expr.arg1 prime state)
               ,(sesem-expression expr.arg2 prime state)
               ,prime)
@@ -223,7 +223,7 @@
    constr
    :equal `(equal ,(sesem-expression constr.left prime state)
                   ,(sesem-expression constr.right prime state))
-   :relation `(,(rel-name-to-symbol constr.name state)
+   :relation `(,(lift-rel-name constr.name state)
                ,@(sesem-expression-list constr.args prime state)
                ,prime)))
 
@@ -275,10 +275,10 @@
      However, the quantification is avoided
      if all the variables in the body are treated as parameters."))
   (b* (((definition def) def)
-       (pred-name (rel-name-to-symbol def.name state))
+       (pred-name (lift-rel-name def.name state))
        (free (definition-free-vars def))
-       (quant (var-name-set-to-symbol-list free state))
-       (para (var-name-list-to-symbol-list def.para state))
+       (quant (lift-var-name-set-to-list free state))
+       (para (lift-var-name-list def.para state))
        (body `(and ,@(sesem-constraint-list def.body prime state))))
     (if free
         `(defund-sk ,pred-name (,@para ,prime)
@@ -429,7 +429,7 @@
      with its lookup in the witness term of the @(tsee defun-sk)."))
   (cond ((set::emptyp free) nil)
         (t (b* ((var (set::head free)))
-             (cons `(,(var-name-to-symbol var state)
+             (cons `(,(lift-var-name var state)
                      (cdr (omap::assoc ,var ,witness)))
                    (lift-thm-free-inst (set::tail free) witness state)))))
   :prepwork ((local (in-theory (enable doublet-listp length len)))))
@@ -517,7 +517,7 @@
      essentially the definition of @(tsee definition-satp)
      specialized to the name of the definition to be the one of @('def')."))
   (b* ((def-name (definition->name def))
-       (pred-name (rel-name-to-symbol def-name state))
+       (pred-name (lift-rel-name def-name state))
        (thm-name (acl2::packn-pos (list 'definition-satp-of- pred-name)
                                   pred-name))
        (thm-event
@@ -560,7 +560,7 @@
      So the local lemma that we generate here limits application
      to the constraint with the name of @('def')."))
   (b* ((def-name (definition->name def))
-       (pred-name (rel-name-to-symbol def-name state))
+       (pred-name (lift-rel-name def-name state))
        (thm-name (acl2::packn-pos (list 'constraint-satp-of- pred-name)
                                   pred-name))
        (thm-event
@@ -620,7 +620,7 @@
      and we generate one specialized theorem for each."))
   (b* (((when (set::emptyp rels)) (mv nil nil))
        (rel (set::head rels))
-       (pred-name (rel-name-to-symbol rel state))
+       (pred-name (lift-rel-name rel state))
        (thm-name (acl2::packn-pos
                   (list 'constraint-satp-to-definition-satp-of- pred-name)
                   pred-name))
@@ -661,7 +661,7 @@
      in the proofs of the lifting theorems."))
   (b* (((when (endp rels)) nil)
        (rel (car rels))
-       (pred-name (rel-name-to-symbol rel state))
+       (pred-name (lift-rel-name rel state))
        (rule `(:t ,pred-name))
        (rules (lift-thm-type-prescriptions-for-called-preds (cdr rels) state)))
     (cons rule rules)))
@@ -736,10 +736,10 @@
 
   (b* ((wrld (w state))
        ((definition def) def)
-       (pred-name (rel-name-to-symbol def.name state))
-       (para (var-name-list-to-symbol-list def.para state))
+       (pred-name (lift-rel-name def.name state))
+       (para (lift-var-name-list def.para state))
        (free (definition-free-vars def))
-       (quant (var-name-set-to-symbol-list free state))
+       (quant (lift-var-name-set-to-list free state))
        (thm-name (acl2::packn-pos (list 'definition-satp-of-
                                         pred-name
                                         '-to-shallow)
@@ -747,7 +747,7 @@
        (def-hyps (lift-thm-def-hyps def wrld))
        (rels (constraint-list-rels def.body))
        (called-lift-thms (lift-thm-called-lift-thms
-                          (var-name-set-to-symbol-list rels state)))
+                          (lift-var-name-set-to-list rels state)))
        (type-presc-rules
         (lift-thm-type-prescriptions-for-called-preds rels state))
 
