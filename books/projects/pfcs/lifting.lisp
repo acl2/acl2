@@ -32,7 +32,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ lifting
-  :parents (semantics)
+  :parents (pfcs)
   :short "Lifting from deeply to shallowly embedded semantics."
   :long
   (xdoc::topstring

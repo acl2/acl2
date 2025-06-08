@@ -14,16 +14,12 @@
 (include-book "concrete-syntax")
 (include-book "abstract-syntax")
 (include-book "well-formedness")
-
-(include-book "parser-interface")
-
 (include-book "semantics")
+(include-book "parser-interface")
 (include-book "proof-support")
 (include-book "lifting")
-(include-book "r1cs-lib-ext")
 (include-book "r1cs-subset")
 (include-book "r1cs-bridge")
-(include-book "pfield-lib-ext")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,4 +93,9 @@
   :order-subtopics (concrete-syntax
                     abstract-syntax
                     well-formedness
-                    t))
+                    semantics
+                    parser-interface
+                    proof-support
+                    lifting
+                    r1cs-subset
+                    r1cs-bridge))
