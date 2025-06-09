@@ -30,4 +30,8 @@
      which we plan to complete with a declarative specification
      of parsing of PFCSes according to the grammar.
      We define an executable lexer, tokenizer, and parser to CSTs
-     (concrete syntax trees).")))
+     (concrete syntax trees)."))
+  :order-subtopics (grammar
+                    lexer
+                    tokenizer
+                    parser))

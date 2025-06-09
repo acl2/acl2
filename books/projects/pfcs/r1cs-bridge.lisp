@@ -11,7 +11,7 @@
 
 (in-package "PFCS")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 (include-book "r1cs-subset")
 
 (include-book "r1cs-lib-ext")
