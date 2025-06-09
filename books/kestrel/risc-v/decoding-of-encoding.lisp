@@ -512,18 +512,6 @@
   :short "Theorems about @(tsee get-imm-btype) applied to
           the encoding of different instructions."
 
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (defrulel bool->bit-logbitp-11-to-logtail-11-when-ubyte12p
-    (implies (ubyte12p x)
-             (equal (bool->bit (logbitp 11 x))
-                    (logtail 11 x)))
-    :enable (logtail
-             bool->bit
-             logbitp
-             ubyte12p
-             unsigned-byte-p))
-
   (defruled get-imm-btype-of-encode-of-instr-branch
     (equal (get-imm-btype (encode (instr-branch funct rs1 rs2 imm) feat))
            (ubyte12-fix imm))
@@ -561,18 +549,6 @@
 (defsection get-imm-jtype-of-encode-of-instr
   :short "Theorems about @(tsee get-imm-jtype) applied to
           the encoding of different instructions."
-
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (defrulel bool->bit-logbitp-19-to-logtail-19-when-ubyte20p
-    (implies (ubyte20p x)
-             (equal (bool->bit (logbitp 19 x))
-                    (logtail 19 x)))
-    :enable (logtail
-             bool->bit
-             logbitp
-             ubyte20p
-             unsigned-byte-p))
 
   (defruled get-imm-jtype-of-encode-of-instr-jal
     (equal (get-imm-jtype (encode (instr-jal rd imm) feat))
@@ -795,7 +771,8 @@
 
   (defruled decode-of-encode-of-instr-op-imm
     (implies (instr-validp (instr-op-imm funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imm funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imm funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imm funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imm
@@ -805,7 +782,8 @@
 
   (defruled decode-of-encode-of-instr-op-imms32
     (implies (instr-validp (instr-op-imms32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms32 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imms32 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imms32 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imms32
@@ -817,7 +795,8 @@
 
   (defruled decode-of-encode-of-instr-op-imms64
     (implies (instr-validp (instr-op-imms64 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms64 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imms64 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imms64 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imms64
@@ -827,7 +806,8 @@
 
   (defruled decode-of-encode-of-instr-op-imm-32
     (implies (instr-validp (instr-op-imm-32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imm-32 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imm-32 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imm-32 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imm-32
@@ -838,7 +818,8 @@
 
   (defruled decode-of-encode-of-instr-op-imms-32
     (implies (instr-validp (instr-op-imms-32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms-32 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imms-32 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imms-32 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imms-32
