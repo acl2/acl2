@@ -93,7 +93,7 @@
 ; That is, this relates deep and shallow embeddings of the gadget.
 
 (must-be-redundant
- (DEFTHM DEFINITION-SATP-OF-BOOLEAN-ASSERT-TO-SHALLOW
+ (DEFTHM DEFINITION-SATP-TO-BOOLEAN-ASSERT
    (IMPLIES
     (AND
      (EQUAL
@@ -139,7 +139,7 @@
            (equal (definition-satp "boolean_assert" defs (list x) p)
                   (bitp x)))
   :in-theory '((:e boolean-assert-gadget)
-               definition-satp-of-boolean-assert-to-shallow
+               definition-satp-to-boolean-assert
                boolean-assert-correctness))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -176,7 +176,7 @@
 ; Again, similar to the previous gadget, just a bit richer.
 
 (must-be-redundant
- (DEFTHM DEFINITION-SATP-OF-IF-THEN-ELSE-TO-SHALLOW
+ (DEFTHM DEFINITION-SATP-TO-IF-THEN-ELSE
    (IMPLIES
     (AND
      (EQUAL
@@ -227,7 +227,7 @@
            (equal (definition-satp "if_then_else" defs (list w x y z) p)
                   (equal z (if (equal w 1) x y))))
   :in-theory '((:e if-then-else-gadget)
-               definition-satp-of-if-then-else-to-shallow
+               definition-satp-to-if-then-else
                if-then-else-correctness))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -298,7 +298,7 @@
 ; it is just about the external variables.
 
 (must-be-redundant
- (DEFTHM DEFINITION-SATP-OF-EQUALITY-TEST-TO-SHALLOW
+ (DEFTHM DEFINITION-SATP-TO-EQUALITY-TEST
    (IMPLIES
     (AND
      (EQUAL
@@ -420,7 +420,7 @@
                   (equal w (if (equal u v) 1 0))))
   :in-theory '((:e equality-test-gadget)
                (:e boolean-assert-gadget)
-               definition-satp-of-equality-test-to-shallow
+               definition-satp-to-equality-test
                equality-test-correctness))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -472,7 +472,7 @@
 ; is amenable to abbreviation, using suitable macros.
 
 (must-be-redundant
- (DEFTHM DEFINITION-SATP-OF-IF-EQUAL-THEN-ELSE-TO-SHALLOW
+ (DEFTHM DEFINITION-SATP-TO-IF-EQUAL-THEN-ELSE
    (IMPLIES
     (AND
      (EQUAL
@@ -607,7 +607,7 @@
                (:e if-then-else-gadget)
                (:e equality-test-gadget)
                (:e boolean-assert-gadget)
-               definition-satp-of-if-equal-then-else-to-shallow
+               definition-satp-to-if-equal-then-else
                if-equal-then-else-correctness))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -891,7 +891,7 @@
 ; and just requires enabling certain functions,
 ; including some from the PFCS semantics.
 
-(defruled constraint-list-satp-of-boolean-assert-list-gadget-aux-to-shallow
+(defruled constraint-list-satp-to-boolean-assert-list-gadget-aux
   (implies (and (equal (lookup-definition "boolean_assert" defs)
                        (boolean-assert-gadget))
                 (primep p)
@@ -915,7 +915,7 @@
            eval-expr
            acl2::not-reserrp-when-natp
            acl2::not-reserrp-when-nat-listp
-           definition-satp-of-boolean-assert-to-shallow
+           definition-satp-to-boolean-assert
            no-duplicatesp-equal
            fe-listp
            omap-in-of-car-of-supermap-of-from-lists
@@ -970,7 +970,7 @@
 ; and that the definition of boolean_assert_list_<n> is also available,
 ; for the same n as the length of xs.
 
-(defruled definition-satp-of-boolean-assert-list-gadget-to-shallow
+(defruled definition-satp-to-boolean-assert-list-gadget
   (implies (and (equal (lookup-definition
                         (iname "boolean_assert_list" (len xs))
                         defs)
@@ -982,7 +982,7 @@
            (equal (definition-satp
                     (iname "boolean_assert_list" (len xs)) defs xs p)
                   (boolean-assert-list xs p)))
-  :enable (constraint-list-satp-of-boolean-assert-list-gadget-aux-to-shallow
+  :enable (constraint-list-satp-to-boolean-assert-list-gadget-aux
            definition-satp
            pfcs::constraint-satp-of-relation-when-nofreevars
            pfcs::constraint-relation-nofreevars-satp
@@ -1021,7 +1021,7 @@
                     (iname "boolean_assert_list" (len xs)) defs xs p)
                   (bit-listp xs)))
   :enable (boolean-assert-list-correctness
-           definition-satp-of-boolean-assert-list-gadget-to-shallow))
+           definition-satp-to-boolean-assert-list-gadget))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
