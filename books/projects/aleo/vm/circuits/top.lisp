@@ -14,6 +14,7 @@
 (include-book "boolean-and")
 (include-book "boolean-assert")
 (include-book "boolean-not")
+(include-book "boolean-or")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,4 +53,5 @@
     "."))
   :order-subtopics (boolean-and
                     boolean-assert
-                    boolean-not))
+                    boolean-not
+                    boolean-or))
