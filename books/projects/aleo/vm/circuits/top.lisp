@@ -11,7 +11,7 @@
 
 (in-package "ALEOVM")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "boolean-assert")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,4 +48,4 @@
     (xdoc::ahref "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22023.9"
                  "ACL2-2023 Workshop paper")
     "."))
-  :order-subtopics ())
+  :order-subtopics (boolean-assert))
