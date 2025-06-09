@@ -238,7 +238,8 @@
      for now we use the same mapping as for the variables."))
   (b* ((tab (table-alist+ 'lift-table (w state)))
        (info (cdr (assoc-equal name tab)))
-       ((when (not info)) (lift-var-name name state))
+       ((unless info)
+        (raise "Internal error: ~x0 not in table." name))
        ((unless (lift-infop info))
         (raise "Internal error: ~x0 has the wrong type." info)))
     (lift-info->name info)))
@@ -339,7 +340,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-definition ((def definitionp) (prime symbolp) state)
+(define lift-definition ((def definitionp) (pred symbolp) (prime symbolp) state)
   :returns (event pseudo-event-formp)
   :short "Shallowly embedded semantics of a definition."
   :long
@@ -360,29 +361,15 @@
      However, the quantification is avoided
      if all the variables in the body are treated as parameters."))
   (b* (((definition def) def)
-       (pred-name (lift-rel-name def.name state))
        (free (definition-free-vars def))
        (quant (lift-var-name-set-to-list free state))
        (para (lift-var-name-list def.para state))
        (body `(and ,@(lift-constraint-list def.body prime state))))
     (if free
-        `(defund-sk ,pred-name (,@para ,prime)
+        `(defund-sk ,pred (,@para ,prime)
            (exists (,@quant) (and ,@(lift-gen-fep-terms quant prime) ,body)))
-      `(defund ,pred-name (,@para ,prime)
+      `(defund ,pred (,@para ,prime)
          ,body))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define lift-definition-list ((defs definition-listp) (prime symbolp) state)
-  :returns (events pseudo-event-form-listp)
-  :short "Shallowly embedded semanics of a list of definitions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the list of events generated from the definitions."))
-  (cond ((endp defs) nil)
-        (t (cons (lift-definition (car defs) prime state)
-                 (lift-definition-list (cdr defs) prime state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,7 +494,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm-definition-satp-specialized-lemma ((def definitionp) state)
+(define lift-thm-definition-satp-specialized-lemma ((def definitionp)
+                                                    (pred symbolp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp))
   :short "Generate a local lemma to apply
@@ -531,9 +519,7 @@
      essentially the definition of @(tsee definition-satp)
      specialized to the name of the definition to be the one of @('def')."))
   (b* ((def-name (definition->name def))
-       (pred-name (lift-rel-name def-name state))
-       (thm-name (acl2::packn-pos (list 'definition-satp-of- pred-name)
-                                  pred-name))
+       (thm-name (acl2::packn-pos (list 'definition-satp-of- pred) pred))
        (thm-event
         `(defruledl ,thm-name
            (equal (definition-satp ,def-name defs vals p)
@@ -551,7 +537,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm-constr-satp-specialized-lemma ((def definitionp) state)
+(define lift-thm-constr-satp-specialized-lemma ((def definitionp)
+                                                (pred symbolp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp))
   :short "Generate a local lemma to apply
@@ -574,9 +561,7 @@
      So the local lemma that we generate here limits application
      to the constraint with the name of @('def')."))
   (b* ((def-name (definition->name def))
-       (pred-name (lift-rel-name def-name state))
-       (thm-name (acl2::packn-pos (list 'constraint-satp-of- pred-name)
-                                  pred-name))
+       (thm-name (acl2::packn-pos (list 'constraint-satp-of- pred) pred))
        (thm-event
         (if (set::emptyp (definition-free-vars def))
             `(defruledl ,thm-name
@@ -634,10 +619,10 @@
      and we generate one specialized theorem for each."))
   (b* (((when (set::emptyp rels)) (mv nil nil))
        (rel (set::head rels))
-       (pred-name (lift-rel-name rel state))
+       (rel-pred (lift-rel-name rel state))
        (thm-name (acl2::packn-pos
-                  (list 'constraint-satp-to-definition-satp-of- pred-name)
-                  pred-name))
+                  (list 'constraint-satp-to-definition-satp-of- rel-pred)
+                  rel-pred))
        (thm-event
         `(defruledl ,thm-name
            (implies (and (primep p)
@@ -675,8 +660,8 @@
      in the proofs of the lifting theorems."))
   (b* (((when (endp rels)) nil)
        (rel (car rels))
-       (pred-name (lift-rel-name rel state))
-       (rule `(:t ,pred-name))
+       (rel-pred (lift-rel-name rel state))
+       (rule `(:t ,rel-pred))
        (rules (lift-thm-type-prescriptions-for-called-preds (cdr rels) state)))
     (cons rule rules)))
 
@@ -686,6 +671,7 @@
                   (def-sat-lemma symbolp)
                   (constr-sat-lemma symbolp)
                   (constr-to-def-sat-lemmas symbol-listp)
+                  (pred symbolp)
                   (prime symbolp)
                   state)
   :returns (mv (event pseudo-event-formp)
@@ -750,14 +736,11 @@
 
   (b* ((wrld (w state))
        ((definition def) def)
-       (pred-name (lift-rel-name def.name state))
        (para (lift-var-name-list def.para state))
        (free (definition-free-vars def))
        (quant (lift-var-name-set-to-list free state))
-       (thm-name (acl2::packn-pos (list 'definition-satp-of-
-                                        pred-name
-                                        '-to-shallow)
-                                  pred-name))
+       (thm-name
+        (acl2::packn-pos (list 'definition-satp-of- pred '-to-shallow) pred))
        (def-hyps (lift-thm-def-hyps def wrld))
        (rels (constraint-list-rels def.body))
        (called-lift-thms (lift-thm-called-lift-thms
@@ -773,9 +756,9 @@
                           (primep ,prime))
                      (equal (definition-satp
                               ,def.name defs (list ,@para) ,prime)
-                            (,pred-name ,@para ,prime)))
-            :in-theory '(,pred-name
-                         (:e ,pred-name)
+                            (,pred ,@para ,prime)))
+            :in-theory '(,pred
+                         (:e ,pred)
                          ,def-sat-lemma
                          ,constr-sat-lemma
                          ,@constr-to-def-sat-lemmas
@@ -836,7 +819,7 @@
                                            (omap::from-lists (list ,@def.para)
                                                              (list ,@para))
                                            ,prime))
-       (def-witness `(,(add-suffix-to-fn pred-name "-WITNESS") ,@para ,prime)))
+       (def-witness `(,(add-suffix-to-fn pred "-WITNESS") ,@para ,prime)))
 
     (mv
      `(defruled ,thm-name
@@ -844,9 +827,9 @@
                       ,@(lift-gen-fep-terms para prime)
                       (primep ,prime))
                  (equal (definition-satp ,def.name defs (list ,@para) ,prime)
-                        (,pred-name ,@para ,prime)))
+                        (,pred ,@para ,prime)))
         :in-theory '((:t definition-satp)
-                     (:t ,pred-name))
+                     (:t ,pred))
         :use (only-if-direction if-direction)
 
         :prep-lemmas
@@ -857,7 +840,7 @@
                          (primep ,prime))
                     (implies (definition-satp
                                ,def.name defs (list ,@para) ,prime)
-                             (,pred-name ,@para ,prime)))
+                             (,pred ,@para ,prime)))
            :in-theory '(,def-sat-lemma
                         ,constr-sat-lemma
                         ,@constr-to-def-sat-lemmas
@@ -918,7 +901,7 @@
                         fep-of-cdr-of-in-when-assignment-wfp
                         (:e no-duplicatesp-equal)
                         ,@type-presc-rules)
-           :use ((:instance ,(add-suffix-to-fn pred-name "-SUFF")
+           :use ((:instance ,(add-suffix-to-fn pred "-SUFF")
                             ,@(lift-thm-free-inst
                                free constraint-relation-satp-witness state))
                  ,@(lift-thm-omap-keys-lemma-instances
@@ -929,10 +912,10 @@
            (implies (and ,@def-hyps
                          ,@(lift-gen-fep-terms para prime)
                          (primep ,prime))
-                    (implies (,pred-name ,@para ,prime)
+                    (implies (,pred ,@para ,prime)
                              (definition-satp
                                ,def.name defs (list ,@para) ,prime)))
-           :in-theory '(,pred-name
+           :in-theory '(,pred
                         ,def-sat-lemma
                         ,constr-sat-lemma
                         ,@constr-to-def-sat-lemmas
@@ -1004,7 +987,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-table-add ((def definitionp) (hyps true-listp) state)
+(define lift-table-add ((pred symbolp) (def definitionp) (hyps true-listp))
   :returns (even pseudo-event-formp)
   :short "Event to update the table of lifted PFCSes."
   :long
@@ -1012,23 +995,22 @@
    (xdoc::p
     "This adds an entry to the table for the definition passed as argument."))
   (b* ((name (definition->name def))
-       (info (make-lift-info :name (lift-rel-name name state)
-                             :def def
-                             :hyps hyps)))
+       (info (make-lift-info :name pred :def def :hyps hyps)))
     `(table lift-table ,name ',info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-fn ((def definitionp) (prime symbolp) state)
+(define lift-fn ((def definitionp) (pred symbolp) (prime symbolp) state)
   :returns (event pseudo-event-formp)
   :short "Lift a deeply embedded PFCS definition
           to a shallowly embedded PFCS definition
           with a theorem relating the two."
-  (b* ((event-fn (lift-definition def prime state))
+  (b* ((pred (or pred (lift-var-name (definition->name def) state)))
+       (event-fn (lift-definition def pred prime state))
        ((mv event-def-sat def-sat-lemma)
-        (lift-thm-definition-satp-specialized-lemma def state))
+        (lift-thm-definition-satp-specialized-lemma def pred))
        ((mv event-constr-sat constr-sat-lemma)
-        (lift-thm-constr-satp-specialized-lemma def state))
+        (lift-thm-constr-satp-specialized-lemma def pred))
        ((mv events-constr-to-def-sat constr-to-def-sat-lemmas)
         (lift-thm-constr-to-def-satp-specialized-lemmas
          (constraint-list-rels (definition->body def)) state))
@@ -1036,10 +1018,12 @@
                                           def-sat-lemma
                                           constr-sat-lemma
                                           constr-to-def-sat-lemmas
+                                          pred
                                           prime
                                           state))
-       (event-table (lift-table-add def def-hyps state)))
-    `(encapsulate ()
+       (event-table (lift-table-add pred def def-hyps)))
+    `(encapsulate
+       ()
        ,event-fn
        ,event-def-sat
        ,event-constr-sat
@@ -1049,7 +1033,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(acl2::defmacro+ lift (def &key (prime 'p))
+(acl2::defmacro+ lift (def &key pred (prime 'p))
   :short "Macro to lift a deeply embedded PFCS definition
           to a shallowly embedded PFCS definition
           with a theorem relating the two."
@@ -1060,8 +1044,18 @@
      that evaluates to a PFCS @(tsee definition).
      The form is evaluated and the resulting definition is processed.")
    (xdoc::p
-    "The keyword argument must be a symbol
-     to use for the prime that parameterizes the PFCS semantics.
+    "The @('pred') keyword argument, if present,
+     must be a symbol to use as
+     the name of the predicate the constitutes
+     the generated shallowly embedded PFCS definition.
+     If omitted, the default is @('nil'),
+     which means that the predicate name is determined
+     according to the same mapping as for PFCS variables.
+     This input is quoted (not evaluated) for processing.")
+   (xdoc::p
+    "The @('prime') keyword argument, if present,
+     must be a symbol to use as
+     the prime that parameterizes the PFCS semantics.
      It is @('p') by default.
      This is quoted (not evaluated) for processing."))
-  `(make-event (lift-fn ,def ',prime state)))
+  `(make-event (lift-fn ,def ',pred ',prime state)))
