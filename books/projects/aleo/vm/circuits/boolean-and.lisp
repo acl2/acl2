@@ -57,9 +57,7 @@
   (xdoc::topstring
    (xdoc::p
     "We use an @(tsee if).
-     An alterntive is to use @(tsee logand).")
-   (xdoc::p
-    ""))
+     An alternative is to use @(tsee logand)."))
   (equal z (if (and (= x 1) (= y 1)) 1 0))
 
   ///
