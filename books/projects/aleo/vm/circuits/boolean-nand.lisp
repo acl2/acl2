@@ -39,10 +39,10 @@
    (xdoc::@[]
     "(x) (y) = (1 - z)")
    (xdoc::p
-    "which defines @($z$) to be 0 if both @($x$) and @($y$) are, otherwise 1.
+    "which defines @($z$) to be 0 if both @($x$) and @($y$) are 1, otherwise 1.
      Thus, @($z$) is boolean (0 or 1) if both @($x$) and @($y$) are.")
    (xdoc::p
-    "This has the same for as @(see boolean-and),
+    "This has the same form as @(see boolean-and),
      but with the result boolean negated (see @(see boolean-not))."))
   :order-subtopics t
   :default-parent t)

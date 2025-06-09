@@ -38,7 +38,7 @@
    (xdoc::@[]
     "(x) (y) = (z)")
    (xdoc::p
-    "which defines @($z$) to be 1 if both @($x$) and @($y$) are, otherwise 0.
+    "which defines @($z$) to be 1 if both @($x$) and @($y$) are 1, otherwise 0.
      Thus, @($z$) is boolean (0 or 1) if both @($x$) and @($y$) are."))
   :order-subtopics t
   :default-parent t)
