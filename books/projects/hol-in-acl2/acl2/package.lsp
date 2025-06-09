@@ -21,9 +21,9 @@
 ; From ../utilities/alist-subsetp.lisp:
     alist-subsetp
 ; Other basic ACL2 symbols etc.:
-    defthm defthmd defgoal set-enforce-redundancy
+    defthm defthmd defconst defgoal set-enforce-redundancy
     implies not and or
-    force type enable disable e/d
+    force type in-theory enable disable e/d
 ; But we deliberately avoid importing t and nil, so that they can be used as
 ; variable names.
     ))

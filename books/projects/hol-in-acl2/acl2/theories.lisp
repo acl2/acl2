@@ -6,7 +6,7 @@
 
 (include-book "hol")
 (include-book "terms")
-(include-book "../utilities/alist-subsetp")
+(include-book "alist-subsetp")
 
 (defun typ1 (flg x) ; expand-type
 
@@ -91,7 +91,9 @@
                  (if old-name 0 1)
                  old-name)))
           (t
-           (value `(progn (defun ,hta-name () ,hta-term)
+           (value `(progn (defun ,hta-name ()
+                            (declare (xargs :guard t))
+                            ,hta-term)
                           (table :hol-theory nil
                                  '((:name . ,name)
                                    (:prop . ,prop)
@@ -141,13 +143,15 @@
         (prop (cdr (hons-assoc-equal :prop tbl))))
     `(defthm ,hol-name
        (implies ,(if args
-                     `(and ,@(hpp-hyps args arg-types)
 
-; When hol::hta is to be bound to a specific hta, free variable matching is
-; more likely to work if we introduce hol::hta after a hypothesis of the form
-; (hpp var hol::hta).
+; Consider the question of free-variable matching for hol::hta.  At one time it
+; seemed, thinking ahead, that seemed more likely to work if we introduce
+; hol::hta after a hypothesis of the form (hpp var hol::hta).  But in practice
+; it turned out that we generally have the desired alist-subsetp hyopothesis in
+; our context, so it's probably best to put it first.
 
-                           (alist-subsetp (,hta-name) hol::hta)
+                     `(and (alist-subsetp (,hta-name) hol::hta)
+                           ,@(hpp-hyps args arg-types)
                            (force (,prop)))
                    `(force (,prop)))
                 ,(if thmp
@@ -360,20 +364,67 @@
         (t (cons `(local (defun ,(caar typed-fns) (x) x))
                  (close-theory-locals (cdr typed-fns))))))
 
-(defun close-theory-encapsulate (prop hta-name typed-fns axioms theorems)
-  (declare (xargs :guard (and (and (symbol-alistp typed-fns)
-                                   (doublet-listp typed-fns)
-                                   (alistp axioms)
-                                   (alistp theorems)))
+(defun close-theory-prop-implies-props (prop props)
+  (declare (xargs :guard (and (symbolp prop)
+                              (symbol-listp props))))
+  (cond ((endp props)
+         nil)
+        (t (cons `(defthm ,(intern-in-package-of-symbol
+                            (concatenate 'string
+                                         (symbol-name prop)
+                                         "-IMPLIES-"
+                                         (symbol-name (car props)))
+                            prop)
+                    (implies (,prop)
+                             (,(car props)))
+                    :rule-classes :forward-chaining)
+                 (close-theory-prop-implies-props prop (cdr props))))))
+
+(defun close-theory-hta-theorems (hta-keys hta-name hta-name-string hta-term)
+  (declare (xargs :guard (and (acl2::keyword-listp hta-keys)
+                              (symbolp hta-name)
+                              (stringp hta-name-string))))
+  (cond ((endp hta-keys) nil)
+        (t (cons (let ((key (car hta-keys)))
+                   `(defthm ,(intern-in-package-of-symbol
+                              (concatenate 'string
+                                           "HONS-ASSOC-EQUAL-"
+                                           (symbol-name key)
+                                           "-"
+                                           hta-name-string)
+                              hta-name)
+                      (hons-assoc-equal ,key ,hta-term)))
+                 (close-theory-hta-theorems (cdr hta-keys)
+                                            hta-name
+                                            hta-name-string
+                                            hta-term)))))
+
+(defun close-theory-encapsulate (prop hta-name typed-fns axioms theorems
+                                      hta-keys)
+  (declare (xargs :guard (and (symbolp prop)
+                              (symbolp hta-name)
+                              (symbol-alistp typed-fns)
+                              (doublet-listp typed-fns)
+                              (alistp axioms)
+                              (alistp theorems)
+                              (acl2::keyword-listp hta-keys))
                   :verify-guards nil))
   (mv-let (sigs types)
     (close-theory-sigs/types hta-name typed-fns prop nil nil)
     `(encapsulate ,sigs
        (local (defun ,prop () nil))
        ,@(close-theory-locals typed-fns)
+       ,@(close-theory-prop-implies-props
+          prop
+          '(zfc prod2$prop domain$prop inverse$prop finseqs$prop))
        ,@types
        ,@axioms
-       ,@theorems)))
+       ,@theorems
+       ,@(close-theory-hta-theorems hta-keys
+                                    hta-name
+                                    (symbol-name hta-name)
+                                    (list hta-name))
+       (in-theory (disable ,hta-name (:e ,hta-name))))))
 
 (local
  (defthm true-listp-mv-nth-1-close-theory-sigs/types
@@ -386,9 +437,19 @@
 (verify-guards close-theory-encapsulate)
 
 (defun close-theory-fn (ctx state)
-  (declare (xargs :stobjs state :guard (error1-state-p state)))
+  (declare (xargs :stobjs state
+                  :guard
+                  (and (symbolp (cdr (hons-assoc-equal
+                                      :prop
+                                      (table-alist :hol-theory (w state)))))
+                       (acl2::keyword-listp
+                        (cdr (hons-assoc-equal
+                              :hta-keys
+                              (table-alist :hol-theory (w state)))))
+                       (error1-state-p state))))
   (let* ((tbl (table-alist :hol-theory (w state)))
          (name (cdr (hons-assoc-equal :name tbl)))
+         (hta-keys (cdr (hons-assoc-equal :hta-keys tbl)))
          (hta-name (and (symbolp name) ; for guard
                         (hta-name name)))
          (typed-fns (reverse (true-list-fix ; for guard
@@ -426,7 +487,8 @@
                      hta-name
                      typed-fns
                      axioms
-                     theorems))))))
+                     theorems
+                     hta-keys))))))
 
 (defmacro close-theory (&key verbose)
   (let ((form `(make-event (close-theory-fn 'close-theory state))))
@@ -435,35 +497,38 @@
       `(with-output :off :all! :on error
          ,form))))
 
+(defun defgoal-form1 (hol-name body tbl)
+  (and body
+       (case-match body
+         ((':forall pairs formula)
+          (cond
+           ((not (and (symbol-alistp pairs)
+                      (doublet-listp pairs)))
+            (er acl2::hard 'defgoal
+                "Illegal pairs for name ~x0: ~x1"
+                hol-name pairs))
+           (t
+            (hol-axiom hol-name
+                       (strip-cars pairs)
+                       (strip-cadrs pairs)
+                       formula
+                       tbl
+                       t))))
+         (&
+          (hol-axiom hol-name
+                     nil
+                     nil
+                     body
+                     tbl
+                     t)))))
+
 (defun defgoal-form (name wrld)
   (declare (xargs :mode :program))
   (let* ((tbl (table-alist :hol-theory wrld))
          (goals (cdr (assoc-eq :goals tbl)))
          (hol-name (hol-name name))
          (body (cdr (assoc-eq hol-name goals))))
-    (and body
-         (case-match body
-           ((':forall pairs formula)
-            (cond
-             ((not (and (symbol-alistp pairs)
-                        (doublet-listp pairs)))
-              (er acl2::hard 'defgoal
-                  "Illegal pairs for name ~x0: ~x1"
-                  name pairs))
-             (t
-              (hol-axiom hol-name
-                         (strip-cars pairs)
-                         (strip-cadrs pairs)
-                         formula
-                         (table-alist :hol-theory wrld)
-                         t))))
-           (&
-            (hol-axiom (hol-name name)
-                       nil
-                       nil
-                       body
-                       (table-alist :hol-theory wrld)
-                       t))))))
+    (defgoal-form1 hol-name body tbl)))
 
 (defmacro defgoal (name body &rest rest)
   `(make-event

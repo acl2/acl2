@@ -1,0 +1,21 @@
+Each example E is associated with the following files.
+- ../hol4/E.sml is the code for translating the HOL4 version of E to
+  ACL2.
+- E-thy.lisp contains the ACL2 code resulting from running the above
+  translator code.
+
+In particular:
+
+File ../hol4/ex1.sml is the code for translating some basic HOL4
+definitions and theorems to ACL2, and ex1-thy.lisp is the result of
+that translation.  The latter has a simple example of a theorem at the
+end corresponding to an earlier defhol form with the keyword, :goal.
+
+File ../hol4/eval-poly.sml is the code for translating a simple
+formalizatino of a HOL4 polynomial evaluator and associated goal
+theorem, and eval-poly-thy.lisp is the result of that translation.
+The book eval-poly-acl2.lisp is a corresponding ACL2 formalization.
+We hope to add a proof of the HOL4 goal theorem that uses that ACL2
+formalization.
+
+The book example-simple.lisp is an early demonstration of defhol.
