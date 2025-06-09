@@ -13,6 +13,7 @@
 
 (include-book "boolean-and")
 (include-book "boolean-assert")
+(include-book "boolean-not")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,4 +51,5 @@
                  "ACL2-2023 Workshop paper")
     "."))
   :order-subtopics (boolean-and
-                    boolean-assert))
+                    boolean-assert
+                    boolean-not))
