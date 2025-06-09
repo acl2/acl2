@@ -489,7 +489,7 @@
     "These are used as rewrite rules in the caller's lifting theorem."))
   (b* (((when (endp rels)) nil)
        (rel (car rels)))
-    (cons (acl2::packn-pos (list 'definition-satp-of- rel '-to-shallow) rel)
+    (cons (acl2::packn-pos (list 'definition-satp-to- rel) rel)
           (lift-thm-called-lift-thms (cdr rels)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -740,7 +740,7 @@
        (free (definition-free-vars def))
        (quant (lift-var-name-set-to-list free state))
        (thm-name
-        (acl2::packn-pos (list 'definition-satp-of- pred '-to-shallow) pred))
+        (acl2::packn-pos (list 'definition-satp-to- pred) pred))
        (def-hyps (lift-thm-def-hyps def wrld))
        (rels (constraint-list-rels def.body))
        (called-lift-thms (lift-thm-called-lift-thms
