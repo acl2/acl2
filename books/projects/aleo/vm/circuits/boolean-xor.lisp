@@ -16,7 +16,6 @@
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
 
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
-(local (include-book "kestrel/utilities/nfix" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
