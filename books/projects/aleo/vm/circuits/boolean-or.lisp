@@ -35,7 +35,7 @@
      (i.e. such that each field element is either 0 or 1;
      see @(tsee boolean-assert)),
      their (inclusive) disjunction @($z$) is obtained via
-     a multiplication of the form")
+     a constraint of the form")
    (xdoc::@[]
     "(1 - x) (1 - y) = (1 - z)")
    (xdoc::p

@@ -34,7 +34,7 @@
     "Given two field elements @($x$) and @($y$) representing booleans
      (i.e. such that each field element is either 0 or 1;
      see @(tsee boolean-assert)),
-     their conjunction @($z$) is obtained via a multiplication of the form")
+     their conjunction @($z$) is obtained via a constraint of the form")
    (xdoc::@[]
     "(x) (y) = (z)")
    (xdoc::p

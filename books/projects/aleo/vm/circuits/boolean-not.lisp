@@ -35,7 +35,7 @@
     "Given a field element @($x$) representing a boolean
      (i.e. such that the field element is either 0 or 1;
      see @(tsee boolean-assert)),
-     its negation @($y$) is obtained via a subtraction of the form")
+     its negation @($y$) is obtained via a constraint of the form")
    (xdoc::@[]
     "(1 - x) (1) = (y)")
    (xdoc::p
