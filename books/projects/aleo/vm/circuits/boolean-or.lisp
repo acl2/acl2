@@ -84,8 +84,7 @@
      of the form described in @(see boolean-or).")
    (xdoc::p
     "An alternative definition could be in terms of
-     the @(see boolean-and) and @(see boolean-not) circuits
-     (see @(see boolean-or)),
+     the @(see boolean-and) and @(see boolean-not) circuits,
      but it is simpler to define this as a single equality constraint."))
   (pfcs::parse-def
    "boolean_or(x, y, z) := {
