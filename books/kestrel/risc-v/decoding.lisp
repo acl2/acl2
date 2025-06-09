@@ -298,11 +298,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decode ((enc ubyte32p) (feat featp))
+(define decodex ((enc ubyte32p) (feat featp))
   :returns (instr? instr-optionp)
-  :short "Decode an instruction."
+  :short "Executable instruction decoder."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The @('x') in the name stands for `executable'.")
    (xdoc::p
     "The first input is a 32-bit encoding of the instruction;
      the second input consists of the features, which affect decoding.
@@ -583,7 +585,7 @@
 
   ///
 
-  (defret instr-validp-of-decode
+  (defret instr-validp-of-decodex
     (implies instr?
              (instr-validp instr? feat))
     :hints (("Goal"

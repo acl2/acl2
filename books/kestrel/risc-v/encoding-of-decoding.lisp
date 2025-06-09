@@ -34,7 +34,7 @@
     "We show that encoding is left inverse of decoding
      over valid encodings, i.e. over encodings of valid instructions:
      if decoding yields an instruction
-     (which we know to be valid as proved in @(tsee decode)),
+     (which we know to be valid as proved in @(tsee decodex)),
      then applying the encoding to the instruction yields the original encoding.
      As a consequence, decoding is injective over valid encodings:
      if two different encodings were decoded in the same way,
@@ -45,14 +45,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled encode-of-decode
+(defruled encode-of-decodex
   :short "Encoding the decoding of a valid encoding
           yields the original encoding."
-  (b* ((instr? (decode enc feat)))
+  (b* ((instr? (decodex enc feat)))
     (implies instr?
              (equal (encode instr? feat)
                     (ubyte32-fix enc))))
-  :enable (decode
+  :enable (decodex
            get-opcode
            get-rd
            get-rs1
@@ -87,21 +87,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled decode-injective
+(defruled decodex-injective
   :short "Injectivity of decoding."
   :long
   (xdoc::topstring
    (xdoc::p
     "Different valid encodings are decoded differently.
-     This is a direct consequence of @(tsee encode-of-decode):
+     This is a direct consequence of @(tsee encode-of-decodex):
      if two different instructions were decoded in the same way,
      the encoder would be unable to restore both at the same time."))
-  (b* ((instr1? (decode enc1 feat))
-       (instr2? (decode enc2 feat)))
+  (b* ((instr1? (decodex enc1 feat))
+       (instr2? (decodex enc2 feat)))
     (implies (and instr1?
                   instr2?)
              (equal (equal instr1? instr2?)
                     (equal (ubyte32-fix enc1)
                            (ubyte32-fix enc2)))))
-  :use ((:instance encode-of-decode (enc enc1))
-        (:instance encode-of-decode (enc enc2))))
+  :use ((:instance encode-of-decodex (enc enc1))
+        (:instance encode-of-decodex (enc enc2))))

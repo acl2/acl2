@@ -765,27 +765,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection decode-of-encode-of-instr
-  :short "Theorems about @(tsee decode) applied to
+(defsection decodex-of-encode-of-instr
+  :short "Theorems about @(tsee decodex) applied to
           the encoding of different instructions."
 
-  (defruled decode-of-encode-of-instr-op-imm
+  (defruled decodex-of-encode-of-instr-op-imm
     (implies (instr-validp (instr-op-imm funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imm funct rd rs1 imm) feat)
-                            feat)
+             (equal (decodex (encode (instr-op-imm funct rd rs1 imm) feat)
+                             feat)
                     (instr-op-imm funct rd rs1 imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-op-imm
              get-fields-itype-of-encode-of-instr-op-imm
              instr-validp
              encode-op-imm-funct))
 
-  (defruled decode-of-encode-of-instr-op-imms32
+  (defruled decodex-of-encode-of-instr-op-imms32
     (implies (instr-validp (instr-op-imms32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms32 funct rd rs1 imm) feat)
-                            feat)
+             (equal (decodex (encode (instr-op-imms32 funct rd rs1 imm) feat)
+                             feat)
                     (instr-op-imms32 funct rd rs1 imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-op-imms32
              get-fields-itype-of-encode-of-instr-op-imms32
              instr-validp
@@ -793,121 +793,121 @@
              feat-32p
              feat-64p))
 
-  (defruled decode-of-encode-of-instr-op-imms64
+  (defruled decodex-of-encode-of-instr-op-imms64
     (implies (instr-validp (instr-op-imms64 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms64 funct rd rs1 imm) feat)
-                            feat)
+             (equal (decodex (encode (instr-op-imms64 funct rd rs1 imm) feat)
+                             feat)
                     (instr-op-imms64 funct rd rs1 imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-op-imms64
              get-fields-itype-of-encode-of-instr-op-imms64
              instr-validp
              encode-op-imms64-funct))
 
-  (defruled decode-of-encode-of-instr-op-imm-32
+  (defruled decodex-of-encode-of-instr-op-imm-32
     (implies (instr-validp (instr-op-imm-32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imm-32 funct rd rs1 imm) feat)
-                            feat)
+             (equal (decodex (encode (instr-op-imm-32 funct rd rs1 imm) feat)
+                             feat)
                     (instr-op-imm-32 funct rd rs1 imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-op-imm-32
              get-fields-itype-of-encode-of-instr-op-imm-32
              instr-validp
              encode-op-imm-32-funct
              op-imm-32-funct-fix))
 
-  (defruled decode-of-encode-of-instr-op-imms-32
+  (defruled decodex-of-encode-of-instr-op-imms-32
     (implies (instr-validp (instr-op-imms-32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms-32 funct rd rs1 imm) feat)
-                            feat)
+             (equal (decodex (encode (instr-op-imms-32 funct rd rs1 imm) feat)
+                             feat)
                     (instr-op-imms-32 funct rd rs1 imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-op-imms-32
              get-fields-itype-of-encode-of-instr-op-imms-32
              instr-validp
              encode-op-imms-32-funct))
 
-  (defruled decode-of-encode-of-instr-lui
+  (defruled decodex-of-encode-of-instr-lui
     (implies (instr-validp (instr-lui rd imm) feat)
-             (equal (decode (encode (instr-lui rd imm) feat) feat)
+             (equal (decodex (encode (instr-lui rd imm) feat) feat)
                     (instr-lui rd imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-lui
              get-fields-utype-of-encode-of-instr-lui
              instr-validp))
 
-  (defruled decode-of-encode-of-instr-auipc
+  (defruled decodex-of-encode-of-instr-auipc
     (implies (instr-validp (instr-auipc rd imm) feat)
-             (equal (decode (encode (instr-auipc rd imm) feat) feat)
+             (equal (decodex (encode (instr-auipc rd imm) feat) feat)
                     (instr-auipc rd imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-auipc
              get-fields-utype-of-encode-of-instr-auipc
              instr-validp))
 
-  (defruled decode-of-encode-of-instr-op
+  (defruled decodex-of-encode-of-instr-op
     (implies (instr-validp (instr-op funct rd rs1 rs2) feat)
-             (equal (decode (encode (instr-op funct rd rs1 rs2) feat) feat)
+             (equal (decodex (encode (instr-op funct rd rs1 rs2) feat) feat)
                     (instr-op funct rd rs1 rs2)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-op
              get-fields-rtype-of-encode-of-instr-op
              instr-validp
              encode-op-funct))
 
-  (defruled decode-of-encode-of-instr-op-32
+  (defruled decodex-of-encode-of-instr-op-32
     (implies (instr-validp (instr-op-32 funct rd rs1 rs2) feat)
-             (equal (decode (encode (instr-op-32 funct rd rs1 rs2) feat) feat)
+             (equal (decodex (encode (instr-op-32 funct rd rs1 rs2) feat) feat)
                     (instr-op-32 funct rd rs1 rs2)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-op-32
              get-fields-rtype-of-encode-of-instr-op-32
              instr-validp
              encode-op-32-funct))
 
-  (defruled decode-of-encode-of-instr-jal
+  (defruled decodex-of-encode-of-instr-jal
     (implies (instr-validp (instr-jal rd imm) feat)
-             (equal (decode (encode (instr-jal rd imm) feat) feat)
+             (equal (decodex (encode (instr-jal rd imm) feat) feat)
                     (instr-jal rd imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-jal
              get-fields-jtype-of-encode-of-instr-jal
              instr-validp))
 
-  (defruled decode-of-encode-of-instr-jalr
+  (defruled decodex-of-encode-of-instr-jalr
     (implies (instr-validp (instr-jalr rd rs1 imm) feat)
-             (equal (decode (encode (instr-jalr rd rs1 imm) feat) feat)
+             (equal (decodex (encode (instr-jalr rd rs1 imm) feat) feat)
                     (instr-jalr rd rs1 imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-jalr
              get-fields-itype-of-encode-of-instr-jalr
              instr-validp))
 
-  (defruled decode-of-encode-of-instr-branch
+  (defruled decodex-of-encode-of-instr-branch
     (implies (instr-validp (instr-branch funct rs1 rs2 imm) feat)
-             (equal (decode (encode (instr-branch funct rs1 rs2 imm) feat) feat)
+             (equal (decodex (encode (instr-branch funct rs1 rs2 imm) feat) feat)
                     (instr-branch funct rs1 rs2 imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-branch
              get-fields-btype-of-encode-of-instr-branch
              instr-validp
              encode-branch-funct))
 
-  (defruled decode-of-encode-of-instr-load
+  (defruled decodex-of-encode-of-instr-load
     (implies (instr-validp (instr-load funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-load funct rd rs1 imm) feat) feat)
+             (equal (decodex (encode (instr-load funct rd rs1 imm) feat) feat)
                     (instr-load funct rd rs1 imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-load
              get-fields-itype-of-encode-of-instr-load
              instr-validp
              encode-load-funct))
 
-  (defruled decode-of-encode-of-instr-store
+  (defruled decodex-of-encode-of-instr-store
     (implies (instr-validp (instr-store funct rs1 rs2 imm) feat)
-             (equal (decode (encode (instr-store funct rs1 rs2 imm) feat) feat)
+             (equal (decodex (encode (instr-store funct rs1 rs2 imm) feat) feat)
                     (instr-store funct rs1 rs2 imm)))
-    :enable (decode
+    :enable (decodex
              get-opcode-of-encode-of-instr-store
              get-fields-stype-of-encode-of-instr-store
              instr-validp
@@ -915,7 +915,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled decode-of-encode
+(defruled decodex-of-encode
   :short "Decoding the encoding of a valid instruction
           yields the original instruction."
   :long
@@ -924,14 +924,14 @@
     "That is, decoding is left inverse of encoding,
      over valid instructions."))
   (implies (instr-validp instr feat)
-           (equal (decode (encode instr feat) feat)
+           (equal (decodex (encode instr feat) feat)
                   (instr-fix instr)))
   :use (:instance lemma (instr (instr-fix instr)))
   :prep-lemmas
   ((defruled lemma
      (implies (and (instrp instr)
                    (instr-validp instr feat))
-              (equal (decode (encode instr feat) feat)
+              (equal (decodex (encode instr feat) feat)
                      instr))
      :cases ((equal (instr-kind instr) :op-imm)
              (equal (instr-kind instr) :op-imms32)
@@ -947,65 +947,65 @@
              (equal (instr-kind instr) :branch)
              (equal (instr-kind instr) :load)
              (equal (instr-kind instr) :store))
-     :use ((:instance decode-of-encode-of-instr-op-imm
+     :use ((:instance decodex-of-encode-of-instr-op-imm
                       (funct (instr-op-imm->funct instr))
                       (rd (instr-op-imm->rd instr))
                       (rs1 (instr-op-imm->rs1 instr))
                       (imm (instr-op-imm->imm instr)))
-           (:instance decode-of-encode-of-instr-op-imms32
+           (:instance decodex-of-encode-of-instr-op-imms32
                       (funct (instr-op-imms32->funct instr))
                       (rd (instr-op-imms32->rd instr))
                       (rs1 (instr-op-imms32->rs1 instr))
                       (imm (instr-op-imms32->imm instr)))
-           (:instance decode-of-encode-of-instr-op-imms64
+           (:instance decodex-of-encode-of-instr-op-imms64
                       (funct (instr-op-imms64->funct instr))
                       (rd (instr-op-imms64->rd instr))
                       (rs1 (instr-op-imms64->rs1 instr))
                       (imm (instr-op-imms64->imm instr)))
-           (:instance decode-of-encode-of-instr-op-imm-32
+           (:instance decodex-of-encode-of-instr-op-imm-32
                       (funct (instr-op-imm-32->funct instr))
                       (rd (instr-op-imm-32->rd instr))
                       (rs1 (instr-op-imm-32->rs1 instr))
                       (imm (instr-op-imm-32->imm instr)))
-           (:instance decode-of-encode-of-instr-op-imms-32
+           (:instance decodex-of-encode-of-instr-op-imms-32
                       (funct (instr-op-imms-32->funct instr))
                       (rd (instr-op-imms-32->rd instr))
                       (rs1 (instr-op-imms-32->rs1 instr))
                       (imm (instr-op-imms-32->imm instr)))
-           (:instance decode-of-encode-of-instr-lui
+           (:instance decodex-of-encode-of-instr-lui
                       (rd (instr-lui->rd instr))
                       (imm (instr-lui->imm instr)))
-           (:instance decode-of-encode-of-instr-auipc
+           (:instance decodex-of-encode-of-instr-auipc
                       (rd (instr-auipc->rd instr))
                       (imm (instr-auipc->imm instr)))
-           (:instance decode-of-encode-of-instr-op
+           (:instance decodex-of-encode-of-instr-op
                       (funct (instr-op->funct instr))
                       (rd (instr-op->rd instr))
                       (rs1 (instr-op->rs1 instr))
                       (rs2 (instr-op->rs2 instr)))
-           (:instance decode-of-encode-of-instr-op-32
+           (:instance decodex-of-encode-of-instr-op-32
                       (funct (instr-op-32->funct instr))
                       (rd (instr-op-32->rd instr))
                       (rs1 (instr-op-32->rs1 instr))
                       (rs2 (instr-op-32->rs2 instr)))
-           (:instance decode-of-encode-of-instr-jal
+           (:instance decodex-of-encode-of-instr-jal
                       (rd (instr-jal->rd instr))
                       (imm (instr-jal->imm instr)))
-           (:instance decode-of-encode-of-instr-jalr
+           (:instance decodex-of-encode-of-instr-jalr
                       (rd (instr-jalr->rd instr))
                       (rs1 (instr-jalr->rs1 instr))
                       (imm (instr-jalr->imm instr)))
-           (:instance decode-of-encode-of-instr-branch
+           (:instance decodex-of-encode-of-instr-branch
                       (funct (instr-branch->funct instr))
                       (rs1 (instr-branch->rs1 instr))
                       (rs2 (instr-branch->rs2 instr))
                       (imm (instr-branch->imm instr)))
-           (:instance decode-of-encode-of-instr-load
+           (:instance decodex-of-encode-of-instr-load
                       (funct (instr-load->funct instr))
                       (rd (instr-load->rd instr))
                       (rs1 (instr-load->rs1 instr))
                       (imm (instr-load->imm instr)))
-           (:instance decode-of-encode-of-instr-store
+           (:instance decodex-of-encode-of-instr-store
                       (funct (instr-store->funct instr))
                       (rs1 (instr-store->rs1 instr))
                       (rs2 (instr-store->rs2 instr))
@@ -1034,7 +1034,7 @@
   (xdoc::topstring
    (xdoc::p
     "Different valid instructions are encoded differently.
-     This is a direct consequence of @(tsee decode-of-encode):
+     This is a direct consequence of @(tsee decodex-of-encode):
      if two different instructions were encoded in the same way,
      the decoder would be unable to restore both at the same time."))
   (implies (and (instr-validp instr1 feat)
@@ -1043,5 +1043,5 @@
                          (encode instr2 feat))
                   (equal (instr-fix instr1)
                          (instr-fix instr2))))
-  :use ((:instance decode-of-encode (instr instr1))
-        (:instance decode-of-encode (instr instr2))))
+  :use ((:instance decodex-of-encode (instr instr1))
+        (:instance decodex-of-encode (instr instr2))))

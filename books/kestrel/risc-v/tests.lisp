@@ -54,7 +54,7 @@
                         33))))
  :enable (step
           encode
-          decode
+          decodex
           exec-instr
           exec-op
           exec-add
@@ -84,7 +84,7 @@
                         -33))))
  :enable (step
           encode
-          decode
+          decodex
           exec-instr
           exec-op
           exec-add-alt-def

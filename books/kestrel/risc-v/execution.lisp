@@ -51,7 +51,7 @@
   (b* (((when (errorp stat feat)) (stat-fix stat))
        (pc (read-pc stat feat))
        (enc (read-instruction pc stat feat))
-       (instr? (decode enc feat))
+       (instr? (decodex enc feat))
        ((unless instr?) (error stat feat)))
     (exec-instr instr? pc stat feat))
   :hooks (:fix)

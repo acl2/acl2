@@ -111,7 +111,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled decodei-is-decode
+(defruled decodei-is-decodex
   :short "Equivalence of declarative and executable decoding."
   :long
   (xdoc::topstring
@@ -119,32 +119,32 @@
     "If the encoding @('enc') is valid,
      it is equal to @('(encode (encoding-valid-witness enc feat) feat)')
      by the definition of @(tsee encoding-validp).
-     If we substitute that into @('(decode enc feat)')
-     and use @(tsee decode-of-encode),
+     If we substitute that into @('(decodex enc feat)')
+     and use @(tsee decodex-of-encode),
      that simplifies to @('(encoding-valid-witness enc feat)'),
      which is the same as @('(decodei enc feat)')
      by definition of the latter.")
    (xdoc::p
     "If instead the encoding @('enc') is invalid,
      by definition @('(decodei enc feat)') is @('nil').
-     If @('(decode enc feat)') were not @('nil'),
+     If @('(decodex enc feat)') were not @('nil'),
      it would be a witness for @(tsee encoding-validp),
-     using @(tsee encode-of-decode) to show that
+     using @(tsee encode-of-decodex) to show that
      the encoding of the witness is @('enc'),
      but we had assumed that the encoding was not valid.
-     Thus also @('(decode enc feat)') must be @('nil'),
+     Thus also @('(decodex enc feat)') must be @('nil'),
      the same as @('(decodei enc feat)')."))
   (equal (decodei enc feat)
-         (decode enc feat))
-  :use (decodei-is-decode-when-encoding-validp
-        decodei-is-decode-when-not-encoding-validp)
+         (decodex enc feat))
+  :use (decodei-is-decodex-when-encoding-validp
+        decodei-is-decodex-when-not-encoding-validp)
 
   :prep-lemmas
 
-  ((defruled decodei-is-decode-when-encoding-validp
+  ((defruled decodei-is-decodex-when-encoding-validp
      (implies (encoding-validp enc feat)
               (equal (decodei enc feat)
-                     (decode enc feat)))
+                     (decodex enc feat)))
      :use (:instance lemma (enc (ubyte32-fix enc)) (feat (feat-fix feat)))
      :prep-lemmas
      ((defruled lemma
@@ -152,16 +152,16 @@
                       (ubyte32p enc)
                       (featp feat))
                  (equal (decodei enc feat)
-                        (decode enc feat)))
-        :use (:instance decode-of-encode
+                        (decodex enc feat)))
+        :use (:instance decodex-of-encode
                         (instr (encoding-valid-witness enc feat)))
         :enable (encoding-validp
                  decodei))))
 
-   (defruled decodei-is-decode-when-not-encoding-validp
+   (defruled decodei-is-decodex-when-not-encoding-validp
      (implies (not (encoding-validp enc feat))
               (equal (decodei enc feat)
-                     (decode enc feat)))
+                     (decodex enc feat)))
      :enable (decodei
-              encode-of-decode)
-     :use (:instance encoding-validp-suff (instr (decode enc feat))))))
+              encode-of-decodex)
+     :use (:instance encoding-validp-suff (instr (decodex enc feat))))))

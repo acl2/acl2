@@ -45,7 +45,7 @@
   (b* (((when (error64p stat)) (state64-fix stat))
        (pc (read64-pc stat))
        (enc (read64-mem-ubyte32-lendian pc stat))
-       (instr? (decode enc (feat-rv64im-le)))
+       (instr? (decodex enc (feat-rv64im-le)))
        ((unless instr?) (error64 stat)))
     (exec64-instr instr? pc stat))
   :hooks (:fix))
