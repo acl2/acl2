@@ -138,7 +138,10 @@
 
   (defund-inline bool->bit (x)
     (declare (xargs :guard t))
-    (if x 1 0)))
+    (if x 1 0))
+
+  (defthm bitp-of-bool->bit
+    (bitp (bool->bit x))))
 
 (defsection bit->bool
   :parents (arith-equivs)
@@ -190,6 +193,3 @@ enabled by default.</p>"
                 (< x 0)))
     :hints(("Goal" :in-theory (enable negp)))
     :rule-classes :compound-recognizer))
-
-
-
