@@ -12,7 +12,7 @@
 (in-package "RISCV")
 
 (include-book "encoding")
-(include-book "decoding")
+(include-book "decoding-executable")
 
 (local (include-book "library-extensions"))
 
