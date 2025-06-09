@@ -14,6 +14,7 @@
 (include-book "features")
 (include-book "instructions")
 (include-book "encoding")
+(include-book "decoding")
 (include-book "decoding-executable")
 (include-book "decoding-of-encoding")
 (include-book "encoding-of-decoding")

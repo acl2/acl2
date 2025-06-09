@@ -13,6 +13,7 @@
 
 (include-book "decoding-of-encoding")
 (include-book "encoding-of-decoding")
+(include-book "decoding")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -21,53 +22,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ decoding-as-inverse
+(defxdoc+ decoding-correct
   :parents (decoding)
-  :short "Declarative definition of decoding as inverse of encoding."
+  :short "Correctness of the executable decoder."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We provide a declarative (non-executable) definition
-     of decoding as the inverse of encoding.
-     We use the inversion theorems proved in
+    "We use the inversion theorems proved in
      @(see decoding-of-encoding) and @(see encoding-of-decoding)
-     to show that this is equivalent to the executable definition."))
+     to show that the declarative definition of the decoder
+     is equivalent to the executable definition of the decoder."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define decode ((enc ubyte32p) (feat featp))
-  :returns (instr? instr-optionp)
-  :short "Declarative definition of instruction decoding."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If there is some valid instruction whose encoding is @('enc'),
-     we return one such instruction.
-     We use the witness function of @(tsee encoding-validp) for that.")
-   (xdoc::p
-    "Since @(tsee encode) is injective,
-     there is in fact at most one such instruction."))
-  (if (encoding-validp enc feat)
-      (encoding-valid-witness (ubyte32-fix enc) (feat-fix feat))
-    nil)
-  :hooks (:fix)
-
-  ///
-
-  (defruled encode-of-decode
-    (implies (encoding-validp enc feat)
-             (equal (encode (decode enc feat) feat)
-                    (ubyte32-fix enc)))
-    :use (:instance lemma (enc (ubyte32-fix enc)) (feat (feat-fix feat)))
-    :prep-lemmas
-    ((defruled lemma
-       (implies (and (ubyte32p enc)
-                     (featp feat)
-                     (encoding-validp enc feat))
-                (equal (encode (decode enc feat) feat)
-                       enc))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
