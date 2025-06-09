@@ -136,7 +136,7 @@
       and one such term for each PFCS definition
       directly or indirectly called by
       the PFCS definition that this information refers to.")))
-  ((name symbol)
+  ((pred symbol)
    (def definition)
    (hyps true-list))
   :pred lift-infop)
@@ -242,7 +242,7 @@
         (raise "Internal error: ~x0 not in table." name))
        ((unless (lift-infop info))
         (raise "Internal error: ~x0 has the wrong type." info)))
-    (lift-info->name info)))
+    (lift-info->pred info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -995,7 +995,7 @@
    (xdoc::p
     "This adds an entry to the table for the definition passed as argument."))
   (b* ((name (definition->name def))
-       (info (make-lift-info :name pred :def def :hyps hyps)))
+       (info (make-lift-info :pred pred :def def :hyps hyps)))
     `(table lift-table ,name ',info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
