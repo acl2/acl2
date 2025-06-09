@@ -225,7 +225,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-rel-name ((name stringp) state)
+(define lift-rel-name ((name stringp) (wrld plist-worldp))
   :returns (sym symbolp)
   :short "Lift a PFCS relation name to an ACL2 symbol."
   :long
@@ -236,7 +236,7 @@
      If it is not in the table,
      which happens when we are lifting the PFCS definition of the relation,
      for now we use the same mapping as for the variables."))
-  (b* ((tab (table-alist+ 'lift-table (w state)))
+  (b* ((tab (table-alist+ 'lift-table wrld))
        (info (cdr (assoc-equal name tab)))
        ((unless info)
         (raise "Internal error: ~x0 not in table." name))
@@ -309,7 +309,7 @@
    constr
    :equal `(equal ,(lift-expression constr.left prime state)
                   ,(lift-expression constr.right prime state))
-   :relation `(,(lift-rel-name constr.name state)
+   :relation `(,(lift-rel-name constr.name (w state))
                ,@(lift-expression-list constr.args prime state)
                ,prime)))
 
@@ -597,7 +597,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-thm-constr-to-def-satp-specialized-lemmas ((rels string-setp)
-                                                        state)
+                                                        (wrld plist-worldp))
   :returns (mv (thm-events pseudo-event-form-listp)
                (thm-names symbol-listp))
   :short "Generate local lemmas to apply
@@ -619,7 +619,7 @@
      and we generate one specialized theorem for each."))
   (b* (((when (set::emptyp rels)) (mv nil nil))
        (rel (set::head rels))
-       (rel-pred (lift-rel-name rel state))
+       (rel-pred (lift-rel-name rel wrld))
        (thm-name (acl2::packn-pos
                   (list 'constraint-satp-to-definition-satp-of- rel-pred)
                   rel-pred))
@@ -642,14 +642,14 @@
            :in-theory '(constraint-satp-to-definition-satp)))
        ((mv thm-events thm-names)
         (lift-thm-constr-to-def-satp-specialized-lemmas (set::tail rels)
-                                                        state)))
+                                                        wrld)))
     (mv (cons thm-event thm-events)
         (cons thm-name thm-names))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-thm-type-prescriptions-for-called-preds ((rels string-listp)
-                                                      state)
+                                                      (wrld plist-worldp))
   :returns (rules true-listp)
   :short "List of type prescription rules for the shallowly embedded predicates
           for the relations called by the definition being lifted."
@@ -660,9 +660,9 @@
      in the proofs of the lifting theorems."))
   (b* (((when (endp rels)) nil)
        (rel (car rels))
-       (rel-pred (lift-rel-name rel state))
+       (rel-pred (lift-rel-name rel wrld))
        (rule `(:t ,rel-pred))
-       (rules (lift-thm-type-prescriptions-for-called-preds (cdr rels) state)))
+       (rules (lift-thm-type-prescriptions-for-called-preds (cdr rels) wrld)))
     (cons rule rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -746,7 +746,7 @@
        (called-lift-thms (lift-thm-called-lift-thms
                           (lift-var-name-set-to-list rels state)))
        (type-presc-rules
-        (lift-thm-type-prescriptions-for-called-preds rels state))
+        (lift-thm-type-prescriptions-for-called-preds rels wrld))
 
        ((when (equal free nil))
         (mv
@@ -1013,7 +1013,7 @@
         (lift-thm-constr-satp-specialized-lemma def pred))
        ((mv events-constr-to-def-sat constr-to-def-sat-lemmas)
         (lift-thm-constr-to-def-satp-specialized-lemmas
-         (constraint-list-rels (definition->body def)) state))
+         (constraint-list-rels (definition->body def)) (w state)))
        ((mv event-thm def-hyps) (lift-thm def
                                           def-sat-lemma
                                           constr-sat-lemma
