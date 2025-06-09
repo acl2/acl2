@@ -17,6 +17,7 @@
 (include-book "boolean-nor")
 (include-book "boolean-not")
 (include-book "boolean-or")
+(include-book "boolean-xor")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,4 +59,5 @@
                     boolean-nand
                     boolean-nor
                     boolean-not
-                    boolean-or))
+                    boolean-or
+                    boolean-xor))
