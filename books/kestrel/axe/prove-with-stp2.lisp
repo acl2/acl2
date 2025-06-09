@@ -603,7 +603,6 @@
                               (nat-listp nodenums-to-translate) ; increasing
                               (nodenum-type-alistp cut-nodenum-type-alist)
                               (string-treep extra-asserts))
-                  ;; :guard-debug t
                   :measure (if (consp worklist1)
                                (if (consp worklist2)
                                    (+ 1 (nfix (max (first worklist1) (first worklist2))))
