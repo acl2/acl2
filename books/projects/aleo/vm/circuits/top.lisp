@@ -39,7 +39,7 @@
    (xdoc::p
     "snarkVM generates zero-knowledge circuits in R1CS form.
      We use our "
-    (xdoc::seetopic "pfcs::prime-field-constraint-systems" "PFCS")
+    (xdoc::seetopic "pfcs::pfcs" "PFCS")
     " formalism
      to formalize and verify the circuits in a compositional way,
      as described in our "
