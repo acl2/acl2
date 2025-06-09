@@ -14,9 +14,6 @@
 (include-book "decoding-of-encoding")
 (include-book "encoding-of-decoding")
 
-(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
-(include-book "std/util/define-sk" :dir :system)
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -37,43 +34,6 @@
      to show that this is equivalent to the executable definition."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define-sk encoding-validp ((enc ubyte32p) (feat featp))
-  :returns (yes/no booleanp)
-  :short "Check if a 32-bit word is a valid instruction encoding."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the case when there exists an instruction,
-     valid for the given features,
-     whose encoding is @('enc').
-     This is a declarative definition."))
-  (exists (instr)
-          (and (instrp instr)
-               (instr-validp instr feat)
-               (equal (encode instr feat)
-                      (ubyte32-fix enc))))
-  :skolem-name encoding-valid-witness
-
-  ///
-
-  (fty::deffixequiv-sk encoding-validp
-    :args ((enc ubyte32p) (feat featp)))
-
-  (defrule instrp-of-encoding-valid-witness
-    (implies (encoding-validp enc feat)
-             (instrp (encoding-valid-witness enc feat))))
-
-  (defrule instr-validp-of-encoding-valid-witness
-    (implies (encoding-validp enc feat)
-             (instr-validp (encoding-valid-witness enc feat) feat)))
-
-  (defrule encode-of-encoding-valid-witness
-    (implies (encoding-validp enc feat)
-             (equal (encode (encoding-valid-witness enc feat) feat)
-                    (ubyte32-fix enc)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

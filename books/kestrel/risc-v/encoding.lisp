@@ -16,10 +16,12 @@
 (include-book "logappn")
 
 (include-book "centaur/bitops/part-select" :dir :system)
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/ubyte3" :dir :system)
 (include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte7" :dir :system)
 (include-book "kestrel/fty/ubyte32" :dir :system)
+(include-book "std/util/define-sk" :dir :system)
 
 (local (include-book "library-extensions"))
 
@@ -55,7 +57,10 @@
     "Even without modeling the C extension yet,
      our encoding mapping depends on the @(see features),
      because it is only defined on instructions
-     that are valid according to the @(see features)."))
+     that are valid according to the @(see features).")
+   (xdoc::p
+    "We also provide a characterization of the valid encodings
+     as the image of the encoding function."))
   :order-subtopics t
   :default-parent t)
 
@@ -480,3 +485,45 @@
                       7 imm-11-5))))
   :guard-hints (("Goal" :in-theory (enable fix ifix instr-validp)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk encoding-validp ((enc ubyte32p) (feat featp))
+  :returns (yes/no booleanp)
+  :short "Check if a 32-bit word is a valid instruction encoding."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case when there exists an instruction,
+     valid for the given features,
+     whose encoding is @('enc').
+     This is a declarative, non-executable definition.")
+   (xdoc::p
+    "The witness function decodes the valid encoding
+     to the corresponding valid instruction.
+     Encoding if left inverse of the witness function,
+     over valid encodings."))
+  (exists (instr)
+          (and (instrp instr)
+               (instr-validp instr feat)
+               (equal (encode instr feat)
+                      (ubyte32-fix enc))))
+  :skolem-name encoding-valid-witness
+
+  ///
+
+  (fty::deffixequiv-sk encoding-validp
+    :args ((enc ubyte32p) (feat featp)))
+
+  (defrule instrp-of-encoding-valid-witness
+    (implies (encoding-validp enc feat)
+             (instrp (encoding-valid-witness enc feat))))
+
+  (defrule instr-validp-of-encoding-valid-witness
+    (implies (encoding-validp enc feat)
+             (instr-validp (encoding-valid-witness enc feat) feat)))
+
+  (defrule encode-of-encoding-valid-witness
+    (implies (encoding-validp enc feat)
+             (equal (encode (encoding-valid-witness enc feat) feat)
+                    (ubyte32-fix enc)))))
