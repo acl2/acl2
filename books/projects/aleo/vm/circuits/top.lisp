@@ -13,6 +13,7 @@
 
 (include-book "boolean-and")
 (include-book "boolean-assert")
+(include-book "boolean-assert-true")
 (include-book "boolean-eq")
 (include-book "boolean-if")
 (include-book "boolean-nand")
@@ -59,6 +60,7 @@
     "."))
   :order-subtopics (boolean-and
                     boolean-assert
+                    boolean-assert-true
                     boolean-eq
                     boolean-if
                     boolean-nand
