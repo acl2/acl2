@@ -15,7 +15,7 @@
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
 
-(local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
+(local (include-book "kestrel/prime-fields/equal-of-add-rules" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -24,31 +24,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ boolean-and
+(defxdoc+ boolean-nor
   :parents (circuits)
   :short "Formalization and verification of the circuit
-          for boolean conjunction."
+          for boolean negated (inclusive) disjunction."
   :long
   (xdoc::topstring
    (xdoc::p
     "Given two field elements @($x$) and @($y$) representing booleans
      (i.e. such that each field element is either 0 or 1;
      see @(see boolean-assert)),
-     their conjunction @($z$) is obtained via a constraint of the form")
+     their negated (inclusive) disjunction @($z$) is obtained via
+     a multiplication of the form")
    (xdoc::@[]
-    "(x) (y) = (z)")
+    "(1 - x) (1 - y) = z")
    (xdoc::p
-    "which defines @($z$) to be 1 if both @($x$) and @($y$) are 1, otherwise 0.
-     Thus, @($z$) is boolean (0 or 1) if both @($x$) and @($y$) are."))
+    "which defines @($z$) to be 1 if both @($x$) and @($y$) are 0, otherwise 0.
+     Thus, @($z$) is boolean (0 or 1) if both @($x$) and @($y$) are.")
+   (xdoc::p
+    "This has the same form as @(see boolean-and),
+     but with the operand booleans negated (see @(see boolean-not))."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-and-spec ((x (pfield::fep x prime))
-                          (y (pfield::fep y prime))
-                          (z (pfield::fep z prime))
-                          (prime primep))
+(define boolean-nor-spec ((x (pfield::fep x prime))
+                           (y (pfield::fep y prime))
+                           (z (pfield::fep z prime))
+                           (prime primep))
   :guard (and (bitp x) (bitp y))
   (declare (ignore prime))
   :returns (yes/no booleanp)
@@ -57,30 +61,34 @@
   (xdoc::topstring
    (xdoc::p
     "We use an @(tsee if).
-     An alternative is to use @(tsee logand)."))
-  (equal z (if (and (= x 1) (= y 1)) 1 0))
+     An alternative is to use @(tsee lognor)."))
+  (equal z (if (and (= x 0) (= y 0)) 1 0))
 
   ///
 
-  (defruled bitp-z-when-boolean-and-spec
-    (implies (and (boolean-and-spec x y z prime)
+  (defruled bitp-z-when-boolean-nor-spec
+    (implies (and (boolean-nor-spec x y z prime)
                   (bitp x)
                   (bitp y))
              (bitp z))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-and-circuit ()
+(define boolean-nor-circuit ()
   :returns (pdef pfcs::definitionp)
   :short "Construction of the circuit."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a PFCS definition with a single equality constraint
-     of the form described in @(see boolean-and)."))
+     of the form described in @(see boolean-nor).")
+   (xdoc::p
+    "An alternative definition could be in terms of
+     the @(see boolean-or) and @(see boolean-not) circuits,
+     but it is simpler to define this as a single equality constraint."))
   (pfcs::parse-def
-   "boolean_and(x, y, z) := {
-      (x) * (y) == (z)
+   "boolean_nor(x, y, z) := {
+      (1 + -1 * x) * (1 + -1 * y) == (z)
     }")
 
   ///
@@ -95,16 +103,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection boolean-and-lifting
+(defsection boolean-nor-lifting
   :short "Lifting of the circuit to a predicate."
 
-  (pfcs::lift (boolean-and-circuit)
-              :pred boolean-and-pred
+  (pfcs::lift (boolean-nor-circuit)
+              :pred boolean-nor-pred
               :prime prime))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection boolean-and-correctness
+(defsection boolean-nor-correctness
   :short "Correctness of the circuit."
   :long
   (xdoc::topstring
@@ -114,21 +122,21 @@
    (xdoc::p
     "The extension to the circuit is boilerplate."))
 
-  (defruled boolean-and-pred-to-spec
+  (defruled boolean-nor-pred-to-spec
     (implies (and (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep z prime)
                   (bitp x)
                   (bitp y))
-             (equal (boolean-and-pred x y z prime)
-                    (boolean-and-spec x y z prime)))
-    :enable (boolean-and-pred
-             boolean-and-spec))
+             (equal (boolean-nor-pred x y z prime)
+                    (boolean-nor-spec x y z prime)))
+    :enable (boolean-nor-pred
+             boolean-nor-spec))
 
-  (defruled boolean-and-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_and" defs)
-                         (boolean-and-circuit))
+  (defruled boolean-nor-circuit-to-spec
+    (implies (and (equal (pfcs::lookup-definition "boolean_nor" defs)
+                         (boolean-nor-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
@@ -136,8 +144,8 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      "boolean_and" defs (list x y z) prime)
-                    (boolean-and-spec x y z prime)))
-    :in-theory '((:e boolean-and-circuit)
-                 definition-satp-to-boolean-and-pred
-                 boolean-and-pred-to-spec)))
+                      "boolean_nor" defs (list x y z) prime)
+                    (boolean-nor-spec x y z prime)))
+    :in-theory '((:e boolean-nor-circuit)
+                 definition-satp-to-boolean-nor-pred
+                 boolean-nor-pred-to-spec)))
