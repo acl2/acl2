@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "instructions")
+(include-book "specification/instructions")
 (include-book "states64")
 
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)

@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "instructions")
+(include-book "specification/instructions")
 
 (include-book "logappn")
 

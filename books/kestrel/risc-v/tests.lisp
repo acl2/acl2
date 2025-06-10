@@ -11,8 +11,8 @@
 
 (in-package "RISCV")
 
-(include-book "execution")
-(include-book "reads-over-writes")
+(include-book "specification/execution")
+(include-book "specification/reads-over-writes")
 (include-book "decoding-correct")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

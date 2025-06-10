@@ -13,7 +13,7 @@
 
 (include-book "features")
 
-(include-book "logappn")
+(include-book "../logappn")
 
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
@@ -24,7 +24,7 @@
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
 
-(local (include-book "library-extensions"))
+(local (include-book "../library-extensions"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))

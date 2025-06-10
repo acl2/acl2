@@ -11,9 +11,10 @@
 
 (in-package "RISCV")
 
-(include-book "decoding")
 (include-book "decoding-left-inverse")
 (include-book "decoding-right-inverse")
+
+(include-book "specification/decoding")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
