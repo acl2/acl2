@@ -23,8 +23,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ decoding-correct
-  :parents (decoding)
-  :short "Correctness of the executable decoder."
+  :parents (executable)
+  :short "Correctness of the executable decoding."
   :long
   (xdoc::topstring
    (xdoc::p

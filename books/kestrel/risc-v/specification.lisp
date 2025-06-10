@@ -43,14 +43,10 @@
      and how @(see execution) proceeds in steps.")
    (xdoc::p
     "This specification is high-level, aimed at maximizing clarity.
-     It is not fully executable because decoding
-     is defined declaratively as the inverse of encoding.
-     In addition to this specification,
-     we provide an "
-    (xdoc::seetopic "decoding-executable" "executable version of decoding")
-    " and we "
-    (xdoc::seetopic "decoding-correct" "prove them equivalent")
-    "."))
+     It is not aimed at being efficiently executable;
+     in fact, since decoding is specified as inverse of encoding,
+     this specification is not fully executable.
+     See @(see executable) for an executable refinement."))
   :order-subtopics (features
                     instructions
                     encoding

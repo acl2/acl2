@@ -35,7 +35,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ decoding-executable
-  :parents (riscv)
+  :parents (executable)
   :short "Executable decoding of instructions."
   :long
   (xdoc::topstring

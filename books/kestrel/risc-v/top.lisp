@@ -12,10 +12,7 @@
 (in-package "RISCV")
 
 (include-book "specification")
-(include-book "decoding-executable")
-(include-book "decoding-left-inverse")
-(include-book "decoding-right-inverse")
-(include-book "decoding-correct")
+(include-book "executable")
 (include-book "rv32im")
 (include-book "rv64im")
 
@@ -75,9 +72,6 @@
     "These square-bracketed references may be used
      as nouns or parenthentically."))
   :order-subtopics (specification
-                    decoding-executable
-                    decoding-left-inverse
-                    decoding-right-inverse
-                    decoding-correct
+                    executable
                     rv32im
                     rv64im))

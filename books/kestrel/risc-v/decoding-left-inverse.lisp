@@ -32,13 +32,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ decoding-left-inverse
-  :parents (encoding decoding)
-  :short "Decoding applied to encoding."
+  :parents (executable)
+  :short "Executable decoding applied to encoding."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We show that decoding is left inverse of encoding
-     (i.e. that encoding is right inverse of decoding)
+    "We show that the executable decoding is left inverse of encoding
+     (i.e. that encoding is right inverse of the executable decoding)
      over valid instructions:
      encoding a valid instruction and then decoding it
      yields the original instruction.
