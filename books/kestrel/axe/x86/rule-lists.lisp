@@ -3510,22 +3510,22 @@
     xr-becomes-rsp
     xr-becomes-rbp
 
-    signed-byte-p-64-of-rax
-    signed-byte-p-64-of-rbx
-    signed-byte-p-64-of-rcx
-    signed-byte-p-64-of-rdx
-    signed-byte-p-64-of-rsi
-    signed-byte-p-64-of-rdi
-    signed-byte-p-64-of-r8
-    signed-byte-p-64-of-r9
-    signed-byte-p-64-of-r10
-    signed-byte-p-64-of-r11
-    signed-byte-p-64-of-r12
-    signed-byte-p-64-of-r13
-    signed-byte-p-64-of-r14
-    signed-byte-p-64-of-r15
-    signed-byte-p-64-of-rsp
-    signed-byte-p-64-of-rbp
+    unsigned-byte-p-64-of-rax
+    unsigned-byte-p-64-of-rbx
+    unsigned-byte-p-64-of-rcx
+    unsigned-byte-p-64-of-rdx
+    unsigned-byte-p-64-of-rsi
+    unsigned-byte-p-64-of-rdi
+    unsigned-byte-p-64-of-r8
+    unsigned-byte-p-64-of-r9
+    unsigned-byte-p-64-of-r10
+    unsigned-byte-p-64-of-r11
+    unsigned-byte-p-64-of-r12
+    unsigned-byte-p-64-of-r13
+    unsigned-byte-p-64-of-r14
+    unsigned-byte-p-64-of-r15
+    unsigned-byte-p-64-of-rsp
+    unsigned-byte-p-64-of-rbp
 
     integerp-of-rax
     integerp-of-rbx

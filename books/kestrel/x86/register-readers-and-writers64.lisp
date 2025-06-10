@@ -35,24 +35,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Register readers (when we need an ordering on registers, we use the order given here):
-;; These are signed-byte-p-64s:
-(defund rax (x86) (declare (xargs :stobjs x86)) (rgfi *rax* x86))
-(defund rbx (x86) (declare (xargs :stobjs x86)) (rgfi *rbx* x86))
-(defund rcx (x86) (declare (xargs :stobjs x86)) (rgfi *rcx* x86))
-(defund rdx (x86) (declare (xargs :stobjs x86)) (rgfi *rdx* x86))
-(defund rsi (x86) (declare (xargs :stobjs x86)) (rgfi *rsi* x86))
-(defund rdi (x86) (declare (xargs :stobjs x86)) (rgfi *rdi* x86))
-(defund r8 (x86) (declare (xargs :stobjs x86)) (rgfi *r8* x86))
-(defund r9 (x86) (declare (xargs :stobjs x86)) (rgfi *r9* x86))
-(defund r10 (x86) (declare (xargs :stobjs x86)) (rgfi *r10* x86))
-(defund r11 (x86) (declare (xargs :stobjs x86)) (rgfi *r11* x86))
-(defund r12 (x86) (declare (xargs :stobjs x86)) (rgfi *r12* x86))
-(defund r13 (x86) (declare (xargs :stobjs x86)) (rgfi *r13* x86))
-(defund r14 (x86) (declare (xargs :stobjs x86)) (rgfi *r14* x86))
-(defund r15 (x86) (declare (xargs :stobjs x86)) (rgfi *r15* x86))
-(defund rsp (x86) (declare (xargs :stobjs x86)) (rgfi *rsp* x86))
-(defund rbp (x86) (declare (xargs :stobjs x86)) (rgfi *rbp* x86))
+;; Register readers.
+;; When we need an ordering on registers, we can use the order given here.
+;; NOTE: Unlike the model's accessors, these accessors return unsigned-bytes:
+(defund rax (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *rax* x86)))
+(defund rbx (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *rbx* x86)))
+(defund rcx (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *rcx* x86)))
+(defund rdx (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *rdx* x86)))
+(defund rsi (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *rsi* x86)))
+(defund rdi (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *rdi* x86)))
+(defund r8 (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *r8* x86)))
+(defund r9 (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *r9* x86)))
+(defund r10 (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *r10* x86)))
+(defund r11 (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *r11* x86)))
+(defund r12 (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *r12* x86)))
+(defund r13 (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *r13* x86)))
+(defund r14 (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *r14* x86)))
+(defund r15 (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *r15* x86)))
+(defund rsp (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *rsp* x86)))
+(defund rbp (x86) (declare (xargs :stobjs x86)) (bvchop 64 (rgfi *rbp* x86)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,22 +76,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm signed-byte-p-64-of-rax (signed-byte-p 64 (rax x86)) :hints (("Goal" :in-theory (enable rax))))
-(defthm signed-byte-p-64-of-rbx (signed-byte-p 64 (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
-(defthm signed-byte-p-64-of-rcx (signed-byte-p 64 (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
-(defthm signed-byte-p-64-of-rdx (signed-byte-p 64 (rdx x86)) :hints (("Goal" :in-theory (enable rdx))))
-(defthm signed-byte-p-64-of-rsi (signed-byte-p 64 (rsi x86)) :hints (("Goal" :in-theory (enable rsi))))
-(defthm signed-byte-p-64-of-rdi (signed-byte-p 64 (rdi x86)) :hints (("Goal" :in-theory (enable rdi))))
-(defthm signed-byte-p-64-of-r8 (signed-byte-p 64 (r8 x86)) :hints (("Goal" :in-theory (enable r8))))
-(defthm signed-byte-p-64-of-r9 (signed-byte-p 64 (r9 x86)) :hints (("Goal" :in-theory (enable r9))))
-(defthm signed-byte-p-64-of-r10 (signed-byte-p 64 (r10 x86)) :hints (("Goal" :in-theory (enable r10))))
-(defthm signed-byte-p-64-of-r11 (signed-byte-p 64 (r11 x86)) :hints (("Goal" :in-theory (enable r11))))
-(defthm signed-byte-p-64-of-r12 (signed-byte-p 64 (r12 x86)) :hints (("Goal" :in-theory (enable r12))))
-(defthm signed-byte-p-64-of-r13 (signed-byte-p 64 (r13 x86)) :hints (("Goal" :in-theory (enable r13))))
-(defthm signed-byte-p-64-of-r14 (signed-byte-p 64 (r14 x86)) :hints (("Goal" :in-theory (enable r14))))
-(defthm signed-byte-p-64-of-r15 (signed-byte-p 64 (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
-(defthm signed-byte-p-64-of-rsp (signed-byte-p 64 (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
-(defthm signed-byte-p-64-of-rbp (signed-byte-p 64 (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
+(defthm unsigned-byte-p-64-of-rax (unsigned-byte-p 64 (rax x86)) :hints (("Goal" :in-theory (enable rax))))
+(defthm unsigned-byte-p-64-of-rbx (unsigned-byte-p 64 (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
+(defthm unsigned-byte-p-64-of-rcx (unsigned-byte-p 64 (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
+(defthm unsigned-byte-p-64-of-rdx (unsigned-byte-p 64 (rdx x86)) :hints (("Goal" :in-theory (enable rdx))))
+(defthm unsigned-byte-p-64-of-rsi (unsigned-byte-p 64 (rsi x86)) :hints (("Goal" :in-theory (enable rsi))))
+(defthm unsigned-byte-p-64-of-rdi (unsigned-byte-p 64 (rdi x86)) :hints (("Goal" :in-theory (enable rdi))))
+(defthm unsigned-byte-p-64-of-r8 (unsigned-byte-p 64 (r8 x86)) :hints (("Goal" :in-theory (enable r8))))
+(defthm unsigned-byte-p-64-of-r9 (unsigned-byte-p 64 (r9 x86)) :hints (("Goal" :in-theory (enable r9))))
+(defthm unsigned-byte-p-64-of-r10 (unsigned-byte-p 64 (r10 x86)) :hints (("Goal" :in-theory (enable r10))))
+(defthm unsigned-byte-p-64-of-r11 (unsigned-byte-p 64 (r11 x86)) :hints (("Goal" :in-theory (enable r11))))
+(defthm unsigned-byte-p-64-of-r12 (unsigned-byte-p 64 (r12 x86)) :hints (("Goal" :in-theory (enable r12))))
+(defthm unsigned-byte-p-64-of-r13 (unsigned-byte-p 64 (r13 x86)) :hints (("Goal" :in-theory (enable r13))))
+(defthm unsigned-byte-p-64-of-r14 (unsigned-byte-p 64 (r14 x86)) :hints (("Goal" :in-theory (enable r14))))
+(defthm unsigned-byte-p-64-of-r15 (unsigned-byte-p 64 (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
+(defthm unsigned-byte-p-64-of-rsp (unsigned-byte-p 64 (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
+(defthm unsigned-byte-p-64-of-rbp (unsigned-byte-p 64 (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,43 +115,43 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Register writers:
-;; TODO: Consider having these take unsigned values (and having the accessors return unsigned values)
-(defund set-rax (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *rax* val x86))
-(defund set-rbx (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *rbx* val x86))
-(defund set-rcx (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *rcx* val x86))
-(defund set-rdx (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *rdx* val x86))
-(defund set-rsi (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *rsi* val x86))
-(defund set-rdi (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *rdi* val x86))
-(defund set-r8 (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *r8* val x86))
-(defund set-r9 (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *r9* val x86))
-(defund set-r10 (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *r10* val x86))
-(defund set-r11 (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *r11* val x86))
-(defund set-r12 (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *r12* val x86))
-(defund set-r13 (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *r13* val x86))
-(defund set-r14 (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *r14* val x86))
-(defund set-r15 (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *r15* val x86))
-(defund set-rsp (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *rsp* val x86))
-(defund set-rbp (val x86) (declare (xargs :stobjs x86 :guard (signed-byte-p 64 val))) (!rgfi *rbp* val x86))
+;; NOTE: Unlike the model's accessors, these take unsigned-bytes
+(defund set-rax (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *rax* (logext 64 val) x86))
+(defund set-rbx (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *rbx* (logext 64 val) x86))
+(defund set-rcx (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *rcx* (logext 64 val) x86))
+(defund set-rdx (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *rdx* (logext 64 val) x86))
+(defund set-rsi (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *rsi* (logext 64 val) x86))
+(defund set-rdi (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *rdi* (logext 64 val) x86))
+(defund set-r8 (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *r8* (logext 64 val) x86))
+(defund set-r9 (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *r9* (logext 64 val) x86))
+(defund set-r10 (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *r10* (logext 64 val) x86))
+(defund set-r11 (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *r11* (logext 64 val) x86))
+(defund set-r12 (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *r12* (logext 64 val) x86))
+(defund set-r13 (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *r13* (logext 64 val) x86))
+(defund set-r14 (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *r14* (logext 64 val) x86))
+(defund set-r15 (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *r15* (logext 64 val) x86))
+(defund set-rsp (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *rsp* (logext 64 val) x86))
+(defund set-rbp (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 64 val))) (!rgfi *rbp* (logext 64 val) x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Introduce the register readers:
-(defthmd xr-becomes-rax (equal (xr :rgf *rax* x86) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
-(defthmd xr-becomes-rbx (equal (xr :rgf *rbx* x86) (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
-(defthmd xr-becomes-rcx (equal (xr :rgf *rcx* x86) (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
-(defthmd xr-becomes-rdx (equal (xr :rgf *rdx* x86) (rdx x86)) :hints (("Goal" :in-theory (enable rdx))))
-(defthmd xr-becomes-rsi (equal (xr :rgf *rsi* x86) (rsi x86)) :hints (("Goal" :in-theory (enable rsi))))
-(defthmd xr-becomes-rdi (equal (xr :rgf *rdi* x86) (rdi x86)) :hints (("Goal" :in-theory (enable rdi))))
-(defthmd xr-becomes-r8 (equal (xr :rgf *r8* x86) (r8 x86)) :hints (("Goal" :in-theory (enable r8))))
-(defthmd xr-becomes-r9 (equal (xr :rgf *r9* x86) (r9 x86)) :hints (("Goal" :in-theory (enable r9))))
-(defthmd xr-becomes-r10 (equal (xr :rgf *r10* x86) (r10 x86)) :hints (("Goal" :in-theory (enable r10))))
-(defthmd xr-becomes-r11 (equal (xr :rgf *r11* x86) (r11 x86)) :hints (("Goal" :in-theory (enable r11))))
-(defthmd xr-becomes-r12 (equal (xr :rgf *r12* x86) (r12 x86)) :hints (("Goal" :in-theory (enable r12))))
-(defthmd xr-becomes-r13 (equal (xr :rgf *r13* x86) (r13 x86)) :hints (("Goal" :in-theory (enable r13))))
-(defthmd xr-becomes-r14 (equal (xr :rgf *r14* x86) (r14 x86)) :hints (("Goal" :in-theory (enable r14))))
-(defthmd xr-becomes-r15 (equal (xr :rgf *r15* x86) (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
-(defthmd xr-becomes-rsp (equal (xr :rgf *rsp* x86) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
-(defthmd xr-becomes-rbp (equal (xr :rgf *rbp* x86) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
+(defthmd xr-becomes-rax (equal (xr :rgf *rax* x86) (logext 64 (rax x86))) :hints (("Goal" :in-theory (enable rax))))
+(defthmd xr-becomes-rbx (equal (xr :rgf *rbx* x86) (logext 64 (rbx x86))) :hints (("Goal" :in-theory (enable rbx))))
+(defthmd xr-becomes-rcx (equal (xr :rgf *rcx* x86) (logext 64 (rcx x86))) :hints (("Goal" :in-theory (enable rcx))))
+(defthmd xr-becomes-rdx (equal (xr :rgf *rdx* x86) (logext 64 (rdx x86))) :hints (("Goal" :in-theory (enable rdx))))
+(defthmd xr-becomes-rsi (equal (xr :rgf *rsi* x86) (logext 64 (rsi x86))) :hints (("Goal" :in-theory (enable rsi))))
+(defthmd xr-becomes-rdi (equal (xr :rgf *rdi* x86) (logext 64 (rdi x86))) :hints (("Goal" :in-theory (enable rdi))))
+(defthmd xr-becomes-r8 (equal (xr :rgf *r8* x86) (logext 64 (r8 x86))) :hints (("Goal" :in-theory (enable r8))))
+(defthmd xr-becomes-r9 (equal (xr :rgf *r9* x86) (logext 64 (r9 x86))) :hints (("Goal" :in-theory (enable r9))))
+(defthmd xr-becomes-r10 (equal (xr :rgf *r10* x86) (logext 64 (r10 x86))) :hints (("Goal" :in-theory (enable r10))))
+(defthmd xr-becomes-r11 (equal (xr :rgf *r11* x86) (logext 64 (r11 x86))) :hints (("Goal" :in-theory (enable r11))))
+(defthmd xr-becomes-r12 (equal (xr :rgf *r12* x86) (logext 64 (r12 x86))) :hints (("Goal" :in-theory (enable r12))))
+(defthmd xr-becomes-r13 (equal (xr :rgf *r13* x86) (logext 64 (r13 x86))) :hints (("Goal" :in-theory (enable r13))))
+(defthmd xr-becomes-r14 (equal (xr :rgf *r14* x86) (logext 64 (r14 x86))) :hints (("Goal" :in-theory (enable r14))))
+(defthmd xr-becomes-r15 (equal (xr :rgf *r15* x86) (logext 64 (r15 x86))) :hints (("Goal" :in-theory (enable r15))))
+(defthmd xr-becomes-rsp (equal (xr :rgf *rsp* x86) (logext 64 (rsp x86))) :hints (("Goal" :in-theory (enable rsp))))
+(defthmd xr-becomes-rbp (equal (xr :rgf *rbp* x86) (logext 64 (rbp x86))) :hints (("Goal" :in-theory (enable rbp))))
 
 (theory-invariant (incompatible (:definition rax) (:rewrite xr-becomes-rax)))
 (theory-invariant (incompatible (:definition rbx) (:rewrite xr-becomes-rbx)))
@@ -170,42 +171,45 @@
 (theory-invariant (incompatible (:definition rbp) (:rewrite xr-becomes-rbp)))
 
 ;; These go in one step:
-(defthmd rgfi-becomes-rax (equal (rgfi *rax* x86) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
-(defthmd rgfi-becomes-rbx (equal (rgfi *rbx* x86) (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
-(defthmd rgfi-becomes-rcx (equal (rgfi *rcx* x86) (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
-(defthmd rgfi-becomes-rdx (equal (rgfi *rdx* x86) (rdx x86)) :hints (("Goal" :in-theory (enable rdx))))
-(defthmd rgfi-becomes-rsi (equal (rgfi *rsi* x86) (rsi x86)) :hints (("Goal" :in-theory (enable rsi))))
-(defthmd rgfi-becomes-rdi (equal (rgfi *rdi* x86) (rdi x86)) :hints (("Goal" :in-theory (enable rdi))))
-(defthmd rgfi-becomes-r8 (equal (rgfi *r8* x86) (r8 x86)) :hints (("Goal" :in-theory (enable r8))))
-(defthmd rgfi-becomes-r9 (equal (rgfi *r9* x86) (r9 x86)) :hints (("Goal" :in-theory (enable r9))))
-(defthmd rgfi-becomes-r10 (equal (rgfi *r10* x86) (r10 x86)) :hints (("Goal" :in-theory (enable r10))))
-(defthmd rgfi-becomes-r11 (equal (rgfi *r11* x86) (r11 x86)) :hints (("Goal" :in-theory (enable r11))))
-(defthmd rgfi-becomes-r12 (equal (rgfi *r12* x86) (r12 x86)) :hints (("Goal" :in-theory (enable r12))))
-(defthmd rgfi-becomes-r13 (equal (rgfi *r13* x86) (r13 x86)) :hints (("Goal" :in-theory (enable r13))))
-(defthmd rgfi-becomes-r14 (equal (rgfi *r14* x86) (r14 x86)) :hints (("Goal" :in-theory (enable r14))))
-(defthmd rgfi-becomes-r15 (equal (rgfi *r15* x86) (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
-(defthmd rgfi-becomes-rsp (equal (rgfi *rsp* x86) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
-(defthmd rgfi-becomes-rbp (equal (rgfi *rbp* x86) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
+(defthmd rgfi-becomes-rax (equal (rgfi *rax* x86) (logext 64 (rax x86))) :hints (("Goal" :in-theory (enable rax))))
+(defthmd rgfi-becomes-rbx (equal (rgfi *rbx* x86) (logext 64 (rbx x86))) :hints (("Goal" :in-theory (enable rbx))))
+(defthmd rgfi-becomes-rcx (equal (rgfi *rcx* x86) (logext 64 (rcx x86))) :hints (("Goal" :in-theory (enable rcx))))
+(defthmd rgfi-becomes-rdx (equal (rgfi *rdx* x86) (logext 64 (rdx x86))) :hints (("Goal" :in-theory (enable rdx))))
+(defthmd rgfi-becomes-rsi (equal (rgfi *rsi* x86) (logext 64 (rsi x86))) :hints (("Goal" :in-theory (enable rsi))))
+(defthmd rgfi-becomes-rdi (equal (rgfi *rdi* x86) (logext 64 (rdi x86))) :hints (("Goal" :in-theory (enable rdi))))
+(defthmd rgfi-becomes-r8 (equal (rgfi *r8* x86) (logext 64 (r8 x86))) :hints (("Goal" :in-theory (enable r8))))
+(defthmd rgfi-becomes-r9 (equal (rgfi *r9* x86) (logext 64 (r9 x86))) :hints (("Goal" :in-theory (enable r9))))
+(defthmd rgfi-becomes-r10 (equal (rgfi *r10* x86) (logext 64 (r10 x86))) :hints (("Goal" :in-theory (enable r10))))
+(defthmd rgfi-becomes-r11 (equal (rgfi *r11* x86) (logext 64 (r11 x86))) :hints (("Goal" :in-theory (enable r11))))
+(defthmd rgfi-becomes-r12 (equal (rgfi *r12* x86) (logext 64 (r12 x86))) :hints (("Goal" :in-theory (enable r12))))
+(defthmd rgfi-becomes-r13 (equal (rgfi *r13* x86) (logext 64 (r13 x86))) :hints (("Goal" :in-theory (enable r13))))
+(defthmd rgfi-becomes-r14 (equal (rgfi *r14* x86) (logext 64 (r14 x86))) :hints (("Goal" :in-theory (enable r14))))
+(defthmd rgfi-becomes-r15 (equal (rgfi *r15* x86) (logext 64 (r15 x86))) :hints (("Goal" :in-theory (enable r15))))
+(defthmd rgfi-becomes-rsp (equal (rgfi *rsp* x86) (logext 64 (rsp x86))) :hints (("Goal" :in-theory (enable rsp))))
+(defthmd rgfi-becomes-rbp (equal (rgfi *rbp* x86) (logext 64 (rbp x86))) :hints (("Goal" :in-theory (enable rbp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Introduce the register writers:
-(defthmd xw-becomes-set-rax (equal (xw :rgf *rax* val x86) (set-rax val x86)) :hints (("Goal" :in-theory (enable set-rax))))
-(defthmd xw-becomes-set-rbx (equal (xw :rgf *rbx* val x86) (set-rbx val x86)) :hints (("Goal" :in-theory (enable set-rbx))))
-(defthmd xw-becomes-set-rcx (equal (xw :rgf *rcx* val x86) (set-rcx val x86)) :hints (("Goal" :in-theory (enable set-rcx))))
-(defthmd xw-becomes-set-rdx (equal (xw :rgf *rdx* val x86) (set-rdx val x86)) :hints (("Goal" :in-theory (enable set-rdx))))
-(defthmd xw-becomes-set-rsi (equal (xw :rgf *rsi* val x86) (set-rsi val x86)) :hints (("Goal" :in-theory (enable set-rsi))))
-(defthmd xw-becomes-set-rdi (equal (xw :rgf *rdi* val x86) (set-rdi val x86)) :hints (("Goal" :in-theory (enable set-rdi))))
-(defthmd xw-becomes-set-r8 (equal (xw :rgf *r8* val x86) (set-r8 val x86)) :hints (("Goal" :in-theory (enable set-r8))))
-(defthmd xw-becomes-set-r9 (equal (xw :rgf *r9* val x86) (set-r9 val x86)) :hints (("Goal" :in-theory (enable set-r9))))
-(defthmd xw-becomes-set-r10 (equal (xw :rgf *r10* val x86) (set-r10 val x86)) :hints (("Goal" :in-theory (enable set-r10))))
-(defthmd xw-becomes-set-r11 (equal (xw :rgf *r11* val x86) (set-r11 val x86)) :hints (("Goal" :in-theory (enable set-r11))))
-(defthmd xw-becomes-set-r12 (equal (xw :rgf *r12* val x86) (set-r12 val x86)) :hints (("Goal" :in-theory (enable set-r12))))
-(defthmd xw-becomes-set-r13 (equal (xw :rgf *r13* val x86) (set-r13 val x86)) :hints (("Goal" :in-theory (enable set-r13))))
-(defthmd xw-becomes-set-r14 (equal (xw :rgf *r14* val x86) (set-r14 val x86)) :hints (("Goal" :in-theory (enable set-r14))))
-(defthmd xw-becomes-set-r15 (equal (xw :rgf *r15* val x86) (set-r15 val x86)) :hints (("Goal" :in-theory (enable set-r15))))
-(defthmd xw-becomes-set-rsp (equal (xw :rgf *rsp* val x86) (set-rsp val x86)) :hints (("Goal" :in-theory (enable set-rsp))))
-(defthmd xw-becomes-set-rbp (equal (xw :rgf *rbp* val x86) (set-rbp val x86)) :hints (("Goal" :in-theory (enable set-rbp))))
+(defthm xw-of-rgf-and-logext-64 (equal (xw :rgf reg (logext 64 val) x86)  (xw :rgf reg val x86)) :hints (("Goal" :in-theory (enable xw))))
+(defthm xw-of-rgf-and-bvchop-64 (equal (xw :rgf reg (bvchop 64 val) x86)  (xw :rgf reg val x86)) :hints (("Goal" :in-theory (enable xw))))
+
+(defthmd xw-becomes-set-rax (equal (xw :rgf *rax* val x86) (set-rax (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rax))))
+(defthmd xw-becomes-set-rbx (equal (xw :rgf *rbx* val x86) (set-rbx (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rbx))))
+(defthmd xw-becomes-set-rcx (equal (xw :rgf *rcx* val x86) (set-rcx (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rcx))))
+(defthmd xw-becomes-set-rdx (equal (xw :rgf *rdx* val x86) (set-rdx (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rdx))))
+(defthmd xw-becomes-set-rsi (equal (xw :rgf *rsi* val x86) (set-rsi (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rsi))))
+(defthmd xw-becomes-set-rdi (equal (xw :rgf *rdi* val x86) (set-rdi (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rdi))))
+(defthmd xw-becomes-set-r8 (equal (xw :rgf *r8* val x86) (set-r8 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r8))))
+(defthmd xw-becomes-set-r9 (equal (xw :rgf *r9* val x86) (set-r9 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r9))))
+(defthmd xw-becomes-set-r10 (equal (xw :rgf *r10* val x86) (set-r10 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r10))))
+(defthmd xw-becomes-set-r11 (equal (xw :rgf *r11* val x86) (set-r11 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r11))))
+(defthmd xw-becomes-set-r12 (equal (xw :rgf *r12* val x86) (set-r12 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r12))))
+(defthmd xw-becomes-set-r13 (equal (xw :rgf *r13* val x86) (set-r13 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r13))))
+(defthmd xw-becomes-set-r14 (equal (xw :rgf *r14* val x86) (set-r14 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r14))))
+(defthmd xw-becomes-set-r15 (equal (xw :rgf *r15* val x86) (set-r15 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r15))))
+(defthmd xw-becomes-set-rsp (equal (xw :rgf *rsp* val x86) (set-rsp (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rsp))))
+(defthmd xw-becomes-set-rbp (equal (xw :rgf *rbp* val x86) (set-rbp (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rbp))))
 
 (theory-invariant (incompatible (:definition set-rax) (:rewrite xw-becomes-set-rax)))
 (theory-invariant (incompatible (:definition set-rbx) (:rewrite xw-becomes-set-rbx)))
@@ -224,42 +228,42 @@
 (theory-invariant (incompatible (:definition set-rsp) (:rewrite xw-becomes-set-rsp)))
 (theory-invariant (incompatible (:definition set-rbp) (:rewrite xw-becomes-set-rbp)))
 
-(defthmd !rgfi-becomes-set-rax (equal (!rgfi *rax* val x86) (set-rax val x86)) :hints (("Goal" :in-theory (enable set-rax))))
-(defthmd !rgfi-becomes-set-rbx (equal (!rgfi *rbx* val x86) (set-rbx val x86)) :hints (("Goal" :in-theory (enable set-rbx))))
-(defthmd !rgfi-becomes-set-rcx (equal (!rgfi *rcx* val x86) (set-rcx val x86)) :hints (("Goal" :in-theory (enable set-rcx))))
-(defthmd !rgfi-becomes-set-rdx (equal (!rgfi *rdx* val x86) (set-rdx val x86)) :hints (("Goal" :in-theory (enable set-rdx))))
-(defthmd !rgfi-becomes-set-rsi (equal (!rgfi *rsi* val x86) (set-rsi val x86)) :hints (("Goal" :in-theory (enable set-rsi))))
-(defthmd !rgfi-becomes-set-rdi (equal (!rgfi *rdi* val x86) (set-rdi val x86)) :hints (("Goal" :in-theory (enable set-rdi))))
-(defthmd !rgfi-becomes-set-r8 (equal (!rgfi *r8* val x86) (set-r8 val x86)) :hints (("Goal" :in-theory (enable set-r8))))
-(defthmd !rgfi-becomes-set-r9 (equal (!rgfi *r9* val x86) (set-r9 val x86)) :hints (("Goal" :in-theory (enable set-r9))))
-(defthmd !rgfi-becomes-set-r10 (equal (!rgfi *r10* val x86) (set-r10 val x86)) :hints (("Goal" :in-theory (enable set-r10))))
-(defthmd !rgfi-becomes-set-r11 (equal (!rgfi *r11* val x86) (set-r11 val x86)) :hints (("Goal" :in-theory (enable set-r11))))
-(defthmd !rgfi-becomes-set-r12 (equal (!rgfi *r12* val x86) (set-r12 val x86)) :hints (("Goal" :in-theory (enable set-r12))))
-(defthmd !rgfi-becomes-set-r13 (equal (!rgfi *r13* val x86) (set-r13 val x86)) :hints (("Goal" :in-theory (enable set-r13))))
-(defthmd !rgfi-becomes-set-r14 (equal (!rgfi *r14* val x86) (set-r14 val x86)) :hints (("Goal" :in-theory (enable set-r14))))
-(defthmd !rgfi-becomes-set-r15 (equal (!rgfi *r15* val x86) (set-r15 val x86)) :hints (("Goal" :in-theory (enable set-r15))))
-(defthmd !rgfi-becomes-set-rsp (equal (!rgfi *rsp* val x86) (set-rsp val x86)) :hints (("Goal" :in-theory (enable set-rsp))))
-(defthmd !rgfi-becomes-set-rbp (equal (!rgfi *rbp* val x86) (set-rbp val x86)) :hints (("Goal" :in-theory (enable set-rbp))))
+(defthmd !rgfi-becomes-set-rax (equal (!rgfi *rax* val x86) (set-rax (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rax))))
+(defthmd !rgfi-becomes-set-rbx (equal (!rgfi *rbx* val x86) (set-rbx (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rbx))))
+(defthmd !rgfi-becomes-set-rcx (equal (!rgfi *rcx* val x86) (set-rcx (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rcx))))
+(defthmd !rgfi-becomes-set-rdx (equal (!rgfi *rdx* val x86) (set-rdx (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rdx))))
+(defthmd !rgfi-becomes-set-rsi (equal (!rgfi *rsi* val x86) (set-rsi (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rsi))))
+(defthmd !rgfi-becomes-set-rdi (equal (!rgfi *rdi* val x86) (set-rdi (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rdi))))
+(defthmd !rgfi-becomes-set-r8 (equal (!rgfi *r8* val x86) (set-r8 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r8))))
+(defthmd !rgfi-becomes-set-r9 (equal (!rgfi *r9* val x86) (set-r9 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r9))))
+(defthmd !rgfi-becomes-set-r10 (equal (!rgfi *r10* val x86) (set-r10 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r10))))
+(defthmd !rgfi-becomes-set-r11 (equal (!rgfi *r11* val x86) (set-r11 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r11))))
+(defthmd !rgfi-becomes-set-r12 (equal (!rgfi *r12* val x86) (set-r12 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r12))))
+(defthmd !rgfi-becomes-set-r13 (equal (!rgfi *r13* val x86) (set-r13 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r13))))
+(defthmd !rgfi-becomes-set-r14 (equal (!rgfi *r14* val x86) (set-r14 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r14))))
+(defthmd !rgfi-becomes-set-r15 (equal (!rgfi *r15* val x86) (set-r15 (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-r15))))
+(defthmd !rgfi-becomes-set-rsp (equal (!rgfi *rsp* val x86) (set-rsp (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rsp))))
+(defthmd !rgfi-becomes-set-rbp (equal (!rgfi *rbp* val x86) (set-rbp (bvchop 64 val) x86)) :hints (("Goal" :in-theory (enable set-rbp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Read-of-write of the same register:
-(defthm rax-of-set-rax (equal (rax (set-rax val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rax set-rax))))
-(defthm rbx-of-set-rbx (equal (rbx (set-rbx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rbx set-rbx))))
-(defthm rcx-of-set-rcx (equal (rcx (set-rcx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rcx set-rcx))))
-(defthm rdx-of-set-rdx (equal (rdx (set-rdx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rdx set-rdx))))
-(defthm rsi-of-set-rsi (equal (rsi (set-rsi val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rsi set-rsi))))
-(defthm rdi-of-set-rdi (equal (rdi (set-rdi val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rdi set-rdi))))
-(defthm r8-of-set-r8 (equal (r8 (set-r8 val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable r8 set-r8))))
-(defthm r9-of-set-r9 (equal (r9 (set-r9 val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable r9 set-r9))))
-(defthm r10-of-set-r10 (equal (r10 (set-r10 val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable r10 set-r10))))
-(defthm r11-of-set-r11 (equal (r11 (set-r11 val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable r11 set-r11))))
-(defthm r12-of-set-r12 (equal (r12 (set-r12 val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable r12 set-r12))))
-(defthm r13-of-set-r13 (equal (r13 (set-r13 val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable r13 set-r13))))
-(defthm r14-of-set-r14 (equal (r14 (set-r14 val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable r14 set-r14))))
-(defthm r15-of-set-r15 (equal (r15 (set-r15 val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable r15 set-r15))))
-(defthm rsp-of-set-rsp (equal (rsp (set-rsp val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rsp set-rsp))))
-(defthm rbp-of-set-rbp (equal (rbp (set-rbp val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rbp set-rbp))))
+(defthm rax-of-set-rax (equal (rax (set-rax val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable rax set-rax))))
+(defthm rbx-of-set-rbx (equal (rbx (set-rbx val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable rbx set-rbx))))
+(defthm rcx-of-set-rcx (equal (rcx (set-rcx val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable rcx set-rcx))))
+(defthm rdx-of-set-rdx (equal (rdx (set-rdx val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable rdx set-rdx))))
+(defthm rsi-of-set-rsi (equal (rsi (set-rsi val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable rsi set-rsi))))
+(defthm rdi-of-set-rdi (equal (rdi (set-rdi val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable rdi set-rdi))))
+(defthm r8-of-set-r8 (equal (r8 (set-r8 val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable r8 set-r8))))
+(defthm r9-of-set-r9 (equal (r9 (set-r9 val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable r9 set-r9))))
+(defthm r10-of-set-r10 (equal (r10 (set-r10 val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable r10 set-r10))))
+(defthm r11-of-set-r11 (equal (r11 (set-r11 val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable r11 set-r11))))
+(defthm r12-of-set-r12 (equal (r12 (set-r12 val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable r12 set-r12))))
+(defthm r13-of-set-r13 (equal (r13 (set-r13 val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable r13 set-r13))))
+(defthm r14-of-set-r14 (equal (r14 (set-r14 val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable r14 set-r14))))
+(defthm r15-of-set-r15 (equal (r15 (set-r15 val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable r15 set-r15))))
+(defthm rsp-of-set-rsp (equal (rsp (set-rsp val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable rsp set-rsp))))
+(defthm rbp-of-set-rbp (equal (rbp (set-rbp val x86)) (bvchop 64 val)) :hints (("Goal" :in-theory (enable rbp set-rbp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1073,6 +1077,9 @@
 
 ;; todo: could enable all these but then we should enable the other rules that introduce the normal form
 
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (defthm loghead-becomes-bvchop (equal (loghead size x) (bvchop size x)) :hints (("Goal" :in-theory (enable bvchop loghead)))))
+
 ;; Note that RR08 is more complicated that RR16 ,etc.
 ;; Goes directly to RAX, etc. and directly to BVCHOP OR SLICE.
 (defthmd rr08-to-normal-form64
@@ -1106,7 +1113,7 @@
                     (if normalp
                         (bvchop 8 val)
                       (slice 15 8 val)))))
-  :hints (("Goal" :in-theory (enable rr08 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead slice unsigned-byte-p))))
+  :hints (("Goal" :in-theory (enable rr08 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 unsigned-byte-p))))
 
 ;; Goes directly to RAX, etc. and directly to BVCHOP.
 (defthmd rr16-to-normal-form64
@@ -1133,7 +1140,7 @@
                                (#.*r14* (r14 x86))
                                (otherwise ;#.*r15*
                                  (r15 x86))))))
-  :hints (("Goal" :in-theory (enable rr16 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead))))
+  :hints (("Goal" :in-theory (enable rr16 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15))))
 
 ;; Goes directly to RAX, etc. and directly to BVCHOP.
 (defthmd rr32-to-normal-form64
@@ -1160,7 +1167,7 @@
                                (#.*r14* (r14 x86))
                                (otherwise ;#.*r15*
                                  (r15 x86))))))
-  :hints (("Goal" :in-theory (enable rr32 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead))))
+  :hints (("Goal" :in-theory (enable rr32 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15))))
 
 (defthmd rr64-to-normal-form64
   (implies (and (syntaxp (quotep reg))
@@ -1186,7 +1193,7 @@
                                (#.*r14* (r14 x86))
                                (otherwise ;#.*r15*
                                  (r15 x86))))))
-  :hints (("Goal" :in-theory (enable rr64 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead))))
+  :hints (("Goal" :in-theory (enable rr64 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1218,8 +1225,13 @@
                                     (otherwise ; #.*r15*
                                       (r15 x86))))
                          (new-val (if normalp
-                                      (logext 64 (bvcat 56 (slice 63 8 old-val) 8 val))
-                                    (logext 64 (bvcat 48 (slice 63 16 old-val) 16 (bvcat 8 val 8 (bvchop 8 old-val)))))))
+                                      ;(logext 64
+                                      (bvcat 56 (slice 63 8 old-val) 8 val)
+                                    ;)
+                                    ;(logext 64
+                                    (bvcat 48 (slice 63 16 old-val) 16 (bvcat 8 val 8 (bvchop 8 old-val)))
+                                    ;)
+                                    )))
                     (case reg
                       ;; The case should be resolved since REG is a constant
                       (#.*rax* (set-rax new-val x86))
@@ -1273,7 +1285,10 @@
                                     (#.*r14* (r14 x86))
                                     (otherwise ; #.*r15*
                                       (r15 x86))))
-                         (new-val (logext 64 (bvcat 48 (slice 63 16 old-val) 16 val))))
+                         (new-val ;(logext 64
+                           (bvcat 48 (slice 63 16 old-val) 16 val)
+                           ;)
+                           ))
                     (case reg
                       ;; The case should be resolved since REG is a constant
                       (#.*rax* (set-rax new-val x86))
@@ -1336,7 +1351,8 @@
                 (unsigned-byte-p 4 reg) ; gets computed
                 )
            (equal (wr64 reg val x86)
-                  (let ((val (logext 64 val)))
+                  (let (;(val (logext 64 val))
+                        )
                     (case reg
                       ;; The case should be resolved since REG is a constant
                       (#.*rax* (set-rax val x86))

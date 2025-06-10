@@ -29,7 +29,7 @@
                     ))
     (if (symbolp output-indicator)
         (case output-indicator
-          (:rax `(bvchop '64 (rax ,term)))
+          (:rax `(rax ,term))
           ;; todo: call eax or use choped rax here?
           (:eax `(bvchop '32 (xr ':rgf '0 ,term))) ; for now, or do something different depending on 32/64 bit mode since eax is not really well supported in 32-bit mode?
           ;; (:eax (rax ,term))
