@@ -140,7 +140,7 @@
     (declare (xargs :guard t))
     (if x 1 0))
 
-  (defthm bitp-of-bool->bit
+  (defthmd bitp-of-bool->bit
     (bitp (bool->bit x))))
 
 (defsection bit->bool
