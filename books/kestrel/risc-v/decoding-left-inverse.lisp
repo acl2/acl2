@@ -33,7 +33,7 @@
 
 (defxdoc+ decoding-left-inverse
   :parents (encoding decoding)
-  :short "Theorems about decoding applied to encoding."
+  :short "Decoding applied to encoding."
   :long
   (xdoc::topstring
    (xdoc::p

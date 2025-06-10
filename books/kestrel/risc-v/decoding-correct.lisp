@@ -11,9 +11,9 @@
 
 (in-package "RISCV")
 
-(include-book "decoding-left-inverse")
-(include-book "encoding-of-decoding")
 (include-book "decoding")
+(include-book "decoding-left-inverse")
+(include-book "decoding-right-inverse")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -29,7 +29,7 @@
   (xdoc::topstring
    (xdoc::p
     "We use the inversion theorems proved in
-     @(see decoding-left-inverse) and @(see encoding-of-decoding)
+     @(see decoding-left-inverse) and @(see encoding-right-inverse)
      to show that the declarative definition of the decoder
      is equivalent to the executable definition of the decoder."))
   :order-subtopics t

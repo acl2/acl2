@@ -25,13 +25,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ encoding-of-decoding
+(defxdoc+ decoding-right-inverse
   :parents (encoding decoding)
   :short "Encoding applied to decoding."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We show that encoding is left inverse of decoding
+    "We show that decoding is right inverse of encoding
+     (i.e. that encoding is left inverse of decoding)
      over valid encodings, i.e. over encodings of valid instructions:
      if decoding yields an instruction
      (which we know to be valid as proved in @(tsee decodex)),
