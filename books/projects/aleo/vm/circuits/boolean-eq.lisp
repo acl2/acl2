@@ -108,7 +108,8 @@
      and expanding all three specifications.")
    (xdoc::p
     "Completeness is proved also by expanding
-     the boolean equality predicate and all the specifications,
+     the boolean negation and non-equality predicates
+     and all the specifications,
      but we we use the @('suff') theorem for the boolean equality predicate.
      The witness for the existential quantification is
      the result of comparing the two operands for non-equality.")
