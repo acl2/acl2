@@ -40,7 +40,10 @@
     "(x) (1) = (1)")
    (xdoc::p
     "which defines @($y$) to be 1 if @($x$) is 0, or 0 if @($x$) is 1.
-     Thus, @($y$) is boolean (0 or 1) if @($x$) is."))
+     Thus, @($y$) is boolean (0 or 1) if @($x$) is.")
+   (xdoc::p
+    "This could be a more general to assert that a field element is 1.
+     We may replace this circuit with that one at some point."))
   :order-subtopics t
   :default-parent t)
 
@@ -48,6 +51,7 @@
 
 (define boolean-assert-true-spec ((x (pfield::fep x prime))
                                   (prime primep))
+  :guard (bitp x)
   (declare (ignore prime))
   :returns (yes/no booleanp)
   :short "Specification of the circuit."
@@ -101,7 +105,8 @@
 
   (defruled boolean-assert-true-pred-to-spec
     (implies (and (primep prime)
-                  (pfield::fep x prime))
+                  (pfield::fep x prime)
+                  (bitp x))
              (equal (boolean-assert-true-pred x prime)
                     (boolean-assert-true-spec x prime)))
     :enable (boolean-assert-true-pred
@@ -111,7 +116,8 @@
     (implies (and (equal (pfcs::lookup-definition "boolean_assert_true" defs)
                          (boolean-assert-true-circuit))
                   (primep prime)
-                  (pfield::fep x prime))
+                  (pfield::fep x prime)
+                  (bitp x))
              (equal (pfcs::definition-satp
                       "boolean_assert_true" defs (list x) prime)
                     (boolean-assert-true-spec x prime)))
