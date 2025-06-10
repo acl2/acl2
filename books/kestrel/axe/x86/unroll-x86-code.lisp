@@ -426,7 +426,7 @@
                                            ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
                                            ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
                                            ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
-                                           nil ; assumptions
+                                           nil ; assumptions ; todo: include assumptions about canonical?
                                            :none
                                            pruning-rule-alist
                                            nil ; interpreted-function-alist
@@ -564,7 +564,7 @@
 ;(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;; Returns (mv erp assumptions assumption-rules state)
-(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state)
+(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp new-style-elf-assumptionsp state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
@@ -583,7 +583,8 @@
                                    (if 64-bitp
                                        ;; needed to match the normal forms used during lifting:
                                        (append (new-normal-form-rules64)
-                                               (if bvp (read-and-write-rules-bv) nil))
+                                               (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))
+                                               (if new-style-elf-assumptionsp (canonical-rules-bv) (canonical-rules-non-bv)))
                                      nil ; todo: why not use (new-normal-form-rules32)?
                                      ))
                            remove-assumption-rules))
@@ -711,6 +712,7 @@
                                         ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
                                         (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
                                         ))
+       (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw "Using new-style ELF64 assumptions.~%")  (cw "Not using new-style ELF64 assumptions.~%"))))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
@@ -771,7 +773,7 @@
                  ((mv erp assumptions assumption-rules state)
                   (if extra-assumptions
                       ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state)
+                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp t state)
                     (mv nil assumptions nil state)))
                  ((when erp) (mv erp nil nil nil nil state)))
               (mv nil assumptions
@@ -861,7 +863,9 @@
                                                 stack-slots
                                                 (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
                                                 type-assumptions-for-array-varsp
-                                                nil nil)
+                                                nil nil
+                                                nil ; new-canonicalp
+                                                )
                   (mv nil nil)))
                (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
                (assumptions (append assumptions extra-assumptions))
@@ -881,7 +885,7 @@
                ;; others, because opening things like read64 involves testing
                ;; canonical-addressp (which we know from other assumptions is true):
                ((mv erp assumptions assumption-rules state)
-                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state))
+                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp nil state))
                ((when erp) (mv erp nil nil nil nil state)))
             (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))
        ((when erp)
@@ -915,9 +919,8 @@
         (mv :unexpected-quotep nil nil nil nil nil nil state))
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
-       (lifter-rules (append (if bvp
-                                 (read-and-write-rules-bv)
-                               (read-and-write-rules-non-bv))
+       (lifter-rules (append (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))       ;todo: only need some of these for 64-bits?
+                             (if new-style-elf-assumptionsp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use these more (e.g., for macho-64)
                              lifter-rules))
        (lifter-rules (if stop-pcs
                          (append (symbolic-execution-rules-with-stop-pcs) lifter-rules)

@@ -1567,7 +1567,7 @@
                   (write n (bvplus 48 x y) val x86)))
   :hints (("Goal" :in-theory (enable write-when-bvchops-agree))))
 
-(defthm write-of-logext
+(defthm write-of-logext-arg2
   (implies (and (<= 48 size)
                 (integerp size))
            (equal (write n (logext size addr) val x86)

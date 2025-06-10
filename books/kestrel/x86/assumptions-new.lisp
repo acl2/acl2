@@ -12,6 +12,7 @@
 (in-package "X")
 
 (include-book "regions") ; since this book knows about disjoint-regions48p
+(include-book "canonical-unsigned")
 (include-book "assumptions") ; todo: for lifter-targetp
 (include-book "assumptions-for-inputs")
 (include-book "assumptions64")  ; reduce?
@@ -66,7 +67,7 @@
                               (acl2::byte-listp bytes)
                               (booleanp relp)
                               (symbolp state-var)
-                              (symbolp base-var)
+                              (symbolp base-var) ; rename base-address-var?
                               (natp stack-slots-needed)
                               (booleanp bvp))))
   (let ((numbytes (len bytes)))
@@ -77,33 +78,37 @@
                                                          (+ -1 addr numbytes)) base-var)) ; todo: use bvplus?
                )
           (mv nil ; no error
-              `((canonical-address-p ,first-addr-term)
-                (canonical-address-p ,last-addr-term)
-                ;; Assert that the chunk is loaded into memory:
-                ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-                ,(if bvp
-                     ;; alternate formulation for bv/smt proofs:
-                     `(equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes)
-                   `(program-at ,first-addr-term ; todo: use something better that includes the length, for speed
-                                ',bytes
-                                ,state-var))
-                ;; Assert that the chunk is disjoint from the saved return address (so writing to the chunk doesn't change it)
-                ;; TODO: Do this only for writable chunks?
-                ,(if bvp
-                     `(disjoint-regions48p ',(len bytes) ,first-addr-term
-                                         '8 (rsp ,state-var))
-                   `(separate ':r ',(len bytes) ,first-addr-term
-                              ':r '8 (rsp ,state-var)))
-                ;; Assert that the chunk is disjoint from the part of the stack that will be written:
-                ,@(if (posp stack-slots-needed)
-                      ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+              (append (if bvp
+                          `((integerp ,base-var) ; needed for things like turning + into bvplus
+                            (canonical-regionp ,(+ 1 numbytes)  ; todo: why the +1? (see above)
+                                               ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var))))
+                        `((canonical-address-p ,first-addr-term)
+                          (canonical-address-p ,last-addr-term)))
+                      ;; Assert that the chunk is loaded into memory:
+                      ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
+                      (if bvp
+                          ;; alternate formulation for bv/smt proofs:
+                          `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
+                        `((program-at ,first-addr-term ; todo: use something better that includes the length, for speed
+                                      ',bytes
+                                      ,state-var)))
+                      ;; Assert that the chunk is disjoint from the saved return address (so writing to the chunk doesn't change it)
+                      ;; TODO: Do this only for writable chunks?
                       (if bvp
                           `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                               ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                                                 '8 (rsp ,state-var)))
                         `((separate ':r ',(len bytes) ,first-addr-term
-                                    ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
-                    ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
-                    nil))))
+                                    ':r '8 (rsp ,state-var))))
+                      ;; Assert that the chunk is disjoint from the part of the stack that will be written:
+                      (if (posp stack-slots-needed)
+                          ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+                          (if bvp
+                              `((disjoint-regions48p ',(len bytes) ,first-addr-term
+                                                     ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                            `((separate ':r ',(len bytes) ,first-addr-term
+                                        ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
+                        ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
+                        nil))))
       ;; Absolute addresses are just numbers:
       (let* ((first-addr addr)
              (last-addr (+ -1 addr numbytes)) ; todo: use bvplus? ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
@@ -328,8 +333,17 @@
                              target ; explicit address given (relative iff relp)
                            ;; target is the name of a function:
                            (acl2::subroutine-address-elf target parsed-elf))))
+       ((when (not (natp target-address)))
+        (er hard? 'assumptions-elf64-new "Bad or missing subroutine address: ~x0." target-address)
+        (mv :bad-or-missing-subroutine-address nil nil))
        (target-address-term (if relp
-                                `(binary-+ ',target-address ,base-var)
+                                (if bvp
+                                    (if (= 0 target-address)
+                                        `(logext 64 ,base-var)
+                                      `(logext 64 (bvplus 64 ',target-address ,base-var)))
+                                  (if (= 0 target-address)
+                                      base-var
+                                    `(binary-+ ',target-address ,base-var)))
                               (acl2::enquote target-address)))
        (bytes (acl2::parsed-elf-bytes parsed-elf))
        (program-header-table (acl2::parsed-elf-program-header-table parsed-elf))
@@ -360,45 +374,56 @@
                                       stack-slots-needed
                                       disjoint-chunk-addresses-and-lens ; (acons text-offset (len (acl2::get-elf-code parsed-elf)) nil) ; todo: could there be extra zeros?
                                       type-assumptions-for-array-varsp
-                                      nil nil))))
+                                      nil nil
+                                      t ; new-canonicalp
+                                      ))))
     (mv nil
         (append ;; can't use this: not in normal form: (make-standard-state-assumptions-64-fn state-var) ; todo: put back, but these are untranslated!  should all the assumptions be generated untranslated (for presentation) and then translated?
           (make-standard-state-assumptions-fn state-var)
+          ;; Assumptions about the BASE-VAR:
           (if relp
-              `(;(integerp ,base-var)
-                (canonical-address-p$inline ,base-var) ; todo: do we need this, given that we have assumptions for all the segments?
-                )
+              (if bvp
+                  `((unsigned-canonical-address-p ,base-var)) ; do we need this?
+                `(;(integerp ,base-var)
+                  (canonical-address-p$inline ,base-var) ; todo: do we need this, given that we have assumptions for all the segments?
+                  ))
             nil)
+          ;; More standard stuff:
           `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
             ;; Alignment checking is turned off:
             (not (alignment-checking-enabled-p ,state-var))
-
             ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
             ;; This may not be respected by malware.
             ;; TODO: Try without this
-            (equal 0 (bvchop 3 (rsp ,state-var)))
+            (equal 0 (bvchop 3 (rsp ,state-var))))
+          ;; The program counter is at the start of the code to lift:
+          `((equal (rip ,state-var) ,target-address-term))
+          ;; The return address must be canonical because we will transfer
+          ;; control to that address when doing the return:
+          (if bvp
+              `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
+            `((canonical-address-p (logext 64 (read 8 (rsp ,state-var) ,state-var)))))
+          ;; The stack must be canonical
+          (if bvp
+              ;; todo: think about this:
+              `((canonical-regionp ,(+ 16 (* 8 stack-slots-needed))
+                                   ,(if (= 0 stack-slots-needed)
+                                        `(rsp ,state-var)
+                                      `(bvplus 64 ',(* -8 stack-slots-needed) (rsp ,state-var)))))
+            (append `(;; The stack slot contaning the return address must be canonical
+                      ;; because the stack pointer returns here when we pop the saved
+                      ;; RBP:
+                      (canonical-address-p (rsp ,state-var))
 
-            ;; The return address must be canonical because we will transfer
-            ;; control to that address when doing the return:
-            (canonical-address-p (logext 64 (read 8 (rsp ,state-var) ,state-var)))
-
-            ;; The stack slot contaning the return address must be canonical
-            ;; because the stack pointer returns here when we pop the saved
-            ;; RBP:
-            (canonical-address-p (rsp ,state-var))
-
-            ;; The stack slot 'below' the return address must be canonical
-            ;; because the stack pointer returns here when we do the return:
-            (canonical-address-p (+ 8 (rsp ,state-var)))
-
-            ;; The program counter is at the start of the code to lift:
-            (equal (rip ,state-var) ,target-address-term))
-          (if (posp stack-slots-needed)
-              `(;;add to make-standard-state-assumptions-64-fn?
-                (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
-                (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
-                )
-            nil)
+                      ;; The stack slot 'below' the return address must be canonical
+                      ;; because the stack pointer returns here when we do the return:
+                      (canonical-address-p (+ 8 (rsp ,state-var))))
+                    (if (posp stack-slots-needed)
+                        `(;;add to make-standard-state-assumptions-64-fn?
+                          (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
+                          (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
+                          )
+                      nil)))
           segment-or-section-assumptions
           input-assumptions)
         input-assumption-vars)))

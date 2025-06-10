@@ -624,7 +624,7 @@
                          (stack-slots ':auto)
                          (position-independent ':auto)
                          (max-conflicts '1000000)
-                         (bvp 'nil))
+                         (bvp 't))
   `(acl2::make-event-quiet (test-function-fn ',function-name-string
                                              ,executable   ; gets evaluated
                                              ,param-names  ; gets evaluated
@@ -887,7 +887,7 @@
                           (position-independent ':auto)
                           (expected-failures ':auto)
                           (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                          (bvp 'nil))
+                          (bvp 't))
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',function-name-strings
                                               nil ; no need for excludes (just don't list the functions you don't want to test)
@@ -942,7 +942,7 @@
                      (position-independent ':auto)
                      (expected-failures ':auto)
                      (assumptions 'nil) ; an alist pairing function names (strings) with lists of terms, or just a list of terms
-                     (bvp 'nil))
+                     (bvp 't))
   `(acl2::make-event-quiet (test-functions-fn ,executable ; gets evaluated
                                               ',include ; todo: evaluate?
                                               ',exclude ; todo: evaluate?
