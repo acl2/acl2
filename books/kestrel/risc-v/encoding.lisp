@@ -35,7 +35,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ encoding
-  :parents (riscv)
+  :parents (specification)
   :short "Encoding of instructions."
   :long
   (xdoc::topstring

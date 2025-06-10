@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ features
-  :parents (riscv)
+  :parents (specification)
   :short "RISC-V features."
   :long
   (xdoc::topstring

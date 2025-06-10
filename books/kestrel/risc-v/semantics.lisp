@@ -34,7 +34,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semantics
-  :parents (riscv)
+  :parents (specification)
   :short "Semantics of instructions."
   :long
   (xdoc::topstring

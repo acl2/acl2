@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ execution
-  :parents (riscv)
+  :parents (specification)
   :short "Model of execution."
   :long
   (xdoc::topstring

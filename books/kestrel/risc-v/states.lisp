@@ -41,7 +41,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ states
-  :parents (riscv)
+  :parents (specification)
   :short "Model of states."
   :long
   (xdoc::topstring

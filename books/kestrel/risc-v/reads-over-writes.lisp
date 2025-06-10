@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ reads-over-writes
-  :parents (riscv)
+  :parents (specification)
   :short "Read-over-write theorems."
   :long
   (xdoc::topstring
