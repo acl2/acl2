@@ -11,18 +11,11 @@
 
 (in-package "RISCV")
 
-(include-book "features")
-(include-book "instructions")
-(include-book "encoding")
-(include-book "decoding")
+(include-book "specification")
 (include-book "decoding-executable")
 (include-book "decoding-left-inverse")
 (include-book "decoding-right-inverse")
 (include-book "decoding-correct")
-(include-book "states")
-(include-book "reads-over-writes")
-(include-book "semantics")
-(include-book "execution")
 (include-book "rv32im")
 (include-book "rv64im")
 
@@ -81,17 +74,10 @@
    (xdoc::p
     "These square-bracketed references may be used
      as nouns or parenthentically."))
-  :order-subtopics (features
-                    instructions
-                    encoding
-                    decoding
+  :order-subtopics (specification
                     decoding-executable
                     decoding-left-inverse
                     decoding-right-inverse
                     decoding-correct
-                    states
-                    reads-over-writes
-                    semantics
-                    execution
                     rv32im
                     rv64im))
