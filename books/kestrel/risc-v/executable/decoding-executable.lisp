@@ -11,16 +11,16 @@
 
 (in-package "RISCV")
 
-(include-book "instructions")
+(include-book "../specification/instructions")
 
-(include-book "logappn")
+(include-book "../library-extensions/logappn")
 
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/ubyte3" :dir :system)
 (include-book "kestrel/fty/ubyte7" :dir :system)
 (include-book "kestrel/fty/ubyte32" :dir :system)
 
-(local (include-book "library-extensions"))
+(local (include-book "../library-extensions/theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
@@ -34,9 +34,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ decoding
-  :parents (riscv)
-  :short "Decoding of instructions."
+(defxdoc+ decoding-executable
+  :parents (executable)
+  :short "Executable decoding of instructions."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -298,11 +298,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decode ((enc ubyte32p) (feat featp))
+(define decodex ((enc ubyte32p) (feat featp))
   :returns (instr? instr-optionp)
-  :short "Decode an instruction."
+  :short "Executable instruction decoder."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "The @('x') in the name stands for `executable'.")
    (xdoc::p
     "The first input is a 32-bit encoding of the instruction;
      the second input consists of the features, which affect decoding.
@@ -583,7 +585,7 @@
 
   ///
 
-  (defret instr-validp-of-decode
+  (defret instr-validp-of-decodex
     (implies instr?
              (instr-validp instr? feat))
     :hints (("Goal"

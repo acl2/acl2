@@ -24,31 +24,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ boolean-and
+(defxdoc+ boolean-nand
   :parents (circuits)
   :short "Formalization and verification of a circuit
-          for boolean conjunction."
+          for boolean negated conjunction."
   :long
   (xdoc::topstring
    (xdoc::p
     "Given two field elements @($x$) and @($y$) representing booleans
      (i.e. such that each field element is either 0 or 1;
      see @(see boolean-assert)),
-     their conjunction @($z$) is obtained via a constraint of the form")
+     their negated conjunction @($z$) is obtained via
+     a multiplication of the form")
    (xdoc::@[]
-    "(x) (y) = (z)")
+    "(x) (y) = (1 - z)")
    (xdoc::p
-    "which defines @($z$) to be 1 if both @($x$) and @($y$) are 1, otherwise 0.
-     Thus, @($z$) is boolean (0 or 1) if both @($x$) and @($y$) are."))
+    "which defines @($z$) to be 0 if both @($x$) and @($y$) are 1, otherwise 1.
+     Thus, @($z$) is boolean (0 or 1) if both @($x$) and @($y$) are.")
+   (xdoc::p
+    "This has the same form as @(see boolean-and),
+     but with the result boolean negated (see @(see boolean-not))."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-and-spec ((x (pfield::fep x prime))
-                          (y (pfield::fep y prime))
-                          (z (pfield::fep z prime))
-                          (prime primep))
+(define boolean-nand-spec ((x (pfield::fep x prime))
+                           (y (pfield::fep y prime))
+                           (z (pfield::fep z prime))
+                           (prime primep))
   :guard (and (bitp x) (bitp y))
   (declare (ignore prime))
   :returns (yes/no booleanp)
@@ -57,30 +61,34 @@
   (xdoc::topstring
    (xdoc::p
     "We use an @(tsee if).
-     An alternative is to use @(tsee logand)."))
-  (equal z (if (and (= x 1) (= y 1)) 1 0))
+     An alternative is to use @(tsee lognand)."))
+  (equal z (if (and (= x 1) (= y 1)) 0 1))
 
   ///
 
-  (defruled bitp-z-when-boolean-and-spec
-    (implies (and (boolean-and-spec x y z prime)
+  (defruled bitp-z-when-boolean-nand-spec
+    (implies (and (boolean-nand-spec x y z prime)
                   (bitp x)
                   (bitp y))
              (bitp z))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-and-circuit ()
+(define boolean-nand-circuit ()
   :returns (pdef pfcs::definitionp)
   :short "Construction of the circuit."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a PFCS definition with a single equality constraint
-     of the form described in @(see boolean-and)."))
+     of the form described in @(see boolean-nand).")
+   (xdoc::p
+    "An alternative definition could be in terms of
+     the @(see boolean-and) and @(see boolean-not) circuits,
+     but it is simpler to define this as a single equality constraint."))
   (pfcs::parse-def
-   "boolean_and(x, y, z) := {
-      (x) * (y) == (z)
+   "boolean_nand(x, y, z) := {
+      (x) * (y) == (1 + -1 * z)
     }")
 
   ///
@@ -95,16 +103,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection boolean-and-lifting
+(defsection boolean-nand-lifting
   :short "Lifting of the circuit to a predicate."
 
-  (pfcs::lift (boolean-and-circuit)
-              :pred boolean-and-pred
+  (pfcs::lift (boolean-nand-circuit)
+              :pred boolean-nand-pred
               :prime prime))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection boolean-and-correctness
+(defsection boolean-nand-correctness
   :short "Correctness of the circuit."
   :long
   (xdoc::topstring
@@ -114,21 +122,21 @@
    (xdoc::p
     "The extension to the circuit is boilerplate."))
 
-  (defruled boolean-and-pred-to-spec
+  (defruled boolean-nand-pred-to-spec
     (implies (and (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep z prime)
                   (bitp x)
                   (bitp y))
-             (equal (boolean-and-pred x y z prime)
-                    (boolean-and-spec x y z prime)))
-    :enable (boolean-and-pred
-             boolean-and-spec))
+             (equal (boolean-nand-pred x y z prime)
+                    (boolean-nand-spec x y z prime)))
+    :enable (boolean-nand-pred
+             boolean-nand-spec))
 
-  (defruled boolean-and-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_and" defs)
-                         (boolean-and-circuit))
+  (defruled boolean-nand-circuit-to-spec
+    (implies (and (equal (pfcs::lookup-definition "boolean_nand" defs)
+                         (boolean-nand-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
@@ -136,8 +144,8 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      "boolean_and" defs (list x y z) prime)
-                    (boolean-and-spec x y z prime)))
-    :in-theory '((:e boolean-and-circuit)
-                 definition-satp-to-boolean-and-pred
-                 boolean-and-pred-to-spec)))
+                      "boolean_nand" defs (list x y z) prime)
+                    (boolean-nand-spec x y z prime)))
+    :in-theory '((:e boolean-nand-circuit)
+                 definition-satp-to-boolean-nand-pred
+                 boolean-nand-pred-to-spec)))

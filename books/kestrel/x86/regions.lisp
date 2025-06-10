@@ -14,7 +14,3 @@
 
 ;; Make the machinery for the 48-bit usable x86 address space:
 (make-memory-region-machinery 48)
-
-;; Make the machinery for the full 65-bit x86 address space, to support
-;; reasoning about canonical addresses:
-(make-memory-region-machinery 64)

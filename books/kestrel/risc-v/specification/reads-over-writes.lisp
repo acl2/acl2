@@ -13,7 +13,7 @@
 
 (include-book "states")
 
-(local (include-book "library-extensions"))
+(local (include-book "../library-extensions/theorems"))
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ reads-over-writes
-  :parents (riscv)
+  :parents (specification)
   :short "Read-over-write theorems."
   :long
   (xdoc::topstring

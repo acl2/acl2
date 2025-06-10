@@ -14,7 +14,7 @@
 (include-book "instructions")
 (include-book "states")
 
-(local (include-book "library-extensions"))
+(local (include-book "../library-extensions/theorems"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -34,7 +34,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ semantics
-  :parents (riscv)
+  :parents (specification)
   :short "Semantics of instructions."
   :long
   (xdoc::topstring

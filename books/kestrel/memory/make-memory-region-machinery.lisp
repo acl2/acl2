@@ -31,6 +31,7 @@
          (disjoint-regionsp-spec-name (acl2::pack-in-package "X" disjoint-regionsp-name '-spec)))
     `(progn
        (include-book "kestrel/bv/bvlt-def" :dir :system)
+       (include-book "kestrel/bv/logext-def" :dir :system)
        (include-book "kestrel/bv/bvminus" :dir :system) ; todo: reduce
 
        (encapsulate ()
@@ -42,6 +43,9 @@
          (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
          (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system)) ; may be droppable with more bvminus rules
          (local (include-book "kestrel/bv/bvlt" :dir :system))
+         (local (include-book "kestrel/bv/bvplus" :dir :system))
+         (local (include-book "kestrel/bv/logext" :dir :system))
+         (local (include-book "kestrel/bv/rules" :dir :system)) ; for bvplus-of-logext rules
          (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
          ;; Defines what it means for AD to be in the region of size LEN starting at
@@ -116,10 +120,38 @@
                            (,in-regionp-name ad len start-ad)))
            :hints (("Goal" :in-theory (enable ,in-regionp-name))))
 
+         (defthm ,(acl2::pack-in-package "X" in-regionp-name '-of-bvplus-tighten-arg1)
+           (implies (and (< ,num-address-bits n)
+                         (integerp n))
+                    (equal (,in-regionp-name (bvplus n ad1 ad2) len start-ad)
+                           (,in-regionp-name (bvplus ,num-address-bits ad1 ad2) len start-ad)))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+
+         (defthm ,(acl2::pack-in-package "X" in-regionp-name '-of-logext-arg1)
+           (implies (and (<= ,num-address-bits n)
+                         (integerp n))
+                    (equal (,in-regionp-name (logext n ad) len start-ad)
+                           (,in-regionp-name ad len start-ad)))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+
          (defthm ,(acl2::pack-in-package "X" in-regionp-name '-of-bvchop-arg3)
            (implies (and (<= ,num-address-bits n)
                          (integerp n))
                     (equal (,in-regionp-name ad len (bvchop n start-ad))
+                           (,in-regionp-name ad len start-ad)))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+
+         (defthm ,(acl2::pack-in-package "X" in-regionp-name '-of-bvplus-tighten-arg3)
+           (implies (and (< ,num-address-bits n)
+                         (integerp n))
+                    (equal (,in-regionp-name ad len (bvplus n offset start-ad))
+                           (,in-regionp-name ad len (bvplus ,num-address-bits offset start-ad))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+
+         (defthm ,(acl2::pack-in-package "X" in-regionp-name '-of-logext-arg3)
+           (implies (and (<= ,num-address-bits n)
+                         (integerp n))
+                    (equal (,in-regionp-name ad len (logext n start-ad))
                            (,in-regionp-name ad len start-ad)))
            :hints (("Goal" :in-theory (enable ,in-regionp-name))))
 
@@ -128,7 +160,7 @@
                          (integerp y))
                     (equal (,in-regionp-name (+ x y) len ad)
                            (,in-regionp-name (bvplus ,num-address-bits x y) len ad)))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name bvplus))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvplus ifix))))
 
          (theory-invariant (incompatible (:rewrite ,(acl2::pack-in-package "X" in-regionp-name '-of-+-arg1)) (:definition bvplus)))
 
@@ -137,7 +169,7 @@
                          (integerp y))
                     (equal (,in-regionp-name ad len (+ x y))
                            (,in-regionp-name ad len (bvplus ,num-address-bits x y))))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name bvplus))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvplus ifix))))
 
          (theory-invariant (incompatible (:rewrite ,(acl2::pack-in-package "X" in-regionp-name '-of-+-arg3)) (:definition bvplus)))
 
@@ -603,6 +635,10 @@
                     (,subregionp-name len ad len ad))
            :hints (("Goal" :in-theory (enable ,subregionp-name))))
 
+         (defthm ,(acl2::pack-in-package "X" subregionp-name '-same-ads-same-lens)
+           (,subregionp-name len ad len ad)
+           :hints (("Goal" :in-theory (enable ,subregionp-name))))
+
          ;; A region of size 0 is a subregion of any region
          (defthm ,(acl2::pack-in-package "X" subregionp-name '-of-0-arg1)
            (,subregionp-name 0 ad len2 ad2)
@@ -883,11 +919,14 @@
                                (,subregionp-spec-name len1 ad len2 ad)))
              :hints (("Goal" :in-theory (enable ,SUBREGIONP-SPEC-NAME)))))
 
+         ;; do we really want this to be about the spec?
          (defthm ,(acl2::pack-in-package "X" subregionp-spec-name '-same-ads)
            (implies (and (unsigned-byte-p ,num-address-bits len1)
                          (unsigned-byte-p ,num-address-bits len2))
                     (equal (,subregionp-spec-name len1 ad len2 ad)
                            (<= len1 len2))))
+
+
 
 ;todo: make some stuff here local:
 ;todo: move some of this up:
@@ -900,7 +939,65 @@
                     (equal (,subregionp-name len1 ad1 len2 ad2)
                            (and (,in-regionp-name ad1 len2 ad2)
                                 (,subregionp-name (+ -1 len1) (+ 1 ad1) len2 ad2))))
-           :hints (("Goal" :in-theory (enable ,subregionp-name ,in-regionp-name bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases))))
+           :hints (("Goal" ;; :in-theory (enable ,subregionp-name ,in-regionp-name bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases
+                           ;;                    ifix natp)
+                    :in-theory '((:compound-recognizer booleanp-compound-recognizer)
+                                 (:compound-recognizer acl2::natp-compound-recognizer)
+                                 (:compound-recognizer acl2::zp-compound-recognizer)
+                                 (:definition bvle)
+                                 (:definition bvlt)
+                                 (:definition bvplus)
+                                 (:definition bvuminus)
+                                 (:definition fix)
+                                 (:definition ifix)
+                                 (:definition ,in-regionp-name)
+                                 (:definition natp)
+                                 (:definition not)
+                                 (:definition ,subregionp-name)
+                                 (:definition synp)
+                                 (:executable-counterpart <)
+                                 (:executable-counterpart binary-+)
+                                 (:executable-counterpart bvchop)
+                                 (:executable-counterpart equal)
+                                 (:executable-counterpart expt)
+                                 (:executable-counterpart integerp)
+                                 (:executable-counterpart natp)
+                                 (:executable-counterpart not)
+                                 (:executable-counterpart tau-system)
+                                 (:executable-counterpart unary--)
+                                 (:executable-counterpart unsigned-byte-p)
+                                 (:executable-counterpart zp)
+                                 ;; (:fake-rune-for-linear nil)
+                                 ;; (:fake-rune-for-linear-equalities nil)
+                                 ;; (:fake-rune-for-type-set nil)
+                                 (:linear acl2::bvchop-upper-bound-linear-strong)
+                                 (:rewrite acl2::<-of-+-of---and-0-arg1)
+                                 (:rewrite acl2::<-of-+-of---and-0-arg2)
+                                 (:rewrite acl2::<-of-bvchop-when-<-of-bvchop-bigger)
+                                 (:rewrite associativity-of-+)
+                                 (:rewrite acl2::bvchop-bound-2)
+                                 (:rewrite acl2::bvchop-bound-other)
+                                 (:rewrite acl2::bvchop-chop-leading-constant)
+                                 (:rewrite acl2::bvchop-identity)
+                                 (:rewrite acl2::bvchop-of-minus)
+                                 (:rewrite acl2::bvchop-of-sum-cases)
+                                 (:rewrite acl2::bvchop-sum-drop-bvchop)
+                                 (:rewrite acl2::bvminus-becomes-bvplus-of-bvuminus)
+                                 (:rewrite acl2::commutativity-2-of-+)
+                                 (:rewrite commutativity-of-+)
+                                 (:rewrite acl2::distributivity-of-minus-over-+)
+                                 (:rewrite acl2::equal-of-booleans-cheap)
+                                 (:rewrite acl2::fold-consts-in-+)
+                                 (:rewrite inverse-of-+)
+                                 (:rewrite unicity-of-0)
+                                 (:rewrite acl2::unsigned-byte-p-from-bound)
+                                 (:rewrite acl2::unsigned-byte-p-from-bounds)
+                                 (:rewrite acl2::unsigned-byte-p-of-+-of--1)
+                                 (:rewrite acl2::unsigned-byte-p-of-if)
+                                 (:rewrite acl2::usb-plus-from-bounds)
+                                 (:rewrite acl2::zp-open)
+                                 (:type-prescription acl2::natp-of-bvchop-type))
+                    )))
 
          ;; The bad guy is an address in r1 but not in r2, is there if such an address
          (local

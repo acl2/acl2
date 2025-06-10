@@ -11,19 +11,9 @@
 
 (in-package "RISCV")
 
-(include-book "features")
-(include-book "instructions")
-(include-book "encoding")
-(include-book "decoding")
-(include-book "decoding-of-encoding")
-(include-book "encoding-of-decoding")
-(include-book "decoding-as-inverse")
-(include-book "states")
-(include-book "reads-over-writes")
-(include-book "semantics")
-(include-book "execution")
-(include-book "rv32im")
-(include-book "rv64im")
+(include-book "specification/top")
+(include-book "executable/top")
+(include-book "specialized/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,14 +70,6 @@
    (xdoc::p
     "These square-bracketed references may be used
      as nouns or parenthentically."))
-  :order-subtopics (features
-                    instructions
-                    states
-                    reads-over-writes
-                    encoding
-                    decoding
-                    decoding-as-inverse
-                    semantics
-                    execution
-                    rv32im
-                    rv64im))
+  :order-subtopics (specification
+                    executable
+                    specialized))
