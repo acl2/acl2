@@ -13,7 +13,7 @@
 
 (include-book "semantics32")
 
-(include-book "executable/decoding-executable")
+(include-book "../executable/decoding-executable")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

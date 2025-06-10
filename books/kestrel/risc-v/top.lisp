@@ -13,7 +13,7 @@
 
 (include-book "specification/top")
 (include-book "executable/top")
-(include-book "specializations")
+(include-book "specialized/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,4 +72,4 @@
      as nouns or parenthentically."))
   :order-subtopics (specification
                     executable
-                    specializations))
+                    specialized))

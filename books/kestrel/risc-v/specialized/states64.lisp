@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "library-extensions")
+(include-book "../library-extensions")
 
 (include-book "kestrel/fty/deflist-of-len" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)

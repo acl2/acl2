@@ -16,9 +16,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ specializations
+(defxdoc+ specialized
   :parents (riscv)
-  :short "Specializations of the RISC-V ISA."
+  :short "Specialized versions of the RISC-V ISA."
   :long
   (xdoc::topstring
    (xdoc::p

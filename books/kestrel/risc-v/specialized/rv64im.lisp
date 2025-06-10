@@ -11,23 +11,23 @@
 
 (in-package "RISCV")
 
-(include-book "states32")
-(include-book "semantics32")
-(include-book "execution32")
+(include-book "states64")
+(include-book "semantics64")
+(include-book "execution64")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ rv32im
-  :parents (specializations)
-  :short "Specialized model for RV32IM."
+(defxdoc+ rv64im
+  :parents (specialized)
+  :short "Specialized model for RV64IM."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This consists of a model of states and instruction execution for RV32IM.
+    "This consists of a model of states and instruction execution for RV64IM.
      This was developed before the more general model with @(see features).
      We plan to re-obtain this specialized model via
      transformation and specialization of the general one at some point,
      but until then we keep it around."))
-  :order-subtopics (states32
-                    semantics32
-                    execution32))
+  :order-subtopics (states64
+                    semantics64
+                    execution64))
