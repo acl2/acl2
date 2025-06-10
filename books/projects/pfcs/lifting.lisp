@@ -510,7 +510,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-thm-definition-satp-specialized-lemma ((def definitionp)
-                                                    (pred symbolp))
+                                                    (pred symbolp)
+                                                    (prime symbolp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp))
   :short "Generate a local lemma to apply
@@ -537,7 +538,7 @@
        (thm-name (acl2::packn-pos (list 'definition-satp-of- pred) pred))
        (thm-event
         `(defruledl ,thm-name
-           (equal (definition-satp ,def-name defs vals p)
+           (equal (definition-satp ,def-name defs vals ,prime)
                   (b* ((def (lookup-definition ,def-name defs))
                        ((unless def) nil)
                        (para (definition->para def))
@@ -546,14 +547,15 @@
                        (constr (make-constraint-relation
                                 :name ,def-name
                                 :args (expression-var-list para))))
-                    (constraint-satp constr defs asg p)))
+                    (constraint-satp constr defs asg ,prime)))
            :in-theory '(definition-satp))))
     (mv thm-event thm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-thm-constr-satp-specialized-lemma ((def definitionp)
-                                                (pred symbolp))
+                                                (pred symbolp)
+                                                (prime symbolp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp))
   :short "Generate a local lemma to apply
@@ -581,7 +583,7 @@
         (if (set::emptyp (definition-free-vars def))
             `(defruledl ,thm-name
                (implies (and (assignmentp asg)
-                             (assignment-wfp asg p)
+                             (assignment-wfp asg ,prime)
                              (constraint-case constr :relation)
                              (equal (constraint-relation->name constr)
                                     ,def-name))
@@ -589,29 +591,31 @@
                              (def (lookup-definition ,def-name defs)))
                           (implies (and def
                                         (set::emptyp (definition-free-vars def)))
-                                   (equal (constraint-satp constr defs asg p)
+                                   (equal (constraint-satp
+                                           constr defs asg ,prime)
                                           (constraint-relation-nofreevars-satp
-                                           ,def-name args defs asg p)))))
+                                           ,def-name args defs asg ,prime)))))
                :in-theory '(constraint-satp-of-relation-when-nofreevars))
           `(defruledl ,thm-name
              (implies (and (assignmentp asg)
-                           (assignment-wfp asg p)
+                           (assignment-wfp asg ,prime)
                            (constraint-case constr :relation)
                            (equal (constraint-relation->name constr)
                                   ,def-name))
-                      (equal (constraint-satp constr defs asg p)
+                      (equal (constraint-satp constr defs asg ,prime)
                              (constraint-relation-satp
                               ,def-name
                               (constraint-relation->args constr)
                               defs
                               asg
-                              p)))
+                              ,prime)))
              :in-theory '(constraint-satp-of-relation)))))
     (mv thm-event thm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-thm-constr-to-def-satp-specialized-lemmas ((rels string-setp)
+                                                        (prime symbolp)
                                                         (wrld plist-worldp))
   :returns (mv (thm-events pseudo-event-form-listp)
                (thm-names symbol-listp))
@@ -640,23 +644,24 @@
                   rel-pred))
        (thm-event
         `(defruledl ,thm-name
-           (implies (and (primep p)
+           (implies (and (primep ,prime)
                          (assignmentp asg)
-                         (assignment-wfp asg p)
+                         (assignment-wfp asg ,prime)
                          (constraint-case constr :relation)
                          (equal (constraint-relation->name constr)
                                 ,rel)
                          (no-duplicatesp-equal
                           (definition->para (lookup-definition ,rel defs))))
                     (b* ((vals (eval-expr-list
-                                (constraint-relation->args constr) asg p)))
+                                (constraint-relation->args constr) asg ,prime)))
                       (implies (not (reserrp vals))
-                               (equal (constraint-satp constr defs asg p)
+                               (equal (constraint-satp constr defs asg ,prime)
                                       (definition-satp
-                                        ,rel defs vals p)))))
+                                        ,rel defs vals ,prime)))))
            :in-theory '(constraint-satp-to-definition-satp)))
        ((mv thm-events thm-names)
         (lift-thm-constr-to-def-satp-specialized-lemmas (set::tail rels)
+                                                        prime
                                                         wrld)))
     (mv (cons thm-event thm-events)
         (cons thm-name thm-names))))
@@ -996,7 +1001,8 @@
                             (name ,def.name)
                             (args (expression-var-list (list ,@def.para)))
                             (asg (omap::from-lists (list ,@def.para)
-                                                   (list ,@para))))))))
+                                                   (list ,@para)))
+                            (p ,prime))))))
      def-hyps)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1022,12 +1028,12 @@
   (b* ((pred (or pred (lift-var-name (definition->name def) state)))
        (event-fn (lift-definition def pred prime state))
        ((mv event-def-sat def-sat-lemma)
-        (lift-thm-definition-satp-specialized-lemma def pred))
+        (lift-thm-definition-satp-specialized-lemma def prime pred))
        ((mv event-constr-sat constr-sat-lemma)
-        (lift-thm-constr-satp-specialized-lemma def pred))
+        (lift-thm-constr-satp-specialized-lemma def prime pred))
        ((mv events-constr-to-def-sat constr-to-def-sat-lemmas)
         (lift-thm-constr-to-def-satp-specialized-lemmas
-         (constraint-list-rels (definition->body def)) (w state)))
+         (constraint-list-rels (definition->body def)) prime (w state)))
        ((mv event-thm def-hyps) (lift-thm def
                                           def-sat-lemma
                                           constr-sat-lemma
