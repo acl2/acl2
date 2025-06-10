@@ -140,12 +140,12 @@ state.</p>")
   :enabled t
   :parents (fgl-rewrite-rules)
   :short "FGL testbench function to assume some condition while interpreting a term."
-  :long "<p>Logically, @('(assume test val)') just returns NIL.  When it is
+  :long "<p>Logically, @('(assume test val)') just returns VAL.  When it is
 encountered by the FGL interpreter under an @('unequiv') congruence, it
 causes the interpreter to assume that @('test') is true while interpreting
 @('val'), returning the symbolic result from @('val').</p>
 "
-  nil)
+  val)
 
 (define narrow-equiv (equiv val)
   :ignore-ok t
@@ -235,6 +235,31 @@ first interprets @('term'), then if this results in a constant object whose
 value is a pseudo-term, it interprets that and returns its result.</p>
 "
   nil)
+
+(define trigger-constraints (term)
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :enabled t
+  :parents (fgl-rewrite-rules)
+  :short "FGL function that can trigger the addition of Boolean constraints on some form"
+  :long "<p>FGL can collect Boolean constraints among terms. It can trigger constraint generation rules (see @(see def-fgl-boolean-constraint)) when
+a term is added to the Boolean variable database, e.g. by being used in an IF
+test. This stub function allows such rules to be triggered without adding
+anything to the Boolean variable database. The subterm is rewritten under an
+IFF context, and the resulting object can trigger constraint generation rules
+as if it were added to the Boolean variable database.</p>"
+  nil)
+
+(define fgl-hide (term)
+  :enabled t
+  :parents (fgl-rewrite-rules)
+  :short "FGL function that inhibits rewriting of its subterm"
+  :long "<p>This acts more or less like @(see hide) in ACL2. Its subterm is processed by
+the FGL interpreter, except that whenever a non-FGL-special function call is
+processed, it is just turned into a @('g-apply') form. The @('fgl-hide') call
+itself is not turned into a @('g-apply'), but just replaced by the object
+resulting from this processing of its subterm.</p>"
+  term)
 
 (defmacro syntax-interp (form)
   `(syntax-interp-fn ,form ',form))

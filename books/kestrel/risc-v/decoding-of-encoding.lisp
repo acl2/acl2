@@ -31,9 +31,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ inverse-encoding-decoding
+(defxdoc+ decoding-of-encoding
   :parents (encoding decoding)
-  :short "Theorems about encoding and decoding being inverses."
+  :short "Theorems about decoding applied to encoding."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that decoding is left inverse of encoding over valid instructions:
+     encoding a valid instruction and then decoding it
+     yields the original instruction.
+     As a consequence, encoding is injective over valid instructions:
+     if two different instructions were encoded in the same way,
+     the decoder would have to restore both from the same encoding,
+     which is impossible since decoding is a function."))
   :default-parent t
   :order-subtopics t)
 
@@ -490,7 +500,8 @@
     :prep-lemmas
     ((defruled lemma
        (implies (ubyte12p imm)
-                (equal (get-imm-stype (encode (instr-store funct rs1 rs2 imm) feat))
+                (equal (get-imm-stype (encode (instr-store funct rs1 rs2 imm)
+                                              feat))
                        imm))
        :enable (get-imm-stype
                 encode)))))
@@ -500,26 +511,6 @@
 (defsection get-imm-btype-of-encode-of-instr
   :short "Theorems about @(tsee get-imm-btype) applied to
           the encoding of different instructions."
-
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (defrulel logbit-11-to-logtail-11-when-ubyte12p
-    (implies (ubyte12p x)
-             (equal (logbit 11 x)
-                    (logtail 11 x)))
-    :enable (logtail
-             bool->bit
-             logbitp
-             ubyte12p
-             unsigned-byte-p))
-
-  (defrulel logapp-6-logtail-4-logtail-10
-    (implies (integerp x)
-             (equal (logapp 6 (logtail 4 x) (logtail 10 x))
-                    (logtail 4 x)))
-    :enable (logapp
-             logtail
-             loghead))
 
   (defruled get-imm-btype-of-encode-of-instr-branch
     (equal (get-imm-btype (encode (instr-branch funct rs1 rs2 imm) feat))
@@ -533,8 +524,7 @@
                        imm))
        :enable (get-imm-btype
                 encode
-                logapp-1-of-logbit-logtail)
-       :disable bitops::logbit-to-logbitp))))
+                loghead-of-1-when-bitp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -560,26 +550,6 @@
   :short "Theorems about @(tsee get-imm-jtype) applied to
           the encoding of different instructions."
 
-  (local (include-book "arithmetic-5/top" :dir :system))
-
-  (defrulel logbit-19-to-logtail-19-when-ubyte20p
-    (implies (ubyte20p x)
-             (equal (logbit 19 x)
-                    (logtail 19 x)))
-    :enable (logtail
-             bool->bit
-             logbitp
-             ubyte20p
-             unsigned-byte-p))
-
-  (defrulel logapp-8-logtail-11-logtail-19
-    (implies (integerp x)
-             (equal (logapp 8 (logtail 11 x) (logtail 19 x))
-                    (logtail 11 x)))
-    :enable (logapp
-             logtail
-             loghead))
-
   (defruled get-imm-jtype-of-encode-of-instr-jal
     (equal (get-imm-jtype (encode (instr-jal rd imm) feat))
            (ubyte20-fix imm))
@@ -591,8 +561,7 @@
                        imm))
        :enable (get-imm-jtype
                 encode
-                logapp-1-of-logbit-logtail)
-       :disable bitops::logbit-to-logbitp))))
+                loghead-of-1-when-bitp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -802,7 +771,8 @@
 
   (defruled decode-of-encode-of-instr-op-imm
     (implies (instr-validp (instr-op-imm funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imm funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imm funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imm funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imm
@@ -812,7 +782,8 @@
 
   (defruled decode-of-encode-of-instr-op-imms32
     (implies (instr-validp (instr-op-imms32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms32 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imms32 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imms32 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imms32
@@ -824,7 +795,8 @@
 
   (defruled decode-of-encode-of-instr-op-imms64
     (implies (instr-validp (instr-op-imms64 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms64 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imms64 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imms64 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imms64
@@ -834,7 +806,8 @@
 
   (defruled decode-of-encode-of-instr-op-imm-32
     (implies (instr-validp (instr-op-imm-32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imm-32 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imm-32 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imm-32 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imm-32
@@ -845,7 +818,8 @@
 
   (defruled decode-of-encode-of-instr-op-imms-32
     (implies (instr-validp (instr-op-imms-32 funct rd rs1 imm) feat)
-             (equal (decode (encode (instr-op-imms-32 funct rd rs1 imm) feat) feat)
+             (equal (decode (encode (instr-op-imms-32 funct rd rs1 imm) feat)
+                            feat)
                     (instr-op-imms-32 funct rd rs1 imm)))
     :enable (decode
              get-opcode-of-encode-of-instr-op-imms-32
@@ -948,7 +922,7 @@
   (xdoc::topstring
    (xdoc::p
     "That is, decoding is left inverse of encoding,
-     and encoding is right inverse of decoding."))
+     over valid instructions."))
   (implies (instr-validp instr feat)
            (equal (decode (encode instr feat) feat)
                   (instr-fix instr)))

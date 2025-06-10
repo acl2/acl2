@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-(include-book "regions") ; since this book knows about disjoint-regionsp
+(include-book "regions") ; since this book knows about disjoint-regions48p
 (include-book "assumptions") ; todo: for lifter-targetp
 (include-book "assumptions-for-inputs")
 (include-book "assumptions64")  ; reduce?
@@ -81,7 +81,7 @@
                 ;; Assert that the chunk is disjoint from the saved return address (so writing to the chunk doesn't change it)
                 ;; TODO: Do this only for writable chunks?
                 ,(if bvp
-                     `(disjoint-regionsp ',(len bytes) ,first-addr-term
+                     `(disjoint-regions48p ',(len bytes) ,first-addr-term
                                          '8 (rsp ,state-var))
                    `(separate ':r ',(len bytes) ,first-addr-term
                               ':r '8 (rsp ,state-var)))
@@ -89,7 +89,7 @@
                 ,@(if (posp stack-slots-needed)
                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
                       (if bvp
-                          `((disjoint-regionsp ',(len bytes) ,first-addr-term
+                          `((disjoint-regions48p ',(len bytes) ,first-addr-term
                                                ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
                         `((separate ':r ',(len bytes) ,first-addr-term
                                     ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
@@ -114,7 +114,7 @@
                 ;; Assert that the chunk is disjoint from the saved return address (so writing to the chunk doesn't change it)
                 ;; TODO: Do this only for writable chunks?
                 ,(if bvp
-                     `(disjoint-regionsp ',(len bytes) ,first-addr-term
+                     `(disjoint-regions48p ',(len bytes) ,first-addr-term
                                          '8 (rsp ,state-var))
                    `(separate ':r ',(len bytes) ,first-addr-term
                               ':r '8 (rsp ,state-var)))
@@ -122,7 +122,7 @@
                 ,@(if (posp stack-slots-needed)
                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
                       (if bvp
-                          `((disjoint-regionsp ',(len bytes) ,first-addr-term
+                          `((disjoint-regions48p ',(len bytes) ,first-addr-term
                                                ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
                         `((separate ':r ',(len bytes) ,first-addr-term
                                     ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))))

@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1170,14 +1170,16 @@
             ((when (reserrp tree)) (mv nil input))
             ((mv trees input) (,parse-repetition input)))
          (mv (cons tree trees) input))
-       :hooks (:fix)
        :measure (len input)
+       :hints (("Goal" :in-theory (enable o< o-finp)))
+       :hooks (:fix)
        ///
        (defret ,(acl2::packn-pos (list 'len-of- parse-repetition)
                                  parse-repetition)
          (<= (len rest-input)
              (len input))
-         :rule-classes :linear))))
+         :rule-classes :linear
+         :hints (("Goal" :induct t))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 

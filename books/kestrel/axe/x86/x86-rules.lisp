@@ -76,9 +76,9 @@
 (add-known-boolean infp)
 (add-known-boolean nanp)
 
-(add-known-boolean in-regionp)
-(add-known-boolean subregionp)
-(add-known-boolean disjoint-regionsp)
+(add-known-boolean in-region48p)
+(add-known-boolean subregion48p)
+(add-known-boolean disjoint-regions48p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -393,9 +393,9 @@
 ;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
 (def-constant-opener rtl::set-flag) ; drop?
 
-(def-constant-opener in-regionp)
-(def-constant-opener subregionp)
-(def-constant-opener disjoint-regionsp)
+(def-constant-opener in-region48p)
+(def-constant-opener subregion48p)
+(def-constant-opener disjoint-regions48p)
 
 (defopeners acl2::get-symbol-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)

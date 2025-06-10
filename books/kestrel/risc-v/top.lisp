@@ -15,7 +15,9 @@
 (include-book "instructions")
 (include-book "encoding")
 (include-book "decoding")
-(include-book "inverse-encoding-decoding")
+(include-book "decoding-of-encoding")
+(include-book "encoding-of-decoding")
+(include-book "decoding-as-inverse")
 (include-book "states")
 (include-book "reads-over-writes")
 (include-book "semantics")
@@ -84,6 +86,7 @@
                     reads-over-writes
                     encoding
                     decoding
+                    decoding-as-inverse
                     semantics
                     execution
                     rv32im

@@ -46,6 +46,7 @@
 (include-book "equivcheck")
 (include-book "extremize")
 (include-book "fty")
+(include-book "annotation")
 
 (local (in-theory (disable w)))
 

@@ -643,36 +643,48 @@ keyword argument. Examples of usage:</p>
     obj-val))
     
 (defmacro break-on-fgl-error ()
-  `(trace$ (interp-st-set-error
-            :cond (not (or (eq msg :abort-rewrite)
-                           (eq msg :intro-bvars-fail)
-                           (eq msg :unreachable)))
+  `(trace! (interp-st-set-error
+            :cond (let ((msg (or (interp-st->errmsg interp-st) msg)))
+                    (not (or (eq msg :abort-rewrite)
+                             (eq msg :intro-bvars-fail)
+                             (eq msg :unreachable))))
             :hide nil
-            :entry (list 'interp-st-set-error msg)
+            :entry (let ((msg (or (interp-st->errmsg interp-st) msg))) (list 'interp-st-set-error msg))
             :exit (break$))
            (fgl-interp-store-debug-info
-            :cond (not (or (eq msg :abort-rewrite)
-                           (eq msg :intro-bvars-fail)
-                           (eq msg :unreachable)))
+            :cond (let ((msg (or (interp-st->errmsg interp-st) msg)))
+                    (not (or (eq msg :abort-rewrite)
+                             (eq msg :intro-bvars-fail)
+                             (eq msg :unreachable))))
             :hide nil
-            :entry (list 'fgl-interp-store-debug-info msg obj)
+            :entry (let* ((msg (or (interp-st->errmsg interp-st) msg))
+                          (obj (if (interp-st->errmsg interp-st)
+                                   (interp-st->debug-info interp-st)
+                                 obj)))
+                     (list 'fgl-interp-store-debug-info msg obj))
             :exit (break$))))
 
 (defmacro stop-on-fgl-error ()
-  `(trace$ (interp-st-set-error
-            :cond (not (or (eq msg :abort-rewrite)
-                           (eq msg :intro-bvars-fail)
-                           (eq msg :unreachable)))
+  `(trace! (interp-st-set-error
+            :cond (let ((msg (or (interp-st->errmsg interp-st) msg)))
+                    (not (or (eq msg :abort-rewrite)
+                             (eq msg :intro-bvars-fail)
+                             (eq msg :unreachable))))
             :hide nil
-            :entry (list 'interp-st-set-error msg)
+            :entry (let ((msg (or (interp-st->errmsg interp-st) msg))) (list 'interp-st-set-error msg))
             :exit (er hard? 'interp-st-set-error
                       "Stopping on error due to ~x0" 'stop-on-fgl-error))
            (fgl-interp-store-debug-info
-            :cond (not (or (eq msg :abort-rewrite)
-                           (eq msg :intro-bvars-fail)
-                           (eq msg :unreachable)))
+            :cond (let ((msg (or (interp-st->errmsg interp-st) msg)))
+                    (not (or (eq msg :abort-rewrite)
+                             (eq msg :intro-bvars-fail)
+                             (eq msg :unreachable))))
             :hide nil
-            :entry (list 'fgl-interp-store-debug-info msg obj)
+            :entry (let* ((msg (or (interp-st->errmsg interp-st) msg))
+                          (obj (if (interp-st->errmsg interp-st)
+                                   (interp-st->debug-info interp-st)
+                                 obj)))
+                     (list 'fgl-interp-store-debug-info msg obj))
             :exit (er hard? 'fgl-interp-store-debug-info
                       "Stopping on error due to ~x0" 'stop-on-fgl-error))))
 

@@ -165,8 +165,8 @@
            ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
            (if bvp
                 ;; essentially the same as the below SEPARATE claim:
-               (disjoint-regionsp (len text-section-bytes) (bvchop 48 text-offset) ; todo: drop the 2 bvchops
-                                  (* 8 stack-slots-needed) (bvchop 48 (+ (* -8 stack-slots-needed) (rgfi *rsp* x86))))
+               (disjoint-regions48p (len text-section-bytes) (bvchop 48 text-offset) ; todo: drop the 2 bvchops
+                                    (* 8 stack-slots-needed) (bvchop 48 (+ (* -8 stack-slots-needed) (rgfi *rsp* x86))))
              (separate :r (len text-section-bytes) text-offset
                        ;; Only a single stack slot is written
                        ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))

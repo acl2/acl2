@@ -26,7 +26,7 @@
 
 (close-theory)
 
-(set-enforce-redundancy t)
+(set-enforce-redundancy acl2::t)
 
 (defthm c$type
   (implies (force (simple$prop))
@@ -35,14 +35,16 @@
                 (equal (hp-type (c (typ (:arrow* (:arrow* a b c) b a c))))
                        (typ (:arrow* (:arrow* a b c) b a c))))))
 
+(in-theory (disable hol::simple$hta (:e hol::simple$hta)))
+
 (defthm hol{c}
-  (implies (and (hpp f hta)
+  (implies (and (alist-subsetp (simple$hta) hta)
+                (hpp f hta)
                 (equal (hp-type f) (typ (:arrow* a b c)))
                 (hpp x hta)
                 (equal (hp-type x) (typ b))
                 (hpp y hta)
                 (equal (hp-type y) (typ a))
-                (alist-subsetp (simple$hta) hta)
                 (force (simple$prop)))
            (equal (hap* (c (typ (:arrow* (:arrow* a b c) b a c))) f x y)
                   (hap* f y x))))

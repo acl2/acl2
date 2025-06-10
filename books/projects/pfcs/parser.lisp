@@ -404,8 +404,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Cannot be called parse-integer because that is a ACL2 standard library function.
-(define parse-pfcs-integer ((token abnf::tree-optionp)
+(define parse-integer ((token abnf::tree-optionp)
                        (input abnf::tree-listp))
   :returns (mv (tree abnf::tree-resultp)
                (next-token abnf::tree-optionp)
@@ -561,7 +560,7 @@
          ((when (not (reserrp tree)))
           (mv (abnf-tree-wrap tree "primary-expression")
               token0 input0))
-         ((mv tree token1 input1) (parse-pfcs-integer token input))
+         ((mv tree token1 input1) (parse-integer token input))
          ((when (not (reserrp tree)))
           (mv (abnf-tree-wrap tree "primary-expression")
               token1 input1))
