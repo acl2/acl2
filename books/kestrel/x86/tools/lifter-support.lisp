@@ -16,8 +16,13 @@
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system) ; mentioned below
 (include-book "kestrel/utilities/translate" :dir :system)
+(include-book "../read-and-write")
 
-;; An "output-indicator" indicates the desired result of lifting, either :all or some component of the state.
+;; An "output-indicator" indicates the desired result of lifting, either :all
+;; or some component of the state.  There is no recognizer for an
+;; output-indicator, such as 'output-indicatorp'.  Instead we call
+;; wrap-in-normal-output-extractor on whatever the user supplies and we check
+;; for an error.
 
 (mutual-recursion
   ;; Create a term representing the extraction of the indicated output from TERM.
@@ -61,7 +66,7 @@
           (:mem32 (if (eql 1 (len (fargs output-indicator)))
                       `(read '4 ,(translate-term (farg1 output-indicator) 'wrap-in-normal-output-extractor wrld) ,term)
                     (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
-          ;; (:byte-array <ADDR-TERM> <LEN>)
+          ;; (:byte-array <ADDR-TERM> <LEN>) ; not sure what order is best for the args
           (:byte-array (if (and (eql 2 (len (fargs output-indicator)))
                                 (posp (farg2 output-indicator)) ; number of bytes to read
                                 )
@@ -69,6 +74,29 @@
                                                                   ',(farg2 output-indicator)
                                                                   ,term))
                          (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          ;; (:array <bits-per-element> <element-count> <addr-term>) ; not sure what order is best for the args
+          (:array (if (and (eql 3 (len (fargs output-indicator)))
+                           (posp (farg1 output-indicator))
+                           (= 0 (mod (farg1 output-indicator) 8)) ; bits-per-element must be a multiple of 8
+                           (natp (farg2 output-indicator)) ; or use posp?
+                           )
+                      `(acl2::list-to-bv-array ',(farg1 output-indicator)
+                                               (read-chunks ,(translate-term (farg3 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                                                            ',(farg2 output-indicator)
+                                                            ',(/ (farg1 output-indicator) 8)
+                                                           ,term))
+                    (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
+          (:bv-list ;; (:bv-list <bits-per-element> <element-count> <addr-term>)
+           (if (and (= 3 (len (fargs output-indicator)))
+                    (posp (farg1 output-indicator))
+                    (= 0 (mod (farg1 output-indicator) 8)) ; bits-per-element must be a multiple of 8
+                    (natp (farg2 output-indicator)) ; or use posp?
+                    )
+               `(read-chunks ,(translate-term (farg3 output-indicator) 'wrap-in-normal-output-extractor wrld)
+                             ',(farg2 output-indicator)
+                             ',(/ (farg1 output-indicator) 8)
+                             ,term)
+             (er hard? 'wrap-in-normal-output-extractor "Bad output-indicator: ~x0." output-indicator)))
           ;; (:tuple ... output-indicators ...)
           ;; todo: what if no args?
           (:tuple (acl2::make-cons-nest (wrap-in-normal-output-extractors (fargs output-indicator) term wrld)))

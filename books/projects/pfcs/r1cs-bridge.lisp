@@ -1,9 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; Copyright (C) 2024 Aleo Systems Inc. (https://www.aleo.org)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
@@ -11,7 +11,7 @@
 
 (in-package "PFCS")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 (include-book "r1cs-subset")
 
 (include-book "r1cs-lib-ext")

@@ -12,8 +12,6 @@
 (in-package "ACL2")
 
 (include-book "../portcullis")
-(include-book "centaur/fty/portcullis" :dir :system)
-(include-book "std/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

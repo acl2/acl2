@@ -1,9 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; modifications Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
@@ -12,22 +12,14 @@
 (in-package "PFCS")
 
 (include-book "concrete-syntax")
-
 (include-book "abstract-syntax")
-(include-book "syntax-abstraction")
-(include-book "parser-interface")
-
-(include-book "abstract-syntax-operations")
-(include-book "indexed-names")
-(include-book "convenience-constructors")
 (include-book "well-formedness")
 (include-book "semantics")
 (include-book "proof-support")
 (include-book "lifting")
-(include-book "r1cs-lib-ext")
+(include-book "parser-interface")
 (include-book "r1cs-subset")
 (include-book "r1cs-bridge")
-(include-book "pfield-lib-ext")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,16 +66,22 @@
       verification, analysis, transformation, and synthesis."))
    (xdoc::p
     "Currently this library contains
-     a concrete syntax of PFCSes and a parser to CSTs (concrete syntax trees),
+     a concrete syntax of PFCSes and
+     with a parser to CSTs (concrete syntax trees),
      an abstract syntax of PFCSes
-     and an abstractor from CSTs to ASTs (abstract syntax trees),
-     parser interface functions to generate ASTs from strings,
-     some operations on the abstract syntax,
+     with operations on the abstract syntax trees
+     and with an abstractor from CSTs to ASTs (abstract syntax trees),
      a notion of well-formedness,
-     a semantics expressed as a shallow embedding,
-     a semantics expressed as a deep embedding,
-     and some tools to support proofs about PFCSes;
+     a semantics defined as a deep embedding,
+     a parser interface functions to generate abstract syntax
+     from strings written in the concrete syntax,
+     some tools to support proofs about PFCSes,
+     and a lifter to turn abstract syntax
+     into shallowly embedded PFCSes;
      see the documentation of these artifacts for more information.
+     The library also includes a characterization of
+     PFCSes that only use R!CS constraints,
+     and a translator from R1CSes to PFCSes.
      This library also includes some examples.
      This library is a work in progress;
      it is expected that it will be extended
@@ -98,4 +96,12 @@
     " and is related to the "
     (xdoc::seetopic "r1cs::r1cs" "R1CS library")
     ", both in the community books."))
-  :order-subtopics t)
+  :order-subtopics (concrete-syntax
+                    abstract-syntax
+                    well-formedness
+                    semantics
+                    proof-support
+                    lifting
+                    parser-interface
+                    r1cs-subset
+                    r1cs-bridge))

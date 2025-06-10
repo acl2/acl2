@@ -25,14 +25,14 @@
   (defthm-axe-basic test
     (equal (car (cons x y))
            x)
-    :rules (car-cons equal-same)))
+    :rules '(car-cons equal-same)))
 
 ;; Test :rule-lists
 (deftest
   (defthm-axe-basic test
     (equal (car (cons x y))
            x)
-    :rule-lists ((car-cons equal-same))))
+    :rule-lists '((car-cons equal-same))))
 
 (deftest
   (must-fail
@@ -40,7 +40,7 @@
      (equal (car (cons x y))
             y ;; should be x
             )
-     :rules (car-cons equal-same))))
+     :rules '(car-cons equal-same))))
 
 ;; Correct theorem but no rules given to prove it
 (deftest
@@ -57,7 +57,7 @@
   (defthm-axe-basic test
     (equal (car (cons x y))
            x)
-    :rules ((rules1))))
+    :rules '((rules1))))
 
 
 (deftest
@@ -67,7 +67,7 @@
   (defthm-axe-basic test
     (equal (car (cons x y))
            x)
-    :rules ((rules1))))
+    :rules '((rules1))))
 
 (deftest
   (defun rules1 ()
@@ -76,14 +76,14 @@
   (defthm-axe-basic test
     (equal (car (cons x y))
            x)
-    :rule-lists (((rules1)))))
+    :rule-lists '(((rules1)))))
 
 ;; Test :eval
 (deftest
   (defthm-axe-basic test
     (:eval '(equal (car (cons x y))
                    x))
-    :rules (car-cons equal-same)))
+    :rules '(car-cons equal-same)))
 
 ;; Test :eval
 (deftest
@@ -92,7 +92,7 @@
                    x))
   (defthm-axe-basic test
     (:eval (create-form))
-    :rules (car-cons equal-same)))
+    :rules '(car-cons equal-same)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,7 +213,7 @@
 ;todo
 ;; (defthm-axe-basic implies-boolor-1
 ;;   (implies (boolor (natp x) (natp y)) (natp y))
-;;   :rules (implies booleanp-of-boolor)
+;;   :rules '(implies booleanp-of-boolor)
 ;;   )
 
 (defthm-axe-basic if-1
@@ -224,7 +224,7 @@
 (defthm-axe-basic if-2
   (implies (member-equal '1 x)
            (equal (if (member-equal '1 x) x y) x))
-;  :rules (implies equal-same)
+;  :rules '(implies equal-same)
   :rule-classes nil
   )
 
@@ -252,7 +252,7 @@
      (implies (and (true-listp x)
                    (equal 3 (len x)))
               (equal (len x) y))
-     :rules (implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal) ;todo: few to none of these rules should need to be given explicitly
+     :rules '(implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal) ;todo: few to none of these rules should need to be given explicitly
      :rule-classes nil
      )))
 
@@ -268,7 +268,7 @@
 ;;     (implies (and (true-listp x)
 ;;                   (equal 3 (len x)))
 ;;              (equal (foo x) (foo (cons (car x) (cons (cadr x) (cons (caddr x) nil))))))
-;;     :rules (implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal BOOLAND-OF-T BOOL-FIX$INLINE BOOLAND-OF-NIL-ARG1
+;;     :rules '(implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal BOOLAND-OF-T BOOL-FIX$INLINE BOOLAND-OF-NIL-ARG1
 ;;                     BOOLAND-OF-constant-when-NON-NIL-ARG2) ;todo: few to none of these rules should need to be given explicitly
 ;;     :rule-classes nil
 ;;     ))
@@ -281,7 +281,7 @@
   ;; requires splitting if we have no if-lifting rules
   (defthm-axe-basic split-1
     (natp (if (natp x) 3 4))
-    :rules (implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal) ;todo: few to none of these rules should need to be given explicitly
+    :rules '(implies equal-same if-becomes-boolif BOOLIF-WHEN-QUOTEP-ARG3 booleanp-of-booland booleanp-of-equal) ;todo: few to none of these rules should need to be given explicitly
     :rule-classes nil
     ))
 
@@ -480,7 +480,7 @@
   (defthm-axe-basic free-1
     (implies (unsigned-byte-p 16 x)
              (integerp x))
-    :rules (integerp-when-unsigned-byte-p)))
+    :rules '(integerp-when-unsigned-byte-p)))
 
 ;; no hints given
 (must-fail

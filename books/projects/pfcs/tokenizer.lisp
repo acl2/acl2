@@ -1,8 +1,9 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
@@ -14,6 +15,11 @@
 (include-book "lexer")
 
 (include-book "projects/abnf/tree-utilities" :dir :system)
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,8 +40,7 @@
   (xdoc::topstring
    (xdoc::p
     "Does not look at details of the internal structure."))
-  (and (abnf::treep tree)
-       (abnf::tree-case tree :nonleaf)
+  (and (abnf::tree-case tree :nonleaf)
        (equal (abnf::tree-nonleaf->rulename? tree)
               (abnf::rulename rulename-string))))
 
@@ -189,30 +194,3 @@
        ((when (reserrp subtoken-trees))
         (reserrf "problem with structure of lexeme tree")))
     subtoken-trees))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-;; example
-
-(defun subtoken-treep (tree)
-  (or (is-tree-rulename? tree "identifier")
-      (is-tree-rulename? tree "integer")
-      (is-tree-rulename? tree "operator")
-      (is-tree-rulename? tree "separator")))
-
-(defun subtoken-tree-listp (tl)
-  (if (endp tl)
-      t
-    (and (subtoken-treep (car tl))
-         (subtoken-tree-listp (cdr tl)))))
-
-(assert-event
- (let ((subtoken-trees
-(tokenize-pfcs "boolean_and(x,y,z) := {
-  x * y == z
-}
-boolean_and(w0, w1, w2)")))
-  (and (not (reserrp subtoken-trees))
-       (subtoken-tree-listp subtoken-trees))))
