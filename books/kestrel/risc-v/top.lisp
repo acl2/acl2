@@ -18,7 +18,7 @@
 (include-book "decoding-executable")
 (include-book "decoding-of-encoding")
 (include-book "encoding-of-decoding")
-(include-book "decoding-as-inverse")
+(include-book "decoding-correct")
 (include-book "states")
 (include-book "reads-over-writes")
 (include-book "semantics")
@@ -88,7 +88,7 @@
                     decoding-executable
                     decoding-of-encoding
                     encoding-of-decoding
-                    decoding-as-inverse
+                    decoding-correct
                     states
                     reads-over-writes
                     semantics

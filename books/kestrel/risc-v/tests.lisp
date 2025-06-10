@@ -13,7 +13,7 @@
 
 (include-book "execution")
 (include-book "reads-over-writes")
-(include-book "decoding-as-inverse")
+(include-book "decoding-correct")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
