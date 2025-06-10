@@ -11,13 +11,14 @@
 
 (in-package "RISCV")
 
-(include-book "decoding")
 (include-book "semantics64")
+
+(include-book "../executable/decoding-executable")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ execution64
-  :parents (execution)
+  :parents (rv64im)
   :short "Model of execution for RV64IM."
   :long
   (xdoc::topstring
@@ -45,7 +46,7 @@
   (b* (((when (error64p stat)) (state64-fix stat))
        (pc (read64-pc stat))
        (enc (read64-mem-ubyte32-lendian pc stat))
-       (instr? (decode enc (feat-rv64im-le)))
+       (instr? (decodex enc (feat-rv64im-le)))
        ((unless instr?) (error64 stat)))
     (exec64-instr instr? pc stat))
   :hooks (:fix))

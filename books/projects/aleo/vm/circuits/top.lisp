@@ -13,6 +13,17 @@
 
 (include-book "boolean-and")
 (include-book "boolean-assert")
+(include-book "boolean-assert-eq")
+(include-book "boolean-assert-neq")
+(include-book "boolean-assert-true")
+(include-book "boolean-eq")
+(include-book "boolean-if")
+(include-book "boolean-nand")
+(include-book "boolean-neq")
+(include-book "boolean-nor")
+(include-book "boolean-not")
+(include-book "boolean-or")
+(include-book "boolean-xor")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,4 +61,15 @@
                  "ACL2-2023 Workshop paper")
     "."))
   :order-subtopics (boolean-and
-                    boolean-assert))
+                    boolean-assert
+                    boolean-assert-eq
+                    boolean-assert-neq
+                    boolean-assert-true
+                    boolean-eq
+                    boolean-if
+                    boolean-nand
+                    boolean-neq
+                    boolean-nor
+                    boolean-not
+                    boolean-or
+                    boolean-xor))

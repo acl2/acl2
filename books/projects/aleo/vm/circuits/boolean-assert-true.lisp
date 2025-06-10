@@ -24,63 +24,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ boolean-and
+(defxdoc+ boolean-assert-true
   :parents (circuits)
   :short "Formalization and verification of a circuit
-          for boolean conjunction."
+          for asserting that a boolean is true."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Given two field elements @($x$) and @($y$) representing booleans
-     (i.e. such that each field element is either 0 or 1;
+    "Given a field element @($x$) representing a boolean
+     (i.e. such that the field element is either 0 or 1;
      see @(see boolean-assert)),
-     their conjunction @($z$) is obtained via a constraint of the form")
+     this circuit constrains it to be `true`, i.e. to be 1,
+     via a single constraint of the form")
    (xdoc::@[]
-    "(x) (y) = (z)")
+    "(x) (1) = (1)")
    (xdoc::p
-    "which defines @($z$) to be 1 if both @($x$) and @($y$) are 1, otherwise 0.
-     Thus, @($z$) is boolean (0 or 1) if both @($x$) and @($y$) are."))
+    "which defines @($y$) to be 1 if @($x$) is 0, or 0 if @($x$) is 1.
+     Thus, @($y$) is boolean (0 or 1) if @($x$) is.")
+   (xdoc::p
+    "This could be a more general to assert that a field element is 1.
+     We may replace this circuit with that one at some point."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-and-spec ((x (pfield::fep x prime))
-                          (y (pfield::fep y prime))
-                          (z (pfield::fep z prime))
-                          (prime primep))
-  :guard (and (bitp x) (bitp y))
+(define boolean-assert-true-spec ((x (pfield::fep x prime))
+                                  (prime primep))
+  :guard (bitp x)
   (declare (ignore prime))
   :returns (yes/no booleanp)
   :short "Specification of the circuit."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We use an @(tsee if).
-     An alternative is to use @(tsee logand)."))
-  (equal z (if (and (= x 1) (= y 1)) 1 0))
-
-  ///
-
-  (defruled bitp-z-when-boolean-and-spec
-    (implies (and (boolean-and-spec x y z prime)
-                  (bitp x)
-                  (bitp y))
-             (bitp z))))
+  (= x 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-and-circuit ()
+(define boolean-assert-true-circuit ()
   :returns (pdef pfcs::definitionp)
   :short "Construction of the circuit."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is a PFCS definition with a single equality constraint
-     of the form described in @(see boolean-and)."))
+     of the form described in @(see boolean-assert-true)."))
   (pfcs::parse-def
-   "boolean_and(x, y, z) := {
-      (x) * (y) == (z)
+   "boolean_assert_true(x) := {
+        (x) * (1) == (1)
     }")
 
   ///
@@ -95,16 +84,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection boolean-and-lifting
+(defsection boolean-assert-true-lifting
   :short "Lifting of the circuit to a predicate."
 
-  (pfcs::lift (boolean-and-circuit)
-              :pred boolean-and-pred
+  (pfcs::lift (boolean-assert-true-circuit)
+              :pred boolean-assert-true-pred
               :prime prime))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection boolean-and-correctness
+(defsection boolean-assert-true-correctness
   :short "Correctness of the circuit."
   :long
   (xdoc::topstring
@@ -114,30 +103,24 @@
    (xdoc::p
     "The extension to the circuit is boilerplate."))
 
-  (defruled boolean-and-pred-to-spec
+  (defruled boolean-assert-true-pred-to-spec
     (implies (and (primep prime)
                   (pfield::fep x prime)
-                  (pfield::fep y prime)
-                  (pfield::fep z prime)
-                  (bitp x)
-                  (bitp y))
-             (equal (boolean-and-pred x y z prime)
-                    (boolean-and-spec x y z prime)))
-    :enable (boolean-and-pred
-             boolean-and-spec))
+                  (bitp x))
+             (equal (boolean-assert-true-pred x prime)
+                    (boolean-assert-true-spec x prime)))
+    :enable (boolean-assert-true-pred
+             boolean-assert-true-spec))
 
-  (defruled boolean-and-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_and" defs)
-                         (boolean-and-circuit))
+  (defruled boolean-assert-true-circuit-to-spec
+    (implies (and (equal (pfcs::lookup-definition "boolean_assert_true" defs)
+                         (boolean-assert-true-circuit))
                   (primep prime)
                   (pfield::fep x prime)
-                  (pfield::fep y prime)
-                  (pfield::fep z prime)
-                  (bitp x)
-                  (bitp y))
+                  (bitp x))
              (equal (pfcs::definition-satp
-                      "boolean_and" defs (list x y z) prime)
-                    (boolean-and-spec x y z prime)))
-    :in-theory '((:e boolean-and-circuit)
-                 definition-satp-to-boolean-and-pred
-                 boolean-and-pred-to-spec)))
+                      "boolean_assert_true" defs (list x) prime)
+                    (boolean-assert-true-spec x prime)))
+    :in-theory '((:e boolean-assert-true-circuit)
+                 definition-satp-to-boolean-assert-true-pred
+                 boolean-assert-true-pred-to-spec)))

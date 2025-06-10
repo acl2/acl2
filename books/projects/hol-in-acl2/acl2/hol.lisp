@@ -133,12 +133,6 @@
        (hol-typep (cdr p) hta t)
        (hol-valuep (car p) (cdr p) hta)))
 
-(defmacro hp-value (p)
-  `(car ,p))
-
-(defmacro hp-type (p)
-  `(cdr ,p))
-
 (defmacro make-hp (value type)
   `(cons ,value ,type))
 
@@ -310,6 +304,16 @@
   (and (consp x)
        (weak-hol-typep (cdr x) t)))
 
+(defun hp-value (p)
+; Hp-value is a function instead of macro so that it can be disabled.
+  (declare (xargs :guard (weak-hpp p)))
+  (car p))
+
+(defun hp-type (p)
+; Hp-type is a function instead of macro so that it can be disabled.
+  (declare (xargs :guard (weak-hpp p)))
+  (cdr p))
+
 (defun weak-hp-listp (x)
   (declare (xargs :guard t))
   (cond ((atom x) (null x))
@@ -421,7 +425,8 @@
 
   (declare (xargs :guard (and (weak-hpp x)
                               (weak-hpp y))))
-  (make-hp (insert (cons (domain y) x) y)
+  (make-hp (insert (cons (domain (hp-value y)) (hp-value x))
+                   (hp-value y))
            (hp-type y)))
 
 (defun hp-num (n)
