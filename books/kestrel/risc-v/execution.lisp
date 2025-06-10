@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "decoding-executable")
+(include-book "decoding")
 (include-book "semantics")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -51,16 +51,18 @@
   (b* (((when (errorp stat feat)) (stat-fix stat))
        (pc (read-pc stat feat))
        (enc (read-instruction pc stat feat))
-       (instr? (decodex enc feat))
+       (instr? (decode enc feat))
        ((unless instr?) (error stat feat)))
     (exec-instr instr? pc stat feat))
+  :guard-hints (("Goal" :in-theory (enable decode-iff-encoding-validp)))
   :hooks (:fix)
 
   ///
 
   (defret stat-validp-of-step
     (stat-validp new-stat feat)
-    :hyp (stat-validp stat feat)))
+    :hyp (stat-validp stat feat)
+    :hints (("Goal" :in-theory (enable decode-iff-encoding-validp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -12,8 +12,8 @@
 (in-package "RISCV")
 
 (include-book "execution")
-(include-book "encoding")
 (include-book "reads-over-writes")
+(include-book "decoding-as-inverse")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -54,6 +54,7 @@
                         33))))
  :enable (step
           encode
+          decode-is-decodex
           decodex
           exec-instr
           exec-op
@@ -84,6 +85,7 @@
                         -33))))
  :enable (step
           encode
+          decode-is-decodex
           decodex
           exec-instr
           exec-op
