@@ -26,7 +26,7 @@
 
 (defxdoc+ boolean-nor
   :parents (circuits)
-  :short "Formalization and verification of the circuit
+  :short "Formalization and verification of a circuit
           for boolean negated (inclusive) disjunction."
   :long
   (xdoc::topstring

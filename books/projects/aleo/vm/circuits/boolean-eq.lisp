@@ -23,7 +23,7 @@
 
 (defxdoc+ boolean-eq
   :parents (circuits)
-  :short "Formalization and verification of the circuit
+  :short "Formalization and verification of a circuit
           for boolean non-equality."
   :long
   (xdoc::topstring

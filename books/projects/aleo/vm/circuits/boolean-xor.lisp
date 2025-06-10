@@ -26,7 +26,7 @@
 
 (defxdoc+ boolean-xor
   :parents (circuits)
-  :short "Formalization and verification of the circuit
+  :short "Formalization and verification of a circuit
           for boolean exclusive disjunction."
   :long
   (xdoc::topstring

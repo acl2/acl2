@@ -26,7 +26,7 @@
 
 (defxdoc+ boolean-if
   :parents (circuits)
-  :short "Formalization and verification of the circuit
+  :short "Formalization and verification of a circuit
           for boolean ternary conditional."
   :long
   (xdoc::topstring
