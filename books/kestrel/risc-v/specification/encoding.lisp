@@ -13,7 +13,7 @@
 
 (include-book "instructions")
 
-(include-book "../logappn")
+(include-book "../library-extensions/logappn")
 
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
@@ -23,7 +23,7 @@
 (include-book "kestrel/fty/ubyte32" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "../library-extensions"))
+(local (include-book "../library-extensions/theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
