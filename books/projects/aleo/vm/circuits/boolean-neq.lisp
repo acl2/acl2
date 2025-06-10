@@ -54,12 +54,7 @@
     (implies (and (boolean-neq-spec x y z prime)
                   (bitp x)
                   (bitp y))
-             (bitp z)))
-
-  (defruled boolean-neq-spec-to-xor-spec
-    (equal (boolean-neq-spec x y z prime)
-           (boolean-xor-spec x y z prime))
-    :enable boolean-xor-spec))
+             (bitp z))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,9 +97,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The proof takes advantage of the correctness theorem of
-     the boolean exclusive disjunction predicate,
-     which is the definition of the boolean on-equality predicate."))
+    "We expand the boolean non-equality predicate
+     to the boolean exclusive disjunction predicate,
+     and we use its correctness theorem to rewrite it to its specification.
+     We expand both specifications, which are equal.")
+   (xdoc::p
+    "The extension to the circuit is boilerplate."))
 
   (defruled boolean-neq-pred-to-spec
     (implies (and (primep prime)
@@ -117,7 +115,8 @@
                     (boolean-neq-spec x y z prime)))
     :enable (boolean-neq-pred
              boolean-xor-pred-to-spec
-             boolean-neq-spec-to-xor-spec))
+             boolean-neq-spec
+             boolean-xor-spec))
 
   (defruled boolean-neq-circuit-to-spec
     (implies (and (equal (pfcs::lookup-definition "boolean_neq" defs)
