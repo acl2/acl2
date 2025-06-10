@@ -83,11 +83,14 @@
      as nouns or parenthentically."))
   :order-subtopics (features
                     instructions
+                    encoding
+                    decoding
+                    decoding-executable
+                    decoding-of-encoding
+                    encoding-of-decoding
+                    decoding-as-inverse
                     states
                     reads-over-writes
-                    encoding
-                    decoding-executable
-                    decoding-as-inverse
                     semantics
                     execution
                     rv32im
