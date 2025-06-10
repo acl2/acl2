@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ rv64im
-  :parents (riscv)
+  :parents (specializations)
   :short "Specialized model for RV64IM."
   :long
   (xdoc::topstring

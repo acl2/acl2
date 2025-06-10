@@ -13,8 +13,7 @@
 
 (include-book "specification")
 (include-book "executable")
-(include-book "rv32im")
-(include-book "rv64im")
+(include-book "specializations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,5 +72,4 @@
      as nouns or parenthentically."))
   :order-subtopics (specification
                     executable
-                    rv32im
-                    rv64im))
+                    specializations))
