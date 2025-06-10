@@ -61,7 +61,7 @@
   (xdoc::topstring
    (xdoc::p
     "We use an @(tsee if).
-     An alternative is to use @(tsee logor)."))
+     An alternative is to use @(tsee logior)."))
   (equal z (if (and (= x 0) (= y 0)) 0 1))
 
   ///
