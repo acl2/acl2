@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "execution")
+(include-book "specification/execution")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -26,7 +26,7 @@
 
 (defxdoc+ boolean-assert
   :parents (circuits)
-  :short "Formalization and verification of the circuit
+  :short "Formalization and verification of a circuit
           for asserting that a field element is a boolean (i.e. 0 or 1)."
   :long
   (xdoc::topstring

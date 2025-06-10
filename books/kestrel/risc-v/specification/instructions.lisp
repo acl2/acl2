@@ -27,7 +27,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ instructions
-  :parents (riscv)
+  :parents (specification)
   :short "Model of instructions."
   :long
   (xdoc::topstring

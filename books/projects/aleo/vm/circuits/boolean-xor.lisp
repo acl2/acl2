@@ -24,28 +24,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ boolean-and
+(defxdoc+ boolean-xor
   :parents (circuits)
   :short "Formalization and verification of a circuit
-          for boolean conjunction."
+          for boolean exclusive disjunction."
   :long
   (xdoc::topstring
    (xdoc::p
     "Given two field elements @($x$) and @($y$) representing booleans
      (i.e. such that each field element is either 0 or 1;
      see @(see boolean-assert)),
-     their conjunction @($z$) is obtained via a constraint of the form")
+     their exclusive disjunction @($z$) is obtained via
+     a constraint of the form")
    (xdoc::@[]
-    "(x) (y) = (z)")
+    "(2x) (y) = (x + y - z)")
    (xdoc::p
-    "which defines @($z$) to be 1 if both @($x$) and @($y$) are 1, otherwise 0.
+    "which is equivalent to")
+   (xdoc::@[]
+    "z = x + y -2xy")
+   (xdoc::p
+    "which defines @($z$) to be
+     1 if @($x$) is 1 and @($y$) is 0,
+     1 if @($x$) is 0 and @($y$) is 1,
+     0 if @($x$) and @($y$) are both 1, and
+     0 if @($x$) and @($y$) are both 0.
      Thus, @($z$) is boolean (0 or 1) if both @($x$) and @($y$) are."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-and-spec ((x (pfield::fep x prime))
+(define boolean-xor-spec ((x (pfield::fep x prime))
                           (y (pfield::fep y prime))
                           (z (pfield::fep z prime))
                           (prime primep))
@@ -57,20 +66,20 @@
   (xdoc::topstring
    (xdoc::p
     "We use an @(tsee if).
-     An alternative is to use @(tsee logand)."))
-  (equal z (if (and (= x 1) (= y 1)) 1 0))
+     An alternative is to use @(tsee logxor)."))
+  (equal z (if (= x y) 0 1))
 
   ///
 
-  (defruled bitp-z-when-boolean-and-spec
-    (implies (and (boolean-and-spec x y z prime)
+  (defruled bitp-z-when-boolean-xor-spec
+    (implies (and (boolean-xor-spec x y z prime)
                   (bitp x)
                   (bitp y))
              (bitp z))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-and-circuit ()
+(define boolean-xor-circuit ()
   :returns (pdef pfcs::definitionp)
   :short "Construction of the circuit."
   :long
@@ -79,8 +88,8 @@
     "This is a PFCS definition with a single equality constraint
      of the form described in @(see boolean-and)."))
   (pfcs::parse-def
-   "boolean_and(x, y, z) := {
-      (x) * (y) == (z)
+   "boolean_xor(x, y, z) := {
+      (2 * x) * (y) == (x + y + -1 * z)
     }")
 
   ///
@@ -95,40 +104,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection boolean-and-lifting
+(defsection boolean-xor-lifting
   :short "Lifting of the circuit to a predicate."
 
-  (pfcs::lift (boolean-and-circuit)
-              :pred boolean-and-pred
+  (pfcs::lift (boolean-xor-circuit)
+              :pred boolean-xor-pred
               :prime prime))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection boolean-and-correctness
+(defsection boolean-xor-correctness
   :short "Correctness of the circuit."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The equivalence between predicate and specification
-     is proved automatically via the prime fields library rules.")
+    "We need to split into cases based on whether the prime is 2 or not.
+     This is not too surprising,
+     because of the 2 that appears in the constraints,
+     which is the same as 0 if the prime happens to be 2.
+     It turns out that, if the prime is 2,
+     the constraint still works (i.e. it realizes exclusive disjunction);
+     but apparently ACL2 needs to consider this case separately.
+     We also need to enable bitp for this proof to work.
+     We use the prime fields library rules as with other circuits.")
    (xdoc::p
     "The extension to the circuit is boilerplate."))
 
-  (defruled boolean-and-pred-to-spec
+  (defruled boolean-xor-pred-to-spec
     (implies (and (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep z prime)
                   (bitp x)
                   (bitp y))
-             (equal (boolean-and-pred x y z prime)
-                    (boolean-and-spec x y z prime)))
-    :enable (boolean-and-pred
-             boolean-and-spec))
+             (equal (boolean-xor-pred x y z prime)
+                    (boolean-xor-spec x y z prime)))
+    :cases ((equal prime 2))
+    :enable (boolean-xor-pred
+             boolean-xor-spec
+             bitp))
 
-  (defruled boolean-and-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_and" defs)
-                         (boolean-and-circuit))
+  (defruled boolean-xor-circuit-to-spec
+    (implies (and (equal (pfcs::lookup-definition "boolean_xor" defs)
+                         (boolean-xor-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
@@ -136,8 +154,8 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      "boolean_and" defs (list x y z) prime)
-                    (boolean-and-spec x y z prime)))
-    :in-theory '((:e boolean-and-circuit)
-                 definition-satp-to-boolean-and-pred
-                 boolean-and-pred-to-spec)))
+                      "boolean_xor" defs (list x y z) prime)
+                    (boolean-xor-spec x y z prime)))
+    :in-theory '((:e boolean-xor-circuit)
+                 definition-satp-to-boolean-xor-pred
+                 boolean-xor-pred-to-spec)))
