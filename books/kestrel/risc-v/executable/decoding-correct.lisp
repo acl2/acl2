@@ -30,7 +30,7 @@
   (xdoc::topstring
    (xdoc::p
     "We use the inversion theorems proved in
-     @(see decoding-left-inverse) and @(see encoding-right-inverse)
+     @(see decoding-left-inverse) and @(see decoding-right-inverse)
      to show that the declarative definition of the decoder
      is equivalent to the executable definition of the decoder."))
   :order-subtopics t

@@ -42,7 +42,7 @@
      the instruction semantic functions do not depend on decoding,
      because they operate on the instruction abstract syntax
      produced by decoding.
-     We plan to provide soon versions of @(tsee step) and @(tsee stepx)
+     We plan to provide soon versions of @(tsee step) and @(tsee stepn)
      that depend on @(tsee decodex) instead of @(tsee decode)."))
   :order-subtopics (decoding-executable
                     decoding-left-inverse
