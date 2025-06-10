@@ -12,7 +12,7 @@
 (in-package "RISCV")
 
 (include-book "specification/top")
-(include-book "executable")
+(include-book "executable/top")
 (include-book "specializations")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

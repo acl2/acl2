@@ -13,11 +13,11 @@
 
 (include-book "decoding-executable")
 
-(include-book "specification/encoding")
-
-(local (include-book "library-extensions"))
+(include-book "../specification/encoding")
 
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
+
+(local (include-book "../library-extensions"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

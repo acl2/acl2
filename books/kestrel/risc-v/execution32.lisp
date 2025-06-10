@@ -11,8 +11,9 @@
 
 (in-package "RISCV")
 
-(include-book "decoding-executable")
 (include-book "semantics32")
+
+(include-book "executable/decoding-executable")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

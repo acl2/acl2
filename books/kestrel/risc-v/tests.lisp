@@ -13,7 +13,7 @@
 
 (include-book "specification/execution")
 (include-book "specification/reads-over-writes")
-(include-book "decoding-correct")
+(include-book "executable/decoding-correct")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

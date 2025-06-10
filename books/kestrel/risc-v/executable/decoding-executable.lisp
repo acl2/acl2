@@ -11,16 +11,16 @@
 
 (in-package "RISCV")
 
-(include-book "specification/instructions")
+(include-book "../specification/instructions")
 
-(include-book "logappn")
+(include-book "../logappn")
 
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/ubyte3" :dir :system)
 (include-book "kestrel/fty/ubyte7" :dir :system)
 (include-book "kestrel/fty/ubyte32" :dir :system)
 
-(local (include-book "library-extensions"))
+(local (include-book "../library-extensions"))
 
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
