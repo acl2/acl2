@@ -17,7 +17,6 @@
 
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -34,7 +33,7 @@
    (xdoc::p
     "Given a field element @($x$) representing a boolean
      (i.e. such that the field element is either 0 or 1;
-     see @(tsee boolean-assert)),
+     see @(see boolean-assert)),
      its negation @($y$) is obtained via a constraint of the form")
    (xdoc::@[]
     "(1 - x) (1) = (y)")

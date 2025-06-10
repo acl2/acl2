@@ -33,7 +33,7 @@
    (xdoc::p
     "Given two field elements @($x$) and @($y$) representing booleans
      (i.e. such that each field element is either 0 or 1;
-     see @(tsee boolean-assert)),
+     see @(see boolean-assert)),
      their (inclusive) disjunction @($z$) is obtained via
      a constraint of the form")
    (xdoc::@[]

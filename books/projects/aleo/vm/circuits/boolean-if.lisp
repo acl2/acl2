@@ -33,7 +33,7 @@
    (xdoc::p
     "Given three field elements @($x$), @($y$), and @($z$) representing booleans
      (i.e. such that each field element is either 0 or 1;
-     see @(tsee boolean-assert)),
+     see @(see boolean-assert)),
      the result @($w$) of the ternary conditional
      with test @($x$), `then' branch @($y$), and `else' branch @($z$),
      is obtained via a constraint of the form")
