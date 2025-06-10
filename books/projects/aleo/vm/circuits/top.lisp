@@ -15,6 +15,7 @@
 (include-book "boolean-assert")
 (include-book "boolean-if")
 (include-book "boolean-nand")
+(include-book "boolean-neq")
 (include-book "boolean-nor")
 (include-book "boolean-not")
 (include-book "boolean-or")
@@ -59,6 +60,7 @@
                     boolean-assert
                     boolean-if
                     boolean-nand
+                    boolean-neq
                     boolean-nor
                     boolean-not
                     boolean-or
