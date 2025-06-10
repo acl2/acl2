@@ -504,3 +504,21 @@
                   (equal (bvchop size y) 0)))
   :hints (("Goal"
            :in-theory (enable bvplus bvchop-of-sum-cases))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvplus-of-bvplus-tighten-arg2
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2))
+           (equal (bvplus size (bvplus size2 x y) z)
+                  (bvplus size (bvplus size x y) z)))
+  :hints (("Goal" :in-theory (enable bvplus))))
+
+(defthm bvplus-of-bvplus-tighten-arg3
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2))
+           (equal (bvplus size x (bvplus size2 y z))
+                  (bvplus size x (bvplus size y z))))
+  :hints (("Goal" :in-theory (enable bvplus))))
