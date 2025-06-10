@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "decoding-of-encoding")
+(include-book "decoding-left-inverse")
 (include-book "encoding-of-decoding")
 (include-book "decoding")
 
@@ -29,7 +29,7 @@
   (xdoc::topstring
    (xdoc::p
     "We use the inversion theorems proved in
-     @(see decoding-of-encoding) and @(see encoding-of-decoding)
+     @(see decoding-left-inverse) and @(see encoding-of-decoding)
      to show that the declarative definition of the decoder
      is equivalent to the executable definition of the decoder."))
   :order-subtopics t

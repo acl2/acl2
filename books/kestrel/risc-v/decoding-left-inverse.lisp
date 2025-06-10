@@ -31,13 +31,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ decoding-of-encoding
+(defxdoc+ decoding-left-inverse
   :parents (encoding decoding)
   :short "Theorems about decoding applied to encoding."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We show that decoding is left inverse of encoding over valid instructions:
+    "We show that decoding is left inverse of encoding
+     (i.e. that encoding is right inverse of decoding)
+     over valid instructions:
      encoding a valid instruction and then decoding it
      yields the original instruction.
      As a consequence, encoding is injective over valid instructions:
