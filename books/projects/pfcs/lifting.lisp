@@ -244,6 +244,20 @@
         (raise "Internal error: ~x0 has the wrong type." info)))
     (lift-info->pred info)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-rel-name-set-to-list ((names string-setp) (wrld plist-worldp))
+  :returns (syms symbol-listp)
+  :short "Lift a set of PFCS relation names to a list of ACL2 symbols."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The order of the list is according to
+     the total order that osets are based on."))
+  (cond ((set::emptyp names) nil)
+        (t (cons (lift-rel-name (set::head names) wrld)
+                 (lift-rel-name-set-to-list (set::tail names) wrld)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-expression ((expr expressionp) (prime symbolp) state)
@@ -480,17 +494,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm-called-lift-thms ((rels symbol-listp))
-  :returns (called-lift-thms)
+(define lift-thm-called-lift-thms ((rels string-setp) (wrld plist-worldp))
+  :returns (called-lift-thms symbol-listp)
   :short "List of lifting theorems for a set of relations."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are used as rewrite rules in the caller's lifting theorem."))
-  (b* (((when (endp rels)) nil)
-       (rel (car rels)))
-    (cons (acl2::packn-pos (list 'definition-satp-to- rel) rel)
-          (lift-thm-called-lift-thms (cdr rels)))))
+  (b* (((when (set::emptyp rels)) nil)
+       (rel (set::head rels))
+       (rel-pred (lift-rel-name rel wrld)))
+    (cons (acl2::packn-pos (list 'definition-satp-to- rel-pred) rel-pred)
+          (lift-thm-called-lift-thms (set::tail rels) wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -743,8 +758,7 @@
         (acl2::packn-pos (list 'definition-satp-to- pred) pred))
        (def-hyps (lift-thm-def-hyps def wrld))
        (rels (constraint-list-rels def.body))
-       (called-lift-thms (lift-thm-called-lift-thms
-                          (lift-var-name-set-to-list rels state)))
+       (called-lift-thms (lift-thm-called-lift-thms rels wrld))
        (type-presc-rules
         (lift-thm-type-prescriptions-for-called-preds rels wrld))
 
