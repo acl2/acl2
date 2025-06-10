@@ -55,9 +55,24 @@
   (if (encoding-validp enc feat)
       (encoding-valid-witness (ubyte32-fix enc) (feat-fix feat))
     nil)
-  :hooks (:fix)
 
   ///
+
+  (fty::deffixequiv decode
+    :args ((enc ubyte32p) (feat featp)))
+
+  (defret instrp-of-decode
+    (instrp instr?)
+    :hyp (encoding-validp enc feat))
+
+  (defret instr-validp-of-decode
+    (instr-validp instr? feat)
+    :hyp (encoding-validp enc feat)
+    :hints (("Goal"
+             :use (:instance instr-validp-of-encoding-valid-witness
+                             (enc (ubyte32-fix enc))
+                             (feat (feat-fix feat)))
+             :in-theory (disable instr-validp-of-encoding-valid-witness))))
 
   (defruled encode-of-decode
     (implies (encoding-validp enc feat)
@@ -70,4 +85,12 @@
                      (featp feat)
                      (encoding-validp enc feat))
                 (equal (encode (decode enc feat) feat)
-                       enc))))))
+                       enc)))))
+
+  (defruled decode-iff-encoding-validp
+    (iff (decode enc feat)
+         (encoding-validp enc feat))
+    :use (:instance instrp-of-encoding-valid-witness
+                    (enc (ubyte32-fix enc))
+                    (feat (feat-fix feat)))
+    :disable instrp-of-encoding-valid-witness))
