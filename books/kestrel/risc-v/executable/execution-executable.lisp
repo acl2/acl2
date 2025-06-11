@@ -79,13 +79,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection stepx
+(defsection stepnx
   :short "Executable multi-step execution function."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is obtained from @(tsee stepn) via @(tsee apt::simplify),
-     passing @(tsee step-is-stepx) to propagate it.
+     passing @('step-is-stepx') to propagate it.
      The result is the same as @(tsee stepn),
      but with a call of @(tsee stepx) instead of @(tsee step).
      The generated theorem that
