@@ -792,9 +792,7 @@
              get-opcode-of-encode-of-instr-op-imms32
              get-fields-itype-of-encode-of-instr-op-imms32
              instr-validp
-             encode-op-imms32-funct
-             feat-32p
-             feat-64p))
+             encode-op-imms32-funct))
 
   (defruled decodex-of-encode-of-instr-op-imms64
     (implies (instr-validp (instr-op-imms64 funct rd rs1 imm) feat)
