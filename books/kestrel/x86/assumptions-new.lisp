@@ -130,14 +130,16 @@
 ;; Returns (mv erp assumptions).
 ;; Generates assumptions asserting that a chunk of data has been loaded into memory (e.g., a section or segment of the executable).
 ;; Also generated assumptions that the addresses are canonical and that the chunk is disjoint from the saved return address and future stack words.
-(defund assumptions-for-memory-chunk (addr bytes relp state-var base-var stack-slots-needed bvp)
+(defund assumptions-for-memory-chunk (addr bytes relp state-var base-var stack-slots-needed bvp new-canonicalp)
   (declare (xargs :guard (and (natp addr)
                               (acl2::byte-listp bytes)
                               (booleanp relp)
                               (symbolp state-var)
                               (symbolp base-var) ; rename base-address-var?
                               (natp stack-slots-needed)
-                              (booleanp bvp))))
+                              (booleanp bvp)
+                              (booleanp new-canonicalp)
+                              )))
   (let ((numbytes (len bytes)))
     (if relp
         ;; Relative addresses make everything relative to the base-var:
@@ -148,7 +150,7 @@
           (mv nil ; no error
               (append
                 ;; Assert that the addresses are canonical:
-                (if bvp ; todo: pass and check new-canonicalp?
+                (if new-canonicalp
                     `((integerp ,base-var) ; needed for things like turning + into bvplus
                       (canonical-regionp ,(+ 1 numbytes)  ; todo: why the +1? (see above)
                                          ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var))))
@@ -214,14 +216,14 @@
                     nil))))))))
 
 (defthm true-listp-of-mv-nth-1-of-assumptions-for-memory-chunk
-  (true-listp (mv-nth 1 (assumptions-for-memory-chunk addr bytes relp state-var base-var stack-slots-needed bvp)))
+  (true-listp (mv-nth 1 (assumptions-for-memory-chunk addr bytes relp state-var base-var stack-slots-needed bvp new-canonicalp)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable assumptions-for-memory-chunk))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions)
-(defund assumptions-for-elf64-segment (program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp)
+(defund assumptions-for-elf64-segment (program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp new-canonicalp)
   (declare (xargs :guard (and (alistp program-header-table-entry)
                               (booleanp relp)
                               (symbolp state-var)
@@ -229,7 +231,8 @@
                               (natp stack-slots-needed)
                               (acl2::byte-listp bytes)
                               (equal bytes-len (len bytes))
-                              (booleanp bvp))
+                              (booleanp bvp)
+                              (booleanp new-canonicalp))
                   :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep)))))
   (b* ((type (lookup-eq :type program-header-table-entry))
        ((when (not (eq type :pt_load)))
@@ -255,17 +258,17 @@
              (bytes (if (posp numzeros)
                         (append bytes (acl2::repeat numzeros 0)) ; optimize?
                       bytes)))
-          (assumptions-for-memory-chunk vaddr bytes relp state-var base-var stack-slots-needed bvp))))))
+          (assumptions-for-memory-chunk vaddr bytes relp state-var base-var stack-slots-needed bvp new-canonicalp))))))
 
 (defthm true-listp-of-mv-nth-1-of-assumptions-for-elf64-segment
-  (true-listp (mv-nth 1 (assumptions-for-elf64-segment program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp)))
+  (true-listp (mv-nth 1 (assumptions-for-elf64-segment program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp new-canonicalp)))
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segment))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions).
 ;; TODO: Check for contradiction due to overlap of segments (after perhaps adding zeros at the end)
-(defund assumptions-for-elf64-segments (program-header-table relp state-var base-var stack-slots-needed bytes bytes-len bvp acc)
+(defund assumptions-for-elf64-segments (program-header-table relp state-var base-var stack-slots-needed bytes bytes-len bvp new-canonicalp acc)
   (declare (xargs :guard (and (acl2::elf-program-header-tablep program-header-table)
                               (booleanp relp)
                               (symbolp state-var)
@@ -274,6 +277,7 @@
                               (acl2::byte-listp bytes)
                               (equal bytes-len (len bytes))
                               (booleanp bvp)
+                              (booleanp new-canonicalp)
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
                                                            acl2::true-listp-when-pseudo-term-listp-2)))))
@@ -281,22 +285,22 @@
       (mv nil (reverse acc))
     (b* ((program-header-table-entry (first program-header-table))
          ((mv erp assumptions)
-          (assumptions-for-elf64-segment program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp))
+          (assumptions-for-elf64-segment program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp new-canonicalp))
          ((when erp) (mv erp nil)))
       (assumptions-for-elf64-segments (rest program-header-table) relp state-var base-var stack-slots-needed bytes bytes-len
-                                      bvp
+                                      bvp new-canonicalp
                                       (revappend assumptions acc) ; since they will be reversed again at the end
                                       ))))
 
 (defthm true-listp-of-mv-nth-1-of-assumptions-for-elf64-segments
   (implies (true-listp acc)
-           (true-listp (mv-nth 1 (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes bytes-len bvp acc))))
+           (true-listp (mv-nth 1 (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes bytes-len bvp new-canonicalp acc))))
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segments))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp ASSUMPTIONS), where ASSUMPTIONS is a list of terms over the variables STATE-VAR and (perhaps BASE-VAR).
-(defund assumptions-for-elf64-sections-new (section-names position-independentp stack-slots-needed state-var base-var parsed-elf bvp acc)
+(defund assumptions-for-elf64-sections-new (section-names position-independentp stack-slots-needed state-var base-var parsed-elf bvp new-canonicalp acc)
   (declare (xargs :guard (and (string-listp section-names)
                               (booleanp position-independentp)
                               (natp stack-slots-needed)
@@ -304,6 +308,7 @@
                               (symbolp base-var)
                               (parsed-elfp parsed-elf)
                               (booleanp bvp)
+                              (booleanp new-canonicalp)
                               (true-listp acc))))
   (if (endp section-names)
       (mv nil (reverse acc))
@@ -316,21 +321,21 @@
                (bytes (acl2::get-elf-section-bytes section-name parsed-elf))
                ((when (not bytes)) ; the call to separate would be ill-guarded if there are no bytes?
                 (cw "(NOTE: section ~s0 is empty.)~%" section-name)
-                (assumptions-for-elf64-sections-new (rest section-names) position-independentp stack-slots-needed state-var base-var parsed-elf bvp acc))
+                (assumptions-for-elf64-sections-new (rest section-names) position-independentp stack-slots-needed state-var base-var parsed-elf bvp new-canonicalp acc))
                ((mv erp assumptions)
                 (assumptions-for-memory-chunk addr
                                               bytes
                                               position-independentp
-                                              state-var base-var stack-slots-needed bvp))
+                                              state-var base-var stack-slots-needed bvp new-canonicalp))
                ((when erp) (mv erp nil)))
-            (assumptions-for-elf64-sections-new (rest section-names) position-independentp stack-slots-needed state-var base-var parsed-elf bvp
+            (assumptions-for-elf64-sections-new (rest section-names) position-independentp stack-slots-needed state-var base-var parsed-elf bvp new-canonicalp
                                                 ;; will be reversed again, as part of the ACC, when this function finishes:
                                                 (append (reverse assumptions) acc)))
-        (assumptions-for-elf64-sections-new (rest section-names) position-independentp stack-slots-needed state-var base-var parsed-elf bvp acc)))))
+        (assumptions-for-elf64-sections-new (rest section-names) position-independentp stack-slots-needed state-var base-var parsed-elf bvp new-canonicalp acc)))))
 
 (defthm true-listp-of-mv-nth-1-of-assumptions-for-elf64-sections-new
   (implies (true-listp acc)
-           (true-listp (mv-nth 1 (assumptions-for-elf64-sections-new section-names position-independentp stack-slots-needed state-var base-var parsed-elf bvp acc))))
+           (true-listp (mv-nth 1 (assumptions-for-elf64-sections-new section-names position-independentp stack-slots-needed state-var base-var parsed-elf bvp new-canonicalp acc))))
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-sections-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -341,24 +346,26 @@
 (defund make-standard-assumptions64-new (stack-slots-needed
                                          state-var
                                          base-var ; only needed if position-independentp
-                                         target-address
+                                         target-offset
                                          position-independentp
                                          bvp)
   (declare (xargs :guard (and (natp stack-slots-needed)
                               (symbolp state-var)
                               (symbolp base-var)
-                              (natp target-address)
+                              (natp target-offset)
                               (booleanp position-independentp)
                               (booleanp bvp))))
   (let ((target-address-term (if position-independentp
+                                 ;; Position-independent, so the target is the base-var plus the target-offset:
                                  (if bvp
-                                     (if (= 0 target-address)
-                                         `(logext 64 ,base-var)
-                                       `(logext 64 (bvplus 64 ',target-address ,base-var)))
-                                   (if (= 0 target-address)
-                                       base-var
-                                     `(binary-+ ',target-address ,base-var)))
-                               (acl2::enquote target-address))))
+                                     (if (= 0 target-offset)
+                                         `(logext 64 ,base-var) ; avoids adding 0
+                                       `(logext 64 (bvplus 64 ',target-offset ,base-var)))
+                                   (if (= 0 target-offset)
+                                       base-var ; avoids adding 0
+                                     `(binary-+ ',target-offset ,base-var)))
+                               ;; Not position-independent, so the target is a concrete address:
+                               (acl2::enquote target-offset))))
     (append (make-standard-state-assumptions-fn state-var)
             ;; Assumptions about the BASE-VAR:
             (if position-independentp
@@ -407,7 +414,7 @@
                         nil))))))
 
 (defthm true-listp-of-make-standard-assumptions64-new
-  (true-listp (make-standard-assumptions64-new stack-slots-needed state-var base-var target-address position-independentp  bvp)))
+  (true-listp (make-standard-assumptions64-new stack-slots-needed state-var base-var target-offset position-independentp bvp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -422,6 +429,7 @@
                                type-assumptions-for-array-varsp
                                inputs-disjoint-from
                                bvp
+                               new-canonicalp
                                parsed-elf)
   (declare (xargs :guard (and (lifter-targetp target)
                               (booleanp position-independentp)
@@ -431,6 +439,7 @@
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
                               (booleanp bvp)
+                              (booleanp new-canonicalp)
                               (acl2::parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((program-header-table (acl2::parsed-elf-program-header-table parsed-elf))
@@ -469,14 +478,14 @@
        ;;         ;; use the explicitly given position-independentp:
        ;;         position-independentp))
        ;; Decide where to start lifting:
-       (target-address (if (eq :entry-point target)
+       (target-offset (if (eq :entry-point target)
                            (acl2::parsed-elf-entry-point parsed-elf)
                          (if (natp target)
                              target ; explicit address given (relative iff position-independentp)
                            ;; target is the name of a function:
                            (acl2::subroutine-address-elf target parsed-elf))))
-       ((when (not (natp target-address)))
-        (er hard? 'assumptions-elf64-new "Bad or missing lift target address: ~x0." target-address)
+       ((when (not (natp target-offset)))
+        (er hard? 'assumptions-elf64-new "Bad or missing lift target offset: ~x0." target-offset)
         (mv :bad-or-missing-subroutine-address nil nil))
 
        ;; Generate assumptions for the segments/sections (bytes are loaded, addresses are canonical, regions are disjoint from future stack words:
@@ -485,9 +494,9 @@
         (if (null program-header-table)
             ;; There are no segments, so we have to use the sections (TODO: WHICH ONES?):
             (assumptions-for-elf64-sections-new '(".text" ".data" ".rodata") ; todo: .bss, etc
-                                                position-independentp stack-slots-needed state-var base-var parsed-elf bvp nil)
+                                                position-independentp stack-slots-needed state-var base-var parsed-elf bvp new-canonicalp nil)
           ;;todo: check that there is at least one LOAD section:
-          (assumptions-for-elf64-segments program-header-table position-independentp state-var base-var stack-slots-needed bytes (len bytes) bvp nil)))
+          (assumptions-for-elf64-segments program-header-table position-independentp state-var base-var stack-slots-needed bytes (len bytes) bvp new-canonicalp nil)))
        ((when erp) (mv erp nil nil))
 
        ;; Generate assumptions for the inputs (introduce vars, canonical, disjointness from future stack space, disjointness from bytes loaded from the executable, disjointness from saved return address):
@@ -507,11 +516,11 @@
                                            ))))
     (mv nil ; no error
         (append ;; can't use this: not in normal form: (make-standard-state-assumptions-64-fn state-var) ; todo: put back, but these are untranslated!  should all the assumptions be generated untranslated (for presentation) and then translated?
-          (make-standard-assumptions64-new stack-slots-needed state-var base-var target-address position-independentp bvp)
+          (make-standard-assumptions64-new stack-slots-needed state-var base-var target-offset position-independentp bvp)
           segment-or-section-assumptions
           input-assumptions)
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-elf64-new
-  (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp stack-slots-needed state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from bvp parsed-elf)))
+  (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp stack-slots-needed state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from bvp new-canonicalp parsed-elf)))
   :hints (("Goal" :in-theory (enable assumptions-elf64-new))))

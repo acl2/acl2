@@ -738,6 +738,7 @@
                                            type-assumptions-for-array-varsp
                                            inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                            bvp
+                                           new-canonicalp
                                            parsed-executable)))
                  ((when erp) (mv erp nil nil nil nil state))
                  (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
@@ -774,7 +775,7 @@
                          (append
                            ;; todo: use this?
                            ;; (make-standard-assumptions64-new stack-slots 'x86 'base-address ; only needed if position-independentp
-                           ;;                                  target-address
+                           ;;                                  target-offset
                            ;;                                  position-independentp
                            ;;                                  bvp)
                            (make-standard-state-assumptions-fn state-var)
