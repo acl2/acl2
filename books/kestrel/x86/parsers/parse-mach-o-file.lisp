@@ -40,8 +40,10 @@
 ;; - Disadvantage: This tool does not yet support exotic load commands.
 
 ;; The constants in this file are from /usr/include/mach-o/loader.h on
-;; my Mac.  I believe they all agree with the ones in
-;; projects/x86isa/tools/execution/exec-loaders/mach-o/mach-o-constants.lisp.
+;; my Mac.  I believe that most or all agree with the ones in:
+;; books/projects/execloader/mach-o-constants.lisp
+;; I also used:
+;; https://github.com/apple/darwin-xnu/blob/main/EXTERNAL_HEADERS/mach-o/loader.h
 
 (local (in-theory (disable mv-nth)))
 
@@ -727,6 +729,14 @@
                            (cons :syms syms)
                            ;; Make it into one big string, for readability:
                            (cons :string-table (coerce (map-code-char string-table) 'string))))))
+          ((eq cmd :LC_MAIN)
+           (b* (((mv erp entryoff bytes) (parse-u64 bytes))
+                ((when erp) (mv erp nil))
+                ((mv erp stacksize &) (parse-u64 bytes))
+                ((when erp) (mv erp nil)))
+             (mv nil
+                 (list (cons :entryoff entryoff)
+                       (cons :stacksize stacksize)))))
           ;;TODO: Add more!
           (t (prog2$ (cw "NOTE: Ignoring unsupported command type: ~x0.~%" cmd)
                      (mv nil ; :unsupported-comment-type
