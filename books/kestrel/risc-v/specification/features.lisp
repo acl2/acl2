@@ -130,6 +130,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defrule not-feat-32p-and-feat-64p
+  :parents (feat-32p feat-64p)
+  :short "Both of @(tsee feat-32p) and @(tsee feat-64p) cannot hold."
+  (or (not (feat-32p feat))
+      (not (feat-64p feat)))
+  :rule-classes ((:forward-chaining :trigger-terms ((feat-32p feat)
+                                                    (feat-64p feat))))
+  :enable (feat-32p feat-64p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define feat-embedp ((feat featp))
   :returns (yes/no booleanp)
   :short "Check if the features indicate embedded systems."
