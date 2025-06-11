@@ -15,6 +15,7 @@
 (include-book "decoding-left-inverse")
 (include-book "decoding-right-inverse")
 (include-book "decoding-correct")
+(include-book "execution-executable")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,14 +38,14 @@
     (xdoc::seetopic "apt::apt" "APT")
     ".")
    (xdoc::p
-    "In the specification, the only functions that depend on @(tsee decode)
-     and @(tsee step) and @(tsee stepn);
-     the instruction semantic functions do not depend on decoding,
-     because they operate on the instruction abstract syntax
-     produced by decoding.
-     We plan to provide soon versions of @(tsee step) and @(tsee stepn)
-     that depend on @(tsee decodex) instead of @(tsee decode)."))
+    "We use @(tsee apt::simplify) to obtain
+     executable versions of @(tsee step) and @(tsee stepn),
+     which call @(tsee decodex) instead of @(tsee decode).")
+   (xdoc::p
+    "The semnantic functions do not depend on decoding
+     and thus do not need to be refined to be fully executable."))
   :order-subtopics (decoding-executable
                     decoding-left-inverse
                     decoding-right-inverse
-                    decoding-correct))
+                    decoding-correct
+                    execution-executable))
