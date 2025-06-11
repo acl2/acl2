@@ -15,6 +15,10 @@
 ;; memory (read-byte, read, write-byte, and write).
 
 (include-book "portcullis") ; for the package
+(include-book "projects/x86isa/machine/state" :dir :system) ; for memi
+(include-book "canonical")
+(include-book "state") ; for X86ISA::INTEGERP-OF-MEMI
+(include-book "projects/x86isa/machine/linear-memory" :dir :system) ; for program-at
 (include-book "support-x86") ;for things like rb-in-terms-of-nth-and-pos-eric and canonical-address-p-between
 ;(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
 ;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce?
