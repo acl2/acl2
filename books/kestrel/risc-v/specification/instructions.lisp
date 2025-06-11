@@ -43,7 +43,7 @@
      in RV32I [ISA:2] and RV64I [ISA:4],
      which are the same for RV32E and RV64E [ISA:3],
      except for @('FENCE'), @('ECALL'), @('EBREAK'), and @('HINT').
-     We also cover the instructions for the M extension [ISA:13].
+     We also cover the instructions for the M extension [ISA:12].
      We plan to add privileged instructions,
      as well as instructions for more extensions.")
    (xdoc::p
@@ -65,7 +65,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These instructions are encoded in the I-type format [ISA:2.4].
+    "These instructions are encoded in the I-type format [ISA:2.2].
      They are designated by the @('funct3') field,
      which motivates the name of this fixtype.")
    (xdoc::p
@@ -133,11 +133,11 @@
 
 (fty::deftagsum op-funct
   :short "Fixtype of names of instructions with the @('OP') opcode
-          [ISA:2.4.2] [ISA:13.1] [ISA:13.2]."
+          [ISA:2.4.2] [ISA:12.1] [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These instructions are encoded in the R-type format [ISA:2.4].
+    "These instructions are encoded in the R-type format [ISA:2.2].
      They are designated by the @('funct3') and @('funct7') fields,
      which motivates the name of this fixtype."))
   (:add ())
@@ -163,7 +163,7 @@
 
 (fty::deftagsum op-32-funct
   :short "Fixtype of names of instructions with the @('OP-32') opcode
-          [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
+          [ISA:4.2.2] [ISA:12.1] [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -187,7 +187,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These instructions are encoded in the B-type format [ISA:2.4].
+    "These instructions are encoded in the B-type format [ISA:2.3].
      They are designated by the @('funct3') field,
      which motivates the name of this fixtype."))
   (:beq ())
@@ -205,7 +205,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These instructions are encoded in the I-type format [ISA:2.4].
+    "These instructions are encoded in the I-type format [ISA:2.2].
      They are designated by the @('funct3') field,
      which motivates the name of this fixtype."))
   (:lb ())
@@ -224,7 +224,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These instructions are encoded in the S-type format [ISA:4.2].
+    "These instructions are encoded in the S-type format [ISA:2.2].
      They are designated by the @('funct3') field,
      which motivates the name of this fixtype."))
   (:sb ())

@@ -67,8 +67,7 @@
     "The processor state always includes the @('x<i>') registers,
      whose number and size depends on the choice of base.
      The size in bits is @('XLEN') [ISA:1.3],
-     which is 32 in RV32I/RV32E, or 64 in RV64I/RV64E;
-     it is 128 in the upcoming RV128I [ISA:5] (which we do not model yet).
+     which is 32 in RV32I/RV32E, or 64 in RV64I/RV64E.
      The number of registers is 32 or 16,
      based on whether the base is RV32I/RV64I or RV32R/RV64E.
      In @(tsee stat-validp),
@@ -861,7 +860,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Instructions are always stored in little endian [ISA:1.5.1],
+    "Instructions are always stored in little endian [ISA:1.5],
      so the memory address is the one of the first byte;
      we read that, and the subsequent bytes.")
    (xdoc::p
