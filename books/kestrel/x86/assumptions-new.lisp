@@ -337,6 +337,7 @@
 
 ;; todo: eventually remove make- from the names
 ;; TODO: Deprecate the bvp=nil case
+;; Not ELF-specific
 (defund make-standard-assumptions64-new (stack-slots-needed
                                          state-var
                                          base-var ; only needed if position-independentp
