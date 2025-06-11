@@ -154,7 +154,6 @@
 ;;         (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf bvp)))))
 
 ;; Returns a list of terms.
-;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
 (defun architecture-specific-assumptions (executable-type position-independentp stack-slots parsed-executable bvp)
   (declare (xargs :guard (and (member-eq executable-type '(:mach-o-64 :elf-64))
                               (booleanp position-independentp)
@@ -352,15 +351,16 @@
         (if 32-bitp ;todo: add support for this in 32-bit mode, or is the calling convention too different?
             (mv nil nil)
           (make-register-replacement-assumptions64 register-names64 param-names nil nil)))
+       ;; Assumptions to be added to what unroll-x86-code-core already puts in:
        (extra-assumptions `(,@user-assumptions
-                      ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
-                      ;; (equal (x86isa::mxcsrbits->ie$inline (mxcsr x86)) 0) ; invalid operation
-                      ;; todo: build this stuff into def-unrolled:
-                      ,@register-replacement-assumptions
-                      ,@register-type-assumptions
-                      ;; todo: build this into def-unrolled:
-                      ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable bvp)
-                      ))
+                            ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
+                            ;; (equal (x86isa::mxcsrbits->ie$inline (mxcsr x86)) 0) ; invalid operation
+                            ;; todo: build this stuff into def-unrolled:
+                            ,@register-replacement-assumptions
+                            ,@register-type-assumptions
+                            ;; todo: build this into def-unrolled:
+                            ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable bvp)
+                            ))
        (target function-name-string)
 
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))

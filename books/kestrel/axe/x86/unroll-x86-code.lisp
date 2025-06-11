@@ -617,7 +617,7 @@
 ;; This is also called by the formal unit tester.
 (defun unroll-x86-code-core (target
                              parsed-executable
-                             extra-assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
+                             extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
                              suppress-assumptions
                              inputs-disjoint-from
                              stack-slots
@@ -645,7 +645,7 @@
                              bvp ; whether to use new-style assumptions
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
-                              ;; parsed-executable
+                              ;; parsed-executable ; todo: add a guard (even if it's weak for now)
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -724,7 +724,7 @@
             state)
         (if new-style-elf-assumptionsp
             ;; New assumption generation behavior, only for ELF64 (for now):
-            (b* ((- (cw "Using new-style assumptions.~%"))
+            (b* (;; (- (cw "Using new-style assumptions.~%"))
                  ;; These are untranslated (in general):
                  ((mv erp automatic-assumptions input-assumption-vars)
                   (if suppress-assumptions
@@ -917,9 +917,10 @@
        ((mv erp pruning-rule-alist)
         (acl2::make-rule-alist pruning-rules (w state)))
        ((when erp) (mv erp nil nil nil nil nil nil state))
-       ;; Do the symbolic execution:
+       ;; Decide which rules to monitor:
        (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
+       ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep state))
        ((when erp) (mv erp nil nil nil nil nil nil state))
@@ -1017,21 +1018,22 @@
                   :stobjs state
                   :mode :program ; todo
                   ))
-  (b* (;; Check whether this call to the lifter has already been made:
+  (b* (;; Check whether this call to the lifter if redundant:
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
+       ;; Start timing:
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       ;; Handle filename vs parsed-structure
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
             (acl2::parse-executable executable state)
-          ;; it's already a parsed-executable:
+          ;; it's already a parsed-executable: ; todo: can we deprecate this case?
           (mv nil executable state)))
        ((when erp)
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
-       (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
@@ -1046,9 +1048,10 @@
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
        (result-dag-vars (acl2::dag-vars result-dag))
-       (defconst-name (pack-in-package-of-symbol lifted-name '* lifted-name '*))
-       (defconst-form `(defconst ,defconst-name ',result-dag))
+       ;; Build the defconst:
+       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag))
        ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
+       (executable-type (acl2::parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        ;; Now sort the formals:
        (param-names (if (and 64-bitp
