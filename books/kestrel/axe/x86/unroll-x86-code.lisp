@@ -690,7 +690,7 @@
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
-                                      t ; since clang seems to produce position-independent code by default ; todo: think about this
+                                      t ; since clang seems to produce position-independent code by default ; todo: look at the PIE bit in the header.
                                     (if (eq executable-type :elf-64)
                                         (let ((elf-type (acl2::parsed-elf-type parsed-executable)))
                                           (prog2$ (cw "ELF type: ~x0.~%" elf-type)
@@ -760,7 +760,8 @@
                    ((when (natp target)) ; todo
                     (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
                     (mv :bad-entry-point nil nil nil nil state))
-                   (text-offset (if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable)))
+                   (text-section-address (acl2::get-mach-o-code-address parsed-executable))
+                   (text-offset (if position-independentp 'text-offset `,text-section-address))
                    (code-length (len (acl2::get-mach-o-code parsed-executable)))
                    (state-var 'x86)
                    (standard-assumptions
@@ -768,7 +769,6 @@
                          ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
                          nil
                        (let* ((text-section-bytes (acl2::get-mach-o-code parsed-executable)) ;all the code, not just the given subroutine
-                              (text-section-address (acl2::get-mach-o-code-address parsed-executable))
                               (subroutine-address (acl2::subroutine-address-mach-o target parsed-executable))
                               (offset-to-subroutine (- subroutine-address text-section-address)))
                          (append
