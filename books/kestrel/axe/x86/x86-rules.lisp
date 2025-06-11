@@ -27,6 +27,7 @@
 (include-book "kestrel/x86/run-until-return3" :dir :system) ; newer scheme
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/regions" :dir :system)
+(include-book "kestrel/x86/canonical-unsigned" :dir :system)
 (include-book "../axe-syntax")
 (include-book "../known-booleans")
 (include-book "../axe-syntax-functions-bv") ; for term-should-be-trimmed-axe
@@ -40,6 +41,7 @@
 ;; mostly to suppress messages (but does this slow down anything?):
 ;; todo: have this print :redundant when it is
 (add-known-boolean canonical-address-p$inline)
+(add-known-boolean unsigned-canonical-address-p)
 (add-known-boolean canonical-address-listp)
 (add-known-boolean disjoint-p)
 (add-known-boolean program-at)
@@ -79,6 +81,10 @@
 (add-known-boolean in-region48p)
 (add-known-boolean subregion48p)
 (add-known-boolean disjoint-regions48p)
+
+(add-known-boolean in-region64p)
+(add-known-boolean subregion64p)
+(add-known-boolean disjoint-regions64p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -396,6 +402,11 @@
 (def-constant-opener in-region48p)
 (def-constant-opener subregion48p)
 (def-constant-opener disjoint-regions48p)
+
+(def-constant-opener in-region64p)
+(def-constant-opener subregion64p)
+(def-constant-opener disjoint-regions64p)
+(def-constant-opener unsigned-canonical-address-p)
 
 (defopeners acl2::get-symbol-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)

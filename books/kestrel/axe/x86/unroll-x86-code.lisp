@@ -426,7 +426,7 @@
                                            ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
                                            ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
                                            ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
-                                           nil ; assumptions
+                                           nil ; assumptions ; todo: include assumptions about canonical?
                                            :none
                                            pruning-rule-alist
                                            nil ; interpreted-function-alist
@@ -564,7 +564,7 @@
 ;(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;; Returns (mv erp assumptions assumption-rules state)
-(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state)
+(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp new-style-elf-assumptionsp state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
@@ -583,7 +583,8 @@
                                    (if 64-bitp
                                        ;; needed to match the normal forms used during lifting:
                                        (append (new-normal-form-rules64)
-                                               (if bvp (read-and-write-rules-bv) nil))
+                                               (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))
+                                               (if new-style-elf-assumptionsp (canonical-rules-bv) (canonical-rules-non-bv)))
                                      nil ; todo: why not use (new-normal-form-rules32)?
                                      ))
                            remove-assumption-rules))
@@ -684,9 +685,8 @@
        (state (acl2::widen-margins state))
        ;; Get and check the executable-type:
        (executable-type (acl2::parsed-executable-type parsed-executable))
-       (- (cw "Executable type: ~x0.~%" executable-type))
+       (- (and (acl2::print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        (- (acl2::ensure-x86 parsed-executable))
-       (- (and (acl2::print-level-at-least-tp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
@@ -701,23 +701,22 @@
                                                     nil)))
                                       ;; TODO: Think about the other cases:
                                       t))
+                                ;; the user supplied a value for position-independent, so use it:
                                 position-independent))
        ((when (and (not position-independentp) ; todo: think about this:
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil nil nil state))
        (- (if position-independentp (cw "Using position-independent lifting.~%") (cw "Using non-position-independent lifting.~%")))
-       (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
                                         ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
                                         (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
                                         ))
+       (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw "Using new-style ELF64 assumptions.~%")  (cw "Not using new-style ELF64 assumptions.~%"))))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
-       (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
-       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Generate assumptions:
        ((mv erp assumptions untranslated-assumptions
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
@@ -726,28 +725,32 @@
         (if new-style-elf-assumptionsp
             ;; New assumption generation behavior, only for ELF64 (for now):
             (b* ((- (cw "Using new-style assumptions.~%"))
-                 (code-address (acl2::get-elf-code-address parsed-executable))
                  (base-var 'base-address) ; only used if position-independentp
-                 (text-offset-term (if position-independentp
-                                       (symbolic-add-constant code-address base-var)
-                                     code-address))
-                 ((mv erp disjoint-chunk-addresses-and-lens)
+                 ;; Decide what memory regions will be used in disjointness assumptions for inputs:
+                 ;; todo: add this stuff to assumptions-elf64-new (see call below)?
+                 ((mv erp disjoint-chunk-addresses-and-lens) ; we will assume the inputs are disjoint from these
                   (if (eq nil inputs-disjoint-from)
+                      ;; Don't assume the inputs are disjoint from anything:
                       (mv nil nil)
                     (if (eq :all inputs-disjoint-from)
-                        (if (not (eq :elf-64 executable-type))
-                            (mv :unsupported
-                                (er hard? 'unroll-x86-code-core "The :inputs-disjoint-from option is only supported for ELF64 executables.")) ;todo!
+                        ;; Assume the inputs are disjoint from all the sections/segments in the executable::
+                        (if (not (eq :elf-64 executable-type)) ; todo: impossible
+                            (mv :unsupported (er hard? 'unroll-x86-code-core "The :inputs-disjoint-from option is only supported for ELF64 executables.")) ;todo!
                           (elf64-segment-addresses-and-lens (acl2::parsed-elf-program-header-table parsed-executable)
                                                             position-independentp
                                                             base-var
                                                             (len (acl2::parsed-elf-bytes parsed-executable))
                                                             nil))
-                      ;; must be :code:
-                      (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-executable)) nil)))))
+                      ;; inputs-disjoint-from must be :code, so assume the inputs are disjoint from the code bytes only:
+                      (let* ((code-address (acl2::get-elf-code-address parsed-executable))
+                             (text-offset-term (if position-independentp
+                                                   (symbolic-add-constant code-address base-var)
+                                                 code-address)))
+                        (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-executable)) nil))))))
                  ((when erp)
-                  (er hard? 'unroll-x86-code-core "Error generating disjointnes assumptions for inputs: ~x0." erp)
+                  (er hard? 'unroll-x86-code-core "Error generating disjointness assumptions for inputs: ~x0." erp)
                   (mv erp nil nil nil nil state))
+                 ;; These are untranslated (in general):
                  ((mv erp automatic-assumptions input-assumption-vars)
                   (if suppress-assumptions
                       (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
@@ -770,7 +773,7 @@
                  ((mv erp assumptions assumption-rules state)
                   (if extra-assumptions
                       ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state)
+                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp t state)
                     (mv nil assumptions nil state)))
                  ((when erp) (mv erp nil nil nil nil state)))
               (mv nil assumptions
@@ -860,7 +863,9 @@
                                                 stack-slots
                                                 (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
                                                 type-assumptions-for-array-varsp
-                                                nil nil)
+                                                nil nil
+                                                nil ; new-canonicalp
+                                                )
                   (mv nil nil)))
                (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
                (assumptions (append assumptions extra-assumptions))
@@ -880,7 +885,7 @@
                ;; others, because opening things like read64 involves testing
                ;; canonical-addressp (which we know from other assumptions is true):
                ((mv erp assumptions assumption-rules state)
-                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state))
+                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp nil state))
                ((when erp) (mv erp nil nil nil nil state)))
             (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))
        ((when erp)
@@ -893,6 +898,7 @@
                                                                 )))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
+       (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        (- (and stop-pcs
                position-independentp
                (er hard? 'unroll-x86-code-core ":stop-pcs are not supported with position-independentp.")))
@@ -913,9 +919,8 @@
         (mv :unexpected-quotep nil nil nil nil nil nil state))
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
-       (lifter-rules (append (if bvp
-                                 (read-and-write-rules-bv)
-                               (read-and-write-rules-non-bv))
+       (lifter-rules (append (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))       ;todo: only need some of these for 64-bits?
+                             (if new-style-elf-assumptionsp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use these more (e.g., for macho-64)
                              lifter-rules))
        (lifter-rules (if stop-pcs
                          (append (symbolic-execution-rules-with-stop-pcs) lifter-rules)
@@ -939,6 +944,8 @@
         (acl2::make-rule-alist pruning-rules (w state)))
        ((when erp) (mv erp nil nil nil nil nil nil state))
        ;; Do the symbolic execution:
+       (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep state))
        ((when erp) (mv erp nil nil nil nil nil nil state))
