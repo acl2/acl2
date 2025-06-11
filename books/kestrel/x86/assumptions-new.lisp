@@ -32,6 +32,8 @@
                            symbol-alistp
                            ))) ; todo
 
+(local (in-theory (disable x86isa::byte-listp-becomes-all-unsigned-byte-p ; todo
+                           )))
 (local
   (defthm true-listp-when-byte-listp
     (implies (acl2::byte-listp x)
@@ -143,13 +145,6 @@
                     ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                     nil))))))))
 
-;;might relax this
-;; (defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-memory-chunk
-;;   (implies (and (pseudo-termp state-var)
-;;                 (pseudo-termp base-var))
-;;            (pseudo-term-listp (mv-nth 1 (assumptions-for-memory-chunk addr bytes relp state-var base-var stack-slots-needed bvp))))
-;;   :hints (("Goal" :in-theory (enable assumptions-for-memory-chunk))))
-
 (defthm true-listp-of-mv-nth-1-of-assumptions-for-memory-chunk
   (true-listp (mv-nth 1 (assumptions-for-memory-chunk addr bytes relp state-var base-var stack-slots-needed bvp)))
   :rule-classes :type-prescription
@@ -194,12 +189,6 @@
                       bytes)))
           (assumptions-for-memory-chunk vaddr bytes relp state-var base-var stack-slots-needed bvp))))))
 
-;; (defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-elf64-segment
-;;   (implies (and (symbolp state-var)
-;;                 (symbolp base-var))
-;;            (pseudo-term-listp (mv-nth 1 (assumptions-for-elf64-segment program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp))))
-;;   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segment))))
-
 (defthm true-listp-of-mv-nth-1-of-assumptions-for-elf64-segment
   (true-listp (mv-nth 1 (assumptions-for-elf64-segment program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len bvp)))
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segment))))
@@ -231,27 +220,12 @@
                                       (revappend assumptions acc) ; since they will be reversed again at the end
                                       ))))
 
-;; (defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-elf64-segments
-;;   (implies (and (acl2::elf-program-header-tablep program-header-table)
-;;                 (booleanp relp)
-;;                 (symbolp state-var)
-;;                 (symbolp base-var)
-;;                 (natp stack-slots-needed)
-;;                 (acl2::byte-listp bytes)
-;;                 (equal bytes-len (len bytes))
-;;                 (pseudo-term-listp acc))
-;;            (pseudo-term-listp (mv-nth 1 (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes bytes-len bvp acc))))
-;;   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segments))))
-
 (defthm true-listp-of-mv-nth-1-of-assumptions-for-elf64-segments
   (implies (true-listp acc)
            (true-listp (mv-nth 1 (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes bytes-len bvp acc))))
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segments))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local (in-theory (disable x86isa::byte-listp-becomes-all-unsigned-byte-p ; todo
-                           )))
 
 ;; Returns (mv erp ASSUMPTIONS), where ASSUMPTIONS is a list of terms over the variables STATE-VAR and (perhaps BASE-VAR).
 (defund assumptions-for-elf64-sections-new (section-names position-independentp stack-slots-needed state-var base-var parsed-elf bvp acc)
@@ -290,6 +264,57 @@
   (implies (true-listp acc)
            (true-listp (mv-nth 1 (assumptions-for-elf64-sections-new section-names position-independentp stack-slots-needed state-var base-var parsed-elf bvp acc))))
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-sections-new))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: eventually remove make- from the names
+;; TODO: Deprecate the bvp=nil cae
+(defund make-standard-assumptions64-new (stack-slots-needed state-var target-address-term bvp)
+  (declare (xargs :guard (and (natp stack-slots-needed)
+                              (symbolp state-var)
+                              ;; target-address-term may be untranslated
+                              (booleanp bvp))))
+  (append (make-standard-state-assumptions-fn state-var)
+          `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
+            ;; Alignment checking is turned off:
+            (not (alignment-checking-enabled-p ,state-var))
+            ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
+            ;; This may not be respected by malware.
+            ;; TODO: Try without this
+            (equal 0 (bvchop 3 (rsp ,state-var)))
+            ;; The program counter is at the start of the code to lift:
+            (equal (rip ,state-var) ,target-address-term)
+            )
+          ;; The return address must be canonical because we will transfer
+          ;; control to that address when doing the return:
+          (if bvp
+              `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
+            `((canonical-address-p (logext 64 (read 8 (rsp ,state-var) ,state-var)))))
+          ;; The stack must be canonical:
+          (if bvp
+              ;; todo: think about this:
+              `((canonical-regionp ,(+ 16 (* 8 stack-slots-needed))
+                                   ,(if (= 0 stack-slots-needed)
+                                        `(rsp ,state-var)
+                                      `(bvplus 64 ',(* -8 stack-slots-needed) (rsp ,state-var)))))
+            ;; old-style
+            (append `(;; The stack slot contaning the return address must be canonical
+                      ;; because the stack pointer returns here when we pop the saved
+                      ;; RBP:
+                      (canonical-address-p (rsp ,state-var))
+
+                      ;; The stack slot 'below' the return address must be canonical
+                      ;; because the stack pointer returns here when we do the return:
+                      (canonical-address-p (+ 8 (rsp ,state-var))))
+                    (if (posp stack-slots-needed)
+                        `(;;add to make-standard-state-assumptions-64-fn?
+                          (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
+                          (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
+                          )
+                      nil)))))
+
+(defthm true-listp-of-make-standard-assumptions64-new
+  (true-listp (make-standard-assumptions64-new stack-slots-needed state-var target-address-term bvp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -334,7 +359,7 @@
                            ;; target is the name of a function:
                            (acl2::subroutine-address-elf target parsed-elf))))
        ((when (not (natp target-address)))
-        (er hard? 'assumptions-elf64-new "Bad or missing subroutine address: ~x0." target-address)
+        (er hard? 'assumptions-elf64-new "Bad or missing lift target address: ~x0." target-address)
         (mv :bad-or-missing-subroutine-address nil nil))
        (target-address-term (if relp
                                 (if bvp
@@ -377,9 +402,10 @@
                                       nil nil
                                       t ; new-canonicalp
                                       ))))
-    (mv nil
+    (mv nil ; no error
         (append ;; can't use this: not in normal form: (make-standard-state-assumptions-64-fn state-var) ; todo: put back, but these are untranslated!  should all the assumptions be generated untranslated (for presentation) and then translated?
-          (make-standard-state-assumptions-fn state-var)
+          (make-standard-assumptions64-new stack-slots-needed state-var target-address-term bvp)
+
           ;; Assumptions about the BASE-VAR:
           (if relp
               (if bvp
@@ -388,42 +414,6 @@
                   (canonical-address-p$inline ,base-var) ; todo: do we need this, given that we have assumptions for all the segments?
                   ))
             nil)
-          ;; More standard stuff:
-          `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
-            ;; Alignment checking is turned off:
-            (not (alignment-checking-enabled-p ,state-var))
-            ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
-            ;; This may not be respected by malware.
-            ;; TODO: Try without this
-            (equal 0 (bvchop 3 (rsp ,state-var))))
-          ;; The program counter is at the start of the code to lift:
-          `((equal (rip ,state-var) ,target-address-term))
-          ;; The return address must be canonical because we will transfer
-          ;; control to that address when doing the return:
-          (if bvp
-              `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
-            `((canonical-address-p (logext 64 (read 8 (rsp ,state-var) ,state-var)))))
-          ;; The stack must be canonical
-          (if bvp
-              ;; todo: think about this:
-              `((canonical-regionp ,(+ 16 (* 8 stack-slots-needed))
-                                   ,(if (= 0 stack-slots-needed)
-                                        `(rsp ,state-var)
-                                      `(bvplus 64 ',(* -8 stack-slots-needed) (rsp ,state-var)))))
-            (append `(;; The stack slot contaning the return address must be canonical
-                      ;; because the stack pointer returns here when we pop the saved
-                      ;; RBP:
-                      (canonical-address-p (rsp ,state-var))
-
-                      ;; The stack slot 'below' the return address must be canonical
-                      ;; because the stack pointer returns here when we do the return:
-                      (canonical-address-p (+ 8 (rsp ,state-var))))
-                    (if (posp stack-slots-needed)
-                        `(;;add to make-standard-state-assumptions-64-fn?
-                          (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
-                          (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
-                          )
-                      nil)))
           segment-or-section-assumptions
           input-assumptions)
         input-assumption-vars)))
@@ -432,20 +422,10 @@
   (true-listp (mv-nth 1 (assumptions-elf64-new target relp stack-slots-needed state-var base-var inputs type-assumptions-for-array-varsp disjoint-chunk-addresses-and-lens bvp parsed-elf)))
   :hints (("Goal" :in-theory (enable assumptions-elf64-new))))
 
-;; not true due to make-standard-state-assumptions-64-fn
-;; (thm
-;;   (implies (and (lifter-targetp target)
-;;                 (member-eq relp '(t nil :auto))
-;;                 (natp stack-slots-needed)
-;;                 (pseudo-termp state-var) ; may actually be untranslated?
-;;                 (acl2::parsed-elfp parsed-elf))
-;;            (pseudo-term-listp (mv-nth 1 (assumptions-elf64-new target
-;;                                                               relp
-;;                                                               stack-slots-needed
-;;                                                               state-var
-;;                                                               parsed-elf)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move this stuff?
 
 ;; Returns (mv erp maybe-extended-acc).
 (defun elf64-segment-address-and-len (program-header-table-entry relp base-var bytes-len acc)
