@@ -973,3 +973,16 @@
 (defthm integerp-of-rsp-gen
   (integerp (rsp x86))
   :hints (("Goal" :in-theory (enable rsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd signed-byte-p-of-+-when-canonical-and-canonical
+  (implies (and (canonical-address-p x) ; could restrict to constant x
+                (canonical-address-p y))
+           (signed-byte-p 64 (+ x y))))
+
+(defthmd logext-64-of-+-when-canonical-and-canonical
+  (implies (and (canonical-address-p x) ; could restrict to constant x
+                (canonical-address-p y))
+           (equal (logext 64 (+ x y))
+                  (+ x y))))
