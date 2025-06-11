@@ -712,6 +712,7 @@
                                         ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
                                         (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
                                         ))
+       (new-canonicalp new-style-elf-assumptionsp) ; for now
        (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw "Using new-style ELF64 assumptions.~%")  (cw "Not using new-style ELF64 assumptions.~%"))))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
@@ -761,6 +762,7 @@
                     (mv :bad-entry-point nil nil nil nil state))
                    (text-offset (if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable)))
                    (code-length (len (acl2::get-mach-o-code parsed-executable)))
+                   (state-var 'x86)
                    (standard-assumptions
                      (if suppress-assumptions
                          ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
@@ -769,28 +771,58 @@
                               (text-section-address (acl2::get-mach-o-code-address parsed-executable))
                               (subroutine-address (acl2::subroutine-address-mach-o target parsed-executable))
                               (offset-to-subroutine (- subroutine-address text-section-address)))
-                         `((standard-state-assumption-64 x86)
-                           (bytes-loaded-at-address-64 ',text-section-bytes ,text-offset ,bvp x86)
-                           ;; The program counter is at the start of the routine to lift:
-                           (equal (rip x86) (+ ,text-offset ,offset-to-subroutine))
+                         (append
+                           ;; todo: use this?
+                           ;; (make-standard-assumptions64-new stack-slots 'x86 'base-address ; only needed if position-independentp
+                           ;;                                  target-address
+                           ;;                                  position-independentp
+                           ;;                                  bvp)
+                           (make-standard-state-assumptions-fn state-var)
+                           `((equal (64-bit-modep ,state-var) t)
 
-                           ;; Stack addresses are canonical (could use something like all-addreses-of-stack-slots here, but these addresses are by definition canonical):
-                           (x86isa::canonical-address-listp (addresses-of-subsequent-stack-slots ,stack-slots (rgfi *rsp* x86))) ; todo: use rsp
-                           ;; old: (canonical-address-p (+ -8 (rgfi *rsp* x86))) ;; The stack slot where the RBP will be saved
+                             ;; Alignment checking is turned off:
+                             (not (alignment-checking-enabled-p ,state-var))
 
-                           ;; The program is disjoint from the part of the stack that is written:
-                           ,@(if (posp stack-slots)
-                                 ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-                                 (if bvp
-                                     ;; essentially the same as the below SEPARATE claim:
-                                     `((disjoint-regions48p ,(len text-section-bytes) (bvchop 48 ,text-offset) ; todo: drop the 2 bvchops
-                                                            (* 8 ,stack-slots) (bvchop 48 (+ (* -8 ,stack-slots) (rgfi *rsp* x86)))))
-                                   `((separate :r ,(len text-section-bytes) ,text-offset
-                                               ;; Only a single stack slot is written
-                                               ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                                               :r (* 8 ,stack-slots) (+ (* -8 ,stack-slots) (rgfi *rsp* x86)))))
-                               ;; Can`'t call separate here because (* 8 stack-slots) = 0.
-                               nil)))))
+                             ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
+                             ;; This may not be respected by malware.
+                             ;; TODO: Try without this
+                             (equal 0 (bvchop 3 (rgfi *rsp* ,state-var)))
+
+                             ;; The return address must be canonical because we will transfer
+                             ;; control to that address when doing the return:
+                             (canonical-address-p (logext 64 (read 8 (rgfi *rsp* ,state-var) ,state-var)))
+
+                             ;; The stack slot contaning the return address must be canonical
+                             ;; because the stack pointer returns here when we pop the saved
+                             ;; RBP:
+                             (canonical-address-p (rgfi *rsp* ,state-var))
+
+                             ;; The stack slot 'below' the return address must be canonical
+                             ;; because the stack pointer returns here when we do the return:
+                             (canonical-address-p (+ 8 (rgfi *rsp* ,state-var)))
+
+                             (bytes-loaded-at-address-64 ',text-section-bytes ,text-offset ,bvp , state-var)
+
+                             ;; The program counter is at the start of the routine to lift:
+                             (equal (rip ,state-var) (+ ,text-offset ,offset-to-subroutine))
+
+                             ;; Stack addresses are canonical (could use something like all-addreses-of-stack-slots here, but these addresses are by definition canonical):
+                             (x86isa::canonical-address-listp (addresses-of-subsequent-stack-slots ,stack-slots (rgfi *rsp* ,state-var))) ; todo: use rsp
+                             ;; old: (canonical-address-p (+ -8 (rgfi *rsp* ,state-var))) ;; The stack slot where the RBP will be saved
+
+                             ;; The program is disjoint from the part of the stack that is written:
+                             ,@(if (posp stack-slots)
+                                   ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+                                   (if bvp
+                                       ;; essentially the same as the below SEPARATE claim:
+                                       `((disjoint-regions48p ,(len text-section-bytes) (bvchop 48 ,text-offset) ; todo: drop the 2 bvchops
+                                                              (* 8 ,stack-slots) (bvchop 48 (+ (* -8 ,stack-slots) (rgfi *rsp* ,state-var)))))
+                                     `((separate :r ,(len text-section-bytes) ,text-offset
+                                                 ;; Only a single stack slot is written
+                                                 ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* ,state-var)))
+                                                 :r (* 8 ,stack-slots) (+ (* -8 ,stack-slots) (rgfi *rsp* ,state-var)))))
+                                 ;; Can`'t call separate here because (* 8 stack-slots) = 0.
+                                 nil))))))
                    ;; maybe we should check suppress-assumptions here, but if they gave an :inputs, they must want the assumptions:
                    ((mv input-assumptions input-assumption-vars)
                     (if (not (equal inputs :skip)) ; really means generate no assumptions
@@ -803,8 +835,7 @@
                                                          (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
                                                          type-assumptions-for-array-varsp
                                                          nil nil
-                                                         nil ; new-canonicalp
-                                                         )
+                                                         new-canonicalp)
                       (mv nil nil)))
                    (automatic-assumptions (append standard-assumptions input-assumptions))
                    (untranslated-assumptions (append automatic-assumptions extra-assumptions))
@@ -903,8 +934,7 @@
                                                        (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
                                                        type-assumptions-for-array-varsp
                                                        nil nil
-                                                       nil ; new-canonicalp
-                                                       )
+                                                       new-canonicalp)
                     (mv nil nil)))
                  (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
                  (assumptions (append assumptions extra-assumptions))
@@ -959,7 +989,7 @@
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
        (lifter-rules (append (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))       ;todo: only need some of these for 64-bits?
-                             (if new-style-elf-assumptionsp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use these more (e.g., for macho-64)
+                             (if new-canonicalp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use these more (e.g., for macho-64)
                              lifter-rules))
        (lifter-rules (if stop-pcs
                          (append (symbolic-execution-rules-with-stop-pcs) lifter-rules)
