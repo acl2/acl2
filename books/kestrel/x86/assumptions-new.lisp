@@ -507,7 +507,6 @@
     (mv nil ; no error
         (append ;; can't use this: not in normal form: (make-standard-state-assumptions-64-fn state-var) ; todo: put back, but these are untranslated!  should all the assumptions be generated untranslated (for presentation) and then translated?
           (make-standard-assumptions64-new stack-slots-needed state-var base-var target-address position-independentp bvp)
-
           segment-or-section-assumptions
           input-assumptions)
         input-assumption-vars)))
