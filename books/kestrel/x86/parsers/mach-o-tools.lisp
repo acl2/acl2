@@ -1,7 +1,7 @@
 ; Tools for processing the alists that represent parsed mach-o files.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,37 +20,92 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 
-;; Get the first element of LOAD-COMMANDS that has :cmd type CMD-TYPE.
+(include-book "parse-mach-o-file") ; todo: reduce
+
+(local (in-theory (disable strip-cars symbol-alistp))) ; prevent induction
+
+(defun mach-o-sectionp (sec)
+  (declare (xargs :guard t))
+  (symbol-alistp sec))
+
+(defund mach-o-section-listp (sections)
+  (declare (xargs :guard t))
+  (if (atom sections)
+      (null sections)
+    (and (mach-o-sectionp (first sections))
+         (mach-o-section-listp (rest sections)))))
+
+(defund mach-o-commandp (cmd)
+  (declare (xargs :guard t))
+  (symbol-alistp cmd))
+
+(defund mach-o-command-listp (cmds)
+  (declare (xargs :guard t))
+  (if (atom cmds)
+      (null cmds)
+    (and (mach-o-commandp (first cmds))
+         (mach-o-command-listp (rest cmds)))))
+
+;move
+(defund parsed-mach-o-p (parsed-mach-o)
+  (declare (xargs :guard t))
+  (and (symbol-alistp parsed-mach-o)
+       (equal (strip-cars parsed-mach-o) '(:magic :header :cmds))
+       (let ((magic (lookup-eq :magic parsed-mach-o))
+             (header (lookup-eq :header parsed-mach-o))
+             (cmds (lookup-eq :cmds parsed-mach-o)))
+         (and (or (member-eq magic *32-bit-magic-numbers*)
+                  (member-eq magic *64-bit-magic-numbers*))
+              (symbol-alistp header) ; todo: strengthen
+              (mach-o-command-listp cmds)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Gets the first element of LOAD-COMMANDS that has :cmd type CMD-TYPE.
+;; Returns a load-command, or throws an error
 (defund get-mach-o-load-command (cmd-type load-commands)
-;  (declare (xargs :guard (true-listp load-commands)))
+  (declare (xargs :guard (and (symbolp cmd-type)
+                              (mach-o-command-listp load-commands))
+                  :guard-hints (("Goal" :in-theory (enable mach-o-command-listp)))
+                  ))
   (if (endp load-commands)
-      (er hard 'get-mach-o-load-command "Can't find a load command of type: ~x0." cmd-type)
+      (er hard? 'get-mach-o-load-command "Can't find a load command of type: ~x0." cmd-type)
     (let* ((load-command (first load-commands))
            (this-cmd-type (acl2::lookup-eq-safe :cmd load-command)))
       (if (eq cmd-type this-cmd-type)
           load-command
         (get-mach-o-load-command cmd-type (rest load-commands))))))
 
-(defopeners get-mach-o-load-command)
+(defopeners get-mach-o-load-command) ;drop?
 
+;; Gets the first element of LOAD-COMMANDS that has has command :LC_SEGMENT or
+;; :LC_SEGMENT_64 and that has :segname SEGNAME.
+;; Returns a load-command, or throws an error
 (defund get-mach-o-segment (segname load-commands)
+  (declare (xargs :guard (and (stringp segname)
+                              (mach-o-command-listp load-commands))
+                  :guard-hints (("Goal" :in-theory (enable mach-o-command-listp)))))
   (if (endp load-commands)
-      (er hard 'get-mach-o-segment "Can't find a segment named: ~x0." segname)
+      (er hard? 'get-mach-o-segment "Can't find a segment named: ~x0." segname)
     (let* ((load-command (first load-commands))
            (cmd (acl2::lookup-eq-safe :cmd load-command)))
-      (if (not (or (eq cmd :LC_SEGMENT)
-                   (eq cmd :LC_SEGMENT_64)))
+      (if (not (or (eq cmd :lc_segment)
+                   (eq cmd :lc_segment_64)))
           (get-mach-o-segment segname (rest load-commands))
-        (let ((this-name (acl2::lookup-eq-safe :SEGNAME load-command)))
+        (let ((this-name (acl2::lookup-eq-safe :segname load-command)))
           (if (equal segname this-name)
               load-command
             (get-mach-o-segment segname (rest load-commands))))))))
 
 (defopeners get-mach-o-segment)
 
-(defun get-mach-o-section (name sections)
+;; Returns a section, or throws an error.
+(defund get-mach-o-section (name sections)
+  (declare (xargs :guard (and (stringp name)
+                              (mach-o-section-listp sections))
+                  :guard-hints (("Goal" :in-theory (enable mach-o-section-listp)))))
   (if (endp sections)
-      (er hard 'get-mach-o-section "Can't find a section named: ~x0." name)
+      (er hard? 'get-mach-o-section "Can't find a section named: ~x0." name)
     (let* ((section (first sections))
            (this-name (acl2::lookup-eq-safe :sectname section)))
       (if (equal name this-name)
@@ -61,18 +116,15 @@
 
 ;; Get the code from the __TEXT,__text section
 (defund get-mach-o-code (mach-o)
+  ;; (declare (xargs :guard (parsed-mach-o-p mach-o)
+  ;;                 :guard-hints (("Goal" :in-theory (enable parsed-mach-o-p)))
+  ;;                 ))
   (acl2::lookup-eq-safe :contents (get-mach-o-section "__text" (acl2::lookup-eq-safe :SECTIONS (get-mach-o-segment "__TEXT" (acl2::lookup-eq-safe :cmds mach-o))))))
 
 ;; Get the load address for the code from the __TEXT,__text section
 (defund get-mach-o-code-address (mach-o)
   (acl2::lookup-eq-safe :addr (get-mach-o-section "__text" (acl2::lookup-eq-safe :SECTIONS (get-mach-o-segment "__TEXT" (acl2::lookup-eq-safe :cmds mach-o))))))
 
-;move to a more general place (this must exist?)
-(defun make-code-alist (addr code)
-  (if (endp code)
-      nil
-    (acons addr (first code)
-           (make-code-alist (+ 1 addr) (rest code)))))
 
 (defun get-all-sections-from-mach-o-load-command (cmd)
   (let ((cmd-name (lookup-eq-safe :cmd cmd)))
@@ -199,7 +251,7 @@
             section
           (maybe-get-mach-o-section name (rest sections)))))))
 
-(defun mach-o-section-presentp (segment-name section-name parsed-mach-o)
+(defund mach-o-section-presentp (segment-name section-name parsed-mach-o)
   (declare (xargs :guard (and (stringp segment-name)
                               (stringp section-name)
                               ;; parsed-mach-o
@@ -215,3 +267,12 @@
 (def-constant-opener maybe-get-mach-o-segment)
 (def-constant-opener maybe-get-mach-o-section)
 (def-constant-opener mach-o-section-presentp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move to a more general place (this must exist?)
+(defun make-code-alist (addr code)
+  (if (endp code)
+      nil
+    (acons addr (first code)
+           (make-code-alist (+ 1 addr) (rest code)))))

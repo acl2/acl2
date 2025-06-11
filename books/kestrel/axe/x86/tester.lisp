@@ -87,73 +87,73 @@
     ;; no assumptions if section not present:
     t))
 
-;; todo: think about signed vs unsigned addresses
-(defun elf64-section-loadedp (section-bytes
-                              section-address
-                              text-offset
-                              position-independentp ; whether to assume position independence
-                              stack-slots-needed
-                              text-section-address
-                              bvp
-                              x86)
-  (declare (xargs :guard (and (acl2::unsigned-byte-listp 8 section-bytes)
-                              (consp section-bytes)
-                              (unsigned-byte-p 48 (len section-bytes))
-                              (unsigned-byte-p 48 section-address) ; (natp section-address) ; or allow signed?
-                              (natp text-offset)
-                              (booleanp position-independentp)
-                              (unsigned-byte-p 45 stack-slots-needed) ; (natp stack-slots-needed)
-                              (natp text-section-address)
-                              (booleanp bvp))
-                  :stobjs x86))
-  (let* ((section-start (if position-independentp
-                            ;; position-independent, so assume the section is loaded at the appropriate offset wrt TEXT-OFFSET, which is where we assume the text section starts.
-                            ;; todo: can this be negative?:
-                            (let* (;; todo: can this be negative?:
-                                   (section-offset-from-text (- section-address text-section-address)))
-                              (+ text-offset section-offset-from-text))
-                          ;; not position-independent, so use the numeric address (may be necessary):
-                          section-address)))
-    (and (bytes-loaded-at-address-64 section-bytes section-start bvp x86) ; todo: this wants section-start to be canonical, not a usb
-         ;; (canonical-address-p$inline const-section-start)
-         ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
-         ;; The section is disjoint from the part of the stack that we expect to be written:
-         (if (posp stack-slots-needed) ; should be resolved, because separate requires but numbers to be positive
-             (if bvp
-                 (disjoint-regions48p (len section-bytes) (bvchop 48 section-start)
-                                    (* 8 stack-slots-needed) (bvchop 48 (+ (* -8 stack-slots-needed)
-                                                                           (rsp x86))))
-               (separate :r (len section-bytes) section-start
-                         :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed)
-                                                        (rsp x86))))
-           t))))
+;; ;todo: remove
+;; ;; todo: think about signed vs unsigned addresses
+;; (defun elf64-section-loadedp (section-bytes
+;;                               section-address
+;;                               text-offset
+;;                               position-independentp ; whether to assume position independence
+;;                               stack-slots-needed
+;;                               text-section-address
+;;                               bvp
+;;                               x86)
+;;   (declare (xargs :guard (and (acl2::unsigned-byte-listp 8 section-bytes)
+;;                               (consp section-bytes)
+;;                               (unsigned-byte-p 48 (len section-bytes))
+;;                               (unsigned-byte-p 48 section-address) ; (natp section-address) ; or allow signed?
+;;                               (natp text-offset)
+;;                               (booleanp position-independentp)
+;;                               (unsigned-byte-p 45 stack-slots-needed) ; (natp stack-slots-needed)
+;;                               (natp text-section-address)
+;;                               (booleanp bvp))
+;;                   :stobjs x86))
+;;   (let* ((section-start (if position-independentp
+;;                             ;; position-independent, so assume the section is loaded at the appropriate offset wrt TEXT-OFFSET, which is where we assume the text section starts.
+;;                             ;; todo: can this be negative?:
+;;                             (let* (;; todo: can this be negative?:
+;;                                    (section-offset-from-text (- section-address text-section-address)))
+;;                               (+ text-offset section-offset-from-text))
+;;                           ;; not position-independent, so use the numeric address (may be necessary):
+;;                           section-address)))
+;;     (and (bytes-loaded-at-address-64 section-bytes section-start bvp x86) ; todo: this wants section-start to be canonical, not a usb
+;;          ;; (canonical-address-p$inline const-section-start)
+;;          ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
+;;          ;; The section is disjoint from the part of the stack that we expect to be written:
+;;          (if (posp stack-slots-needed) ; should be resolved, because separate requires but numbers to be positive
+;;              (if bvp
+;;                  (disjoint-regions48p (len section-bytes) (bvchop 48 section-start)
+;;                                     (* 8 stack-slots-needed) (bvchop 48 (+ (* -8 stack-slots-needed)
+;;                                                                            (rsp x86))))
+;;                (separate :r (len section-bytes) section-start
+;;                          :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed)
+;;                                                         (rsp x86))))
+;;            t))))
 
-;; Returns a list of terms over the variables X86 and (perhaps TEXT-OFFSET).
-;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
-(defund assumptions-for-elf64-sections (section-names position-independentp stack-slots text-section-address parsed-elf bvp)
-  ;; (declare (xargs :guard (and (string-listp section-names) (booleanp position-independentp) (natp stack-slots)
-  ;;                             (parsed-elfp parsed-elf)
-  ;;                             )))
-  (if (endp section-names)
-      nil
-    (let* ((section-name (first section-names)))
-      (if (acl2::elf-section-presentp section-name parsed-elf)
-          (prog2$ (cw "(~s0 section detected.)~%" section-name)
-                  ;; todo: do better?
-                  (cons `(elf64-section-loadedp ;; ',section-name
-                                                ',(acl2::get-elf-section-bytes section-name parsed-elf)
-                                                ',(acl2::get-elf-section-address section-name parsed-elf)
-                                                text-offset
-                                                ',position-independentp
-                                                ',stack-slots
-                                                ',text-section-address
-                                                ',bvp
-                                                x86)
-                        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf bvp)))
-        (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf bvp)))))
+;; ;; Returns a list of terms over the variables X86 and (perhaps TEXT-OFFSET).
+;; ;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
+;; (defund assumptions-for-elf64-sections (section-names position-independentp stack-slots text-section-address parsed-elf bvp)
+;;   ;; (declare (xargs :guard (and (string-listp section-names) (booleanp position-independentp) (natp stack-slots)
+;;   ;;                             (parsed-elfp parsed-elf)
+;;   ;;                             )))
+;;   (if (endp section-names)
+;;       nil
+;;     (let* ((section-name (first section-names)))
+;;       (if (acl2::elf-section-presentp section-name parsed-elf)
+;;           (prog2$ (cw "(~s0 section detected.)~%" section-name)
+;;                   ;; todo: do better?
+;;                   (cons `(elf64-section-loadedp ;; ',section-name
+;;                                                 ',(acl2::get-elf-section-bytes section-name parsed-elf)
+;;                                                 ',(acl2::get-elf-section-address section-name parsed-elf)
+;;                                                 text-offset
+;;                                                 ',position-independentp
+;;                                                 ',stack-slots
+;;                                                 ',text-section-address
+;;                                                 ',bvp
+;;                                                 x86)
+;;                         (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf bvp)))
+;;         (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf bvp)))))
 
 ;; Returns a list of terms.
-;; TODO: Consider making this non-meta.  That is, make it a predicate on the x86 state.
 (defun architecture-specific-assumptions (executable-type position-independentp stack-slots parsed-executable bvp)
   (declare (xargs :guard (and (member-eq executable-type '(:mach-o-64 :elf-64))
                               (booleanp position-independentp)
@@ -162,6 +162,7 @@
                               (booleanp bvp)
                               )
                   :verify-guards nil))
+  (declare (ignore position-independentp))
   (if (eq :mach-o-64 executable-type)
       (b* ((- (and (acl2::mach-o-section-presentp "__TEXT" "__const" parsed-executable) (cw "(__TEXT,__const section detected.)~%")))
            (- (and (acl2::mach-o-section-presentp "__DATA" "__data" parsed-executable) (cw "(__DATA,__data section detected.)~%")))
@@ -175,11 +176,12 @@
           ;;        `((acl2::data-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
           ))
     (if (eq :elf-64 executable-type) ; todo: handle elf32
-        ;; todo: handle more sections here:
-        (assumptions-for-elf64-sections '(".data" ".rodata"
-                                          ;;  ".got" ; todo: consider putting this back (at least assume it disjoint from the stack)
-                                          )
-                                        position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable bvp)
+        nil
+        ;; ;; todo: handle more sections here:
+        ;; (assumptions-for-elf64-sections '(".data" ".rodata"
+        ;;                                   ;;  ".got" ; todo: consider putting this back (at least assume it disjoint from the stack)
+        ;;                                   )
+        ;;                                 position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable bvp)
       (if (eq :elf-32 executable-type)
           (cw "WARNING: Architecture-specific assumptions are not yet supported for ELF32.~%")
         nil))))
@@ -349,15 +351,16 @@
         (if 32-bitp ;todo: add support for this in 32-bit mode, or is the calling convention too different?
             (mv nil nil)
           (make-register-replacement-assumptions64 register-names64 param-names nil nil)))
-       (assumptions `(,@user-assumptions
-                      ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
-                      ;; (equal (x86isa::mxcsrbits->ie$inline (mxcsr x86)) 0) ; invalid operation
-                      ;; todo: build this stuff into def-unrolled:
-                      ,@register-replacement-assumptions
-                      ,@register-type-assumptions
-                      ;; todo: build this into def-unrolled:
-                      ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable bvp)
-                      ))
+       ;; Assumptions to be added to what unroll-x86-code-core already puts in:
+       (extra-assumptions `(,@user-assumptions
+                            ;; (equal (x86isa::mxcsrbits->de$inline (mxcsr x86)) 0) ; no denormal result created yet
+                            ;; (equal (x86isa::mxcsrbits->ie$inline (mxcsr x86)) 0) ; invalid operation
+                            ;; todo: build this stuff into def-unrolled:
+                            ,@register-replacement-assumptions
+                            ,@register-type-assumptions
+                            ;; todo: build this into def-unrolled:
+                            ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable bvp)
+                            ))
        (target function-name-string)
 
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
@@ -368,7 +371,7 @@
         (unroll-x86-code-core
           target
           parsed-executable
-          assumptions
+          extra-assumptions
           nil ;suppress-assumptions
           inputs-disjoint-from
           stack-slots
@@ -401,7 +404,7 @@
                     ;;acl2::get-mach-o-constants-constant-opener
                     ;;acl2::get-mach-o-data-address-constant-opener
                     ;;acl2::get-mach-o-data-constant-opener
-                    elf64-section-loadedp ; todo:package
+                    ;;elf64-section-loadedp ; todo:package
                     acl2::elf-section-presentp
                     fix-of-rsp
                     integerp-of-rsp)
