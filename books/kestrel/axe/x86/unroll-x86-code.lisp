@@ -765,12 +765,32 @@
                      (if suppress-assumptions
                          ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
                          nil
-                       `((standard-assumptions-mach-o-64 ',target
-                                                         ',parsed-executable
-                                                         ',stack-slots
-                                                         ,text-offset
-                                                         ',bvp
-                                                         x86))))
+                       (let* ((text-section-bytes (acl2::get-mach-o-code parsed-executable)) ;all the code, not just the given subroutine
+                              (text-section-address (acl2::get-mach-o-code-address parsed-executable))
+                              (subroutine-address (acl2::subroutine-address-mach-o target parsed-executable))
+                              (offset-to-subroutine (- subroutine-address text-section-address)))
+                         `((standard-state-assumption-64 x86)
+                           (bytes-loaded-at-address-64 ',text-section-bytes ,text-offset ,bvp x86)
+                           ;; The program counter is at the start of the routine to lift:
+                           (equal (rip x86) (+ ,text-offset ,offset-to-subroutine))
+
+                           ;; Stack addresses are canonical (could use something like all-addreses-of-stack-slots here, but these addresses are by definition canonical):
+                           (x86isa::canonical-address-listp (addresses-of-subsequent-stack-slots ,stack-slots (rgfi *rsp* x86))) ; todo: use rsp
+                           ;; old: (canonical-address-p (+ -8 (rgfi *rsp* x86))) ;; The stack slot where the RBP will be saved
+
+                           ;; The program is disjoint from the part of the stack that is written:
+                           ,@(if (posp stack-slots)
+                                 ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+                                 (if bvp
+                                     ;; essentially the same as the below SEPARATE claim:
+                                     `((disjoint-regions48p ,(len text-section-bytes) (bvchop 48 ,text-offset) ; todo: drop the 2 bvchops
+                                                            (* 8 ,stack-slots) (bvchop 48 (+ (* -8 ,stack-slots) (rgfi *rsp* x86)))))
+                                   `((separate :r ,(len text-section-bytes) ,text-offset
+                                               ;; Only a single stack slot is written
+                                               ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
+                                               :r (* 8 ,stack-slots) (+ (* -8 ,stack-slots) (rgfi *rsp* x86)))))
+                               ;; Can`'t call separate here because (* 8 stack-slots) = 0.
+                               nil)))))
                    ;; maybe we should check suppress-assumptions here, but if they gave an :inputs, they must want the assumptions:
                    ((mv input-assumptions input-assumption-vars)
                     (if (not (equal inputs :skip)) ; really means generate no assumptions
