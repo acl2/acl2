@@ -754,7 +754,7 @@
                   untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
                   assumption-rules input-assumption-vars state))
           ;; legacy case (generate some assumptions and then simplify them):
-          ;; TODO: Why is input-assumptions-and-vars in this legacy case?
+          ;; TODO: Why is assumptions-and-vars-for-inputs in this legacy case?
           (b* (;;todo: finish adding support for :entry-point!
                ((when (and (eq :entry-point target)
                            (not (eq :pe-32 executable-type))))
@@ -829,17 +829,17 @@
                 (if (and 64-bitp                                      ; todo
                          (not (equal inputs :skip)) ; really means generate no assumptions
                          )
-                    (input-assumptions-and-vars inputs ; these are names-and-types
-                                                ;; todo: handle zmm regs and values passed on the stack?!:
-                                                ;; handle structs that fit in 2 registers?
-                                                ;; See the System V AMD64 ABI
-                                                '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
-                                                stack-slots
-                                                (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
-                                                type-assumptions-for-array-varsp
-                                                nil nil
-                                                nil ; new-canonicalp
-                                                )
+                    (assumptions-and-vars-for-inputs inputs ; these are names-and-types
+                                                     ;; todo: handle zmm regs and values passed on the stack?!:
+                                                     ;; handle structs that fit in 2 registers?
+                                                     ;; See the System V AMD64 ABI
+                                                     '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
+                                                     stack-slots
+                                                     (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
+                                                     type-assumptions-for-array-varsp
+                                                     nil nil
+                                                     nil ; new-canonicalp
+                                                     )
                   (mv nil nil)))
                (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
                (assumptions (append assumptions extra-assumptions))

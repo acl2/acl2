@@ -128,10 +128,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Returns (mv erp assumptions).
 ;; Generates assumptions asserting that a chunk of data has been loaded into memory (e.g., a section or segment of the executable).
+;; Also generated assumptions that the addresses are canonical and that the chunk is disjoint from the saved return address and future stack words.
 (defund assumptions-for-memory-chunk (addr bytes relp state-var base-var stack-slots-needed bvp)
   (declare (xargs :guard (and (natp addr)
                               (acl2::byte-listp bytes)
@@ -148,37 +147,39 @@
                                                          (+ -1 addr numbytes)) base-var)) ; todo: use bvplus?
                )
           (mv nil ; no error
-              (append (if bvp
-                          `((integerp ,base-var) ; needed for things like turning + into bvplus
-                            (canonical-regionp ,(+ 1 numbytes)  ; todo: why the +1? (see above)
-                                               ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var))))
-                        `((canonical-address-p ,first-addr-term)
-                          (canonical-address-p ,last-addr-term)))
-                      ;; Assert that the chunk is loaded into memory:
-                      ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-                      (if bvp
-                          ;; alternate formulation for bv/smt proofs:
-                          `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
-                        `((program-at ,first-addr-term ; todo: use something better that includes the length, for speed
-                                      ',bytes
-                                      ,state-var)))
-                      ;; Assert that the chunk is disjoint from the saved return address (so writing to the chunk doesn't change it)
-                      ;; TODO: Do this only for writable chunks?
-                      (if bvp
-                          `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                                 '8 (rsp ,state-var)))
-                        `((separate ':r ',(len bytes) ,first-addr-term
-                                    ':r '8 (rsp ,state-var))))
-                      ;; Assert that the chunk is disjoint from the part of the stack that will be written:
-                      (if (posp stack-slots-needed)
-                          ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-                          (if bvp
-                              `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                                     ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
-                            `((separate ':r ',(len bytes) ,first-addr-term
-                                        ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
-                        ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
-                        nil))))
+              (append
+                ;; Assert that the addresses are canonical:
+                (if bvp ; todo: pass and check new-canonicalp?
+                    `((integerp ,base-var) ; needed for things like turning + into bvplus
+                      (canonical-regionp ,(+ 1 numbytes)  ; todo: why the +1? (see above)
+                                         ,(if (= addr 0) base-var `(bvplus 64 ,addr ,base-var))))
+                  `((canonical-address-p ,first-addr-term)
+                    (canonical-address-p ,last-addr-term)))
+                ;; Assert that the chunk is loaded into memory:
+                ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
+                (if bvp
+                    ;; alternate formulation for bv/smt proofs:
+                    `((equal (read-bytes ,first-addr-term ',(len bytes) ,state-var) ',bytes))
+                  `((program-at ,first-addr-term ; todo: use something better that includes the length, for speed
+                                ',bytes
+                                ,state-var)))
+                ;; Assert that the chunk is disjoint from the saved return address (so writing to the chunk doesn't change it)
+                ;; TODO: Do this only for writable chunks?
+                (if bvp
+                    `((disjoint-regions48p ',(len bytes) ,first-addr-term
+                                           '8 (rsp ,state-var)))
+                  `((separate ':r ',(len bytes) ,first-addr-term
+                              ':r '8 (rsp ,state-var))))
+                ;; Assert that the chunk is disjoint from the part of the stack that will be written:
+                (if (posp stack-slots-needed)
+                    ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+                    (if bvp
+                        `((disjoint-regions48p ',(len bytes) ,first-addr-term
+                                               ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                      `((separate ':r ',(len bytes) ,first-addr-term
+                                  ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
+                  ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
+                  nil))))
       ;; Absolute addresses are just numbers:
       (let* ((first-addr addr)
              (last-addr (+ -1 addr numbytes)) ; todo: use bvplus? ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
@@ -429,42 +430,40 @@
                               (names-and-typesp inputs)
                               (booleanp type-assumptions-for-array-varsp)
                               (member-eq inputs-disjoint-from '(nil :code :all))
-                              ;; (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
-                              ;; (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
                               (booleanp bvp)
                               (acl2::parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
-  (b* ((file-type (acl2::parsed-elf-type parsed-elf))
-       ((when (not (member-eq file-type '(:rel :dyn :exec))))
-        (mv (cons :unknown-file-type file-type) nil nil))
+  (b* ((program-header-table (acl2::parsed-elf-program-header-table parsed-elf))
        (base-var 'base-address) ; only used if position-independentp
-       (code-address (acl2::get-elf-code-address parsed-elf)) ; todo: what if there are segments but no sections?!
-       ((when (not (natp code-address))) ; impossible?
-        (mv :bad-code-addres nil nil))
-
-       ;; Decide what memory regions will be used in disjointness assumptions for inputs:
-       ((mv erp disjoint-chunk-addresses-and-lens) ; we will assume the inputs are disjoint from the chunks described by disjoint-chunk-addresses-and-lens
+       ;; Decide which memory regions to assume disjoint from the inputs:
+       ((mv erp addresses-and-lens-of-chunks-disjoint-from-inputs) ; we will assume the inputs are disjoint from the chunks described by addresses-and-lens-of-chunks-disjoint-from-inputs
         (if (eq nil inputs-disjoint-from)
             ;; Don't assume the inputs are disjoint from anything:
             (mv nil nil)
           (if (eq :all inputs-disjoint-from)
               ;; Assume the inputs are disjoint from all the sections/segments in the executable::
               ;; Warning: This is quite strong: an input to the function being lifted may very well be in a data section or in the stack!):
-              (elf64-segment-addresses-and-lens (acl2::parsed-elf-program-header-table parsed-elf)
+              (elf64-segment-addresses-and-lens program-header-table ; todo: consider null table (see below) ; todo: combine this pass through the segments/sections with the one below?
                                                 position-independentp
                                                 base-var
                                                 (len (acl2::parsed-elf-bytes parsed-elf))
                                                 nil)
             ;; inputs-disjoint-from must be :code, so assume the inputs are disjoint from the code bytes only:
-            (let* ((text-offset-term (if position-independentp
-                                         (symbolic-add-constant code-address base-var)
-                                       code-address)))
+            (b* ((code-address (acl2::get-elf-code-address parsed-elf)) ; todo: what if there are segments but no sections?!
+                 ((when (not (natp code-address))) ; impossible?
+                  (mv :bad-code-addres nil))
+                 (text-offset-term (if position-independentp
+                                       (symbolic-add-constant code-address base-var)
+                                     code-address)))
               (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-elf)) nil))))))
        ((when erp)
-        (er hard? 'assumptions-elf64-new "Error generating disjoint-chunk-addresses-and-lens: ~x0." erp)
+        (er hard? 'assumptions-elf64-new "Error generating addresses-and-lens-of-chunks-disjoint-from-inputs: ~x0." erp)
         (mv erp nil nil))
 
        ;; Decide whether to treat addresses as relative or absolute:
+       ;; (file-type (acl2::parsed-elf-type parsed-elf))
+       ;; ((when (not (member-eq file-type '(:rel :dyn :exec))))
+       ;;  (mv (cons :unknown-elf-file-type file-type) nil nil))
        ;; (position-independentp (if (eq :auto position-independentp)
        ;;           (if (member-eq file-type '(:rel :dyn)) t nil) ; :exec means absolute
        ;;         ;; use the explicitly given position-independentp:
@@ -480,9 +479,8 @@
         (er hard? 'assumptions-elf64-new "Bad or missing lift target address: ~x0." target-address)
         (mv :bad-or-missing-subroutine-address nil nil))
 
+       ;; Generate assumptions for the segments/sections (bytes are loaded, addresses are canonical, regions are disjoint from future stack words:
        (bytes (acl2::parsed-elf-bytes parsed-elf))
-       (program-header-table (acl2::parsed-elf-program-header-table parsed-elf))
-       ;; Generate assumptions for the segments/sections:
        ((mv erp segment-or-section-assumptions)
         (if (null program-header-table)
             ;; There are no segments, so we have to use the sections (TODO: WHICH ONES?):
@@ -496,17 +494,17 @@
        ((mv input-assumptions input-assumption-vars)
         (if (equal inputs :skip)
             (mv nil nil)
-          (input-assumptions-and-vars inputs ; tttodo: do we assume inputs disjoint from the stack?
-                                      ;; todo: handle zmm regs and values passed on the stack?!:
-                                      ;; handle structs that fit in 2 registers?
-                                      ;; See the System V AMD64 ABI
-                                      '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
-                                      stack-slots-needed
-                                      disjoint-chunk-addresses-and-lens ; (acons text-offset (len (acl2::get-elf-code parsed-elf)) nil) ; todo: could there be extra zeros?
-                                      type-assumptions-for-array-varsp
-                                      nil nil
-                                      t ; new-canonicalp
-                                      ))))
+          (assumptions-and-vars-for-inputs inputs ; tttodo: do we assume inputs disjoint from the stack?
+                                           ;; todo: handle zmm regs and values passed on the stack?!:
+                                           ;; handle structs that fit in 2 registers?
+                                           ;; See the System V AMD64 ABI
+                                           '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
+                                           stack-slots-needed
+                                           addresses-and-lens-of-chunks-disjoint-from-inputs ; (acons text-offset (len (acl2::get-elf-code parsed-elf)) nil) ; todo: could there be extra zeros?
+                                           type-assumptions-for-array-varsp
+                                           nil nil
+                                           t ; new-canonicalp
+                                           ))))
     (mv nil ; no error
         (append ;; can't use this: not in normal form: (make-standard-state-assumptions-64-fn state-var) ; todo: put back, but these are untranslated!  should all the assumptions be generated untranslated (for presentation) and then translated?
           (make-standard-assumptions64-new stack-slots-needed state-var base-var target-address position-independentp bvp)

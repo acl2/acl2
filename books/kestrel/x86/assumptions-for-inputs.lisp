@@ -203,13 +203,13 @@
 
 ;; Returns (mv assumptions input-assumption-vars-rev) where the input-assumption-vars-rev are in reverse order.
 ;; todo: check for repeated vars, or prove they can't occur
-(defund assumptions-for-input (input-name
-                               input-type ;; examples: u32 or u32* or u32[4]
-                               state-component
-                               stack-slots
-                               disjoint-chunk-addresses-and-lens
-                               type-assumptions-for-array-varsp
-                               new-canonicalp)
+(defund assumptions-and-vars-for-input (input-name
+                                        input-type ;; examples: u32 or u32* or u32[4]
+                                        state-component
+                                        stack-slots
+                                        disjoint-chunk-addresses-and-lens
+                                        type-assumptions-for-array-varsp
+                                        new-canonicalp)
   (declare (xargs :guard (and (symbolp input-name)
                               (symbolp input-type)
                               ;;state-component might be rdi or (rdi x86)
@@ -220,7 +220,7 @@
                               (booleanp new-canonicalp))))
   (let ((type (parse-type input-type)))
     (if (eq :error type)
-        (prog2$ (er hard? 'assumptions-for-input "Bad input type: ~x0." type)
+        (prog2$ (er hard? 'assumptions-and-vars-for-input "Bad input type: ~x0." type)
                 (mv nil nil))
       (if (atom type) ; scalar (e.g., "U32")
           ;; just put in the var name for the state component:
@@ -232,7 +232,7 @@
           (if (call-of :pointer type)
               (if (not (stringp (farg1 type))) ; for guards? ; todo: what about a pointer to something else? ; todo: give this check a name, e.g., scalar-typep
                   ;; TODO: Handle pointer to array, or struct, or pointer
-                  (prog2$ (er hard? 'assumptions-for-input "Unsupported input type: ~x0." type)
+                  (prog2$ (er hard? 'assumptions-and-vars-for-input "Unsupported input type: ~x0." type)
                           (mv nil nil))
                 (let* ((base-type (farg1 type))
                        (numbytes (bytes-in-scalar-type base-type))
@@ -254,8 +254,8 @@
                                   :r ,stack-byte-count
                                   (+ ,(- stack-byte-count) (rsp x86)))
                         (disjoint-regions48p ,numbytes ,pointer-name
-                                           ,stack-byte-count
-                                           (+ ,(- stack-byte-count) (rsp x86)))
+                                             ,stack-byte-count
+                                             (+ ,(- stack-byte-count) (rsp x86)))
                         ;; The input is disjoint from the code:
                         ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                         ;; The input is disjoint from the saved return address:
@@ -263,7 +263,7 @@
                         (separate :r 8 (rsp x86)
                                   :r ,numbytes ,pointer-name)
                         (disjoint-regions48p 8 (rsp x86)
-                                           ,numbytes ,pointer-name))
+                                             ,numbytes ,pointer-name))
                       ;; will be reversed later:
                       (list input-name pointer-name))))
             (if (and (call-of :array type) ; (:array <base-type> <element-count>)
@@ -280,53 +280,53 @@
                       (var-intro-assumptions-for-array-input 0 element-count bytes-per-element pointer-name input-name type-assumptions-for-array-varsp nil nil)))
                   (mv ;;todo: think about the order here (it will be reversed!):
                     (append assumptions
-                              `(;; Rewriting will replace the state component with the pointer's name:
-                                (equal ,state-component ,pointer-name)
-                                ;; The base adddress of the array, and subsequent bytes, are canonical:
-                                ,@(if new-canonicalp
-                                      `((canonical-regionp ,numbytes ,pointer-name)
-                                        (integerp ,pointer-name))
-                                    `((canonical-address-p$inline ,pointer-name) ; first address
-                                      (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address (todo: consider numbytes=0)
-                                      ))
-                                ;; The input is disjoint from the space into which the stack will grow:
-                                (separate :r ,numbytes ,pointer-name
-                                          :r ,stack-byte-count
-                                          (+ ,(- stack-byte-count) (rsp x86)))
-                                (disjoint-regions48p ,numbytes ,pointer-name
+                            `(;; Rewriting will replace the state component with the pointer's name:
+                              (equal ,state-component ,pointer-name)
+                              ;; The base adddress of the array, and subsequent bytes, are canonical:
+                              ,@(if new-canonicalp
+                                    `((canonical-regionp ,numbytes ,pointer-name)
+                                      (integerp ,pointer-name))
+                                  `((canonical-address-p$inline ,pointer-name) ; first address
+                                    (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address (todo: consider numbytes=0)
+                                    ))
+                              ;; The input is disjoint from the space into which the stack will grow:
+                              (separate :r ,numbytes ,pointer-name
+                                        :r ,stack-byte-count
+                                        (+ ,(- stack-byte-count) (rsp x86)))
+                              (disjoint-regions48p ,numbytes ,pointer-name
                                                    ,stack-byte-count
                                                    (+ ,(- stack-byte-count) (rsp x86)))
-                                ;; The input is disjoint from the code:
-                                ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
-                                ;; The input is disjoint from the saved return address:
-                                ;; todo: reorder args?
-                                (separate :r 8 (rsp x86)
-                                          :r ,numbytes ,pointer-name)
-                                (disjoint-regions48p 8 (rsp x86)
+                              ;; The input is disjoint from the code:
+                              ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
+                              ;; The input is disjoint from the saved return address:
+                              ;; todo: reorder args?
+                              (separate :r 8 (rsp x86)
+                                        :r ,numbytes ,pointer-name)
+                              (disjoint-regions48p 8 (rsp x86)
                                                    ,numbytes ,pointer-name)))
-                      ;; will be reversed later:
-                      (append input-assumption-vars-rev (list pointer-name))))
-              (prog2$ (er hard? 'assumptions-for-input "Bad type: ~x0." type)
+                    ;; will be reversed later:
+                    (append input-assumption-vars-rev (list pointer-name))))
+              (prog2$ (er hard? 'assumptions-and-vars-for-input "Bad type: ~x0." type)
                       (mv nil nil)))))))))
 
 (local
-  (defthm true-listp-of-mv-nth-0-of-assumptions-for-input
+  (defthm true-listp-of-mv-nth-0-of-assumptions-and-vars-for-input
     (implies (true-listp assumptions-acc)
-             (true-listp (mv-nth 0 (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp new-canonicalp))))
-    :hints (("Goal" :in-theory (enable assumptions-for-input)))))
+             (true-listp (mv-nth 0 (assumptions-and-vars-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp new-canonicalp))))
+    :hints (("Goal" :in-theory (enable assumptions-and-vars-for-input)))))
 
 (local
-  (defthm symbol-listp-of-mv-nth-1-of-assumptions-for-input
+  (defthm symbol-listp-of-mv-nth-1-of-assumptions-and-vars-for-input
     (implies (and (symbol-listp vars-acc)
                   (symbolp input-name))
-             (symbol-listp (mv-nth 1 (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp new-canonicalp))))
-    :hints (("Goal" :in-theory (enable assumptions-for-input)))))
+             (symbol-listp (mv-nth 1 (assumptions-and-vars-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp new-canonicalp))))
+    :hints (("Goal" :in-theory (enable assumptions-and-vars-for-input)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv assumptions input-assumption-vars).
 ;; might have extra, unneeded items in state-components
-(defund input-assumptions-and-vars (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc new-canonicalp)
+(defund assumptions-and-vars-for-inputs (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc new-canonicalp)
   (declare (xargs :guard (and (names-and-typesp input-names-and-types)
                               (true-listp state-components)
                               (natp stack-slots)
@@ -345,25 +345,25 @@
          (input-type (second name-and-type))
          (state-component (first state-components))
          ((mv assumptions-for-first vars-for-first-rev)
-          (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp new-canonicalp)))
-      (input-assumptions-and-vars (rest input-names-and-types)
-                                  (rest state-components) stack-slots disjoint-chunk-addresses-and-lens
-                                  type-assumptions-for-array-varsp
-                                  (append assumptions-for-first assumptions-acc)
-                                  (append vars-for-first-rev vars-acc) ; todo: check for dups
-                                  new-canonicalp
-                                  ))))
+          (assumptions-and-vars-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp new-canonicalp)))
+      (assumptions-and-vars-for-inputs (rest input-names-and-types)
+                                       (rest state-components) stack-slots disjoint-chunk-addresses-and-lens
+                                       type-assumptions-for-array-varsp
+                                       (append assumptions-for-first assumptions-acc)
+                                       (append vars-for-first-rev vars-acc) ; todo: check for dups
+                                       new-canonicalp
+                                       ))))
 
-;; Example: (input-assumptions-and-vars '((v1 :u32*) (v2 :u32*)) '((rdi x86) (rsi x86)))
+;; Example: (assumptions-and-vars-for-inputs '((v1 :u32*) (v2 :u32*)) '((rdi x86) (rsi x86)))
 
-(defthm true-listp-of-mv-nth-0-of-input-assumptions-and-vars-type
+(defthm true-listp-of-mv-nth-0-of-assumptions-and-vars-for-inputs-type
   (implies (true-listp assumptions-acc)
-           (true-listp (mv-nth 0 (input-assumptions-and-vars input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc new-canonicalp))))
+           (true-listp (mv-nth 0 (assumptions-and-vars-for-inputs input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc new-canonicalp))))
   :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable input-assumptions-and-vars))))
+  :hints (("Goal" :in-theory (enable assumptions-and-vars-for-inputs))))
 
-(defthm true-listp-of-mv-nth-1-of-input-assumptions-and-vars-type
+(defthm true-listp-of-mv-nth-1-of-assumptions-and-vars-for-inputs-type
   (implies (true-listp vars-acc)
-           (true-listp (mv-nth 1 (input-assumptions-and-vars input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc new-canonicalp))))
+           (true-listp (mv-nth 1 (assumptions-and-vars-for-inputs input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens type-assumptions-for-array-varsp assumptions-acc vars-acc new-canonicalp))))
   :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable input-assumptions-and-vars))))
+  :hints (("Goal" :in-theory (enable assumptions-and-vars-for-inputs))))
