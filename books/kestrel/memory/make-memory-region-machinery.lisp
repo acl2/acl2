@@ -299,6 +299,25 @@
                                (,in-regionp-name ad (+ -1 len) (+ 1 start-ad)))))
            :hints (("Goal" :in-theory (enable ,in-regionp-name bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases))))
 
+         ;; Sanity check (split out the 2 cases depending on whether the memory region wraps around):
+         (defthmd ,(acl2::pack-in-package "X" in-regionp-name '-alt-def)
+           (implies (and (unsigned-byte-p ,num-address-bits ad)
+                         (unsigned-byte-p ,num-address-bits start-ad)
+                         (integerp len)
+                         (<= len (expt 2 ,num-address-bits)))
+                    (equal (,in-regionp-name ad len start-ad)
+                           (if (<= (+ start-ad len) (expt 2 ,num-address-bits))
+                               ;; memory region does not wrap around:
+                               (and (<= start-ad ad)
+                                    (< ad (+ start-ad len)))
+                             ;; wrap-around case: ad is either in the top part (above
+                             ;; start-ad) or in the bottom part (below the wrapped
+                             ;; around bound):
+                             (or (<= start-ad ad)
+                                 (< ad (- (+ start-ad len)
+                                          (expt 2 ,num-address-bits)))))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvlt bvuminus bvplus acl2::bvchop-of-sum-cases))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
          ;; Defines what it means for 2 memory regions to be disjoint (no address in both regions).
