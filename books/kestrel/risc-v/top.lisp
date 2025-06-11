@@ -33,7 +33,6 @@
      unprivileged RV32IM, RV64IM, RV32EM, and RV64EM,
      (except for
      the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
-     little endian memory access,
      fully readable and writable address space,
      and no alignment checks.
      We plan to extend and improve this library.")
