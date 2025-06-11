@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-(include-book "regions") ; since this book knows about disjoint-regions48p
+(include-book "kestrel/memory/memory48" :dir :system) ; since this book knows about disjoint-regions48p
 (include-book "canonical-unsigned")
 (include-book "assumptions") ; todo: for lifter-targetp
 (include-book "assumptions-for-inputs")
@@ -54,20 +54,28 @@
              t))
     :hints (("Goal" :in-theory (enable acl2::byte-listp acl2::repeat)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Result is untranslated
 (defund symbolic-add-constant (constant term)
   (declare (xargs :guard (integerp constant)))
   (if (= 0 constant)
       term
-    `(+ ',constant ,term)))
+    `(+ ,constant ,term)))
+
+;; Result is untranslated
+(defund symbolic-bvplus-constant (size constant term)
+  (declare (xargs :guard (integerp constant)))
+  (if (= 0 constant)
+      term ; could chop
+    `(bvplus ,size ,constant ,term)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;move this stuff?
 
 ;; Returns (mv erp maybe-extended-acc).
-(defun elf64-segment-address-and-len (program-header-table-entry relp base-var bytes-len acc)
+(defun elf64-segment-address-and-len (program-header-table-entry relp bvp base-var bytes-len acc)
   (declare (xargs :guard (and (alistp program-header-table-entry)
                               (booleanp relp)
                               (symbolp base-var)
@@ -92,13 +100,13 @@
         (mv :not-enough-bytes nil)
       (if (< memsz filesz)
           (mv :too-many-bytes-in-file nil)
-        (b* ((address-term (if relp (symbolic-add-constant vaddr base-var) `,vaddr)))
+        (b* ((address-term (if relp (if bvp (symbolic-bvplus-constant 48 vaddr base-var) (symbolic-add-constant vaddr base-var)) `,vaddr)))
           (mv nil
               (cons (cons address-term memsz)
                     acc)))))))
 
 ;; Returns (mv erp bases-and-lens).
-(defund elf64-segment-addresses-and-lens (program-header-table relp base-var bytes-len acc)
+(defund elf64-segment-addresses-and-lens (program-header-table relp bvp base-var bytes-len acc)
   (declare (xargs :guard (and (acl2::elf-program-header-tablep program-header-table)
                               (booleanp relp)
                               (symbolp base-var)
@@ -110,16 +118,16 @@
       (mv nil (reverse acc))
     (b* ((program-header-table-entry (first program-header-table))
          ((mv erp acc)
-          (elf64-segment-address-and-len program-header-table-entry relp base-var bytes-len acc))
+          (elf64-segment-address-and-len program-header-table-entry relp bvp base-var bytes-len acc))
          ((when erp) (mv erp nil)))
-      (elf64-segment-addresses-and-lens (rest program-header-table) relp base-var bytes-len acc))))
+      (elf64-segment-addresses-and-lens (rest program-header-table) relp bvp base-var bytes-len acc))))
 
 ;todo: nested induction
 (defthm elf64-segment-addresses-and-lens-type
   (implies (and (alistp acc) ; cars are terms
                 (nat-listp (strip-cdrs acc)))
            (mv-let (erp bases-and-lens)
-             (elf64-segment-addresses-and-lens program-header-table relp base-var bytes-len acc)
+             (elf64-segment-addresses-and-lens program-header-table relp bvp base-var bytes-len acc)
              (declare (ignore erp))
              (and (alistp bases-and-lens) ; cars are terms
                   (nat-listp (strip-cdrs bases-and-lens)))))
@@ -138,14 +146,18 @@
                               (symbolp base-var) ; rename base-address-var?
                               (natp stack-slots-needed)
                               (booleanp bvp)
-                              (booleanp new-canonicalp)
-                              )))
+                              (booleanp new-canonicalp))))
   (let ((numbytes (len bytes)))
     (if relp
         ;; Relative addresses make everything relative to the base-var:
-        (let* ((first-addr-term (symbolic-add-constant offset base-var)) ; todo: use bvplus?
-               (last-addr-term (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
-                                                         (+ -1 offset numbytes)) base-var)) ; todo: use bvplus?
+        (let* ((first-addr-term (if bvp (symbolic-bvplus-constant 48 offset base-var) (symbolic-add-constant offset base-var)))
+               (last-addr-term (if bvp
+                                   (symbolic-bvplus-constant 48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                                                                   (+ -1 offset numbytes))
+                                                             base-var)
+                                 (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                                                           (+ -1 offset numbytes))
+                                                        base-var))) ; todo: use bvplus?
                )
           (mv nil ; no error
               (append
@@ -176,9 +188,9 @@
                     ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
                     (if bvp
                         `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                               ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))) ; todo: use bvplus
+                                               ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var))))
                       `((separate ':r ',(len bytes) ,first-addr-term
-                                  ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
+                                  ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
                   ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                   nil))))
       ;; Absolute addresses are just numbers:
@@ -209,9 +221,9 @@
                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
                       (if bvp
                           `((disjoint-regions48p ',(len bytes) ,first-addr-term
-                                               ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                                               ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var))))
                         `((separate ':r ',(len bytes) ,first-addr-term
-                                    ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
+                                    ':r ',(* 8 stack-slots-needed) (bvplus 48 ',(* '-8 stack-slots-needed) (rsp ,state-var)))))
                     ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                     nil))))))))
 
@@ -455,7 +467,7 @@
               ;; Assume the inputs are disjoint from all the sections/segments in the executable::
               ;; Warning: This is quite strong: an input to the function being lifted may very well be in a data section or in the stack!):
               (elf64-segment-addresses-and-lens program-header-table ; todo: consider null table (see below) ; todo: combine this pass through the segments/sections with the one below?
-                                                position-independentp
+                                                position-independentp bvp
                                                 base-var
                                                 (len (acl2::parsed-elf-bytes parsed-elf))
                                                 nil)
@@ -464,7 +476,9 @@
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
-                                       (symbolic-add-constant code-address base-var)
+                                       (if bvp
+                                           (symbolic-bvplus-constant 48 code-address base-var)
+                                         (symbolic-add-constant code-address base-var))
                                      code-address)))
               (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-elf)) nil))))))
        ((when erp)
