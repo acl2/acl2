@@ -23,6 +23,7 @@
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/reverse" :dir :system))
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
 
 (local (in-theory (disable acl2::reverse-becomes-reverse-list-gen
                            acl2::reverse-becomes-reverse-list
@@ -112,8 +113,6 @@
           (elf64-segment-address-and-len program-header-table-entry relp base-var bytes-len acc))
          ((when erp) (mv erp nil)))
       (elf64-segment-addresses-and-lens (rest program-header-table) relp base-var bytes-len acc))))
-
-(local (include-book "kestrel/alists-light/alistp" :dir :system))
 
 ;todo: nested induction
 (defthm elf64-segment-addresses-and-lens-type
