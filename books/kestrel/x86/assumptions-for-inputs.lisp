@@ -242,6 +242,7 @@
                         (equal ,state-component ,pointer-name)
                         ;; todo: what about reading individual bytes?:  don't trim down reads?
                         (equal (read ,numbytes ,pointer-name x86) ,input-name)
+                        ;; The pointer, and subsequent bytes, are canonical:
                         ,@(if new-canonicalp
                               `((canonical-regionp ,numbytes ,pointer-name)
                                 (integerp ,pointer-name))
@@ -281,6 +282,7 @@
                     (append assumptions
                               `(;; Rewriting will replace the state component with the pointer's name:
                                 (equal ,state-component ,pointer-name)
+                                ;; The base adddress of the array, and subsequent bytes, are canonical:
                                 ,@(if new-canonicalp
                                       `((canonical-regionp ,numbytes ,pointer-name)
                                         (integerp ,pointer-name))

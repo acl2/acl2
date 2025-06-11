@@ -725,31 +725,6 @@
         (if new-style-elf-assumptionsp
             ;; New assumption generation behavior, only for ELF64 (for now):
             (b* ((- (cw "Using new-style assumptions.~%"))
-                 (base-var 'base-address) ; only used if position-independentp
-                 ;; Decide what memory regions will be used in disjointness assumptions for inputs:
-                 ;; todo: add this stuff to assumptions-elf64-new (see call below)?
-                 ((mv erp disjoint-chunk-addresses-and-lens) ; we will assume the inputs are disjoint from these
-                  (if (eq nil inputs-disjoint-from)
-                      ;; Don't assume the inputs are disjoint from anything:
-                      (mv nil nil)
-                    (if (eq :all inputs-disjoint-from)
-                        ;; Assume the inputs are disjoint from all the sections/segments in the executable::
-                        (if (not (eq :elf-64 executable-type)) ; todo: impossible
-                            (mv :unsupported (er hard? 'unroll-x86-code-core "The :inputs-disjoint-from option is only supported for ELF64 executables.")) ;todo!
-                          (elf64-segment-addresses-and-lens (acl2::parsed-elf-program-header-table parsed-executable)
-                                                            position-independentp
-                                                            base-var
-                                                            (len (acl2::parsed-elf-bytes parsed-executable))
-                                                            nil))
-                      ;; inputs-disjoint-from must be :code, so assume the inputs are disjoint from the code bytes only:
-                      (let* ((code-address (acl2::get-elf-code-address parsed-executable))
-                             (text-offset-term (if position-independentp
-                                                   (symbolic-add-constant code-address base-var)
-                                                 code-address)))
-                        (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-executable)) nil))))))
-                 ((when erp)
-                  (er hard? 'unroll-x86-code-core "Error generating disjointness assumptions for inputs: ~x0." erp)
-                  (mv erp nil nil nil nil state))
                  ;; These are untranslated (in general):
                  ((mv erp automatic-assumptions input-assumption-vars)
                   (if suppress-assumptions
@@ -758,10 +733,9 @@
                                            position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
                                            stack-slots
                                            'x86
-                                           base-var
                                            inputs
                                            type-assumptions-for-array-varsp
-                                           disjoint-chunk-addresses-and-lens
+                                           inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                            bvp
                                            parsed-executable)))
                  ((when erp) (mv erp nil nil nil nil state))

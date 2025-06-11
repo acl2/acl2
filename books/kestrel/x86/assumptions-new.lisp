@@ -53,12 +53,80 @@
              t))
     :hints (("Goal" :in-theory (enable acl2::byte-listp acl2::repeat)))))
 
+
 ;; Result is untranslated
 (defund symbolic-add-constant (constant term)
   (declare (xargs :guard (integerp constant)))
   (if (= 0 constant)
       term
     `(+ ',constant ,term)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move this stuff?
+
+;; Returns (mv erp maybe-extended-acc).
+(defun elf64-segment-address-and-len (program-header-table-entry relp base-var bytes-len acc)
+  (declare (xargs :guard (and (alistp program-header-table-entry)
+                              (booleanp relp)
+                              (symbolp base-var)
+                              (natp bytes-len)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep)))))
+  (b* ((type (lookup-eq :type program-header-table-entry))
+       ((when (not (eq type :pt_load)))
+        ;; We skip any segment that is not a LOAD segment:
+        (mv nil acc))
+       (offset (lookup-eq :offset program-header-table-entry))
+       (filesz (lookup-eq :filesz program-header-table-entry))
+       (vaddr (lookup-eq :vaddr program-header-table-entry)) ; we don't use the paddr for anything
+       (memsz (lookup-eq :memsz program-header-table-entry)) ; todo: do anything with flags or align?
+       ((when (not (and (natp offset)
+                        (natp filesz)
+                        (natp vaddr)
+                        (natp memsz))))
+        (mv :bad-program-header-table-entry-value nil))
+       (last-byte-num (+ -1 offset filesz)))
+    (if (not (< last-byte-num bytes-len))
+        (mv :not-enough-bytes nil)
+      (if (< memsz filesz)
+          (mv :too-many-bytes-in-file nil)
+        (b* ((address-term (if relp (symbolic-add-constant vaddr base-var) `,vaddr)))
+          (mv nil
+              (cons (cons address-term memsz)
+                    acc)))))))
+
+;; Returns (mv erp bases-and-lens).
+(defund elf64-segment-addresses-and-lens (program-header-table relp base-var bytes-len acc)
+  (declare (xargs :guard (and (acl2::elf-program-header-tablep program-header-table)
+                              (booleanp relp)
+                              (symbolp base-var)
+                              (natp bytes-len)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
+                                                           acl2::true-listp-when-pseudo-term-listp-2)))))
+  (if (endp program-header-table)
+      (mv nil (reverse acc))
+    (b* ((program-header-table-entry (first program-header-table))
+         ((mv erp acc)
+          (elf64-segment-address-and-len program-header-table-entry relp base-var bytes-len acc))
+         ((when erp) (mv erp nil)))
+      (elf64-segment-addresses-and-lens (rest program-header-table) relp base-var bytes-len acc))))
+
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
+
+;todo: nested induction
+(defthm elf64-segment-addresses-and-lens-type
+  (implies (and (alistp acc) ; cars are terms
+                (nat-listp (strip-cdrs acc)))
+           (mv-let (erp bases-and-lens)
+             (elf64-segment-addresses-and-lens program-header-table relp base-var bytes-len acc)
+             (declare (ignore erp))
+             (and (alistp bases-and-lens) ; cars are terms
+                  (nat-listp (strip-cdrs bases-and-lens)))))
+  :hints (("Goal" :in-theory (enable elf64-segment-addresses-and-lens elf64-segment-address-and-len))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,53 +336,77 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: eventually remove make- from the names
-;; TODO: Deprecate the bvp=nil cae
-(defund make-standard-assumptions64-new (stack-slots-needed state-var target-address-term bvp)
+;; TODO: Deprecate the bvp=nil case
+(defund make-standard-assumptions64-new (stack-slots-needed
+                                         state-var
+                                         base-var ; only needed if position-independentp
+                                         target-address
+                                         position-independentp
+                                         bvp)
   (declare (xargs :guard (and (natp stack-slots-needed)
                               (symbolp state-var)
-                              ;; target-address-term may be untranslated
+                              (symbolp base-var)
+                              (natp target-address)
+                              (booleanp position-independentp)
                               (booleanp bvp))))
-  (append (make-standard-state-assumptions-fn state-var)
-          `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
-            ;; Alignment checking is turned off:
-            (not (alignment-checking-enabled-p ,state-var))
-            ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
-            ;; This may not be respected by malware.
-            ;; TODO: Try without this
-            (equal 0 (bvchop 3 (rsp ,state-var)))
-            ;; The program counter is at the start of the code to lift:
-            (equal (rip ,state-var) ,target-address-term)
-            )
-          ;; The return address must be canonical because we will transfer
-          ;; control to that address when doing the return:
-          (if bvp
-              `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
-            `((canonical-address-p (logext 64 (read 8 (rsp ,state-var) ,state-var)))))
-          ;; The stack must be canonical:
-          (if bvp
-              ;; todo: think about this:
-              `((canonical-regionp ,(+ 16 (* 8 stack-slots-needed))
-                                   ,(if (= 0 stack-slots-needed)
-                                        `(rsp ,state-var)
-                                      `(bvplus 64 ',(* -8 stack-slots-needed) (rsp ,state-var)))))
-            ;; old-style
-            (append `(;; The stack slot contaning the return address must be canonical
-                      ;; because the stack pointer returns here when we pop the saved
-                      ;; RBP:
-                      (canonical-address-p (rsp ,state-var))
+  (let ((target-address-term (if position-independentp
+                                 (if bvp
+                                     (if (= 0 target-address)
+                                         `(logext 64 ,base-var)
+                                       `(logext 64 (bvplus 64 ',target-address ,base-var)))
+                                   (if (= 0 target-address)
+                                       base-var
+                                     `(binary-+ ',target-address ,base-var)))
+                               (acl2::enquote target-address))))
+    (append (make-standard-state-assumptions-fn state-var)
+            ;; Assumptions about the BASE-VAR:
+            (if position-independentp
+                (if bvp
+                    `((unsigned-canonical-address-p ,base-var)) ; do we need this?
+                  `(;(integerp ,base-var)
+                    (canonical-address-p$inline ,base-var) ; todo: do we need this, given that we have assumptions for all the segments?
+                    ))
+              nil)
+            `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
+              ;; Alignment checking is turned off:
+              (not (alignment-checking-enabled-p ,state-var))
+              ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
+              ;; This may not be respected by malware.
+              ;; TODO: Try without this
+              (equal 0 (bvchop 3 (rsp ,state-var)))
+              ;; The program counter is at the start of the code to lift:
+              (equal (rip ,state-var) ,target-address-term)
+              )
+            ;; The return address must be canonical because we will transfer
+            ;; control to that address when doing the return:
+            (if bvp
+                `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
+              `((canonical-address-p (logext 64 (read 8 (rsp ,state-var) ,state-var)))))
+            ;; The stack must be canonical:
+            (if bvp
+                ;; todo: think about this:
+                `((canonical-regionp ,(+ 16 (* 8 stack-slots-needed))
+                                     ,(if (= 0 stack-slots-needed)
+                                          `(rsp ,state-var)
+                                        `(bvplus 64 ',(* -8 stack-slots-needed) (rsp ,state-var)))))
+              ;; old-style
+              (append `(;; The stack slot contaning the return address must be canonical
+                        ;; because the stack pointer returns here when we pop the saved
+                        ;; RBP:
+                        (canonical-address-p (rsp ,state-var))
 
-                      ;; The stack slot 'below' the return address must be canonical
-                      ;; because the stack pointer returns here when we do the return:
-                      (canonical-address-p (+ 8 (rsp ,state-var))))
-                    (if (posp stack-slots-needed)
-                        `(;;add to make-standard-state-assumptions-64-fn?
-                          (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
-                          (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
-                          )
-                      nil)))))
+                        ;; The stack slot 'below' the return address must be canonical
+                        ;; because the stack pointer returns here when we do the return:
+                        (canonical-address-p (+ 8 (rsp ,state-var))))
+                      (if (posp stack-slots-needed)
+                          `(;;add to make-standard-state-assumptions-64-fn?
+                            (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
+                            (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
+                            )
+                        nil))))))
 
 (defthm true-listp-of-make-standard-assumptions64-new
-  (true-listp (make-standard-assumptions64-new stack-slots-needed state-var target-address-term bvp)))
+  (true-listp (make-standard-assumptions64-new stack-slots-needed state-var base-var target-address position-independentp  bvp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -322,54 +414,72 @@
 ;; absolute.  Returns (mv erp assumptions assumption-vars) where assumptions is
 ;; a list of (untranslated) terms.
 (defund assumptions-elf64-new (target
-                               relp ; rename position-independentp?
+                               position-independentp
                                stack-slots-needed
                                state-var
-                               base-var ; only used if relp
                                inputs
                                type-assumptions-for-array-varsp
-                               disjoint-chunk-addresses-and-lens
+                               inputs-disjoint-from
                                bvp
                                parsed-elf)
   (declare (xargs :guard (and (lifter-targetp target)
-                              (booleanp relp)
+                              (booleanp position-independentp)
                               (natp stack-slots-needed)
                               (symbolp state-var) ; todo: too strict?
-                              (symbolp base-var)
                               (names-and-typesp inputs)
                               (booleanp type-assumptions-for-array-varsp)
-                              (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
-                              (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
+                              (member-eq inputs-disjoint-from '(nil :code :all))
+                              ;; (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
+                              ;; (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
                               (booleanp bvp)
                               (acl2::parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((file-type (acl2::parsed-elf-type parsed-elf))
        ((when (not (member-eq file-type '(:rel :dyn :exec))))
         (mv (cons :unknown-file-type file-type) nil nil))
+       (base-var 'base-address) ; only used if position-independentp
+       (code-address (acl2::get-elf-code-address parsed-elf)) ; todo: what if there are segments but no sections?!
+       ((when (not (natp code-address))) ; impossible?
+        (mv :bad-code-addres nil nil))
+
+       ;; Decide what memory regions will be used in disjointness assumptions for inputs:
+       ((mv erp disjoint-chunk-addresses-and-lens) ; we will assume the inputs are disjoint from the chunks described by disjoint-chunk-addresses-and-lens
+        (if (eq nil inputs-disjoint-from)
+            ;; Don't assume the inputs are disjoint from anything:
+            (mv nil nil)
+          (if (eq :all inputs-disjoint-from)
+              ;; Assume the inputs are disjoint from all the sections/segments in the executable::
+              ;; Warning: This is quite strong: an input to the function being lifted may very well be in a data section or in the stack!):
+              (elf64-segment-addresses-and-lens (acl2::parsed-elf-program-header-table parsed-elf)
+                                                position-independentp
+                                                base-var
+                                                (len (acl2::parsed-elf-bytes parsed-elf))
+                                                nil)
+            ;; inputs-disjoint-from must be :code, so assume the inputs are disjoint from the code bytes only:
+            (let* ((text-offset-term (if position-independentp
+                                         (symbolic-add-constant code-address base-var)
+                                       code-address)))
+              (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-elf)) nil))))))
+       ((when erp)
+        (er hard? 'assumptions-elf64-new "Error generating disjoint-chunk-addresses-and-lens: ~x0." erp)
+        (mv erp nil nil))
+
        ;; Decide whether to treat addresses as relative or absolute:
-       ;; (relp (if (eq :auto relp)
+       ;; (position-independentp (if (eq :auto position-independentp)
        ;;           (if (member-eq file-type '(:rel :dyn)) t nil) ; :exec means absolute
-       ;;         ;; use the explicitly given relp:
-       ;;         relp))
+       ;;         ;; use the explicitly given position-independentp:
+       ;;         position-independentp))
        ;; Decide where to start lifting:
        (target-address (if (eq :entry-point target)
                            (acl2::parsed-elf-entry-point parsed-elf)
                          (if (natp target)
-                             target ; explicit address given (relative iff relp)
+                             target ; explicit address given (relative iff position-independentp)
                            ;; target is the name of a function:
                            (acl2::subroutine-address-elf target parsed-elf))))
        ((when (not (natp target-address)))
         (er hard? 'assumptions-elf64-new "Bad or missing lift target address: ~x0." target-address)
         (mv :bad-or-missing-subroutine-address nil nil))
-       (target-address-term (if relp
-                                (if bvp
-                                    (if (= 0 target-address)
-                                        `(logext 64 ,base-var)
-                                      `(logext 64 (bvplus 64 ',target-address ,base-var)))
-                                  (if (= 0 target-address)
-                                      base-var
-                                    `(binary-+ ',target-address ,base-var)))
-                              (acl2::enquote target-address)))
+
        (bytes (acl2::parsed-elf-bytes parsed-elf))
        (program-header-table (acl2::parsed-elf-program-header-table parsed-elf))
        ;; Generate assumptions for the segments/sections:
@@ -377,21 +487,16 @@
         (if (null program-header-table)
             ;; There are no segments, so we have to use the sections (TODO: WHICH ONES?):
             (assumptions-for-elf64-sections-new '(".text" ".data" ".rodata") ; todo: .bss, etc
-                                                relp stack-slots-needed state-var base-var parsed-elf bvp nil)
+                                                position-independentp stack-slots-needed state-var base-var parsed-elf bvp nil)
           ;;todo: check that there is at least one LOAD section:
-          (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes (len bytes) bvp nil)))
+          (assumptions-for-elf64-segments program-header-table position-independentp state-var base-var stack-slots-needed bytes (len bytes) bvp nil)))
        ((when erp) (mv erp nil nil))
-       ;; currently, we only assume the inputs are disjoint from the text section (an input to the function being lifted may very well be in a data section or in the stack!):
-       (code-address (acl2::get-elf-code-address parsed-elf)) ; todo: what if there are segments but no sections?!
-       ((when (not (natp code-address))) ; impossible
-        (mv :bad-code-addres nil nil))
-       ;; (text-offset (if relp
-       ;;                  (symbolic-add-constant code-address base-var) ; todo clean up base-var handling -- done?
-       ;;                code-address))
+
+       ;; Generate assumptions for the inputs (introduce vars, canonical, disjointness from future stack space, disjointness from bytes loaded from the executable, disjointness from saved return address):
        ((mv input-assumptions input-assumption-vars)
         (if (equal inputs :skip)
             (mv nil nil)
-          (input-assumptions-and-vars inputs
+          (input-assumptions-and-vars inputs ; tttodo: do we assume inputs disjoint from the stack?
                                       ;; todo: handle zmm regs and values passed on the stack?!:
                                       ;; handle structs that fit in 2 registers?
                                       ;; See the System V AMD64 ABI
@@ -404,88 +509,12 @@
                                       ))))
     (mv nil ; no error
         (append ;; can't use this: not in normal form: (make-standard-state-assumptions-64-fn state-var) ; todo: put back, but these are untranslated!  should all the assumptions be generated untranslated (for presentation) and then translated?
-          (make-standard-assumptions64-new stack-slots-needed state-var target-address-term bvp)
+          (make-standard-assumptions64-new stack-slots-needed state-var base-var target-address position-independentp bvp)
 
-          ;; Assumptions about the BASE-VAR:
-          (if relp
-              (if bvp
-                  `((unsigned-canonical-address-p ,base-var)) ; do we need this?
-                `(;(integerp ,base-var)
-                  (canonical-address-p$inline ,base-var) ; todo: do we need this, given that we have assumptions for all the segments?
-                  ))
-            nil)
           segment-or-section-assumptions
           input-assumptions)
         input-assumption-vars)))
 
 (defthm true-list-of-mv-nth-1-of-assumptions-elf64-new
-  (true-listp (mv-nth 1 (assumptions-elf64-new target relp stack-slots-needed state-var base-var inputs type-assumptions-for-array-varsp disjoint-chunk-addresses-and-lens bvp parsed-elf)))
+  (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp stack-slots-needed state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from bvp parsed-elf)))
   :hints (("Goal" :in-theory (enable assumptions-elf64-new))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;move this stuff?
-
-;; Returns (mv erp maybe-extended-acc).
-(defun elf64-segment-address-and-len (program-header-table-entry relp base-var bytes-len acc)
-  (declare (xargs :guard (and (alistp program-header-table-entry)
-                              (booleanp relp)
-                              (symbolp base-var)
-                              (natp bytes-len)
-                              (true-listp acc))
-                  :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep)))))
-  (b* ((type (lookup-eq :type program-header-table-entry))
-       ((when (not (eq type :pt_load)))
-        ;; We skip any segment that is not a LOAD segment:
-        (mv nil acc))
-       (offset (lookup-eq :offset program-header-table-entry))
-       (filesz (lookup-eq :filesz program-header-table-entry))
-       (vaddr (lookup-eq :vaddr program-header-table-entry)) ; we don't use the paddr for anything
-       (memsz (lookup-eq :memsz program-header-table-entry)) ; todo: do anything with flags or align?
-       ((when (not (and (natp offset)
-                        (natp filesz)
-                        (natp vaddr)
-                        (natp memsz))))
-        (mv :bad-program-header-table-entry-value nil))
-       (last-byte-num (+ -1 offset filesz)))
-    (if (not (< last-byte-num bytes-len))
-        (mv :not-enough-bytes nil)
-      (if (< memsz filesz)
-          (mv :too-many-bytes-in-file nil)
-        (b* ((address-term (if relp (symbolic-add-constant vaddr base-var) `,vaddr)))
-          (mv nil
-              (cons (cons address-term memsz)
-                    acc)))))))
-
-;; Returns (mv erp bases-and-lens).
-(defund elf64-segment-addresses-and-lens (program-header-table relp base-var bytes-len acc)
-  (declare (xargs :guard (and (acl2::elf-program-header-tablep program-header-table)
-                              (booleanp relp)
-                              (symbolp base-var)
-                              (natp bytes-len)
-                              (true-listp acc))
-                  :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
-                                                           acl2::true-listp-when-pseudo-term-listp-2)))))
-  (if (endp program-header-table)
-      (mv nil (reverse acc))
-    (b* ((program-header-table-entry (first program-header-table))
-         ((mv erp acc)
-          (elf64-segment-address-and-len program-header-table-entry relp base-var bytes-len acc))
-         ((when erp) (mv erp nil)))
-      (elf64-segment-addresses-and-lens (rest program-header-table) relp base-var bytes-len acc))))
-
-(local (include-book "kestrel/alists-light/alistp" :dir :system))
-
-;todo: nested induction
-(defthm elf64-segment-addresses-and-lens-type
-  (implies (and (alistp acc) ; cars are terms
-                (nat-listp (strip-cdrs acc)))
-           (mv-let (erp bases-and-lens)
-             (elf64-segment-addresses-and-lens program-header-table relp base-var bytes-len acc)
-             (declare (ignore erp))
-             (and (alistp bases-and-lens) ; cars are terms
-                  (nat-listp (strip-cdrs bases-and-lens)))))
-  :hints (("Goal" :in-theory (enable elf64-segment-addresses-and-lens elf64-segment-address-and-len))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
