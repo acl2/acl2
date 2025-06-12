@@ -26,6 +26,7 @@
 (include-book "boolean-xor")
 (include-book "field-add")
 (include-book "field-div-checked")
+(include-book "field-div-flagged")
 (include-book "field-double")
 (include-book "field-inv-checked")
 (include-book "field-inv-flagged")
