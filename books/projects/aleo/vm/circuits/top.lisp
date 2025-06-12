@@ -25,6 +25,7 @@
 (include-book "boolean-or")
 (include-book "boolean-xor")
 (include-book "field-add")
+(include-book "field-div-checked")
 (include-book "field-double")
 (include-book "field-inv-checked")
 (include-book "field-inv-flagged")
@@ -82,6 +83,7 @@
                     boolean-or
                     boolean-xor
                     field-add
+                    field-div-checked
                     field-double
                     field-inv-checked
                     field-inv-flagged
