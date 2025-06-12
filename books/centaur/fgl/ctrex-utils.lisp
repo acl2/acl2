@@ -3059,10 +3059,15 @@ compute a value for @('x').</p>
        (scratch (interp-st->user-scratch interp-st))
        ;; Collect counterexamples in the user scratch for later extraction
        (interp-st (update-interp-st->user-scratch
-                   (hons-acons ':counterexamples
-                               (cons ctrex-bindings
-                                     (cdr (hons-get ':counterexamples scratch)))
-                               scratch)
+                   (hons-acons
+                    ':counterexamples
+                    (cons ctrex-bindings
+                          (cdr (hons-get ':counterexamples scratch)))
+                    (hons-acons ':counterexample-status
+                                (cond (err `(:error ,err))
+                                      (ans :false-ctrex)
+                                      (t :ok))
+                                scratch))
                    interp-st))
        (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
     (mv nil interp-st)))
