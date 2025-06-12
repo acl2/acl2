@@ -25,6 +25,7 @@
 (include-book "boolean-or")
 (include-book "boolean-xor")
 (include-book "field-add")
+(include-book "field-mul")
 (include-book "field-neg")
 (include-book "field-sub")
 
@@ -77,5 +78,6 @@
                     boolean-or
                     boolean-xor
                     field-add
+                    field-mul
                     field-neg
                     field-sub))
