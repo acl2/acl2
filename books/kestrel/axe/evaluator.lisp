@@ -649,7 +649,6 @@
 ; need return-type theorem for the clique first (see above)
 (skip-proofs
 (verify-guards apply-axe-evaluator
-  :guard-debug t
   :otf-flg t
   :hints (("Goal" :in-theory (e/d (true-list-fix
                                    true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp

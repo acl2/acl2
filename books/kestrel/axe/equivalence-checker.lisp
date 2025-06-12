@@ -4796,7 +4796,6 @@
                               (symbol-listp formals2)
                               (pseudo-termp body2)
                               (symbolp induction-fn-name))
-                  :guard-debug t
                   :stobjs state))
   (let* (;(props1 (getprops fn1 'current-acl2-world (w state)))
          ;;(body1 (lookup-eq 'unnormalized-body props1))

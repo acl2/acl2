@@ -1,4 +1,4 @@
-; Disjointness of memory regions
+; Memory region machinery for a 32-bit address space
 ;
 ; Copyright (C) 2025 Kestrel Institute
 ;
@@ -8,9 +8,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "X")
+(in-package "ACL2")
 
-(include-book "kestrel/memory/make-memory-region-machinery" :dir :system)
+(include-book "make-memory-region-machinery")
 
-;; Make the machinery for the 48-bit usable x86 address space:
-(make-memory-region-machinery 48)
+;; Make the machinery for a 32-bit address space (e.g., for RISC-V in 32-bit
+;; mode):
+(x::make-memory-region-machinery 32)

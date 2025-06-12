@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 ;; TODO: Rename this book, since the clause processor function itself must already exist.  Should make-prover-simple (optionally) just do this stuff?
+;; TODO: Rename to be more specific.
 
 ;; This machinery requires a TTAG, due to the use of define-trusted-clause-processor.
 

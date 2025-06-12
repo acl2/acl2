@@ -26,7 +26,7 @@
 (include-book "kestrel/x86/run-until-return2" :dir :system) ; new scheme
 (include-book "kestrel/x86/run-until-return3" :dir :system) ; newer scheme
 (include-book "kestrel/x86/floats" :dir :system)
-(include-book "kestrel/x86/regions" :dir :system)
+(include-book "kestrel/memory/memory48" :dir :system)
 (include-book "kestrel/x86/canonical-unsigned" :dir :system)
 (include-book "../axe-syntax")
 (include-book "../known-booleans")
@@ -973,3 +973,16 @@
 (defthm integerp-of-rsp-gen
   (integerp (rsp x86))
   :hints (("Goal" :in-theory (enable rsp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd signed-byte-p-of-+-when-canonical-and-canonical
+  (implies (and (canonical-address-p x) ; could restrict to constant x
+                (canonical-address-p y))
+           (signed-byte-p 64 (+ x y))))
+
+(defthmd logext-64-of-+-when-canonical-and-canonical
+  (implies (and (canonical-address-p x) ; could restrict to constant x
+                (canonical-address-p y))
+           (equal (logext 64 (+ x y))
+                  (+ x y))))

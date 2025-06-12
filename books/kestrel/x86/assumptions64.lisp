@@ -14,7 +14,7 @@
 (include-book "assumptions")
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes")
-(include-book "regions")
+(include-book "kestrel/memory/memory48" :dir :system)
 (include-book "parsers/parsed-executable-tools")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
@@ -211,7 +211,7 @@
                                 bvp
                                 x86))
 
-;; TODO: What should this go if the parsed-elf is bad (e.g., doesn't have a
+;; TODO: What should this do if the parsed-elf is bad (e.g., doesn't have a
 ;; text section)?  Transition to just generating a list of terms?
 (defun standard-assumptions-elf-64 (subroutine-name
                                     parsed-elf

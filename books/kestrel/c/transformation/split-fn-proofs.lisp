@@ -173,7 +173,6 @@
    proofs
    (wrld plist-worldp))
   :returns (event acl2::pseudo-event-formp)
-  :guard-debug t
   (b* (((unless (symbolp const-old))
         (raise "~x0 must be a symbol." const-old)
         '(_))

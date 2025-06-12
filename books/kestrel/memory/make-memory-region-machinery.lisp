@@ -10,6 +10,18 @@
 
 (in-package "X") ; todo: pull out of x86
 
+;; This book includes machinery for reasoning about memory addresses and memory
+;; regions.  Memory regions can wrap around the end of the address space back
+;; to the beginning, but the user of this library rarely if ever has to think
+;; about that.  For example, the cancellation rules apply regardless of whether
+;; the region wraps around.
+
+;; These functions can be opened up to expose BV functions for SMT solvers like
+;; STP.  In many cases (when the lengths of regions are known), the results of
+;; opening up these functions are conjunctions of BV terms.  Having
+;; conjunctions instead of disjunctions is important if we want to use the
+;; opened up functions as assumptions.
+
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 (include-book "kestrel/utilities/pack" :dir :system)
 
@@ -35,7 +47,6 @@
        (include-book "kestrel/bv/bvminus" :dir :system) ; todo: reduce
 
        (encapsulate ()
-         ;; See also the function SEPARATE, but this machinery is intended to be more amenable to SMT solving.
 
          ;(include-book "kestrel/bv/sbvlt-def" :dir :system)
          ;(local (include-book "kestrel/bv/sbvlt" :dir :system))
@@ -299,6 +310,25 @@
                                (,in-regionp-name ad (+ -1 len) (+ 1 start-ad)))))
            :hints (("Goal" :in-theory (enable ,in-regionp-name bvlt bvplus bvminus bvuminus acl2::bvchop-of-sum-cases))))
 
+         ;; Sanity check (split out the 2 cases depending on whether the memory region wraps around):
+         (defthmd ,(acl2::pack-in-package "X" in-regionp-name '-alt-def)
+           (implies (and (unsigned-byte-p ,num-address-bits ad)
+                         (unsigned-byte-p ,num-address-bits start-ad)
+                         (integerp len)
+                         (<= len (expt 2 ,num-address-bits)))
+                    (equal (,in-regionp-name ad len start-ad)
+                           (if (<= (+ start-ad len) (expt 2 ,num-address-bits))
+                               ;; memory region does not wrap around:
+                               (and (<= start-ad ad)
+                                    (< ad (+ start-ad len)))
+                             ;; wrap-around case: ad is either in the top part (above
+                             ;; start-ad) or in the bottom part (below the wrapped
+                             ;; around bound):
+                             (or (<= start-ad ad)
+                                 (< ad (- (+ start-ad len)
+                                          (expt 2 ,num-address-bits)))))))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name bvlt bvuminus bvplus acl2::bvchop-of-sum-cases))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
          ;; Defines what it means for 2 memory regions to be disjoint (no address in both regions).
@@ -307,6 +337,7 @@
          ;; Regions may wrap around the end of the address space back to the start.
          ;; We put the len arguments first because they will often be small constants.
          ;; In the normal case, this can be opened up to a conjunction of nice, BV claims.
+         ;; See also the function SEPARATE, but this machinery is intended to be more amenable to SMT solving.
          (defund ,disjoint-regionsp-name (len1 ad1 len2 ad2)
            (declare (xargs :guard (and (natp len1) ; note that len >= 2^,num-address-bits covers the whole region
                                        (unsigned-byte-p ,num-address-bits ad1)
