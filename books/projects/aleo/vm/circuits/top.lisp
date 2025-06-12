@@ -26,6 +26,7 @@
 (include-book "boolean-xor")
 (include-book "field-add")
 (include-book "field-double")
+(include-book "field-inv-checked")
 (include-book "field-mul")
 (include-book "field-neg")
 (include-book "field-square")
@@ -81,6 +82,7 @@
                     boolean-xor
                     field-add
                     field-double
+                    field-inv-checked
                     field-mul
                     field-neg
                     field-square
