@@ -39,16 +39,6 @@
 ;;   (not (not (equal (bvplus 33 x y) (bvplus 32 z x))))
 ;;   :hints (("Goal" :in-theory nil :clause-processor (stp-clause-processor clause nil state))))
 
-(defthm-with-stp-clause-processor stp-clause-processor-test-1
-  (equal (bvplus 32 x y)
-         (bvplus 32 y x)))
-
-; Same as above but with double negation added
-(defthm-with-stp-clause-processor stp-clause-processor-test-2
-  (not (not (equal (bvplus 32 x y)
-                   (bvplus 32 y x)))))
-
-;; (defthm-with-stp-clause-processor mytest (not (not (equal (bvplus 32 x y) (bvplus 33 y x)))))
 
 ;; todo: get this to work:
 ;; (defthm mytest
@@ -82,3 +72,30 @@
   :rule-classes nil
   :hints (("Goal" :in-theory nil ; ensure the clause-processor does the work
            :clause-processor (stp-clause-processor clause '((:max-conflicts . 100)) state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (defthm-with-stp-clause-processor mytest (not (not (equal (bvplus 32 x y) (bvplus 33 y x)))))
+
+(defthm-with-stp-clause-processor defthm-with-stp-clause-processor-test-1
+  (equal (bvplus 32 x y)
+         (bvplus 32 y x)))
+
+;; Test :print
+(defthm-with-stp-clause-processor defthm-with-stp-clause-processor-test-1b
+  (equal (bvplus 32 x y)
+         (bvplus 32 y x))
+  :print t)
+
+; Same as above but with double negation added
+(defthm-with-stp-clause-processor defthm-with-stp-clause-processor-test-2
+  (not (not (equal (bvplus 32 x y)
+                   (bvplus 32 y x)))))
+
+;; Test :rule-classes
+(defthm-with-stp-clause-processor defthm-with-stp-clause-processor-test-3
+  (equal (bvplus 32 x y)
+         (bvplus 32 x y))
+  :rule-classes nil)
+
+;; TODO: Test other options
