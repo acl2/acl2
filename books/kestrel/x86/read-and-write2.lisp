@@ -15,7 +15,7 @@
 
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes") ; could separate out
-(include-book "kestrel/x86/regions" :dir :system)
+(include-book "kestrel/memory/memory48" :dir :system)
 
 (defthm read-byte-of-write-byte-when-disjoint-1
   (implies (and (disjoint-regions48p len1 start1 len2 start2)

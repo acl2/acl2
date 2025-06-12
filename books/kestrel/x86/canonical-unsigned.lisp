@@ -12,12 +12,13 @@
 
 (include-book "portcullis")
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-address-p
-(include-book "regions")
+(include-book "kestrel/memory/memory48" :dir :system)
+(include-book "kestrel/memory/memory64" :dir :system)
 
-;; Make the machinery for the full 64-bit x86 address space, to support
-;; reasoning about canonical addresses:
-(local (in-theory (e/d (zp) (acl2::ifix-when-integerp acl2::natp-when-gte-0))))
-(make-memory-region-machinery 64)
+;; ;; Make the machinery for the full 64-bit x86 address space, to support
+;; ;; reasoning about canonical addresses:
+;; (local (in-theory (e/d (zp) (acl2::ifix-when-integerp acl2::natp-when-gte-0))))
+;; (make-memory-region-machinery 64)
 
 ;(include-book "kestrel/bv/bvchop" :dir :system)
 (include-book "kestrel/bv/bvlt" :dir :system)

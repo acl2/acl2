@@ -48,45 +48,6 @@
 
 (acl2::def-constant-opener alistp) ; why?
 
-;; ;todo: not really an assumption generator
-;; todo: redo this like elf64-section-loadedp.
-;todo: move this to ../x86/ ?
-(defun section-assumptions-mach-o-64 (segment-name section-name parsed-mach-o
-                                                   text-offset stack-slots-needed bvp x86)
-  (declare (xargs :guard (and (stringp segment-name)
-                              (stringp section-name)
-                              ;; parsed-mach-o
-                              (natp text-offset)
-                              (natp stack-slots-needed)
-                              (booleanp bvp))
-                  :stobjs x86
-                  :verify-guards nil ;todo
-                  ))
-  (if (acl2::mach-o-section-presentp segment-name section-name parsed-mach-o)
-      (let* ((segment (acl2::get-mach-o-segment segment-name (acl2::lookup-eq-safe :cmds parsed-mach-o)))
-             (section (acl2::get-mach-o-section section-name (acl2::lookup-eq-safe :SECTIONS segment)))
-             (section-bytes (acl2::lookup-eq-safe :contents section))
-             (section-address (acl2::lookup-eq-safe :addr section))
-             (text-section-address (acl2::get-mach-o-code-address parsed-mach-o))
-             ;; todo: can this be negative?:
-             (section-offset-from-text (- section-address text-section-address))
-             (section-start (+ text-offset section-offset-from-text)))
-        (and (bytes-loaded-at-address-64 section-bytes section-start bvp x86)
-             ;; (canonical-address-p$inline const-section-start)
-             ;; (canonical-address-p$inline (+ -1 (len const-section-bytes) const-section-start))
-             ;; The constant data is disjoint from the part of the stack that is written:
-             (if bvp
-                 (disjoint-regions48p (len section-bytes) section-start
-                                    ;; Only a single stack slot is written
-                                    ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                                    (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rsp x86)))
-               (separate :r (len section-bytes) section-start
-                         ;; Only a single stack slot is written
-                         ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
-                         :r (* 8 stack-slots-needed) (+ (* -8 stack-slots-needed) (rsp x86))))))
-    ;; no assumptions if section not present:
-    t))
-
 ;; ;todo: remove
 ;; ;; todo: think about signed vs unsigned addresses
 ;; (defun elf64-section-loadedp (section-bytes
@@ -153,38 +114,38 @@
 ;;                         (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf bvp)))
 ;;         (assumptions-for-elf64-sections (rest section-names) position-independentp stack-slots text-section-address parsed-elf bvp)))))
 
-;; Returns a list of terms.
-(defun architecture-specific-assumptions (executable-type position-independentp stack-slots parsed-executable bvp)
-  (declare (xargs :guard (and (member-eq executable-type '(:mach-o-64 :elf-64))
-                              (booleanp position-independentp)
-                              (natp stack-slots)
-                              ;; parsed-executable
-                              (booleanp bvp)
-                              )
-                  :verify-guards nil))
-  (declare (ignore position-independentp))
-  (if (eq :mach-o-64 executable-type)
-      (b* ((- (and (acl2::mach-o-section-presentp "__TEXT" "__const" parsed-executable) (cw "(__TEXT,__const section detected.)~%")))
-           (- (and (acl2::mach-o-section-presentp "__DATA" "__data" parsed-executable) (cw "(__DATA,__data section detected.)~%")))
-           (- (and (acl2::mach-o-section-presentp "__DATA_CONST" "__got" parsed-executable) (cw "(__DATA_CONST,__got section detected.)~%"))))
-        `((section-assumptions-mach-o-64 "__TEXT" "__const" ',parsed-executable text-offset ',stack-slots ',bvp x86)
-          (section-assumptions-mach-o-64 "__DATA" "__data" ',parsed-executable text-offset ',stack-slots ',bvp x86)
-          (section-assumptions-mach-o-64 "__DATA_CONST" "__got" ',parsed-executable text-offset ',stack-slots ',bvp x86)
-          ;; ,@(and const-section-presentp ; suppress when there is no __const section
-          ;;        `((acl2::const-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
-          ;; ,@(and data-section-presentp ; suppress when there is no __data section
-          ;;        `((acl2::data-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
-          ))
-    (if (eq :elf-64 executable-type) ; todo: handle elf32
-        nil
-        ;; ;; todo: handle more sections here:
-        ;; (assumptions-for-elf64-sections '(".data" ".rodata"
-        ;;                                   ;;  ".got" ; todo: consider putting this back (at least assume it disjoint from the stack)
-        ;;                                   )
-        ;;                                 position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable bvp)
-      (if (eq :elf-32 executable-type)
-          (cw "WARNING: Architecture-specific assumptions are not yet supported for ELF32.~%")
-        nil))))
+;; ;; Returns a list of terms.
+;; (defun architecture-specific-assumptions (executable-type position-independentp stack-slots parsed-executable bvp)
+;;   (declare (xargs :guard (and (member-eq executable-type '(:mach-o-64 :elf-64))
+;;                               (booleanp position-independentp)
+;;                               (natp stack-slots)
+;;                               ;; parsed-executable
+;;                               (booleanp bvp)
+;;                               )
+;;                   :verify-guards nil))
+;;   (declare (ignore position-independentp))
+;;   (if (eq :mach-o-64 executable-type)
+;;       (b* ((- (and (acl2::mach-o-section-presentp "__TEXT" "__const" parsed-executable) (cw "(__TEXT,__const section detected.)~%")))
+;;            (- (and (acl2::mach-o-section-presentp "__DATA" "__data" parsed-executable) (cw "(__DATA,__data section detected.)~%")))
+;;            (- (and (acl2::mach-o-section-presentp "__DATA_CONST" "__got" parsed-executable) (cw "(__DATA_CONST,__got section detected.)~%"))))
+;;         `((section-assumptions-mach-o-64 "__TEXT" "__const" ',parsed-executable text-offset ',stack-slots ',bvp base-address x86)
+;;           (section-assumptions-mach-o-64 "__DATA" "__data" ',parsed-executable text-offset ',stack-slots ',bvp base-address x86)
+;;           (section-assumptions-mach-o-64 "__DATA_CONST" "__got" ',parsed-executable text-offset ',stack-slots ',bvp base-address x86)
+;;           ;; ,@(and const-section-presentp ; suppress when there is no __const section
+;;           ;;        `((acl2::const-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
+;;           ;; ,@(and data-section-presentp ; suppress when there is no __data section
+;;           ;;        `((acl2::data-assumptions-mach-o-64 ',parsed-executable text-offset ,stack-slots x86)))
+;;           ))
+;;     (if (eq :elf-64 executable-type) ; todo: handle elf32
+;;         nil
+;;         ;; ;; todo: handle more sections here:
+;;         ;; (assumptions-for-elf64-sections '(".data" ".rodata"
+;;         ;;                                   ;;  ".got" ; todo: consider putting this back (at least assume it disjoint from the stack)
+;;         ;;                                   )
+;;         ;;                                 position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable bvp)
+;;       (if (eq :elf-32 executable-type)
+;;           (cw "WARNING: Architecture-specific assumptions are not yet supported for ELF32.~%")
+;;         nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -359,7 +320,7 @@
                             ,@register-replacement-assumptions
                             ,@register-type-assumptions
                             ;; todo: build this into def-unrolled:
-                            ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable bvp)
+                            ;; ,@(architecture-specific-assumptions executable-type position-independentp stack-slots parsed-executable bvp)
                             ))
        (target function-name-string)
 
@@ -392,7 +353,7 @@
           ;; extra-assumption-rules:
           (append ;; (new-normal-form-rules64)
                   ;; todo: build these in deeper
-                  '(section-assumptions-mach-o-64
+                  '(;section-assumptions-mach-o-64
                     acl2::mach-o-section-presentp-constant-opener
                     acl2::maybe-get-mach-o-segment-constant-opener
                     acl2::maybe-get-mach-o-segment-from-load-commands-constant-opener

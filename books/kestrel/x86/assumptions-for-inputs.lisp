@@ -12,7 +12,7 @@
 (in-package "X")
 
 (include-book "portcullis")
-(include-book "regions") ; since this book knows about disjoint-regions48p
+(include-book "kestrel/memory/memory48" :dir :system) ; since this book knows about disjoint-regions48p
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/map-symbol-name" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
@@ -255,7 +255,7 @@
                                   (+ ,(- stack-byte-count) (rsp x86)))
                         (disjoint-regions48p ,numbytes ,pointer-name
                                              ,stack-byte-count
-                                             (+ ,(- stack-byte-count) (rsp x86)))
+                                             (bvplus 48 ,(- stack-byte-count) (rsp x86)))
                         ;; The input is disjoint from the code:
                         ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                         ;; The input is disjoint from the saved return address:
@@ -295,7 +295,7 @@
                                         (+ ,(- stack-byte-count) (rsp x86)))
                               (disjoint-regions48p ,numbytes ,pointer-name
                                                    ,stack-byte-count
-                                                   (+ ,(- stack-byte-count) (rsp x86)))
+                                                   (bvplus 48 ,(- stack-byte-count) (rsp x86)))
                               ;; The input is disjoint from the code:
                               ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                               ;; The input is disjoint from the saved return address:
