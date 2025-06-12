@@ -11,7 +11,7 @@
 
 (in-package "PFCS")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 
 (include-book "kestrel/fty/string-set" :dir :system)
 (include-book "std/util/deflist" :dir :system)
@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-operations
-  :parents (abstract-syntax pfcs)
+  :parents (abstract-syntax)
   :short "Operations on the abstract syntax of PFCSes."
   :order-subtopics t
   :default-parent t)

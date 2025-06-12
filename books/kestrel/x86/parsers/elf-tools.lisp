@@ -42,12 +42,12 @@
 
 
 ;; Get the code from the .text section:
-(defun get-elf-code (parsed-elf)
+(defund get-elf-code (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)))
   (get-elf-section-bytes ".text" parsed-elf))
 
 ;; Returns the :addr field of the header with the give SECTION-NAME, or :none
-(defun get-elf-section-address (section-name parsed-elf)
+(defund get-elf-section-address (section-name parsed-elf)
   (declare (xargs :guard (and (stringp section-name)
                               (parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
@@ -57,7 +57,7 @@
       (lookup-eq-safe :addr header))))
 
 ;; Returns the :addr field of the ".text" section, or :none.
-(defun get-elf-code-address (parsed-elf)
+(defund get-elf-code-address (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)
                   :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
   (let ((addr (get-elf-section-address ".text" parsed-elf)))
@@ -66,7 +66,7 @@
       addr)))
 
 ;; Throws an error if the symbol has multiple matches
-(defun get-elf-symbol-address-aux (name symbol-table)
+(defund get-elf-symbol-address-aux (name symbol-table)
   (declare (xargs :guard (and (stringp name)
                               (elf-symbol-tablep symbol-table))
                   :guard-hints (("Goal" :in-theory (enable elf-symbol-tablep)))))
@@ -82,7 +82,7 @@
         (get-elf-symbol-address-aux name (rest symbol-table))))))
 
 ;; Throws an error if the symbol is not found or has multiple matches
-(defun get-elf-symbol-address (name symbol-table)
+(defund get-elf-symbol-address (name symbol-table)
   (declare (xargs :guard (and (stringp name)
                               (elf-symbol-tablep symbol-table))))
   (let ((result (get-elf-symbol-address-aux name symbol-table)))
@@ -90,7 +90,7 @@
         (er hard? 'get-elf-symbol-address "Can't find ~s0 in symbol table." name)
       result)))
 
-(defun get-names-from-elf-symbol-table (symbol-table acc)
+(defund get-names-from-elf-symbol-table (symbol-table acc)
   (declare (xargs :guard (and (elf-symbol-tablep symbol-table)
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (enable elf-symbol-tablep)))))
@@ -117,21 +117,21 @@
                                                            parsed-elfp)))))
   (get-elf-symbol-address name (parsed-elf-symbol-table parsed-elf)))
 
-(defun parsed-elf-symbols (parsed-elf)
+(defund parsed-elf-symbols (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)
                   :guard-hints (("Goal" :in-theory (enable parsed-elfp parsed-elf-symbol-table)))))
   (get-names-from-elf-symbol-table (parsed-elf-symbol-table parsed-elf) nil))
 
 ;; :rel or :exec or :dyn, etc.
-(defun parsed-elf-type (parsed-elf)
+(defund parsed-elf-type (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)))
   (lookup-eq :type parsed-elf))
 
-(defun parsed-elf-cpu-type (parsed-elf)
+(defund parsed-elf-cpu-type (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)))
   (lookup-eq :machine parsed-elf))
 
-(defun parsed-elf-entry-point (parsed-elf)
+(defund parsed-elf-entry-point (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)))
   (lookup-eq :entry parsed-elf))
 
@@ -159,7 +159,7 @@
 ;; Parses an ELF executable.
 ;; Returns (mv erp contents state) where contents in an alist representing
 ;; the contents of the executable.
-(defun parse-elf (filename state)
+(defund parse-elf (filename state)
   (declare (xargs :guard (stringp filename)
                   :stobjs state))
   (b* (((mv existsp state) (file-existsp filename state))
@@ -177,8 +177,13 @@
         (parse-elf-file-bytes bytes)))
     (mv erp parsed-elf state)))
 
+(defthm parsed-elfp-of-mv-nth-1-of-parse-elf
+  (implies (not (mv-nth 0 (parse-elf filename state))) ; no error
+           (parsed-elfp (mv-nth 1 (parse-elf filename state))))
+  :hints (("Goal" :in-theory (enable parse-elf))))
+
 ;; Returns an error triple (mv erp res state) where res contains information about the given ELF file.
-(defun elf-info-fn (filename state)
+(defund elf-info-fn (filename state)
   (declare (xargs :guard (stringp filename)
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (enable alistp-when-parsed-elfp)))))

@@ -11,7 +11,7 @@
 
 (in-package "PFCS")
 
-(include-book "semantics-deep")
+(include-book "semantics")
 
 (local (include-book "oset-lib-ext"))
 
@@ -64,8 +64,7 @@
     "However, the (deeply embedded) semantics of PFCSes is somewhat complicated,
      defined in terms of
      existentially quantified proof trees and their execution.
-     The reason for that complication is discussed
-     in @(see semantics-deeply-embedded).
+     The reason for that complication is discussed in @(see semantics).
      The complication burdens the task to reason about PFCSes
      (whether parameterized or not)
      directly in terms of the deeply embedded semantics.")
@@ -79,7 +78,7 @@
      via existentially quantified proof trees.
      (These alternative definitions could not be used as actual definitions,
      because of the recursion and existential quantification issues
-     discussed in @(see semantics-deeply-embedded).)")
+     discussed in @(see semantics).)")
    (xdoc::p
     "Currently we provide the following forms of proof support:")
    (xdoc::ul

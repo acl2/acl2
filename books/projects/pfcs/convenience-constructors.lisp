@@ -12,7 +12,7 @@
 
 (in-package "PFCS")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

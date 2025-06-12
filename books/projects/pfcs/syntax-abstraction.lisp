@@ -13,7 +13,7 @@
 (in-package "PFCS")
 
 (include-book "grammar")
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 
 (include-book "kestrel/fty/character-result" :dir :system)
 (include-book "kestrel/fty/character-list-result" :dir :system)
