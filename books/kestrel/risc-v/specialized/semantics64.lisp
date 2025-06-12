@@ -737,7 +737,7 @@
                     (rs2 ubyte5p)
                     (stat state64p))
   :returns (new-stat state64p)
-  :short "Semanics of the @('MUL') instruction [ISA:13.1]."
+  :short "Semanics of the @('MUL') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -759,7 +759,7 @@
                      (rs2 ubyte5p)
                      (stat state64p))
   :returns (new-stat state64p)
-  :short "Semanics of the @('MULH') instruction [ISA:13.1]."
+  :short "Semanics of the @('MULH') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -784,7 +784,7 @@
                       (rs2 ubyte5p)
                       (stat state64p))
   :returns (new-stat state64p)
-  :short "Semanics of the @('MULHU') instruction [ISA:13.1]."
+  :short "Semanics of the @('MULHU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -809,7 +809,7 @@
                        (rs2 ubyte5p)
                        (stat state64p))
   :returns (new-stat state64p)
-  :short "Semanics of the @('MULHSU') instruction [ISA:13.1]."
+  :short "Semanics of the @('MULHSU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -835,14 +835,14 @@
                     (rs2 ubyte5p)
                     (stat state64p))
   :returns (new-stat state64p)
-  :short "Semanics of the @('DIV') instruction [ISA:13.2]."
+  :short "Semanics of the @('DIV') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We read two signed 64-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is -1
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-signed rs1 stat))
@@ -862,14 +862,14 @@
                      (rs2 ubyte5p)
                      (stat state64p))
   :returns (new-stat state64p)
-  :short "Semanics of the @('DIVU') instruction [ISA:13.2]."
+  :short "Semanics of the @('DIVU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We read two unsigned 64-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is @($2^{64}-1$)
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-unsigned rs1 stat))
@@ -889,7 +889,7 @@
                     (rs2 ubyte5p)
                     (stat state64p))
   :returns (new-stat state64p)
-  :short "Semanics of the @('REM') instruction [ISA:13.2]."
+  :short "Semanics of the @('REM') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -897,7 +897,7 @@
      We calculate the remainder of the first by the second,
      based on division towards 0;
      if the divisor is 0, the result is the dividend
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-signed rs1 stat))
@@ -917,7 +917,7 @@
                      (rs2 ubyte5p)
                      (stat state64p))
   :returns (new-stat state64p)
-  :short "Semanics of the @('REMU') instruction [ISA:13.2]."
+  :short "Semanics of the @('REMU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -925,7 +925,7 @@
      We calculate the remainder of the first by the second,
      based on division towards 0;
      if the divisor is 0, the result is the dividend
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-unsigned rs1 stat))
@@ -947,7 +947,7 @@
                    (stat state64p))
   :returns (new-stat state64p)
   :short "Semantics of the instructions with the @('OP') opcode
-          [ISA:2.4.2] [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
+          [ISA:2.4.2] [ISA:4.2.2] [ISA:12.1] [ISA:12.2]."
   (op-funct-case funct
                  :add (exec64-add rd rs1 rs2 stat)
                  :sub (exec64-sub rd rs1 rs2 stat)
@@ -1101,7 +1101,7 @@
                      (rs2 ubyte5p)
                      (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('MULW') instruction [ISA:13.1]."
+  :short "Semantics of the @('MULW') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1124,14 +1124,14 @@
                      (rs2 ubyte5p)
                      (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('DIVW') instruction [ISA:13.2]."
+  :short "Semantics of the @('DIVW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We read two signed 32-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is -1
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-signed32 rs1 stat))
@@ -1151,14 +1151,14 @@
                       (rs2 ubyte5p)
                       (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('DIVUW') instruction [ISA:13.2]."
+  :short "Semantics of the @('DIVUW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is @($2^{32}-1$)
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-unsigned32 rs1 stat))
@@ -1178,7 +1178,7 @@
                      (rs2 ubyte5p)
                      (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('REMW') instruction [ISA:13.2]."
+  :short "Semantics of the @('REMW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1186,7 +1186,7 @@
      We calculate the remainder of the first by the second,
      based on division towards 0;
      if the divisor is 0, the result is the dividend
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-signed32 rs1 stat))
@@ -1206,7 +1206,7 @@
                       (rs2 ubyte5p)
                       (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('REMUW') instruction [ISA:13.2]."
+  :short "Semantics of the @('REMUW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1214,7 +1214,7 @@
      We calculate the remainder of the first by the second,
      based on division towards 0;
      if the divisor is 0, the result is the dividend
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-unsigned32 rs1 stat))
@@ -1236,7 +1236,7 @@
                       (stat state64p))
   :returns (new-stat state64p)
   :short "Semantics of the instructions with the @('OP-32') opcode
-          [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
+          [ISA:4.2.2] [ISA:12.1] [ISA:12.2]."
   (op-32-funct-case funct
                     :addw (exec64-addw rd rs1 rs2 stat)
                     :subw (exec64-subw rd rs1 rs2 stat)

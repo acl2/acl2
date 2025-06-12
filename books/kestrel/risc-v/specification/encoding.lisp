@@ -45,7 +45,7 @@
     (xdoc::seetopic "instructions" "the instruction fixtypes")
     " to their encodings.")
    (xdoc::p
-    "Without the C extension [ISA:26],
+    "Without the C extension [ISA:27],
      instructions are encoded in 32 bits per instruction.
      So we define our mapping from instructions to 32-bit unsigned integers.
      We plan to model the C extension in the future:
@@ -71,7 +71,7 @@
   :short "Encode the name of
           a non-shift instruction with the @('OP-IMM') opcode
           into the @('funct3') field
-          [ISA:2.4.1] [ISA:34]."
+          [ISA:2.4.1] [ISA:35]."
   (op-imm-funct-case
    funct
    :addi  #b000
@@ -90,7 +90,7 @@
   :short "Encode the name of
           a 32-bit shift instruction with the @('OP-IMM') opcode
           into the @('funct3') field and the high 7 immediate bits
-          [ISA:2.4.1] [ISA:34]."
+          [ISA:2.4.1] [ISA:35]."
   (op-imms-funct-case
    funct
    :slli (mv #b001 #b0000000)
@@ -106,7 +106,7 @@
   :short "Encode the name of
           a 64-bit shift instruction with the @('OP-IMM') opcode
           into the @('funct3') field and the high 6 immediate bits
-          [ISA:4.2.1] [ISA:34]."
+          [ISA:4.2.1] [ISA:35]."
   (op-imms-funct-case
    funct
    :slli (mv #b001 #b000000)
@@ -121,7 +121,7 @@
   :short "Encode the name of
           a non-shift instruction with the @('OP-IMM-32') opcode
           into the @('funct3') field
-          [ISA:4.2.1] [ISA:34]."
+          [ISA:4.2.1] [ISA:35]."
   (op-imm-32-funct-case
    funct
    :addiw #b000)
@@ -135,7 +135,7 @@
   :short "Encode the name of
           a shift instruction with the @('OP-IMM') opcode
           into the @('funct3') field and the high 6 immediate bits
-          [ISA:4.2.1] [ISA:34]."
+          [ISA:4.2.1] [ISA:35]."
   (op-imms-32-funct-case
    funct
    :slliw (mv #b001 #b000000)
@@ -151,7 +151,7 @@
   :short "Encode the name of
           an instruction with the @('OP') opcode
           into the @('funct3') and @('funct7') fields
-          [ISA:2.4.2] [ISA:13.1] [ISA:13.2] [ISA:34]."
+          [ISA:2.4.2] [ISA:12.1] [ISA:12.2] [ISA:35]."
   (op-funct-case
    funct
    :add    (mv #b000 #b0000000)
@@ -182,7 +182,7 @@
   :short "Encode the name of
           an instruction with the @('OP-32') opcode
           into the @('funct3') and @('funct7') fields
-          [ISA:4.2.2] [ISA:13.1] [ISA:13.2] [ISA:34]."
+          [ISA:4.2.2] [ISA:12.1] [ISA:12.2] [ISA:35]."
   (op-32-funct-case
    funct
    :addw  (mv #b000 #b0000000)
@@ -204,7 +204,7 @@
   :short "Encode the name of
           an instruction with the @('BRANCH') opcode
           into the @('funct3') field
-          [ISA:2.5.2] [ISA:34]."
+          [ISA:2.5.2] [ISA:35]."
   (branch-funct-case
    funct
    :beq  #b000
@@ -225,7 +225,7 @@
   :short "Encode the name of
           an instruction with the @('LOAD') opcode
           into the @('func3') field
-          [ISA:2.6] [ISA:4.3] [ISA:34]."
+          [ISA:2.6] [ISA:4.3] [ISA:35]."
   (load-funct-case
    funct
    :lb  #b000
@@ -250,7 +250,7 @@
   :short "Encode the name of
           an instruction with the @('STORE') opcode
           into the @('funct3') field
-          [ISA:2.6] [ISA:4.3] [ISA:34]."
+          [ISA:2.6] [ISA:4.3] [ISA:35]."
   (store-funct-case
    funct
    :sb #b000
@@ -280,7 +280,7 @@
     "This is based on
      [ISA:2.4.1] [ISA:2.4.2] [ISA:2.5.1] [ISA:2.5.2] [ISA:2.6]
      [ISA:4.2.1] [ISA:4.2.2] [ISA:4.3]
-     [ISA:34].")
+     [ISA:35].")
    (xdoc::p
     "Note that the 20 immediate bits in @('JAL')
      are designated as bits 1 to 20 in [ISA:2.5.1], not 0 to 19.
