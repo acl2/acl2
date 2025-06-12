@@ -27,6 +27,7 @@
 (include-book "field-add")
 (include-book "field-double")
 (include-book "field-inv-checked")
+(include-book "field-inv-flagged")
 (include-book "field-mul")
 (include-book "field-neg")
 (include-book "field-square")
@@ -83,6 +84,7 @@
                     field-add
                     field-double
                     field-inv-checked
+                    field-inv-flagged
                     field-mul
                     field-neg
                     field-square
