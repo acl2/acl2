@@ -28,6 +28,7 @@
 (include-book "field-double")
 (include-book "field-mul")
 (include-book "field-neg")
+(include-book "field-square")
 (include-book "field-sub")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -79,6 +80,8 @@
                     boolean-or
                     boolean-xor
                     field-add
+                    field-double
                     field-mul
                     field-neg
+                    field-square
                     field-sub))
