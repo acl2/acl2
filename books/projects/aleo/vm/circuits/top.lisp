@@ -34,6 +34,7 @@
 (include-book "field-inv-flagged")
 (include-book "field-mul")
 (include-book "field-neg")
+(include-book "field-neq")
 (include-book "field-square")
 (include-book "field-sub")
 
@@ -93,5 +94,6 @@
                     field-inv-flagged
                     field-mul
                     field-neg
+                    field-neq
                     field-square
                     field-sub))
