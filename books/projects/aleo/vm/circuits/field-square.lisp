@@ -11,9 +11,7 @@
 
 (in-package "ALEOVM")
 
-(include-book "projects/pfcs/lifting" :dir :system)
-(include-book "projects/pfcs/parser-interface" :dir :system)
-(include-book "projects/pfcs/r1cs-subset" :dir :system)
+(include-book "field-mul")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -30,9 +28,9 @@
   (xdoc::topstring
    (xdoc::p
     "Given a field element @($x$),
-     its square @($y$) is obtained via a constraint of the form")
+     its square @($y$) is obtained via a a multiplication:")
    (xdoc::@[]
-    "(x) (x) = (y)"))
+    "\\mathit{field\_mul(x,x,y)"))
   :order-subtopics t
   :default-parent t)
 
@@ -57,7 +55,7 @@
      of the form described in @(see field-square)."))
   (pfcs::parse-def
    "field_square(x, y) := {
-    (x) * (x) == (y)
+    field_mul(x, x, y)
     }")
 
   ///
@@ -88,7 +86,7 @@
    (xdoc::p
     "The equivalence between predicate and specification
      is proved automatically,
-     without even using the prime fields library rules.")
+     using the correctness theorem for the @(see field-mul).")
    (xdoc::p
     "The extension to the circuit is boilerplate."))
 
@@ -99,11 +97,15 @@
              (equal (field-square-pred x y prime)
                     (field-square-spec x y prime)))
     :enable (field-square-pred
-             field-square-spec))
+             field-mul-pred-to-spec
+             field-square-spec
+             field-mul-spec))
 
   (defruled field-square-circuit-to-spec
     (implies (and (equal (pfcs::lookup-definition "field_square" defs)
                          (field-square-circuit))
+                  (equal (pfcs::lookup-definition "field_mul" defs)
+                         (field-mul-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime))
@@ -111,5 +113,6 @@
                       "field_square" defs (list x y) prime)
                     (field-square-spec x y prime)))
     :in-theory '((:e field-square-circuit)
+                 (:e field-mul-circuit)
                  definition-satp-to-field-square-pred
                  field-square-pred-to-spec)))
