@@ -76,7 +76,8 @@ static void lineba();
 "set_slc"                   {return SET_SLC;}
 
 "tuple"                     {return TUPLE;}
-"array"                     {return ARRAY;}
+"array"                     {yylval.s = tokstr(); return ARRAY;}
+"fast_array"                {yylval.s = tokstr(); return ARRAY;}
 "tie"                       {return TIE;}
 
 "ac_int"                    {return AC_INT;}

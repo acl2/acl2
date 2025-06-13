@@ -243,7 +243,8 @@ bool TypingAction::VisitArrayRef(ArrayRef *e) {
     }
 
   } else {
-    e->set_type(boolType);
+    // AC register
+    e->set_type(new IntType(e->loc(), Integer::one_v(e->loc()), Boolean::false_v(e->loc())));
   }
   return true;
 }
@@ -346,6 +347,7 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
 bool TypingAction::VisitCastExpr(CastExpr *e) {
 
   const Type *t = deref(e->type);
+  e->type = t;
 
   bool source_depends_on_template_parameter = false;
 
@@ -749,6 +751,12 @@ bool TypingAction::VisitAssignment(Assignment *s) {
           .report();
       return error();
     }
+  } else if (auto ar = dynamic_cast<ArrayRef *>(s->lval)) {
+    if (!isa<const ArrayType *>(ar->array->get_type())) {
+      ar->set_type(new IntType(ar->loc(),
+                               Integer::one_v(ar->loc()),
+                               Boolean::false_v(ar->loc())));
+    }
   }
 
   if (!strcmp(s->op, "set_slc")) {
@@ -817,6 +825,18 @@ bool TypingAction::VisitSymDec(SymDec *s) {
     }
 
     return check_assignement(s->loc(), sym_type, s->init->get_type());
+  }
+  return true;
+}
+
+bool TypingAction::VisitArrayType(const ArrayType *t) {
+
+  if (t->fast_repr()) {
+    if (!t->isConst()) {
+      diag_.new_error(t->get_original_location(), "Fast array must be const")
+        .report();
+      return error();
+    }
   }
   return true;
 }
