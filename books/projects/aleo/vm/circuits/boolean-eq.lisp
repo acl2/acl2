@@ -32,7 +32,12 @@
      (i.e. such that each field element is either 0 or 1;
      see @(see boolean-assert)),
      their equality can be checked, and put into a boolean result @($z$),
-     by negating the non-equality of @($x$) and @($y$)."))
+     by negating the non-equality of @($x$) and @($y$):")
+   (xdoc::@[]
+    "\\begin{array}{l}
+     \\mathit{boolean\_neq(x,y,w) \\\\
+     \\mathit{boolean\_not(w,z)
+     \\end{array}"))
   :order-subtopics t
   :default-parent t)
 
@@ -71,8 +76,8 @@
      and the operand of @(see boolean-not)."))
   (pfcs::parse-def
    "boolean_eq(x, y, z) := {
-      boolean_neq(x, y, w),
-      boolean_not(w, z)
+    boolean_neq(x, y, w),
+    boolean_not(w, z)
     }")
 
   ///

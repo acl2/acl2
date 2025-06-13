@@ -59,7 +59,7 @@
      of the form described in @(see field-double)."))
   (pfcs::parse-def
    "field_double(x, y) := {
-      (x + x) * (1) == (y)
+    (x + x) * (1) == (y)
     }")
 
   ///

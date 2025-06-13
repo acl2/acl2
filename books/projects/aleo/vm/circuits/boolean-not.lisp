@@ -78,7 +78,7 @@
      of the form described in @(see boolean-not)."))
   (pfcs::parse-def
    "boolean_not(x, y) := {
-      (1 + -1 * x) * (1) == (y)
+    (1 + -1 * x) * (1) == (y)
     }")
 
   ///

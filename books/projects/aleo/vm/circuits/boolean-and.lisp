@@ -80,7 +80,7 @@
      of the form described in @(see boolean-and)."))
   (pfcs::parse-def
    "boolean_and(x, y, z) := {
-      (x) * (y) == (z)
+    (x) * (y) == (z)
     }")
 
   ///

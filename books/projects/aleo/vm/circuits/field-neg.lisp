@@ -59,7 +59,7 @@
      of the form described in @(see field-neg)."))
   (pfcs::parse-def
    "field_neg(x, y) := {
-      (-1 * x) * (1) == (y)
+    (-1 * x) * (1) == (y)
     }")
 
   ///

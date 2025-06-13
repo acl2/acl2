@@ -57,7 +57,7 @@
      of the form described in @(see field-square)."))
   (pfcs::parse-def
    "field_square(x, y) := {
-      (x) * (x) == (y)
+    (x) * (x) == (y)
     }")
 
   ///

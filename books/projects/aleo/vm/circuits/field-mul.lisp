@@ -58,7 +58,7 @@
      of the form described in @(see field-mul)."))
   (pfcs::parse-def
    "field_mul(x, y, z) := {
-      (x) * (y) == (z)
+    (x) * (y) == (z)
     }")
 
   ///

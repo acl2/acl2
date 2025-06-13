@@ -31,8 +31,14 @@
     "Given two field elements @($x$) and @($y$),
      their quotient @($z$) is obtained
      by combining @(see field-inv-checked) and @(see field-mul)
-     to obtain the inverse of @($y$) and multiply it by @($x$).
-     If @($y$) is 0, the circuit has no solution,
+     to obtain the inverse of @($y$) and multiply it by @($x$):")
+   (xdoc::@[]
+    "\\begin{array}{l}
+     \\mathit{field\_inv\_checked}(y,w) \\\\
+     \\mathit{field\_mul}(x,w,z)
+     \\end{array}")
+   (xdoc::p
+    "If @($y$) is 0, the circuit has no solution,
      because @(see field-inv-checked) has no solution:
      this is why this is `checked' field division."))
   :order-subtopics t
@@ -74,8 +80,8 @@
      which is the inverse of the divisor."))
   (pfcs::parse-def
    "field_div_checked(x, y, z) := {
-      field_inv_checked(y, w),
-      field_mul(x, w, z)
+    field_inv_checked(y, w),
+    field_mul(x, w, z)
     }")
 
   ///

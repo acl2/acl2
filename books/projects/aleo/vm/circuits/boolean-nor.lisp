@@ -88,7 +88,7 @@
      but it is simpler to define this as a single equality constraint."))
   (pfcs::parse-def
    "boolean_nor(x, y, z) := {
-      (1 + -1 * x) * (1 + -1 * y) == (z)
+    (1 + -1 * x) * (1 + -1 * y) == (z)
     }")
 
   ///

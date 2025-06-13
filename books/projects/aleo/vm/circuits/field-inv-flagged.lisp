@@ -31,6 +31,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is not yet implemented in snarkVM.")
+   (xdoc::p
     "Given a field element @($x$),
      the constraints")
    (xdoc::@[]
@@ -81,9 +83,9 @@
      described in @(see field-inv-flagged)."))
   (pfcs::parse-def
    "field_inv_flagged(x, y, e) := {
-      (x) * (w) == (1 + -1 * e),
-      (x) * (e) == (0),
-      (w) * (1 + -1 * e) == (y)
+    (x) * (w) == (1 + -1 * e),
+    (x) * (e) == (0),
+    (w) * (1 + -1 * e) == (y)
     }")
 
   ///

@@ -86,10 +86,10 @@
   (xdoc::topstring
    (xdoc::p
     "This is a PFCS definition with a single equality constraint
-     of the form described in @(see boolean-and)."))
+     of the form described in @(see boolean-xor)."))
   (pfcs::parse-def
    "boolean_xor(x, y, z) := {
-      (2 * x) * (y) == (x + y + -1 * z)
+    (2 * x) * (y) == (x + y + -1 * z)
     }")
 
   ///

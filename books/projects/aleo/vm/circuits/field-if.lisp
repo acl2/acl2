@@ -77,7 +77,7 @@
      of the form described in @(see field-if)."))
   (pfcs::parse-def
    "field_if(x, y, z, w) := {
-      (x) * (y + -1 * z) == (w + -1 * z)
+    (x) * (y + -1 * z) == (w + -1 * z)
     }")
 
   ///

@@ -76,7 +76,7 @@
      of the form described in @(see field-inv-checked)."))
   (pfcs::parse-def
    "field_inv_checked(x, y) := {
-      (x) * (y) == (1)
+    (x) * (y) == (1)
     }")
 
   ///

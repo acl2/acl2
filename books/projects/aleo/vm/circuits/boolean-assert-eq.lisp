@@ -32,7 +32,12 @@
      (i.e. such that each field element is either 0 or 1;
      see @(see boolean-assert)),
      we combine the @(see boolean-eq) and @(see boolean-assert-true)
-     to constrain @($x$) and @($y$) to be equal."))
+     to constrain @($x$) and @($y$) to be equal:")
+   (xdoc::@[]
+    "\\begin{array}{l}
+     \\mathit{boolean\_eq(x,y,z) \\\\
+     \\mathit{boolean\_assert\_true}(z)
+     \\end{array}"))
   :order-subtopics t
   :default-parent t)
 
@@ -63,8 +68,8 @@
      and the operand of @(see boolean-assert-true)."))
   (pfcs::parse-def
    "boolean_assert_eq(x, y) := {
-      boolean_eq(x, y, z),
-      boolean_assert_true(z)
+    boolean_eq(x, y, z),
+    boolean_assert_true(z)
     }")
 
   ///

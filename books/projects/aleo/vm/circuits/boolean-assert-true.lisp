@@ -69,7 +69,7 @@
      of the form described in @(see boolean-assert-true)."))
   (pfcs::parse-def
    "boolean_assert_true(x) := {
-        (x) * (1) == (1)
+    (x) * (1) == (1)
     }")
 
   ///

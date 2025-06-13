@@ -60,7 +60,7 @@
      of the form described in @(see field-add)."))
   (pfcs::parse-def
    "field_add(x, y, z) := {
-      (x + y) * (1) == (z)
+    (x + y) * (1) == (z)
     }")
 
   ///

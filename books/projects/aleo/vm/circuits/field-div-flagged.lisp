@@ -31,6 +31,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is not yet implemented in snarkVM.")
+   (xdoc::p
     "Given two field elements @($x$) and @($y$),
      the constraints")
    (xdoc::@[]
@@ -86,12 +88,12 @@
    (xdoc::p
     "This is a PFCS definition with the three equality constraints
      described in @(see field-div-flagged)."))
-  (pfcs::parse-def "
-    field_div_flagged(x,y,z,e) := {
-      (y) * (w) == (1 + -1 * e),
-      (y) * (e) == (0),
-      (x) * (w) == (z),
-      (z) * (e) == (0)
+  (pfcs::parse-def
+   "field_div_flagged(x,y,z,e) := {
+    (y) * (w) == (1 + -1 * e),
+    (y) * (e) == (0),
+    (x) * (w) == (z),
+    (z) * (e) == (0)
     }")
 
   ///

@@ -32,7 +32,9 @@
      see @(see boolean-assert)),
      the @(see boolean-xor) circuit can be also used
      to set @($z$) to 0 or 1 depending on
-     whether @($x$) and @($y$) are equal or not."))
+     whether @($x$) and @($y$) are equal or not:")
+   (xdoc::@[]
+    "\\mathit{boolean\_xor}(x,y,z)"))
   :order-subtopics t
   :default-parent t)
 

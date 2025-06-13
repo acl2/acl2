@@ -80,7 +80,7 @@
      of the form described in @(see field-div-unchecked)."))
   (pfcs::parse-def
    "field_div_unchecked(x, y, z) := {
-       (z) * (y) == (x)
+    (z) * (y) == (x)
     }")
   ///
 
