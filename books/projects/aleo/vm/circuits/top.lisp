@@ -29,6 +29,7 @@
 (include-book "field-div-flagged")
 (include-book "field-div-unchecked")
 (include-book "field-double")
+(include-book "field-if")
 (include-book "field-inv-checked")
 (include-book "field-inv-flagged")
 (include-book "field-mul")
@@ -87,6 +88,7 @@
                     field-add
                     field-div-checked
                     field-double
+                    field-if
                     field-inv-checked
                     field-inv-flagged
                     field-mul
