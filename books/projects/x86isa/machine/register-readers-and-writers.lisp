@@ -88,8 +88,7 @@ prefix.</p>"
                (reg-indexp reg rex)))
 
     (defthm reg-indexp-logand-7
-      (implies (n08p rex-byte)
-               (reg-indexp (loghead 3 modr/m) rex-byte))
+      (reg-indexp (loghead 3 modr/m) rex-byte)
       :hints (("Goal" :in-theory (enable reg-indexp)))))
 
   (define reg-index
@@ -201,18 +200,18 @@ are used to write natural numbers into the GPRs.</p>"
     :no-function t
     :guard (reg-indexp reg rex)
     :short "Read from byte general-purpose registers"
-    :long "<p><i>Source: Intel Manuals, Vol. 1, Section
-    3.4.1.1 (General-Purpose Registers in 64-bit Mode)</i></p>
+    :long "<p><i>Source: Intel Manual Volume 1 Section 3.4.1.1 (Jun 2024)
+           (General-Purpose Registers in 64-bit Mode)</i></p>
 
     <blockquote>In 64-bit mode, there are limitations on accessing byte
     registers. An instruction cannot reference legacy high-bytes (for example: AH,
-                                                                      BH, CH, DH) and one of the new byte registers at the same time (for example:
-                                                                      the low byte of the RAX register). However, instructions may reference legacy
+    BH, CH, DH) and one of the new byte registers at the same time (for example:
+    the low byte of the RAX register). However, instructions may reference legacy
     low-bytes (for example: AL, BL, CL or DL) and new byte registers at the same
     time (for example: the low byte of the R8 register, or R8L). The architecture
     enforces this limitation by changing high-byte references (AH, BH, CH, DH) to
     low byte references (BPL, SPL, DIL, SIL: the low 8 bits for RBP, RSP, RDI and
-                              RSI) for instructions using a REX prefix.</blockquote>
+    RSI) for instructions using a REX prefix.</blockquote>
 
     <p>In other words, without the REX prefix, indices 0-7 refer to byte registers
     AL, CL, DL, BL, AH, CH, DH, and BH, whereas with the REX prefix, indices 0-15
@@ -222,15 +221,16 @@ are used to write natural numbers into the GPRs.</p>"
     <p>In 32-bit mode, this function is called with 0 as REX.</p>"
 
     (b* ((reg (mbe :logic (nfix reg) :exec reg)))
-        (cond ((or (not (eql rex 0))
-                   (< reg 4))
-               (let ((qword (the (signed-byte 64) (rgfi reg x86))))
-                 (n08 qword)))
-              (t ;; no rex and reg is at least 4 -- then read from AH, etc.
-                (let ((qword
-                        (the (signed-byte 64) (rgfi (the (unsigned-byte 4) (- reg 4)) x86))))
-                  (mbe :logic (part-select qword :low 8 :width 8)
-                       :exec (n08 (ash qword -8)))))))
+      (cond ((or (not (eql rex 0))
+                 (< reg 4))
+             (let ((qword (the (signed-byte 64) (rgfi reg x86))))
+               (n08 qword)))
+            (t ;; no rex and reg is at least 4 -- then read from AH, etc.
+             (let ((qword
+                    (the (signed-byte 64)
+                         (rgfi (the (unsigned-byte 4) (- reg 4)) x86))))
+               (mbe :logic (part-select qword :low 8 :width 8)
+                    :exec (n08 (ash qword -8)))))))
 
     ///
 
@@ -256,33 +256,34 @@ are used to write natural numbers into the GPRs.</p>"
                                             bitops::logand-with-bitmask
                                             unsigned-byte-p))))
     :short "Writing to byte general-purpose registers"
-    :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
-    p. 3-17, which says the following about 64-bit mode:</p>
+    :long "<p>Note Intel Manual Volume 1 Section 3.4.1.1 (Jun 2024),
+    which says the following about 64-bit mode:</p>
 
-    <p><em>8-bit and 16-bit operands generate an 8-bit or 16-bit result.
-    The upper 56 or 48 bits (respectively) of the destination general-purpose
+    <p><em>8-bit and 16-bit operands generate an 8-bit or 16-bit result.  The
+    upper 56 or 48 bits (respectively) of the destination general-purpose
     register are not modified by the operation.</em></p>
 
     <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
     &lsquo;No Extension of 8-Bit and 16-Bit Results&rsquo;.</p>
 
-    <p>In 32-bit mode, the upper 32 bits are undefined, as specified by
-    the following quote from the same page as above:</p>
+    <p>In 32-bit mode, the upper 32 bits are undefined, as specified by the
+    following quote from the same page as above:</p>
 
     <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
-    undefined in 32-bit modes, the upper 32 bits of any general-purpose
-    register are not preserved when switching from 64-bit mode to a 32-bit
-    mode (to protected mode or compatibility mode). Software must not depend on
-    these bits to maintain a value after a 64-bit to 32-bit mode
-    switch.</em></p>
+    undefined in 32-bit modes, the upper 32 bits of any general-purpose register
+    are not preserved when switching from 64-bit mode to a 32-bit mode (to
+    protected mode or compatibility mode). Software must not depend on these
+    bits to maintain a value after a 64-bit to 32-bit mode switch.</em></p>
 
-    <p>In 32-bit mode, this function is called with 0 as REX.  Since in 32-bit
-    mode the high 32 bits of general-purpose registers are not accessible, it
-    is fine for this function to leave those bits unchanged, as opposed to, for
-    example, setting them to undefined values as done by the semantic functions
-    of certain instructions for certain flags. The switching from 32-bit mode
-    to 64-bit mode (when modeled) will set the high 32 bits of general-purpose
-    registers to undefined values.</p>"
+    <p>This function is used both in 64-bit mode and in 32-bit mode. Since in
+    32-bit mode the high 32 bits of general-purpose registers are not
+    accessible, it is fine for this function to leave those bits unchanged, as
+    opposed to, for example, setting them to undefined values as done by the
+    semantic functions of certain instructions for certain flags. This way, in
+    this function, we can treat 32-bit and 64-bit the same, without a case
+    split. Note that the switching from 32-bit mode to 64-bit mode (when
+    modeled) will set the high 32 bits of general-purpose registers to undefined
+    values.</p>"
 
     (b* ((reg (mbe :logic (nfix reg) :exec reg)))
         (cond ((or (not (eql rex 0))
@@ -390,30 +391,31 @@ are used to write natural numbers into the GPRs.</p>"
     :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
     p. 3-17, which says the following about 64-bit mode:</p>
 
-    <p><em>8-bit and 16-bit operands generate an 8-bit or 16-bit result.
-    The upper 56 or 48 bits (respectively) of the destination general-purpose
+    <p><em>8-bit and 16-bit operands generate an 8-bit or 16-bit result.  The
+    upper 56 or 48 bits (respectively) of the destination general-purpose
     register are not modified by the operation.</em></p>
 
     <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
     &lsquo;No Extension of 8-Bit and 16-Bit Results&rsquo;.</p>
 
-    <p>In 32-bit mode, the upper 32 bits are undefined, as specified by
-    the following quote from the same page as above:</p>
+    <p>In 32-bit mode, the upper 32 bits are undefined, as specified by the
+    following quote from the same page as above:</p>
 
     <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
-    undefined in 32-bit modes, the upper 32 bits of any general-purpose
-    register are not preserved when switching from 64-bit mode to a 32-bit
-    mode (to protected mode or compatibility mode). Software must not depend on
-    these bits to maintain a value after a 64-bit to 32-bit mode
-    switch.</em></p>
+    undefined in 32-bit modes, the upper 32 bits of any general-purpose register
+    are not preserved when switching from 64-bit mode to a 32-bit mode (to
+    protected mode or compatibility mode). Software must not depend on these
+    bits to maintain a value after a 64-bit to 32-bit mode switch.</em></p>
 
     <p>This function is used both in 64-bit mode and in 32-bit mode. Since in
     32-bit mode the high 32 bits of general-purpose registers are not
     accessible, it is fine for this function to leave those bits unchanged, as
     opposed to, for example, setting them to undefined values as done by the
-    semantic functions of certain instructions for certain flags. The switching
-    from 32-bit mode to 64-bit mode (when modeled) will set the high 32 bits of
-    general-purpose registers to undefined values.</p>"
+    semantic functions of certain instructions for certain flags. This way, in
+    this function, we can treat 32-bit and 64-bit the same, without a case
+    split. Note that the switching from 32-bit mode to 64-bit mode (when
+    modeled) will set the high 32 bits of general-purpose registers to undefined
+    values.</p>"
 
     (let ((qword (the (signed-byte 64) (rgfi reg x86))))
       (!rgfi reg
@@ -487,30 +489,30 @@ are used to write natural numbers into the GPRs.</p>"
     :long "<p>Note Intel Vol. 1 Sec. 3.4.1.1
     p. 3-17, which says the following about 64-bit mode:</p>
 
-    <p><em>32-bit operands generate a 32-bit result, zero-extended to a
-    64-bit result in the destination general-purpose
-    register.</em></p>
+    <p><em>32-bit operands generate a 32-bit result, zero-extended to a 64-bit
+    result in the destination general-purpose register.</em></p>
 
-    <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under
-    `No Extension of 8-Bit and 16-Bit Results'.</p>
+    <p>This is also confirmed by AMD manual, Jun'15, Vol. 3, App. B.1, under `No
+    Extension of 8-Bit and 16-Bit Results'.</p>
 
     <p>In 32-bit mode, the upper 32 bits are undefined, as specified by the
     following quote from the same page as above:</p>
 
     <p><em>Because the upper 32 bits of 64-bit general-purpose registers are
-    undefined in 32-bit modes, the upper 32 bits of any general-purpose
-    register are not preserved when switching from 64-bit mode to a 32-bit
-    mode (to protected mode or compatibility mode). Software must not depend on
-    these bits to maintain a value after a 64-bit to 32-bit mode
-    switch.</em></p>
+    undefined in 32-bit modes, the upper 32 bits of any general-purpose register
+    are not preserved when switching from 64-bit mode to a 32-bit mode (to
+    protected mode or compatibility mode). Software must not depend on these
+    bits to maintain a value after a 64-bit to 32-bit mode switch.</em></p>
 
     <p>This function is used both in 64-bit mode and in 32-bit mode. Since in
     32-bit mode the high 32 bits of general-purpose registers are not
     accessible, it is fine for this function to set those bits to 0, as opposed
     to, for example, setting them to undefined values as done by the semantic
-    functions of certain instructions for certain flags. The switching from
-    32-bit mode to 64-bit mode (when modeled) will set the high 32 bits of
-    general-purpose registers to undefined values.</p>"
+    functions of certain instructions for certain flags. This way, in this
+    function, we can treat 32-bit and 64-bit the same, without a case
+    split. Note that the switching from 32-bit mode to 64-bit mode (when
+    modeled) will set the high 32 bits of general-purpose registers to undefined
+    values.</p>"
 
     (!rgfi reg (mbe :logic (n32 val) :exec val) x86)
 
