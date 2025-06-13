@@ -58,7 +58,7 @@
      that returns an error if @('x') is 0:
      saying that @('y') is equal to that function
      involves saying that the function does not return an error
-     (imagine that @(tsee pfield::inv) below is such a function,
+     (imagine that @('pfield::inv') below is such a function,
      even though it does not return an error,
      but has a guard instead."))
   (and (not (equal x 0))
