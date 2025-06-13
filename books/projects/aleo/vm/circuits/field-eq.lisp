@@ -33,8 +33,8 @@
      by negating the non-equality of @($x$) and @($y$):")
    (xdoc::@[]
     "\\begin{array}{l}
-     \\mathit{field\_neq(x,y,w) \\\\
-     \\mathit{boolean\_not(w,z)
+     \\mathit{field\_neq}(x,y,w) \\\\
+     \\mathit{boolean\_not}(w,z)
      \\end{array}"))
   :order-subtopics t
   :default-parent t)
