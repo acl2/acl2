@@ -35,8 +35,8 @@
      by negating the non-equality of @($x$) and @($y$):")
    (xdoc::@[]
     "\\begin{array}{l}
-     \\mathit{boolean\_neq(x,y,w) \\\\
-     \\mathit{boolean\_not(w,z)
+     \\mathit{boolean\_neq}(x,y,w) \\\\
+     \\mathit{boolean\_not}(w,z)
      \\end{array}"))
   :order-subtopics t
   :default-parent t)
