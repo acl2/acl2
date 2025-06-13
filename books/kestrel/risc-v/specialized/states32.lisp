@@ -248,7 +248,7 @@
      at least in the normal encoding, instructions take 32 bits each.
      We may generalize this function, or add an alternative one,
      if and when we extend our model to support
-     compressed encodings in the C extension [ISA:26].")
+     compressed encodings in the C extension [ISA:27].")
    (xdoc::p
     "We read the program counter, we add 4, and we write the result.
      Recall that @(tsee write32-pc) wraps around if needed [ISA:1.4]."))

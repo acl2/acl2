@@ -1134,6 +1134,7 @@ workshop2018: $(filter workshops/2018/%, $(OK_CERTS))
 workshop2020: $(filter workshops/2020/%, $(OK_CERTS))
 workshop2022: $(filter workshops/2022/%, $(OK_CERTS))
 workshop2023: $(filter workshops/2023/%, $(OK_CERTS))
+workshop2025: $(filter workshops/2025/%, $(OK_CERTS))
 
 # Projects targets:
 
