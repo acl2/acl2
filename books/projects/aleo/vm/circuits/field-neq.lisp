@@ -155,7 +155,7 @@
     :use (field-neq-pred-soundness
           field-neq-pred-completeness))
 
-  (defruled field-neq-opt-circuit-to-spec
+  (defruled field-neq-circuit-to-spec
     (implies (and (equal (pfcs::lookup-definition "field_neq" defs)
                          (field-neq-circuit))
                   (primep prime)
