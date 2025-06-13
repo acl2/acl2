@@ -26,6 +26,7 @@
 (include-book "boolean-xor")
 (include-book "field-add")
 (include-book "field-assert-eq")
+(include-book "field-assert-neq")
 (include-book "field-div-checked")
 (include-book "field-div-flagged")
 (include-book "field-div-unchecked")
@@ -90,6 +91,7 @@
                     boolean-xor
                     field-add
                     field-assert-eq
+                    field-assert-neq
                     field-div-checked
                     field-double
                     field-eq
