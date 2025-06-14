@@ -165,7 +165,7 @@
      and instead associates corresponding elements of the lists.
      To have a sufficient induction hypothesis,
      we need to generalize the theorem to a generic assignment asg,
-     assumed to include at least the one built via @(tseeomap::from-lists).
+     assumed to include at least the one built via @(tsee omap::from-lists).
      The lifting theorem says that
      the list of recursively constructed constraints is satisfied iff
      the shallowly embedded @('boolean-assert-all') predicate holds.
