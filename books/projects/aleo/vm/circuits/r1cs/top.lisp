@@ -12,6 +12,7 @@
 (in-package "ALEOVM")
 
 (include-book "equal")
+(include-book "one")
 (include-book "zero")
 
 (include-book "xdoc/constructors" :dir :system)
