@@ -17,8 +17,8 @@
 (include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/indexed-names" :dir :system)
 
-(local (include-book "library-extensions/omaps"))
-(local (include-book "library-extensions/osets"))
+(local (include-book "../library-extensions/omaps"))
+(local (include-book "../library-extensions/osets"))
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))

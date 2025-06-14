@@ -11,36 +11,7 @@
 
 (in-package "ALEOVM")
 
-(include-book "boolean-and")
-(include-book "boolean-assert")
-(include-book "boolean-assert-all")
-(include-book "boolean-assert-eq")
-(include-book "boolean-assert-neq")
-(include-book "boolean-assert-true")
-(include-book "boolean-eq")
-(include-book "boolean-if")
-(include-book "boolean-nand")
-(include-book "boolean-neq")
-(include-book "boolean-nor")
-(include-book "boolean-not")
-(include-book "boolean-or")
-(include-book "boolean-xor")
-(include-book "field-add")
-(include-book "field-assert-eq")
-(include-book "field-assert-neq")
-(include-book "field-div-checked")
-(include-book "field-div-flagged")
-(include-book "field-div-unchecked")
-(include-book "field-double")
-(include-book "field-eq")
-(include-book "field-if")
-(include-book "field-inv-checked")
-(include-book "field-inv-flagged")
-(include-book "field-mul")
-(include-book "field-neg")
-(include-book "field-neq")
-(include-book "field-square")
-(include-book "field-sub")
+(include-book "pfcs/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -66,7 +37,8 @@
      with respect to high-level specifications that we also provide.")
    (xdoc::p
     "snarkVM generates zero-knowledge circuits in R1CS form.
-     We use our "
+     In @(see circuits-pfcs),
+     we use our "
     (xdoc::seetopic "pfcs::pfcs" "PFCS")
     " formalism
      to formalize and verify the circuits in a compositional way,
@@ -76,32 +48,4 @@
     " and in our "
     (xdoc::ahref "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22023.9"
                  "ACL2-2023 Workshop paper")
-    "."))
-  :order-subtopics (boolean-and
-                    boolean-assert
-                    boolean-assert-all
-                    boolean-assert-eq
-                    boolean-assert-neq
-                    boolean-assert-true
-                    boolean-eq
-                    boolean-if
-                    boolean-nand
-                    boolean-neq
-                    boolean-nor
-                    boolean-not
-                    boolean-or
-                    boolean-xor
-                    field-add
-                    field-assert-eq
-                    field-assert-neq
-                    field-div-checked
-                    field-double
-                    field-eq
-                    field-if
-                    field-inv-checked
-                    field-inv-flagged
-                    field-mul
-                    field-neg
-                    field-neq
-                    field-square
-                    field-sub))
+    ".")))
