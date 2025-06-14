@@ -13,6 +13,7 @@
 
 (include-book "equal")
 (include-book "if")
+(include-book "if-with-coeffs")
 (include-book "one")
 (include-book "zero")
 
