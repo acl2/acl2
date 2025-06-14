@@ -12,6 +12,7 @@
 (in-package "ALEOVM")
 
 (include-book "equal")
+(include-book "if")
 (include-book "one")
 (include-book "zero")
 
