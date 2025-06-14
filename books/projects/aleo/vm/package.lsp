@@ -160,6 +160,8 @@
                            abnf::patbind-tree-list-tuple9-result
                            abnf::patbind-tree-list-tuple9-result-err
                            abnf::patbind-tree-list-tuple9-result-ok
+                           dm::prime
+                           dm::primep
                            ecurve::point
                            ecurve::pointp
                            fty::info
@@ -171,7 +173,15 @@
                            fty::reserr-option
                            fty::reserr-optionp
                            fty::stack
-                           dm::prime
-                           dm::primep
-                           str::string-list
-                           std::defret-mutual)))
+                           pfcs::iname
+                           pfcs::iname-list
+                           pfcs::pf+
+                           pfcs::pf*
+                           pfcs::pf=
+                           pfcs::pfcall
+                           pfcs::pfconst
+                           pfcs::pfdef
+                           pfcs::pfmon
+                           pfcs::pfvar
+                           std::defret-mutual
+                           str::string-list)))
