@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "boolean-check")
 (include-book "equal")
 (include-book "if")
 (include-book "if-with-coeffs")
