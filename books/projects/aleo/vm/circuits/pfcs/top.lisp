@@ -259,31 +259,33 @@
     "All of this is still work in progress, so things may evolve.
      Nonetheless, the circuits currently formalized and verified in PFCS form
      follow the patterns and approach described here."))
-  :order-subtopics (boolean-and
-                    boolean-assert
+  :order-subtopics (boolean-assert
                     boolean-assert-all
-                    boolean-assert-eq
-                    boolean-assert-neq
                     boolean-assert-true
-                    boolean-eq
-                    boolean-if
-                    boolean-nand
-                    boolean-neq
-                    boolean-nor
                     boolean-not
+                    boolean-and
                     boolean-or
                     boolean-xor
+                    boolean-nand
+                    boolean-nor
+                    boolean-eq
+                    boolean-neq
+                    boolean-assert-eq
+                    boolean-assert-neq
+                    boolean-if
                     field-add
-                    field-assert-eq
-                    field-assert-neq
-                    field-div-checked
-                    field-double
-                    field-eq
-                    field-if
+                    field-neg
+                    field-sub
+                    field-mul
                     field-inv-checked
                     field-inv-flagged
-                    field-mul
-                    field-neg
-                    field-neq
+                    field-div-checked
+                    field-div-flagged
+                    field-div-unchecked
+                    field-double
                     field-square
-                    field-sub))
+                    field-eq
+                    field-neq
+                    field-assert-eq
+                    field-assert-neq
+                    field-if))
