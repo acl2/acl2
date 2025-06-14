@@ -36,6 +36,7 @@
                          '(any
                            any-p
                            assert-equal
+                           bit-listp
                            bool
                            boolean-list-fix
                            boolean-resultp
