@@ -12,10 +12,13 @@
 (in-package "ALEOVM")
 
 (include-book "equal")
+(include-book "zero")
+
+(include-book "xdoc/constructors" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ circuits-r1cs
+(defxdoc circuits-r1cs
   :parents (circuits)
   :short "AleoVM circuits in R1CS form."
   :long
