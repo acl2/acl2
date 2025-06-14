@@ -53,6 +53,7 @@
                            lnfix
                            logext
                            loghead
+                           lookup-equal
                            maybe-msgp
                            maybe-natp
                            maybe-pseudo-event-formp
