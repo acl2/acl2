@@ -11,7 +11,7 @@
 
 (in-package "ALEOVM")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "equal")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,5 +39,7 @@
      is now essentially legacy code,
      which we keep mainly for historical and testing purposes,
      and also because not all the circuits in R1CS forms
-     have been ported to PFCS form yet."))
-  :order-subtopics ())
+     have been ported to PFCS form yet.")
+   (xdoc::p
+    "These circuits in R1CS form are documented with comments in the files,
+     not in XDOC; thus, this XDOC topic has no subtopics for the circuits.")))
