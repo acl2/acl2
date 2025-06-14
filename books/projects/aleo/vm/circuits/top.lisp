@@ -12,6 +12,7 @@
 (in-package "ALEOVM")
 
 (include-book "pfcs/top")
+(include-book "r1cs/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,4 +49,6 @@
     " and in our "
     (xdoc::ahref "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22023.9"
                  "ACL2-2023 Workshop paper")
-    ".")))
+    "."))
+  :order-subtopics (pfcs
+                    r1cs))
