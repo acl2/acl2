@@ -25,6 +25,7 @@
 (include-book "if-with-coeffs")
 (include-book "indicator")
 (include-book "one")
+(include-book "pow2sum-vectors")
 (include-book "vector-neg")
 (include-book "zero")
 
