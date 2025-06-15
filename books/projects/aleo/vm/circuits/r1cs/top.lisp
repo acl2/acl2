@@ -27,6 +27,7 @@
 (include-book "boolean-xor")
 (include-book "equal")
 (include-book "field-bits-add-bits")
+(include-book "field-mul")
 (include-book "field-to-bits")
 (include-book "if")
 (include-book "if-with-coeffs")
