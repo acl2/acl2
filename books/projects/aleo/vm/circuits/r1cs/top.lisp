@@ -63,6 +63,7 @@
 (include-book "unsigned-small-div")
 (include-book "unsigned-small-lt")
 (include-book "unsigned-small-mul")
+(include-book "unsigned-small-mul-and-check")
 (include-book "unsigned-small-mul-carry")
 (include-book "unsigned-small-mul-checked")
 (include-book "unsigned-small-mul-wrapped")
