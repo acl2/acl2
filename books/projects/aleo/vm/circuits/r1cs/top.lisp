@@ -64,6 +64,7 @@
 (include-book "unsigned-small-sub")
 (include-book "unsigned-small-sub-checked")
 (include-book "unsigned-small-sub-opt")
+(include-book "unsigned-small-sub-opt-const-var")
 (include-book "unsigned-small-sub-wrapped")
 (include-book "vector-neg")
 (include-book "zero")
