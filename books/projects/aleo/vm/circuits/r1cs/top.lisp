@@ -43,6 +43,7 @@
 (include-book "field-pow-const")
 (include-book "field-square")
 (include-book "field-square-root")
+(include-book "field-ternary")
 (include-book "field-to-bits")
 (include-book "if")
 (include-book "if-with-coeffs")
