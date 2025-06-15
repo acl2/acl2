@@ -58,6 +58,7 @@
 (include-book "pow2sum")
 (include-book "unsigned-medium-mul-carry")
 (include-book "unsigned-medium-mul-checked")
+(include-book "unsigned-medium-div")
 (include-book "unsigned-small-add")
 (include-book "unsigned-small-add-checked")
 (include-book "unsigned-small-add-checked-opt")
