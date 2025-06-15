@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "babbage-multiplication")
 (include-book "bits-lt")
 (include-book "bits-lt-prime")
 (include-book "bits-lte-const")
