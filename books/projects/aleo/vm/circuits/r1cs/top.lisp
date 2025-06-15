@@ -63,6 +63,7 @@
 (include-book "unsigned-small-neq-opt")
 (include-book "unsigned-small-sub")
 (include-book "unsigned-small-sub-checked")
+(include-book "unsigned-small-sub-const-var")
 (include-book "unsigned-small-sub-opt")
 (include-book "unsigned-small-sub-opt-const-var")
 (include-book "unsigned-small-sub-wrapped")
