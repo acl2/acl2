@@ -57,6 +57,7 @@
 (include-book "pow2sum-vectors")
 (include-book "pow2sum")
 (include-book "signed-small-neg")
+(include-book "signed-small-neq")
 (include-book "signed-small-sub-wrapped-const-var")
 (include-book "unsigned-medium-mul-carry")
 (include-book "unsigned-medium-mul-checked")
