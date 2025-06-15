@@ -50,6 +50,7 @@
                            int
                            integers-from-to
                            integer-resultp
+                           lebits=>nat
                            lnfix
                            logext
                            loghead
