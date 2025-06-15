@@ -58,6 +58,7 @@
 (include-book "unsigned-small-add")
 (include-book "unsigned-small-add-checked")
 (include-book "unsigned-small-add-checked-opt")
+(include-book "unsigned-small-add-wrapped")
 (include-book "vector-neg")
 (include-book "zero")
 
