@@ -12,6 +12,7 @@
 (in-package "ALEOVM")
 
 (include-book "bits-lt")
+(include-book "bits-lt-prime")
 (include-book "bits-lte-const")
 (include-book "bits-lte-const-check")
 (include-book "boolean-and")
