@@ -56,6 +56,7 @@
 (include-book "one")
 (include-book "pow2sum-vectors")
 (include-book "pow2sum")
+(include-book "unsigned-medium-mul-carry")
 (include-book "unsigned-small-add")
 (include-book "unsigned-small-add-checked")
 (include-book "unsigned-small-add-checked-opt")
