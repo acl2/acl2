@@ -15,6 +15,7 @@
 (include-book "bits-lt-prime")
 (include-book "bits-lte-const")
 (include-book "bits-lte-const-check")
+(include-book "bits-mul-field")
 (include-book "boolean-and")
 (include-book "boolean-and-notleft")
 (include-book "boolean-and-notright")
