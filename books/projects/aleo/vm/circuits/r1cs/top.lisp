@@ -29,6 +29,7 @@
 (include-book "field-bits-add-bits")
 (include-book "field-const-pow")
 (include-book "field-const-pow-bits")
+(include-book "field-inverse")
 (include-book "field-mul")
 (include-book "field-pow-bits")
 (include-book "field-pow-bits-const")
