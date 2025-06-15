@@ -53,9 +53,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Experiment: try a specification that uses defresult to handle the errors.
-; Note, if we like this kind of specification, the spec should go over in
-; ../specs
-; and the soundness proofs should remain here.
 
 (include-book "kestrel/fty/integer-result" :dir :system)
 ; defines integer-resultp
