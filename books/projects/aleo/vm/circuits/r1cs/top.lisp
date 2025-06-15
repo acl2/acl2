@@ -50,6 +50,7 @@
 (include-book "indicator")
 (include-book "integer-and")
 (include-book "integer-or")
+(include-book "integer-ternary")
 (include-book "integer-xor")
 (include-book "one")
 (include-book "pow2sum-vectors")
