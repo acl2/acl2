@@ -13,6 +13,7 @@
 
 (include-book "boolean-and")
 (include-book "boolean-and-notleft")
+(include-book "boolean-and-notright")
 (include-book "boolean-check")
 (include-book "equal")
 (include-book "if")
