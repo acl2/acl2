@@ -13,6 +13,7 @@
 
 (include-book "bits-lt")
 (include-book "bits-lte-const")
+(include-book "bits-lte-const-check")
 (include-book "boolean-and")
 (include-book "boolean-and-notleft")
 (include-book "boolean-and-notright")
