@@ -56,6 +56,7 @@
 (include-book "pow2sum-vectors")
 (include-book "pow2sum")
 (include-book "unsigned-small-add")
+(include-book "unsigned-small-add-checked")
 (include-book "vector-neg")
 (include-book "zero")
 
