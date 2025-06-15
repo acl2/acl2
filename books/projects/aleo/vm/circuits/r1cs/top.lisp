@@ -33,6 +33,7 @@
 (include-book "field-div-unchecked")
 (include-book "field-from-bits")
 (include-book "field-inverse")
+(include-book "field-lt")
 (include-book "field-mul")
 (include-book "field-pow-bits")
 (include-book "field-pow-bits-const")
