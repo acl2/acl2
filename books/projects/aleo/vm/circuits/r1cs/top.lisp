@@ -11,6 +11,8 @@
 
 (in-package "ALEOVM")
 
+(include-book "boolean-and")
+(include-book "boolean-and-notleft")
 (include-book "boolean-check")
 (include-book "equal")
 (include-book "if")
