@@ -40,6 +40,7 @@
 (include-book "field-pow")
 (include-book "field-pow-bits")
 (include-book "field-pow-bits-const")
+(include-book "field-pow-const")
 (include-book "field-square")
 (include-book "field-to-bits")
 (include-book "if")
