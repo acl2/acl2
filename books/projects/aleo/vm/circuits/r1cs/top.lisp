@@ -11,6 +11,8 @@
 
 (in-package "ALEOVM")
 
+(include-book "bits-lt")
+(include-book "bits-lte-const")
 (include-book "boolean-and")
 (include-book "boolean-and-notleft")
 (include-book "boolean-and-notright")
