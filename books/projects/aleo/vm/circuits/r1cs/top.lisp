@@ -36,6 +36,7 @@
 (include-book "field-lt")
 (include-book "field-mul")
 (include-book "field-neq")
+(include-book "field-neq-opt")
 (include-book "field-pow-bits")
 (include-book "field-pow-bits-const")
 (include-book "field-square")
