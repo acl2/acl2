@@ -36,6 +36,8 @@
                          '(any
                            any-p
                            assert-equal
+                           bebits=>nat
+                           bfix
                            bit-listp
                            bit-list-fix
                            bool
@@ -74,6 +76,7 @@
                            nat-option-listp
                            nat-option-resultp
                            nat-option-list-resultp
+                           nat=>lebits*
                            nati-case
                            nati-finite
                            nati-finite->get
