@@ -61,6 +61,7 @@
 (include-book "unsigned-small-add-wrapped")
 (include-book "unsigned-small-neq")
 (include-book "unsigned-small-neq-opt")
+(include-book "unsigned-small-sub-opt")
 (include-book "vector-neg")
 (include-book "zero")
 
