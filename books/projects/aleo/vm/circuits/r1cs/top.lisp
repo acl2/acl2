@@ -70,4 +70,13 @@
      have been ported to PFCS form yet.")
    (xdoc::p
     "These circuits in R1CS form are documented with comments in the files,
-     not in XDOC; thus, this XDOC topic has no subtopics for the circuits.")))
+     not in XDOC; thus, this XDOC topic has no subtopics for the circuits.")
+   (xdoc::p
+    "For some of these circuits in R1CS form,
+     we prove both soundness and completeness,
+     while for others, we only prove soundness;
+     this was work in progress,
+     but we switched to the PFCS approach at some point
+     (see @(see circuits-pfcs)).
+     See the papers referenced in @(see circuits)
+     for the notions of `soundness' and `completeness' in this context.")))
