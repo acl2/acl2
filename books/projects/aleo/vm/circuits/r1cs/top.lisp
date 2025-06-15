@@ -26,6 +26,7 @@
 (include-book "boolean-or-notleft")
 (include-book "boolean-xor")
 (include-book "equal")
+(include-book "field-bits-add-bits")
 (include-book "if")
 (include-book "if-with-coeffs")
 (include-book "indicator")
