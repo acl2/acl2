@@ -15,6 +15,7 @@
 (include-book "boolean-and-notleft")
 (include-book "boolean-and-notright")
 (include-book "boolean-check")
+(include-book "boolean-nand")
 (include-book "boolean-or")
 (include-book "boolean-or-notleft")
 (include-book "boolean-xor")
