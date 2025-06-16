@@ -57,6 +57,7 @@
 (include-book "pow2sum-vectors")
 (include-book "pow2sum")
 (include-book "signed-small-abs-checked")
+(include-book "signed-small-abs-wrapped")
 (include-book "signed-small-add-checked")
 (include-book "signed-small-add-wrapped")
 (include-book "signed-small-neg")
