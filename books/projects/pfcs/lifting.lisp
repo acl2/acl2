@@ -806,8 +806,11 @@
                          (:e expression-kind)
                          (:e expression-const->value)
                          (:e expression-var->name)
+                         (:e expression-neg->arg)
                          (:e expression-add->arg1)
                          (:e expression-add->arg2)
+                         (:e expression-sub->arg1)
+                         (:e expression-sub->arg2)
                          (:e expression-mul->arg1)
                          (:e expression-mul->arg2)
                          (:e expression-var-list)
@@ -818,7 +821,9 @@
                          (:e assignmentp)
                          omap::from-lists
                          pfield::fep-fw-to-natp
+                         pfield::natp-of-neg
                          pfield::natp-of-add
+                         pfield::natp-of-sub
                          pfield::natp-of-mul
                          len
                          fty::consp-when-reserrp
@@ -888,8 +893,11 @@
                         (:e expression-kind)
                         (:e expression-const->value)
                         (:e expression-var->name)
+                        (:e expression-neg->arg)
                         (:e expression-add->arg1)
                         (:e expression-add->arg2)
+                        (:e expression-sub->arg1)
+                        (:e expression-sub->arg2)
                         (:e expression-mul->arg1)
                         (:e expression-mul->arg2)
                         (:e expression-var-list)
@@ -902,7 +910,9 @@
                         (:e assignmentp)
                         omap::from-lists
                         pfield::fep-fw-to-natp
+                        pfield::natp-of-neg
                         pfield::natp-of-add
+                        pfield::natp-of-sub
                         pfield::natp-of-mul
                         len
                         fty::consp-when-reserrp
