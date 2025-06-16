@@ -65,6 +65,7 @@
 (include-book "signed-small-neq-opt")
 (include-book "signed-small-sub-checked")
 (include-book "signed-small-sub-checked-const-var")
+(include-book "signed-small-sub-wrapped")
 (include-book "signed-small-sub-wrapped-const-var")
 (include-book "unsigned-medium-mul-carry")
 (include-book "unsigned-medium-mul-checked")
