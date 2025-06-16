@@ -28,11 +28,11 @@ boolean_and(w0, w1, w2)")))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event
- (let ((cst (parse "boolean_and(x,y,z) := {
+ (let ((ast (parse "boolean_and(x,y,z) := {
   x * y == z
 }
 boolean_and(w0, w1, w2)")))
-   (equal cst
+   (equal ast
           '(:SYSTEM (DEFINITIONS (:DEFINITION (NAME . "boolean_and")
                                   (PARA "x" "y" "z")
                                   (BODY (:EQUAL (:MUL (:VAR "x") (:VAR "y"))
@@ -52,3 +52,24 @@ boolean_and(w0, w1, w2)")))
             (PARA "x" "y" "z")
             (BODY (:EQUAL (:MUL (:VAR "x") (:VAR "y"))
                    (:VAR "z")))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Examples of neg and sub
+
+;; sub and neg of identifier
+(assert-event
+ (let ((ast (parse "a - 1 == -b")))
+   (equal ast
+          '(:SYSTEM (DEFINITIONS)
+            (CONSTRAINTS (:EQUAL (:SUB (:VAR "a") (:CONST 1))
+                          (:NEG (:VAR "b"))))))))
+
+;; sub and neg of numeral and neg of expression
+(assert-event
+ (let ((ast (parse "-2 == 1--(3 * 4)")))
+   (equal ast
+          '(:SYSTEM (DEFINITIONS)
+            (CONSTRAINTS (:EQUAL (:NEG (:CONST 2))
+                          (:SUB (:CONST 1)
+                                (:NEG (:MUL (:CONST 3) (:CONST 4))))))))))

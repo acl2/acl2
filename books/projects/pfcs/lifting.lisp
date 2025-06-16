@@ -37,7 +37,7 @@
 
 (defxdoc+ lifting
   :parents (pfcs)
-  :short "Lifting of PFCSes."
+  :short "Lifting of PFCS."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -283,7 +283,12 @@
    expr
    :const `(mod ,expr.value ,prime)
    :var (lift-var-name expr.name state)
+   :neg `(neg ,(lift-expression expr.arg prime state)
+              ,prime)
    :add `(add ,(lift-expression expr.arg1 prime state)
+              ,(lift-expression expr.arg2 prime state)
+              ,prime)
+   :sub `(sub ,(lift-expression expr.arg1 prime state)
               ,(lift-expression expr.arg2 prime state)
               ,prime)
    :mul `(mul ,(lift-expression expr.arg1 prime state)

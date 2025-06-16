@@ -122,12 +122,6 @@
       "[ carriage-return ]" optional-cr
 
       ;; --------------------------------
-      ;; components for rule "integer"
-      ;; integer = [ "-" ] numeral
-
-      "[ \"-\" ]" optional-hyphen
-
-      ;; --------------------------------
       ;; components for rule "relation-constraint"
       ;; relation-constraint = identifier "("
       ;;                       [ expression *( "," expression ) ] ")"
@@ -260,14 +254,6 @@
     :rule-classes :linear))
 
 (defparse-pfcs-rulename "numeral")
-
-
-;; --------------------------------
-;; rule integer
-;;   integer = [ "-" ] numeral
-
-(defparse-pfcs-option "[ \"-\" ]")
-(defparse-pfcs-rulename "integer")
 
 
 ;; --------------------------------

@@ -368,22 +368,7 @@
     t)
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define abs-integer ((tree abnf::treep))
-  :returns (int integer-resultp)
-  :short "Abstract an @('integer') to an ACL2 int."
-  (b* (((okf (abnf::tree-list-tuple2 sub))
-        (abnf::check-tree-nonleaf-2 tree "integer"))
-       ((okf optional-minus-tree) (abnf::check-tree-list-1 sub.1st))
-       ((okf has-minus-sign?) (check-optional-minus-sign-p
-                               optional-minus-tree))
-       ((okf numeral-tree) (abnf::check-tree-list-1 sub.2nd))
-       ((okf nat-value) (abs-numeral numeral-tree)))
-    (if has-minus-sign?
-        (- nat-value)
-        nat-value))
-  :hooks (:fix))
+;(acl2::i-am-here)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -403,11 +388,11 @@
                       (if (stringp id-or-err)
                           (make-expression-var :name id-or-err)
                           id-or-err)))
-                   ((equal rulename? "integer")
-                    (let ((int-or-err (abs-integer tree)))
-                      (if (integerp int-or-err)
-                          (make-expression-const :value int-or-err)
-                          int-or-err)))
+                   ((equal rulename? "numeral")
+                    (let ((num-or-err (abs-numeral tree)))
+                      (if (natp num-or-err)
+                          (make-expression-const :value num-or-err)
+                          num-or-err)))
                    (t (reserrf (list :found-subtree
                                      (abnf::tree-info-for-error tree)))))))
         (3 (b* (((okf (abnf::tree-list-tuple3 sub))
@@ -423,18 +408,36 @@
                                   (abnf::tree-info-for-error tree))))))
     :measure (abnf::tree-count tree))
 
+  ;; unary-minus-expression = [ "-" ] primary-expression
+
+  (define abs-unary-minus-expression ((tree abnf::treep))
+    :returns (expr-or-err expression-resultp)
+    :short "Abstract a @('unary-minus-expression')."
+    (b* (((okf (abnf::tree-list-tuple2 sub))
+          (abnf::check-tree-nonleaf-2 tree "unary-minus-expression"))
+         ((okf optional-minus-tree) (abnf::check-tree-list-1 sub.1st))
+         ((okf has-minus-sign?) (check-optional-minus-sign-p
+                                 optional-minus-tree))
+         ((okf tree) (abnf::check-tree-list-1 sub.2nd))
+         ((okf expr) (abs-primary-expression tree)))
+      (if has-minus-sign?
+          (make-expression-neg :arg expr)
+          expr))
+      :measure (abnf::tree-count tree))
+
   ;; multiplication-expression
-  ;;   = primary-expression
-  ;;     / multiplication-expression "*" primary-expression
+  ;;   = unary-minus-expression
+  ;;     / multiplication-expression "*" unary-minus-expression
 
   (define abs-multiplication-expression ((tree abnf::treep))
     :returns (expr-or-err expression-resultp)
     :short "Abstract a @('multiplication-expression')."
-    (b* (((okf treess) (abnf::check-tree-nonleaf tree "multiplication-expression")))
+    (b* (((okf treess) (abnf::check-tree-nonleaf 
+                        tree "multiplication-expression")))
       (case (len treess)
         (1 (b* (((okf trees) (abnf::check-tree-list-list-1 treess))
                 ((okf tree) (abnf::check-tree-list-1 trees))
-                ((okf primary) (abs-primary-expression tree)))
+                ((okf primary) (abs-unary-minus-expression tree)))
              primary))
         (3 (b* (((okf (abnf::tree-list-tuple3 sub))
                  (abnf::check-tree-list-list-3 treess))
@@ -443,18 +446,19 @@
                 ((okf tree) (abnf::check-tree-list-1 sub.2nd))
                 ((okf &) (abnf::check-tree-schars tree "*"))
                 ((okf tree) (abnf::check-tree-list-1 sub.3rd))
-                ((okf sub-prim) (abs-primary-expression tree)))
+                ((okf sub-prim) (abs-unary-minus-expression tree)))
              (make-expression-mul :arg1 sub-mul :arg2 sub-prim)))
         (otherwise (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))))
     :measure (abnf::tree-count tree))
 
-  ;; addition-expression = multiplication-expression
-  ;;                     / addition-expression "+" multiplication-expression
+  ;; additive-expression = multiplication-expression
+  ;;                     / additive-expression "+" multiplication-expression
+  ;;                     / additive-expression "-" multiplication-expression
 
-  (define abs-addition-expression ((tree abnf::treep))
+  (define abs-additive-expression ((tree abnf::treep))
     :returns (expr-or-err expression-resultp)
-    :short "Abstract a @('addition-expression')."
-    (b* (((okf treess) (abnf::check-tree-nonleaf tree "addition-expression")))
+    :short "Abstract a @('additive-expression')."
+    (b* (((okf treess) (abnf::check-tree-nonleaf tree "additive-expression")))
       (case (len treess)
         (1 (b* (((okf trees) (abnf::check-tree-list-list-1 treess))
                 ((okf tree) (abnf::check-tree-list-1 trees))
@@ -463,22 +467,26 @@
         (3 (b* (((okf (abnf::tree-list-tuple3 sub))
                  (abnf::check-tree-list-list-3 treess))
                 ((okf tree) (abnf::check-tree-list-1 sub.1st))
-                ((okf sub-add) (abs-addition-expression tree))
-                ((okf tree) (abnf::check-tree-list-1 sub.2nd))
-                ((okf &) (abnf::check-tree-schars tree "+"))
-                ((okf tree) (abnf::check-tree-list-1 sub.3rd))
-                ((okf sub-mult) (abs-multiplication-expression tree)))
-             (make-expression-add :arg1 sub-add :arg2 sub-mult)))
+                ((okf sub-add-or-sub) (abs-additive-expression tree))
+                ((okf tree) (abnf::check-tree-list-1 sub.2nd)))
+             (if (abnf::passp (abnf::check-tree-schars tree "+"))
+                 (b* (((okf tree) (abnf::check-tree-list-1 sub.3rd))
+                      ((okf sub-mult) (abs-multiplication-expression tree)))
+                   (make-expression-add :arg1 sub-add-or-sub :arg2 sub-mult))
+                 (b* (((okf &) (abnf::check-tree-schars tree "-"))
+                      ((okf tree) (abnf::check-tree-list-1 sub.3rd))
+                      ((okf sub-mult) (abs-multiplication-expression tree)))
+                   (make-expression-sub :arg1 sub-add-or-sub :arg2 sub-mult)))))
         (otherwise (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))))
     :measure (abnf::tree-count tree))
 
-  ;; expression = addition-expression
+  ;; expression = additive-expression
 
   (define abs-expression ((tree abnf::treep))
     :returns (expr expression-resultp)
     :short "Abstract an @('expression') to an expression."
     (b* (((okf tree) (abnf::check-tree-nonleaf-1-1 tree "expression")))
-      (abs-addition-expression tree))
+      (abs-additive-expression tree))
     :measure (abnf::tree-count tree))
 
   :ruler-extenders :all
