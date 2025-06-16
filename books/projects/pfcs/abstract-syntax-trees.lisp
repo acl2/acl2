@@ -56,11 +56,10 @@
    (xdoc::p
     "We use (any) strings for variables.")
    (xdoc::p
-    "We include just two field operations for now: addition and multiplication.
-     These suffice for arithmetic circuits.
-     Negation, and therefore subtraction, are easily represented,
-     via multiplication by negative one
-     (see @(tsee expression-neg) and @(tsee expression-sub)).
+    "Two field operations, addition and multiplication,
+     suffice for arithmetic circuits.
+     We also add negation (unary), and subtraction (binary)
+     for convenience.
      We may add other operations in the future,
      most notably reciprocal, and therefore division.
      We may also add square roots,
@@ -69,7 +68,9 @@
      e.g. non-zero divisors."))
   (:const ((value int)))
   (:var ((name string)))
+  (:neg ((arg expression)))
   (:add ((arg1 expression) (arg2 expression)))
+  (:sub ((arg1 expression) (arg2 expression)))
   (:mul ((arg1 expression) (arg2 expression)))
   :pred expressionp
   :prepwork ((local (in-theory (enable ifix)))))
