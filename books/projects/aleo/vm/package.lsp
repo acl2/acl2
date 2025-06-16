@@ -36,7 +36,10 @@
                          '(any
                            any-p
                            assert-equal
+                           bebits=>nat
+                           bfix
                            bit-listp
+                           bit-list-fix
                            bool
                            boolean-list-fix
                            boolean-resultp
@@ -50,9 +53,11 @@
                            int
                            integers-from-to
                            integer-resultp
+                           lebits=>nat
                            lnfix
                            logext
                            loghead
+                           lookup-equal
                            maybe-msgp
                            maybe-natp
                            maybe-pseudo-event-formp
@@ -71,6 +76,7 @@
                            nat-option-listp
                            nat-option-resultp
                            nat-option-list-resultp
+                           nat=>lebits*
                            nati-case
                            nati-finite
                            nati-finite->get
