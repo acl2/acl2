@@ -115,7 +115,7 @@
      This follows the approach described in
      the papers referenced in @(see circuits).")
    (xdoc::p
-    "This approach is superseded by the approach in @(see circuit-pfcs),
+    "This approach is superseded by the approach in @(see circuits-pfcs),
      also described in the aforementioned papers,
      which also explain how the PFCS approach
      solves a scalability problem inherent to the R1CS approach.
