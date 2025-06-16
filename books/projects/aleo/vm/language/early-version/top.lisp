@@ -11,18 +11,16 @@
 
 (in-package "ALEOVM")
 
-(include-book "concrete-syntax")
-
-(include-book "early-version/top")
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ language
-  :parents (aleovm)
-  :short "AleoVM language."
+(defxdoc+ early-version
+  :parents (language)
+  :short "An early version of the AleoVM language."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We provide a formalization of the AleoVM language.
-     This formalization is work in progress."))
-  :order-subtopics (concrete-syntax))
+    "Here is some unfinished formalization of
+     an early version of the AleoVM @(see language)."))
+  :order-subtopics ())
