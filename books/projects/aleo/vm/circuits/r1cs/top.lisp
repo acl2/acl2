@@ -60,6 +60,7 @@
 (include-book "signed-small-abs-wrapped")
 (include-book "signed-small-add-checked")
 (include-book "signed-small-add-wrapped")
+(include-book "signed-small-mul-wrapped")
 (include-book "signed-small-neg")
 (include-book "signed-small-neq")
 (include-book "signed-small-neq-opt")
