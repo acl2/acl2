@@ -60,8 +60,9 @@
   (xdoc::topstring
    (xdoc::p
     "This is an addend of an R1CS polynomial (i.e. linear combination).
-     It is either a constant
-     or a variable
+     It is either a constant,
+     or a variable,
+     or a negated constant or variable,
      or a product of a constant (natural number) by a variable,
      or a product of a negated constant (negative number) by a variable.")
    (xdoc::p
@@ -69,6 +70,10 @@
      a constant (natural number) by a negated variable."))
   (or (expression-case expr :const)
       (expression-case expr :var)
+      (and (expression-case expr :neg)
+           (expression-case (expression-neg->arg expr) :const))
+      (and (expression-case expr :neg)
+           (expression-case (expression-neg->arg expr) :var))
       (and (expression-case expr :mul)
            (or (expression-case (expression-mul->arg1 expr) :const)
                (and (expression-case (expression-mul->arg1 expr) :neg)
@@ -188,7 +193,7 @@
 (define sr1cs-definitionp ((def definitionp))
   :returns (yes/no booleanp)
   :short "Check if a PFCS definition
-          consists of strcutred R1CS constraints."
+          consists of structured R1CS constraints."
   (sr1cs-constraint-listp (definition->body def))
   :hooks (:fix))
 
