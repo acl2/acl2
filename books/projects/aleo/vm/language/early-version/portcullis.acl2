@@ -1,6 +1,6 @@
 ; AleoVM Library
 ;
-; Copyright (C) 2025 Provable Inc.
+; Copyright (C) 2025 Aleo Systems Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -9,4 +9,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "portcullis")
+(ld "package.lsp")
