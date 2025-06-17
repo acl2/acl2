@@ -12,6 +12,7 @@
 (in-package "ALEOVM-EARLY")
 
 (include-book "concrete-syntax")
+(include-book "abstract-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,4 +23,5 @@
   (xdoc::topstring
    (xdoc::p
     "This should be updated to the latest version."))
-  :order-subtopics (concrete-syntax))
+  :order-subtopics (concrete-syntax
+                    abstract-syntax))
