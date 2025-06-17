@@ -972,8 +972,11 @@
                         (:e expression-kind)
                         (:e expression-const->value)
                         (:e expression-var->name)
+                        (:e expression-neg->arg)
                         (:e expression-add->arg1)
                         (:e expression-add->arg2)
+                        (:e expression-sub->arg1)
+                        (:e expression-sub->arg2)
                         (:e expression-mul->arg1)
                         (:e expression-mul->arg2)
                         (:e expression-var-list)
@@ -1006,7 +1009,9 @@
                         (:e no-duplicatesp-equal)
                         acl2::primep-forward-to-posp
                         ,@type-presc-rules
+                        pfield::natp-of-neg
                         pfield::natp-of-add
+                        pfield::natp-of-sub
                         pfield::natp-of-mul)
            :use ((:instance constraint-relation-satp-suff
                             (asgfree (omap::from-lists
