@@ -60,7 +60,7 @@
      of the form described in @(see field-sub)."))
   (pfcs::parse-def
    "field_sub(x, y, z) := {
-      (x + -1 * y) * (1) == (z)
+      (x - y) * (1) == (z)
     }")
 
   ///
