@@ -21,6 +21,5 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Here is some unfinished formalization of
-     an early version of the AleoVM @(see language)."))
+    "This should be updated to the latest version."))
   :order-subtopics ())
