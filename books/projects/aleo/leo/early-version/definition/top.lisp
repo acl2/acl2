@@ -16,7 +16,6 @@
 (include-book "static-semantics")
 (include-book "dynamic-semantics")
 (include-book "compilation")
-(include-book "compile-file")
 (include-book "format-strings")
 (include-book "flattening")
 
