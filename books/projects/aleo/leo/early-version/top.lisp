@@ -1,6 +1,6 @@
-; AleoVM Library
+; Leo Library
 ;
-; Copyright (C) 2025 Provable Inc.
+; Copyright (C) 2024 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -9,20 +9,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOVM")
+(in-package "LEO-EARLY")
 
-(include-book "concrete-syntax")
-
-(include-book "early-version/top")
+(include-book "xdoc/defxdoc-plus" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ language
-  :parents (aleovm)
-  :short "AleoVM language."
+(defxdoc+ early-version
+  :parents (leo::leo)
+  :short "An early version of the Leo language."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We provide a formalization of the AleoVM language.
-     This formalization is work in progress."))
-  :order-subtopics (concrete-syntax))
+    "This should be updated to the latest version.")))

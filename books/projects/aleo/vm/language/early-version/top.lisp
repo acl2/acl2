@@ -9,20 +9,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOVM")
+(in-package "ALEOVM-EARLY")
 
-(include-book "concrete-syntax")
-
-(include-book "early-version/top")
+(include-book "grammar")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ language
-  :parents (aleovm)
-  :short "AleoVM language."
+(defxdoc+ early-version
+  :parents (aleovm::language)
+  :short "An early version of the AleoVM language."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We provide a formalization of the AleoVM language.
-     This formalization is work in progress."))
-  :order-subtopics (concrete-syntax))
+    "This should be updated to the latest version."))
+  :order-subtopics ())
