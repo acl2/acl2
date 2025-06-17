@@ -88,7 +88,7 @@
      but it is simpler to define this as a single equality constraint."))
   (pfcs::parse-def
    "boolean_nand(x, y, z) := {
-    (x) * (y) == (1 + -1 * z)
+    (x) * (y) == (1 - z)
     }")
 
   ///

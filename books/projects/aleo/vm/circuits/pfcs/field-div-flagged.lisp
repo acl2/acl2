@@ -90,7 +90,7 @@
      described in @(see field-div-flagged)."))
   (pfcs::parse-def
    "field_div_flagged(x,y,z,e) := {
-    (y) * (w) == (1 + -1 * e),
+    (y) * (w) == (1 - e),
     (y) * (e) == (0),
     (x) * (w) == (z),
     (z) * (e) == (0)

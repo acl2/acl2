@@ -88,7 +88,7 @@
      but it is simpler to define this as a single equality constraint."))
   (pfcs::parse-def
    "boolean_or(x, y, z) := {
-    (1 + -1 * x) * (1 + -1 * y) == (1 + -1 * z)
+    (1 - x) * (1 - y) == (1 - z)
     }")
 
   ///

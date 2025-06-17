@@ -89,7 +89,7 @@
      of the form described in @(see boolean-xor)."))
   (pfcs::parse-def
    "boolean_xor(x, y, z) := {
-    (2 * x) * (y) == (x + y + -1 * z)
+    (2 * x) * (y) == (x + y - z)
     }")
 
   ///
