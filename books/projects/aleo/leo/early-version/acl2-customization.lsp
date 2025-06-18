@@ -1,6 +1,6 @@
-; AleoBFT Library
+; Leo Library
 ;
-; Copyright (C) 2024 Aleo Systems Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -9,4 +9,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(ld "../package.lsp")
+(ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
+
+(ld "package.lsp")
+
+(reset-prehistory)
+
+(in-package "LEO-EARLY")

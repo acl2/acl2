@@ -13,6 +13,8 @@
 
 (include-book "concrete-syntax")
 
+(include-book "early-version/top")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ language

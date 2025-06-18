@@ -13,6 +13,8 @@
 
 (include-book "grammar")
 
+(include-book "early-version/top")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ leo

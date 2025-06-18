@@ -1,6 +1,6 @@
-; AleoBFT Library
+; Leo Library
 ;
-; Copyright (C) 2025 Aleo Systems Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -9,4 +9,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(ld "../package.lsp")
+(include-book "portcullis")
+
+; cert-flags: ? t :useless-runes nil
