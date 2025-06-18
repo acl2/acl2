@@ -40,6 +40,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-union
   ((x binary-tree-p)
    (y binary-tree-p))
@@ -252,7 +257,6 @@
      (y setp))
     :returns (set setp)
     (tree-union (sfix x) (sfix y))
-    :no-function t
     :inline t)
 
   ;;;;;;;;;;;;;;;;;;;;

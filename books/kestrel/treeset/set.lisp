@@ -27,6 +27,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define setp (x)
   (declare (xargs :type-prescription (booleanp (setp x))))
   :parents (set)
@@ -138,7 +143,6 @@
   (equal (sfix x)
          (sfix y))
   :inline t
-  :no-function t
 
   ///
   (defequiv set-equiv))
@@ -161,7 +165,6 @@
   :parents (set)
   :short "Check if a @(see set) is empty."
   (tree-emptyp (sfix set))
-  :no-function t
   :inline t)
 
 (defrule emptyp-when-set-equiv
@@ -215,7 +218,6 @@
       element of the underlying tree, which will be the unique maximum value
       with respect to @(tsee heap<)."))
   (tree-head (sfix set))
-  :no-function t
   :inline t)
 
 (defrule head-when-set-equiv
@@ -256,7 +258,6 @@
       @(tsee bst<) the @(tsee head). In terms of the underlying tree
       representation, this is the left subtree."))
   (tree-left (sfix set))
-  :no-function t
   :inline t)
 
 (defrule left-type-prescription
@@ -342,7 +343,6 @@
       @(tsee bst<) all elements. In terms of the underlying tree representation,
       this is the right subtree."))
   (tree-right (sfix set))
-  :no-function t
   :inline t)
 
 (defrule right-type-prescription
@@ -440,7 +440,6 @@
             (right (set-induct (right set))))
         (declare (ignore left right))
         t))
-  :no-function t
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards nil)
 
@@ -469,7 +468,6 @@
             (right (set-bi-induct (right x) (right y))))
         (declare (ignore left right))
         t))
-  :no-function t
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards nil)
 

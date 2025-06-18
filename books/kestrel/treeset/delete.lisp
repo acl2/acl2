@@ -36,6 +36,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-delete
   (x
    (tree binary-tree-p))
@@ -202,7 +207,6 @@
                                            (equal (delete1 x set) nil))))
     :returns (set$ setp)
     (tree-delete x (sfix set))
-    :no-function t
     :inline t)
 
   ;;;;;;;;;;;;;;;;;;;;

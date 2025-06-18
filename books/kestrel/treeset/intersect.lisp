@@ -38,6 +38,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-intersect
   ((x binary-tree-p)
    (y binary-tree-p))
@@ -187,7 +192,6 @@
      (y setp))
     :returns (set setp)
     (tree-intersect (sfix x) (sfix y))
-    :no-function t
     :inline t)
 
   ;;;;;;;;;;;;;;;;;;;;
