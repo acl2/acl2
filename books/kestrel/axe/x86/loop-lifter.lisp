@@ -827,7 +827,7 @@
        (base-addr2 (second write-pair2))
        (- (cw "(Proving that there is no overlap between ~x0 bytes starting at ~x1 and ~x2 bytes starting at ~x3.~%" (unquote num-bytes1) base-addr1 (unquote num-bytes2) base-addr2))
        (separation-term (if bvp
-                            `(disjoint-regionsp ,num-bytes1 ,base-addr1 ,num-bytes2 ,base-addr2)
+                            `(disjoint-regions48p ,num-bytes1 ,base-addr1 ,num-bytes2 ,base-addr2)
                           `(separate ':r ,num-bytes1 ,base-addr1 ':r ,num-bytes2 ,base-addr2)))
        ((mv erp result state)
         (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil state))
@@ -2277,6 +2277,8 @@
                        (append (if bvp
                                    (read-and-write-rules-bv)
                                  (read-and-write-rules-non-bv))
+                               (if nil ; for now
+                                   (canonical-rules-bv) (canonical-rules-non-bv))
                                (loop-lifter-rules64))))
        (32-bitp (member-eq executable-type *executable-types32*))
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))

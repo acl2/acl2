@@ -1028,6 +1028,7 @@
     x86isa::i256$inline
     x86isa::i512$inline
 
+    x86isa::i48p
     x86isa::i48p$inline  ;todo: more like this
 
     x86isa::n64-to-i64  ;todo: more like this
@@ -1688,6 +1689,9 @@
     x86isa::raw-result
 
     x86isa::low-nibble
+
+    x86isa::cs.limit
+    x86isa::*ip+delta
 ))
 
 ;; TODO: Think about this...

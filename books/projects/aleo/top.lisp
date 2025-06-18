@@ -12,6 +12,7 @@
 (in-package "ALEO")
 
 (include-book "bft/top")
+(include-book "vm/top")
 (include-book "leo/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,14 +34,18 @@
     (xdoc::ahref "https://provable.com" "Provable")
     ".")
    (xdoc::p
-    "Currently this library contains two sub-libraries:")
+    "Currently this library contains three sub-libraries:")
    (xdoc::ul
     (xdoc::li
      "A sub-library about AleoBFT,
       the consensus protocol of the Aleo blockchain.")
     (xdoc::li
+     "A sublibrary about AleoVM,
+      the virtual machine of the Aleo blockchain.")
+    (xdoc::li
      "A sub-library about Leo,
       a programming language for zero-knowledge applications
       to be deployed on the Aleo blockchain.")))
   :order-subtopics (aleobft::aleobft
+                    aleovm::aleovm
                     leo::leo))

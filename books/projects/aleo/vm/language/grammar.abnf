@@ -1,0 +1,500 @@
+; AleoVM Library
+;
+; Copyright (C) 2019-2023 Aleo Systems Inc.
+; Copyright (C) 2024-2025 Provable Inc.
+;
+; License: See the LICENSE file distributed with this library.
+;
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This is a copy of https://github.com/ProvableHQ/grammars/blob/master/aleo.abnf,
+; which is Provable's official ABNF grammar of the AleoVM language.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This file specifies the grammar of Aleo instructions in the ABNF notation,
+; which is defined in:
+; - RFC 5234 (https://www.rfc-editor.org/rfc/rfc5234)
+; - RFC 7405 (https://www.rfc-editor.org/rfc/rfc7405)
+
+; Aleo instructions files are written in Unicode, encoded in UTF-8.
+; The grammar in this file applies to the Unicode scalar values
+; that result from the UTF-8 decoding of the files.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This grammar is derived from the current implementation of
+; the nom parser of Aleo instructions in snarkVM.
+
+; The grammar should recognize exactly the same language as the parser.
+; The formulation of the rules for some constructs may not correspond
+; to the parser implementation exactly;
+; this is to highlight more structure to facilitate future changes,
+; or because of inherent differences between
+; the declarative nature of the grammar
+; and the operational nature of the parser.
+
+; This grammar currently consists of one level,
+; as opposed to two levels (lexical and syntactic).
+; While two levels are typical for higher-level languages like Leo,
+; one level is workable for lower-level languages like Aleo instructions.
+; By not throwing away whitespace and comment
+; when moving between the two levels,
+; we can (as the current rules do) enforce requirements
+; on where comments and whitespace may occur.
+; The parser also is written according to a single level.
+
+; The grammar should be unambiguous
+; if we take into account the extra-grammatical requirement
+; that the longest match is used,
+; which is a common extra-grammatical requirement,
+; at least in lexical grammars of two-level grammars,
+; but should also work for this one-level grammar.
+; We may also need extra-grammatical requirements
+; to enforce a preference over certain otherwise ambiguous alternatives.
+; We plan to formally prove all of this eventually.
+
+; The rules below are separated into sections delimited by 40 semicolons.
+; The sections do not have a very deep significance,
+; but are meant to group related rules.
+; For instance, the first section gives names to characters
+; that could not be otherwise denoted in ABNF strings;
+; the second section categorizes the allowed characters;
+; and so on.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ht = %x9 ; horizontal tab
+
+lf = %xA ; line feed
+
+cr = %xD ; carriage return
+
+sp = %x20 ; space
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+visible-ascii = %x21-7E
+
+safe-ascii = ht / lf / cr / sp / visible-ascii
+             ; excludes control characters 0-8, 11, 12, 14-31, 127
+
+safe-nonascii = %x80-2029 / %x202F-2065 / %x206A-D7FF / %xE000-10FFFF
+                ; excludes bidi embeddings/overrides/isolates
+                ; (i.e. %x202A-202E and %x2066-2069)
+                ; and excludes high/low surrogates
+                ; (i.e. %xD800-DFFF )
+
+character = safe-ascii / safe-nonascii
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+escaped-lf = "\" lf ; escaped line feed
+
+plain-ws = ht / sp / lf / cr ; plain (i.e. without escaped-lf) whitespace
+
+ws = *( 1*plain-ws / escaped-lf ) ; whitespace
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+comment = line-comment / block-comment
+
+line-comment = "//" *( escaped-lf / not-lf-or-cr )
+
+not-lf-or-cr = ht
+             / sp
+             / visible-ascii
+             / safe-nonascii
+             ; anything but lf and cr
+
+block-comment = "/*" rest-of-block-comment
+
+rest-of-block-comment = "*" rest-of-block-comment-after-star
+                      / not-star rest-of-block-comment
+
+not-star = ht
+         / lf
+         / cr
+         / %x20-29
+         / %x2B-7E
+         / safe-nonascii
+         ; anything but * (%x2A)
+
+rest-of-block-comment-after-star = "/"
+                                 / "*" rest-of-block-comment-after-star
+                                 / not-star-or-slash rest-of-block-comment
+
+not-star-or-slash = ht
+                  / lf
+                  / cr
+                  / %x20-29
+                  / %x2B-2E
+                  / %x30-7E
+                  / safe-nonascii
+                  ; anything but * (%x2A) and / (%x2F)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+cws = ws *( comment / ws ) ; comments and/or whitespace
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+uppercase-letter = %x41-5A ; A-Z
+
+lowercase-letter = %x61-7A ; a-z
+
+letter = uppercase-letter / lowercase-letter
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+digit = %x30-39 ; 0-9
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+identifier = letter *( letter / digit / "_" )
+
+lowercase-identifier = lowercase-letter *( lowercase-letter / digit / "_" )
+
+program-name = lowercase-identifier
+
+program-domain = lowercase-identifier
+
+program-id = program-name "." program-domain
+
+locator = program-id "/" identifier
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+register = %s"r" 1*digit
+
+register-accessor = "." identifier / "[" u32-literal "]"
+
+register-access = register *register-accessor
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+signed-literal = [ "-" ] 1*( digit *"_" ) signed-type
+
+unsigned-literal = [ "-" ] 1*( digit *"_" ) unsigned-type
+
+integer-literal = signed-literal / unsigned-literal
+
+field-literal = [ "-" ] 1*( digit *"_" ) field-type
+
+group-literal = [ "-" ] 1*( digit *"_" ) group-type
+
+scalar-literal = [ "-" ] 1*( digit *"_" ) scalar-type
+
+arithmetic-literal = integer-literal
+                   / field-literal
+                   / group-literal
+                   / scalar-literal
+
+u32-literal = [ "-" ] 1*( digit *"_" ) %s"u32"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+address-literal = %s"aleo1" 1*( address-or-signature-char *"_" )
+
+signature-literal = %s"sign1" 1*( address-or-signature-char *"_" )
+
+address-or-signature-char =
+    "0" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+  / %s"a" / %s"c" / %s"d" / %s"e" / %s"f" / %s"g" / %s"h" / %s"j"
+  / %s"k" / %s"l" / %s"m" / %s"n" / %s"p" / %s"q" / %s"r" / %s"s"
+  / %s"t" / %s"u" / %s"v" / %s"w" / %s"x" / %s"y" / %s"z"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+boolean-literal = %s"true" / %s"false"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+literal = arithmetic-literal
+        / address-literal
+        / signature-literal
+        / boolean-literal
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+operand = %s"group::GEN"
+        / %s"self.signer"
+        / %s"self.caller"
+        / %s"block.height"
+        / %s"network.id"
+        / program-id
+        / literal
+        / register-access
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+unsigned-type = %s"u8" / %s"u16" / %s"u32" / %s"u64" / %s"u128"
+
+signed-type = %s"i8" / %s"i16" / %s"i32" / %s"i64" / %s"i128"
+
+integer-type = unsigned-type / signed-type
+
+field-type = %s"field"
+
+group-type = %s"group"
+
+scalar-type = %s"scalar"
+
+arithmetic-type = integer-type / field-type / group-type / scalar-type
+
+address-type = %s"address"
+
+boolean-type = %s"boolean"
+
+signature-type = %s"signature"
+
+literal-type = arithmetic-type
+             / address-type
+             / signature-type
+             / boolean-type
+
+array-type = "[" ws plaintext-type ws ";" ws u32-literal ws "]"
+
+plaintext-type = literal-type / array-type / identifier
+
+value-type = plaintext-type %s".constant"
+           / plaintext-type %s".public"
+           / plaintext-type %s".private"
+           / identifier %s".record"
+           / locator %s".record"
+           / locator %s".future"
+
+mapping-type = plaintext-type %s".public"
+
+finalize-type = plaintext-type %s".public"
+              / locator %s".future"
+
+entry-type = plaintext-type ( %s".constant" / %s".public" / %s".private" )
+
+register-type = locator %s".future"
+              / locator %s".record"
+              / identifier %s".record"
+              / plaintext-type
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+import = cws %s"import" ws program-id ws ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+mapping = cws %s"mapping" ws identifier ws ":"
+          mapping-key
+          mapping-value
+
+mapping-key = cws %s"key" ws %s"as" ws mapping-type ws ";"
+
+mapping-value = cws %s"value" ws %s"as" ws mapping-type ws ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+struct = cws %s"struct" ws identifier ws ":" 1*tuple
+
+tuple = cws identifier ws %s"as" ws plaintext-type ws ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+record = cws %s"record" ws identifier ws ":"
+         cws %s"owner" ws %s"as" ws
+         ( %s"address.public" / %s"address.private" ) ws ";"
+         *entry
+
+entry = cws identifier ws %s"as" ws entry-type ws ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+unary-op = %s"abs" / %s"abs.w"
+         / %s"double"
+         / %s"inv"
+         / %s"neg"
+         / %s"not"
+         / %s"square"
+         / %s"sqrt"
+
+binary-op = %s"add" / %s"add.w"
+          / %s"sub" / %s"sub.w"
+          / %s"mul" / %s"mul.w"
+          / %s"div" / %s"div.w"
+          / %s"rem" / %s"rem.w"
+          / %s"mod"
+          / %s"pow" / %s"pow.w"
+          / %s"shl" / %s"shl.w"
+          / %s"shr" / %s"shr.w"
+          / %s"and"
+          / %s"or"
+          / %s"xor"
+          / %s"nand"
+          / %s"nor"
+          / %s"gt"
+          / %s"gte"
+          / %s"lt"
+          / %s"lte"
+
+is-op = %s"is.eq" / %s"is.neq"
+
+assert-op = %s"assert.eq" / %s"assert.neq"
+
+commit-op = %s"commit.bhp" ( "256" / "512" / "768" / "1024" )
+          / %s"commit.ped" ( "64" / "128" )
+
+hash-op = %s"hash.bhp" ( "256" / "512" / "768" / "1024" )
+        / %s"hash.ped" ( "64" / "128" )
+        / %s"hash.psd" ( "2" / "4" / "8" )
+        / %s"hash.keccak" ( "256" / "384" / "512" )
+        / %s"hash.sha3_" ( "256" / "384" / "512" )
+
+cast-op = %s"cast" / %s"cast.lossy"
+
+cast-destination = plaintext-type
+                 / identifier
+                 / locator
+                 / %s"group.x"
+                 / %s"group.y"
+
+unary = unary-op ws ( operand ws ) %s"into" ws register-access
+
+binary = binary-op ws 2( operand ws ) %s"into" ws register-access
+
+ternary = %s"ternary" ws 3( operand ws ) %s"into" ws register-access
+
+is = is-op ws operand ws operand ws %s"into" ws register-access
+
+assert = assert-op ws operand ws operand
+
+commit = commit-op ws operand ws operand
+         ws %s"into" ws register-access
+         ws %s"as" ws ( address-type / field-type / group-type )
+
+hash = hash-op ws operand
+       ws %s"into" ws register-access
+       ws %s"as" ws
+       ( arithmetic-type
+       / address-type
+       / signature-type
+       / array-type
+       / identifier )
+
+signverify = %s"sign.verify" ws operand ws operand ws operand
+             ws %s"into" ws register-access
+
+cast = cast-op 1*( ws operand )
+       ws %s"into" ws register-access ws %s"as" ws cast-destination
+
+call = %s"call" ws ( locator / identifier ) ws *( ws operand )
+       ws [ %s"into" ws 1*( ws register-access ) ]
+
+async = cws %s"async" ws identifier *( ws operand )
+        ws %s"into" ws register-access ws
+
+instruction = cws
+              ( unary
+              / binary
+              / ternary
+              / is
+              / assert
+              / commit
+              / hash
+              / signverify
+              / cast
+              / call
+              / async )
+              ws ";"
+
+contains = cws %s"contains"
+           ws identifier "[" ws operand ws "]"
+           ws %s"into" ws register-access ws ";"
+
+get = cws %s"get"
+      ws identifier "[" ws operand ws "]"
+      ws %s"into" ws register-access ws ";"
+
+get-or-use = cws %s"get.or_use"
+             ws identifier "[" ws operand ws "]"
+             ws operand
+             ws %s"into" ws register-access ws ";"
+
+set = cws %s"set"
+      ws operand
+      ws %s"into" ws identifier "[" ws operand ws "]" ws ";"
+
+remove = cws %s"remove"
+         ws identifier "[" ws operand ws "]" ws ";"
+
+random  = cws %s"rand.chacha"
+          *2( ws operand )
+          ws %s"into" ws register-access
+          ws %s"as" ws
+          ( arithmetic-type
+          / address-type
+          / signature-type
+          / boolean-type )
+          ws ";"
+
+label = identifier
+
+position = cws %s"position" ws label ws ";"
+
+branch-op = %s"branch.eq" / %s"branch.neq"
+
+branch = cws branch-op ws operand ws operand ws %s"to" ws label ws ";"
+
+await = cws %s"await" ws register-access ws ";"
+
+command = contains
+        / get
+        / get-or-use
+        / set
+        / remove
+        / random
+        / position
+        / branch
+        / await
+        / instruction
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+closure = cws %s"closure" ws identifier ws ":"
+          1*closure-input
+          1*instruction
+          *closure-output
+
+closure-input = cws %s"input" ws register
+                ws %s"as" ws register-type ws ";"
+
+closure-output = cws %s"output" ws operand
+                 ws %s"as" ws register-type ws ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+function = cws %s"function" ws identifier ws ":"
+           *function-input
+           *instruction
+           *function-output
+           [ finalize ]
+
+function-input = cws %s"input" ws register
+                 ws %s"as" ws value-type ws ";"
+
+function-output = cws %s"output" ws operand
+                  ws %s"as" ws value-type ws ";"
+
+finalize = cws %s"finalize" ws identifier ws ":"
+           *finalize-input
+           1*command
+
+finalize-input = cws %s"input" ws register
+                 ws %s"as" ws finalize-type ws ";"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+program = *import
+          cws %s"program" ws program-id ws ";"
+          1*( mapping / struct / record / closure / function )
+          cws

@@ -71,7 +71,7 @@
 ;; operator = "+" / "*" / ":=" / "=="
 ;; separator = "(" / ")" / "{" / "}" / ","
 
-(defconst *operators* '("+" "*" ":=" "=="))
+(defconst *operators* '("+" "-" "*" ":=" "=="))
 
 (defconst *separators* '("(" ")" "{" "}" ","))
 

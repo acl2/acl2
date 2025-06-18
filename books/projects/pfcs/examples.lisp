@@ -65,7 +65,7 @@
                   (or (equal b 0)
                       (equal b 1))))
   :in-theory '((:e make-rel-boolean))
-  :use (definition-satp-of-rel-boolean-to-shallow
+  :use (definition-satp-to-rel-boolean
          rel-boolean-to-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -108,7 +108,7 @@
                   (or (equal a 0)
                       (equal b c))))
   :in-theory '((:e make-rel-condeq))
-  :use (definition-satp-of-rel-condeq-to-shallow
+  :use (definition-satp-to-rel-condeq
          rel-condeq-to-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -159,7 +159,7 @@
                   (equal z
                          (if (equal b 1) x y))))
   :in-theory '((:e make-rel-select))
-  :use (definition-satp-of-rel-select-to-shallow
+  :use (definition-satp-to-rel-select
          rel-select-to-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -212,7 +212,7 @@
                   (not (equal a 0))))
   :in-theory '((:e make-rel-nonzero)
                acl2::primep-forward-to-posp)
-  :use (definition-satp-of-rel-nonzero-to-shallow
+  :use (definition-satp-to-rel-nonzero
          rel-nonzero-to-spec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -262,5 +262,5 @@
            (equal (definition-satp "rel-xor" defs (list a b c) p)
                   (equal c (if (equal a b) 0 1))))
   :in-theory '((:e make-rel-xor))
-  :use (definition-satp-of-rel-xor-to-shallow
+  :use (definition-satp-to-rel-xor
          rel-xor-to-spec))

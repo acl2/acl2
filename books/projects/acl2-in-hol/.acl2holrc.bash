@@ -17,13 +17,13 @@
 #  ./doit)
 
 if [ "${ACL2_SRC}" = "" ] ; then \
-    echo "Need to define ACL2_SRC; see books/projects/hol-acl2/.acl2holrc.bash" ; \
+    echo "Need to define ACL2_SRC; see books/projects/acl2-in-hol/.acl2holrc.bash" ; \
     exit 1 ; \
 fi
 
 if [ "${ACL2}" = "" ] ; then \
     export ACL2=${ACL2_SRC}/saved_acl2 ; \
 fi
-export ACL2_HOL=${ACL2_SRC}/books/projects/hol-acl2
+export ACL2_HOL=${ACL2_SRC}/books/projects/acl2-in-hol
 export ACL2_SYSTEM_BOOKS=${ACL2_SRC}/books
 export ACL2_HOL_LISP=${ACL2_HOL}/lisp

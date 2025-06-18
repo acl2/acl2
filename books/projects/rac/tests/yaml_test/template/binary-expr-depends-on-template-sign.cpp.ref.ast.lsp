@@ -1,3 +1,3 @@
 
 
-(funcdef foo (S x) (block (return (si (bits (if (logior1 S (true$)) (si (bits (+ (if1 S (si x 4) x) 1) (- (+ (if1 (log>= (+ 4 (logand1 (lognot1 S) (true$))) (+ 32 (logand1 (lognot1 (true$)) S))) (+ 4 (logand1 (lognot1 S) (true$))) (+ 32 (logand1 (lognot1 (true$)) S))) 1) 1) 0) (+ (if1 (log>= (+ 4 (logand1 (lognot1 S) (true$))) (+ 32 (logand1 (lognot1 (true$)) S))) (+ 4 (logand1 (lognot1 S) (true$))) (+ 32 (logand1 (lognot1 (true$)) S))) 1)) (bits (+ (if1 S (si x 4) x) 1) (- (+ (if1 (log>= (+ 4 (logand1 (lognot1 S) (true$))) (+ 32 (logand1 (lognot1 (true$)) S))) (+ 4 (logand1 (lognot1 S) (true$))) (+ 32 (logand1 (lognot1 (true$)) S))) 1) 1) 0)) 31 0) 32))))
+(funcdef foo (S x) (block (return (si (bits (bits (+ (if1 S (si x 4) x) 1) (- (+ (if1 (log>= (+ 4 (logand1 (lognot1 S) (true$))) (+ 32 (logand1 (lognot1 (true$)) S))) (+ 4 (logand1 (lognot1 S) (true$))) (+ 32 (logand1 (lognot1 (true$)) S))) 1) 1) 0) 31 0) 32))))

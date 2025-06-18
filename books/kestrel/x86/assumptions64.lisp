@@ -14,7 +14,7 @@
 (include-book "assumptions")
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes")
-(include-book "regions")
+(include-book "kestrel/memory/memory48" :dir :system)
 (include-book "parsers/parsed-executable-tools")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
@@ -165,8 +165,8 @@
            ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
            (if bvp
                 ;; essentially the same as the below SEPARATE claim:
-               (disjoint-regionsp (len text-section-bytes) (bvchop 48 text-offset) ; todo: drop the 2 bvchops
-                                  (* 8 stack-slots-needed) (bvchop 48 (+ (* -8 stack-slots-needed) (rgfi *rsp* x86))))
+               (disjoint-regions48p (len text-section-bytes) (bvchop 48 text-offset) ; todo: drop the 2 bvchops
+                                    (* 8 stack-slots-needed) (bvchop 48 (+ (* -8 stack-slots-needed) (rgfi *rsp* x86))))
              (separate :r (len text-section-bytes) text-offset
                        ;; Only a single stack slot is written
                        ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* x86)))
@@ -211,7 +211,7 @@
                                 bvp
                                 x86))
 
-;; TODO: What should this go if the parsed-elf is bad (e.g., doesn't have a
+;; TODO: What should this do if the parsed-elf is bad (e.g., doesn't have a
 ;; text section)?  Transition to just generating a list of terms?
 (defun standard-assumptions-elf-64 (subroutine-name
                                     parsed-elf

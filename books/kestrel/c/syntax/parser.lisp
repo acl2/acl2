@@ -4288,7 +4288,6 @@
             (lex-oct-iconst-/-dec-fconst first-pos parstate))))))
      (t ; 1-9
       (lex-dec-iconst/fconst first-digit first-pos parstate))))
-  :guard-debug t
   :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
 
   ///

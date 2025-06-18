@@ -386,7 +386,6 @@
                                           (- steps 1)))
      :measure (nfix steps)
      :hints (("Goal" :in-theory (enable o< o-finp nfix)))
-     :guard-debug t
      :guard-hints (("Goal" :in-theory (enable nfix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

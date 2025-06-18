@@ -1113,7 +1113,7 @@ smtlink: $(filter workshops/2015/peng-greenstreet/%, $(OK_CERTS))
         workshop2003 workshop2004 workshop2006 workshop2007 \
         workshop2009 workshop2011 workshop2013 workshop2014 \
         workshop2015 workshop2017 workshop2018 workshop2020 \
-        workshop2022 workshop2023
+        workshop2022 workshop2023 workshop2025
 
 workshops: $(filter workshops/%, $(OK_CERTS))
 workshop1999: $(filter workshops/1999/%, $(OK_CERTS))
@@ -1134,6 +1134,7 @@ workshop2018: $(filter workshops/2018/%, $(OK_CERTS))
 workshop2020: $(filter workshops/2020/%, $(OK_CERTS))
 workshop2022: $(filter workshops/2022/%, $(OK_CERTS))
 workshop2023: $(filter workshops/2023/%, $(OK_CERTS))
+workshop2025: $(filter workshops/2025/%, $(OK_CERTS))
 
 # Projects targets:
 

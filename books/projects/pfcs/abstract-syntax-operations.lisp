@@ -11,7 +11,7 @@
 
 (in-package "PFCS")
 
-(include-book "abstract-syntax")
+(include-book "abstract-syntax-trees")
 
 (include-book "kestrel/fty/string-set" :dir :system)
 (include-book "std/util/deflist" :dir :system)
@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax-operations
-  :parents (abstract-syntax pfcs)
+  :parents (abstract-syntax)
   :short "Operations on the abstract syntax of PFCSes."
   :order-subtopics t
   :default-parent t)
@@ -67,7 +67,10 @@
    expr
    :const nil
    :var (set::insert expr.name nil)
+   :neg (expression-vars expr.arg)
    :add (set::union (expression-vars expr.arg1)
+                    (expression-vars expr.arg2))
+   :sub (set::union (expression-vars expr.arg1)
                     (expression-vars expr.arg2))
    :mul (set::union (expression-vars expr.arg1)
                     (expression-vars expr.arg2)))
@@ -126,31 +129,6 @@
     "These are the variables in the body minus the parameters."))
   (set::difference (constraint-list-vars (definition->body def))
                    (set::mergesort (definition->para def))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expression-neg ((expr expressionp))
-  :returns (neg-expr expressionp)
-  :short "Abbreviation to construct a negation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This may be added to the abstract syntax at some point.
-     For now it is just an ephemeral abbreviation."))
-  (expression-mul (expression-const -1) expr))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expression-sub ((expr1 expressionp) (expr2 expressionp))
-  :returns (sub-expr expressionp)
-  :short "Abbreviation to construct a subtraction."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This may be added to the abstract syntax at some point.
-     For now it is just an ephemeral abbreviation."))
-  (expression-add expr1
-                  (expression-neg expr2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

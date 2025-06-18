@@ -168,13 +168,13 @@ while (0)
 %token INT UINT INT64 UINT64 BOOL
 %token SLC SET_SLC
 %token FOR IF ELSE WHILE DO SWITCH CASE DEFAULT BREAK RETURN ASSERT
-%token ARRAY TUPLE TIE
+%token TUPLE TIE
 %token AC_INT AC_FIXED
 %token<s> RSHFT_ASSIGN LSHFT_ASSIGN ADD_ASSIGN SUB_ASSIGN MUL_ASSIGN DIV_ASSIGN
 %token<s> MOD_ASSIGN AND_ASSIGN XOR_ASSIGN OR_ASSIGN
 %token<s> INC_OP DEC_OP
 %token<s> RSHFT_OP LSHFT_OP AND_OP OR_OP LE_OP GE_OP EQ_OP NE_OP
-%token<s> ID NAT TRUE FALSE TYPEID TEMPLATEID
+%token<s> ID NAT TRUE FALSE TYPEID TEMPLATEID ARRAY 
 %token<s> '=' '+' '-' '&' '|' '!' '~' '*' '%' '<' '>' '^' '/'
 
 %start program
@@ -300,7 +300,7 @@ typedef_dec
 {
   if ($3->isStaticallyEvaluable () && $3->evalConst () > 0)
     {
-      auto at = new ArrayType (@$, $3, $1->getdef ());
+      auto at = new ArrayType (@$, $3, $1->getdef (), false);
       $$ = new DefinedType(@$, $1->getname(), at);
     }
   else
@@ -382,7 +382,7 @@ array_param_type
 {
   if ($5->isStaticallyEvaluable () && $5->evalConst () > 0)
     {
-      auto at = new ArrayType (@$, $5, $3);
+      auto at = new ArrayType (@$, $5, $3, !strcmp($1, "fast_array"));
       at->setSTDArray();
       $$ = at;
     }
@@ -911,7 +911,7 @@ untyped_var_dec
     }
   bool error = register_with_new_id(symTab, $1, @1,
     [&]() {
-      $$ = new VarDec (@$, $1, new ArrayType (@1, $3, nullptr));
+      $$ = new VarDec (@$, $1, new ArrayType (@1, $3, nullptr, false));
       symTab.push ((VarDec *)$$);
   });
   if (error) {
@@ -931,7 +931,7 @@ untyped_var_dec
     }
   bool error = register_with_new_id(symTab, $1, @1,
     [&]() {
-      $$ = new VarDec (@1, $1, new ArrayType (@$, $3, nullptr), $6);
+      $$ = new VarDec (@1, $1, new ArrayType (@$, $3, nullptr, false), $6);
       symTab.push ((VarDec *)$$);
     });
   if (error) {
@@ -1013,7 +1013,7 @@ untyped_param_dec
     }
   bool error = register_with_new_id(symTab, $1, @$,
     [&]() {
-      $$ = new VarDec (@$, $1, new ArrayType (@$, $3, nullptr));
+      $$ = new VarDec (@$, $1, new ArrayType (@$, $3, nullptr, false));
       symTab.push ((VarDec *)$$);
   });
   if (error) {

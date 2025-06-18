@@ -38,6 +38,24 @@
          (set-rip rip x86))
   :hints (("Goal" :in-theory (enable set-rip))))
 
+(defthm set-rip-of-logext
+  (implies (and (<= 48 size)
+                (integerp size))
+           (equal (set-rip (logext size rip) x86)
+                  (set-rip rip x86)))
+  :hints (("Goal" :in-theory (enable set-rip xw))))
+
+(defthm set-rip-of-+-of-logext
+  (implies (and (<= 48 size)
+                (integerp size)
+                (integerp x)
+                (integerp y))
+           (equal (set-rip (+ x (logext size y)) x86)
+                  (set-rip (+ x y) x86)))
+  :hints (("Goal" :use ((:instance set-rip-of-logext (rip (+ x (logext size y))))
+                        (:instance set-rip-of-logext (rip (+ x y))))
+           :in-theory (disable set-rip-of-logext))))
+
 ;; A read-of-write rule
 (defthm rip-of-set-rip
   (equal (rip (set-rip rip x86))

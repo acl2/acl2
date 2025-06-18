@@ -213,6 +213,8 @@ public:
   Sexpression *ACL2Expr() override;
 };
 
+bool default_value_can_be_ignored(const Type *t);
+
 class Initializer final : public Expression {
 public:
   std::vector<Expression *> vals;
@@ -223,7 +225,7 @@ public:
   // actual type.
   Sexpression *ACL2Expr() override { UNREACHABLE(); }
 
-  Sexpression *ACL2ArrayExpr(const ArrayType *t, bool output_optmized_const);
+  Sexpression *ACL2ArrayExpr(const ArrayType *t);
   Sexpression *ACL2TupleExpr(const MvType *t);
   Sexpression *ACL2StructExpr(const StructType *t);
 };
@@ -303,6 +305,8 @@ std::string to_string(PrefixExpr::Op op);
 class CastExpr final : public Expression {
 public:
   Expression *expr;
+  // TODO: is this field really necessary ? Could we use instead
+  // Expression::type_ instead ?
   const Type *type;
 
   CastExpr(Location loc, Expression *e, const Type *t)
