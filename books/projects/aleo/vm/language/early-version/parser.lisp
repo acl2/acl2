@@ -1,8 +1,10 @@
-; Aleo Library
+; AleoVM Library
 ;
-; Copyright (C) 2022 Aleo Systems Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
-; Authors: Alessandro Coglio (acoglio on GitHub)
+; License: See the LICENSE file distributed with this library.
+;
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
