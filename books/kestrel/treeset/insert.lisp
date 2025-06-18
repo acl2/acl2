@@ -36,6 +36,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-insert
   (x
    (tree binary-tree-p))
@@ -252,7 +257,6 @@
      (set setp))
     :returns (set$ setp)
     (tree-insert x (sfix set))
-    :no-function t
     :inline t)
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -449,7 +453,6 @@
    (xdoc::p
      "Time complexity: @($O(n\\log(n))$)."))
   (insert-all list nil)
-  :no-function t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

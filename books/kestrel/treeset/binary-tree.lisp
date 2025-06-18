@@ -26,6 +26,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ binary-tree
   :parents (implementation)
   :short "Definition of a binary tree data structure."
@@ -59,7 +64,6 @@
   :short "Fixer for @(see binary-tree)s."
   (mbe :logic (if (binary-tree-p tree) tree nil)
        :exec (the (or cons null) tree))
-  :no-function t
   :inline t)
 
 (defrule tree-fix-when-binary-tree-p
@@ -96,7 +100,6 @@
   :short "Equivalence up to @(tsee tree-fix)."
   (equal (tree-fix x)
          (tree-fix y))
-  :no-function t
   :inline t
 
   ///
@@ -114,7 +117,6 @@
   (declare (xargs :type-prescription (booleanp (tree-emptyp tree))))
   :short "Check if a @(see binary-tree) is empty."
   (endp (tree-fix tree))
-  :no-function t
   :inline t)
 
 (defrule tree-emptyp-when-tree-equiv-congruence
@@ -158,7 +160,6 @@
    (xdoc::p
      "For empty trees, returns @('nil')."))
   (car (tree-fix tree))
-  :no-function t
   :inline t)
 
 (defrule tree-head-when-tree-equiv-congruence
@@ -195,7 +196,6 @@
      "For empty trees, returns @('nil')."))
   (cadr (tree-fix tree))
   :guard-hints (("Goal" :in-theory (enable binary-tree-p)))
-  :no-function t
   :inline t)
 
 (defrule tree-left-type-prescription
@@ -263,7 +263,6 @@
      "For empty trees, returns @('nil')."))
   (cddr (tree-fix tree))
   :guard-hints (("Goal" :in-theory (enable binary-tree-p)))
-  :no-function t
   :inline t)
 
 (defrule tree-right-type-prescription
@@ -360,7 +359,6 @@
   (list* head
          (tree-fix left)
          (tree-fix right))
-  :no-function t
   :inline t)
 
 (defrule tree-node-elim
@@ -433,7 +431,6 @@
      (tree-fix right)
      (cdr hint))
    hint)
-  :no-function t
   :inline t)
 
 (defrule tree-node-with-hint-becomes-tree-node
@@ -451,7 +448,6 @@
             (right (tree-induct (tree-right tree))))
         (declare (ignore left right))
         t))
-  :no-function t
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :verify-guards nil)
 

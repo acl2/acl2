@@ -28,6 +28,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-in
   (x
    (tree binary-tree-p))
@@ -286,7 +291,6 @@
                       (if (bst< x (head set))
                           (in x (left set))
                         (in x (right set))))))
-  :no-function t
   :inline t
 
   ;; Verified below
