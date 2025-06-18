@@ -30,6 +30,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; A tail-recursive version of tree-nodes-count
 ;; TODO: consider using loop$
 (define fast-tree-nodes-count
@@ -127,7 +132,6 @@
                    (tree-nodes-count (tree-left tree))
                    (tree-nodes-count (tree-right tree))))
        :exec (fast-tree-nodes-count (list tree) 0))
-  :no-function t
   :inline t
   :hints (("Goal" :in-theory (enable o< o-finp)))
   ;; Verified below
@@ -195,7 +199,6 @@
    (xdoc::p
      "Time complexity: @($O(n)$)."))
   (tree-nodes-count (sfix set))
-  :no-function t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
