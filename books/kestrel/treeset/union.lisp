@@ -251,7 +251,9 @@
     ((x setp)
      (y setp))
     :returns (set setp)
-    (tree-union (sfix x) (sfix y)))
+    (tree-union (sfix x) (sfix y))
+    :no-function t
+    :inline t)
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -272,7 +274,7 @@
     (declare (xargs :guard t))
     (union-macro-loop (list* x y rst)))
 
-  (add-macro-fn union binary-union t))
+  (add-macro-fn union binary-union$inline t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

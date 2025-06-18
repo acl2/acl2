@@ -286,6 +286,8 @@
                       (if (bst< x (head set))
                           (in x (left set))
                         (in x (right set))))))
+  :no-function t
+  :inline t
 
   ;; Verified below
   :verify-guards nil
@@ -306,7 +308,7 @@
              left
              right))
 
-  (verify-guards in
+  (verify-guards in$inline
     :hints (("Goal" :in-theory (enable emptyp)
                     :use tree-in-of-sfix-becomes-in-exec))))
 
