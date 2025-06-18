@@ -11,7 +11,9 @@
 
 (in-package "ALEOVM-EARLY")
 
-(include-book "grammar")
+(include-book "concrete-syntax")
+(include-book "abstract-syntax")
+(include-book "parser")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -22,4 +24,5 @@
   (xdoc::topstring
    (xdoc::p
     "This should be updated to the latest version."))
-  :order-subtopics ())
+  :order-subtopics (concrete-syntax
+                    abstract-syntax))

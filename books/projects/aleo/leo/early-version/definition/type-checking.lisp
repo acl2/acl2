@@ -684,7 +684,7 @@
      (xdoc::p
       "Unary and binary expressions are type-checked by
        first recursively type-checking their arguments,
-       and then using @(tsee typechekc-unop) and @(tsee typecheck-binop)
+       and then using @(tsee typecheck-unop) and @(tsee typecheck-binop)
        to check whether the argument types are allowed for the operator
        and to determine what the resulting type is.
        A unary or binary expression

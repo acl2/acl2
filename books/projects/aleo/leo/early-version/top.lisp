@@ -11,11 +11,12 @@
 
 (in-package "LEO-EARLY")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "definition/top")
+(include-book "testing/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ early-version
+(defxdoc early-version
   :parents (leo::leo)
   :short "An early version of the Leo language."
   :long

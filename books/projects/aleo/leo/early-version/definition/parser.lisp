@@ -78,8 +78,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is related to @(tsee fty::patbind-ok)
-     and similar to @(tsee patbind-tok),
+    "This is related to @(tsee fty::patbind-ok),
      but it is used for most of the parsing functions,
      in many places."))
   :decls
