@@ -27,27 +27,27 @@
   (xdoc::topstring
    (xdoc::p
     "Leo abstract syntax trees are represented in many forms.  Here we discuss
-  the steps in which they are translated from JSON files to ACL2 fixtypes.
-  We usually omit the term \"Leo abstract syntax trees\" for brevity.")
+     the steps in which they are translated from JSON files to ACL2 fixtypes.
+     We usually omit the term \"Leo abstract syntax trees\" for brevity.")
    (xdoc::p
     "Currently we call @('jsonfile-to-formal') as the entry point.
      It calls @('jsonfile-to-spanfree'), which handles the first few steps,
      followed by @('j2f-file'), which handles the last step.")
    (xdoc::p
     "A JSON file is parsed into an ACL2 JSON list structure using
-  @('acl2::parse-file-as-json').  All further processing is done in ACL2,
-  so we will omit that term.")
+     @('acl2::parse-file-as-json').  All further processing is done in ACL2,
+     so we will omit that term.")
    (xdoc::p
     "Then the JSON list structure is translated to a
-     <see topic='@(url json::abstract-syntax)'>JSON abstract syntax</see>
-    structure using @(tsee json::parsed-to-value).
-  By a <it>JSON abstract syntax structure</it> we mean a value of type @('json::value') that
-  represents the JSON that was seen in the file.  At this point ACL2 does not
-  know anything about the meaning of this value as a Leo program.")
+     JSON abstract syntax structure using @(tsee json::parsed-to-value).
+     By a <it>JSON abstract syntax structure</it> we mean
+     a value of type @('json::value') that
+     represents the JSON that was seen in the file.  At this point ACL2 does not
+     know anything about the meaning of this value as a Leo program.")
    (xdoc::p
     "Operating on the JSON abstract syntax, we remove span objects using
-  @(tsee json-remove-spans-in-value).
-  For more details see @(tsee json-fixtype-span-removal).")
+     @(tsee json-remove-spans-in-value).
+     For more details see @(tsee json-fixtype-span-removal).")
    (xdoc::p
     "Finally, the spanfree JSON abstract syntax is translated to
      <see topic='@(url abstract-syntax)'>Leo abstract syntax</see>
