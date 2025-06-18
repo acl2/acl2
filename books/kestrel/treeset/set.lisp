@@ -119,10 +119,12 @@
            setp))
 
 (defrule bst-p-of-sfix
-  (bst-p (sfix set)))
+  (bst-p (sfix set))
+  :enable sfix)
 
 (defrule heapp-of-sfix
-  (heapp (sfix set)))
+  (heapp (sfix set))
+  :enable sfix)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

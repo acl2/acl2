@@ -15,7 +15,6 @@
 (include-book "cardinality-defs")
 (include-book "in-defs")
 (include-book "join-defs")
-(include-book "rotate-defs")
 (include-book "set-defs")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -33,7 +32,6 @@
 (local (include-book "in"))
 (local (include-book "join"))
 (local (include-book "pick-a-point"))
-(local (include-book "rotate"))
 (local (include-book "set"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -203,7 +201,9 @@
     (declare (xargs :type-prescription (or (consp (delete1 x set))
                                            (equal (delete1 x set) nil))))
     :returns (set$ setp)
-    (tree-delete x (sfix set)))
+    (tree-delete x (sfix set))
+    :no-function t
+    :inline t)
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -224,7 +224,7 @@
     (declare (xargs :guard t))
     (delete-macro-loop (list* x y rst)))
 
-  (add-macro-fn delete delete1 t))
+  (add-macro-fn delete delete1$inline t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
