@@ -171,7 +171,7 @@
 ; namespace: Import tests have been moved out of leo for now.
 ;             :import (raise "running Import tests not yet supported")
              ;; for the others, :parse-file and :compile and :serialize,
-             ;; we parse the string as a leo::file
+             ;; we parse the string as a leo-early::file
              :otherwise (and (file-parses-same-fringe? item-string)
                              ;; Special check for valid addresses.
                              ;; For "expectation: Pass" tests, all addresses
@@ -198,7 +198,7 @@
                         ; namespace: Import tests have been moved out of leo for now.
                         ;           :import (raise "running Import tests not yet supported")
            ;; for the others, :parse-file and :compile and :serialize,
-           ;; we parse the string as a leo::file
+           ;; we parse the string as a leo-early::file
            :otherwise (or (not (file-parses? item-string))
                           ;; Another way we could have "expectation: Fail" on
                           ;; the Leo test case is when the file parses but there
