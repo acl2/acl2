@@ -86,7 +86,7 @@
      of the form described in @(see boolean-if)."))
   (pfcs::parse-def
    "boolean_if(x, y, z, w) := {
-      (x) * (y + -1 * z) == (w + -1 * z)
+      (x) * (y - z) == (w - z)
     }")
 
   ///

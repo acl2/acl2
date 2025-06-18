@@ -32,15 +32,13 @@ digit = %x30-39 ; 0-9
 
 numeral = 1*digit
 
-integer = [ "-" ] numeral
-
 identifier = letter *( letter / digit / "_" )
 
-operator = "+" / "*" / ":=" / "=="
+operator = "+" / "-" / "*" / ":=" / "=="
 
 separator = "(" / ")" / "{" / "}" / ","
 
-token = identifier / integer / operator / separator
+token = identifier / numeral / operator / separator
 
 lexeme = token / whitespace
 
@@ -48,15 +46,18 @@ lexeme = token / whitespace
 
 ; Syntactic Grammar
 
-primary-expression = identifier / integer / "(" expression ")"
+primary-expression = identifier / numeral / "(" expression ")"
 
-multiplication-expression = primary-expression
-                          / multiplication-expression "*" primary-expression
+unary-minus-expression = [ "-" ] primary-expression
 
-addition-expression = multiplication-expression
-                    / addition-expression "+" multiplication-expression
+multiplication-expression = unary-minus-expression
+                          / multiplication-expression "*" unary-minus-expression
 
-expression = addition-expression
+additive-expression = multiplication-expression
+                    / additive-expression "+" multiplication-expression
+                    / additive-expression "-" multiplication-expression
+
+expression = additive-expression
 
 equality-constraint = expression "==" expression
 
