@@ -28,7 +28,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;(defxdoc+ ...)
+(defxdoc+ parser
+  :parents (early-version)
+  :short "A parser of Aleo instructions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is work in progress."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Right now lexing and parsing is combined into one pass ("level").
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

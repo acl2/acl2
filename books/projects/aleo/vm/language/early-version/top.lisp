@@ -25,4 +25,5 @@
    (xdoc::p
     "This should be updated to the latest version."))
   :order-subtopics (concrete-syntax
-                    abstract-syntax))
+                    abstract-syntax
+                    parser))
