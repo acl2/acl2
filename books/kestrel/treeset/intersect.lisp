@@ -186,7 +186,9 @@
     ((x setp)
      (y setp))
     :returns (set setp)
-    (tree-intersect (sfix x) (sfix y)))
+    (tree-intersect (sfix x) (sfix y))
+    :no-function t
+    :inline t)
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -207,7 +209,7 @@
     (declare (xargs :guard t))
     (intersect-macro-loop (list* x y rst)))
 
-  (add-macro-fn intersect binary-intersect t)
+  (add-macro-fn intersect binary-intersect$inline t)
 
   "@(def intersect)")
 

@@ -127,6 +127,8 @@
                    (tree-nodes-count (tree-left tree))
                    (tree-nodes-count (tree-right tree))))
        :exec (fast-tree-nodes-count (list tree) 0))
+  :no-function t
+  :inline t
   :hints (("Goal" :in-theory (enable o< o-finp)))
   ;; Verified below
   :verify-guards nil)
@@ -139,7 +141,7 @@
   :enable tree-nodes-count
   :expand ((fast-tree-nodes-count (list tree) 0)))
 
-(verify-guards tree-nodes-count
+(verify-guards tree-nodes-count$inline
   :hints (("Goal" :in-theory (enable
                                fast-tree-nodes-count-becomes-tree-nodes-count
                                tree-nodes-count
@@ -192,7 +194,9 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(n)$)."))
-  (tree-nodes-count (sfix set)))
+  (tree-nodes-count (sfix set))
+  :no-function t
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
