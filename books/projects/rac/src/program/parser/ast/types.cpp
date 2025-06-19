@@ -103,10 +103,15 @@ Sexpression *PrimType::cast(Expression *rval) const {
   // If the destination is a bool, we should ensure that the result if
   // always_cast zero or one. TODO
   if (rank_ == PrimType::Rank::Bool) {
-    return sexpr;
-    //  return new Plist(
-    //  { &s_if1, sexpr, new Plist({ &s_true }), new Plist({ &s_false })
-    //  });
+    
+    if (auto rt = dynamic_cast<const PrimType *>(rval_type))
+      if (rt->ACL2ValWidth() <= 1)
+        return sexpr;
+    if (auto rt = dynamic_cast<const IntType *>(rval_type))
+      if (rt->width()->isStaticallyEvaluable() && rt->width()->evalConst() <= 1)
+        return sexpr;
+
+    return new Plist({&s_logneq, sexpr, Integer::zero_v(rval->loc())->ACL2Expr()});
   }
 
   Location loc = get_original_location();
@@ -139,19 +144,7 @@ Sexpression *PrimType::cast(Expression *rval) const {
   // First, we need to get the value begin the type: if it is a PrimType or an
   // unsigned register, we have nothing to do since they already have their
   // value. We only need to add a `si` for the signed registers.
-  Sexpression *value = nullptr;
-
-  // Known at compile time.
-  if (s_src_val) {
-    if (isa<const IntType *>(rval_type) && *s_src_val) {
-      value = new Plist({&s_si, sexpr, w_src->ACL2Expr()});
-    } else {
-      value = sexpr;
-    }
-  } else {
-    value = new Plist({&s_if, s_src->ACL2Expr(),
-                       new Plist({&s_si, sexpr, w_src->ACL2Expr()}), sexpr});
-  }
+  Sexpression *value = sexpr;
 
   // Check if we need to do some conversion to fit the source into the
   // destination (sign and width).
@@ -300,7 +293,10 @@ Sexpression *IntType::cast(Expression *rval) const {
   const Type *rval_type = rval->get_type();
 
   if (rval_type->isEqual(this)) {
-    return rval->ACL2Expr();
+    auto rt = always_cast<const IntType *>(rval_type);
+    if (rt->isSigned()->isStaticallyEvaluable()
+        && !rt->isSigned()->evalConst())
+      return rval->ACL2Expr();
   }
 
   if (!disable_optimizations) {
@@ -318,15 +314,14 @@ Sexpression *IntType::cast(Expression *rval) const {
               return rval->ACL2Expr();
             }
           }
-
-          // Check if a register fit inside another.
-          if (auto p = dynamic_cast<const IntType *>(rval_type)) {
-            if (p->width()->isStaticallyEvaluable() &&
-                p->isSigned()->isStaticallyEvaluable() &&
-                !p->isSigned()->evalConst() &&
-                rval_type->ACL2ValWidth() <= w_dst) {
-              return rval->ACL2Expr();
-            }
+        }
+        // Check if a register fit inside another.
+        if (auto p = dynamic_cast<const IntType *>(rval_type)) {
+          if (p->width()->isStaticallyEvaluable() &&
+              p->isSigned()->isStaticallyEvaluable() &&
+              !p->isSigned()->evalConst() &&
+              rval_type->ACL2ValWidth() <= w_dst) {
+            return rval->ACL2Expr();
           }
         }
       }
@@ -343,7 +338,7 @@ Sexpression *IntType::cast(Expression *rval) const {
 
   Location loc = get_original_location();
 
-  Sexpression *sexpr = rval_type->eval(rval->ACL2Expr());
+  Sexpression *sexpr = rval->ACL2Expr();
 
   Sexpression *upper_bound = nullptr;
   upper_bound =
@@ -355,23 +350,6 @@ Sexpression *IntType::cast(Expression *rval) const {
       {&s_bits, sexpr, upper_bound, Integer::zero_v(loc)->ACL2Expr()});
 
   return res;
-}
-
-Sexpression *IntType::eval(Sexpression *sexpr) const {
-
-  if (isSigned_->isStaticallyEvaluable()) {
-    if (isSigned_->evalConst()) {
-      auto w = width_->isStaticallyEvaluable()
-                   ? new Integer(get_original_location(), width_->evalConst())
-                   : width_;
-      return new Plist({&s_si, sexpr, w->ACL2Expr()});
-    } else {
-      return sexpr;
-    }
-  }
-
-  return new Plist({&s_if1, isSigned_->ACL2Expr(),
-                    new Plist({&s_si, sexpr, width_->ACL2Expr()}), sexpr});
 }
 
 bool IntType::isEqual(const Type *other) const {
@@ -428,6 +406,10 @@ void ArrayType::display(std::ostream &os) const {
   os << "[";
   dim->display(os);
   os << "]";
+
+  if (fast_repr_) {
+    os << " (fast representation)";
+  }
 }
 
 void ArrayType::displayVarType(std::ostream &os) const {
@@ -464,13 +446,15 @@ void ArrayType::makeDef(const char *name, std::ostream &os) const {
 }
 
 bool ArrayType::isEqual(const Type *other) const {
+
   if (auto o = dynamic_cast<const DefinedType *>(other)) {
     other = o->derefType();
   }
 
   if (auto o = dynamic_cast<const ArrayType *>(other)) {
     return dim->evalConst() == o->dim->evalConst() &&
-           baseType->isEqual(o->baseType);
+           baseType->isEqual(o->baseType) &&
+           fast_repr_ == o->fast_repr_;
   } else {
     return false;
   }
@@ -479,7 +463,7 @@ bool ArrayType::isEqual(const Type *other) const {
 Sexpression *ArrayType::cast(Expression *rval) const {
 
   if (auto init = dynamic_cast<Initializer *>(rval)) {
-    return init->ACL2ArrayExpr(this, isConst());
+    return init->ACL2ArrayExpr(this);
   } else {
     return rval->ACL2Expr();
   }
@@ -487,18 +471,22 @@ Sexpression *ArrayType::cast(Expression *rval) const {
 
 Sexpression *ArrayType::default_initializer_value() const {
 
+  if (default_value_can_be_ignored(baseType)) {
+    return &s_nil;
+  }
   Plist *result = new Plist({});
-
-  // TODO do not support template
+  
+  //TODO do not support template
   assert(dim->isStaticallyEvaluable());
-
+  
+  result->add(&s_list);
   unsigned size = dim->evalConst();
   for (unsigned i = 0; i < size; ++i) {
     result->add(new Cons(Integer(get_original_location(), i).ACL2Expr(),
                          baseType->default_initializer_value()));
   }
 
-  return new Plist({&s_quote, result});
+  return new Plist({&s_ainit, result});
 }
 
 // class StructField

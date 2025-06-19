@@ -1,7 +1,7 @@
 ; Theorems about bvsx
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,6 +33,12 @@
   (natp (bvsx a b c))
   :hints (("Goal" :in-theory (enable bvsx))))
 
+(defthm bvsx-when-not-natp-arg2
+  (implies (not (natp old-size))
+           (equal (bvsx new-size old-size x)
+                  0))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
 (defthm bvchop-of-bvsx-low
   (implies (and (<= n old-size)
                 (< 0 old-size)
@@ -62,10 +68,26 @@
   (not (< (bvsx new-size old-size val) 0))
   :hints (("Goal" :in-theory (enable bvsx))))
 
+;drop?
 (defthm bvsx-of-bvchop
-  (implies (and (posp old-size)
+  (implies (and ;(posp old-size)
                 (natp new-size))
            (equal (bvsx new-size old-size (bvchop old-size x))
+                  (bvsx new-size old-size x)))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm bvsx-of-bvchop-gen
+  (implies (and (<= old-size size)
+                (integerp size)
+                (natp new-size))
+           (equal (bvsx new-size old-size (bvchop size x))
+                  (bvsx new-size old-size x)))
+  :hints (("Goal" :in-theory (enable bvsx))))
+
+(defthm bvsx-of-logext
+  (implies (and (<= old-size size)
+                (integerp size))
+           (equal (bvsx new-size old-size (logext size x))
                   (bvsx new-size old-size x)))
   :hints (("Goal" :in-theory (enable bvsx))))
 

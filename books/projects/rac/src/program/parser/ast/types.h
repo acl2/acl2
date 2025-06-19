@@ -65,7 +65,6 @@ public:
   // Convert rval to an S-expression to be assigned to an object of this
   virtual bool canBeImplicitlyCastTo(const Type *target) const = 0;
   virtual Sexpression *cast(Expression *rval) const;
-  virtual Sexpression *eval(Sexpression *sexpr) const { return sexpr; }
   virtual Sexpression *default_initializer_value() const = 0;
 
   // TODO refactore.
@@ -278,8 +277,6 @@ public:
   Expression *isSigned() const { return isSigned_; }
   Expression *width() const { return width_; }
 
-  Sexpression *eval(Sexpression *sexpr) const override;
-
   bool isEqual(const Type *other) const override;
   bool canBeImplicitlyCastTo(const Type *target) const override;
 
@@ -295,8 +292,8 @@ public:
   const Type *baseType;
   Expression *dim;
 
-  ArrayType(origin_t loc, Expression *d, const Type *t)
-      : Type(loc, idOf(this)), baseType(t), dim(d) {}
+  ArrayType(origin_t loc, Expression *d, const Type *t, bool fast_repr)
+      : Type(loc, idOf(this)), baseType(t), dim(d), fast_repr_(fast_repr) {}
 
   ~ArrayType() {}
 
@@ -332,10 +329,15 @@ public:
   inline void setSTDArray() { isSTDarray_ = true; }
   inline bool isSTDArray() const { return isSTDarray_; }
 
+  inline bool fast_repr() const { return fast_repr_; }
+
   Sexpression *default_initializer_value() const override;
 
 private:
   bool isSTDarray_ = false;
+  // ACL2 arrays can be represented in two ways: using ag/as or nth. This flags
+  // switch from the default (as/ag) to the fast representation (nth).
+  bool fast_repr_ = false;
 };
 
 class StructField {

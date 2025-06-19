@@ -118,8 +118,8 @@
            :in-theory (enable bvminus))))
 
 (defthm bvminus-of-bvchop-arg3-same
-  (equal (bvminus size y (bvchop size x))
-         (bvminus size y x))
+  (equal (bvminus size x (bvchop size y))
+         (bvminus size x y))
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable bvminus))))
 
@@ -293,3 +293,25 @@
            (equal (bvminus size (bvplus size y (bvplus size z x)) (bvplus size w x))
                   (bvminus size (bvplus size y z) w)))
   :hints (("Goal" :in-theory (enable bvminus-becomes-bvplus-of-bvuminus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvminus-of-bvplus-tighten-arg2
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2))
+           (equal (bvminus size (bvplus size2 x y) z)
+                  (bvminus size (bvplus size x y) z)))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-of-bvplus-tighten-arg3
+  (implies (and (< size size2)
+                (natp size)
+                (integerp size2))
+           (equal (bvminus size x (bvplus size2 y z))
+                  (bvminus size x (bvplus size y z))))
+  :hints (("Goal" :use ((:instance bvminus-of-bvchop-arg3-same (y (bvplus size2 y z)))
+                        (:instance bvminus-of-bvchop-arg3-same (y (bvplus size y z))))
+           :in-theory (disable bvminus-of-bvchop-arg3-same
+                               bvminus-of-bvchop-arg3
+                               bvminus-becomes-bvplus-of-bvuminus))))

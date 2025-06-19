@@ -60,13 +60,25 @@
   (xdoc::topstring
    (xdoc::p
     "This is an addend of an R1CS polynomial (i.e. linear combination).
-     It is either a constant
-     or a variable
-     or a product of a constant by a variable."))
+     It is either a constant,
+     or a variable,
+     or a negated constant or variable,
+     or a product of a constant (natural number) by a variable,
+     or a product of a negated constant (negative number) by a variable.")
+   (xdoc::p
+    "Although it could be supported, for simplicity we disallow a product of 
+     a constant (natural number) by a negated variable."))
   (or (expression-case expr :const)
       (expression-case expr :var)
+      (and (expression-case expr :neg)
+           (expression-case (expression-neg->arg expr) :const))
+      (and (expression-case expr :neg)
+           (expression-case (expression-neg->arg expr) :var))
       (and (expression-case expr :mul)
-           (expression-case (expression-mul->arg1 expr) :const)
+           (or (expression-case (expression-mul->arg1 expr) :const)
+               (and (expression-case (expression-mul->arg1 expr) :neg)
+                    (expression-case (expression-neg->arg
+                                      (expression-mul->arg1 expr)) :const)))
            (expression-case (expression-mul->arg2 expr) :var)))
   :hooks (:fix))
 
@@ -80,13 +92,16 @@
    (xdoc::p
     "This is a linear combination, i.e. a sum of one or more monomials.")
    (xdoc::p
-    "Currently the PFCS abstract syntax only has binary addition.
-     We pick left-associated additions as linear polynomials;
+    "We allow both binary addition and subtraction,
+     We pick left-associated additions/subtractions as linear polynomials;
      the base case is that of a single monomial."))
   (or (r1cs-monomialp expr)
       (and (expression-case expr :add)
            (r1cs-polynomialp (expression-add->arg1 expr))
-           (r1cs-monomialp (expression-add->arg2 expr))))
+           (r1cs-monomialp (expression-add->arg2 expr)))
+      (and (expression-case expr :sub)
+           (r1cs-polynomialp (expression-sub->arg1 expr))
+           (r1cs-monomialp (expression-sub->arg2 expr))))
   :measure (expression-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))
@@ -178,7 +193,7 @@
 (define sr1cs-definitionp ((def definitionp))
   :returns (yes/no booleanp)
   :short "Check if a PFCS definition
-          consists of strcutred R1CS constraints."
+          consists of structured R1CS constraints."
   (sr1cs-constraint-listp (definition->body def))
   :hooks (:fix))
 

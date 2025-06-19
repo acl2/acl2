@@ -11,8 +11,8 @@
 
 (in-package "ALEOVM")
 
-(include-book "boolean-and")
-(include-book "boolean-assert")
+(include-book "pfcs/top")
+(include-book "r1cs/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,7 +38,8 @@
      with respect to high-level specifications that we also provide.")
    (xdoc::p
     "snarkVM generates zero-knowledge circuits in R1CS form.
-     We use our "
+     In @(see circuits-pfcs),
+     we use our "
     (xdoc::seetopic "pfcs::pfcs" "PFCS")
     " formalism
      to formalize and verify the circuits in a compositional way,
@@ -49,5 +50,5 @@
     (xdoc::ahref "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22023.9"
                  "ACL2-2023 Workshop paper")
     "."))
-  :order-subtopics (boolean-and
-                    boolean-assert))
+  :order-subtopics (pfcs
+                    r1cs))

@@ -106,8 +106,10 @@ after each ACL2 release for this binary Debian package to be updated
 for that release.</p>
 
 <p>Otherwise, it should be easy to obtain and build GCL yourself.  Note
-that ACL2 requires ANSI GCL version 2.6.12 or later.  Perhaps simplest
-is to fetch it via git and then build the
+that ACL2 requires ANSI GCL version 2.6.12 or later.  See
+<code><a href='https://www.gnu.org/software/gcl/'>https://www.gnu.org/software/gcl/</a></code>
+for instructions.  If you encounter difficulties, you might want to
+fetch an older version and then build the
 executable <code>gcl/gcl/bin/gcl</code> as follows.</p>
 
 <pre>
@@ -115,16 +117,6 @@ git clone git://git.sv.gnu.org/gcl.git
 cd gcl/gcl
 git checkout Version_2_6_13pre
 ./configure --enable-ansi && make
-</pre>
-
-<p>It may also be possible to fetch it from
-the <a href="http://www.gnu.org/software/gcl/">main GNU website for
-GCL</a> or perhaps
-from <code><a href="http://backports.debian.org">backports.debian.org</a></code>,
-in which case ANSI GCL can be built as shown above:</p>
-
-<pre>
-cd gcl && ./configure --enable-ansi && make
 </pre>
 
 <P><B><A NAME="Obtaining-LispWorks">Obtaining LispWorks</A></B></P>

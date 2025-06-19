@@ -37,7 +37,7 @@
 
 (defxdoc+ lifting
   :parents (pfcs)
-  :short "Lifting of PFCSes."
+  :short "Lifting of PFCS."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -244,6 +244,20 @@
         (raise "Internal error: ~x0 has the wrong type." info)))
     (lift-info->pred info)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lift-rel-name-set-to-list ((names string-setp) (wrld plist-worldp))
+  :returns (syms symbol-listp)
+  :short "Lift a set of PFCS relation names to a list of ACL2 symbols."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The order of the list is according to
+     the total order that osets are based on."))
+  (cond ((set::emptyp names) nil)
+        (t (cons (lift-rel-name (set::head names) wrld)
+                 (lift-rel-name-set-to-list (set::tail names) wrld)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-expression ((expr expressionp) (prime symbolp) state)
@@ -269,7 +283,12 @@
    expr
    :const `(mod ,expr.value ,prime)
    :var (lift-var-name expr.name state)
+   :neg `(neg ,(lift-expression expr.arg prime state)
+              ,prime)
    :add `(add ,(lift-expression expr.arg1 prime state)
+              ,(lift-expression expr.arg2 prime state)
+              ,prime)
+   :sub `(sub ,(lift-expression expr.arg1 prime state)
               ,(lift-expression expr.arg2 prime state)
               ,prime)
    :mul `(mul ,(lift-expression expr.arg1 prime state)
@@ -480,22 +499,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lift-thm-called-lift-thms ((rels symbol-listp))
-  :returns (called-lift-thms)
+(define lift-thm-called-lift-thms ((rels string-setp) (wrld plist-worldp))
+  :returns (called-lift-thms symbol-listp)
   :short "List of lifting theorems for a set of relations."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are used as rewrite rules in the caller's lifting theorem."))
-  (b* (((when (endp rels)) nil)
-       (rel (car rels)))
-    (cons (acl2::packn-pos (list 'definition-satp-to- rel) rel)
-          (lift-thm-called-lift-thms (cdr rels)))))
+  (b* (((when (set::emptyp rels)) nil)
+       (rel (set::head rels))
+       (rel-pred (lift-rel-name rel wrld)))
+    (cons (acl2::packn-pos (list 'definition-satp-to- rel-pred) rel-pred)
+          (lift-thm-called-lift-thms (set::tail rels) wrld))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-thm-definition-satp-specialized-lemma ((def definitionp)
-                                                    (pred symbolp))
+                                                    (pred symbolp)
+                                                    (prime symbolp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp))
   :short "Generate a local lemma to apply
@@ -522,7 +543,7 @@
        (thm-name (acl2::packn-pos (list 'definition-satp-of- pred) pred))
        (thm-event
         `(defruledl ,thm-name
-           (equal (definition-satp ,def-name defs vals p)
+           (equal (definition-satp ,def-name defs vals ,prime)
                   (b* ((def (lookup-definition ,def-name defs))
                        ((unless def) nil)
                        (para (definition->para def))
@@ -531,14 +552,15 @@
                        (constr (make-constraint-relation
                                 :name ,def-name
                                 :args (expression-var-list para))))
-                    (constraint-satp constr defs asg p)))
+                    (constraint-satp constr defs asg ,prime)))
            :in-theory '(definition-satp))))
     (mv thm-event thm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-thm-constr-satp-specialized-lemma ((def definitionp)
-                                                (pred symbolp))
+                                                (pred symbolp)
+                                                (prime symbolp))
   :returns (mv (thm-event pseudo-event-formp)
                (thm-name symbolp))
   :short "Generate a local lemma to apply
@@ -566,7 +588,7 @@
         (if (set::emptyp (definition-free-vars def))
             `(defruledl ,thm-name
                (implies (and (assignmentp asg)
-                             (assignment-wfp asg p)
+                             (assignment-wfp asg ,prime)
                              (constraint-case constr :relation)
                              (equal (constraint-relation->name constr)
                                     ,def-name))
@@ -574,29 +596,31 @@
                              (def (lookup-definition ,def-name defs)))
                           (implies (and def
                                         (set::emptyp (definition-free-vars def)))
-                                   (equal (constraint-satp constr defs asg p)
+                                   (equal (constraint-satp
+                                           constr defs asg ,prime)
                                           (constraint-relation-nofreevars-satp
-                                           ,def-name args defs asg p)))))
+                                           ,def-name args defs asg ,prime)))))
                :in-theory '(constraint-satp-of-relation-when-nofreevars))
           `(defruledl ,thm-name
              (implies (and (assignmentp asg)
-                           (assignment-wfp asg p)
+                           (assignment-wfp asg ,prime)
                            (constraint-case constr :relation)
                            (equal (constraint-relation->name constr)
                                   ,def-name))
-                      (equal (constraint-satp constr defs asg p)
+                      (equal (constraint-satp constr defs asg ,prime)
                              (constraint-relation-satp
                               ,def-name
                               (constraint-relation->args constr)
                               defs
                               asg
-                              p)))
+                              ,prime)))
              :in-theory '(constraint-satp-of-relation)))))
     (mv thm-event thm-name)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lift-thm-constr-to-def-satp-specialized-lemmas ((rels string-setp)
+                                                        (prime symbolp)
                                                         (wrld plist-worldp))
   :returns (mv (thm-events pseudo-event-form-listp)
                (thm-names symbol-listp))
@@ -625,23 +649,24 @@
                   rel-pred))
        (thm-event
         `(defruledl ,thm-name
-           (implies (and (primep p)
+           (implies (and (primep ,prime)
                          (assignmentp asg)
-                         (assignment-wfp asg p)
+                         (assignment-wfp asg ,prime)
                          (constraint-case constr :relation)
                          (equal (constraint-relation->name constr)
                                 ,rel)
                          (no-duplicatesp-equal
                           (definition->para (lookup-definition ,rel defs))))
                     (b* ((vals (eval-expr-list
-                                (constraint-relation->args constr) asg p)))
+                                (constraint-relation->args constr) asg ,prime)))
                       (implies (not (reserrp vals))
-                               (equal (constraint-satp constr defs asg p)
+                               (equal (constraint-satp constr defs asg ,prime)
                                       (definition-satp
-                                        ,rel defs vals p)))))
+                                        ,rel defs vals ,prime)))))
            :in-theory '(constraint-satp-to-definition-satp)))
        ((mv thm-events thm-names)
         (lift-thm-constr-to-def-satp-specialized-lemmas (set::tail rels)
+                                                        prime
                                                         wrld)))
     (mv (cons thm-event thm-events)
         (cons thm-name thm-names))))
@@ -743,8 +768,7 @@
         (acl2::packn-pos (list 'definition-satp-to- pred) pred))
        (def-hyps (lift-thm-def-hyps def wrld))
        (rels (constraint-list-rels def.body))
-       (called-lift-thms (lift-thm-called-lift-thms
-                          (lift-var-name-set-to-list rels state)))
+       (called-lift-thms (lift-thm-called-lift-thms rels wrld))
        (type-presc-rules
         (lift-thm-type-prescriptions-for-called-preds rels wrld))
 
@@ -782,8 +806,11 @@
                          (:e expression-kind)
                          (:e expression-const->value)
                          (:e expression-var->name)
+                         (:e expression-neg->arg)
                          (:e expression-add->arg1)
                          (:e expression-add->arg2)
+                         (:e expression-sub->arg1)
+                         (:e expression-sub->arg2)
                          (:e expression-mul->arg1)
                          (:e expression-mul->arg2)
                          (:e expression-var-list)
@@ -794,7 +821,9 @@
                          (:e assignmentp)
                          omap::from-lists
                          pfield::fep-fw-to-natp
+                         pfield::natp-of-neg
                          pfield::natp-of-add
+                         pfield::natp-of-sub
                          pfield::natp-of-mul
                          len
                          fty::consp-when-reserrp
@@ -864,8 +893,11 @@
                         (:e expression-kind)
                         (:e expression-const->value)
                         (:e expression-var->name)
+                        (:e expression-neg->arg)
                         (:e expression-add->arg1)
                         (:e expression-add->arg2)
+                        (:e expression-sub->arg1)
+                        (:e expression-sub->arg2)
                         (:e expression-mul->arg1)
                         (:e expression-mul->arg2)
                         (:e expression-var-list)
@@ -878,7 +910,9 @@
                         (:e assignmentp)
                         omap::from-lists
                         pfield::fep-fw-to-natp
+                        pfield::natp-of-neg
                         pfield::natp-of-add
+                        pfield::natp-of-sub
                         pfield::natp-of-mul
                         len
                         fty::consp-when-reserrp
@@ -938,8 +972,11 @@
                         (:e expression-kind)
                         (:e expression-const->value)
                         (:e expression-var->name)
+                        (:e expression-neg->arg)
                         (:e expression-add->arg1)
                         (:e expression-add->arg2)
+                        (:e expression-sub->arg1)
+                        (:e expression-sub->arg2)
                         (:e expression-mul->arg1)
                         (:e expression-mul->arg2)
                         (:e expression-var-list)
@@ -972,7 +1009,9 @@
                         (:e no-duplicatesp-equal)
                         acl2::primep-forward-to-posp
                         ,@type-presc-rules
+                        pfield::natp-of-neg
                         pfield::natp-of-add
+                        pfield::natp-of-sub
                         pfield::natp-of-mul)
            :use ((:instance constraint-relation-satp-suff
                             (asgfree (omap::from-lists
@@ -982,7 +1021,8 @@
                             (name ,def.name)
                             (args (expression-var-list (list ,@def.para)))
                             (asg (omap::from-lists (list ,@def.para)
-                                                   (list ,@para))))))))
+                                                   (list ,@para)))
+                            (p ,prime))))))
      def-hyps)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1008,12 +1048,12 @@
   (b* ((pred (or pred (lift-var-name (definition->name def) state)))
        (event-fn (lift-definition def pred prime state))
        ((mv event-def-sat def-sat-lemma)
-        (lift-thm-definition-satp-specialized-lemma def pred))
+        (lift-thm-definition-satp-specialized-lemma def prime pred))
        ((mv event-constr-sat constr-sat-lemma)
-        (lift-thm-constr-satp-specialized-lemma def pred))
+        (lift-thm-constr-satp-specialized-lemma def prime pred))
        ((mv events-constr-to-def-sat constr-to-def-sat-lemmas)
         (lift-thm-constr-to-def-satp-specialized-lemmas
-         (constraint-list-rels (definition->body def)) (w state)))
+         (constraint-list-rels (definition->body def)) prime (w state)))
        ((mv event-thm def-hyps) (lift-thm def
                                           def-sat-lemma
                                           constr-sat-lemma

@@ -15,9 +15,11 @@
 ;; This tool simplifies a term and stores the resulting DAG as a defconst.
 
 ;; See also the generated def-simplified-xxx functions (see make-rewriter-simple.lisp).
-;; TODO: Deprecate this file in favor of def-simplified-basic.
+;; TODO: Deprecate this file in favor of def-simplified-basic (defined in rewriter-basic.lisp).
 
 ;; See also unroll-spec-basic.  That one involves skip-proofs but can embed the DAG in a function (and state a theorem).
+
+;; See tests in def-simplified-tests.lisp.
 
 (include-book "rewriter-basic")
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
@@ -150,6 +152,11 @@
                              monitor
                              nil ; fns-to-elide
                              ))
+       ;; Print the result: todo: print as a term when small
+       (- (and print
+               (progn$ (cw "(Result:~%")
+                       (cw "~X01" dag nil)
+                       (cw ")~%"))))
        ((when erp)
         (mv erp nil state)))
     (mv (erp-nil)

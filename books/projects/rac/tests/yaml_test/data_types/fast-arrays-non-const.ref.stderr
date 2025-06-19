@@ -1,0 +1,3 @@
+fast-arrays-non-const.cpp:11 (2-20): Fast array must be const
+ 11 |   fast_array<int, 3> a_fast_local = { 1, 2, 3 };
+    |   ^^^^^^^^^^^^^^^^^^

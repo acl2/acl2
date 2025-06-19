@@ -426,7 +426,7 @@
                                            ;; the assumptions used during lifting (program-at, MXCSR assumptions, etc) seem unlikely
                                            ;; to be helpful when pruning, and user assumptions seem like they should be applied by the
                                            ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
-                                           nil ; assumptions
+                                           nil ; assumptions ; todo: include assumptions about canonical?
                                            :none
                                            pruning-rule-alist
                                            nil ; interpreted-function-alist
@@ -564,7 +564,7 @@
 ;(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;; Returns (mv erp assumptions assumption-rules state)
-(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state)
+(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp new-style-elf-assumptionsp state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
@@ -583,7 +583,8 @@
                                    (if 64-bitp
                                        ;; needed to match the normal forms used during lifting:
                                        (append (new-normal-form-rules64)
-                                               (if bvp (read-and-write-rules-bv) nil))
+                                               (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))
+                                               (if new-style-elf-assumptionsp (canonical-rules-bv) (canonical-rules-non-bv)))
                                      nil ; todo: why not use (new-normal-form-rules32)?
                                      ))
                            remove-assumption-rules))
@@ -616,7 +617,7 @@
 ;; This is also called by the formal unit tester.
 (defun unroll-x86-code-core (target
                              parsed-executable
-                             extra-assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
+                             extra-assumptions ; todo: can these introduce vars for state components?  now we have :inputs for that.  could also replace register expressions with register names (vars) -- see what do do for the Tester.
                              suppress-assumptions
                              inputs-disjoint-from
                              stack-slots
@@ -644,7 +645,7 @@
                              bvp ; whether to use new-style assumptions
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
-                              ;; parsed-executable
+                              ;; parsed-executable ; todo: add a guard (even if it's weak for now)
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
                               (member-eq inputs-disjoint-from '(nil :code :all))
@@ -684,13 +685,12 @@
        (state (acl2::widen-margins state))
        ;; Get and check the executable-type:
        (executable-type (acl2::parsed-executable-type parsed-executable))
-       (- (cw "Executable type: ~x0.~%" executable-type))
+       (- (and (acl2::print-level-at-least-briefp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        (- (acl2::ensure-x86 parsed-executable))
-       (- (and (acl2::print-level-at-least-tp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ;; Handle a :position-independent of :auto:
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
-                                      t ; since clang seems to produce position-independent code by default ; todo: think about this
+                                      t ; since clang seems to produce position-independent code by default ; todo: look at the PIE bit in the header.
                                     (if (eq executable-type :elf-64)
                                         (let ((elf-type (acl2::parsed-elf-type parsed-executable)))
                                           (prog2$ (cw "ELF type: ~x0.~%" elf-type)
@@ -701,23 +701,25 @@
                                                     nil)))
                                       ;; TODO: Think about the other cases:
                                       t))
+                                ;; the user supplied a value for position-independent, so use it:
                                 position-independent))
        ((when (and (not position-independentp) ; todo: think about this:
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil nil nil state))
        (- (if position-independentp (cw "Using position-independent lifting.~%") (cw "Using non-position-independent lifting.~%")))
-       (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
                                         ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
                                         (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
                                         ))
+       (new-canonicalp (or new-style-elf-assumptionsp ; for now
+                           (eq :mach-o-64 executable-type)
+                           ))
+       (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw "Using new-style ELF64 assumptions.~%")  (cw "Not using new-style ELF64 assumptions.~%"))))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
-       (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
-       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Generate assumptions:
        ((mv erp assumptions untranslated-assumptions
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
@@ -725,29 +727,8 @@
             state)
         (if new-style-elf-assumptionsp
             ;; New assumption generation behavior, only for ELF64 (for now):
-            (b* ((- (cw "Using new-style assumptions.~%"))
-                 (code-address (acl2::get-elf-code-address parsed-executable))
-                 (base-var 'base-address) ; only used if position-independentp
-                 (text-offset-term (if position-independentp
-                                       (symbolic-add-constant code-address base-var)
-                                     code-address))
-                 ((mv erp disjoint-chunk-addresses-and-lens)
-                  (if (eq nil inputs-disjoint-from)
-                      (mv nil nil)
-                    (if (eq :all inputs-disjoint-from)
-                        (if (not (eq :elf-64 executable-type))
-                            (mv :unsupported
-                                (er hard? 'unroll-x86-code-core "The :inputs-disjoint-from option is only supported for ELF64 executables.")) ;todo!
-                          (elf64-segment-addresses-and-lens (acl2::parsed-elf-program-header-table parsed-executable)
-                                                            position-independentp
-                                                            base-var
-                                                            (len (acl2::parsed-elf-bytes parsed-executable))
-                                                            nil))
-                      ;; must be :code:
-                      (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-executable)) nil)))))
-                 ((when erp)
-                  (er hard? 'unroll-x86-code-core "Error generating disjointnes assumptions for inputs: ~x0." erp)
-                  (mv erp nil nil nil nil state))
+            (b* (;; (- (cw "Using new-style assumptions.~%"))
+                 ;; These are untranslated (in general):
                  ((mv erp automatic-assumptions input-assumption-vars)
                   (if suppress-assumptions
                       (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
@@ -755,14 +736,13 @@
                                            position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
                                            stack-slots
                                            'x86
-                                           base-var
                                            inputs
                                            type-assumptions-for-array-varsp
-                                           disjoint-chunk-addresses-and-lens
+                                           inputs-disjoint-from ; disjoint-chunk-addresses-and-lens
                                            bvp
+                                           new-canonicalp
                                            parsed-executable)))
                  ((when erp) (mv erp nil nil nil nil state))
-
                  (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
                  ;; Translate all the assumptions:
                  (assumptions (acl2::translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
@@ -770,27 +750,188 @@
                  ((mv erp assumptions assumption-rules state)
                   (if extra-assumptions
                       ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state)
+                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp t state)
                     (mv nil assumptions nil state)))
                  ((when erp) (mv erp nil nil nil nil state)))
               (mv nil assumptions
                   untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
                   assumption-rules input-assumption-vars state))
-          ;; legacy case (generate some assumptions and then simplify them):
-          ;; TODO: Why is input-assumptions-and-vars in this legacy case?
-          (b* (;;todo: finish adding support for :entry-point!
-               ((when (and (eq :entry-point target)
-                           (not (eq :pe-32 executable-type))))
-                (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
-                (mv :bad-entry-point nil nil nil nil state))
-               ((when (and (natp target)
-                           (not (eq :pe-32 executable-type))))
-                (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
-                (mv :bad-entry-point nil nil nil nil state))
-               (text-offset
-                 (and 64-bitp ; todo
-                      (if (eq :mach-o-64 executable-type)
-                          (if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
+          (if (eq :mach-o-64 executable-type)
+              (b* (((when (eq :entry-point target)) ; todo
+                    (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
+                    (mv :bad-entry-point nil nil nil nil state))
+                   ((when (natp target)) ; todo
+                    (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
+                    (mv :bad-entry-point nil nil nil nil state))
+                   (text-section-bytes (acl2::get-mach-o-code parsed-executable)) ;all the code, not just the given subroutine
+                   (text-section-offset (acl2::get-mach-o-code-address parsed-executable))
+                   (text-section-length (len text-section-bytes))
+                   (base-var 'base-address) ; only used if position-independentp
+                   ;(offset-to-subroutine (- subroutine-address text-section-offset))
+                   (text-address-term (if position-independentp
+                                          (if bvp
+                                              (if (= 0 text-section-offset)
+                                                  base-var ; avoids adding 0
+                                                `(bvplus 64 ',text-section-offset ,base-var))
+                                            (if (= 0 text-section-offset)
+                                                base-var ; avoids adding 0
+                                              `(binary-+ ',text-section-offset ,base-var)))
+                                        text-section-offset))
+                   ((mv erp standard-assumptions)
+                    (if suppress-assumptions
+                        ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
+                        (mv nil nil)
+                      (b* ((state-var 'x86)
+                           (subroutine-offset (acl2::subroutine-address-mach-o target parsed-executable))
+                           ((mv erp assumptions-for-text-section)
+                            (assumptions-for-memory-chunk text-section-offset text-section-bytes position-independentp state-var base-var stack-slots bvp new-canonicalp))
+                           ((when erp) (mv erp nil))
+
+                           ((mv erp text-const-assumptions) ; todo: do the main text section like this too -- really do all reasonable sections
+                            (make-section-assumptions-mach-o-64 "__TEXT" "__const" parsed-executable position-independentp stack-slots bvp base-var state-var)) ; pass new-canonicalp?
+                           ((when erp) (mv erp nil))
+                           ((mv erp data-assumptions)
+                            (make-section-assumptions-mach-o-64 "__DATA" "__data" parsed-executable position-independentp stack-slots bvp base-var state-var)) ; pass new-canonicalp?
+                           ((when erp) (mv erp nil)))
+                        (mv nil ; no error
+                            (append
+                              assumptions-for-text-section
+                              text-const-assumptions
+                              data-assumptions
+                              ;; todo: use this?
+                              ;; (make-standard-assumptions64-new stack-slots 'x86 'base-address ; only needed if position-independentp
+                              ;;                                  target-offset
+                              ;;                                  position-independentp
+                              ;;                                  bvp)
+                              (make-standard-state-assumptions-fn state-var)
+                              (if new-canonicalp
+                                  `((integerp ,base-var))
+                                `((canonical-address-p ,base-var)) ; at least for now
+                                )
+
+                              `((equal (64-bit-modep ,state-var) t)
+
+                                ;; Alignment checking is turned off:
+                                (not (alignment-checking-enabled-p ,state-var))
+
+                                ;; The RSP is 8-byte aligned (TODO: check with Shilpi):
+                                ;; This may not be respected by malware.
+                                ;; TODO: Try without this
+                                (equal 0 (bvchop 3 (rgfi *rsp* ,state-var)))
+
+                                ;; The return address must be canonical because we will transfer
+                                ;; control to that address when doing the return:
+                                ,@(if new-canonicalp
+                                      `((unsigned-canonical-address-p (read 8 (rsp ,state-var) ,state-var)))
+                                    `((canonical-address-p (logext 64 (read 8 (rsp ,state-var) ,state-var)))))
+
+                                ;; The stack must be canonical:
+                                ,@(if new-canonicalp ; todo: what if not bvp?
+                                      ;; todo: think about this:
+                                      `((canonical-regionp ,(+ 16 (* 8 stack-slots))
+                                                           ,(if (= 0 stack-slots)
+                                                                `(rsp ,state-var)
+                                                              `(bvplus 64 ',(* -8 stack-slots) (rsp ,state-var)))))
+                                    ;; old-style
+                                    (append `(;; The stack slot contaning the return address must be canonical
+                                              ;; because the stack pointer returns here when we pop the saved
+                                              ;; RBP:
+                                              (canonical-address-p (rsp ,state-var))
+
+                                              ;; The stack slot 'below' the return address must be canonical
+                                              ;; because the stack pointer returns here when we do the return:
+                                              (canonical-address-p (+ 8 (rsp ,state-var))))
+                                            (if (posp stack-slots)
+                                                `(;;add to make-standard-state-assumptions-64-fn?
+                                                  (x86isa::canonical-address-p (+ -8 (rsp ,state-var)))
+                                                  (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots) (rsp ,state-var))) ; todo: drop if same as above
+                                                  )
+                                              ;; ;; todo: modernize:
+                                              ;; ;; Stack addresses are canonical (could use something like all-addreses-of-stack-slots here, but these addresses are by definition canonical):
+                                              ;; (x86isa::canonical-address-listp (addresses-of-subsequent-stack-slots ,stack-slots (rgfi *rsp* ,state-var))) ; todo: use rsp
+                                              ;; ;; old: (canonical-address-p (+ -8 (rgfi *rsp* ,state-var))) ;; The stack slot where the RBP will be saved
+                                              nil)))
+
+                                ;; ;; todo: modernize:
+                                ;; (bytes-loaded-at-address-64 ',text-section-bytes ,text-address-term
+                                ;;                             ,bvp , state-var)
+
+                                ;; The program counter is at the start of the routine to lift:
+                                (equal (rip ,state-var) (logext 64 ,(if position-independentp
+                                                                        (if bvp
+                                                                            (if (= 0 subroutine-offset)
+                                                                                base-var ; avoids adding 0
+                                                                              `(bvplus 64 ',subroutine-offset ,base-var))
+                                                                          (if (= 0 subroutine-offset)
+                                                                              base-var ; avoids adding 0
+                                                                            `(binary-+ ',subroutine-offset ,base-var)))
+                                                                      subroutine-offset)))
+
+                                ;; ;; The program is disjoint from the part of the stack that is written:
+                                ;; ,@(if (posp stack-slots)
+                                ;;       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+                                ;;       (if bvp
+                                ;;           ;; essentially the same as the below SEPARATE claim:
+                                ;;           `((disjoint-regions48p ,(len text-section-bytes) ,text-address-term ; todo: drop the 2 bvchop
+                                ;;                                  (* 8 ,stack-slots) (bvchop 48 (+ (* -8 ,stack-slots) (rgfi *rsp* ,state-var)))))
+                                ;;         `((separate :r ,(len text-section-bytes) ,text-address-term
+                                ;;                     ;; Only a single stack slot is written
+                                ;;                     ;;old: (create-canonical-address-list 8 (+ -8 (rgfi *rsp* ,state-var)))
+                                ;;                     :r (* 8 ,stack-slots) (+ (* -8 ,stack-slots) (rgfi *rsp* ,state-var)))))
+                                ;;     ;; Can`'t call separate here because (* 8 stack-slots) = 0.
+                                ;;     nil)
+                                ))))))
+                   ((when erp) (mv erp nil nil nil nil state))
+                   ;; maybe we should check suppress-assumptions here, but if they gave an :inputs, they must want the assumptions:
+                   ((mv input-assumptions input-assumption-vars)
+                    (if (not (equal inputs :skip)) ; really means generate no assumptions
+                        (assumptions-and-vars-for-inputs inputs ; these are names-and-types
+                                                         ;; todo: handle zmm regs and values passed on the stack?!:
+                                                         ;; handle structs that fit in 2 registers?
+                                                         ;; See the System V AMD64 ABI
+                                                         '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
+                                                         stack-slots
+                                                         (acons text-address-term text-section-length nil) ;; disjoint-chunk-addresses-and-lens
+                                                         type-assumptions-for-array-varsp
+                                                         nil nil
+                                                         new-canonicalp)
+                      (mv nil nil)))
+                   (automatic-assumptions (append standard-assumptions input-assumptions))
+                   (untranslated-assumptions (append automatic-assumptions extra-assumptions))
+                   (assumptions (acl2::translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+                   (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
+                                                                         (print-terms-elided assumptions
+                                                                                             '(;(standard-assumptions-elf-64 t nil t t t t)
+                                                                                               (standard-assumptions-mach-o-64 t nil t t t t)
+                                                                                               ;(standard-assumptions-pe-64 t nil t t t t)
+                                                                                               )) ; todo: more?
+                                                                         (cw ")~%"))))
+                   ;; Next, we simplify the assumptions.  This allows us to state the
+                   ;; theorem about a lifted routine concisely, using an assumption
+                   ;; function that opens to a large conjunction before lifting is
+                   ;; attempted.  We need to assume some assumptions when simplifying the
+                   ;; others, because opening things like read64 involves testing
+                   ;; canonical-addressp (which we know from other assumptions is true):
+                   ((mv erp assumptions assumption-rules state)
+                    (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp nil state))
+                   ((when erp) (mv erp nil nil nil nil state)))
+                (mv nil assumptions
+                    untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
+                    assumption-rules input-assumption-vars state))
+
+            ;; legacy case (generate some assumptions and then simplify them):
+            ;; TODO: Why is assumptions-and-vars-for-inputs in this legacy case?
+            (b* (;;todo: finish adding support for :entry-point!
+                 ((when (and (eq :entry-point target)
+                             (not (eq :pe-32 executable-type))))
+                  (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
+                  (mv :bad-entry-point nil nil nil nil state))
+                 ((when (and (natp target)
+                             (not (eq :pe-32 executable-type))))
+                  (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
+                  (mv :bad-entry-point nil nil nil nil state))
+                 (text-offset
+                   (and 64-bitp ; todo
                         (if (eq :pe-64 executable-type)
                             'text-offset ; todo: match what we do for other executable types
                           (if (or (eq :elf-32 executable-type)
@@ -800,11 +941,9 @@
                                 nil ; todo
                               (if (eq :pe-32 executable-type)
                                   nil ; todo
-                                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
-               (code-length
-                 (and 64-bitp ; todo
-                      (if (eq :mach-o-64 executable-type)
-                          (len (acl2::get-mach-o-code parsed-executable))
+                                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))
+                 (code-length
+                   (and 64-bitp ; todo
                         (if (eq :pe-64 executable-type)
                             10000 ; fixme
                           (if (or (eq :elf-32 executable-type)
@@ -814,18 +953,11 @@
                                 nil ; todo
                               (if (eq :pe-32 executable-type)
                                   nil ; todo
-                                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
-               (standard-assumptions
-                 (if suppress-assumptions
-                     ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
-                     nil
-                   (if (eq :mach-o-64 executable-type)
-                       `((standard-assumptions-mach-o-64 ',target
-                                                         ',parsed-executable
-                                                         ',stack-slots
-                                                         ,text-offset
-                                                         ',bvp
-                                                         x86))
+                                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))
+                 (standard-assumptions
+                   (if suppress-assumptions
+                       ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
+                       nil
                      (if (eq :pe-64 executable-type)
                          `((standard-assumptions-pe-64 ',target
                                                        ',parsed-executable
@@ -846,43 +978,44 @@
                                ;; todo: try without expanding this:
                                (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
                              ;;todo: add support for :elf-32
-                             (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
-               ;; maybe we should check suppress-assumptions here, but if they gave an :inputs, they must want the assumptions:
-               ((mv input-assumptions input-assumption-vars)
-                (if (and 64-bitp                                      ; todo
-                         (not (equal inputs :skip)) ; really means generate no assumptions
-                         )
-                    (input-assumptions-and-vars inputs ; these are names-and-types
-                                                ;; todo: handle zmm regs and values passed on the stack?!:
-                                                ;; handle structs that fit in 2 registers?
-                                                ;; See the System V AMD64 ABI
-                                                '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
-                                                stack-slots
-                                                (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
-                                                type-assumptions-for-array-varsp
-                                                nil nil)
-                  (mv nil nil)))
-               (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
-               (assumptions (append assumptions extra-assumptions))
-               (assumptions-to-return assumptions) ; untranslated?
-               (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
-               (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
-                                                                     (print-terms-elided assumptions
-                                                                                         '((standard-assumptions-elf-64 t nil t t t t)
-                                                                                           (standard-assumptions-mach-o-64 t nil t t t t)
-                                                                                           (standard-assumptions-pe-64 t nil t t t t)
-                                                                                           )) ; todo: more?
-                                                                     (cw ")~%"))))
-               ;; Next, we simplify the assumptions.  This allows us to state the
-               ;; theorem about a lifted routine concisely, using an assumption
-               ;; function that opens to a large conjunction before lifting is
-               ;; attempted.  We need to assume some assumptions when simplifying the
-               ;; others, because opening things like read64 involves testing
-               ;; canonical-addressp (which we know from other assumptions is true):
-               ((mv erp assumptions assumption-rules state)
-                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp state))
-               ((when erp) (mv erp nil nil nil nil state)))
-            (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state))))
+                             (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))
+                 ;; maybe we should check suppress-assumptions here, but if they gave an :inputs, they must want the assumptions:
+                 ((mv input-assumptions input-assumption-vars)
+                  (if (and 64-bitp                                      ; todo
+                           (not (equal inputs :skip)) ; really means generate no assumptions
+                           )
+                      (assumptions-and-vars-for-inputs inputs ; these are names-and-types
+                                                       ;; todo: handle zmm regs and values passed on the stack?!:
+                                                       ;; handle structs that fit in 2 registers?
+                                                       ;; See the System V AMD64 ABI
+                                                       '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
+                                                       stack-slots
+                                                       (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
+                                                       type-assumptions-for-array-varsp
+                                                       nil nil
+                                                       new-canonicalp)
+                    (mv nil nil)))
+                 (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
+                 (assumptions (append assumptions extra-assumptions))
+                 (assumptions-to-return assumptions) ; untranslated?
+                 (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
+                 (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
+                                                                       (print-terms-elided assumptions
+                                                                                           '((standard-assumptions-elf-64 t nil t t t t)
+                                                                                             ;; (standard-assumptions-mach-o-64 t nil t t t t)
+                                                                                             (standard-assumptions-pe-64 t nil t t t t)
+                                                                                             )) ; todo: more?
+                                                                       (cw ")~%"))))
+                 ;; Next, we simplify the assumptions.  This allows us to state the
+                 ;; theorem about a lifted routine concisely, using an assumption
+                 ;; function that opens to a large conjunction before lifting is
+                 ;; attempted.  We need to assume some assumptions when simplifying the
+                 ;; others, because opening things like read64 involves testing
+                 ;; canonical-addressp (which we know from other assumptions is true):
+                 ((mv erp assumptions assumption-rules state)
+                  (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits bvp nil state))
+                 ((when erp) (mv erp nil nil nil nil state)))
+              (mv nil assumptions assumptions-to-return assumption-rules input-assumption-vars state)))))
        ((when erp)
         (er hard? 'unroll-x86-code-core "Error generating assumptions: ~x0." erp)
         (mv erp nil nil nil nil nil nil state))
@@ -893,6 +1026,7 @@
                                                                 )))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
+       (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        (- (and stop-pcs
                position-independentp
                (er hard? 'unroll-x86-code-core ":stop-pcs are not supported with position-independentp.")))
@@ -913,9 +1047,8 @@
         (mv :unexpected-quotep nil nil nil nil nil nil state))
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
-       (lifter-rules (append (if bvp
-                                 (read-and-write-rules-bv)
-                               (read-and-write-rules-non-bv))
+       (lifter-rules (append (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))       ;todo: only need some of these for 64-bits?
+                             (if new-canonicalp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use these more (e.g., for macho-64)
                              lifter-rules))
        (lifter-rules (if stop-pcs
                          (append (symbolic-execution-rules-with-stop-pcs) lifter-rules)
@@ -938,6 +1071,9 @@
        ((mv erp pruning-rule-alist)
         (acl2::make-rule-alist pruning-rules (w state)))
        ((when erp) (mv erp nil nil nil nil nil nil state))
+       ;; Decide which rules to monitor:
+       (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune-precise prune-approx normalize-xors count-hits print print-base untranslatep memoizep state))
@@ -1036,21 +1172,22 @@
                   :stobjs state
                   :mode :program ; todo
                   ))
-  (b* (;; Check whether this call to the lifter has already been made:
+  (b* (;; Check whether this call to the lifter if redundant:
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))
+       ;; Start timing:
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       ;; Handle filename vs parsed-structure
        ((mv erp parsed-executable state)
         (if (stringp executable)
             ;; it's a filename, so parse the file:
             (acl2::parse-executable executable state)
-          ;; it's already a parsed-executable:
+          ;; it's already a parsed-executable: ; todo: can we deprecate this case?
           (mv nil executable state)))
        ((when erp)
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
-       (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
@@ -1065,9 +1202,10 @@
        ;; wasn't resolved, but other times it's just needed to express some
        ;; junk left on the stack
        (result-dag-vars (acl2::dag-vars result-dag))
-       (defconst-name (pack-in-package-of-symbol lifted-name '* lifted-name '*))
-       (defconst-form `(defconst ,defconst-name ',result-dag))
+       ;; Build the defconst:
+       (defconst-form `(defconst ,(pack-in-package-of-symbol lifted-name '* lifted-name '*) ',result-dag))
        ;; (fn-formals result-dag-vars) ; we could include x86 here, even if the dag is a constant
+       (executable-type (acl2::parsed-executable-type parsed-executable))
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        ;; Now sort the formals:
        (param-names (if (and 64-bitp

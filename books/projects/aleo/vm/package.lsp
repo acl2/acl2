@@ -36,6 +36,10 @@
                          '(any
                            any-p
                            assert-equal
+                           bebits=>nat
+                           bfix
+                           bit-listp
+                           bit-list-fix
                            bool
                            boolean-list-fix
                            boolean-resultp
@@ -49,9 +53,11 @@
                            int
                            integers-from-to
                            integer-resultp
+                           lebits=>nat
                            lnfix
                            logext
                            loghead
+                           lookup-equal
                            maybe-msgp
                            maybe-natp
                            maybe-pseudo-event-formp
@@ -70,6 +76,7 @@
                            nat-option-listp
                            nat-option-resultp
                            nat-option-list-resultp
+                           nat=>lebits*
                            nati-case
                            nati-finite
                            nati-finite->get
@@ -160,6 +167,8 @@
                            abnf::patbind-tree-list-tuple9-result
                            abnf::patbind-tree-list-tuple9-result-err
                            abnf::patbind-tree-list-tuple9-result-ok
+                           dm::prime
+                           dm::primep
                            ecurve::point
                            ecurve::pointp
                            fty::info
@@ -171,7 +180,15 @@
                            fty::reserr-option
                            fty::reserr-optionp
                            fty::stack
-                           dm::prime
-                           dm::primep
-                           str::string-list
-                           std::defret-mutual)))
+                           pfcs::iname
+                           pfcs::iname-list
+                           pfcs::pf+
+                           pfcs::pf*
+                           pfcs::pf=
+                           pfcs::pfcall
+                           pfcs::pfconst
+                           pfcs::pfdef
+                           pfcs::pfmon
+                           pfcs::pfvar
+                           std::defret-mutual
+                           str::string-list)))

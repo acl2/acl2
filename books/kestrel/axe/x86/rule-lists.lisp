@@ -400,7 +400,8 @@
 
 (defund region-rules ()
   (declare (xargs :guard t))
-  '(in-region48p-cancel-constants-1-1+
+  '( ;; WARNING: Keep in sync with the list for 64 bits below
+    in-region48p-cancel-constants-1-1+
     in-region48p-cancel-constants-1+-1
     in-region48p-cancel-constants-1+-1+
     in-region48p-cancel-1-1+
@@ -417,6 +418,8 @@
     in-region48p-of-0-arg3 ; introduces bvlt
     in-region48p-of-bvchop-arg1
     in-region48p-of-bvchop-arg3
+    in-region48p-same
+
     ;; Seems ok to always have these on: ; todo: add more
     disjoint-regions48p-cancel-1-1+
     disjoint-regions48p-cancel-1+-1
@@ -438,6 +441,7 @@
     subregion48p-cancel-constants-1+-1
     subregion48p-cancel-constants-1+-1+
     subregion48p-reduce-sizes
+    ;; subregion48p-same-ads-same-lens ; consider this
     subregion48p-when-non-negative-and-negative-range
     subregion48p-of-1-arg1 ; introduces in-region48p
     acl2::bvminus-of-bvplus-and-bvplus-same-2-2 ; move?  open bvminus?
@@ -462,6 +466,12 @@
   '(read-of-write-when-disjoint-regions48p-gen
     read-of-write-when-disjoint-regions48p-gen-alt
     read-of-write-when-disjoint-regions48p ; for different regions with the same base address?
+    in-region48p-of-+-arg1
+    in-region48p-of-+-arg3
+    in-region48p-of-logext-arg1
+    in-region48p-of-logext-arg3
+    in-region48p-of-bvplus-tighten-arg1
+    in-region48p-of-bvplus-tighten-arg3
     subregion48p-of-+-arg2
     subregion48p-of-+-arg4
     disjoint-regions48p-of-+-arg2
@@ -474,7 +484,10 @@
     read-when-equal-of-read-and-subregion48p-alt
     acl2::bvchop-of-+-becomes-bvplus
     acl2::bvplus-of-*-arg1
-    acl2::bvplus-of-*-arg2))
+    acl2::bvplus-of-*-arg2
+    acl2::bvminus-of-bvplus-tighten-arg2
+    acl2::bvminus-of-bvplus-tighten-arg3
+    ))
 
 ;; Rules about the actual functions READ and WRITE.
 (defund read-and-write-rules ()
@@ -1271,6 +1284,10 @@
 
     acl2::bvlt-of-bvmult-of-expt-arg2-constant-version2
     acl2::bvlt-of-bvmult-of-expt-arg3-constant-version
+
+    acl2::bvplus-of-bvplus-tighten-arg3 ; new
+    acl2::bvsx-of-logext
+    acl2::logext-of-+-of-logext-arg2
     ))
 
 ;; ;not used?
@@ -1851,6 +1868,120 @@
     acl2::equal-of-+-and-+-cancel-constants
     ))
 
+(defund canonical-rules-non-bv ()
+  (declare (xargs :guard t))
+  '(booleanp-of-canonical-address-p
+    x86isa::canonical-address-p-of-logext-48
+    x86isa::logext-48-does-nothing-when-canonical-address-p
+    ;; x86isa::create-canonical-address-list-1
+    ;; x86isa::canonical-address-listp-of-cons
+    ;; x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
+    ;; x86isa::member-p-of-create-canonical-address-list-same
+    ;; x86isa::canonical-address-listp-create-canonical-address-list
+    ;; x86isa::pos-and-create-canonical-address-list
+    ;; x86isa::car-create-canonical-address-list
+    x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
+    ;;will axe try all free variable matches?
+    ;; x86isa::canonical-address-p-between-special1
+    ;; x86isa::canonical-address-p-between-special2
+    ;; x86isa::canonical-address-p-between-special3
+    ;; x86isa::canonical-address-p-between-special4
+    x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
+    x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
+    ;; x86isa::member-p-canonical-address-listp
+    ;; x86isa::true-listp-create-canonical-address-list
+    ;; x86isa::len-of-create-canonical-address-list
+    x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
+    x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
+    ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
+    ;; x86isa::subset-p-two-create-canonical-address-lists-same-base-address
+    x86isa::canonical-address-p-of-logext-64
+    ;; x86isa::no-duplicates-p-create-canonical-address-list
+    ;; x86isa::not-member-p-canonical-address-listp-when-disjoint-p
+    ;; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
+    ;; <-when-canonical-address-p
+    ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
+    x86isa::write-canonical-address-to-memory
+    ;; x86isa::canonical-address-listp-of-cdr
+    ;; x86isa::car-create-canonical-address-list
+    ;; x86isa::cdr-create-canonical-address-list
+    ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
+    ;; signed-byte-p-when-between-canonical-addresses
+    x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
+    ;;signed-byte-p-of-+-when-canonical-and-canonical ; todo: remove the one just above?
+    logext-64-of-+-when-canonical-and-canonical
+    ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
+    ;;         canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
+    ;;         canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
+    ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
+    ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
+    x86isa::canonical-address-p-of-i48
+    x86isa::i48-when-canonical-address-p
+    ;; x86isa::canonical-address-p-of-if
+    acl2::logext-of-bvplus-64 ; new, to get rid of bvplus
+    ))
+
+(defund unsigned-canonical-rules ()
+  (declare (xargs :guard t))
+  '(canonical-address-p-becomes-unsigned-canonical-address-p-of-bvchop
+    unsigned-canonical-address-p-when-canonical-regionp-and-in-region64p
+    canonical-regionp-of-+-arg2
+    unsigned-canonical-address-p-of-bvif
+    unsigned-canonical-address-p-of-if
+    unsigned-canonical-address-p-of-bvsx-64-48
+    unsigned-canonical-address-p-of-bvchop
+    bvsx-64-48-of-bvplyus-48-when-unsigned-canonical-address-p
+    unsigned-canonical-address-p-constant-opener
+    write-of-logext-arg2 ; move?
+    unsigned-canonical-address-p-of-+-when-small
+    unsigned-canonical-address-p-of-bvplus-when-small
+    acl2::bvplus-associative-when-constant-arg1 ; hope this is ok (had to turn it off for a blake proof).  for cancellation rules for in-region64p.  use an alias, or just a better, general cancellation rule that doesn't enforce any normal form?
+    ))
+
+(defund canonical-rules-bv ()
+  (declare (xargs :guard t))
+  '(
+    ;; these are for the full, 64-bit address space:
+    ;; WARNING: Keep in sync with the list for 48 bits above
+    in-region64p-of-bvchop-arg1
+    in-region64p-of-bvchop-arg3
+    in-region64p-same
+    in-region64p-cancel-constants-1-1+
+    in-region64p-cancel-constants-1+-1
+    in-region64p-cancel-constants-1+-1+
+    in-region64p-cancel-1-1+
+    in-region64p-cancel-1+-1
+    in-region64p-cancel-1+-1+
+    in-region64p-cancel-1-2
+    in-region64p-cancel-2-1
+    in-region64p-cancel-1+-2
+    in-region64p-cancel-2-1+
+    in-region64p-cancel-1-3
+    in-region64p-cancel-3-1
+    in-region64p-cancel-2-2
+    in-region64p-when-non-negative-and-negative-range
+    in-region64p-of-0-arg3 ; introduces bvlt
+    in-region64p-of-+-arg1
+    in-region64p-of-+-arg3
+
+    subregion64p-constant-opener
+    in-region64p-constant-opener
+    disjoint-regions64p-constant-opener
+
+    ;; some of these might become unnecesary after we switch to hiding the signed values
+    ;x86isa::add-to-*ip-of-*64-bit-mode*-safe
+    x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ; could generalize
+    ;;acl2::logext-of-plus-of-logext
+    ;;write-of-logext-arg2
+    ;;set-rip-of-+-of-logext
+    set-rip-of-+-of-bvplus
+    ;;x86isa::logext-48-does-nothing-when-canonical-address-p
+    acl2::bvplus-of-+-of-logext-arg3 ; crucial
+    acl2::bvsx-convert-arg3-to-bv-axe ; crucial
+
+    x86isa::integerp-when-canonical-address-p-cheap ; also in the non-bv case!
+    ))
+
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defund lifter-rules-common ()
@@ -1895,6 +2026,7 @@
           (acl2::if-becomes-bvif-rules)
           (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
           '(acl2::len-of-cons acl2::nth-of-cons-constant-version) ; add to list-to-bv-array-rules?
+          ;(canonical-rules-non-bv) ; todo
           *unsigned-choppers* ;; these are just logead, aka bvchop
           *signed-choppers* ;; these are just logext
           *unsigned-recognizers* ;; these are just unsigned-byte-p
@@ -1959,7 +2091,7 @@
 
             poor-mans-quotep-constant-opener
 
-            booleanp-of-canonical-address-p
+
 
             the-check
             ;; get-prefixes:
@@ -1970,31 +2102,14 @@
 
             ;x86isa::mv-nth-of-cons ;mv-nth ;or do mv-nth of cons.  rules like rb-in-terms-of-nth-and-pos-eric target mv-nth
 
-            x86isa::canonical-address-p-of-logext-48
-            x86isa::logext-48-does-nothing-when-canonical-address-p
 
-;            x86isa::create-canonical-address-list-1
-
-;            x86isa::canonical-address-listp-of-cons
-;            x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
-;            x86isa::member-p-of-create-canonical-address-list-same
-;            x86isa::canonical-address-listp-create-canonical-address-list
-;            x86isa::pos-and-create-canonical-address-list
 
             inverse-of-+
             x86isa::combine-bytes-when-singleton
 
             x86isa::get-one-byte-prefix-array-code-rewrite-quotep ;;get-one-byte-prefix-array-code ;this is applied to a constant (the function is gross because it uses an array)
-;            x86isa::car-create-canonical-address-list
-            x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
-            ;;will axe try all free variable matches?
-            ;; x86isa::canonical-address-p-between-special1
-            ;; x86isa::canonical-address-p-between-special2
-            ;; x86isa::canonical-address-p-between-special3
-            ;; x86isa::canonical-address-p-between-special4
-            x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
 
-            ;; some of these can be needed for x86isa::canonical-address-p-between:
+            ;; some of these can be needed for x86isa::canonical-address-p-between: ; move to canonical-rules-non-bv?
             acl2::<-of-+-cancel-1-2
             acl2::<-of-+-cancel-2-1
             acl2::<-of-+-cancel-2-2
@@ -2010,12 +2125,10 @@
 
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
-            x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
             acl2::integerp-when-signed-byte-p
 
             ;; acl2::acl2-numberp-when-signed-byte-p
 
-;            x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
             acl2::ash-negative-becomes-slice-axe ; move?
 
@@ -2042,16 +2155,13 @@
             ;x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             ;x86isa::program-at-wb-disjoint ;drop?
 ;            strip-cars-of-create-addr-bytes-alist
-;            x86isa::true-listp-create-canonical-address-list
-;            x86isa::len-of-create-canonical-address-list
 ;            len-of-byte-ify ;can we drop the integerp hyp?
 
-            x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
+
             ;x86isa::xr-wb-in-app-view ;targets xr-of-mv-nth-1-of-wb
             x86isa::x86-decode-sib-p               ;restrict to ground terms?
             x86isa::x86-operand-to-reg/mem         ;shilpi leaves this enabled
             x86isa::mv-nth-becomes-nth-when-constants
-            x86isa::canonical-address-p-becomes-signed-byte-p-when-constant
             acl2::distributivity-of-minus-over-+
             acl2::commutativity-2-of-+-when-constant
 
@@ -2076,10 +2186,7 @@
             ;x86isa::mv-nth-1-rb-xw-undef
 
             ;; x86isa::rb-wb-disjoint-eric
-;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
             ;; x86isa::rb-wb-subset
-;            x86isa::subset-p-two-create-canonical-address-lists-same-base-address
-            x86isa::canonical-address-p-of-logext-64
             ;;x86isa::xw-xw-intra-array-field-shadow-writes
             ;;x86isa::xw-xw-intra-simple-field-shadow-writes
             x86isa::xw-xw-shadow-writes
@@ -2087,7 +2194,6 @@
             x86isa::xw-xw-intra-field-arrange-writes ;axe puts in a loop-stopper hyp
 ;            assoc-list-of-rev-of-create-addr-bytes-alist
 ;            true-listp-of-byte-ify
-;            x86isa::no-duplicates-p-create-canonical-address-list
             ;acl2::slice-becomes-bvchop
             ;acl2::bvchop-of-bvchop
             ;acl2::bvchop-of-bvplus
@@ -2127,24 +2233,16 @@
 
             x86isa::disjoint-p-cons-1 ;restrict to a singleton?
             ;x86isa::disjoint-p-nil-1
-;            x86isa::not-member-p-canonical-address-listp-when-disjoint-p
-; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
             ;acl2::bvplus-combine-constants
             x86isa::<-of-logext-and-bvplus-of-constant
-;<-when-canonical-address-p
 
             ;acl2::logext-of-bvplus-64 ; a bit scary (instead, see todo #1 above)
 
-;            x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
-            x86isa::write-canonical-address-to-memory
-;            x86isa::canonical-address-listp-of-cdr
-;            x86isa::car-create-canonical-address-list
-;            x86isa::cdr-create-canonical-address-list
             x86isa::combine-bytes-unroll
             x86isa::combine-bytes-base
             x86isa::if-of-xr-app-view
-;            x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
+
 
 ;            x86isa::set-flag-undefined$inline ;trying this..
 ;            x86isa::xr-set-flag-undefined
@@ -2152,15 +2250,11 @@
 ;xr-rgf-mv-nth-2-rb
 ;xr-app-view-mv-nth-2-rb
 
-;signed-byte-p-when-between-canonical-addresses
+
 ;            x86isa::x86p-of-set-flag-undefined-eric ;x86p-of-set-flag-undefined ;drop?
 ;            x86isa::rb-set-flag-undefined-in-app-view ;drop?
 
             x86isa::<-of-logext-and-+-of-constant
-            x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
-            ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
-;                    canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
-;                    canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
             ;;signed-byte-p-of-+-between
 
             acl2::logext-of-+-of-constant
@@ -2184,8 +2278,6 @@
             acl2::bvmult-of-bvcat-of-0
             acl2::bvmult-of-bvchop-arg3
 
-;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
-;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk-pos ;only needed for pe file?
 
             acl2::bvplus-of-unary-minus
@@ -2200,10 +2292,9 @@
             ;x86isa::64-bit-modep-of-mv-nth-1-of-wb
 
             ;;todo: include all of the lifter rules:
-            x86isa::canonical-address-p-of-i48
-            x86isa::i48-when-canonical-address-p
+
             x86isa::select-address-size$inline
-            ;x86isa::canonical-address-p-of-if
+
 
             cf-spec64-when-unsigned-byte-p
 
@@ -2458,7 +2549,11 @@
             40bits-fix
             45bits-fix
             54bits-fix
-            64bits-fix)))
+            64bits-fix
+
+            ;; maybe eventually remove, but needed for the loop lifter (at least remove other mentions)
+            x86isa::integerp-when-canonical-address-p-cheap
+            )))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
