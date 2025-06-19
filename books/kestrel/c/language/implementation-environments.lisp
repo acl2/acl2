@@ -1992,25 +1992,29 @@
     (implies (char+short+int+long+llong-format-wfp format)
              (>= (integer-format->bit-size
                   (char+short+int+long+llong-format->short format))
-                 16)))
+                 16))
+    :rule-classes :linear)
 
   (defrule char+short+int+long+llong-format-wf-int-bit-size-lower-bound
     (implies (char+short+int+long+llong-format-wfp format)
              (>= (integer-format->bit-size
                   (char+short+int+long+llong-format->int format))
-                 16)))
+                 16))
+    :rule-classes :linear)
 
   (defrule char+short+int+long+llong-format-wf-long-bit-size-lower-bound
     (implies (char+short+int+long+llong-format-wfp format)
              (>= (integer-format->bit-size
                   (char+short+int+long+llong-format->long format))
-                 32)))
+                 32))
+    :rule-classes :linear)
 
   (defrule char+short+int+long+llong-format-wf-llong-bit-size-lower-bound
     (implies (char+short+int+long+llong-format-wfp format)
              (>= (integer-format->bit-size
                   (char+short+int+long+llong-format->llong format))
-                 64))))
+                 64))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
