@@ -1,0 +1,6 @@
+// The program input for compound-assignments/src/main.leo
+[main]
+a: i8 = 0;
+
+[registers]
+r0: i8 = 0;

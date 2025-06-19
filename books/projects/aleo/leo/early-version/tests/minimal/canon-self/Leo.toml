@@ -1,0 +1,8 @@
+[project]
+name = "canon-self"
+version = "0.1.0"
+description = "The canon-self package"
+license = "MIT"
+
+[remote]
+author = "[AUTHOR]" # Add your Aleo Package Manager username, team's name, or organization's name.
