@@ -7,6 +7,7 @@
 ; Author: Eric Smith (eric.smith@kestrel.edu)
 ; Supporting Author: Alessandro Coglio (coglio@kestrel.edu)
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "R1CS")
@@ -72,6 +73,16 @@
            (pseudo-var-listp vars))
   :hints (("Goal" :in-theory (enable pseudo-var-listp))))
 
+(defun r1cs-termp (term)
+  (and (true-listp term)
+       (= 2 (len term))
+       ;; could say (coefficientp (first item) prime) but then we'd have to
+       ;; pass in the prime:
+       (integerp (first term))
+       (pseudo-varp (second term))))
+
+(verify-guards r1cs-termp)
+
 ;; A sparse vector, represented as a list of pairs where each pair contains a
 ;; coefficient and a pseudo-var.  Pseudo-vars not mentioned have an implicit
 ;; coefficient of 0.
@@ -80,12 +91,7 @@
   (if (atom vec)
       (equal vec nil)
     (let ((item (first vec)))
-      (and (true-listp item)
-           (= 2 (len item))
-           ;; could say (coefficientp (first item) prime) but then we'd have to
-           ;; pass in the prime:
-           (integerp (first item))
-           (pseudo-varp (second item))
+      (and (r1cs-termp item)
            (sparse-vectorp (rest vec))))))
 
 (defthm sparse-vectorp-of-cons
