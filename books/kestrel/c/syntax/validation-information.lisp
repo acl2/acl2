@@ -439,6 +439,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod tyname-info
+  :short "Fixtype of validation information for type names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to type names,
+     i.e. the @(tsee tyname) fixtype.
+     The information for a type name consists of its denoted type."))
+  ((type type))
+  :pred tyname-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-tyname-info
+  :short "An irrelevant validation information for type names."
+  :type tyname-infop
+  :body (make-tyname-info :type (irr-type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-tyname-info (x)
+  :returns (info tyname-infop)
+  :short "Coerce a value to @(tsee tyname-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (tyname-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy TYNAME-INFOP." x)
+            (irr-tyname-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod transunit-info
   :short "Fixtype of validation information for translation units."
   :long
