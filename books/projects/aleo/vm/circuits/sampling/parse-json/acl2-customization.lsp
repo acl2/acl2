@@ -1,4 +1,4 @@
-; Leo Library
+; AleoVM Library
 ;
 ; Copyright (C) 2025 Provable Inc.
 ;
@@ -11,8 +11,8 @@
 
 (ld "~/acl2-customization.lsp" :ld-missing-input-ok t)
 
-(ld "../package.lsp")
+(ld "../../../package.lsp")
 
 (reset-prehistory)
 
-(in-package "LEO-EARLY")
+(in-package "ALEOVM")

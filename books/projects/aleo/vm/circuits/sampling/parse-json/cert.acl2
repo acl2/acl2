@@ -1,4 +1,4 @@
-; Leo Library
+; AleoVM Library
 ;
 ; Copyright (C) 2025 Provable Inc.
 ;
@@ -9,4 +9,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(include-book "../portcullis")
+(include-book "../../../portcullis")
