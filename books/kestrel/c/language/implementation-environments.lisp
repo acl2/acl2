@@ -2240,7 +2240,11 @@
   (defret ienv->short-bit-size-type-prescription
     (and (posp size)
          (> size 1))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret ienv->short-bit-size-lower-bound
+    (>= size 16)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2257,7 +2261,11 @@
   (defret ienv->int-bit-size-type-prescription
     (and (posp size)
          (> size 1))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret ienv->int-bit-size-lower-bound
+    (>= size 16)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2274,7 +2282,11 @@
   (defret ienv->long-bit-size-type-prescription
     (and (posp size)
          (> size 1))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret ienv->long-bit-size-lower-bound
+    (>= size 32)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2291,7 +2303,11 @@
   (defret ienv->llong-bit-size-type-prescription
     (and (posp size)
          (> size 1))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret ienv->llong-bit-size-lower-bound
+    (>= size 64)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
