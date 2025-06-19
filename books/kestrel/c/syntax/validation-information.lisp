@@ -668,7 +668,7 @@
    :unary (unary-info->type (coerce-unary-info expr.info))
    :sizeof (type-unknown)
    :alignof (type-unknown)
-   :cast (type-unknown)
+   :cast (tyname-info->type (coerce-tyname-info (tyname->info expr.type)))
    :binary (binary-info->type (coerce-binary-info expr.info))
    :cond (b* (((when (expr-option-case expr.then :none)) (type-unknown))
               (expr.then (expr-option-some->val expr.then))
