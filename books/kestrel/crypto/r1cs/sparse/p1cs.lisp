@@ -24,13 +24,16 @@
 (include-book "std/strings/pretty" :dir :system)
 
 ; These should be in std/lists without a backchain limit
+(local
 (defthmd iff-consp-when-true-listp
   (implies (true-listp x)
            (iff (consp x) x)))
-
+)
+(local
 (defthmd true-listp-of-cdr
   (implies (true-listp l)
            (true-listp (cdr l))))
+)
 
 (defmacro fp1 () '(primes::bn-254-group-prime))
 (defmacro fp2 () '(primes::bls12-377-scalar-field-prime))
