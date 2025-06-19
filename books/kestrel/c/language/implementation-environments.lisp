@@ -1573,8 +1573,7 @@
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format short-format))
-             :in-theory (e/d (integer-format-short-wfp)
-                             (integer-format->unsigned-max-upper-bound))))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1625,8 +1624,7 @@
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format int-format))
-             :in-theory (e/d (integer-format-int-wfp)
-                             (integer-format->unsigned-max-upper-bound))))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1678,8 +1676,7 @@
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format long-format))
-             :in-theory (e/d (integer-format-long-wfp)
-                             (integer-format->unsigned-max-upper-bound))))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1732,8 +1729,7 @@
     :hints (("Goal"
              :use (:instance integer-format->unsigned-max-upper-bound
                              (format llong-format))
-             :in-theory (e/d (integer-format-llong-wfp)
-                             (integer-format->unsigned-max-upper-bound))))))
+             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
