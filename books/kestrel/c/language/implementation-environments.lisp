@@ -1561,7 +1561,20 @@
          (<= signed-short-min signed-char-min)
          (<= signed-char-max signed-short-max)
          (<= unsigned-char-max unsigned-short-max)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule integer-format-short-wf-bit-size-lower-bound
+    (implies (integer-format-short-wfp short-format uchar-format schar-fomat)
+             (>= (integer-format->bit-size short-format)
+                 16))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance integer-format->unsigned-max-upper-bound
+                             (format short-format))
+             :in-theory (e/d (integer-format-short-wfp)
+                             (integer-format->unsigned-max-upper-bound))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1600,7 +1613,20 @@
          (<= signed-int-min signed-short-min)
          (<= signed-short-max signed-int-max)
          (<= unsigned-short-max unsigned-int-max)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule integer-format-int-wf-bit-size-lower-bound
+    (implies (integer-format-int-wfp int-format uchar-format short-fomat)
+             (>= (integer-format->bit-size int-format)
+                 16))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance integer-format->unsigned-max-upper-bound
+                             (format int-format))
+             :in-theory (e/d (integer-format-int-wfp)
+                             (integer-format->unsigned-max-upper-bound))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1640,7 +1666,20 @@
          (<= signed-long-min signed-int-min)
          (<= signed-int-max signed-long-max)
          (<= unsigned-int-max unsigned-long-max)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule integer-format-long-wf-bit-size-lower-bound
+    (implies (integer-format-long-wfp long-format uchar-format int-fomat)
+             (>= (integer-format->bit-size long-format)
+                 32))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance integer-format->unsigned-max-upper-bound
+                             (format long-format))
+             :in-theory (e/d (integer-format-long-wfp)
+                             (integer-format->unsigned-max-upper-bound))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1681,7 +1720,20 @@
          (<= signed-llong-min signed-long-min)
          (<= signed-long-max signed-llong-max)
          (<= unsigned-long-max unsigned-llong-max)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule integer-format-llong-wf-bit-size-lower-bound
+    (implies (integer-format-llong-wfp llong-format uchar-format long-fomat)
+             (>= (integer-format->bit-size llong-format)
+                 64))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance integer-format->unsigned-max-upper-bound
+                             (format llong-format))
+             :in-theory (e/d (integer-format-llong-wfp)
+                             (integer-format->unsigned-max-upper-bound))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
