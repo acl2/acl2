@@ -420,7 +420,7 @@
      does not affect the treatment of identifier CSTs,
      which are not leaf CSTs.
      For concrete motivations for this special treatment,
-     see @(tsee input-file-parsep) and @(tsee output-file-parserp)."))
+     see @(tsee input-file-parsep) and @(tsee output-file-parsep)."))
 
   (define token-fringe ((tree abnf::treep)
                         (identifiers string-listp))

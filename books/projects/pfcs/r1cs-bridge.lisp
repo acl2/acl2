@@ -33,7 +33,7 @@
    (xdoc::p
     "PFCSes are a generalization of R1CSes.
      Thus, there is an embedding of R1CSes into PFCSes,
-     which we reify by providing a mapping from R1CSes and PFCSes.")
+     which we reify by providing a mapping from R1CSes to PFCSes.")
    (xdoc::p
     "The mapping functions are accompanied by theorems
      showing that the resulting PFCSes are in the "

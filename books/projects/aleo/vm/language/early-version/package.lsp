@@ -19,6 +19,7 @@
 (defpkg "ALEOVM-EARLY" (append (set-difference-eq *std-pkg-symbols*
                                                   '(char
                                                     check-type
+                                                    closure
                                                     compile
                                                     function
                                                     functionp
