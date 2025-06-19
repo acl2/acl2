@@ -1,6 +1,7 @@
 - name: int-arith
 
 - name: int-arith-invalid
+  args: ['int-arith-invalid.cpp']
   env: {RAC_BYPASS_ERROR: 'true'}
   disabled-checks:
     - generated_code

@@ -1908,6 +1908,8 @@
     ;; x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
     ;; signed-byte-p-when-between-canonical-addresses
     x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
+    ;;signed-byte-p-of-+-when-canonical-and-canonical ; todo: remove the one just above?
+    logext-64-of-+-when-canonical-and-canonical
     ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
     ;;         canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
     ;;         canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
@@ -1916,6 +1918,7 @@
     x86isa::canonical-address-p-of-i48
     x86isa::i48-when-canonical-address-p
     ;; x86isa::canonical-address-p-of-if
+    acl2::logext-of-bvplus-64 ; new, to get rid of bvplus
     ))
 
 (defund unsigned-canonical-rules ()

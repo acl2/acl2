@@ -11,19 +11,8 @@
 
 (in-package "ALEOVM")
 
-(include-book "boolean-and")
-(include-book "boolean-assert")
-(include-book "boolean-assert-eq")
-(include-book "boolean-assert-neq")
-(include-book "boolean-assert-true")
-(include-book "boolean-eq")
-(include-book "boolean-if")
-(include-book "boolean-nand")
-(include-book "boolean-neq")
-(include-book "boolean-nor")
-(include-book "boolean-not")
-(include-book "boolean-or")
-(include-book "boolean-xor")
+(include-book "pfcs/top")
+(include-book "r1cs/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,7 +38,8 @@
      with respect to high-level specifications that we also provide.")
    (xdoc::p
     "snarkVM generates zero-knowledge circuits in R1CS form.
-     We use our "
+     In @(see circuits-pfcs),
+     we use our "
     (xdoc::seetopic "pfcs::pfcs" "PFCS")
     " formalism
      to formalize and verify the circuits in a compositional way,
@@ -60,16 +50,5 @@
     (xdoc::ahref "https://cgi.cse.unsw.edu.au/~eptcs/paper.cgi?ACL22023.9"
                  "ACL2-2023 Workshop paper")
     "."))
-  :order-subtopics (boolean-and
-                    boolean-assert
-                    boolean-assert-eq
-                    boolean-assert-neq
-                    boolean-assert-true
-                    boolean-eq
-                    boolean-if
-                    boolean-nand
-                    boolean-neq
-                    boolean-nor
-                    boolean-not
-                    boolean-or
-                    boolean-xor))
+  :order-subtopics (pfcs
+                    r1cs))

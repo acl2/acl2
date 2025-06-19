@@ -12,15 +12,17 @@
 
 (in-package "ACL2")
 
+;; This book requires a :ttag (translate-dag-to-stp) because of the call to define-trusted-clause-processor.
+
 (include-book "prove-with-stp")
 
 ;Attempts to prove CLAUSE using STP.
 ;Returns (mv erp clauses state) where clauses is nil if STP proved the goal and
 ;otherwise is a singleton set containing the original clause (indicating that
-;no change was made).  TODO: What is the format of the hint?
-(defun stp-clause-processor (clause hint state)
+;no change was made).
+(defund stp-clause-processor (clause hint state)
   (declare (xargs :guard (and (pseudo-term-listp clause)
-                              (alistp hint))
+                              (symbol-alistp hint))
                   :stobjs state))
   (b* (;; Get and check options:
        (hint-keys (strip-cars hint))
@@ -77,8 +79,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Check whether STP alone can prove a theorem
-;; TODO: Pass in the rest of the options (and the rest of the things that defthm takes)
-(defmacro defthm-with-stp-clause-processor (name term)
+;; Returns a DEFTHM event.
+(defund defthm-with-stp-clause-processor-fn (name term must-prove max-conflicts counterexample print rule-classes)
+  (declare (xargs :guard (and (symbolp name)
+                              ;; term is untranslated in general
+                              (booleanp must-prove)
+                              (or (null max-conflicts)
+                                  (natp max-conflicts))
+                              (booleanp counterexample)
+                              (print-levelp print)
+                              ;; rule-classes may be :auto
+                              )))
   `(defthm ,name ,term
-     :hints (("Goal" :clause-processor (stp-clause-processor clause '((:must-prove . t)) state)))))
+     :hints (("Goal" :clause-processor (stp-clause-processor clause
+                                                             '((:must-prove . ,must-prove)
+                                                               (:max-conflicts . ,max-conflicts)
+                                                               (:counterexample . ,counterexample)
+                                                               (:print . ,print))
+                                                             state)))
+     ,@(if (eq :auto rule-classes) nil `(:rule-classes ,rule-classes))))
+
+;; A tool to prove a theorem using STP alone.
+;; TODO: At least handle IMPLIES specially.  Perhaps apply the pre-stp-rules.
+;; TODO: Consider allowing other :hints (need to merge with the :clause-processor hint), and maybe :otf-flg.
+(defmacro defthm-with-stp-clause-processor (name
+                                            term
+                                            &key
+                                            (rule-classes ':auto)
+                                            (max-conflicts '1000000)
+                                            (counterexample 't)
+                                            (must-prove 't)
+                                            (print ':brief))
+  (defthm-with-stp-clause-processor-fn name term must-prove max-conflicts counterexample print rule-classes))

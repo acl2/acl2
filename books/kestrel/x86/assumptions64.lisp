@@ -14,7 +14,7 @@
 (include-book "assumptions")
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes")
-(include-book "regions")
+(include-book "kestrel/memory/memory48" :dir :system)
 (include-book "parsers/parsed-executable-tools")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 

@@ -75,6 +75,8 @@
                          pfield::fe-list-listp
                          pfield::inv
                          pfield::mul
+                         pfield::neg
+                         pfield::sub
                          str::str-fix
                          str::string-list
                          str::string-list-fix

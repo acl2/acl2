@@ -339,7 +339,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv hyps conc).
+;; Returns (mv hyps conc).  Handles IMPLIES.
 ;; (See also get-hyps-and-conc.  That one can handle some nested calls implies.  Should we use it?)
 (defund term-hyps-and-conc (term)
   (declare (xargs :guard (pseudo-termp term)))
@@ -2615,7 +2615,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Splits TERM into hyps and a conclusion when possible.
+;; Attempts to prove TERM with STP.
+;; Splits TERM into hyps and a conclusion when it is an IMPLIES.
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
 (defund prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :guard (and (pseudo-termp term)
@@ -2633,6 +2634,7 @@
 
 ;; This version avoids imposing invariant-risk on callers, because it has a guard that is just a stobj recognizer.
 ;Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+;; Splits TERM into hyps and a conclusion when it is an IMPLIES.
 (defund prove-term-with-stp-unguarded (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :stobjs state))
   (if (and (pseudo-termp term)
@@ -2649,6 +2651,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
+;; Splits TERM into hyps and a conclusion when it is an IMPLIES.
 (defund translate-and-prove-term-with-stp (term counterexamplep print-cex-as-signedp max-conflicts print base-filename state)
   (declare (xargs :guard (and ;; term is untranslated
                               (booleanp counterexamplep)
@@ -2665,8 +2668,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv result state) where RESULT is :error, :valid, :invalid, :timedout, (:counterexample <counterexample>), or (:possible-counterexample <counterexample>).
-;TODO: Deprecate in favor of defthm-stp?  We could make a thm-stp too.
+;TODO: Deprecate in favor of defthm-stp?  We could call this thm-stp and use the :clause-processor hint
 ;TODO: Allow a name to be passed in
+;; Splits TERM into hyps and a conclusion when it is an IMPLIES.
 (defmacro prove-with-stp (term
                           &key
                           (counterexample 't)

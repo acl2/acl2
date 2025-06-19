@@ -39,7 +39,7 @@
     "We make no change if the error flag is set.
      Otherwise, we read the program counter,
      we read the 32-bit encoding of the instruction from there
-     (which is always little endian [ISA:1.5.1]),
+     (which is always little endian [ISA:1.5]),
      we decode it, and, if we obtain an instruction,
      we run the semantic function of the instruction;
      if decoding fails, we set the error flag instead."))

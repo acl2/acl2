@@ -27,6 +27,9 @@
 
 (local (in-theory (disable <<-rules)))
 
+(std::make-define-config
+  :no-function t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ heap<
@@ -101,7 +104,6 @@
                       ;;   (<< y x))
                       (<< x y)
                       )))
-  :no-function t
   :inline t)
 
 (define heap< (x y)
@@ -113,7 +115,6 @@
     (declare (type (unsigned-byte 32) hash-x)
              (type (unsigned-byte 32) hash-y))
     (heap<-with-hashes x y hash-x hash-y))
-  :no-function t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

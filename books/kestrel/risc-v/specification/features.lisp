@@ -30,7 +30,7 @@
      there is a choice of base (RV32I, RV64I, RV128I, RV32E, RV64E),
      and there are choices of extensions.
      There is also a choice of little or big endian memory access
-     (for data; instruction access is always little endian [ISA:1.5.1]).
+     (for data; instruction access is always little endian [ISA:1.5]).
      Perhaps less obvious, there is also a choice of
      which parts of the address space are readable and/or writable.")
    (xdoc::p
@@ -50,10 +50,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we support
-     RV32I [ISA:2], RV64I [ISA:4], RV32E [ISA:3], and RV64E [ISA:3].
-     Since RV128I [ISA:5] is still 'Draft' in the table in the Preface in [ISA],
-     we do not have immediate plans to add that, unless the need arises."))
+    "We support all the bases:
+     RV32I [ISA:2], RV64I [ISA:4], RV32E [ISA:3], and RV64E [ISA:3]."))
   (:rv32i ())
   (:rv64i ())
   (:rv32e ())
@@ -67,7 +65,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Although instruction encodings are always in little endian [ISA:1.5.1],
+    "Although instruction encodings are always in little endian [ISA:1.5],
      data loaded/stored from/to memory may be little or big endian [ISA:2.6].
      This choice is ``byte-address invariant'' [ISA:2.6],
      i.e. it does not depend on the address;
@@ -90,7 +88,7 @@
     (xdoc::li
      "The endianness.")
     (xdoc::li
-     "Whether the M extension [ISA:13] is present or not."))
+     "Whether the M extension [ISA:12] is present or not."))
    (xdoc::p
     "More features will be added later."))
   ((base feat-base)
@@ -129,6 +127,17 @@
   :enable (feat-32p feat-64p))
 
 (in-theory (enable (:forward-chaining feat-32p-or-64p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule not-feat-32p-and-feat-64p
+  :parents (feat-32p feat-64p)
+  :short "Both of @(tsee feat-32p) and @(tsee feat-64p) cannot hold."
+  (or (not (feat-32p feat))
+      (not (feat-64p feat)))
+  :rule-classes ((:forward-chaining :trigger-terms ((feat-32p feat)
+                                                    (feat-64p feat))))
+  :enable (feat-32p feat-64p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

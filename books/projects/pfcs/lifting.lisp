@@ -37,7 +37,7 @@
 
 (defxdoc+ lifting
   :parents (pfcs)
-  :short "Lifting of PFCSes."
+  :short "Lifting of PFCS."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -283,7 +283,12 @@
    expr
    :const `(mod ,expr.value ,prime)
    :var (lift-var-name expr.name state)
+   :neg `(neg ,(lift-expression expr.arg prime state)
+              ,prime)
    :add `(add ,(lift-expression expr.arg1 prime state)
+              ,(lift-expression expr.arg2 prime state)
+              ,prime)
+   :sub `(sub ,(lift-expression expr.arg1 prime state)
               ,(lift-expression expr.arg2 prime state)
               ,prime)
    :mul `(mul ,(lift-expression expr.arg1 prime state)
@@ -801,8 +806,11 @@
                          (:e expression-kind)
                          (:e expression-const->value)
                          (:e expression-var->name)
+                         (:e expression-neg->arg)
                          (:e expression-add->arg1)
                          (:e expression-add->arg2)
+                         (:e expression-sub->arg1)
+                         (:e expression-sub->arg2)
                          (:e expression-mul->arg1)
                          (:e expression-mul->arg2)
                          (:e expression-var-list)
@@ -813,7 +821,9 @@
                          (:e assignmentp)
                          omap::from-lists
                          pfield::fep-fw-to-natp
+                         pfield::natp-of-neg
                          pfield::natp-of-add
+                         pfield::natp-of-sub
                          pfield::natp-of-mul
                          len
                          fty::consp-when-reserrp
@@ -883,8 +893,11 @@
                         (:e expression-kind)
                         (:e expression-const->value)
                         (:e expression-var->name)
+                        (:e expression-neg->arg)
                         (:e expression-add->arg1)
                         (:e expression-add->arg2)
+                        (:e expression-sub->arg1)
+                        (:e expression-sub->arg2)
                         (:e expression-mul->arg1)
                         (:e expression-mul->arg2)
                         (:e expression-var-list)
@@ -897,7 +910,9 @@
                         (:e assignmentp)
                         omap::from-lists
                         pfield::fep-fw-to-natp
+                        pfield::natp-of-neg
                         pfield::natp-of-add
+                        pfield::natp-of-sub
                         pfield::natp-of-mul
                         len
                         fty::consp-when-reserrp
@@ -957,8 +972,11 @@
                         (:e expression-kind)
                         (:e expression-const->value)
                         (:e expression-var->name)
+                        (:e expression-neg->arg)
                         (:e expression-add->arg1)
                         (:e expression-add->arg2)
+                        (:e expression-sub->arg1)
+                        (:e expression-sub->arg2)
                         (:e expression-mul->arg1)
                         (:e expression-mul->arg2)
                         (:e expression-var-list)
@@ -991,7 +1009,9 @@
                         (:e no-duplicatesp-equal)
                         acl2::primep-forward-to-posp
                         ,@type-presc-rules
+                        pfield::natp-of-neg
                         pfield::natp-of-add
+                        pfield::natp-of-sub
                         pfield::natp-of-mul)
            :use ((:instance constraint-relation-satp-suff
                             (asgfree (omap::from-lists

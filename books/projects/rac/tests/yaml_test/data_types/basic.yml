@@ -150,6 +150,8 @@
 
 - name: const-arrays
 
+- name: const-arrays-2
+
 - name: array-in-struct
   env: {RAC_BYPASS_ERROR: 'true'} # Bypass pedantic error
   disabled-checks:
@@ -170,3 +172,10 @@
 - name: static-invalid
   should_report_error: true
 
+- name: fast-arrays
+
+- name: fast-arrays-non-const
+  should_report_error: true
+
+- name: fast-arrays-mixed
+  should_report_error: true

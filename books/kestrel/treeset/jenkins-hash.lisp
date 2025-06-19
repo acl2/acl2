@@ -44,6 +44,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ jenkins-hash
   :parents (implementation)
   :short
@@ -101,7 +106,6 @@
   (the (unsigned-byte 32)
     (logand (+ x y)
             *u32-max*))
-  :no-function t
   :inline t)
 
 (define u32-ash (i c)
@@ -113,7 +117,6 @@
   (the (unsigned-byte 32)
     (logand (ash i c)
             *u32-max*))
-  :no-function t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,7 +131,6 @@
     (let* ((acc (u32-+ acc byte))
            (acc (u32-+ acc (u32-ash acc 10))))
       (logxor acc (u32-ash acc -6))))
-  :no-function t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -147,7 +149,6 @@
     (jenkins-acc-byte (the (unsigned-byte 8)
                         (char-code c))
                       acc))
-  :no-function t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -249,7 +250,6 @@
       (if (<= len *u-fixnum-max*)
           (jenkins-acc-string-fixnum-index str 0 (the #.*u-fixnum-type* len) acc)
         (jenkins-acc-string-nonfixnum-index str 0 len acc))))
-  :no-function t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -285,7 +285,6 @@
         (jenkins-acc-nat n acc)
       (jenkins-acc-nat (the unsigned-byte (- n))
                   (jenkins-acc-byte 0 acc))))
-  :no-function t
   :inline t)
 
 (define jenkins-acc-rational (n acc)
@@ -298,7 +297,6 @@
     (jenkins-acc-nat (denominator n)
                 (jenkins-acc-integer (numerator n)
                                 acc)))
-  :no-function t
   :inline t)
 
 (define jenkins-acc-complex-rational (n acc)
@@ -311,7 +309,6 @@
     (jenkins-acc-rational (imagpart n)
                      (jenkins-acc-rational (realpart n)
                                       acc)))
-  :no-function t
   :inline t)
 
 (define jenkins-acc-acl2-number (n acc)
@@ -326,7 +323,6 @@
           ((rationalp n)
            (jenkins-acc-rational (the rational n) acc))
           (t (jenkins-acc-complex-rational (the complex n) acc))))
-  :no-function t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -342,7 +338,6 @@
     (jenkins-acc-string (symbol-name symbol)
                    (jenkins-acc-string (symbol-package-name symbol)
                                   acc)))
-  :no-function t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -366,7 +361,6 @@
                             acc
                           0)
                  :exec acc))))
-  :no-function t
   :inline t)
 
 (defrule jenkins-acc-atom-type-presciption

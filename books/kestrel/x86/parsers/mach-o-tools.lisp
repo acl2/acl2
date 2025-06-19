@@ -119,6 +119,7 @@
   ;; (declare (xargs :guard (parsed-mach-o-p mach-o)
   ;;                 :guard-hints (("Goal" :in-theory (enable parsed-mach-o-p)))
   ;;                 ))
+  ;; todo: what if :contents is (:zero-fill ...)?
   (acl2::lookup-eq-safe :contents (get-mach-o-section "__text" (acl2::lookup-eq-safe :SECTIONS (get-mach-o-segment "__TEXT" (acl2::lookup-eq-safe :cmds mach-o))))))
 
 ;; Get the load address for the code from the __TEXT,__text section
