@@ -583,8 +583,11 @@
    (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
                                      (align-spec-fix align-spec)))
    (dirabsdeclor :dummy-base (raise "Internal error: ~
-                                       dummy base case of ~
-                                       direct abstract declarator."))
+                                     dummy base case of ~
+                                     direct abstract declarator."))
+   (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
+                (absdeclor-option-annop (tyname->decl? tyname))
+                (tyname-infop (tyname->info tyname))))
    (attrib t)
    (attrib-spec t)
    (asm-output t)
