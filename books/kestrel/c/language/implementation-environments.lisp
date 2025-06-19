@@ -1984,7 +1984,33 @@
          (integer-format-int-wfp format.int format.uchar format.short)
          (integer-format-long-wfp format.long format.uchar format.int)
          (integer-format-llong-wfp format.llong format.uchar format.long)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule char+short+int+long+llong-format-wf-short-bit-size-lower-bound
+    (implies (char+short+int+long+llong-format-wfp format)
+             (>= (integer-format->bit-size
+                  (char+short+int+long+llong-format->short format))
+                 16)))
+
+  (defrule char+short+int+long+llong-format-wf-int-bit-size-lower-bound
+    (implies (char+short+int+long+llong-format-wfp format)
+             (>= (integer-format->bit-size
+                  (char+short+int+long+llong-format->int format))
+                 16)))
+
+  (defrule char+short+int+long+llong-format-wf-long-bit-size-lower-bound
+    (implies (char+short+int+long+llong-format-wfp format)
+             (>= (integer-format->bit-size
+                  (char+short+int+long+llong-format->long format))
+                 32)))
+
+  (defrule char+short+int+long+llong-format-wf-llong-bit-size-lower-bound
+    (implies (char+short+int+long+llong-format-wfp format)
+             (>= (integer-format->bit-size
+                  (char+short+int+long+llong-format->llong format))
+                 64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
