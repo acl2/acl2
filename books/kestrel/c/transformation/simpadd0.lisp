@@ -3852,7 +3852,8 @@
          ((mv new-decl? (simpadd0-gout gout-decl?))
           (simpadd0-absdeclor-option tyname.decl? gin state)))
       (mv (make-tyname :specquals new-specquals
-                       :decl? new-decl?)
+                       :decl? new-decl?
+                       :info tyname.info)
           (make-simpadd0-gout
            :events (append gout-specqual.events gout-decl?.events)
            :thm-name nil
