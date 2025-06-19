@@ -564,10 +564,13 @@
   :override
   ((iconst (iconst-infop (iconst->info iconst)))
    (expr :ident (var-infop expr.info))
-   (expr :unary (unary-infop expr.info))
+   (expr :unary (and (expr-annop expr.arg)
+                     (unary-infop expr.info)))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
-   (expr :binary (binary-infop expr.info))
+   (expr :binary (and (expr-annop expr.arg1)
+                      (expr-annop expr.arg2)
+                      (binary-infop expr.info)))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
    (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
