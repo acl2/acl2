@@ -1,0 +1,77 @@
+{
+  "name": "",
+  "expected_input": [],
+  "functions": {
+    "{\"name\":\"main\",\"span\":\"{\\\"lo\\\":9,\\\"hi\\\":13}\"}": {
+      "identifier": "{\"name\":\"main\",\"span\":\"{\\\"lo\\\":9,\\\"hi\\\":13}\"}",
+      "input": [
+        {
+          "Variable": {
+            "identifier": "{\"name\":\"a\",\"span\":\"{\\\"lo\\\":14,\\\"hi\\\":15}\"}",
+            "mode": "Private",
+            "type_": {
+              "IntegerType": "U16"
+            },
+            "span": {
+              "lo": 14,
+              "hi": 15
+            }
+          }
+        },
+        {
+          "Variable": {
+            "identifier": "{\"name\":\"b\",\"span\":\"{\\\"lo\\\":22,\\\"hi\\\":23}\"}",
+            "mode": "Private",
+            "type_": {
+              "IntegerType": "U16"
+            },
+            "span": {
+              "lo": 22,
+              "hi": 23
+            }
+          }
+        }
+      ],
+      "output": {
+        "IntegerType": "U16"
+      },
+      "core_mapping": null,
+      "block": {
+        "statements": [
+          {
+            "Return": {
+              "expression": {
+                "Binary": {
+                  "left": {
+                    "Identifier": "{\"name\":\"a\",\"span\":\"{\\\"lo\\\":50,\\\"hi\\\":51}\"}"
+                  },
+                  "right": {
+                    "Identifier": "{\"name\":\"b\",\"span\":\"{\\\"lo\\\":54,\\\"hi\\\":55}\"}"
+                  },
+                  "op": "Add",
+                  "span": {
+                    "lo": 50,
+                    "hi": 55
+                  }
+                }
+              },
+              "span": {
+                "lo": 43,
+                "hi": 55
+              }
+            }
+          }
+        ],
+        "span": {
+          "lo": 37,
+          "hi": 58
+        }
+      },
+      "span": {
+        "lo": 0,
+        "hi": 58
+      }
+    }
+  },
+  "circuits": {}
+}
