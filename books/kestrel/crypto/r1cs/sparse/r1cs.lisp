@@ -73,15 +73,16 @@
            (pseudo-var-listp vars))
   :hints (("Goal" :in-theory (enable pseudo-var-listp))))
 
-(defun r1cs-termp (term)
+; This can be thought of as a monomial, a single addend from a linear
+; combination. Some terminology calls it an "R1CS term".
+(defun sparse-vector-elementp (term)
+  (declare (xargs :guard t))
   (and (true-listp term)
        (= 2 (len term))
        ;; could say (coefficientp (first item) prime) but then we'd have to
        ;; pass in the prime:
        (integerp (first term))
        (pseudo-varp (second term))))
-
-(verify-guards r1cs-termp)
 
 ;; A sparse vector, represented as a list of pairs where each pair contains a
 ;; coefficient and a pseudo-var.  Pseudo-vars not mentioned have an implicit
@@ -91,7 +92,7 @@
   (if (atom vec)
       (equal vec nil)
     (let ((item (first vec)))
-      (and (r1cs-termp item)
+      (and (sparse-vector-elementp item)
            (sparse-vectorp (rest vec))))))
 
 (defthm sparse-vectorp-of-cons
