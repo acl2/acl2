@@ -49,9 +49,8 @@
      The name of the function is outside this function information,
      so that we can define finite maps: see @(tsee function-denv).")
    (xdoc::p
-    "This function information is almost the same as
-     in function definitions in the abstract syntax (see @(tsee functiondef)),
-     but here we require the output type to be present."))
+    "This function information is the same as
+     in function definitions in the abstract syntax (see @(tsee fundecl))."))
   ((inputs funparam-list)
    (output type)
    (body statement-list))

@@ -77,8 +77,8 @@
      of the form described in @(see field-neq)."))
   (pfcs::parse-def
    "field_neq(x, y, z) := {
-    (x + -1 * y) * (w) == (z),
-    (x + -1 * y) * (1 + -1 * z) == (0)
+    (x - y) * (w) == (z),
+    (x - y) * (1 - z) == (0)
     }")
 
   ///

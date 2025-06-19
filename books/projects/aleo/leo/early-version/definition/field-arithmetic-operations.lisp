@@ -30,7 +30,7 @@
      (all binary).")
    (xdoc::p
     "These ACL2 functions are defined over values of the
-     <see topic='@(url leo::value)'><tt>value-field</tt> type</see>
+     <see topic='@(url leo-early::value)'><tt>value-field</tt> type</see>
      @('value-field') type. These values contain natural numbers that
      are not guaranteed to be below the prime returned by
      @('(curve-base-prime curve)').

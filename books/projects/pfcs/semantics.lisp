@@ -38,7 +38,7 @@
 
 (defxdoc+ semantics
   :parents (pfcs)
-  :short "Semantics of PFCSes."
+  :short "Semantics of PFCS."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -276,9 +276,14 @@
           (if (consp pair)
               (nfix (cdr pair))
             (reserr nil)))
+   :neg (b* (((ok val) (eval-expr expr.arg asg p)))
+          (neg val p))
    :add (b* (((ok val1) (eval-expr expr.arg1 asg p))
              ((ok val2) (eval-expr expr.arg2 asg p)))
           (add val1 val2 p))
+   :sub (b* (((ok val1) (eval-expr expr.arg1 asg p))
+             ((ok val2) (eval-expr expr.arg2 asg p)))
+          (sub val1 val2 p))
    :mul (b* (((ok val1) (eval-expr expr.arg1 asg p))
              ((ok val2) (eval-expr expr.arg2 asg p)))
           (mul val1 val2 p)))
