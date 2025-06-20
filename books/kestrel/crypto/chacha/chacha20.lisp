@@ -38,6 +38,8 @@
 (local (include-book "kestrel/typed-lists-light/all-integerp2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+(local (include-book "kestrel/bv-lists/packing" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 (local (in-theory (e/d (acl2::all-integerp-when-nat-listp)
                        (nth update-nth len))))
@@ -62,7 +64,6 @@
                   )
              (acl2::all-integerp (ungroup n x)))
     :hints (("Goal" :in-theory (enable ungroup acl2::items-have-len)))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -135,6 +136,7 @@
   :hints (("Goal" :in-theory (enable quarterround))))
 
 ;; Sec 2.3
+;; The carry here is not in the RFC but seems necessary to match what implementations actually do.
 (defun initial-state (key counter nonce carry)
   (declare (xargs :guard (and (unsigned-byte-listp 8 key)
                               (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
@@ -208,7 +210,6 @@
                    64))
   :hints (("Goal" :in-theory (enable chacha20-block))))
 
-(local (include-book "kestrel/bv-lists/packing" :dir :system))
 (defthm unsigned-byte-listp-8-of-chacha20-block
   (implies  (and (unsigned-byte-listp 8 key)
                  (= 32 (len key)) ; key is 32 8-bit bytes = 256 bits
@@ -221,7 +222,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The for loop in 2.4.1.
+;; The for loop in chacha20_encrypt (2.4.1).
 ;; Note: It would be more idiomatic to just increment counter, instead of having a
 ;; separate j parameter, but here we follow the pseudocode as closely as we can.
 ;; Note: The term (floor (/ (len plaintext) 64) 1) could instead be written
@@ -256,6 +257,7 @@
            ;; the pseudocode calls this just "block":
            (plaintext-block (subrange (* j 64) (+ (* j 64) 63) plaintext))
            ;; we assume the "+=" operation on the encrypted message represents a concatenation of byte lists:
+           ;; See https://www.rfc-editor.org/errata/eid5989
            (encrypted-message (append encrypted-message (bvxor-list 8 plaintext-block keystream-block))))
       ;; same key and nonce:
       (chacha20-loop (+ 1 j) key counter nonce plaintext encrypted-message carryp))))
@@ -263,8 +265,6 @@
 (defthm unsigned-byte-listp-8-of-chacha20-loop
   (implies (unsigned-byte-listp 8 encrypted-message)
            (unsigned-byte-listp 8 (chacha20-loop j key counter nonce plaintext encrypted-message carryp))))
-
-(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 (local
   (defthmd len-of-chacha20-loop-helper
@@ -315,9 +315,11 @@
                       ;; the pseudocode calls this just "block":
                       (plaintext-block (subrange (* j 64) (+ (len plaintext) -1) plaintext)) ; might be shorter than a full block
                       ;; we assume the "+=" operation on the encrypted message represents a concatenation of byte lists:
+                      ;; See https://www.rfc-editor.org/errata/eid5989
                       (encrypted_message (append encrypted_message ;assuming "encrypted_message += means append
                                                  ;; note that bvxor-list stops once its first argument runs out:
                                                  ;; TODO: In the RFC, in [0..len(plaintext)%64], len(plaintext)%64 should probably be len(plaintext)%64 - 1
+                                                 ;; See https://www.rfc-editor.org/errata/eid7880
                                                  (bvxor-list 8 plaintext-block keystream-block) ; stops when block is exhausted
                                                  )))
                  encrypted_message)
