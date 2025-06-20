@@ -14,7 +14,6 @@
 (include-book "support32") ; reduce?  but we need at least the memory readers
 (include-book "register-readers-and-writers32")
 
-
 (defthm esp-of-write-byte-to-segment
   (equal (esp (write-byte-to-segment eff-addr seg-reg val x86))
          (esp x86))
@@ -27,40 +26,18 @@
 
 ;;;
 
-(defthm read-byte-from-segment-of-set-eip
-  (equal (read-byte-from-segment eff-addr seg-reg (set-eip eip x86))
+(defthm read-byte-from-segment-of-set-reg-high
+  (equal (read-byte-from-segment eff-addr seg-reg (set-reg-high reg val x86))
          (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-eip))))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
 
-(defthm read-byte-from-segment-of-set-eax
-  (equal (read-byte-from-segment eff-addr seg-reg (set-eax val x86))
-         (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-eax))))
-
-(defthm read-byte-from-segment-of-set-ebx
-  (equal (read-byte-from-segment eff-addr seg-reg (set-ebx val x86))
-         (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-ebx))))
-
-(defthm read-byte-from-segment-of-set-ecx
-  (equal (read-byte-from-segment eff-addr seg-reg (set-ecx val x86))
-         (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-ecx))))
-
-(defthm read-byte-from-segment-of-set-edx
-  (equal (read-byte-from-segment eff-addr seg-reg (set-edx val x86))
-         (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-edx))))
-
-(defthm read-byte-from-segment-of-set-esp
-  (equal (read-byte-from-segment eff-addr seg-reg (set-esp val x86))
-         (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-esp))))
-
-(defthm read-byte-from-segment-of-set-ebp
-  (equal (read-byte-from-segment eff-addr seg-reg (set-ebp val x86))
-         (read-byte-from-segment eff-addr seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-ebp))))
+(defthm read-byte-from-segment-of-set-eip (equal (read-byte-from-segment eff-addr seg-reg (set-eip eip x86)) (read-byte-from-segment eff-addr seg-reg x86)) :hints (("Goal" :in-theory (enable set-eip))))
+(defthm read-byte-from-segment-of-set-eax (equal (read-byte-from-segment eff-addr seg-reg (set-eax val x86)) (read-byte-from-segment eff-addr seg-reg x86)) :hints (("Goal" :in-theory (enable set-eax))))
+(defthm read-byte-from-segment-of-set-ebx (equal (read-byte-from-segment eff-addr seg-reg (set-ebx val x86)) (read-byte-from-segment eff-addr seg-reg x86)) :hints (("Goal" :in-theory (enable set-ebx))))
+(defthm read-byte-from-segment-of-set-ecx (equal (read-byte-from-segment eff-addr seg-reg (set-ecx val x86)) (read-byte-from-segment eff-addr seg-reg x86)) :hints (("Goal" :in-theory (enable set-ecx))))
+(defthm read-byte-from-segment-of-set-edx (equal (read-byte-from-segment eff-addr seg-reg (set-edx val x86)) (read-byte-from-segment eff-addr seg-reg x86)) :hints (("Goal" :in-theory (enable set-edx))))
+(defthm read-byte-from-segment-of-set-esp (equal (read-byte-from-segment eff-addr seg-reg (set-esp val x86)) (read-byte-from-segment eff-addr seg-reg x86)) :hints (("Goal" :in-theory (enable set-esp))))
+(defthm read-byte-from-segment-of-set-ebp (equal (read-byte-from-segment eff-addr seg-reg (set-ebp val x86)) (read-byte-from-segment eff-addr seg-reg x86)) :hints (("Goal" :in-theory (enable set-ebp))))
 
 (defthm read-byte-from-segment-of-set-mxcsr
   (equal (read-byte-from-segment eff-addr seg-reg (set-mxcsr mxcsr x86))
@@ -68,6 +45,11 @@
   :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 ;;;
+
+(defthm read-from-segment-of-set-reg-high
+  (equal (read-from-segment n eff-addr seg-reg (set-reg-high reg val x86))
+         (read-from-segment n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
 
 (defthm read-from-segment-of-set-eip
   (equal (read-from-segment n eff-addr seg-reg (set-eip eip x86))
@@ -121,6 +103,11 @@
 
 ;;;
 
+(defthm segment-is-32-bitsp-of-set-reg-high
+  (equal (segment-is-32-bitsp seg-reg (set-reg-high reg val x86))
+         (segment-is-32-bitsp seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm segment-is-32-bitsp-of-set-eax
   (equal (segment-is-32-bitsp seg-reg (set-eax eax x86))
          (segment-is-32-bitsp seg-reg x86))
@@ -153,6 +140,11 @@
 
 ;;;
 
+(defthm 32-bit-segment-size-of-set-reg-high
+  (equal (32-bit-segment-size seg-reg (set-reg-high reg val x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm 32-bit-segment-size-of-set-eax
   (equal (32-bit-segment-size seg-reg (set-eax eax x86))
          (32-bit-segment-size seg-reg x86))
@@ -184,6 +176,12 @@
   :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;open less in the proof?
+(defthm 32-bit-segment-size-of-set-reg-high
+  (equal (32-bit-segment-size seg-reg (set-reg-high reg val x86))
+         (32-bit-segment-size seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high 32-bit-segment-size 32-bit-segment-start-and-size))))
+
+;open less in the proof?
 (defthm 32-bit-segment-size-of-set-eip
   (equal (32-bit-segment-size seg-reg (set-eip eip x86))
          (32-bit-segment-size seg-reg x86))
@@ -201,6 +199,11 @@
   :hints (("Goal" :in-theory (enable 32-bit-segment-size))))
 
 ;;;
+
+(defthm 32-bit-segment-start-of-set-reg-high
+  (equal (32-bit-segment-start seg-reg (set-reg-high reg val x86))
+         (32-bit-segment-start seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
 
 (defthm 32-bit-segment-start-of-set-eax
   (equal (32-bit-segment-start seg-reg (set-eax eax x86))
@@ -233,6 +236,11 @@
   :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
+
+(defthm segment-expand-down-bit-of-set-reg-high
+  (equal (segment-expand-down-bit seg-reg (set-reg-high reg val x86))
+         (segment-expand-down-bit seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
 
 (defthm segment-expand-down-bit-of-set-eip
   (equal (segment-expand-down-bit seg-reg (set-eip eip x86))
@@ -282,6 +290,11 @@
 
 ;;;
 
+(defthm well-formed-32-bit-segmentp-of-set-reg-high
+  (equal (well-formed-32-bit-segmentp seg-reg (set-reg-high reg val x86))
+         (well-formed-32-bit-segmentp seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm well-formed-32-bit-segmentp-of-set-eax
   (equal (well-formed-32-bit-segmentp seg-reg (set-eax eax x86))
          (well-formed-32-bit-segmentp seg-reg x86))
@@ -319,6 +332,11 @@
 
 ;;;
 
+(defthm segments-separate-of-set-reg-high
+  (equal (segments-separate seg-reg1 seg-reg2 (set-reg-high reg val x86))
+         (segments-separate seg-reg1 seg-reg2 x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm segments-separate-of-set-eax
   (equal (segments-separate seg-reg1 seg-reg2 (set-eax eax x86))
          (segments-separate seg-reg1 seg-reg2 x86))
@@ -350,6 +368,11 @@
   :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
+
+(defthm code-and-stack-segments-separate-of-set-reg-high
+  (equal (code-and-stack-segments-separate (set-reg-high reg val x86))
+         (code-and-stack-segments-separate x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
 
 (defthm code-and-stack-segments-separate-of-set-eax
   (equal (code-and-stack-segments-separate (set-eax eax x86))
@@ -383,6 +406,11 @@
 
 ;;;
 
+(defthm alignment-checking-enabled-p-of-set-reg-high
+  (equal (alignment-checking-enabled-p (set-reg-high reg val x86))
+         (alignment-checking-enabled-p x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm alignment-checking-enabled-p-of-set-eax
   (equal (alignment-checking-enabled-p (set-eax eax x86))
          (alignment-checking-enabled-p x86))
@@ -414,6 +442,11 @@
   :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
+
+(defthm get-flag-of-set-reg-high
+  (equal (get-flag flag (set-reg-high reg val x86))
+         (get-flag flag x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
 
 (defthm get-flag-of-set-eip
   (equal (get-flag flag (set-eip eip x86))
@@ -462,6 +495,11 @@
 
 ;;;
 
+(defthm eff-addr-okp-of-set-reg-high
+  (equal (eff-addr-okp eff-addr seg-reg (set-reg-high reg val x86))
+         (eff-addr-okp eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm eff-addr-okp-of-set-eax
   (equal (eff-addr-okp eff-addr seg-reg (set-eax eax x86))
          (eff-addr-okp eff-addr seg-reg x86))
@@ -494,6 +532,11 @@
 
 ;;;
 
+(defthm eff-addrs-okp-of-set-reg-high
+  (equal (eff-addrs-okp n eff-addr seg-reg (set-reg-high reg high x86))
+         (eff-addrs-okp n eff-addr seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm eff-addrs-okp-of-set-eax
   (equal (eff-addrs-okp n eff-addr seg-reg (set-eax eax x86))
          (eff-addrs-okp n eff-addr seg-reg x86))
@@ -525,6 +568,11 @@
   :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
+
+(defthm 64-bit-modep-of-set-reg-high
+  (equal (64-bit-modep (set-reg-high reg val x86))
+         (64-bit-modep x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
 
 (defthm 64-bit-modep-of-set-eip
   (equal (64-bit-modep (set-eip eip x86))
@@ -562,6 +610,11 @@
   :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
+
+(defthm app-view-of-set-reg-high
+  (equal (app-view (set-reg-high reg val x86))
+         (app-view x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
 
 (defthm app-view-of-set-eip
   (equal (app-view (set-eip eip x86))
@@ -604,6 +657,11 @@
 
 ;;;
 
+(defthm code-segment-assumptions32-for-code-of-set-reg-high
+  (equal (code-segment-assumptions32-for-code code offset (set-reg-high reg val x86))
+         (code-segment-assumptions32-for-code code offset x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm code-segment-assumptions32-for-code-of-set-eax
   (equal (code-segment-assumptions32-for-code code offset (set-eax eax x86))
          (code-segment-assumptions32-for-code code offset x86))
@@ -636,6 +694,11 @@
 
 ;;;
 
+(defthm segment-base-and-bounds-of-set-reg-high
+  (equal (segment-base-and-bounds proc-mode seg-reg (set-reg-high reg val x86))
+         (segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm segment-base-and-bounds-of-set-eax
   (equal (segment-base-and-bounds proc-mode seg-reg (set-eax eax x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
@@ -667,6 +730,11 @@
   :hints (("Goal" :in-theory (enable set-ebp))))
 
 ;;;
+
+(defthm data-segment-writeable-bit-of-set-reg-high
+  (equal (data-segment-writeable-bit seg-reg (set-reg-high reg val x86))
+         (data-segment-writeable-bit seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
 
 (defthm data-segment-writeable-bit-of-set-eip
   (equal (data-segment-writeable-bit seg-reg (set-eip eip x86))
@@ -715,6 +783,11 @@
 
 ;;;
 
+(defthm code-segment-readable-bit-of-set-reg-high
+  (equal (code-segment-readable-bit (set-reg-high reg val x86))
+         (code-segment-readable-bit x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm code-segment-readable-bit-of-set-eip
   (equal (code-segment-readable-bit (set-eip eip x86))
          (code-segment-readable-bit x86))
@@ -761,6 +834,11 @@
   :hints (("Goal" :in-theory (enable write-to-segment))))
 
 ;;;
+
+(defthm code-segment-well-formedp-of-set-reg-high
+  (equal (code-segment-well-formedp (set-reg-high reg val x86))
+         (code-segment-well-formedp x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
 
 (defthm code-segment-well-formedp-of-set-eax
   (equal (code-segment-well-formedp (set-eax eax x86))
@@ -946,6 +1024,11 @@
 
 ;;;
 
+(defthm read-stack-dword-of-set-reg-high
+  (equal (read-stack-dword eff-addr (set-reg-high reg val x86))
+         (read-stack-dword eff-addr x86))
+  :hints (("Goal" :in-theory (enable set-reg-high))))
+
 (defthm read-stack-dword-of-set-eip
   (equal (read-stack-dword eff-addr (set-eip val x86))
          (read-stack-dword eff-addr x86))
@@ -1033,6 +1116,7 @@
 ;; (defthm edi-of-set-mxcsr (equal (edi (set-mxcsr mxcsr x86)) (edi x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
 ;todo: more?
 
+(defthm undef-of-set-reg-high (equal (undef (set-reg-high reg val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-reg-high))))
 (defthm undef-of-set-eip (equal (undef (set-eip val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-eip))))
 (defthm undef-of-set-eax (equal (undef (set-eax val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-eax))))
 (defthm undef-of-set-ebx (equal (undef (set-ebx val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-ebx))))
@@ -1043,6 +1127,7 @@
 (defthm undef-of-set-esp (equal (undef (set-esp val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-esp))))
 (defthm undef-of-set-ebp (equal (undef (set-ebp val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef set-ebp))))
 
+(defthm mxcsr-of-set-reg-high (equal (mxcsr (set-reg-high reg val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-reg-high))))
 (defthm mxcsr-of-set-eip (equal (mxcsr (set-eip val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-eip))))
 (defthm mxcsr-of-set-eax (equal (mxcsr (set-eax val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-eax))))
 (defthm mxcsr-of-set-ebx (equal (mxcsr (set-ebx val x86)) (mxcsr x86)) :hints (("Goal" :in-theory (enable mxcsr set-ebx))))
@@ -1073,7 +1158,7 @@
          (mxcsr x86))
   :hints (("Goal" :in-theory (enable write-to-segment))))
 
-
+(defthm ms-of-set-reg-high (equal (ms (set-reg-high reg val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-reg-high))))
 (defthm ms-of-set-eip (equal (ms (set-eip val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-eip))))
 (defthm ms-of-set-eax (equal (ms (set-eax val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-eax))))
 (defthm ms-of-set-ebx (equal (ms (set-ebx val x86)) (ms x86)) :hints (("Goal" :in-theory (enable ms set-ebx))))
@@ -1088,6 +1173,7 @@
 (defthm ms-of-write-to-segment (equal (ms (write-to-segment n eff-addr seg-reg val x86)) (ms x86)) :hints (("Goal" :in-theory (enable write-to-segment))))
 
 
+(defthm fault-of-set-reg-high (equal (fault (set-reg-high reg val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-reg-high))))
 (defthm fault-of-set-eip (equal (fault (set-eip val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-eip))))
 (defthm fault-of-set-eax (equal (fault (set-eax val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-eax))))
 (defthm fault-of-set-ebx (equal (fault (set-ebx val x86)) (fault x86)) :hints (("Goal" :in-theory (enable fault set-ebx))))
@@ -1100,6 +1186,11 @@
 
 (defthm fault-of-write-byte-to-segment (equal (fault (write-byte-to-segment eff-addr seg-reg val x86)) (fault x86)) :hints (("Goal" :in-theory (enable write-byte-to-segment))))
 (defthm fault-of-write-to-segment (equal (fault (write-to-segment n eff-addr seg-reg val x86)) (fault x86)) :hints (("Goal" :in-theory (enable write-to-segment))))
+
+(defthm program-at-of-set-reg-high
+  (equal (program-at prog-addr bytes (set-reg-high reg val x86))
+         (program-at prog-addr bytes x86))
+  :hints (("Goal" :in-theory (enable set-reg-high program-at))))
 
 (defthm program-at-of-set-eip
   (equal (program-at prog-addr bytes (set-eip eip x86))

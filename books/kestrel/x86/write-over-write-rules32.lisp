@@ -13,6 +13,9 @@
 
 (include-book "support32")
 (include-book "register-readers-and-writers32")
+(local (include-book "kestrel/bv/rules" :dir :system)) ; for bvcat-of-logext-arg4
+(local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/rules6" :dir :system))
 
 (defthm write-byte-to-segment-of-set-eip
   (equal (write-byte-to-segment eff-addr seg-reg val (set-eip eip x86))
@@ -34,6 +37,18 @@
 (defthm set-undef-of-write-to-segment
   (equal (set-undef undef (write-to-segment n eff-addr seg-reg val x86))
          (write-to-segment n eff-addr seg-reg val (set-undef undef x86)))
+  :hints (("Goal" :in-theory (enable write-to-segment))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm set-reg-high-of-write-byte-to-segment
+  (equal (set-reg-high reg val (write-byte-to-segment eff-addr seg-reg val2 x86))
+         (write-byte-to-segment eff-addr seg-reg val2 (set-reg-high reg val x86)))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-reg-high))))
+
+(defthm set-reg-high-of-write-to-segment
+  (equal (set-reg-high reg val (write-to-segment n eff-addr seg-reg val2 x86))
+         (write-to-segment n eff-addr seg-reg val2 (set-reg-high reg val x86)))
   :hints (("Goal" :in-theory (enable write-to-segment))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -198,6 +213,19 @@
 (defthm set-undef-of-set-esp (equal (set-undef undef (set-esp rsp x86)) (set-esp rsp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-esp))))
 (defthm set-undef-of-set-ebp (equal (set-undef undef (set-ebp rbp x86)) (set-ebp rbp (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef set-ebp))))
 
+(local (in-theory (enable acl2::bvcat-of-bvcat-tighten-arg4)))
+
+;; These push set-reg-high inward:
+(defthm set-reg-high-of-set-eip (equal (set-reg-high reg val (set-eip rip x86)) (set-eip rip (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-reg-high))))
+(defthm set-reg-high-of-set-eax (equal (set-reg-high reg val (set-eax rax x86)) (set-eax rax (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-reg-high rax-high set-eax))))
+(defthm set-reg-high-of-set-ebx (equal (set-reg-high reg val (set-ebx rbx x86)) (set-ebx rbx (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-reg-high rbx-high set-ebx))))
+(defthm set-reg-high-of-set-ecx (equal (set-reg-high reg val (set-ecx rcx x86)) (set-ecx rcx (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-reg-high rcx-high set-ecx))))
+(defthm set-reg-high-of-set-edx (equal (set-reg-high reg val (set-edx rdx x86)) (set-edx rdx (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-reg-high rdx-high set-edx))))
+;; (defthm set-reg-high-of-set-esi (equal (set-reg-high reg val (set-esi rsi x86)) (set-esi rsi (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-reg-high rbx-high set-esi))))
+;; (defthm set-reg-high-of-set-edi (equal (set-reg-high reg val (set-edi rdi x86)) (set-edi rdi (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-reg-high rbx-high set-edi))))
+(defthm set-reg-high-of-set-esp (equal (set-reg-high reg val (set-esp rsp x86)) (set-esp rsp (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-reg-high rsp-high set-esp))))
+(defthm set-reg-high-of-set-ebp (equal (set-reg-high reg val (set-ebp rbp x86)) (set-ebp rbp (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-reg-high rbp-high set-ebp))))
+
 
 ;; These push set-mxcsr inward:
 (defthm set-mxcsr-of-set-eip (equal (set-mxcsr mxcsr (set-eip rip x86)) (set-eip rip (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr))))
@@ -209,3 +237,7 @@
 ;; (defthm set-mxcsr-of-set-edi (equal (set-mxcsr mxcsr (set-edi rdi x86)) (set-edi rdi (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-edi))))
 (defthm set-mxcsr-of-set-esp (equal (set-mxcsr mxcsr (set-esp rsp x86)) (set-esp rsp (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-esp))))
 (defthm set-mxcsr-of-set-ebp (equal (set-mxcsr mxcsr (set-ebp rbp x86)) (set-ebp rbp (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr set-ebp))))
+
+(defthm set-reg-high-of-set-flag (equal (set-reg-high reg val (set-flag flag fval x86)) (set-flag flag fval (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-flag set-reg-high))))
+(defthm set-reg-high-of-!rflags (equal (set-reg-high reg val (!rflags flags x86)) (!rflags flags (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-reg-high))))
+(defthm set-reg-high-of-set-undef (equal (set-reg-high reg val (set-undef undef x86)) (set-undef undef (set-reg-high reg val x86))) :hints (("Goal" :in-theory (enable set-undef set-reg-high))))

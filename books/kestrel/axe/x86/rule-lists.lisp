@@ -650,6 +650,9 @@
     undef-of-write-to-segment
     undef-of-write-byte-to-segment
 
+    set-reg-high-of-write-to-segment
+    set-reg-high-of-write-byte-to-segment
+
     mxcsr-of-write-to-segment
     mxcsr-of-write-byte-to-segment
     ))
@@ -1582,7 +1585,8 @@
 
 (defund segment-base-and-bounds-rules-32 ()
   (declare (xargs :guard t))
-  '(segment-base-and-bounds-of-set-eip
+  '(segment-base-and-bounds-of-set-reg-high
+    segment-base-and-bounds-of-set-eip
     segment-base-and-bounds-of-set-eax
     segment-base-and-bounds-of-set-ebx
     segment-base-and-bounds-of-set-ecx
@@ -1793,6 +1797,14 @@
     ;; acl2::bvminus-of-+-arg2 ; disabled later due to problems?
     ;; acl2::bvminus-of-+-arg3
     acl2::bvminus-of-+-cancel-arg3
+
+    ;; newer scheme, 32-bit:
+    run-until-return4
+    run-until-esp-is-above-opener-axe ; not for IFs
+    run-until-esp-is-above-base-axe ; not for IFs
+    run-until-esp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    esp-is-abovep
+
     ))
 
 ;; Extra rules to support the :stop-pcs option:
@@ -1821,7 +1833,14 @@
     acl2::bvminus-of-bvplus-same-arg2
     ;; acl2::bvminus-of-+-arg2 ; disabled later due to problems?
     ;; acl2::bvminus-of-+-arg3
-    acl2::bvminus-of-+-cancel-arg3))
+    acl2::bvminus-of-+-cancel-arg3
+
+    ;;newer-scheme, 32-bits:
+    run-until-return-or-reach-pc4
+    run-until-esp-is-above-or-reach-pc-opener-axe
+    run-until-esp-is-above-or-reach-pc-base-axe
+    run-until-esp-is-above-or-reach-pc-of-if-arg2
+    esp-is-abovep))
 
 (defund separate-rules ()
   (declare (xargs :guard t))
@@ -2774,6 +2793,7 @@
             data-segment-writeable-bit-of-set-undef
             data-segment-writeable-bit-of-write-byte-to-segment
             data-segment-writeable-bit-of-write-to-segment
+            data-segment-writeable-bit-of-set-reg-high
             data-segment-writeable-bit-of-set-eip
             data-segment-writeable-bit-of-set-eax
             data-segment-writeable-bit-of-set-ebx
@@ -2829,15 +2849,17 @@
     mv-nth-1-of-rime-size$inline-becomes-read-from-segment-8
 ;    read-of-mv-nth-1-of-ea-to-la-becomes-read-from-segment
 
-    ;; Type rules for read-from-segment:
+    ;; Type rules, etc for read-from-segment:
     read-from-segment-not-negative
     unsigned-byte-p-of-read-from-segment
     integerp-of-read-from-segment
+    slice-of-read-from-segment-too-high
 
     ;; Read-over-write rules for read-from-segment:
     read-from-segment-of-write-to-segment-same
     read-from-segment-of-write-to-segment-irrel
     read-from-segment-of-write-to-segment-diff-segments
+    read-from-segment-of-set-reg-high
     read-from-segment-of-set-eip
     read-from-segment-of-set-eax
     read-from-segment-of-set-ebx
@@ -2850,8 +2872,12 @@
     read-from-segment-of-set-undef
     read-from-segment-of-set-mxcsr
     ;; read-from-segment-of-set-ms
+    read-from-segment-of-set-reg-high
 
     read-from-segment-of-1 ;; simplifies to read-byte-from-segment
+
+    ;; write-to-segment-of-bvchop ; todo: rename and uncomment here
+    write-to-segment-of-bvchop-arg4
 
     write-to-segment-of-write-to-segment-same
     write-to-segment-of-write-to-segment-diff-axe
@@ -2918,6 +2944,7 @@
 
     ;; Rules about read-byte-from-segment
     read-byte-from-segment-of-xw
+    read-byte-from-segment-of-set-reg-high
     read-byte-from-segment-of-set-eip
     read-byte-from-segment-of-set-eax
     read-byte-from-segment-of-set-ebx
@@ -2968,6 +2995,14 @@
     xw-becomes-set-edx
     xw-becomes-set-esp
     xw-becomes-set-ebp
+    set-reg-high-of-bvchop
+    ;; set-reg-high-does-nothing
+    set-reg-high-of-rax-does-nothing
+    set-reg-high-of-rbx-does-nothing
+    set-reg-high-of-rcx-does-nothing
+    set-reg-high-of-rdx-does-nothing
+    set-reg-high-of-rsp-does-nothing
+    set-reg-high-of-rbp-does-nothing
 
     ;; Introduce EIP (we put in eip instead of rip since these rules are for 32-bit reasoning, but eip and rip are equivalent)
     read-*ip-becomes-eip
@@ -2985,6 +3020,7 @@
     xr-becomes-ebp
     xr-becomes-esp
 
+    get-flag-of-set-reg-high
     get-flag-of-set-eip
     get-flag-of-set-eax
     get-flag-of-set-ebx
@@ -2993,6 +3029,7 @@
     get-flag-of-set-esp
     get-flag-of-set-ebp
 
+    program-at-of-set-reg-high
     program-at-of-set-eip ; only needed for loop lifter?
     program-at-of-set-eax
     program-at-of-set-ebx
@@ -3001,6 +3038,7 @@
     program-at-of-set-esp
     program-at-of-set-ebp
 
+    code-segment-readable-bit-of-set-reg-high
     code-segment-readable-bit-of-set-eip
     code-segment-readable-bit-of-set-eax
     code-segment-readable-bit-of-set-ebx
@@ -3031,6 +3069,8 @@
     x86isa::rme08-does-not-affect-state-in-app-view ;; targets mv-nth-2-of-rme08
     x86isa::rme16-does-not-affect-state-in-app-view ;; targets mv-nth-2-of-rme16
 
+    xr-of-set-reg-high-irrel
+
     ;; Rules about EIP/SET-EIP:
     xw-of-set-eip-irrel
     xr-of-set-eip-irrel
@@ -3043,6 +3083,7 @@
     set-edx-of-set-eip
     set-esp-of-set-eip
     set-ebp-of-set-eip
+    eip-of-set-reg-high
     eip-of-set-eip
     eip-of-set-eax
     eip-of-set-ebx
@@ -3056,6 +3097,22 @@
 ;mv-nth-1-of-add-to-*ip
     mv-nth-1-of-add-to-*ip-gen
 
+    set-eax-of-bvchop
+    set-ebx-of-bvchop
+    set-ecx-of-bvchop
+    set-edx-of-bvchop
+    set-ebp-of-bvchop
+    set-esp-of-bvchop
+
+    set-eax-when-equal-eax ; could restrict to when the val is (eax x86)
+    set-ebx-when-equal-ebx
+    set-ecx-when-equal-ecx
+    set-edx-when-equal-edx
+    set-esp-when-equal-esp
+    set-ebp-when-equal-ebp
+    set-undef-of-undef-same-gen ; rename?  ; in case set-reg-high is inside the set-undef
+
+    undef-of-set-reg-high
     undef-of-set-eip
     undef-of-set-eax
     undef-of-set-ebx
@@ -3064,6 +3121,20 @@
     undef-of-set-esp
     undef-of-set-ebp
 
+    set-reg-high-of-set-eip
+    set-reg-high-of-set-eax
+    set-reg-high-of-set-ebx
+    set-reg-high-of-set-ecx
+    set-reg-high-of-set-edx
+    set-reg-high-of-set-esp
+    set-reg-high-of-set-ebp
+    set-reg-high-of-set-flag
+    set-reg-high-of-!rflags
+    set-reg-high-of-set-undef
+    set-reg-high-of-set-reg-high-same
+    set-reg-high-of-set-reg-high-diff
+
+    mxcsr-of-set-reg-high
     mxcsr-of-set-eip
     mxcsr-of-set-eax
     mxcsr-of-set-ebx
@@ -3072,6 +3143,7 @@
     mxcsr-of-set-esp
     mxcsr-of-set-ebp
 
+    ms-of-set-reg-high
     ms-of-set-eip
     ms-of-set-eax
     ms-of-set-ebx
@@ -3080,6 +3152,7 @@
     ms-of-set-esp
     ms-of-set-ebp
 
+    fault-of-set-reg-high
     fault-of-set-eip
     fault-of-set-eax
     fault-of-set-ebx
@@ -3158,6 +3231,7 @@
     bvchop-of-decrement-esp-hack
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
+    slice-63-32-of-+-of-esp-when-stack-segment-assumptions32
     bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop
     ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound
@@ -3215,6 +3289,7 @@
     eff-addr-okp-of-esp
 
     ;; Rules about x86p
+    x86p-of-set-reg-high
     x86p-of-set-eip
     x86p-of-set-eax
     x86p-of-set-ebx
@@ -3224,6 +3299,7 @@
     x86p-of-set-ebp
 
     ;; Rules about segment-is-32-bitsp
+    segment-is-32-bitsp-of-set-reg-high
     segment-is-32-bitsp-of-set-eip
     segment-is-32-bitsp-of-set-eax
     segment-is-32-bitsp-of-set-ebx
@@ -3237,6 +3313,7 @@
     segment-is-32-bitsp-of-xw-irrel
 
     ;;Rules about 32-bit-segment-size
+    32-bit-segment-size-of-set-reg-high
     32-bit-segment-size-of-set-eip
     32-bit-segment-size-of-set-eax
     32-bit-segment-size-of-set-ebx
@@ -3250,6 +3327,7 @@
     32-bit-segment-size-of-xw
 
     ;;Rules about 32-bit-segment-start
+    32-bit-segment-start-of-set-reg-high
     32-bit-segment-start-of-set-eip
     32-bit-segment-start-of-set-eax
     32-bit-segment-start-of-set-ebx
@@ -3263,6 +3341,7 @@
     32-bit-segment-start-of-xw
 
     ;; Rules about segment-expand-down-bit
+    segment-expand-down-bit-of-set-reg-high
     segment-expand-down-bit-of-set-eip
     segment-expand-down-bit-of-set-eax
     segment-expand-down-bit-of-set-ebx
@@ -3276,6 +3355,7 @@
     segment-expand-down-bit-of-xw-irrel
 
     ;; Rules about well-formed-32-bit-segmentp
+    well-formed-32-bit-segmentp-of-set-reg-high
     well-formed-32-bit-segmentp-of-set-eip
     well-formed-32-bit-segmentp-of-set-eax
     well-formed-32-bit-segmentp-of-set-ebx
@@ -3289,6 +3369,7 @@
     well-formed-32-bit-segmentp-of-xw
 
     ;; Rules about segments-separate
+    segments-separate-of-set-reg-high
     segments-separate-of-set-eip
     segments-separate-of-set-eax
     segments-separate-of-set-ebx
@@ -3302,6 +3383,7 @@
     segments-separate-of-xw-irrel
 
     ;; Rules about code-and-stack-segments-separate (todo: do we need these and the rules about segments-separate?)
+    code-and-stack-segments-separate-of-set-reg-high
     code-and-stack-segments-separate-of-set-eip
     code-and-stack-segments-separate-of-set-eax
     code-and-stack-segments-separate-of-set-ebx
@@ -3315,6 +3397,7 @@
     code-and-stack-segments-separate-of-xw-irrel
 
     ;; Rules about alignment-checking-enabled-p
+    alignment-checking-enabled-p-of-set-reg-high
     alignment-checking-enabled-p-of-set-eip
     alignment-checking-enabled-p-of-set-eax
     alignment-checking-enabled-p-of-set-ebx
@@ -3355,6 +3438,7 @@
     ebp-of-set-esp
 
     ;; Rules about esp
+    esp-of-set-reg-high
     esp-of-set-eip
     esp-of-set-flag
     esp-of-set-undef
@@ -3364,6 +3448,7 @@
 
     ;; Rules about 64-bit-modep
 
+    64-bit-modep-of-set-reg-high
     64-bit-modep-of-set-eip
     64-bit-modep-of-set-eax
     64-bit-modep-of-set-ebx
@@ -3374,6 +3459,7 @@
 
     ;; Rules about app-view
 
+    app-view-of-set-reg-high
     app-view-of-set-eip
     app-view-of-set-eax
     app-view-of-set-ebx
@@ -3384,6 +3470,7 @@
 
     ;; Rules about code-segment-well-formedp
     code-segment-well-formedp-of-xw ;; lets us drop most state updates
+    code-segment-well-formedp-of-set-reg-high
     code-segment-well-formedp-of-set-eip
     code-segment-well-formedp-of-set-eax
     code-segment-well-formedp-of-set-ebx
@@ -3397,6 +3484,7 @@
 
     ;; Rules about code-segment-assumptions32-for-code
     code-segment-assumptions32-for-code-of-xw
+    code-segment-assumptions32-for-code-of-set-reg-high
     code-segment-assumptions32-for-code-of-set-eip
     code-segment-assumptions32-for-code-of-set-eax
     code-segment-assumptions32-for-code-of-set-ebx
@@ -3409,9 +3497,9 @@
     code-segment-assumptions32-for-code-of-set-mxcsr
 
     unsigned-byte-p-of-+-of-esp
-    eff-addr-okp-of-+-of-esp-positive-offset
-    eff-addrs-okp-of-+-of-esp-positive-offset
-    eff-addrs-okp-of-+-of-esp-negative-offset
+    eff-addr-okp-of-+-of-esp-positive-offset ; todo: bv version
+    eff-addrs-okp-of-+-of-esp-positive-offset ; todo: bv version
+    eff-addrs-okp-of-+-of-esp-negative-offset ; todo: bv version
 
     eff-addrs-okp-of-esp
     sep-eff-addr-ranges ;; we leave this enabled, at least for now
@@ -3433,6 +3521,7 @@
 ;    ea-to-la-of-set-eip
 
     eff-addr-okp-of-xw-irrel
+    eff-addr-okp-of-set-reg-high
     eff-addr-okp-of-set-eip
     eff-addr-okp-of-set-eax
     eff-addr-okp-of-set-ebx
@@ -3445,6 +3534,7 @@
     eff-addrs-okp-of-set-flag
     eff-addrs-okp-of-set-undef
     eff-addrs-okp-of-set-mxcsr
+    eff-addrs-okp-of-set-reg-high
     eff-addrs-okp-of-set-eip
     eff-addrs-okp-of-set-eax
     eff-addrs-okp-of-set-ebx
@@ -3479,10 +3569,15 @@
     esp-of-set-esp
     ebp-of-set-ebp
 
+    eax-of-set-reg-high
     eax-of-set-eip
+    ebx-of-set-reg-high
     ebx-of-set-eip
+    ecx-of-set-reg-high
     ecx-of-set-eip
+    edx-of-set-reg-high
     edx-of-set-eip
+    ebp-of-set-reg-high
     ebp-of-set-eip
     ;esp-of-set-eip
 
@@ -3509,12 +3604,12 @@
     xr-of-set-esp
     xr-of-set-ebp
 
-    xr-of-set-esp-same ;todo hack
-    xr-of-esp-and-set-eax
-    xr-of-esp-and-set-ebx
-    xr-of-esp-and-set-ecx
-    xr-of-esp-and-set-edx
-    xr-of-esp-and-set-ebp
+;    xr-of-set-esp-same ;todo hack
+    ;; xr-of-esp-and-set-eax
+    ;; xr-of-esp-and-set-ebx
+    ;; xr-of-esp-and-set-ecx
+    ;; xr-of-esp-and-set-edx
+    ;; xr-of-esp-and-set-ebp
 
     set-eax-of-set-eax
     set-ebx-of-set-ebx

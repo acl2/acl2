@@ -527,6 +527,13 @@
     ;;(ifix (memi (bvchop 52 (+ base eff-addr)) x86))
     ))
 
+(defthm unsigned-byte-p-of-read-byte-from-segment
+  (implies (x86p x86)
+           (unsigned-byte-p 8 (read-byte-from-segment eff-addr seg-reg x86)))
+  :hints (("Goal" :in-theory (enable read-byte-from-segment ifix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Read N bytes, starting at EFF-ADDR, from the segment indicated by SEG-REG.
 ;; Returns a list of bytes
 (defun read-byte-list-from-segment (n eff-addr seg-reg x86)
@@ -919,6 +926,22 @@
           (unsigned-byte-p 32 esp)
           (stack-segment-assumptions32-helper stack-segment-base stack-segment-limit esp stack-slots-needed)))))
 
+;; todo: avoid introducing this by making the addition wrap when introduced
+(defthm slice-63-32-of-+-of-esp-when-stack-segment-assumptions32
+  (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
+                (<= k 11) ; see "for now, assuming it's at least 12 bytes" above
+                (natp k))
+           (equal (slice 63 32 (+ k (esp x86)))
+                  0))
+  :hints (("Goal"
+           :use ((:instance acl2::slice-too-high-is-0
+                            (acl2::high 63)
+                            (acl2::low 32)
+                            (x (+ k (esp x86)))))
+           :in-theory (enable stack-segment-assumptions32
+                              esp
+                              unsigned-byte-p))))
+
 (defthm data-segment-writeable-bit-when-stack-segment-assumptions32
   (implies (stack-segment-assumptions32 stack-slots-needed x86)
            (equal (data-segment-writeable-bit *ss* x86)
@@ -1092,6 +1115,22 @@
                 )
            (equal (mv-nth 1 (x86isa::add-to-*sp *compatibility-mode* (esp x86) delta x86-2))
                   (+ delta (esp x86))))
+  :hints (("Goal" :use (:instance mv-nth-1-of-add-to-*sp-gen (delta2 0))
+           :in-theory (e/d (esp) (mv-nth-1-of-add-to-*sp-gen)))))
+
+(defthm mv-nth-1-of-add-to-*sp-gen-special-better
+  (implies (and (<= delta 0) ;stack is expanding downward (e.g., delta is -4)
+                (stack-segment-assumptions32 stack-slots-needed x86) ;stack-slots-needed is a free var and usually will be a constant
+                (equal (segment-base-and-bounds *compatibility-mode* *ss* x86)
+                       (segment-base-and-bounds *compatibility-mode* *ss* x86-2))
+                (not (64-bit-modep x86))
+                (<= (* -4 stack-slots-needed) delta)
+                (integerp delta)
+                (x86p x86)
+                (x86p x86-2)
+                )
+           (equal (mv-nth 1 (x86isa::add-to-*sp *compatibility-mode* (esp x86) delta x86-2))
+                  (bvplus 32 delta (esp x86))))
   :hints (("Goal" :use (:instance mv-nth-1-of-add-to-*sp-gen (delta2 0))
            :in-theory (e/d (esp) (mv-nth-1-of-add-to-*sp-gen)))))
 
@@ -1979,7 +2018,7 @@
 
 (defthm eip-of-xw-of-rip
   (equal (eip (xw :rip nil value x86))
-         (logext 48 value))
+         (bvchop 32 value))
   :hints (("Goal" :in-theory (enable eip))))
 
 (defthm eff-addr-okp-when-code-segment-assumptions32-for-code
@@ -2326,9 +2365,10 @@
                   (esp x86)))
   :hints (("Goal" :in-theory (enable esp))))
 
+;move?
 (defthm esp-of-xw-of-rgf-and-rsp
   (equal (esp (xw :rgf *rsp* val x86))
-         (logext 64 val))
+         (bvchop 32 val))
   :hints (("Goal" :in-theory (enable esp))))
 
 (defthm eff-addr-okp-of-+-of-esp
@@ -2462,6 +2502,7 @@
 ;; Read an N-byte chunk of data at effective address EFF-ADDR in the segment
 ;; indicated by SEG-REG.  Reads in a little-endian fashion: bytes with lower
 ;; addresses occupy less significant bits of the result.
+;todo: disable
 (defun read-from-segment (n eff-addr seg-reg x86)
   (declare (xargs :stobjs x86
                   :guard (and (seg-regp seg-reg)
@@ -2474,11 +2515,6 @@
             8
             (read-byte-from-segment eff-addr seg-reg x86)
             )))
-
-(defthm unsigned-byte-p-of-read-byte-from-segment
-  (implies (x86p x86)
-           (unsigned-byte-p 8 (read-byte-from-segment eff-addr seg-reg x86)))
-  :hints (("Goal" :in-theory (enable read-byte-from-segment ifix))))
 
 (defthm unsigned-byte-p-of-read-from-segment-helper
   (implies (natp n)
@@ -2495,6 +2531,14 @@
 
 (defthm read-from-segment-not-negative
   (not (< (read-from-segment n eff-addr seg-reg x86) 0)))
+
+(defthm slice-of-read-from-segment-too-high
+  (implies (and (<= (* 8 n) low)
+                (natp n)
+                (natp low))
+           (equal (slice high low (read-from-segment n eff-addr seg-reg x86))
+                  0))
+  :hints (("Goal" :in-theory (enable acl2::slice-too-high-is-0))))
 
 (defthm read-from-segment-of-xw
   (implies (and (not (equal :mem fld))
@@ -2743,9 +2787,17 @@
                                    ;; x86isa::seg-hidden-basei-is-n64p
                                    )))))
 
+;rename to indicate which arg is chopped
 (defthm write-byte-to-segment-of-bvchop
   (implies (integerp eff-addr)
            (equal (write-byte-to-segment (bvchop 32 eff-addr) seg-reg val x86)
+                  (write-byte-to-segment eff-addr seg-reg val x86)))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+
+(defthm write-byte-to-segment-of-bvchop-arg4
+  (implies (and (<= 8 size)
+                (integerp size))
+           (equal (write-byte-to-segment eff-addr seg-reg (bvchop size val) x86)
                   (write-byte-to-segment eff-addr seg-reg val x86)))
   :hints (("Goal" :in-theory (enable write-byte-to-segment))))
 
@@ -2799,6 +2851,7 @@
            :expand ((write-to-segment n eff-addr1 seg-reg val x86)
                     (write-to-segment n eff-addr2 seg-reg val x86)))))
 
+;rename to indicate which arg is chopped
 (defthm write-to-segment-of-bvchop
   (implies (and (integerp eff-addr)
                 (unsigned-byte-p 32 n)
@@ -2810,6 +2863,29 @@
                                   (eff-addr1 eff-addr)
                                   (eff-addr2 (bvchop 32 eff-addr)))
            :in-theory (disable write-to-segment-of-bvchop-helper))))
+
+(local
+  (defun-nx write-to-segment-sub8-induct (n eff-addr seg-reg val x86 size)
+    (if (zp n)
+        x86
+      (let ((x86 (write-byte-to-segment eff-addr seg-reg
+                                        (bvchop 8 val)
+                                        x86)))
+        (write-to-segment-sub8-induct (+ -1 n)
+                                      (+ 1 eff-addr)
+                                      seg-reg
+                                      (logtail 8 val)
+                                      x86
+                                      (+ -8 size))))))
+
+(defthm write-to-segment-of-bvchop-arg4
+  (implies (and (<= (* 8 n) size)
+                (integerp size))
+           (equal (write-to-segment n eff-addr seg-reg (bvchop size val) x86)
+                  (write-to-segment n eff-addr seg-reg val x86)))
+  :hints (("Goal" :induct (write-to-segment-sub8-induct n eff-addr seg-reg val x86 size)
+           :expand (write-to-segment n eff-addr seg-reg (bvchop size val) x86)
+           :in-theory (enable write-to-segment acl2::logtail-of-bvchop))))
 
 ;simple ordering
 (defthm read-byte-from-segment-of-write-to-segment-not-irrel-1
@@ -3039,6 +3115,7 @@
                 )
            (unsigned-byte-p 32 (+ k (esp x86))))
   :hints (("Goal" :in-theory (enable
+                               acl2::bvchop-identity
                               ;BVPLUS
                               bvuminus
                               bvminus
