@@ -1402,17 +1402,19 @@
         (mv (irr-expr) (irr-simpadd0-gout)))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
+                              (:e ldm-tyname)
                               (:e c::expr-cast)
+                              (:e c::tyname-to-type)
                               (:e c::type-nonchar-integerp))
                  :use (,arg-thm-name
                        (:instance
                         simpadd0-expr-cast-support-lemma-1
-                        (tyname type)
+                        (tyname (mv-nth 1 (ldm-tyname ',type)))
                         (old-arg (mv-nth 1 (ldm-expr ',arg)))
                         (new-arg (mv-nth 1 (ldm-expr ',arg-new))))
                        (:instance
                         simpadd0-expr-cast-support-lemma-2
-                        (tyname type)
+                        (tyname (mv-nth 1 (ldm-tyname ',type)))
                         (arg (mv-nth 1 (ldm-expr ',arg))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
