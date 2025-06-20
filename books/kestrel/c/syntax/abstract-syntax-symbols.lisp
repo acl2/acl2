@@ -557,6 +557,9 @@
     binary-infop
     coerce-binary-info
 
+    tyname-infop
+    coerce-tyname-info
+
     expr-type
     stmt-type
     block-item-type
