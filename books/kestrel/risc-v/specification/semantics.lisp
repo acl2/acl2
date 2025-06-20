@@ -97,8 +97,7 @@
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
              stat))
-    :enable (exec-addi
-             read-xreg-signed
+    :enable (read-xreg-signed
              write-xreg
              inc4-pc
              write-pc)
@@ -1021,8 +1020,7 @@
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
              stat))
-    :enable (exec-add
-             read-xreg-signed
+    :enable (read-xreg-signed
              write-xreg
              inc4-pc
              write-pc
@@ -1075,8 +1073,7 @@
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
              stat))
-    :enable (exec-sub
-             read-xreg-signed
+    :enable (read-xreg-signed
              write-xreg
              inc4-pc
              write-pc
