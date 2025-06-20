@@ -520,6 +520,7 @@
     ;; language mapping:
 
     ldm-ident
+    ldm-tyname
     ldm-binop
     ldm-expr
     ldm-stmt
@@ -555,6 +556,9 @@
 
     binary-infop
     coerce-binary-info
+
+    tyname-infop
+    coerce-tyname-info
 
     expr-type
     stmt-type

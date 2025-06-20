@@ -12,8 +12,8 @@
 
 (in-package "ACL2S")
 (acl2s-defaults :set testing-enabled nil)
-(set-acl2s-property-table-proof-timeout 100000)
-(set-defunc-timeout 100000)
+(set-acl2s-property-table-proof-timeout 1000000)
+(set-defunc-timeout 1000000)
 
 ;; The book automata.lisp has a rewrite stack overflow if
 ;; useless-runes are excluded:

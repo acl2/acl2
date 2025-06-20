@@ -1,8 +1,10 @@
-; Aleo Library
+; AleoVM Library
 ;
-; Copyright (C) 2022 Aleo Systems Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
-; Authors: Alessandro Coglio (acoglio on GitHub)
+; License: See the LICENSE file distributed with this library.
+;
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -26,7 +28,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;(defxdoc+ ...)
+(defxdoc+ parser
+  :parents (early-version)
+  :short "A parser of Aleo instructions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is work in progress."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Right now lexing and parsing is combined into one pass ("level").
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
