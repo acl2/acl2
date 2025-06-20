@@ -1350,6 +1350,7 @@
                             (arg-thm-name symbolp)
                             (arg-vartys ident-type-mapp)
                             (arg-diffp booleanp)
+                            (info tyname-infop)
                             (gin simpadd0-ginp))
   :guard (and (tyname-unambp type)
               (tyname-unambp type-new)
@@ -1385,8 +1386,12 @@
                 unexpected type name transformation theorem ~x0."
                type-thm-name)
         (mv (irr-expr) (irr-simpadd0-gout)))
+       ((c$::tyname-info info) info)
        ((unless (and arg-thm-name
-                     (not type-diffp)))
+                     (not type-diffp)
+                     (type-formalp info.type)
+                     (not (type-case info.type :void))
+                     (not (type-case info.type :char))))
         (mv expr-new
             (make-simpadd0-gout
              :events (append type-events arg-events)
@@ -2484,6 +2489,7 @@
                              gout-arg.thm-name
                              gout-arg.vartys
                              gout-arg.diffp
+                             (coerce-tyname-info (c$::tyname->info expr.type))
                              gin))
        :binary
        (b* (((mv new-arg1 (simpadd0-gout gout-arg1))
