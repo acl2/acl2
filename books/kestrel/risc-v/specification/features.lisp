@@ -272,6 +272,26 @@
 
   (in-theory (disable (:e feat->ialign))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat->ilen ((feat featp))
+  :returns (ilen posp)
+  :short "The @('ILEN') parameter [ISA:1.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently always 32,
+     but it could be larger if we add support for more features."))
+  (declare (ignore feat))
+  32
+  :type-prescription (and (posp (feat->ilen feat))
+                          (> (feat->ilen feat) 1))
+  :hooks (:fix)
+
+  ///
+
+  (in-theory (disable (:e feat->ilen))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define feat-rv32i-le ()
