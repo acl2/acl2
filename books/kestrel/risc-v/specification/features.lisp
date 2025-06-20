@@ -261,7 +261,10 @@
     "This is currently always 32,
      because we do not support the C extension [ISA:27] yet.
      Once we add support for the C extension,
-     this will be 16 when the C extension is active in the features."))
+     this will be 16 when the C extension is active in the features.")
+   (xdoc::p
+    "In any case, @('IALIGN') always consists of
+     a whole number of bytes."))
   (declare (ignore feat))
   32
   :type-prescription (and (posp (feat->ialign feat))
@@ -270,7 +273,11 @@
 
   ///
 
-  (in-theory (disable (:e feat->ialign))))
+  (in-theory (disable (:e feat->ialign)))
+
+  (defret feat->ialign-is-whole-bytes
+    (integerp (/ ialign 8))
+    :rule-classes (:rewrite :type-prescription)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
