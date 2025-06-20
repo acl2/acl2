@@ -11,6 +11,8 @@
 
 (in-package "RISCV")
 
+(include-book "features")
+(include-book "states")
 (include-book "rv32im")
 (include-book "rv64im")
 
@@ -29,5 +31,7 @@
      but we plan to re-obtain them, and possibly others, via "
     (xdoc::seetopic "apt::apt" "APT")
     " transformation applied to the general model."))
-  :order-subtopics (rv32im
+  :order-subtopics (specialized-features
+                    specialized-states
+                    rv32im
                     rv64im))
