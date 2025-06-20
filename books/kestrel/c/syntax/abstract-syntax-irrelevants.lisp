@@ -318,7 +318,7 @@
 (defirrelevant irr-tyname
   :short "An irrelevant type name."
   :type tynamep
-  :body (tyname nil nil))
+  :body (tyname nil nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

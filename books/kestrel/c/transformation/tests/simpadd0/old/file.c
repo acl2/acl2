@@ -71,6 +71,14 @@ int ternary_int(int x, int y, int z) {
   return x ? y : z;
 }
 
+long cast_int_to_long(int x) {
+  return (long) x;
+}
+
+int cast_long_to_int(long x) {
+  return (int) x;
+}
+
 int main() {
   return 0;
 }
