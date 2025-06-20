@@ -175,4 +175,4 @@
 
 ; Example:
 ;   (include-book "top")
-;   (ALEO::JSON-GADGET-STRING-TO-R1CS ALEO::*BOOLEAN-AND-JSON*)
+;   (JSON-GADGET-STRING-TO-R1CS *BOOLEAN-AND-JSON*)
