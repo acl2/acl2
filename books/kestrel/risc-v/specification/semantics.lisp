@@ -1199,6 +1199,17 @@
 
   ///
 
+  (defruled exec-and-alt-def
+    (equal (exec-and rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logand rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg))
+
   (defret stat-validp-of-exec-and
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
