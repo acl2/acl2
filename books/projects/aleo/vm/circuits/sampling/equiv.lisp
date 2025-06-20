@@ -35,9 +35,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; temporary include-book just for r1s::r1cs-termp
-(include-book "gadget-json-to-r1cs-defagg")
-
 ; Note, the equiv functions must be total (and binary) in order to use defequiv.
 
 (acl2::define equiv-1-comm-2--lc (lc1 lc2)

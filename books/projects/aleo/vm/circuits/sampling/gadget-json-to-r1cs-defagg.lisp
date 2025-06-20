@@ -94,17 +94,6 @@
                   1
                 (intern-in-package-of-symbol (json-var-with-parens-0 varstring) 'r1cs::hoy))))))
 
-; I want to call this r1cs::pseudo-termp but that name is taken
-; This should live in acl2/books/kestrel/crypto/r1cs/sparse/r1cs.lisp
-; and be factored out of r1cs::sparse-vectorp
-(defun r1cs::r1cs-termp (term)
-  (and (true-listp term)
-       (equal 2 (len term))
-       (integerp (first term))
-       (r1cs::pseudo-varp (second term))))
-
-(verify-guards r1cs::r1cs-termp)
-
 (define json-terms-to-r1cs ((json-terms json::value-listp))
   :returns (mv (ret-erp booleanp) (ret-val r1cs::sparse-vectorp
                                            :hints (("Goal" :in-theory (enable r1cs::sparse-vectorp)))))
@@ -113,7 +102,7 @@
        ((mv erp first-term)
         (json-term-to-r1cs (first json-terms)))
        ((when erp) (mv t nil))
-       ((unless (r1cs::r1cs-termp first-term))
+       ((unless (r1cs::sparse-vector-elementp first-term))
         (mv t nil))
        ((mv erp rest-terms)
         (json-terms-to-r1cs (rest json-terms)))
