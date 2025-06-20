@@ -21,6 +21,7 @@
 (include-book "kestrel/fty/ubyte16" :dir :system)
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte32-list" :dir :system)
+(include-book "kestrel/fty/ubyte32-option" :dir :system)
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
 
@@ -851,11 +852,8 @@
 
 (define read-instruction ((addr integerp) (stat statp) (feat featp))
   :guard (stat-validp stat feat)
-  :returns (val ubyte32p
-                :hints (("Goal" :in-theory (enable ubyte32p
-                                                   unsigned-byte-p
-                                                   integer-range-p
-                                                   ifix))))
+  :returns (val ubyte32-optionp
+                :hints (("Goal" :in-theory (enable ubyte32p ifix))))
   :short "Read the 32-bit encoding of an instruction from memory."
   :long
   (xdoc::topstring
@@ -865,14 +863,31 @@
      we read that, and the subsequent bytes.")
    (xdoc::p
     "As in @(tsee read-memory-unsigned8),
-     we let the address be any integer.
-     We use @(tsee read-memory-unsigned8) four times.
+     we let the address be any integer,
+     but we keep the low @('XLEN') bits,
+     and we perform an alignment check [ISA:1.5];
+     currently instructions must be always 4-byte-aligned,
+     but see broader discussion in @(tsee feat->ialign).
+     Note that @(tsee read-memory-unsigne8)
+     already coerces the integer address to keep the low @('XLEN') bits,
+     but we do that here too so we can do a clear alignment check;
+     when we extend the model with
+     the option to perform alignment checks on data read from memory [ISA:2.6],
+     we may refactor the memory reading (and writing) functions,
+     but for now what we have is fine for specification.")
+   (xdoc::p
+    "If the alignment check passes,
+     we use @(tsee read-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
-     then the subsequent addresses may wrap around to addres 0."))
-  (b* ((b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat)))
+     then the subsequent addresses may wrap around to addres 0.")
+   (xdoc::p
+    "We return @('nil') if the first address is not 4-byte-aligned."))
+  (b* ((addr (loghead (feat->xlen feat) addr))
+       ((unless (= (mod addr 4) 0)) nil)
+       (b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ addr 3) stat feat)))
     (logappn 8 b0
              8 b1
              8 b2
@@ -882,9 +897,16 @@
   ///
 
   (more-returns
-   (val natp
+   (val (or (natp val)
+            (null val))
+        :name natp-or-null-read-instruction
         :rule-classes :type-prescription
-        :hints (("Goal" :in-theory (enable ifix))))))
+        :hints (("Goal" :in-theory (enable ifix)))))
+
+  (more-returns
+   (val ubyte32p
+        :hyp (equal (mod (loghead (feat->xlen feat) addr) 4) 0)
+        :hints (("Goal" :in-theory (enable ubyte32p ifix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
