@@ -250,6 +250,28 @@
     :hyp (not (feat-embedp feat))
     :hints (("Goal" :in-theory (enable feat-embedp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat->ialign ((feat featp))
+  :returns (ialign posp)
+  :short "The @('IALIGN') parameter [ISA:1.5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is currently always 32,
+     because we do not support the C extension [ISA:27] yet.
+     Once we add support for the C extension,
+     this will be 16 when the C extension is active in the features."))
+  (declare (ignore feat))
+  32
+  :type-prescription (and (posp (feat->ialign feat))
+                          (> (feat->ialign feat) 1))
+  :hooks (:fix)
+
+  ///
+
+  (in-theory (disable (:e feat->ialign))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define feat-rv32i-le ()
