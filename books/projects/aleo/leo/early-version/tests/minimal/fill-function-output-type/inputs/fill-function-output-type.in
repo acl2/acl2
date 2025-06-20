@@ -1,0 +1,6 @@
+// The program input for fill-function-output-type/src/main.leo
+[main]
+n: u8 = 2;
+
+[registers]
+r0: u8 = 0;
