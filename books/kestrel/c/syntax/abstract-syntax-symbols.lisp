@@ -520,6 +520,7 @@
     ;; language mapping:
 
     ldm-ident
+    ldm-tyname
     ldm-binop
     ldm-expr
     ldm-stmt
