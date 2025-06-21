@@ -156,13 +156,6 @@
   :hints (("Goal" :in-theory (e/d (segment-expand-down-bit)
                                   (segment-expand-down-bit-intro)))))
 
-(defthm segment-expand-down-bit-of-set-flag
-  (equal (segment-expand-down-bit seg-reg (set-flag flg val x86))
-         (segment-expand-down-bit seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-flag))))
-
-(defthm segment-expand-down-bit-of-set-undef (equal (segment-expand-down-bit seg-reg (set-undef undef x86)) (segment-expand-down-bit seg-reg x86)) :hints (("Goal" :in-theory (enable set-undef))))
-(defthm segment-expand-down-bit-of-set-mxcsr (equal (segment-expand-down-bit seg-reg (set-mxcsr mxcsr x86)) (segment-expand-down-bit seg-reg x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 ;;;
 ;;; segment-base32

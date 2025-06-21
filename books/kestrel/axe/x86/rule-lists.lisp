@@ -650,8 +650,19 @@
     undef-of-write-to-segment
     undef-of-write-byte-to-segment
 
-    set-reg-high-of-write-to-segment
-    set-reg-high-of-write-byte-to-segment
+    set-rax-high-of-write-to-segment
+    set-rbx-high-of-write-to-segment
+    set-rcx-high-of-write-to-segment
+    set-rdx-high-of-write-to-segment
+    set-rsp-high-of-write-to-segment
+    set-rbp-high-of-write-to-segment
+
+    set-rax-high-of-write-byte-to-segment
+    set-rbx-high-of-write-byte-to-segment
+    set-rcx-high-of-write-byte-to-segment
+    set-rdx-high-of-write-byte-to-segment
+    set-rsp-high-of-write-byte-to-segment
+    set-rbp-high-of-write-byte-to-segment
 
     mxcsr-of-write-to-segment
     mxcsr-of-write-byte-to-segment
@@ -1585,14 +1596,19 @@
 
 (defund segment-base-and-bounds-rules-32 ()
   (declare (xargs :guard t))
-  '(segment-base-and-bounds-of-set-reg-high
-    segment-base-and-bounds-of-set-eip
+  '(segment-base-and-bounds-of-set-eip
     segment-base-and-bounds-of-set-eax
     segment-base-and-bounds-of-set-ebx
     segment-base-and-bounds-of-set-ecx
     segment-base-and-bounds-of-set-edx
     segment-base-and-bounds-of-set-esp
     segment-base-and-bounds-of-set-ebp
+    segment-base-and-bounds-of-set-rax-high
+    segment-base-and-bounds-of-set-rbx-high
+    segment-base-and-bounds-of-set-rcx-high
+    segment-base-and-bounds-of-set-rdx-high
+    segment-base-and-bounds-of-set-rsp-high
+    segment-base-and-bounds-of-set-rbp-high
     segment-base-and-bounds-of-write-to-segment
     segment-base-and-bounds-of-write-byte-to-segment))
 
@@ -2793,7 +2809,6 @@
             data-segment-writeable-bit-of-set-undef
             data-segment-writeable-bit-of-write-byte-to-segment
             data-segment-writeable-bit-of-write-to-segment
-            data-segment-writeable-bit-of-set-reg-high
             data-segment-writeable-bit-of-set-eip
             data-segment-writeable-bit-of-set-eax
             data-segment-writeable-bit-of-set-ebx
@@ -2801,6 +2816,12 @@
             data-segment-writeable-bit-of-set-edx
             data-segment-writeable-bit-of-set-esp
             data-segment-writeable-bit-of-set-ebp
+            data-segment-writeable-bit-of-set-rax-high
+            data-segment-writeable-bit-of-set-rbx-high
+            data-segment-writeable-bit-of-set-rcx-high
+            data-segment-writeable-bit-of-set-rdx-high
+            data-segment-writeable-bit-of-set-rsp-high
+            data-segment-writeable-bit-of-set-rbp-high
 
             code-segment-descriptor-attributesbits->r-of-bvchop
             data-segment-descriptor-attributesbits->w-of-bvchop
@@ -2859,7 +2880,6 @@
     read-from-segment-of-write-to-segment-same
     read-from-segment-of-write-to-segment-irrel
     read-from-segment-of-write-to-segment-diff-segments
-    read-from-segment-of-set-reg-high
     read-from-segment-of-set-eip
     read-from-segment-of-set-eax
     read-from-segment-of-set-ebx
@@ -2867,12 +2887,17 @@
     read-from-segment-of-set-edx
     read-from-segment-of-set-esp
     read-from-segment-of-set-ebp
+    read-from-segment-of-set-rax-high
+    read-from-segment-of-set-rbx-high
+    read-from-segment-of-set-rcx-high
+    read-from-segment-of-set-rdx-high
+    read-from-segment-of-set-rsp-high
+    read-from-segment-of-set-rbp-high
     read-from-segment-of-xw
     read-from-segment-of-set-flag
     read-from-segment-of-set-undef
     read-from-segment-of-set-mxcsr
     ;; read-from-segment-of-set-ms
-    read-from-segment-of-set-reg-high
 
     read-from-segment-of-1 ;; simplifies to read-byte-from-segment
 
@@ -2944,7 +2969,6 @@
 
     ;; Rules about read-byte-from-segment
     read-byte-from-segment-of-xw
-    read-byte-from-segment-of-set-reg-high
     read-byte-from-segment-of-set-eip
     read-byte-from-segment-of-set-eax
     read-byte-from-segment-of-set-ebx
@@ -2952,6 +2976,12 @@
     read-byte-from-segment-of-set-edx
     read-byte-from-segment-of-set-esp
     read-byte-from-segment-of-set-ebp
+    read-byte-from-segment-of-set-rax-high
+    read-byte-from-segment-of-set-rbx-high
+    read-byte-from-segment-of-set-rcx-high
+    read-byte-from-segment-of-set-rdx-high
+    read-byte-from-segment-of-set-rsp-high
+    read-byte-from-segment-of-set-rbp-high
     read-byte-from-segment-of-set-flag
     read-byte-from-segment-of-set-undef
     read-byte-from-segment-of-set-mxcsr
@@ -2995,14 +3025,39 @@
     xw-becomes-set-edx
     xw-becomes-set-esp
     xw-becomes-set-ebp
-    set-reg-high-of-bvchop
-    ;; set-reg-high-does-nothing
-    set-reg-high-of-rax-does-nothing
-    set-reg-high-of-rbx-does-nothing
-    set-reg-high-of-rcx-does-nothing
-    set-reg-high-of-rdx-does-nothing
-    set-reg-high-of-rsp-does-nothing
-    set-reg-high-of-rbp-does-nothing
+    set-rax-high-of-bvchop
+    set-rbx-high-of-bvchop
+    set-rcx-high-of-bvchop
+    set-rdx-high-of-bvchop
+    set-rsp-high-of-bvchop
+    set-rbp-high-of-bvchop
+    set-rax-high-does-nothing
+    set-rbx-high-does-nothing
+    set-rcx-high-does-nothing
+    set-rdx-high-does-nothing
+    set-rsp-high-does-nothing
+    set-rbp-high-does-nothing
+
+    rax-high-of-write-byte-to-segment
+    rbx-high-of-write-byte-to-segment
+    rcx-high-of-write-byte-to-segment
+    rdx-high-of-write-byte-to-segment
+    rsp-high-of-write-byte-to-segment
+    rbp-high-of-write-byte-to-segment
+
+    rax-high-of-write-to-segment
+    rbx-high-of-write-to-segment
+    rcx-high-of-write-to-segment
+    rdx-high-of-write-to-segment
+    rsp-high-of-write-to-segment
+    rbp-high-of-write-to-segment
+
+    ;; rax-high-of-write-bytes-to-segment
+    ;; rbx-high-of-write-bytes-to-segment
+    ;; rcx-high-of-write-bytes-to-segment
+    ;; rdx-high-of-write-bytes-to-segment
+    ;; rsp-high-of-write-bytes-to-segment
+    ;; rbp-high-of-write-bytes-to-segment
 
     ;; Introduce EIP (we put in eip instead of rip since these rules are for 32-bit reasoning, but eip and rip are equivalent)
     read-*ip-becomes-eip
@@ -3020,7 +3075,6 @@
     xr-becomes-ebp
     xr-becomes-esp
 
-    get-flag-of-set-reg-high
     get-flag-of-set-eip
     get-flag-of-set-eax
     get-flag-of-set-ebx
@@ -3028,8 +3082,13 @@
     get-flag-of-set-edx
     get-flag-of-set-esp
     get-flag-of-set-ebp
+    get-flag-of-set-rax-high
+    get-flag-of-set-rbx-high
+    get-flag-of-set-rcx-high
+    get-flag-of-set-rdx-high
+    get-flag-of-set-rsp-high
+    get-flag-of-set-rbp-high
 
-    program-at-of-set-reg-high
     program-at-of-set-eip ; only needed for loop lifter?
     program-at-of-set-eax
     program-at-of-set-ebx
@@ -3037,8 +3096,13 @@
     program-at-of-set-edx
     program-at-of-set-esp
     program-at-of-set-ebp
+    program-at-of-set-rax-high
+    program-at-of-set-rbx-high
+    program-at-of-set-rcx-high
+    program-at-of-set-rdx-high
+    program-at-of-set-rsp-high
+    program-at-of-set-rbp-high
 
-    code-segment-readable-bit-of-set-reg-high
     code-segment-readable-bit-of-set-eip
     code-segment-readable-bit-of-set-eax
     code-segment-readable-bit-of-set-ebx
@@ -3046,6 +3110,12 @@
     code-segment-readable-bit-of-set-edx
     code-segment-readable-bit-of-set-esp
     code-segment-readable-bit-of-set-ebp
+    code-segment-readable-bit-of-set-rax-high
+    code-segment-readable-bit-of-set-rbx-high
+    code-segment-readable-bit-of-set-rcx-high
+    code-segment-readable-bit-of-set-rdx-high
+    code-segment-readable-bit-of-set-rsp-high
+    code-segment-readable-bit-of-set-rbp-high
 
     acl2::bvchop-numeric-bound ; move
     acl2::fix-of-ifix ; move
@@ -3069,7 +3139,7 @@
     x86isa::rme08-does-not-affect-state-in-app-view ;; targets mv-nth-2-of-rme08
     x86isa::rme16-does-not-affect-state-in-app-view ;; targets mv-nth-2-of-rme16
 
-    xr-of-set-reg-high-irrel
+    ;xr-of-set-reg-high-irrel
 
     ;; Rules about EIP/SET-EIP:
     xw-of-set-eip-irrel
@@ -3083,7 +3153,7 @@
     set-edx-of-set-eip
     set-esp-of-set-eip
     set-ebp-of-set-eip
-    eip-of-set-reg-high
+
     eip-of-set-eip
     eip-of-set-eax
     eip-of-set-ebx
@@ -3091,6 +3161,12 @@
     eip-of-set-edx
     eip-of-set-esp
     eip-of-set-ebp
+    eip-of-set-rax-high
+    eip-of-set-rbx-high
+    eip-of-set-rcx-high
+    eip-of-set-rdx-high
+    eip-of-set-rsp-high
+    eip-of-set-rbp-high
     eip-of-xw-irrel
 ;eip-of-xw-of-rip ;drop?
     not-mv-nth-0-of-add-to-*ip
@@ -3112,7 +3188,6 @@
     set-ebp-when-equal-ebp
     set-undef-of-undef-same-gen ; rename?  ; in case set-reg-high is inside the set-undef
 
-    undef-of-set-reg-high
     undef-of-set-eip
     undef-of-set-eax
     undef-of-set-ebx
@@ -3120,21 +3195,123 @@
     undef-of-set-edx
     undef-of-set-esp
     undef-of-set-ebp
+    undef-of-set-rax-high
+    undef-of-set-rbx-high
+    undef-of-set-rcx-high
+    undef-of-set-rdx-high
+    undef-of-set-rsp-high
+    undef-of-set-rbp-high
 
-    set-reg-high-of-set-eip
-    set-reg-high-of-set-eax
-    set-reg-high-of-set-ebx
-    set-reg-high-of-set-ecx
-    set-reg-high-of-set-edx
-    set-reg-high-of-set-esp
-    set-reg-high-of-set-ebp
-    set-reg-high-of-set-flag
-    set-reg-high-of-!rflags
-    set-reg-high-of-set-undef
-    set-reg-high-of-set-reg-high-same
-    set-reg-high-of-set-reg-high-diff
+    set-rax-high-of-set-eax
+    set-rax-high-of-set-ebx
+    set-rax-high-of-set-ecx
+    set-rax-high-of-set-edx
+    set-rax-high-of-set-esp
+    set-rax-high-of-set-ebp
 
-    mxcsr-of-set-reg-high
+    set-rbx-high-of-set-eax
+    set-rbx-high-of-set-ebx
+    set-rbx-high-of-set-ecx
+    set-rbx-high-of-set-edx
+    set-rbx-high-of-set-esp
+    set-rbx-high-of-set-ebp
+
+    set-rcx-high-of-set-eax
+    set-rcx-high-of-set-ebx
+    set-rcx-high-of-set-ecx
+    set-rcx-high-of-set-edx
+    set-rcx-high-of-set-esp
+    set-rcx-high-of-set-ebp
+
+    set-rdx-high-of-set-eax
+    set-rdx-high-of-set-ebx
+    set-rdx-high-of-set-ecx
+    set-rdx-high-of-set-edx
+    set-rdx-high-of-set-esp
+    set-rdx-high-of-set-ebp
+
+    set-rsp-high-of-set-eax
+    set-rsp-high-of-set-ebx
+    set-rsp-high-of-set-ecx
+    set-rsp-high-of-set-edx
+    set-rsp-high-of-set-esp
+    set-rsp-high-of-set-ebp
+
+    set-rbp-high-of-set-eax
+    set-rbp-high-of-set-ebx
+    set-rbp-high-of-set-ecx
+    set-rbp-high-of-set-edx
+    set-rbp-high-of-set-esp
+    set-rbp-high-of-set-ebp
+
+    set-rax-high-of-set-eip
+    set-rbx-high-of-set-eip
+    set-rcx-high-of-set-eip
+    set-rdx-high-of-set-eip
+    set-rsp-high-of-set-eip
+    set-rbp-high-of-set-eip
+
+    set-rax-high-of-set-eax
+    set-rax-high-of-set-ebx
+    set-rax-high-of-set-ecx
+    set-rax-high-of-set-edx
+    set-rax-high-of-set-esp
+    set-rax-high-of-set-ebp
+    set-rbx-high-of-set-eax
+    set-rbx-high-of-set-ebx
+    set-rbx-high-of-set-ecx
+    set-rbx-high-of-set-edx
+    set-rbx-high-of-set-esp
+    set-rbx-high-of-set-ebp
+    set-rcx-high-of-set-eax
+    set-rcx-high-of-set-ebx
+    set-rcx-high-of-set-ecx
+    set-rcx-high-of-set-edx
+    set-rcx-high-of-set-esp
+    set-rcx-high-of-set-ebp
+    set-rdx-high-of-set-eax
+    set-rdx-high-of-set-ebx
+    set-rdx-high-of-set-ecx
+    set-rdx-high-of-set-edx
+    set-rdx-high-of-set-esp
+    set-rdx-high-of-set-ebp
+    set-rsp-high-of-set-eax
+    set-rsp-high-of-set-ebx
+    set-rsp-high-of-set-ecx
+    set-rsp-high-of-set-edx
+    set-rsp-high-of-set-esp
+    set-rsp-high-of-set-ebp
+    set-rbp-high-of-set-eax
+    set-rbp-high-of-set-ebx
+    set-rbp-high-of-set-ecx
+    set-rbp-high-of-set-edx
+    set-rbp-high-of-set-esp
+    set-rbp-high-of-set-ebp
+
+    set-rax-high-of-set-flag
+    set-rbx-high-of-set-flag
+    set-rcx-high-of-set-flag
+    set-rdx-high-of-set-flag
+    set-rsp-high-of-set-flag
+    set-rbp-high-of-set-flag
+
+    set-rax-high-of-!rflags
+    set-rbx-high-of-!rflags
+    set-rcx-high-of-!rflags
+    set-rdx-high-of-!rflags
+    set-rsp-high-of-!rflags
+    set-rbp-high-of-!rflags
+
+    set-rax-high-of-set-undef
+    set-rbx-high-of-set-undef
+    set-rcx-high-of-set-undef
+    set-rdx-high-of-set-undef
+    set-rsp-high-of-set-undef
+    set-rbp-high-of-set-undef
+
+    ;; set-reg-high-of-set-reg-high-same
+    ;; set-reg-high-of-set-reg-high-diff
+
     mxcsr-of-set-eip
     mxcsr-of-set-eax
     mxcsr-of-set-ebx
@@ -3142,8 +3319,13 @@
     mxcsr-of-set-edx
     mxcsr-of-set-esp
     mxcsr-of-set-ebp
+    mxcsr-of-set-rax-high
+    mxcsr-of-set-rbx-high
+    mxcsr-of-set-rcx-high
+    mxcsr-of-set-rdx-high
+    mxcsr-of-set-rsp-high
+    mxcsr-of-set-rbp-high
 
-    ms-of-set-reg-high
     ms-of-set-eip
     ms-of-set-eax
     ms-of-set-ebx
@@ -3151,8 +3333,13 @@
     ms-of-set-edx
     ms-of-set-esp
     ms-of-set-ebp
+    ms-of-set-rax-high
+    ms-of-set-rbx-high
+    ms-of-set-rcx-high
+    ms-of-set-rdx-high
+    ms-of-set-rsp-high
+    ms-of-set-rbp-high
 
-    fault-of-set-reg-high
     fault-of-set-eip
     fault-of-set-eax
     fault-of-set-ebx
@@ -3160,6 +3347,12 @@
     fault-of-set-edx
     fault-of-set-esp
     fault-of-set-ebp
+    fault-of-set-rax-high
+    fault-of-set-rbx-high
+    fault-of-set-rcx-high
+    fault-of-set-rdx-high
+    fault-of-set-rsp-high
+    fault-of-set-rbp-high
 
     ;; bury set-undef deep in the term:
     set-undef-of-set-eip
@@ -3193,6 +3386,13 @@
     ;; edi-of-set-flag
     ;todo: more?
 
+    rax-high-of-set-flag
+    rbx-high-of-set-flag
+    rcx-high-of-set-flag
+    rdx-high-of-set-flag
+    rbp-high-of-set-flag
+    rsp-high-of-set-flag
+
     eax-of-set-undef
     ebx-of-set-undef
     ecx-of-set-undef
@@ -3203,6 +3403,13 @@
     ;; edi-of-set-undef
     ;todo: more?
 
+    rax-high-of-set-undef
+    rbx-high-of-set-undef
+    rcx-high-of-set-undef
+    rdx-high-of-set-undef
+    rbp-high-of-set-undef
+    rsp-high-of-set-undef
+
     eax-of-set-mxcsr
     ebx-of-set-mxcsr
     ecx-of-set-mxcsr
@@ -3212,6 +3419,13 @@
     ;; esi-of-set-mxcsr
     ;; edi-of-set-mxcsr
     ;todo: more?
+
+    rax-high-of-set-mxcsr
+    rbx-high-of-set-mxcsr
+    rcx-high-of-set-mxcsr
+    rdx-high-of-set-mxcsr
+    rbp-high-of-set-mxcsr
+    rsp-high-of-set-mxcsr
 
     ;; Rules about add-to-*sp
     not-mv-nth-0-of-add-to-*sp
@@ -3289,7 +3503,6 @@
     eff-addr-okp-of-esp
 
     ;; Rules about x86p
-    x86p-of-set-reg-high
     x86p-of-set-eip
     x86p-of-set-eax
     x86p-of-set-ebx
@@ -3297,9 +3510,14 @@
     x86p-of-set-edx
     x86p-of-set-esp
     x86p-of-set-ebp
+    x86p-of-set-rax-high
+    x86p-of-set-rbx-high
+    x86p-of-set-rcx-high
+    x86p-of-set-rdx-high
+    x86p-of-set-rsp-high
+    x86p-of-set-rbp-high
 
     ;; Rules about segment-is-32-bitsp
-    segment-is-32-bitsp-of-set-reg-high
     segment-is-32-bitsp-of-set-eip
     segment-is-32-bitsp-of-set-eax
     segment-is-32-bitsp-of-set-ebx
@@ -3307,13 +3525,18 @@
     segment-is-32-bitsp-of-set-edx
     segment-is-32-bitsp-of-set-esp
     segment-is-32-bitsp-of-set-ebp
+    segment-is-32-bitsp-of-set-rax-high
+    segment-is-32-bitsp-of-set-rbx-high
+    segment-is-32-bitsp-of-set-rcx-high
+    segment-is-32-bitsp-of-set-rdx-high
+    segment-is-32-bitsp-of-set-rsp-high
+    segment-is-32-bitsp-of-set-rbp-high
     segment-is-32-bitsp-of-set-flag
     segment-is-32-bitsp-of-set-undef
     segment-is-32-bitsp-of-set-mxcsr
     segment-is-32-bitsp-of-xw-irrel
 
     ;;Rules about 32-bit-segment-size
-    32-bit-segment-size-of-set-reg-high
     32-bit-segment-size-of-set-eip
     32-bit-segment-size-of-set-eax
     32-bit-segment-size-of-set-ebx
@@ -3321,13 +3544,18 @@
     32-bit-segment-size-of-set-edx
     32-bit-segment-size-of-set-esp
     32-bit-segment-size-of-set-ebp
+    32-bit-segment-size-of-set-rax-high
+    32-bit-segment-size-of-set-rbx-high
+    32-bit-segment-size-of-set-rcx-high
+    32-bit-segment-size-of-set-rdx-high
+    32-bit-segment-size-of-set-rsp-high
+    32-bit-segment-size-of-set-rbp-high
     32-bit-segment-size-of-set-flag
     32-bit-segment-size-of-set-undef
     32-bit-segment-size-of-set-mxcsr
     32-bit-segment-size-of-xw
 
     ;;Rules about 32-bit-segment-start
-    32-bit-segment-start-of-set-reg-high
     32-bit-segment-start-of-set-eip
     32-bit-segment-start-of-set-eax
     32-bit-segment-start-of-set-ebx
@@ -3335,13 +3563,18 @@
     32-bit-segment-start-of-set-edx
     32-bit-segment-start-of-set-esp
     32-bit-segment-start-of-set-ebp
+    32-bit-segment-start-of-set-rax-high
+    32-bit-segment-start-of-set-rbx-high
+    32-bit-segment-start-of-set-rcx-high
+    32-bit-segment-start-of-set-rdx-high
+    32-bit-segment-start-of-set-rsp-high
+    32-bit-segment-start-of-set-rbp-high
     32-bit-segment-start-of-set-flag
     32-bit-segment-start-of-set-undef
     32-bit-segment-start-of-set-mxcsr
     32-bit-segment-start-of-xw
 
     ;; Rules about segment-expand-down-bit
-    segment-expand-down-bit-of-set-reg-high
     segment-expand-down-bit-of-set-eip
     segment-expand-down-bit-of-set-eax
     segment-expand-down-bit-of-set-ebx
@@ -3349,13 +3582,18 @@
     segment-expand-down-bit-of-set-edx
     segment-expand-down-bit-of-set-esp
     segment-expand-down-bit-of-set-ebp
+    segment-expand-down-bit-of-set-rax-high
+    segment-expand-down-bit-of-set-rbx-high
+    segment-expand-down-bit-of-set-rcx-high
+    segment-expand-down-bit-of-set-rdx-high
+    segment-expand-down-bit-of-set-rsp-high
+    segment-expand-down-bit-of-set-rbp-high
     segment-expand-down-bit-of-set-flag
     segment-expand-down-bit-of-set-undef
     segment-expand-down-bit-of-set-mxcsr
     segment-expand-down-bit-of-xw-irrel
 
     ;; Rules about well-formed-32-bit-segmentp
-    well-formed-32-bit-segmentp-of-set-reg-high
     well-formed-32-bit-segmentp-of-set-eip
     well-formed-32-bit-segmentp-of-set-eax
     well-formed-32-bit-segmentp-of-set-ebx
@@ -3363,13 +3601,18 @@
     well-formed-32-bit-segmentp-of-set-edx
     well-formed-32-bit-segmentp-of-set-esp
     well-formed-32-bit-segmentp-of-set-ebp
+    well-formed-32-bit-segmentp-of-set-rax-high
+    well-formed-32-bit-segmentp-of-set-rbx-high
+    well-formed-32-bit-segmentp-of-set-rcx-high
+    well-formed-32-bit-segmentp-of-set-rdx-high
+    well-formed-32-bit-segmentp-of-set-rsp-high
+    well-formed-32-bit-segmentp-of-set-rbp-high
     well-formed-32-bit-segmentp-of-set-flag
     well-formed-32-bit-segmentp-of-set-undef
     well-formed-32-bit-segmentp-of-set-mxcsr
     well-formed-32-bit-segmentp-of-xw
 
     ;; Rules about segments-separate
-    segments-separate-of-set-reg-high
     segments-separate-of-set-eip
     segments-separate-of-set-eax
     segments-separate-of-set-ebx
@@ -3377,13 +3620,18 @@
     segments-separate-of-set-edx
     segments-separate-of-set-esp
     segments-separate-of-set-ebp
+    segments-separate-of-set-rax-high
+    segments-separate-of-set-rbx-high
+    segments-separate-of-set-rcx-high
+    segments-separate-of-set-rdx-high
+    segments-separate-of-set-rsp-high
+    segments-separate-of-set-rbp-high
     segments-separate-of-set-flag
     segments-separate-of-set-undef
     segments-separate-of-set-mxcsr
     segments-separate-of-xw-irrel
 
     ;; Rules about code-and-stack-segments-separate (todo: do we need these and the rules about segments-separate?)
-    code-and-stack-segments-separate-of-set-reg-high
     code-and-stack-segments-separate-of-set-eip
     code-and-stack-segments-separate-of-set-eax
     code-and-stack-segments-separate-of-set-ebx
@@ -3391,13 +3639,18 @@
     code-and-stack-segments-separate-of-set-edx
     code-and-stack-segments-separate-of-set-esp
     code-and-stack-segments-separate-of-set-ebp
+    code-and-stack-segments-separate-of-set-rax-high
+    code-and-stack-segments-separate-of-set-rbx-high
+    code-and-stack-segments-separate-of-set-rcx-high
+    code-and-stack-segments-separate-of-set-rdx-high
+    code-and-stack-segments-separate-of-set-rsp-high
+    code-and-stack-segments-separate-of-set-rbp-high
     code-and-stack-segments-separate-of-set-flag
     code-and-stack-segments-separate-of-set-undef
     code-and-stack-segments-separate-of-set-mxcsr
     code-and-stack-segments-separate-of-xw-irrel
 
     ;; Rules about alignment-checking-enabled-p
-    alignment-checking-enabled-p-of-set-reg-high
     alignment-checking-enabled-p-of-set-eip
     alignment-checking-enabled-p-of-set-eax
     alignment-checking-enabled-p-of-set-ebx
@@ -3405,6 +3658,12 @@
     alignment-checking-enabled-p-of-set-edx
     alignment-checking-enabled-p-of-set-esp
     alignment-checking-enabled-p-of-set-ebp
+    alignment-checking-enabled-p-of-set-rax-high
+    alignment-checking-enabled-p-of-set-rbx-high
+    alignment-checking-enabled-p-of-set-rcx-high
+    alignment-checking-enabled-p-of-set-rdx-high
+    alignment-checking-enabled-p-of-set-rsp-high
+    alignment-checking-enabled-p-of-set-rbp-high
 
     eax-of-set-ebx
     eax-of-set-ecx
@@ -3437,8 +3696,70 @@
     ebp-of-set-edx
     ebp-of-set-esp
 
+    eax-of-set-rbx-high
+    eax-of-set-rcx-high
+    eax-of-set-rdx-high
+    eax-of-set-rsp-high
+    eax-of-set-rbp-high
+    ebx-of-set-rax-high
+    ebx-of-set-rcx-high
+    ebx-of-set-rdx-high
+    ebx-of-set-rsp-high
+    ebx-of-set-rbp-high
+    ecx-of-set-rax-high
+    ecx-of-set-rbx-high
+    ecx-of-set-rdx-high
+    ecx-of-set-rsp-high
+    ecx-of-set-rbp-high
+    edx-of-set-rax-high
+    edx-of-set-rbx-high
+    edx-of-set-rcx-high
+    edx-of-set-rsp-high
+    edx-of-set-rbp-high
+    esp-of-set-rax-high
+    esp-of-set-rbx-high
+    esp-of-set-rcx-high
+    esp-of-set-rdx-high
+    esp-of-set-rbp-high
+    ebp-of-set-rax-high
+    ebp-of-set-rbx-high
+    ebp-of-set-rcx-high
+    ebp-of-set-rdx-high
+    ebp-of-set-rsp-high
+
+    rax-high-of-set-ebx
+    rax-high-of-set-ecx
+    rax-high-of-set-edx
+    rax-high-of-set-esp
+    rax-high-of-set-ebp
+    rbx-high-of-set-eax
+    rbx-high-of-set-ecx
+    rbx-high-of-set-edx
+    rbx-high-of-set-esp
+    rbx-high-of-set-ebp
+    rcx-high-of-set-eax
+    rcx-high-of-set-ebx
+    rcx-high-of-set-edx
+    rcx-high-of-set-esp
+    rcx-high-of-set-ebp
+    rdx-high-of-set-eax
+    rdx-high-of-set-ebx
+    rdx-high-of-set-ecx
+    rdx-high-of-set-esp
+    rdx-high-of-set-ebp
+    rsp-high-of-set-eax
+    rsp-high-of-set-ebx
+    rsp-high-of-set-ecx
+    rsp-high-of-set-edx
+    rsp-high-of-set-ebp
+    rbp-high-of-set-eax
+    rbp-high-of-set-ebx
+    rbp-high-of-set-ecx
+    rbp-high-of-set-edx
+    rbp-high-of-set-esp
+
     ;; Rules about esp
-    esp-of-set-reg-high
+    ;; esp-of-set-reg-high
     esp-of-set-eip
     esp-of-set-flag
     esp-of-set-undef
@@ -3448,7 +3769,6 @@
 
     ;; Rules about 64-bit-modep
 
-    64-bit-modep-of-set-reg-high
     64-bit-modep-of-set-eip
     64-bit-modep-of-set-eax
     64-bit-modep-of-set-ebx
@@ -3456,10 +3776,15 @@
     64-bit-modep-of-set-edx
     64-bit-modep-of-set-esp
     64-bit-modep-of-set-ebp
+    64-bit-modep-of-set-rax-high
+    64-bit-modep-of-set-rbx-high
+    64-bit-modep-of-set-rcx-high
+    64-bit-modep-of-set-rdx-high
+    64-bit-modep-of-set-rsp-high
+    64-bit-modep-of-set-rbp-high
 
     ;; Rules about app-view
 
-    app-view-of-set-reg-high
     app-view-of-set-eip
     app-view-of-set-eax
     app-view-of-set-ebx
@@ -3467,10 +3792,15 @@
     app-view-of-set-edx
     app-view-of-set-esp
     app-view-of-set-ebp
+    app-view-of-set-rax-high
+    app-view-of-set-rbx-high
+    app-view-of-set-rcx-high
+    app-view-of-set-rdx-high
+    app-view-of-set-rsp-high
+    app-view-of-set-rbp-high
 
     ;; Rules about code-segment-well-formedp
     code-segment-well-formedp-of-xw ;; lets us drop most state updates
-    code-segment-well-formedp-of-set-reg-high
     code-segment-well-formedp-of-set-eip
     code-segment-well-formedp-of-set-eax
     code-segment-well-formedp-of-set-ebx
@@ -3478,13 +3808,18 @@
     code-segment-well-formedp-of-set-edx
     code-segment-well-formedp-of-set-esp
     code-segment-well-formedp-of-set-ebp
+    code-segment-well-formedp-of-set-rax-high
+    code-segment-well-formedp-of-set-rbx-high
+    code-segment-well-formedp-of-set-rcx-high
+    code-segment-well-formedp-of-set-rdx-high
+    code-segment-well-formedp-of-set-rsp-high
+    code-segment-well-formedp-of-set-rbp-high
     code-segment-well-formedp-of-set-flag
     code-segment-well-formedp-of-set-undef
     code-segment-well-formedp-of-set-mxcsr
 
     ;; Rules about code-segment-assumptions32-for-code
     code-segment-assumptions32-for-code-of-xw
-    code-segment-assumptions32-for-code-of-set-reg-high
     code-segment-assumptions32-for-code-of-set-eip
     code-segment-assumptions32-for-code-of-set-eax
     code-segment-assumptions32-for-code-of-set-ebx
@@ -3492,6 +3827,12 @@
     code-segment-assumptions32-for-code-of-set-edx
     code-segment-assumptions32-for-code-of-set-esp
     code-segment-assumptions32-for-code-of-set-ebp
+    code-segment-assumptions32-for-code-of-set-rax-high
+    code-segment-assumptions32-for-code-of-set-rbx-high
+    code-segment-assumptions32-for-code-of-set-rcx-high
+    code-segment-assumptions32-for-code-of-set-rdx-high
+    code-segment-assumptions32-for-code-of-set-rsp-high
+    code-segment-assumptions32-for-code-of-set-rbp-high
     code-segment-assumptions32-for-code-of-set-flag
     code-segment-assumptions32-for-code-of-set-undef
     code-segment-assumptions32-for-code-of-set-mxcsr
@@ -3521,7 +3862,6 @@
 ;    ea-to-la-of-set-eip
 
     eff-addr-okp-of-xw-irrel
-    eff-addr-okp-of-set-reg-high
     eff-addr-okp-of-set-eip
     eff-addr-okp-of-set-eax
     eff-addr-okp-of-set-ebx
@@ -3529,12 +3869,17 @@
     eff-addr-okp-of-set-edx
     eff-addr-okp-of-set-esp
     eff-addr-okp-of-set-ebp
+    eff-addr-okp-of-set-rax-high
+    eff-addr-okp-of-set-rbx-high
+    eff-addr-okp-of-set-rcx-high
+    eff-addr-okp-of-set-rdx-high
+    eff-addr-okp-of-set-rsp-high
+    eff-addr-okp-of-set-rbp-high
 
     eff-addrs-okp-of-xw-irrel
     eff-addrs-okp-of-set-flag
     eff-addrs-okp-of-set-undef
     eff-addrs-okp-of-set-mxcsr
-    eff-addrs-okp-of-set-reg-high
     eff-addrs-okp-of-set-eip
     eff-addrs-okp-of-set-eax
     eff-addrs-okp-of-set-ebx
@@ -3542,6 +3887,12 @@
     eff-addrs-okp-of-set-edx
     eff-addrs-okp-of-set-esp
     eff-addrs-okp-of-set-ebp
+    eff-addrs-okp-of-set-rax-high
+    eff-addrs-okp-of-set-rbx-high
+    eff-addrs-okp-of-set-rcx-high
+    eff-addrs-okp-of-set-rdx-high
+    eff-addrs-okp-of-set-rsp-high
+    eff-addrs-okp-of-set-rbp-high
 
     eff-addrs-okp-of-1 ;simplifies to just eff-addr-okp
     segment-is-32-bitsp-intro-code
@@ -3562,6 +3913,7 @@
     set-flag-of-set-esp
     set-flag-of-set-ebp
 
+    ;; read of write of same register
     eax-of-set-eax
     ebx-of-set-ebx
     ecx-of-set-ecx
@@ -3569,16 +3921,27 @@
     esp-of-set-esp
     ebp-of-set-ebp
 
-    eax-of-set-reg-high
+    ;; eax-of-set-reg-high
     eax-of-set-eip
-    ebx-of-set-reg-high
+    ;; ebx-of-set-reg-high
     ebx-of-set-eip
-    ecx-of-set-reg-high
+    ;; ecx-of-set-reg-high
     ecx-of-set-eip
-    edx-of-set-reg-high
+    ;; edx-of-set-reg-high
     edx-of-set-eip
-    ebp-of-set-reg-high
+    ;; ebp-of-set-reg-high
     ebp-of-set-eip
+    ;esp-of-set-eip
+
+    rax-high-of-set-eip
+    ;; ebx-of-set-reg-high
+    rbx-high-of-set-eip
+    ;; ecx-of-set-reg-high
+    rcx-high-of-set-eip
+    ;; edx-of-set-reg-high
+    rdx-high-of-set-eip
+    ;; ebp-of-set-reg-high
+    rbp-high-of-set-eip
     ;esp-of-set-eip
 
     set-ebx-of-set-eax
@@ -3597,12 +3960,35 @@
     set-ebp-of-set-edx
     set-ebp-of-set-esp
 
+    set-rbx-high-of-set-rax-high
+    set-rcx-high-of-set-rax-high
+    set-rdx-high-of-set-rax-high
+    set-rsp-high-of-set-rax-high
+    set-rbp-high-of-set-rax-high
+    set-rcx-high-of-set-rbx-high
+    set-rdx-high-of-set-rbx-high
+    set-rsp-high-of-set-rbx-high
+    set-rbp-high-of-set-rbx-high
+    set-rdx-high-of-set-rcx-high
+    set-rsp-high-of-set-rcx-high
+    set-rbp-high-of-set-rcx-high
+    set-rsp-high-of-set-rdx-high
+    set-rbp-high-of-set-rdx-high
+    set-rbp-high-of-set-rsp-high
+
     xr-of-set-eax
     xr-of-set-ebx
     xr-of-set-ecx
     xr-of-set-edx
     xr-of-set-esp
     xr-of-set-ebp
+    xr-of-set-rax-high
+    xr-of-set-rbx-high
+    xr-of-set-rcx-high
+    xr-of-set-rdx-high
+    xr-of-set-rsp-high
+    xr-of-set-rbp-high
+
 
 ;    xr-of-set-esp-same ;todo hack
     ;; xr-of-esp-and-set-eax
@@ -3617,6 +4003,12 @@
     set-edx-of-set-edx
     set-esp-of-set-esp
     set-ebp-of-set-ebp
+    set-rax-high-of-set-rax-high
+    set-rbx-high-of-set-rbx-high
+    set-rcx-high-of-set-rcx-high
+    set-rdx-high-of-set-rdx-high
+    set-rsp-high-of-set-rsp-high
+    set-rbp-high-of-set-rbp-high
 
     segment-is-32-bitsp-of-if
     esp-of-if
