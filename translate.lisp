@@ -17858,34 +17858,45 @@
              (not (true-listp (cdr x)))
              (not (symbolp (car x)))
              (not (getpropc (car x) 'macro-body nil wrld))
-             (member-eq (car x)
+             (cond ((member-eq (car x)
 
 ; The following list should include every macro name on which translate11
 ; imposes requirements before expanding that macro.
 
-                        '(ld
-                          loop$
-                          mv
-                          mv-let
-                          pargs
-                          read-user-stobj-alist
-                          stobj-let
-                          swap-stobjs
-                          translate-and-test
-                          with-global-stobj
-                          with-local-stobj))
-             (and (eq (car x) 'progn!)
-                  (not (ttag wrld)))
-             (and (eq (car x) 'the)
-                  (consp (cdr x))
-                  (consp (cddr x))
-                  (null (cdddr x))
-                  (eq (cadr x) 'double-float))
-             (hons-get (car x) *syms-not-callable-in-code-fal*)
-             (and (member-eq (car x) '(pand por plet))
-                  (eq (access state-vars state-vars
-                              :parallel-execution-enabled)
-                      t)))
+                               '(ld
+                                 loop$
+                                 mv
+                                 mv-let
+                                 pargs
+                                 read-user-stobj-alist
+                                 stobj-let
+                                 swap-stobjs
+                                 translate-and-test
+                                 with-global-stobj
+                                 with-local-stobj))
+                    t)
+                   ((eq (car x) 'progn!)
+                    (not (ttag wrld)))
+                   ((eq (car x) 'the)
+                    (and (consp (cdr x))
+                         (eq (cadr x) 'double-float)
+                         (consp (cddr x))
+                         (null (cdddr x))))
+                   ((member-eq (car x) '(pand por plet))
+                    (eq (access state-vars state-vars
+                                :parallel-execution-enabled)
+                        t))
+                   (t (and (not (eq (access state-vars state-vars :ld-skip-proofsp)
+                                    'include-book))
+
+; If we are translating with ld-skip-proofsp = 'include-book, then we trust
+; that we are not inside code where we are calling a macro in
+; *syms-not-callable-in-code-fal*.  Otherwise we need to make that check rather
+; than just passing control to macroexpand1-cmp.  We have seen significant
+; speed-up with this change, in particular for processing with-output calls, as
+; noted in :DOC note-8-7.
+
+                           (hons-get (car x) *syms-not-callable-in-code-fal*)))))
          (value-cmp x))
         (t
          (mv-let

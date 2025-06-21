@@ -87,6 +87,7 @@
 (include-book "symbol-pseudoeventform-alist")
 (include-book "symbol-pseudoterm-alist")
 (include-book "string-option")
+(include-book "ubyte32-option")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
