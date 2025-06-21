@@ -868,7 +868,7 @@
      and we perform an alignment check [ISA:1.5];
      currently instructions must be always 4-byte-aligned,
      but see broader discussion in @(tsee feat->ialign).
-     Note that @(tsee read-memory-unsigne8)
+     Note that @(tsee read-memory-unsigned8)
      already coerces the integer address to keep the low @('XLEN') bits,
      but we do that here too so we can do a clear alignment check;
      when we extend the model with
