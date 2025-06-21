@@ -348,6 +348,15 @@ passed into a function or bound to a different variable in a lambda.</p>
                                    :exec n)
                               (major-stack-fix x))))
 
+(define stack$a-nth-frame-rule ((n natp)
+                                (x major-stack-p))
+  :guard (< n (stack$a-frames x))
+  :guard-hints (("goal" :in-theory (enable stack$a-frames max)))
+  :returns (rule maybe-fgl-generic-rule-p)
+  (major-frame->rule (nth (mbe :logic (min (1- (stack$a-frames x)) (nfix n))
+                               :exec n)
+                          (major-stack-fix x))))
+
 
 (define stack$a-minor-bindings ((x major-stack-p))
   :returns (binings fgl-object-bindings-p)

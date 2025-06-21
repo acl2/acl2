@@ -1350,10 +1350,12 @@
                             (arg-thm-name symbolp)
                             (arg-vartys ident-type-mapp)
                             (arg-diffp booleanp)
+                            (info tyname-infop)
                             (gin simpadd0-ginp))
   :guard (and (tyname-unambp type)
-              (expr-unambp arg))
-  (declare (ignore type type-thm-name arg arg-thm-name))
+              (tyname-unambp type-new)
+              (expr-unambp arg)
+              (expr-unambp arg-new))
   :returns (mv (expr exprp) (gout simpadd0-goutp))
   :short "Transform a cast expression."
   :long
@@ -1361,10 +1363,15 @@
    (xdoc::p
     "The resulting expression is obtained by
      combining the possibly transformed type name with
-     the possibly transformed argument expression."))
+     the possibly transformed argument expression.")
+   (xdoc::p
+    "For now, we generate no theorem for the transformation of the type name,
+     but we double-check that here.
+     We generate a theorem only if we generated one for the argument expression
+     and the old and new type names are the same (i.e. no transformation)."))
   (b* (((simpadd0-gin gin) gin)
-       (expr-new (make-expr-cast :type type-new
-                                 :arg arg-new))
+       (expr (make-expr-cast :type type :arg arg))
+       (expr-new (make-expr-cast :type type-new :arg arg-new))
        (type-vartys (ident-type-map-fix type-vartys))
        (arg-vartys (ident-type-map-fix arg-vartys))
        ((unless (omap::compatiblep type-vartys arg-vartys))
@@ -1373,15 +1380,63 @@
                type-vartys arg-vartys)
         (mv (irr-expr) (irr-simpadd0-gout)))
        (vartys (omap::update* type-vartys arg-vartys))
-       (diffp (or type-diffp arg-diffp)))
+       (diffp (or type-diffp arg-diffp))
+       ((when type-thm-name)
+        (raise "Internal error: ~
+                unexpected type name transformation theorem ~x0."
+               type-thm-name)
+        (mv (irr-expr) (irr-simpadd0-gout)))
+       ((c$::tyname-info info) info)
+       ((unless (and arg-thm-name
+                     (not type-diffp)
+                     (type-formalp info.type)
+                     (not (type-case info.type :void))
+                     (not (type-case info.type :char))))
+        (mv expr-new
+            (make-simpadd0-gout
+             :events (append type-events arg-events)
+             :thm-name nil
+             :thm-index gin.thm-index
+             :names-to-avoid gin.names-to-avoid
+             :vartys vartys
+             :diffp diffp)))
+       ((unless (equal type type-new))
+        (raise "Internal error: ~
+                type names ~x0 and ~x1 differ."
+               type type-new)
+        (mv (irr-expr) (irr-simpadd0-gout)))
+       (hints `(("Goal"
+                 :in-theory '((:e ldm-expr)
+                              (:e ldm-tyname)
+                              (:e c::expr-cast)
+                              (:e c::tyname-to-type)
+                              (:e c::type-nonchar-integerp))
+                 :use (,arg-thm-name
+                       (:instance
+                        simpadd0-expr-cast-support-lemma-1
+                        (tyname (mv-nth 1 (ldm-tyname ',type)))
+                        (old-arg (mv-nth 1 (ldm-expr ',arg)))
+                        (new-arg (mv-nth 1 (ldm-expr ',arg-new))))
+                       (:instance
+                        simpadd0-expr-cast-support-lemma-2
+                        (tyname (mv-nth 1 (ldm-tyname ',type)))
+                        (arg (mv-nth 1 (ldm-expr ',arg))))))))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-expr-pure-thm expr
+                                    expr-new
+                                    arg-vartys
+                                    gin.const-new
+                                    gin.thm-index
+                                    hints)))
     (mv expr-new
-        (make-simpadd0-gout
-         :events (append type-events arg-events)
-         :thm-name nil
-         :thm-index gin.thm-index
-         :names-to-avoid gin.names-to-avoid
-         :vartys vartys
-         :diffp diffp)))
+        (make-simpadd0-gout :events (append type-events
+                                            arg-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+                            :vartys vartys
+                            :diffp diffp)))
 
   ///
 
@@ -1389,7 +1444,41 @@
     (expr-unambp expr)
     :hyp (and (tyname-unambp type-new)
               (expr-unambp arg-new))
-    :hints (("Goal" :in-theory (enable irr-expr)))))
+    :hints (("Goal" :in-theory (enable irr-expr))))
+
+  (defruled simpadd0-expr-cast-support-lemma-1
+    (b* ((old (c::expr-cast tyname old-arg))
+         (new (c::expr-cast tyname new-arg))
+         (old-arg-result (c::exec-expr-pure old-arg compst))
+         (new-arg-result (c::exec-expr-pure new-arg compst))
+         (old-arg-value (c::expr-value->value old-arg-result))
+         (new-arg-value (c::expr-value->value new-arg-result))
+         (old-result (c::exec-expr-pure old compst))
+         (new-result (c::exec-expr-pure new compst))
+         (old-value (c::expr-value->value old-result))
+         (new-value (c::expr-value->value new-result))
+         (type (c::type-of-value old-arg-value))
+         (type1 (c::tyname-to-type tyname)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-arg-result))
+                    (equal old-arg-value new-arg-value)
+                    (c::type-nonchar-integerp type)
+                    (c::type-nonchar-integerp type1))
+               (and (not (c::errorp new-result))
+                    (equal old-value new-value)
+                    (equal (c::type-of-value old-value)
+                           type1))))
+    :expand ((c::exec-expr-pure (c::expr-cast tyname old-arg) compst)
+             (c::exec-expr-pure (c::expr-cast tyname new-arg) compst))
+    :enable (c::exec-cast
+             c::eval-cast
+             c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp))
+
+  (defruled simpadd0-expr-cast-support-lemma-2
+    (implies (c::errorp (c::exec-expr-pure arg compst))
+             (c::errorp (c::exec-expr-pure (c::expr-cast tyname arg) compst)))
+    :expand ((c::exec-expr-pure (c::expr-cast tyname arg) compst))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2400,6 +2489,7 @@
                              gout-arg.thm-name
                              gout-arg.vartys
                              gout-arg.diffp
+                             (coerce-tyname-info (c$::tyname->info expr.type))
                              gin))
        :binary
        (b* (((mv new-arg1 (simpadd0-gout gout-arg1))
@@ -3770,7 +3860,8 @@
          ((mv new-decl? (simpadd0-gout gout-decl?))
           (simpadd0-absdeclor-option tyname.decl? gin state)))
       (mv (make-tyname :specquals new-specquals
-                       :decl? new-decl?)
+                       :decl? new-decl?
+                       :info tyname.info)
           (make-simpadd0-gout
            :events (append gout-specqual.events gout-decl?.events)
            :thm-name nil

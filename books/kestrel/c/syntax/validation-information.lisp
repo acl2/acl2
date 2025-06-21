@@ -439,6 +439,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod tyname-info
+  :short "Fixtype of validation information for type names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to type names,
+     i.e. the @(tsee tyname) fixtype.
+     The information for a type name consists of its denoted type."))
+  ((type type))
+  :pred tyname-infop)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-tyname-info
+  :short "An irrelevant validation information for type names."
+  :type tyname-infop
+  :body (make-tyname-info :type (irr-type)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-tyname-info (x)
+  :returns (info tyname-infop)
+  :short "Coerce a value to @(tsee tyname-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (tyname-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy TYNAME-INFOP." x)
+            (irr-tyname-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod transunit-info
   :short "Fixtype of validation information for translation units."
   :long
@@ -528,10 +564,13 @@
   :override
   ((iconst (iconst-infop (iconst->info iconst)))
    (expr :ident (var-infop expr.info))
-   (expr :unary (unary-infop expr.info))
+   (expr :unary (and (expr-annop expr.arg)
+                     (unary-infop expr.info)))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
-   (expr :binary (binary-infop expr.info))
+   (expr :binary (and (expr-annop expr.arg1)
+                      (expr-annop expr.arg2)
+                      (binary-infop expr.info)))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
                                  (expr-fix expr)))
    (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
@@ -547,8 +586,11 @@
    (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
                                      (align-spec-fix align-spec)))
    (dirabsdeclor :dummy-base (raise "Internal error: ~
-                                       dummy base case of ~
-                                       direct abstract declarator."))
+                                     dummy base case of ~
+                                     direct abstract declarator."))
+   (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
+                (absdeclor-option-annop (tyname->decl? tyname))
+                (tyname-infop (tyname->info tyname))))
    (attrib t)
    (attrib-spec t)
    (asm-output t)
@@ -626,7 +668,7 @@
    :unary (unary-info->type (coerce-unary-info expr.info))
    :sizeof (type-unknown)
    :alignof (type-unknown)
-   :cast (type-unknown)
+   :cast (tyname-info->type (coerce-tyname-info (tyname->info expr.type)))
    :binary (binary-info->type (coerce-binary-info expr.info))
    :cond (b* (((when (expr-option-case expr.then :none)) (type-unknown))
               (expr.then (expr-option-some->val expr.then))

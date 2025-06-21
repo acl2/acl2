@@ -2366,9 +2366,13 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>type-name</i> in the grammar in [C17]."))
+      "This corresponds to <i>type-name</i> in the grammar in [C17].")
+     (xdoc::p
+      "Type names may be accompanied by some additional information,
+       such as the type calculated during validation."))
     ((specquals spec/qual-list)
-     (decl? absdeclor-option))
+     (decl? absdeclor-option)
+     (info any))
     :pred tynamep
     :measure (two-nats-measure (acl2-count x) 4))
 

@@ -519,28 +519,57 @@
 
 
 
-(define constraint-db-map-bfrs ((x constraint-db-p)
+(define constraint-table-map-bfrs ((x constraint-table-p)
                                      litarr
                                      (memo fgl-object-map-bfrs-memo-p))
+  :guard (and (< 0 (lits-length litarr))
+              (bfr-listp (constraint-table-bfrlist x)
+                         (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
+  :returns (mv (new-x constraint-table-p)
+               (new-memo fgl-object-map-bfrs-memo-p))
+  :prepwork ((local (in-theory (enable constraint-table-bfrlist))))
+  (b* (((when (atom x)) (mv nil (fgl-object-map-bfrs-memo-fix memo litarr)))
+       ((unless (mbt (and (consp (car x))
+                          (pseudo-fnsym-p (caar x)))))
+        (constraint-table-map-bfrs (cdr x) litarr memo))
+       ((mv cdar memo) (constraint-tuplelist-map-bfrs (cdar x) litarr memo))
+       ((mv cdr memo) (constraint-table-map-bfrs (cdr x) litarr memo)))
+    (mv (hons-acons (caar x) cdar cdr) memo))
+  ///
+  (defret bfr-listp-of-<fn>
+    (implies (and (bfr-litarr-p (constraint-table-bfrlist x) litarr
+                                (bfrstate->bound bfrstate))
+                  (equal (bfrstate->mode bfrstate) (bfrmode :aignet)))
+             (bfr-listp (constraint-table-bfrlist new-x) bfrstate)))
+
+  (local (in-theory (enable constraint-table-fix))))
+
+(define constraint-db-map-bfrs ((x constraint-db-p)
+                                litarr
+                                (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (constraint-db-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
   :returns (mv (new-x constraint-db-p)
                (new-memo fgl-object-map-bfrs-memo-p))
   :prepwork ((local (in-theory (enable constraint-db-bfrlist))))
-  (b* (((when (atom x)) (mv nil (fgl-object-map-bfrs-memo-fix memo litarr)))
-       ((unless (mbt (and (consp (car x))
-                          (pseudo-fnsym-p (caar x)))))
-        (constraint-db-map-bfrs (cdr x) litarr memo))
-       ((mv cdar memo) (constraint-tuplelist-map-bfrs (cdar x) litarr memo))
-       ((mv cdr memo) (constraint-db-map-bfrs (cdr x) litarr memo)))
-    (mv (hons-acons (caar x) cdar cdr) memo))
+  ;; FIXME: At the moment since the COMPLETE field of constraint-db just
+  ;; supports a performance optimization, we don't bother including it in the
+  ;; BFR list of the constraint-db, and therefore don't mark their BFRs in
+  ;; mark-bfrs.lisp and don't map them here. Instead we just empty this field
+  ;; when doing the mapping. This could impair performance, but only in
+  ;; situations where we're adding constraints, then doing a global transform,
+  ;; then adding more constraints.
+  (b* (((constraint-db x))
+       ((mv new-tab memo) (constraint-table-map-bfrs x.tab litarr memo)))
+    (mv (change-constraint-db x
+                              :tab new-tab
+                              :complete nil)
+        memo))
   ///
   (defret bfr-listp-of-<fn>
     (implies (and (bfr-litarr-p (constraint-db-bfrlist x) litarr
                                 (bfrstate->bound bfrstate))
                   (equal (bfrstate->mode bfrstate) (bfrmode :aignet)))
-             (bfr-listp (constraint-db-bfrlist new-x) bfrstate)))
-
-  (local (in-theory (enable constraint-db-fix))))
+             (bfr-listp (constraint-db-bfrlist new-x) bfrstate))))
 

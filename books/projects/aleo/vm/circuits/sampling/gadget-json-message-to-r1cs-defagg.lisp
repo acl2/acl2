@@ -11,7 +11,7 @@
 
 ; Example:
 ;   (include-book "top")
-;   (aleo::json-message-group-string-to-constraints ALEO::*field-compare--message-json*)
+;   (json-message-group-string-to-constraints *field-compare--message-json*)
 
 ; Future possibilities: make versions that return PFCS value or FTY version of R1CS
 
@@ -48,8 +48,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ALEOVM")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "gadget-json-to-r1cs-defagg")
 

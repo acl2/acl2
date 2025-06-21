@@ -16,7 +16,7 @@
 ; At first this generates files in the format such as:
 ;   aleo-acl2/circuits/samples/field-message-json-auto.lisp
 ; Later we will include the additional processing of
-;   aleo::json-message-group-string-to-constraints
+;   json-message-group-string-to-constraints
 ; so we don't have to do that as a separate step.
 
 ; Example.
@@ -30,7 +30,7 @@
 ;   (raw-test-results-file-to-sample-file "~/aleo-acl2/circuits/samples/raw/field-2023-03-14.txt" "~/aleo-acl2/circuits/samples/field-message-json-auto.lisp" state)
 ;
 ; Previous example, just running the first part of the tool:
-;   (aleo::cargo-test-output-file-to-gadget-json-message-strings "/path-to/aleo-acl2/circuits/samples/raw/u64-2023-03-13.txt" state)
+;   (cargo-test-output-file-to-gadget-json-message-strings "/path-to/aleo-acl2/circuits/samples/raw/u64-2023-03-13.txt" state)
 
 ; Other future possibilities: make versions that return PFCS value or FTY version of R1CS
 
