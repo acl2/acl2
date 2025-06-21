@@ -47,6 +47,7 @@
 (include-book "extremize")
 (include-book "fty")
 (include-book "annotation")
+(include-book "backtrace")
 
 (local (in-theory (disable w)))
 

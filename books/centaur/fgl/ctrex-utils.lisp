@@ -2737,6 +2737,56 @@ compute a value for @('x').</p>
                   (symbol-listp (alist-keys x)))
          :hints(("Goal" :in-theory (enable alist-keys)))))
 
+
+(define interp-st-eval-object-under-counterexample ((x fgl-object-p)
+                                                  (interp-st)
+                                                  (state))
+  :guard (and (interp-st-bfrs-ok interp-st)
+              (interp-st-bfr-listp (fgl-object-bfrlist x)))
+  (stobj-let ((logicman (interp-st->logicman interp-st))
+              (env$ (interp-st->ctrex-env interp-st)))
+             (eval-err val)
+             (if (bfr-env$-p env$ (logicman->bfrstate logicman))
+                 (magic-fgl-object-eval x env$)
+               (mv "Bad counterexample env!" nil))
+             (mv eval-err val)))
+
+(define interp-st-eval-objectlist-under-counterexample ((x fgl-objectlist-p)
+                                                  (interp-st)
+                                                  (state))
+  :guard (and (interp-st-bfrs-ok interp-st)
+              (interp-st-bfr-listp (fgl-objectlist-bfrlist x)))
+  (stobj-let ((logicman (interp-st->logicman interp-st))
+              (env$ (interp-st->ctrex-env interp-st)))
+             (eval-err val)
+             (if (bfr-env$-p env$ (logicman->bfrstate logicman))
+                 (magic-fgl-objectlist-eval x env$)
+               (mv "Bad counterexample env!" nil))
+             (mv eval-err val)))
+
+(local (defthm fgl-object-alist-p-when-fgl-object-bindings-p
+         (implies (fgl-object-bindings-p x)
+                  (fgl-object-alist-p x))
+         :hints(("Goal" :in-theory (enable fgl-object-alist-p
+                                           fgl-object-bindings-p)))))
+
+(define interp-st-eval-object-bindings-under-counterexample ((x fgl-object-bindings-p)
+                                                  (interp-st)
+                                                  (state))
+  :guard (and (interp-st-bfrs-ok interp-st)
+              (interp-st-bfr-listp (fgl-object-bindings-bfrlist x)))
+  :returns (mv err (val symbol-alistp))
+  (stobj-let ((logicman (interp-st->logicman interp-st))
+              (env$ (interp-st->ctrex-env interp-st)))
+             (eval-err val)
+             (if (bfr-env$-p env$ (logicman->bfrstate logicman))
+                 (b* ((x (fgl-object-bindings-fix x))
+                      ((mv eval-err vals)
+                       (magic-fgl-objectlist-eval (alist-vals x) env$)))
+                   (mv eval-err (and (not eval-err) (pairlis$ (alist-keys x) vals))))
+               (mv "Bad counterexample env!" nil))
+             (mv eval-err val)))
+
 (define interp-st-counterex-bindings ((x fgl-object-bindings-p)
                                       (interp-st)
                                       (state))
@@ -2749,29 +2799,18 @@ compute a value for @('x').</p>
   :guard-hints ((and stable-under-simplificationp
                      '(:in-theory (enable interp-st-bfrs-ok
                                           bfr-listp-when-not-member-witness))))
-  :prepwork ((local (defthm fgl-object-alist-p-when-fgl-object-bindings-p
-                      (implies (fgl-object-bindings-p x)
-                               (fgl-object-alist-p x))
-                      :hints(("Goal" :in-theory (enable fgl-object-alist-p
-                                                        fgl-object-bindings-p))))))
   (b* ((x (fgl-object-bindings-fix x))
        (vars (fgl-object-alist-vars x nil))
        ((mv infer-err interp-st)
         (interp-st-infer-ctrex-var-assignments vars interp-st state))
-       ;; ((when err)
-       ;;  (mv (msg "Error inferring counterexample term-level variable assignments: ~@0" err)
-       ;;      nil nil interp-st))
-       )
-    (stobj-let ((logicman (interp-st->logicman interp-st))
-                (env$ (interp-st->ctrex-env interp-st)))
-               (eval-err binding-vals var-vals)
-               (b* (((mv eval-err objs) (magic-fgl-objectlist-eval (alist-vals x) env$))
-                    ;; (errmsg (ctrex-eval-summarize-errors eval-err full-deriv-errors))
-                    (binding-vals (pairlis$ (alist-keys x) objs))
-                    (var-vals (env$->obj-alist env$)))
-                 (mv eval-err binding-vals var-vals))
-               (mv (counterex-bindings-summarize-errors infer-err eval-err)
-                   binding-vals  var-vals interp-st)))
+       ((mv eval-err binding-vals)
+        (interp-st-eval-object-bindings-under-counterexample x interp-st state))
+       (var-vals (stobj-let ((env$ (interp-st->ctrex-env interp-st)))
+                            (vals)
+                            (env$->obj-alist env$)
+                            vals)))
+    (mv (counterex-bindings-summarize-errors infer-err eval-err)
+        binding-vals var-vals interp-st))
   ///
   (defret interp-st-get-of-<fn>
     (implies (member (interp-st-field-fix key)
@@ -3020,10 +3059,15 @@ compute a value for @('x').</p>
        (scratch (interp-st->user-scratch interp-st))
        ;; Collect counterexamples in the user scratch for later extraction
        (interp-st (update-interp-st->user-scratch
-                   (hons-acons ':counterexamples
-                               (cons ctrex-bindings
-                                     (cdr (hons-get ':counterexamples scratch)))
-                               scratch)
+                   (hons-acons
+                    ':counterexamples
+                    (cons ctrex-bindings
+                          (cdr (hons-get ':counterexamples scratch)))
+                    (hons-acons ':counterexample-status
+                                (cond (err `(:error ,err))
+                                      (ans :false-ctrex)
+                                      (t :ok))
+                                scratch))
                    interp-st))
        (interp-st (update-interp-st->debug-info (cons "Counterexample." ctrex-bindings) interp-st)))
     (mv nil interp-st)))

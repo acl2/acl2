@@ -2313,7 +2313,7 @@
          ((tyname tyname) tyname)
          ((erp new-specquals table) (dimb-spec/qual-list tyname.specquals table))
          ((erp new-decl? table) (dimb-absdeclor-option tyname.decl? table)))
-      (retok (make-tyname :specquals new-specquals :decl? new-decl?)
+      (retok (make-tyname :specquals new-specquals :decl? new-decl? :info nil)
              table))
     :measure (tyname-count tyname))
 
