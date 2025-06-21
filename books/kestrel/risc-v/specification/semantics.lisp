@@ -97,8 +97,7 @@
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
              stat))
-    :enable (exec-addi
-             read-xreg-signed
+    :enable (read-xreg-signed
              write-xreg
              inc4-pc
              write-pc)
@@ -906,7 +905,7 @@
   :guard (and (stat-validp stat feat)
               (< (lnfix rd) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('LUI') instruction [ISA:4.2.1]."
+  :short "Semantics of the @('LUI') instruction [ISA:2.4.1] [ISA:4.2.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -948,7 +947,7 @@
                     (t (impossible)))
               (< (lnfix rd) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('AUIPC') instruction [ISA:4.2.1]."
+  :short "Semantics of the @('AUIPC') instruction [ISA:2.4.1] [ISA:4.2.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1021,8 +1020,7 @@
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
              stat))
-    :enable (exec-add
-             read-xreg-signed
+    :enable (read-xreg-signed
              write-xreg
              inc4-pc
              write-pc
@@ -1075,8 +1073,7 @@
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
              stat))
-    :enable (exec-sub
-             read-xreg-signed
+    :enable (read-xreg-signed
              write-xreg
              inc4-pc
              write-pc
@@ -1183,7 +1180,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) @('XLEN')-bit integers
+     from @('rs1') and @('rs2').
      We perform a bitwise `and' of
      the two unsigned @('XLEN')-bit integers.
      We write the result to @('rd').
@@ -1198,6 +1196,17 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-and-alt-def
+    (equal (exec-and rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logand rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg))
 
   (defret stat-validp-of-exec-and
     (stat-validp new-stat feat)
@@ -1221,7 +1230,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) @('XLEN')-bit integers
+     from @('rs1') and @('rs2').
      We perform a bitwise inclusive `or' of
      the two unsigned @('XLEN')-bit integers.
      We write the result to @('rd').
@@ -1236,6 +1246,17 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-or-alt-def
+    (equal (exec-or rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logior rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg))
 
   (defret stat-validp-of-exec-or
     (stat-validp new-stat feat)
@@ -1259,7 +1280,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) @('XLEN')-bit integers
+     from @('rs1') and @('rs2').
      We perform a bitwise exclusive `or' of
      the two unsigned @('XLEN')-bit integers.
      We write the result to @('rd').
@@ -1274,6 +1296,17 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-xor-alt-def
+    (equal (exec-xor rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logxor rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg))
 
   (defret stat-validp-of-exec-xor
     (stat-validp new-stat feat)
@@ -1432,7 +1465,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MUL') instruction [ISA:13.1]."
+  :short "Semanics of the @('MUL') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1469,7 +1502,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MULH') instruction [ISA:13.1]."
+  :short "Semanics of the @('MULH') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1509,7 +1542,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MULHU') instruction [ISA:13.1]."
+  :short "Semanics of the @('MULHU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1549,7 +1582,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('MULHSU') instruction [ISA:13.1]."
+  :short "Semanics of the @('MULHSU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1590,14 +1623,14 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('DIV') instruction [ISA:13.2]."
+  :short "Semanics of the @('DIV') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We read two signed @('XLEN')-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is -1
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
@@ -1632,14 +1665,14 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('DIVU') instruction [ISA:13.2]."
+  :short "Semanics of the @('DIVU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is @($2^{\\mathtt{XLEN}}-1$)
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -1674,7 +1707,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('REM') instruction [ISA:13.2]."
+  :short "Semanics of the @('REM') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1682,7 +1715,7 @@
      We calculate the remainder of the first by the second,
      based on division towards 0;
      if the divisor is 0, the result is the dividend
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
@@ -1717,7 +1750,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semanics of the @('REMU') instruction [ISA:13.2]."
+  :short "Semanics of the @('REMU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1725,7 +1758,7 @@
      We calculate the remainder of the first by the second,
      based on division towards 0;
      if the divisor is 0, the result is the dividend
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -1765,7 +1798,7 @@
                        (feat-mp feat)))
   :returns (new-stat statp)
   :short "Semantics of the instructions with the @('OP') opcode
-          [ISA:2.4.2] [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
+          [ISA:2.4.2] [ISA:4.2.2] [ISA:12.1] [ISA:12.2]."
   (op-funct-case funct
                  :add (exec-add rd rs1 rs2 stat feat)
                  :sub (exec-sub rd rs1 rs2 stat feat)
@@ -2010,7 +2043,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('MULW') instruction [ISA:13.1]."
+  :short "Semantics of the @('MULW') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2049,14 +2082,14 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('DIVW') instruction [ISA:13.2]."
+  :short "Semantics of the @('DIVW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We read two signed 32-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is -1
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
@@ -2092,14 +2125,14 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('DIVUW') instruction [ISA:13.2]."
+  :short "Semantics of the @('DIVUW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is @($2^{32}-1$)
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
@@ -2135,7 +2168,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('REMW') instruction [ISA:13.2]."
+  :short "Semantics of the @('REMW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2143,7 +2176,7 @@
      We calculate the remainder of the first by the second,
      based on division towards 0;
      if the divisor is 0, the result is the dividend
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
@@ -2179,7 +2212,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('REMUW') instruction [ISA:13.2]."
+  :short "Semantics of the @('REMUW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2187,7 +2220,7 @@
      We calculate the remainder of the first by the second,
      based on division towards 0;
      if the divisor is 0, the result is the dividend
-     (see Table 11 in [ISA:13.2]).
+     (see Table 11 in [ISA:12.2]).
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
@@ -2228,7 +2261,7 @@
                        (feat-mp feat)))
   :returns (new-stat statp)
   :short "Semantics of the instructions with the @('OP-32') opcode
-          [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
+          [ISA:4.2.2] [ISA:12.1] [ISA:12.2]."
   (op-32-funct-case funct
                     :addw (exec-addw rd rs1 rs2 stat feat)
                     :subw (exec-subw rd rs1 rs2 stat feat)
@@ -2974,7 +3007,8 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the instructions with the @('LOAD') opcode [ISA:2.6]."
+  :short "Semantics of the instructions with the @('LOAD') opcode
+          [ISA:2.6] [ISA:4.3]."
   (load-funct-case funct
                    :lb (exec-lb rd rs1 imm stat feat)
                    :lbu (exec-lbu rd rs1 imm stat feat)
@@ -3147,7 +3181,8 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the instructions with the @('STORE') opcode [ISA:2.6]."
+  :short "Semantics of the instructions with the @('STORE') opcode
+          [ISA:2.6] [ISA:4.3]."
   (store-funct-case funct
                     :sb (exec-sb rs1 rs2 imm stat feat)
                     :sh (exec-sh rs1 rs2 imm stat feat)

@@ -21,6 +21,7 @@
 (include-book "kestrel/fty/ubyte16" :dir :system)
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte32-list" :dir :system)
+(include-book "kestrel/fty/ubyte32-option" :dir :system)
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
 (include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
 
@@ -67,8 +68,7 @@
     "The processor state always includes the @('x<i>') registers,
      whose number and size depends on the choice of base.
      The size in bits is @('XLEN') [ISA:1.3],
-     which is 32 in RV32I/RV32E, or 64 in RV64I/RV64E;
-     it is 128 in the upcoming RV128I [ISA:5] (which we do not model yet).
+     which is 32 in RV32I/RV32E, or 64 in RV64I/RV64E.
      The number of registers is 32 or 16,
      based on whether the base is RV32I/RV64I or RV32R/RV64E.
      In @(tsee stat-validp),
@@ -852,28 +852,42 @@
 
 (define read-instruction ((addr integerp) (stat statp) (feat featp))
   :guard (stat-validp stat feat)
-  :returns (val ubyte32p
-                :hints (("Goal" :in-theory (enable ubyte32p
-                                                   unsigned-byte-p
-                                                   integer-range-p
-                                                   ifix))))
+  :returns (val ubyte32-optionp
+                :hints (("Goal" :in-theory (enable ubyte32p ifix))))
   :short "Read the 32-bit encoding of an instruction from memory."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Instructions are always stored in little endian [ISA:1.5.1],
+    "Instructions are always stored in little endian [ISA:1.5],
      so the memory address is the one of the first byte;
      we read that, and the subsequent bytes.")
    (xdoc::p
     "As in @(tsee read-memory-unsigned8),
-     we let the address be any integer.
-     We use @(tsee read-memory-unsigned8) four times.
+     we let the address be any integer,
+     but we keep the low @('XLEN') bits,
+     and we perform an alignment check [ISA:1.5];
+     currently instructions must be always 4-byte-aligned,
+     but see broader discussion in @(tsee feat->ialign).
+     Note that @(tsee read-memory-unsigned8)
+     already coerces the integer address to keep the low @('XLEN') bits,
+     but we do that here too so we can do a clear alignment check;
+     when we extend the model with
+     the option to perform alignment checks on data read from memory [ISA:2.6],
+     we may refactor the memory reading (and writing) functions,
+     but for now what we have is fine for specification.")
+   (xdoc::p
+    "If the alignment check passes,
+     we use @(tsee read-memory-unsigned8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
-     then the subsequent addresses may wrap around to addres 0."))
-  (b* ((b0 (read-memory-unsigned8 addr stat feat))
-       (b1 (read-memory-unsigned8 (+ (lifix addr) 1) stat feat))
-       (b2 (read-memory-unsigned8 (+ (lifix addr) 2) stat feat))
-       (b3 (read-memory-unsigned8 (+ (lifix addr) 3) stat feat)))
+     then the subsequent addresses may wrap around to addres 0.")
+   (xdoc::p
+    "We return @('nil') if the first address is not 4-byte-aligned."))
+  (b* ((addr (loghead (feat->xlen feat) addr))
+       ((unless (= (mod addr 4) 0)) nil)
+       (b0 (read-memory-unsigned8 addr stat feat))
+       (b1 (read-memory-unsigned8 (+ addr 1) stat feat))
+       (b2 (read-memory-unsigned8 (+ addr 2) stat feat))
+       (b3 (read-memory-unsigned8 (+ addr 3) stat feat)))
     (logappn 8 b0
              8 b1
              8 b2
@@ -883,9 +897,16 @@
   ///
 
   (more-returns
-   (val natp
+   (val (or (natp val)
+            (null val))
+        :name natp-or-null-read-instruction
         :rule-classes :type-prescription
-        :hints (("Goal" :in-theory (enable ifix))))))
+        :hints (("Goal" :in-theory (enable ifix)))))
+
+  (more-returns
+   (val ubyte32p
+        :hyp (equal (mod (loghead (feat->xlen feat) addr) 4) 0)
+        :hints (("Goal" :in-theory (enable ubyte32p ifix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -937,135 +958,3 @@
     (stat-validp new-stat feat)
     :hyp (stat-validp stat feat)
     :hints (("Goal" :in-theory (enable stat-validp)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stat-rv32i-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognizer of RV32I(M) states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These only depend on the base,
-     not on the M extension or the endianness."))
-  (and (statp x)
-       (stat-validp x (feat-rv32i-le)))
-
-  ///
-
-  (defruled stat-rv32i-p-alt-def-be
-    (equal (stat-rv32i-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv32i-be))))
-    :enable stat-validp)
-
-  (defruled stat-rv32i-p-alt-def-m-le
-    (equal (stat-rv32i-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv32im-le))))
-    :enable stat-validp)
-
-  (defruled stat-rv32i-p-alt-def-m-be
-    (equal (stat-rv32i-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv32im-be))))
-    :enable stat-validp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stat-rv64i-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognizer of RV64I(M) states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These only depend on the base,
-     not on the M extension or the endianness."))
-  (and (statp x)
-       (stat-validp x (feat-rv64i-le)))
-
-  ///
-
-  (defruled stat-rv64i-p-alt-def-be
-    (equal (stat-rv64i-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv64i-be))))
-    :enable stat-validp)
-
-  (defruled stat-rv64i-p-alt-def-m-le
-    (equal (stat-rv64i-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv64im-le))))
-    :enable stat-validp)
-
-  (defruled stat-rv64i-p-alt-def-m-be
-    (equal (stat-rv64i-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv64im-be))))
-    :enable stat-validp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stat-rv32e-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognizer of RV32E states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These only depend on the base,
-     not on the M extension or the endianness."))
-  (and (statp x)
-       (stat-validp x (feat-rv32e-le)))
-
-  ///
-
-  (defruled stat-rv32e-p-alt-def-be
-    (equal (stat-rv32e-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv32e-be))))
-    :enable stat-validp)
-
-  (defruled stat-rv32e-p-alt-def-m-le
-    (equal (stat-rv32e-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv32em-le))))
-    :enable stat-validp)
-
-  (defruled stat-rv32e-p-alt-def-m-be
-    (equal (stat-rv32e-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv32em-be))))
-    :enable stat-validp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stat-rv64e-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognizer of RV64E states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These only depend on the base,
-     not on the M extension or the endianness."))
-  (and (statp x)
-       (stat-validp x (feat-rv64e-be)))
-
-  ///
-
-  (defruled stat-rv64e-p-alt-def-be
-    (equal (stat-rv64e-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv64e-be))))
-    :enable stat-validp)
-
-  (defruled stat-rv64e-p-alt-def-m-le
-    (equal (stat-rv64e-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv64em-le))))
-    :enable stat-validp)
-
-  (defruled stat-rv64e-p-alt-def-m-be
-    (equal (stat-rv64e-p x)
-           (and (statp x)
-                (stat-validp x (feat-rv64em-be))))
-    :enable stat-validp))

@@ -860,27 +860,27 @@
              (bfrs-markedp (constraint-tuplelist-bfrlist x) new-bitarr))))
 
 
-(define constraint-db-mark-bfrs ((x constraint-db-p) bitarr seen)
+(define constraint-table-mark-bfrs ((x constraint-table-p) bitarr seen)
   :returns (mv new-bitarr new-seen)
   :guard (and (< 0 (bits-length bitarr))
-              (bfr-listp (constraint-db-bfrlist x)
+              (bfr-listp (constraint-table-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (bits-length bitarr)))))
-  :prepwork ((local (in-theory (enable constraint-db-bfrlist))))
+  :prepwork ((local (in-theory (enable constraint-table-bfrlist))))
   (b* (((when (atom x))
         (mv bitarr seen))
        ((unless (mbt (and (consp (car x))
                           (pseudo-fnsym-p (caar x)))))
-        (constraint-db-mark-bfrs (cdr x) bitarr seen))
+        (constraint-table-mark-bfrs (cdr x) bitarr seen))
        ((mv bitarr seen) (constraint-tuplelist-mark-bfrs (cdar x) bitarr seen)))
-    (constraint-db-mark-bfrs (cdr x) bitarr seen))
+    (constraint-table-mark-bfrs (cdr x) bitarr seen))
     
   ///
   
   (defret length-of-<fn>
-    (implies (bfr-listp (constraint-db-bfrlist x) (bfrstate (bfrmode :aignet) (1- (len bitarr))))
+    (implies (bfr-listp (constraint-table-bfrlist x) (bfrstate (bfrmode :aignet) (1- (len bitarr))))
              (equal (len new-bitarr) (len bitarr))))
 
-  (verify-guards constraint-db-mark-bfrs)
+  (verify-guards constraint-table-mark-bfrs)
 
   (defret length-of-<fn>-incr
     (>= (len new-bitarr) (len bitarr))
@@ -905,7 +905,46 @@
 
   (defret <fn>-marks-bfrs
     (implies (fgl-object-mark-bfrs-invar seen bitarr)
-             (bfrs-markedp (constraint-db-bfrlist x) new-bitarr)))
+             (bfrs-markedp (constraint-table-bfrlist x) new-bitarr)))
 
-  (local (in-theory (enable constraint-db-fix))))
+  (local (in-theory (enable constraint-table-fix))))
+
+(define constraint-db-mark-bfrs ((x constraint-db-p) bitarr seen)
+  :returns (mv new-bitarr new-seen)
+  :guard (and (< 0 (bits-length bitarr))
+              (bfr-listp (constraint-db-bfrlist x)
+                         (bfrstate (bfrmode :aignet) (1- (bits-length bitarr)))))
+  :prepwork ((local (in-theory (enable constraint-db-bfrlist))))
+  (constraint-table-mark-bfrs (constraint-db->tab x) bitarr seen)
+  ///
+  
+  
+  (defret length-of-<fn>
+    (implies (bfr-listp (constraint-db-bfrlist x) (bfrstate (bfrmode :aignet) (1- (len bitarr))))
+             (equal (len new-bitarr) (len bitarr))))
+
+  (defret length-of-<fn>-incr
+    (>= (len new-bitarr) (len bitarr))
+    :rule-classes :linear)
+
+  (defret bfr-markedp-preserved-of-<fn>
+    (implies (bfr-markedp y bitarr)
+             (bfr-markedp y new-bitarr)))
+
+  (defret bitarr-subsetp-of-<fn>
+    (bitarr-subsetp bitarr new-bitarr)
+    :hints(("Goal" :in-theory (disable <fn>))
+           (acl2::witness)))
+
+  (defret bfrs-markedp-preserved-of-<fn>
+    (implies (bfrs-markedp y bitarr)
+             (bfrs-markedp y new-bitarr)))
+
+  (defret <fn>-preserves-invar
+    (implies (fgl-object-mark-bfrs-invar seen bitarr)
+             (fgl-object-mark-bfrs-invar new-seen new-bitarr)))
+
+  (defret <fn>-marks-bfrs
+    (implies (fgl-object-mark-bfrs-invar seen bitarr)
+             (bfrs-markedp (constraint-db-bfrlist x) new-bitarr))))
 

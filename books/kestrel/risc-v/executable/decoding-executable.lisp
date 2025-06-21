@@ -49,7 +49,7 @@
     "Currently we only cover the decoding of
      the instructions defined in @(see instructions).
      We only handle the normal encodings,
-     i.e. not the compressed ones in the C extension [ISA:26];
+     i.e. not the compressed ones in the C extension [ISA:27];
      thus, our decoder operates on 32-bit encodings."))
   :order-subtopics t
   :default-parent t)
@@ -312,7 +312,7 @@
      If decoding is unsuccessful, we return @('nil').")
    (xdoc::p
     "The values of the encoded fields, which we write in binary notation,
-     are taken from the instruction listings in [ISA:34].")
+     are taken from the instruction listings in [ISA:35].")
    (xdoc::p
     "We retrieve the opcode, and we dispatch based on it.
      Each dispatch first retrieves the fields, based on the format,
@@ -438,7 +438,7 @@
                      (t nil)))
             ((unless funct) nil))
          (instr-store funct rs1 rs2 imm)))
-      (#b0110011 ; OP [ISA:2.4.2] [ISA:13.1] [ISA:13.2]
+      (#b0110011 ; OP [ISA:2.4.2] [ISA:12.1] [ISA:12.2]
        (b* (((mv funct3 funct7 rd rs1 rs2) (get-fields-rtype enc))
             ((unless (or (not (feat-embedp feat))
                          (and (ubyte4p rd)

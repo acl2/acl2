@@ -13128,6 +13128,21 @@
                      '(value dir-value)
                    'dir-value))))))
 
+(defun accumulate-post-alist1 (post-alist include-book-alist)
+  (cond ((endp post-alist) include-book-alist)
+        (t (let* ((entry0 (car post-alist))
+                  (entry (if (eq (car entry0) 'LOCAL)
+                             (cadr entry0)
+                           entry0))
+                  (key (hons-copy (car entry))))
+             (cond
+              ((hons-get key include-book-alist)
+               (accumulate-post-alist1 (cdr post-alist) include-book-alist))
+              (t (accumulate-post-alist1 (cdr post-alist)
+                                         (hons-acons key
+                                                     (cdr entry)
+                                                     include-book-alist))))))))
+
 (defun accumulate-post-alist (post-alist include-book-alist)
 
 ; Post-alist is a tail of a post-alist from the certificate of a book.
@@ -13135,17 +13150,10 @@
 ; global 'include-book-alist-all.  We accumulate post-alist into
 ; include-book-alist, stripping off each LOCAL wrapper.
 
-  (cond ((endp post-alist) include-book-alist)
-        (t (let* ((entry0 (car post-alist))
-                  (entry (if (eq (car entry0) 'LOCAL)
-                             (cadr entry0)
-                           entry0)))
-             (cond
-              ((member-equal entry include-book-alist)
-               (accumulate-post-alist (cdr post-alist) include-book-alist))
-              (t (cons entry
-                       (accumulate-post-alist (cdr post-alist)
-                                              include-book-alist))))))))
+  (let ((include-book-alist (make-fast-alist include-book-alist)))
+    (fast-alist-free-on-exit include-book-alist
+                             (accumulate-post-alist1 post-alist
+                                                     include-book-alist))))
 
 (defun skipped-proofsp-in-post-alist (post-alist)
   (cond

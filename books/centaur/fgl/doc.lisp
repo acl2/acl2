@@ -2031,10 +2031,56 @@ this rule can be applied several times to update the assignment to a term
 @('x'); i.e. we can build up an alist given the values assigned to several
 different keys.</p>
 
-<p>Another method of adding pairs is to copy values on the basis of
-equivalences that are assumed.  That is, if @('(equiv x y)') is assigned @('T')
-and @('y') is assigned some value, then assign @('x') that same value.</p>
+<p>Generally, a value for one term-like object suggests a value for some
+subterm object, as in the rules above. However, if an object is composed of
+subterms that can be assigned values, then that parent object can be computed
+directly from these subterm values.</p>
 
+<p>More details on the implementation of the derivation of counterexamples can
+be found under the @(see cgraph) topic.</p>
 
+<p>Counterexamples can be derived and run from SAT calls during rewriting. The
+following functions can be used inside a @(see syntaxp), @(see syntax-interp),
+or @(see syntax-bind) form:</p>
+
+<ul>
+
+<li>@('interp-st-run-ctrex'): After a satisfiability call produces a SAT
+result, fetch the satisfying assignment from the solver (for the given sat-config),
+turn the satisfying assignment into a term-level counterexample and
+evaluate the top-level goal on that counterexample.</li>
+
+<li>@('interp-st-sat-counterexample'): Fetch the satisfying assignment from
+the SAT solver (for the given sat-config) and store it in the FGL interpreter
+state. This must be done before the deriving the counterexample using the
+functions below; on the other hand, it is not a prerequisite for
+@('interp-st-run-ctrex').</li>
+
+<li>@('interp-st-counterex-bindings'): Derive a counterexample from the
+latest satisfiable SAT check (if any), and evaluate the given symbolic object
+bindings under that counterexample.  Additionally returns the counterexample's
+assignment of top-level theorem variables.</li>
+
+<li>@('interp-st-counterex-bindings/print-errors'): like
+@('interp-st-counterex-bindings') but also summarizes any counterexample
+derivation errors.</li>
+
+<li>@('interp-st-counterex-stack-bindings/print-errors'): like
+@('interp-st-counterex-bindings/print-errors') but uses the bindings of the top stack
+frame (i.e. the rewrite rule from which this function is called).</li>
+
+<li>@('interp-st-counterex-prev-stack-bindings/print-errors'): like
+@('interp-st-counterex-stack-bindings/print-errors') but uses the bindings of
+the next-to-top stack frame (i.e. the caller of the rewrite rule from which
+this function is called).</li>
+
+</ul>
+
+<p>Counterexample derivation, as well as running the goal term after the
+counterexample is derived, uses an evaluator function called
+@('magitastic-ev'). This evaluator allows function definitions to be overridden
+for the purpose of running counterexamples, by adding entries to a table. This
+can be used to speed up counterexample generation or cheat to work around
+abstractions that don't allow the production of top-level counterexamples.</p>
 
 ")

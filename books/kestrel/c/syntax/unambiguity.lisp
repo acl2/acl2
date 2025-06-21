@@ -619,10 +619,10 @@
     :expand (param-declor-unambp (param-declor-abstract absdeclor)))
 
   (defrule tyname-unambp-of-tyname
-    (equal (tyname-unambp (tyname specqual decl?))
+    (equal (tyname-unambp (tyname specqual decl? info))
            (and (spec/qual-list-unambp specqual)
                 (absdeclor-option-unambp decl?)))
-    :expand (tyname-unambp (tyname specqual decl?)))
+    :expand (tyname-unambp (tyname specqual decl? info)))
 
   (defrule strunispec-unambp-of-strunispec
     (equal (strunispec-unambp (strunispec name members))

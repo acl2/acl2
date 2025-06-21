@@ -2236,7 +2236,7 @@
                      (valid-expr expr.arg2 table ienv))
                     ((erp type)
                      (valid-binary expr expr.op type-arg1 type-arg2 ienv))
-                    (info (make-unary-info :type type)))
+                    (info (make-binary-info :type type)))
                  (retok (make-expr-binary :op expr.op
                                           :arg1 new-arg1
                                           :arg2 new-arg2
@@ -4383,8 +4383,9 @@
          ((erp new-specquals type types table)
           (valid-spec/qual-list tyname.specquals nil nil table ienv))
          ((erp new-decl? type more-types table)
-          (valid-absdeclor-option tyname.decl? type table ienv)))
-      (retok (make-tyname :specquals new-specquals :decl? new-decl?)
+          (valid-absdeclor-option tyname.decl? type table ienv))
+         (info (make-tyname-info :type type)))
+      (retok (make-tyname :specquals new-specquals :decl? new-decl? :info info)
              type
              (set::union types more-types)
              table))

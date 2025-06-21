@@ -1,0 +1,571 @@
+{
+  "name": "",
+  "expected_input": [],
+  "imports": [],
+  "circuits": {
+    "{\"name\":\"C\",\"span\":\"{\\\"line_start\\\":25,\\\"line_stop\\\":25,\\\"col_start\\\":9,\\\"col_stop\\\":10,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"circuit C {\\\"}\"}": {
+      "circuit_name": "{\"name\":\"C\",\"span\":\"{\\\"line_start\\\":25,\\\"line_stop\\\":25,\\\"col_start\\\":9,\\\"col_stop\\\":10,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"circuit C {\\\"}\"}",
+      "members": [
+        {
+          "CircuitVariable": [
+            "{\"name\":\"m\",\"span\":\"{\\\"line_start\\\":26,\\\"line_stop\\\":26,\\\"col_start\\\":3,\\\"col_stop\\\":4,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"  m: u8,\\\"}\"}",
+            {
+              "IntegerType": "U8"
+            }
+          ]
+        },
+        {
+          "CircuitFunction": {
+            "annotations": [],
+            "identifier": "{\"name\":\"incm\",\"span\":\"{\\\"line_start\\\":27,\\\"line_stop\\\":27,\\\"col_start\\\":12,\\\"col_stop\\\":16,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"  function incm(mut self) {\\\"}\"}",
+            "input": [
+              {
+                "MutSelfKeyword": "{\"name\":\"mut self\",\"span\":\"{\\\"line_start\\\":27,\\\"line_stop\\\":27,\\\"col_start\\\":17,\\\"col_stop\\\":25,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"  function incm(mut self) {\\\"}\"}"
+              }
+            ],
+            "output": {
+              "Tuple": []
+            },
+            "block": {
+              "statements": [
+                {
+                  "Assign": {
+                    "operation": "Assign",
+                    "assignee": {
+                      "identifier": "{\"name\":\"self\",\"span\":\"{\\\"line_start\\\":28,\\\"line_stop\\\":28,\\\"col_start\\\":5,\\\"col_stop\\\":9,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    self.m += 1;\\\"}\"}",
+                      "accesses": [
+                        {
+                          "Member": "{\"name\":\"m\",\"span\":\"{\\\"line_start\\\":28,\\\"line_stop\\\":28,\\\"col_start\\\":10,\\\"col_stop\\\":11,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    self.m += 1;\\\"}\"}"
+                        }
+                      ],
+                      "span": {
+                        "line_start": 28,
+                        "line_stop": 28,
+                        "col_start": 5,
+                        "col_stop": 11,
+                        "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                        "content": "    self.m += 1;"
+                      }
+                    },
+                    "value": {
+                      "Binary": {
+                        "left": {
+                          "CircuitMemberAccess": {
+                            "circuit": {
+                              "Identifier": "{\"name\":\"self\",\"span\":\"{\\\"line_start\\\":28,\\\"line_stop\\\":28,\\\"col_start\\\":5,\\\"col_stop\\\":9,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    self.m += 1;\\\"}\"}"
+                            },
+                            "name": "{\"name\":\"m\",\"span\":\"{\\\"line_start\\\":28,\\\"line_stop\\\":28,\\\"col_start\\\":10,\\\"col_stop\\\":11,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    self.m += 1;\\\"}\"}",
+                            "span": {
+                              "line_start": 28,
+                              "line_stop": 28,
+                              "col_start": 5,
+                              "col_stop": 16,
+                              "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                              "content": "    self.m += 1;"
+                            }
+                          }
+                        },
+                        "right": {
+                          "Value": {
+                            "Implicit": [
+                              "1",
+                              {
+                                "line_start": 28,
+                                "line_stop": 28,
+                                "col_start": 15,
+                                "col_stop": 16,
+                                "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                                "content": "    self.m += 1;"
+                              }
+                            ]
+                          }
+                        },
+                        "op": "Add",
+                        "span": {
+                          "line_start": 28,
+                          "line_stop": 28,
+                          "col_start": 5,
+                          "col_stop": 16,
+                          "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                          "content": "    self.m += 1;"
+                        }
+                      }
+                    },
+                    "span": {
+                      "line_start": 28,
+                      "line_stop": 28,
+                      "col_start": 5,
+                      "col_stop": 16,
+                      "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                      "content": "    self.m += 1;"
+                    }
+                  }
+                }
+              ],
+              "span": {
+                "line_start": 27,
+                "line_stop": 29,
+                "col_start": 27,
+                "col_stop": 4,
+                "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                "content": "  function incm(mut self) {\n...\n  }"
+              }
+            },
+            "span": {
+              "line_start": 27,
+              "line_stop": 29,
+              "col_start": 3,
+              "col_stop": 4,
+              "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+              "content": "  function incm(mut self) {\n...\n  }"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "global_consts": {},
+  "functions": {
+    "{\"name\":\"main\",\"span\":\"{\\\"line_start\\\":2,\\\"line_stop\\\":2,\\\"col_start\\\":10,\\\"col_stop\\\":14,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"function main(n: u8) -> u8 {\\\"}\"}": {
+      "annotations": [],
+      "identifier": "{\"name\":\"main\",\"span\":\"{\\\"line_start\\\":2,\\\"line_stop\\\":2,\\\"col_start\\\":10,\\\"col_stop\\\":14,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"function main(n: u8) -> u8 {\\\"}\"}",
+      "input": [
+        {
+          "Variable": {
+            "identifier": "{\"name\":\"n\",\"span\":\"{\\\"line_start\\\":2,\\\"line_stop\\\":2,\\\"col_start\\\":15,\\\"col_stop\\\":16,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"function main(n: u8) -> u8 {\\\"}\"}",
+            "const_": false,
+            "mutable": true,
+            "type_": {
+              "IntegerType": "U8"
+            },
+            "span": {
+              "line_start": 2,
+              "line_stop": 2,
+              "col_start": 15,
+              "col_stop": 16,
+              "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+              "content": "function main(n: u8) -> u8 {"
+            }
+          }
+        }
+      ],
+      "output": {
+        "IntegerType": "U8"
+      },
+      "block": {
+        "statements": [
+          {
+            "Definition": {
+              "declaration_type": "Let",
+              "variable_names": [
+                {
+                  "mutable": true,
+                  "identifier": "{\"name\":\"circ\",\"span\":\"{\\\"line_start\\\":3,\\\"line_stop\\\":3,\\\"col_start\\\":9,\\\"col_stop\\\":13,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    let circ = C { m: n };\\\"}\"}",
+                  "span": {
+                    "line_start": 3,
+                    "line_stop": 3,
+                    "col_start": 9,
+                    "col_stop": 13,
+                    "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                    "content": "    let circ = C { m: n };"
+                  }
+                }
+              ],
+              "type_": null,
+              "value": {
+                "CircuitInit": {
+                  "name": "{\"name\":\"C\",\"span\":\"{\\\"line_start\\\":3,\\\"line_stop\\\":3,\\\"col_start\\\":16,\\\"col_stop\\\":17,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    let circ = C { m: n };\\\"}\"}",
+                  "members": [
+                    {
+                      "identifier": "{\"name\":\"m\",\"span\":\"{\\\"line_start\\\":3,\\\"line_stop\\\":3,\\\"col_start\\\":20,\\\"col_stop\\\":21,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    let circ = C { m: n };\\\"}\"}",
+                      "expression": {
+                        "Identifier": "{\"name\":\"n\",\"span\":\"{\\\"line_start\\\":3,\\\"line_stop\\\":3,\\\"col_start\\\":23,\\\"col_stop\\\":24,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    let circ = C { m: n };\\\"}\"}"
+                      }
+                    }
+                  ],
+                  "span": {
+                    "line_start": 3,
+                    "line_stop": 3,
+                    "col_start": 16,
+                    "col_stop": 26,
+                    "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                    "content": "    let circ = C { m: n };"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 3,
+                "line_stop": 3,
+                "col_start": 5,
+                "col_stop": 26,
+                "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                "content": "    let circ = C { m: n };"
+              }
+            }
+          },
+          {
+            "Expression": {
+              "expression": {
+                "Call": {
+                  "function": {
+                    "CircuitMemberAccess": {
+                      "circuit": {
+                        "Identifier": "{\"name\":\"circ\",\"span\":\"{\\\"line_start\\\":4,\\\"line_stop\\\":4,\\\"col_start\\\":5,\\\"col_stop\\\":9,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    circ.incm();\\\"}\"}"
+                      },
+                      "name": "{\"name\":\"incm\",\"span\":\"{\\\"line_start\\\":4,\\\"line_stop\\\":4,\\\"col_start\\\":10,\\\"col_stop\\\":14,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    circ.incm();\\\"}\"}",
+                      "span": {
+                        "line_start": 4,
+                        "line_stop": 4,
+                        "col_start": 5,
+                        "col_stop": 14,
+                        "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                        "content": "    circ.incm();"
+                      }
+                    }
+                  },
+                  "arguments": [],
+                  "span": {
+                    "line_start": 4,
+                    "line_stop": 4,
+                    "col_start": 5,
+                    "col_stop": 16,
+                    "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                    "content": "    circ.incm();"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 4,
+                "line_stop": 4,
+                "col_start": 5,
+                "col_stop": 16,
+                "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                "content": "    circ.incm();"
+              }
+            }
+          },
+          {
+            "Expression": {
+              "expression": {
+                "Call": {
+                  "function": {
+                    "Identifier": "{\"name\":\"show_C_m\",\"span\":\"{\\\"line_start\\\":5,\\\"line_stop\\\":5,\\\"col_start\\\":5,\\\"col_stop\\\":13,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    show_C_m(circ);\\\"}\"}"
+                  },
+                  "arguments": [
+                    {
+                      "Identifier": "{\"name\":\"circ\",\"span\":\"{\\\"line_start\\\":5,\\\"line_stop\\\":5,\\\"col_start\\\":14,\\\"col_stop\\\":18,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    show_C_m(circ);\\\"}\"}"
+                    }
+                  ],
+                  "span": {
+                    "line_start": 5,
+                    "line_stop": 5,
+                    "col_start": 5,
+                    "col_stop": 19,
+                    "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                    "content": "    show_C_m(circ);"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 5,
+                "line_stop": 5,
+                "col_start": 5,
+                "col_stop": 19,
+                "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                "content": "    show_C_m(circ);"
+              }
+            }
+          },
+          {
+            "Assign": {
+              "operation": "Assign",
+              "assignee": {
+                "identifier": "{\"name\":\"circ\",\"span\":\"{\\\"line_start\\\":6,\\\"line_stop\\\":6,\\\"col_start\\\":5,\\\"col_stop\\\":9,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    circ.m += 1;\\\"}\"}",
+                "accesses": [
+                  {
+                    "Member": "{\"name\":\"m\",\"span\":\"{\\\"line_start\\\":6,\\\"line_stop\\\":6,\\\"col_start\\\":10,\\\"col_stop\\\":11,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    circ.m += 1;\\\"}\"}"
+                  }
+                ],
+                "span": {
+                  "line_start": 6,
+                  "line_stop": 6,
+                  "col_start": 5,
+                  "col_stop": 11,
+                  "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                  "content": "    circ.m += 1;"
+                }
+              },
+              "value": {
+                "Binary": {
+                  "left": {
+                    "CircuitMemberAccess": {
+                      "circuit": {
+                        "Identifier": "{\"name\":\"circ\",\"span\":\"{\\\"line_start\\\":6,\\\"line_stop\\\":6,\\\"col_start\\\":5,\\\"col_stop\\\":9,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    circ.m += 1;\\\"}\"}"
+                      },
+                      "name": "{\"name\":\"m\",\"span\":\"{\\\"line_start\\\":6,\\\"line_stop\\\":6,\\\"col_start\\\":10,\\\"col_stop\\\":11,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    circ.m += 1;\\\"}\"}",
+                      "span": {
+                        "line_start": 6,
+                        "line_stop": 6,
+                        "col_start": 5,
+                        "col_stop": 16,
+                        "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                        "content": "    circ.m += 1;"
+                      }
+                    }
+                  },
+                  "right": {
+                    "Value": {
+                      "Implicit": [
+                        "1",
+                        {
+                          "line_start": 6,
+                          "line_stop": 6,
+                          "col_start": 15,
+                          "col_stop": 16,
+                          "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                          "content": "    circ.m += 1;"
+                        }
+                      ]
+                    }
+                  },
+                  "op": "Add",
+                  "span": {
+                    "line_start": 6,
+                    "line_stop": 6,
+                    "col_start": 5,
+                    "col_stop": 16,
+                    "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                    "content": "    circ.m += 1;"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 6,
+                "line_stop": 6,
+                "col_start": 5,
+                "col_stop": 16,
+                "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                "content": "    circ.m += 1;"
+              }
+            }
+          },
+          {
+            "Expression": {
+              "expression": {
+                "Call": {
+                  "function": {
+                    "Identifier": "{\"name\":\"show_C_m\",\"span\":\"{\\\"line_start\\\":7,\\\"line_stop\\\":7,\\\"col_start\\\":5,\\\"col_stop\\\":13,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    show_C_m(circ);\\\"}\"}"
+                  },
+                  "arguments": [
+                    {
+                      "Identifier": "{\"name\":\"circ\",\"span\":\"{\\\"line_start\\\":7,\\\"line_stop\\\":7,\\\"col_start\\\":14,\\\"col_stop\\\":18,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    show_C_m(circ);\\\"}\"}"
+                    }
+                  ],
+                  "span": {
+                    "line_start": 7,
+                    "line_stop": 7,
+                    "col_start": 5,
+                    "col_stop": 19,
+                    "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                    "content": "    show_C_m(circ);"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 7,
+                "line_stop": 7,
+                "col_start": 5,
+                "col_stop": 19,
+                "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                "content": "    show_C_m(circ);"
+              }
+            }
+          },
+          {
+            "Return": {
+              "expression": {
+                "CircuitMemberAccess": {
+                  "circuit": {
+                    "Identifier": "{\"name\":\"circ\",\"span\":\"{\\\"line_start\\\":8,\\\"line_stop\\\":8,\\\"col_start\\\":12,\\\"col_stop\\\":16,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    return circ.m;\\\"}\"}"
+                  },
+                  "name": "{\"name\":\"m\",\"span\":\"{\\\"line_start\\\":8,\\\"line_stop\\\":8,\\\"col_start\\\":17,\\\"col_stop\\\":18,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"    return circ.m;\\\"}\"}",
+                  "span": {
+                    "line_start": 8,
+                    "line_stop": 8,
+                    "col_start": 12,
+                    "col_stop": 18,
+                    "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                    "content": "    return circ.m;"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 8,
+                "line_stop": 8,
+                "col_start": 5,
+                "col_stop": 18,
+                "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                "content": "    return circ.m;"
+              }
+            }
+          }
+        ],
+        "span": {
+          "line_start": 2,
+          "line_stop": 9,
+          "col_start": 28,
+          "col_stop": 2,
+          "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+          "content": "function main(n: u8) -> u8 {\n...\n}"
+        }
+      },
+      "span": {
+        "line_start": 2,
+        "line_stop": 9,
+        "col_start": 1,
+        "col_stop": 2,
+        "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+        "content": "function main(n: u8) -> u8 {\n...\n}\n\n\n\n\n"
+      }
+    },
+    "{\"name\":\"show_C_m\",\"span\":\"{\\\"line_start\\\":32,\\\"line_stop\\\":32,\\\"col_start\\\":10,\\\"col_stop\\\":18,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"function show_C_m(c: C) {\\\"}\"}": {
+      "annotations": [],
+      "identifier": "{\"name\":\"show_C_m\",\"span\":\"{\\\"line_start\\\":32,\\\"line_stop\\\":32,\\\"col_start\\\":10,\\\"col_stop\\\":18,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"function show_C_m(c: C) {\\\"}\"}",
+      "input": [
+        {
+          "Variable": {
+            "identifier": "{\"name\":\"c\",\"span\":\"{\\\"line_start\\\":32,\\\"line_stop\\\":32,\\\"col_start\\\":19,\\\"col_stop\\\":20,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"function show_C_m(c: C) {\\\"}\"}",
+            "const_": false,
+            "mutable": true,
+            "type_": {
+              "Circuit": "{\"name\":\"C\",\"span\":\"{\\\"line_start\\\":32,\\\"line_stop\\\":32,\\\"col_start\\\":22,\\\"col_stop\\\":23,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"function show_C_m(c: C) {\\\"}\"}"
+            },
+            "span": {
+              "line_start": 32,
+              "line_stop": 32,
+              "col_start": 19,
+              "col_stop": 20,
+              "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+              "content": "function show_C_m(c: C) {"
+            }
+          }
+        }
+      ],
+      "output": {
+        "Tuple": []
+      },
+      "block": {
+        "statements": [
+          {
+            "Console": {
+              "function": {
+                "Log": {
+                  "string": [
+                    {
+                      "Scalar": 99
+                    },
+                    {
+                      "Scalar": 105
+                    },
+                    {
+                      "Scalar": 114
+                    },
+                    {
+                      "Scalar": 99
+                    },
+                    {
+                      "Scalar": 117
+                    },
+                    {
+                      "Scalar": 105
+                    },
+                    {
+                      "Scalar": 116
+                    },
+                    {
+                      "Scalar": 39
+                    },
+                    {
+                      "Scalar": 115
+                    },
+                    {
+                      "Scalar": 32
+                    },
+                    {
+                      "Scalar": 109
+                    },
+                    {
+                      "Scalar": 32
+                    },
+                    {
+                      "Scalar": 61
+                    },
+                    {
+                      "Scalar": 32
+                    },
+                    {
+                      "Scalar": 123
+                    },
+                    {
+                      "Scalar": 125
+                    }
+                  ],
+                  "parameters": [
+                    {
+                      "CircuitMemberAccess": {
+                        "circuit": {
+                          "Identifier": "{\"name\":\"c\",\"span\":\"{\\\"line_start\\\":33,\\\"line_stop\\\":33,\\\"col_start\\\":35,\\\"col_stop\\\":36,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"  console.log(\\\\\\\"circuit's m = {}\\\\\\\", c.m);\\\"}\"}"
+                        },
+                        "name": "{\"name\":\"m\",\"span\":\"{\\\"line_start\\\":33,\\\"line_stop\\\":33,\\\"col_start\\\":37,\\\"col_stop\\\":38,\\\"path\\\":\\\"/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo\\\",\\\"content\\\":\\\"  console.log(\\\\\\\"circuit's m = {}\\\\\\\", c.m);\\\"}\"}",
+                        "span": {
+                          "line_start": 33,
+                          "line_stop": 33,
+                          "col_start": 35,
+                          "col_stop": 38,
+                          "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                          "content": "  console.log(\"circuit's m = {}\", c.m);"
+                        }
+                      }
+                    }
+                  ],
+                  "span": {
+                    "line_start": 33,
+                    "line_stop": 33,
+                    "col_start": 15,
+                    "col_stop": 38,
+                    "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                    "content": "  console.log(\"circuit's m = {}\", c.m);"
+                  }
+                }
+              },
+              "span": {
+                "line_start": 33,
+                "line_stop": 33,
+                "col_start": 3,
+                "col_stop": 38,
+                "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+                "content": "  console.log(\"circuit's m = {}\", c.m);"
+              }
+            }
+          }
+        ],
+        "span": {
+          "line_start": 32,
+          "line_stop": 34,
+          "col_start": 25,
+          "col_stop": 2,
+          "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+          "content": "function show_C_m(c: C) {\n...\n}"
+        }
+      },
+      "span": {
+        "line_start": 32,
+        "line_stop": 34,
+        "col_start": 1,
+        "col_stop": 2,
+        "path": "/home/batman/leo-acl2/tests/minimal/fill-function-output-type/src/main.leo",
+        "content": "function show_C_m(c: C) {\n...\n}"
+      }
+    }
+  }
+}

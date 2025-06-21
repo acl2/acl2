@@ -40,6 +40,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tree-union
   ((x binary-tree-p)
    (y binary-tree-p))
@@ -251,7 +256,8 @@
     ((x setp)
      (y setp))
     :returns (set setp)
-    (tree-union (sfix x) (sfix y)))
+    (tree-union (sfix x) (sfix y))
+    :inline t)
 
   ;;;;;;;;;;;;;;;;;;;;
 
@@ -272,7 +278,7 @@
     (declare (xargs :guard t))
     (union-macro-loop (list* x y rst)))
 
-  (add-macro-fn union binary-union t))
+  (add-macro-fn union binary-union$inline t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
