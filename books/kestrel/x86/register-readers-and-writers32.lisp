@@ -259,6 +259,12 @@
   (equal (eip (set-eip eip x86))
          (bvchop 32 eip)))
 
+(defthm set-eip-of-set-eip
+  (equal (set-eip eip1 (set-eip eip2 x86))
+         (set-eip eip1 x86)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Read of a write of the same register
 (defthm eax-of-set-eax (equal (eax (set-eax val x86)) (bvchop 32 val)) :hints (("Goal" :in-theory (enable eax set-eax))))
 (defthm ebx-of-set-ebx (equal (ebx (set-ebx val x86)) (bvchop 32 val)) :hints (("Goal" :in-theory (enable ebx set-ebx))))

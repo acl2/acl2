@@ -20,7 +20,7 @@
 (defthm write-byte-to-segment-of-set-eip
   (equal (write-byte-to-segment eff-addr seg-reg val (set-eip eip x86))
          (set-eip eip (write-byte-to-segment eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (enable write-byte-to-segment))))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment segment-base-and-bounds))))
 
 (defthm write-to-segment-of-set-eip
   (equal (write-to-segment n eff-addr seg-reg val (set-eip eip x86))
