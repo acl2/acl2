@@ -97,8 +97,7 @@
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
              stat))
-    :enable (exec-addi
-             read-xreg-signed
+    :enable (read-xreg-signed
              write-xreg
              inc4-pc
              write-pc)
@@ -1021,8 +1020,7 @@
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
              stat))
-    :enable (exec-add
-             read-xreg-signed
+    :enable (read-xreg-signed
              write-xreg
              inc4-pc
              write-pc
@@ -1075,8 +1073,7 @@
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
              stat))
-    :enable (exec-sub
-             read-xreg-signed
+    :enable (read-xreg-signed
              write-xreg
              inc4-pc
              write-pc
@@ -1183,7 +1180,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) @('XLEN')-bit integers
+     from @('rs1') and @('rs2').
      We perform a bitwise `and' of
      the two unsigned @('XLEN')-bit integers.
      We write the result to @('rd').
@@ -1198,6 +1196,17 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-and-alt-def
+    (equal (exec-and rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logand rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg))
 
   (defret stat-validp-of-exec-and
     (stat-validp new-stat feat)
@@ -1221,7 +1230,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) @('XLEN')-bit integers
+     from @('rs1') and @('rs2').
      We perform a bitwise inclusive `or' of
      the two unsigned @('XLEN')-bit integers.
      We write the result to @('rd').
@@ -1236,6 +1246,17 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-or-alt-def
+    (equal (exec-or rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logior rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg))
 
   (defret stat-validp-of-exec-or
     (stat-validp new-stat feat)
@@ -1259,7 +1280,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) @('XLEN')-bit integers
+     from @('rs1') and @('rs2').
      We perform a bitwise exclusive `or' of
      the two unsigned @('XLEN')-bit integers.
      We write the result to @('rd').
@@ -1274,6 +1296,17 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-xor-alt-def
+    (equal (exec-xor rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logxor rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg))
 
   (defret stat-validp-of-exec-xor
     (stat-validp new-stat feat)
