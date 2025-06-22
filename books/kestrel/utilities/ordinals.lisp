@@ -88,12 +88,6 @@
            (natp (o-first-coeff x)))
   :hints (("Goal" :in-theory (enable o-p))))
 
-;; (defthm posp-of-o-first-coeff
-;;   (implies (and (o-p x)
-;;                 (not (equal 0 (o-first-expt x))))
-;;            (posp (o-first-coeff x)))
-;;   :hints (("Goal" :in-theory (enable o-p))))
-
 (defthm posp-of-o-first-coeff
   (implies (o-p x)
            (equal (posp (o-first-coeff x))
