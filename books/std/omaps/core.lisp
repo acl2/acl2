@@ -1048,6 +1048,14 @@
   (theory-invariant (incompatible (:rewrite assoc-to-in-of-keys)
                                   (:rewrite in-of-keys-to-assoc)))
 
+  (defruled list-in-to-subset-keys
+    (iff (list-in keys map)
+         (set::subset (set::mergesort keys) (keys map)))
+    :induct t
+    :enable (set::mergesort
+             list-in
+             assoc-to-in-of-keys))
+
   (defruled in-keys-when-assoc-forward
     (implies (assoc key map)
              (set::in key (keys map)))
