@@ -1,7 +1,7 @@
 ; BV Library: bvcat2
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,7 +34,8 @@
     (symbolic-sum (car sizes-and-vals)
                   (bvcat-size (cddr sizes-and-vals)))))
 
-;; Concatenate several values together.  Takes a non-empty list of alternating sizes and values.
+;; Concatenate several values together.  Takes a non-empty list of alternating sizes and values,
+;; with the most significant values listed first, as in BVCAT.
 ;; TODO: Pull out the macro body into a function.
 ;; TODO: Perhaps rename, perhaps to BVCATN
 (defmacro bvcat2 (&rest sizes-and-vals)
@@ -50,3 +51,6 @@
                  ,(cadr sizes-and-vals)
                  ,(bvcat-size (cddr sizes-and-vals))
                  (bvcat2 ,@(cddr sizes-and-vals))))))
+
+
+;; Example: (bvcat2 8 0 8 1 8 2)
