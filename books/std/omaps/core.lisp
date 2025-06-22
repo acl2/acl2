@@ -728,6 +728,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define list-in ((keys true-listp) (map mapp))
+  :returns (yes/no booleanp)
+  :short "Check if every key in a list is in an omap."
+  (cond ((endp keys) t)
+        (t (and (assoc (car keys) map)
+                (list-in (cdr keys) map)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection omap-order-rules
   :short "Some rules involving the ordering in omaps."
 

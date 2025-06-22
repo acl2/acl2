@@ -58,6 +58,11 @@
   (fty::deffixequiv in*
     :hints (("Goal" :in-theory (enable in*)))))
 
+(defsection list-in-fix
+  :extension list-in
+  (fty::deffixequiv list-in
+    :hints (("Goal" :in-theory (enable list-in)))))
+
 (defsection lookup-fix
   :extension lookup
   (fty::deffixequiv lookup))
