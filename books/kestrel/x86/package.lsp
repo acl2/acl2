@@ -57,6 +57,7 @@
     x86isa::n48
     x86isa::app-view$inline
     x86isa::app-view
+    x86isa::app-view$a
     x86isa::canonical-address-p$inline
     x86isa::canonical-address-p
     x86isa::xr
