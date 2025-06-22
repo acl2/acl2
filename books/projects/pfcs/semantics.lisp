@@ -434,16 +434,16 @@
     :disable eval-expr-list)
 
   (defruled eval-expr-list-of-cons-when-not-error
-    (b* ((result (eval-expr-list (cons expr exprs) asg p)))
-      (implies (not (reserrp result))
-               (equal (eval-expr-list (cons expr exprs) asg p)
-                      (cons (eval-expr expr asg p)
-                            (eval-expr-list exprs asg p))))))
+    (implies (and (not (reserrp (pfcs::eval-expr expr asg p)))
+                  (not (reserrp (pfcs::eval-expr-list exprs asg p))))
+             (equal (eval-expr-list (cons expr exprs) asg p)
+                    (cons (eval-expr expr asg p)
+                          (eval-expr-list exprs asg p)))))
 
   (defruled eval-expr-list-of-append-when-not-error
     (implies (and (primep p)
-                  (not (reserrp
-                        (eval-expr-list (append exprs1 exprs2) asg p))))
+                  (not (reserrp (pfcs::eval-expr-list exprs1 asg p)))
+                  (not (reserrp (pfcs::eval-expr-list exprs2 asg p))))
              (equal (eval-expr-list (append exprs1 exprs2) asg p)
                     (append (eval-expr-list exprs1 asg p)
                             (eval-expr-list exprs2 asg p))))
