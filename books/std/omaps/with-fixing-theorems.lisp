@@ -72,6 +72,11 @@
   (fty::deffixequiv lookup*
     :hints (("Goal" :in-theory (enable lookup*)))))
 
+(defsection list-lookup-fix
+  :extension list-lookup
+  (fty::deffixequiv list-lookup
+    :hints (("Goal" :in-theory (enable list-lookup)))))
+
 (defsection rlookup-fix
   :extension rlookup
   (fty::deffixequiv rlookup

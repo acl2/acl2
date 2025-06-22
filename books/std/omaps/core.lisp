@@ -863,6 +863,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define list-lookup ((keys true-listp) (map mapp))
+  :guard (list-in keys map)
+  :returns (vals true-listp)
+  :short "List of values associated to a list of keys in an omap."
+  (cond ((endp keys) nil)
+        (t (cons (lookup (car keys) map)
+                 (list-lookup (cdr keys) map))))
+  :guard-hints (("Goal" :in-theory (enable list-in)))
+
+  ///
+
+  (defruled list-lookup-of-cons
+    (equal (list-lookup (cons key keys) map)
+           (cons (lookup key map)
+                 (list-lookup keys map))))
+
+  (defruled list-lookup-of-append
+    (equal (list-lookup (append keys1 keys2) map)
+           (append (list-lookup keys1 map)
+                   (list-lookup keys2 map)))
+    :induct t
+    :enable append)
+
+  (defruled list-lookup-of-rev
+    (equal (list-lookup (rev keys) map)
+           (rev (list-lookup keys map)))
+    :induct t
+    :enable (rev
+             list-lookup-of-append)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define rlookup (val (map mapp))
   :returns (keys set::setp)
   :short "Set of keys to which a value is associated."
