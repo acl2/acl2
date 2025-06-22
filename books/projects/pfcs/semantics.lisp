@@ -242,7 +242,25 @@
     :induct t
     :enable (len
              omap::from-lists
-             pfield::nat-listp-when-fe-listp)))
+             pfield::nat-listp-when-fe-listp))
+
+  (defruled fep-of-lookup-when-assignment-wfp
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg prime)
+                  (omap::assoc var asg))
+             (pfield::fep (omap::lookup var asg) prime))
+    :enable (omap::lookup
+             fep-of-cdr-of-in-when-assignment-wfp))
+
+  (defruled fe-listp-of-list-lookup-when-assignment-wfp
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg prime)
+                  (omap::list-in vars asg))
+             (pfield::fe-listp (omap::list-lookup vars asg) prime))
+    :induct t
+    :enable (omap::list-lookup
+             omap::list-in
+             fep-of-lookup-when-assignment-wfp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
