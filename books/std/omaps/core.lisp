@@ -147,6 +147,7 @@
                   (consp (cadr x))
                   (fast-<< (caar x) (caadr x))
                   (mapp (cdr x))))))
+
   ///
 
   (defruled setp-when-mapp
@@ -182,6 +183,7 @@
    "This is similar to @(tsee set::sfix) for osets.")
   (mbe :logic (if (mapp x) x nil)
        :exec x)
+
   ///
 
   (defrule mfix-when-mapp
@@ -201,6 +203,7 @@
   (xdoc::topstring-p
    "This is similar to @(tsee set::emptyp) for osets.")
   (null (mfix map))
+
   ///
 
   (defrule mapp-when-not-emptyp
@@ -236,6 +239,7 @@
   (let ((pair (car (mfix map))))
     (mv (car pair) (cdr pair)))
   :guard-hints (("Goal" :in-theory (enable emptyp mapp)))
+
   ///
 
   (defrule head-key-when-emptyp
@@ -319,6 +323,7 @@
    "This is similar to @(tsee set::tail) for osets.")
   (cdr (mfix map))
   :guard-hints (("Goal" :in-theory (enable emptyp alistp-when-mapp)))
+
   ///
 
   (defrule tail-when-emptyp
@@ -376,6 +381,7 @@
                    ((<< key key0) (cons (cons key val) map))
                    (t (cons (cons key0 val0)
                             (update key val (tail map))))))))
+
   ///
 
   (in-theory (disable (:type-prescription update)))
@@ -546,6 +552,7 @@
              (update new-key new-val
                      (update* (tail new) old)))))
   :verify-guards :after-returns
+
   ///
 
   (defrule update*-when-left-emptyp
@@ -574,6 +581,7 @@
                               val0
                               (delete key (tail map))))))))
   :verify-guards :after-returns
+
   ///
 
   (defrule delete-when-emptyp
@@ -591,6 +599,7 @@
   (cond ((set::emptyp keys) (mfix map))
         (t (delete (set::head keys) (delete* (set::tail keys) map))))
   :verify-guards :after-returns
+
   ///
 
   (defrule delete*-when-left-emptyp
@@ -620,6 +629,7 @@
              (head map)
              (cond ((equal key key0) (cons key0 val0))
                    (t (assoc key (tail map)))))))
+
   ///
 
   (defrule assoc-of-mfix
@@ -711,6 +721,7 @@
   (cond ((set::emptyp keys) t)
         (t (and (assoc (set::head keys) map)
                 (in* (set::tail keys) map))))
+
   ///
 
   (defrule in*-when-left-emptyp
@@ -812,6 +823,7 @@
   :returns (val)
   :short "Value associated to a key in an omap."
   (cdr (assoc key map))
+
   ///
 
   (defrule lookup-when-emptyp
@@ -847,7 +859,9 @@
                       (lookup* (set::tail keys) map)))
         (t (lookup* (set::tail keys) map)))
   :verify-guards nil ; done below
+
   ///
+
   (verify-guards lookup* :hints (("Goal" :in-theory (enable in*))))
 
   (defrule lookup*-when-left-emptyp
@@ -915,6 +929,7 @@
                  (set::insert key0 (rlookup val (tail map)))
                (rlookup val (tail map))))))
   :verify-guards :after-returns
+
   ///
 
   (defrule rlookup-when-emptyp
@@ -934,6 +949,7 @@
         (t (set::union (rlookup (set::head vals) map)
                        (rlookup* (set::tail vals) map))))
   :verify-guards :after-returns
+
   ///
 
   (defrule rlookup*-when-left-emptyp
@@ -962,6 +978,7 @@
                  (update key val (restrict keys (tail map)))
                (restrict keys (tail map))))))
   :verify-guards :after-returns
+
   ///
 
   (defrule restrict-when-left-emptyp
@@ -995,6 +1012,7 @@
                (head map)
              (declare (ignore val))
              (set::insert key (keys (tail map))))))
+
   ///
 
   (defrule keys-of-mfix
@@ -1098,6 +1116,7 @@
              (declare (ignore key))
              (set::insert val (values (tail map))))))
   :verify-guards :after-returns
+
   ///
 
   (defrule values-when-emptyp
@@ -1136,6 +1155,7 @@
                   (not (equal val1 (cdr pair2))))))
          nil)
         (t (compatiblep (tail map1) map2)))
+
   ///
 
   (defrule compatiblep-when-left-emptyp
@@ -1164,6 +1184,7 @@
              (and (equal (assoc key sup)
                          (cons key val))
                   (submap (tail sub) sup)))))
+
   ///
 
   (defrule submap-when-left-emptyp
@@ -1195,6 +1216,7 @@
     " for lists."))
   (cond ((emptyp map) 0)
         (t (1+ (size (tail map)))))
+
   ///
 
   (defruled unfold-equal-size-const
