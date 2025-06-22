@@ -1046,6 +1046,7 @@
                             (LOGBITP ; for speed
                              LOGBITP-TO-GETBIT-EQUAL-1 INTEGERP-OF-EXPT-when-natp)))))
 
+;drop? since we have bvcat-of-logext-arg4
 (defthm bvcat-of-logext-same
    (implies (and (natp size)
                  (< 0 size)
@@ -1055,6 +1056,14 @@
                    (bvcat highsize y size x)))
    :hints (("Goal" :in-theory (enable bvcat ;bvchop-logapp
                                       ))))
+
+(defthm bvcat-of-logext-arg4
+  (implies (and (<= size size2)
+                (natp size)
+                (integerp size2))
+            (equal (bvcat highsize y size (logext size2 x))
+                   (bvcat highsize y size x)))
+   :hints (("Goal" :in-theory (enable bvcat))))
 
 (defthm logapp-of-logext
    (implies (and (natp size2)
