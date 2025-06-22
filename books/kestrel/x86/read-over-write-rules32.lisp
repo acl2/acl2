@@ -1,7 +1,7 @@
 ; "Read over write" rules for our x86 state readers and writers
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -240,11 +240,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm segment-base-and-bounds-of-set-eip
-  (equal (segment-base-and-bounds proc-mode seg-reg (set-eip eip x86))
-         (segment-base-and-bounds proc-mode seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-eip))))
-
+(defthm segment-base-and-bounds-of-set-eip (equal (segment-base-and-bounds proc-mode seg-reg (set-eip eip x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-eip))))
 (defthm segment-base-and-bounds-of-set-eax (equal (segment-base-and-bounds proc-mode seg-reg (set-eax eax x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-eax))))
 (defthm segment-base-and-bounds-of-set-ebx (equal (segment-base-and-bounds proc-mode seg-reg (set-ebx ebx x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-ebx))))
 (defthm segment-base-and-bounds-of-set-ecx (equal (segment-base-and-bounds proc-mode seg-reg (set-ecx ecx x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-ecx))))
@@ -260,33 +256,18 @@
 (defthm segment-base-and-bounds-of-set-rbp-high (equal (segment-base-and-bounds proc-mode seg-reg (set-rbp-high ebp x86)) (segment-base-and-bounds proc-mode seg-reg x86)) :hints (("Goal" :in-theory (enable set-rbp-high))))
 
 (defthm segment-base-and-bounds-of-write-byte-to-segment
-  (equal (segment-base-and-bounds proc-mode seg-reg (write-byte-to-segment eff-addr seg-reg val x86))
+  (equal (segment-base-and-bounds proc-mode seg-reg (write-byte-to-segment eff-addr seg-reg2 val x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
   :hints (("Goal" :in-theory (enable write-byte-to-segment))))
 
 (defthm segment-base-and-bounds-of-write-to-segment
-  (equal (segment-base-and-bounds proc-mode seg-reg (write-to-segment n eff-addr seg-reg val x86))
+  (equal (segment-base-and-bounds proc-mode seg-reg (write-to-segment n eff-addr seg-reg2 val x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
   :hints (("Goal" :in-theory (enable write-to-segment))))
 
-(defthm mv-nth-1-of-segment-base-and-bounds-of-write-to-segment
-  (equal (mv-nth 1 (segment-base-and-bounds 1 seg-reg (write-to-segment n eff-addr2 seg-reg2 val x86)))
-         (mv-nth 1 (segment-base-and-bounds 1 seg-reg x86)))
-  :hints (("Goal" :in-theory (e/d (segment-base-and-bounds) (;; x86isa::seg-hidden-basei-is-n64p
-                                                             ;; x86isa::seg-hidden-limiti-is-n32p
-                                                             ;; x86isa::seg-hidden-attri-is-n16p
-                                                             )))))
-
-
-(defthm mv-nth-2-of-segment-base-and-bounds-of-write-to-segment
-  (equal (mv-nth 2 (segment-base-and-bounds 1 seg-reg (write-to-segment n eff-addr2 seg-reg2 val x86)))
-         (mv-nth 2 (segment-base-and-bounds 1 seg-reg x86)))
-  :hints (("Goal" :in-theory (e/d (segment-base-and-bounds) (;; x86isa::seg-hidden-basei-is-n64p
-                                                             ;; x86isa::seg-hidden-limiti-is-n32p
-                                                             ;; x86isa::seg-hidden-attri-is-n16p
-                                                             )))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Are these used?
 
 (defthm segment-min-eff-addr32-of-set-eip
   (equal (segment-min-eff-addr32 seg-reg (set-eip eip x86))
@@ -313,6 +294,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Are these used?
+
 (defthm segment-max-eff-addr32-of-set-eip
   (equal (segment-max-eff-addr32 seg-reg (set-eip eip x86))
          (segment-max-eff-addr32 seg-reg x86))
@@ -323,16 +306,6 @@
          (segment-max-eff-addr32 seg-reg x86))
   :hints (("Goal" :in-theory (enable set-flag))))
 
-(defthm segment-max-eff-addr32-of-set-undef
-  (equal (segment-max-eff-addr32 seg-reg (set-undef undef x86))
-         (segment-max-eff-addr32 seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-undef))))
-
-(defthm segment-max-eff-addr32-of-set-mxcsr
-  (equal (segment-max-eff-addr32 seg-reg (set-mxcsr mxcsr x86))
-         (segment-max-eff-addr32 seg-reg x86))
-  :hints (("Goal" :in-theory (enable set-mxcsr))))
-
 (defthm segment-max-eff-addr32-of-write-byte-to-segment
   (equal (segment-max-eff-addr32 seg-reg (write-byte-to-segment eff-addr2 seg-reg2 val x86))
          (segment-max-eff-addr32 seg-reg x86))
@@ -342,6 +315,16 @@
   (equal (segment-max-eff-addr32 seg-reg (write-to-segment n eff-addr seg-reg2 val x86))
          (segment-max-eff-addr32 seg-reg x86))
   :hints (("Goal" :in-theory (enable segment-max-eff-addr32))))
+
+(defthm segment-max-eff-addr32-of-set-undef
+  (equal (segment-max-eff-addr32 seg-reg (set-undef undef x86))
+         (segment-max-eff-addr32 seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-undef))))
+
+(defthm segment-max-eff-addr32-of-set-mxcsr
+  (equal (segment-max-eff-addr32 seg-reg (set-mxcsr mxcsr x86))
+         (segment-max-eff-addr32 seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

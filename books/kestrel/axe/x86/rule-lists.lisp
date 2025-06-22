@@ -312,15 +312,6 @@
 
 ;; (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
 
-;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
-(defund program-at-rules ()
-  (declare (xargs :guard t))
-  '(program-at-of-write
-    x86isa::program-at-of-if
-    program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
-    program-at-of-set-undef ; do we not need something like this?
-    program-at-of-set-mxcsr
-    ))
 
 ;; Now we just go to read
 ;; (defun read-byte-rules ()
@@ -369,6 +360,7 @@
     read-chunks-base
     read-chunks-unroll))
 
+;; Mostly for 64-bit mode
 ;todo: some are only needed with the new normal forms
 (defund write-rules ()
   (declare (xargs :guard t))
@@ -509,10 +501,12 @@
 ;; For both 32-bit and 64-bit
 (defund new-normal-form-rules-common ()
   (declare (xargs :guard t))
-  '(xr-becomes-fault
+  '(;; Introduce fault, etc:
+    xr-becomes-fault
     xr-becomes-ms
     xr-becomes-mxcsr
     xr-becomes-undef
+    ;; Introduce set-fault, etc:
     xw-becomes-set-fault
     xw-becomes-set-ms
     xw-becomes-set-mxcsr
@@ -523,12 +517,14 @@
     !undef-becomes-set-undef))
 
 ;; todo: some of these are write-over-write rules
-(defund read-over-write-rules ()
+;; These are used for both 32 and 64 bit modes.
+;; Most of these are for the new normal form (fault, etc.)
+(defund read-over-write-rules-common ()
   (declare (xargs :guard t))
   '( ; rule to intro app-view?
     x86isa::app-view-of-xw ; needed?
     app-view-of-set-flag
-    ;; app-view-of-set-ms
+    ;; app-view-of-set-ms ;; we don't want to continue once a branch has a call of set-ms
     app-view-of-set-mxcsr
     app-view-of-set-undef
     app-view-of-!rflags
@@ -698,7 +694,6 @@
 (defund state-rules ()
   (declare (xargs :guard t))
   '(
-    ;x86isa::x86p-set-flag
     force ;todo: think about this, could only open force on a constant arg
     ;x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
@@ -2017,12 +2012,13 @@
     x86isa::integerp-when-canonical-address-p-cheap ; also in the non-bv case!
     ))
 
+;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defund lifter-rules-common ()
   (declare (xargs :guard t))
   (append (symbolic-execution-rules)
-          (read-over-write-rules) ; todo: don't use all these
+          (read-over-write-rules-common) ; todo: don't use all these?
           (shadowed-write-rules) ; requires the x86 rewriter ; todo: not needed for 32-bit?
           (read-write-set-flag-rules) ; requires the x86 rewriter ; todo: not needed for 32-bit?
           (acl2::base-rules)
@@ -2753,6 +2749,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Used in loop-lifter (old normal form) and unroller (new normal form)
 ;; todo: move some of these to lifter-rules-common
 (defund lifter-rules32 ()
   (declare (xargs :guard t))
@@ -2809,19 +2806,6 @@
             data-segment-writeable-bit-of-set-undef
             data-segment-writeable-bit-of-write-byte-to-segment
             data-segment-writeable-bit-of-write-to-segment
-            data-segment-writeable-bit-of-set-eip
-            data-segment-writeable-bit-of-set-eax
-            data-segment-writeable-bit-of-set-ebx
-            data-segment-writeable-bit-of-set-ecx
-            data-segment-writeable-bit-of-set-edx
-            data-segment-writeable-bit-of-set-esp
-            data-segment-writeable-bit-of-set-ebp
-            data-segment-writeable-bit-of-set-rax-high
-            data-segment-writeable-bit-of-set-rbx-high
-            data-segment-writeable-bit-of-set-rcx-high
-            data-segment-writeable-bit-of-set-rdx-high
-            data-segment-writeable-bit-of-set-rsp-high
-            data-segment-writeable-bit-of-set-rbp-high
 
             code-segment-descriptor-attributesbits->r-of-bvchop
             data-segment-descriptor-attributesbits->w-of-bvchop
@@ -3013,6 +2997,11 @@
     write-to-segment-of-write-to-segment-included
     ))
 
+;; The new normal form uses:
+;; EAX, etc.
+;; SET-EAX, etc.
+;; RAX-HIGH, etc. (these should go away)
+;; what else?
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 ;; todo: restrict this to memory stuff?
 (defund new-normal-form-rules32 ()
@@ -3059,11 +3048,12 @@
     ;; rsp-high-of-write-bytes-to-segment
     ;; rbp-high-of-write-bytes-to-segment
 
-    ;; Introduce EIP (we put in eip instead of rip since these rules are for 32-bit reasoning, but eip and rip are equivalent)
-    read-*ip-becomes-eip
+    ;; Introduce EIP (we put in eip instead of rip since these rules are for 32-bit reasoning -- eip now returns a u32)
     xr-becomes-eip
     rip-becomes-eip
+    read-*ip-becomes-eip
 
+    ;; Introduce set-eip
     xw-becomes-set-eip
     !rip-becomes-set-eip
 
@@ -3074,6 +3064,20 @@
     xr-becomes-edx
     xr-becomes-ebp
     xr-becomes-esp
+
+    data-segment-writeable-bit-of-set-eip
+    data-segment-writeable-bit-of-set-eax
+    data-segment-writeable-bit-of-set-ebx
+    data-segment-writeable-bit-of-set-ecx
+    data-segment-writeable-bit-of-set-edx
+    data-segment-writeable-bit-of-set-esp
+    data-segment-writeable-bit-of-set-ebp
+    data-segment-writeable-bit-of-set-rax-high
+    data-segment-writeable-bit-of-set-rbx-high
+    data-segment-writeable-bit-of-set-rcx-high
+    data-segment-writeable-bit-of-set-rdx-high
+    data-segment-writeable-bit-of-set-rsp-high
+    data-segment-writeable-bit-of-set-rbp-high
 
     get-flag-of-set-eip
     get-flag-of-set-eax
@@ -3855,11 +3859,11 @@
     segments-separate-of-code-and-stack
     write-*ip-inline-becomes-xw
 
-    ;segment-min-eff-addr32-of-set-undef
-;segment-min-eff-addr32-of-set-eip ;drop?
-;segment-max-eff-addr32-of-set-eip ;drop?
+    ;;segment-min-eff-addr32-of-set-undef
+    ;;segment-min-eff-addr32-of-set-eip ;drop?
+    ;;segment-max-eff-addr32-of-set-eip ;drop?
 
-;    ea-to-la-of-set-eip
+    ;; ea-to-la-of-set-eip
 
     eff-addr-okp-of-xw-irrel
     eff-addr-okp-of-set-eip
@@ -4052,7 +4056,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Used by the unroller and loop-lifter.
+;; Used by the unroller (new normal forms) and loop-lifter (old normal forms).
 (defund lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules-common)
@@ -4086,7 +4090,7 @@
 
 (defund new-normal-form-rules64 ()
   (declare (xargs :guard t))
-  '(;; these target xr-of-rgf:
+  '(;; these target xr-of-rgf and introduce RAX, etc:
     xr-becomes-rax
     xr-becomes-rbx
     xr-becomes-rcx
@@ -5779,6 +5783,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
+(defund program-at-rules ()
+  (declare (xargs :guard t))
+  '(program-at-of-write
+    x86isa::program-at-of-if
+    program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
+    program-at-of-set-undef ; do we not need something like this?
+    program-at-of-set-mxcsr
+    ))
+
 (defund extra-loop-lifter-rules ()
   (declare (xargs :guard t))
   (append ;or put these in symbolic-execution-rules-loop ?:
@@ -5879,6 +5893,8 @@
     xr-of-set-mxcsr-irrel ; maybe this normal form is not used?
     ))
 
+;; These are for both 32 and 64 bit modes.
+;; For the old normal form, we expose XR and XW.
 (defund old-normal-form-rules ()
   (declare (xargs :guard t))
   '(fault fault$a ; exposes xr
