@@ -157,15 +157,16 @@
           field-inv-flagged-pred-completeness))
 
   (defruled field-inv-flagged-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_inv_flagged" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_inv_flagged") defs)
                          (field-inv-flagged-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep e prime))
              (equal (pfcs::definition-satp
-                      "field_inv_flagged" defs (list x y e) prime)
+                      (name "field_inv_flagged") defs (list x y e) prime)
                     (field-inv-flagged-spec x y e prime)))
     :in-theory '((:e field-inv-flagged-circuit)
+                 (:e name)
                  definition-satp-to-field-inv-flagged-pred
                  field-inv-flagged-pred-to-spec)))

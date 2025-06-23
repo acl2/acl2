@@ -103,14 +103,15 @@
              field-double-spec))
 
   (defruled field-double-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_double" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_double") defs)
                          (field-double-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime))
              (equal (pfcs::definition-satp
-                      "field_double" defs (list x y) prime)
+                      (name "field_double") defs (list x y) prime)
                     (field-double-spec x y prime)))
     :in-theory '((:e field-double-circuit)
+                 (:e name)
                  definition-satp-to-field-double-pred
                  field-double-pred-to-spec)))

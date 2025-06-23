@@ -124,7 +124,7 @@
              field-if-spec))
 
   (defruled field-if-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_if" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_if") defs)
                          (field-if-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -133,8 +133,9 @@
                   (pfield::fep w prime)
                   (bitp x))
              (equal (pfcs::definition-satp
-                      "field_if" defs (list x y z w) prime)
+                      (name "field_if") defs (list x y z w) prime)
                     (field-if-spec x y z w prime)))
     :in-theory '((:e field-if-circuit)
+                 (:e name)
                  definition-satp-to-field-if-pred
                  field-if-pred-to-spec)))

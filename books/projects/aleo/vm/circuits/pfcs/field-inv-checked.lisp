@@ -120,14 +120,15 @@
              field-inv-checked-spec))
 
   (defruled field-inv-checked-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_inv_checked" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_inv_checked") defs)
                          (field-inv-checked-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime))
              (equal (pfcs::definition-satp
-                      "field_inv_checked" defs (list x y) prime)
+                      (name "field_inv_checked") defs (list x y) prime)
                     (field-inv-checked-spec x y prime)))
     :in-theory '((:e field-inv-checked-circuit)
+                 (:e name)
                  definition-satp-to-field-inv-checked-pred
                  field-inv-checked-pred-to-spec)))

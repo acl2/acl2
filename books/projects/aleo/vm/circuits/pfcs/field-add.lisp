@@ -105,15 +105,16 @@
              field-add-spec))
 
   (defruled field-add-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_add" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_add") defs)
                          (field-add-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep z prime))
              (equal (pfcs::definition-satp
-                      "field_add" defs (list x y z) prime)
+                      (name "field_add") defs (list x y z) prime)
                     (field-add-spec x y z prime)))
     :in-theory '((:e field-add-circuit)
+                 (:e name)
                  definition-satp-to-field-add-pred
                  field-add-pred-to-spec)))

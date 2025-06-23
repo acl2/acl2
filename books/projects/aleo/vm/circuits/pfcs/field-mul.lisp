@@ -104,15 +104,16 @@
              field-mul-spec))
 
   (defruled field-mul-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_mul" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_mul") defs)
                          (field-mul-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep z prime))
              (equal (pfcs::definition-satp
-                      "field_mul" defs (list x y z) prime)
+                      (name "field_mul") defs (list x y z) prime)
                     (field-mul-spec x y z prime)))
     :in-theory '((:e field-mul-circuit)
+                 (:e name)
                  definition-satp-to-field-mul-pred
                  field-mul-pred-to-spec)))

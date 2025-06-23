@@ -77,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define boolean-assert-all-circuit-body ((xs string-listp))
+(define boolean-assert-all-circuit-body ((xs name-listp))
   :returns (constrs pfcs::constraint-listp)
   :short "Construct the defining body of the PFCS relation."
   :long
@@ -89,7 +89,7 @@
      we define this construction over an arbitrary list of variable names,
      which are then instantiated to @('(x_0 ... x_<n-1>)')."))
   (cond ((endp xs) nil)
-        (t (cons (pfcall "boolean_assert" (pfvar (car xs)))
+        (t (cons (pfcall (name "boolean_assert") (pfvar (car xs)))
                  (boolean-assert-all-circuit-body (cdr xs)))))
 
   ///
@@ -102,7 +102,7 @@
 
   (defrule constraint-list-vars-of-boolean-assert-all-circuit-body
     (equal (pfcs::constraint-list-vars (boolean-assert-all-circuit-body xs))
-           (set::mergesort (str::string-list-fix xs)))
+           (set::mergesort (name-list-fix xs)))
     :induct t
     :enable (pfcs::constraint-list-vars
              pfcs::constraint-vars
@@ -200,10 +200,10 @@
 
 
   (defruled constraint-list-satp-to-boolean-assert-all-circuit-body
-    (implies (and (equal (pfcs::lookup-definition "boolean_assert" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "boolean_assert") defs)
                          (boolean-assert-circuit))
                   (primep prime)
-                  (string-listp xs-vars)
+                  (name-listp xs-vars)
                   (no-duplicatesp-equal xs-vars)
                   (pfield::fe-listp xs-vals prime)
                   (equal (len xs-vars) (len xs-vals))
@@ -233,7 +233,7 @@
                           (iname "boolean_assert_all" (len xs))
                           defs)
                          (boolean-assert-all-circuit (len xs)))
-                  (equal (pfcs::lookup-definition "boolean_assert" defs)
+                  (equal (pfcs::lookup-definition (name "boolean_assert") defs)
                          (boolean-assert-circuit))
                   (primep prime)
                   (pfield::fe-listp xs prime))
@@ -276,7 +276,7 @@
                           (iname "boolean_assert_all" (len xs))
                           defs)
                          (boolean-assert-all-circuit (len xs)))
-                  (equal (pfcs::lookup-definition "boolean_assert" defs)
+                  (equal (pfcs::lookup-definition (name "boolean_assert") defs)
                          (boolean-assert-circuit))
                   (primep prime)
                   (pfield::fe-listp xs prime))

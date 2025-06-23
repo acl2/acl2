@@ -135,7 +135,7 @@
              boolean-nand-spec))
 
   (defruled boolean-nand-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_nand" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "boolean_nand") defs)
                          (boolean-nand-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -144,8 +144,9 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      "boolean_nand" defs (list x y z) prime)
+                      (name "boolean_nand") defs (list x y z) prime)
                     (boolean-nand-spec x y z prime)))
     :in-theory '((:e boolean-nand-circuit)
+                 (:e name)
                  definition-satp-to-boolean-nand-pred
                  boolean-nand-pred-to-spec)))

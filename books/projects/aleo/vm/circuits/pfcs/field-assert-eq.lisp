@@ -42,8 +42,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define field-assert-eq-spec ((x (pfield::fep x prime))
-                                (y (pfield::fep y prime))
-                                (prime primep))
+                              (y (pfield::fep y prime))
+                              (prime primep))
   (declare (ignore prime))
   :returns (yes/no booleanp)
   :short "Specification of the circuit."
@@ -147,26 +147,27 @@
           field-assert-eq-pred-completeness))
 
   (defruled field-assert-eq-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_assert_eq" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_assert_eq") defs)
                          (field-assert-eq-circuit))
-                  (equal (pfcs::lookup-definition "boolean_assert_true" defs)
+                  (equal (pfcs::lookup-definition (name "boolean_assert_true") defs)
                          (boolean-assert-true-circuit))
-                  (equal (pfcs::lookup-definition "field_eq" defs)
+                  (equal (pfcs::lookup-definition (name "field_eq") defs)
                          (field-eq-circuit))
-                  (equal (pfcs::lookup-definition "field_neq" defs)
+                  (equal (pfcs::lookup-definition (name "field_neq") defs)
                          (field-neq-circuit))
-                  (equal (pfcs::lookup-definition "boolean_not" defs)
+                  (equal (pfcs::lookup-definition (name "boolean_not") defs)
                          (boolean-not-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime))
              (equal (pfcs::definition-satp
-                      "field_assert_eq" defs (list x y) prime)
+                      (name "field_assert_eq") defs (list x y) prime)
                     (field-assert-eq-spec x y prime)))
     :in-theory '((:e field-assert-eq-circuit)
                  (:e boolean-assert-true-circuit)
                  (:e field-eq-circuit)
                  (:e field-neq-circuit)
                  (:e boolean-not-circuit)
+                 (:e name)
                  definition-satp-to-field-assert-eq-pred
                  field-assert-eq-pred-to-spec)))

@@ -123,15 +123,16 @@
              boolean-not-spec))
 
   (defruled boolean-not-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_not" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "boolean_not") defs)
                          (boolean-not-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (bitp x))
              (equal (pfcs::definition-satp
-                      "boolean_not" defs (list x y) prime)
+                      (name "boolean_not") defs (list x y) prime)
                     (boolean-not-spec x y prime)))
     :in-theory '((:e boolean-not-circuit)
+                 (:e name)
                  definition-satp-to-boolean-not-pred
                  boolean-not-pred-to-spec)))

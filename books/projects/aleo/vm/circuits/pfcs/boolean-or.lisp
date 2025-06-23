@@ -135,7 +135,7 @@
              boolean-or-spec))
 
   (defruled boolean-or-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_or" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "boolean_or") defs)
                          (boolean-or-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -144,8 +144,9 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      "boolean_or" defs (list x y z) prime)
+                      (name "boolean_or") defs (list x y z) prime)
                     (boolean-or-spec x y z prime)))
     :in-theory '((:e boolean-or-circuit)
+                 (:e name)
                  definition-satp-to-boolean-or-pred
                  boolean-or-pred-to-spec)))

@@ -125,7 +125,7 @@
              field-div-unchecked-spec))
 
   (defruled field-div-unchecked-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_div_unchecked" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_div_unchecked") defs)
                          (field-div-unchecked-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -133,8 +133,9 @@
                   (pfield::fep z prime)
                   (not (equal y 0)))
              (equal (pfcs::definition-satp
-                      "field_div_unchecked" defs (list x y z) prime)
+                      (name "field_div_unchecked") defs (list x y z) prime)
                     (field-div-unchecked-spec x y z prime)))
     :in-theory '((:e field-div-unchecked-circuit)
+                 (:e name)
                  definition-satp-to-field-div-unchecked-pred
                  field-div-unchecked-pred-to-spec)))
