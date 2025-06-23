@@ -414,7 +414,7 @@ OK_CERTS := $(filter-out $(CERT_PL_USES_STP), $(OK_CERTS))
 endif
 
 ifeq ($(OS_HAS_GCC_C17), )
-$(info Excluding books that invoke GCC with \"-std=c17\": [$(CERT_PL_USES_GCC_C17)])
+$(info Excluding books that require a GCC with \"-std=c17\": [$(CERT_PL_USES_GCC_C17)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_GCC_C17), $(OK_CERTS))
 endif
 
