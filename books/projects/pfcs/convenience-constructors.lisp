@@ -65,10 +65,9 @@
     (implies (constraint-listp x)
              (constraint/constraintlist-p x)))
 
-  (defrule not-constraintp-when-constraint-listp
+  (defruled not-constraintp-when-constraint-listp
     (implies (pfcs::constraint-listp x)
              (not (pfcs::constraintp x)))
-    :rule-classes :tau-system
     :enable pfcs::constraintp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
