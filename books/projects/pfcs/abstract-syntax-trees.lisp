@@ -17,6 +17,8 @@
 (include-book "std/util/defprojection" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -43,16 +45,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod name
+(fty::deftagsum name
   :short "Fixtype of names."
   :long
   (xdoc::topstring
    (xdoc::p
     "Names are used for variables and relations.")
    (xdoc::p
-    "For now we define names as wrappers of (any) strings,
-     but in the future we may add more structure."))
-  ((string string))
+    "We define name as either (wrapped) strings
+     or (wrapped) pairs consisting of a string and a natural number.
+     The former are simple names,
+     while the latter are indexed names.
+     Our current "
+    (xdoc::seetopic "concrete-syntax" "concrete syntax")
+    " only covers simple names,
+     but we may extend it to also cover indexed names at some point,
+     as part of a larger extension to add syntax for parameterized circuits.
+     In the meanwhile, indexed names are useful
+     to construct parameterized circuits directly in abstract syntax."))
+  (:simple ((string string)))
+  (:indexed ((string string)
+             (index nat)))
   :pred namep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -85,7 +98,8 @@
 (fty::defresult name-result
   :short "Fixtype of errors and names."
   :ok name
-  :pred name-resultp)
+  :pred name-resultp
+  :prepwork ((local (in-theory (enable name-kind)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

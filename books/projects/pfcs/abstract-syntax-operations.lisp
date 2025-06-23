@@ -32,15 +32,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection name-list (x)
+(std::defprojection name-simple-list (x)
   :guard (string-listp x)
   :returns (names name-listp)
-  :short "Lift @(tsee name) to lists."
-  (name x)
+  :short "Lift @(tsee name-simple) to lists."
+  (name-simple x)
 
   ///
 
-  (fty::deffixequiv name-list))
+  (fty::deffixequiv name-simple-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

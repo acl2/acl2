@@ -69,10 +69,10 @@
   (b* ((coeff (first elem))
        (pvar (second elem)))
     (cond ((equal pvar 1) (expression-const coeff))
-          ((equal coeff 1) (expression-var (name (symbol-name pvar))))
+          ((equal coeff 1) (expression-var (name-simple (symbol-name pvar))))
           (t (make-expression-mul
               :arg1 (expression-const (first elem))
-              :arg2 (expression-var (name (symbol-name pvar)))))))
+              :arg2 (expression-var (name-simple (symbol-name pvar)))))))
 
   ///
 

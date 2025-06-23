@@ -275,7 +275,7 @@
        ((okf char) (abs-letter letter-tree))
        ((okf chars) (abs-*-letter/decimaldigit/underscore sub.2nd))
        (string (str::implode (cons char chars))))
-    (name string))
+    (name-simple string))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

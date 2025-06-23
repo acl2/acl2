@@ -29,45 +29,39 @@ boolean_and(w0, w1, w2)")))
 
 (assert-event
  (let ((ast (parse "boolean_and(x,y,z) := {
-  x * y == z
-}
-boolean_and(w0, w1, w2)")))
+                    x * y == z
+                    }
+                    boolean_and(w0, w1, w2)")))
    (equal ast
           '(:SYSTEM
             (DEFINITIONS (:DEFINITION
-                          (NAME (STRING . "boolean_and"))
-                          (PARA ((STRING . "x"))
-                                ((STRING . "y"))
-                                ((STRING . "z")))
-                          (BODY (:EQUAL
-                                 (:MUL
-                                  (:VAR ((STRING . "x")))
-                                  (:VAR ((STRING . "y"))))
-                                 (:VAR ((STRING . "z")))))))
+                          (NAME :SIMPLE "boolean_and")
+                          (PARA (:SIMPLE "x")
+                                (:SIMPLE "y")
+                                (:SIMPLE "z"))
+                          (BODY (:EQUAL (:MUL (:VAR (:SIMPLE "x"))
+                                         (:VAR (:SIMPLE "y")))
+                                 (:VAR (:SIMPLE "z"))))))
             (CONSTRAINTS (:RELATION
-                          ((STRING . "boolean_and"))
-                          ((:VAR ((STRING . "w0")))
-                           (:VAR ((STRING . "w1")))
-                           (:VAR ((STRING . "w2"))))))))))
+                          (:SIMPLE "boolean_and")
+                          ((:VAR (:SIMPLE "w0"))
+                           (:VAR (:SIMPLE "w1"))
+                           (:VAR (:SIMPLE "w2")))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (assert-event
- (let ((def (parse-def "
-  boolean_and(x,y,z) := {
-    x * y == z
-  }")))
+ (let ((def (parse-def"boolean_and(x,y,z) := {
+                       x * y == z
+                       }")))
    (equal def
-          '(:DEFINITION
-            (NAME (STRING . "boolean_and"))
-            (PARA ((STRING . "x"))
-                  ((STRING . "y"))
-                  ((STRING . "z")))
-            (BODY (:EQUAL
-                   (:MUL
-                    (:VAR ((STRING . "x")))
-                    (:VAR ((STRING . "y"))))
-                   (:VAR ((STRING . "z")))))))))
+          '(:DEFINITION (NAME :SIMPLE "boolean_and")
+            (PARA (:SIMPLE "x")
+                  (:SIMPLE "y")
+                  (:SIMPLE "z"))
+            (BODY (:EQUAL (:MUL (:VAR (:SIMPLE "x"))
+                           (:VAR (:SIMPLE "y")))
+                   (:VAR (:SIMPLE "z"))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,13 +71,11 @@ boolean_and(w0, w1, w2)")))
 (assert-event
  (let ((ast (parse "a - 1 == -b")))
    (equal ast
-          '(:SYSTEM (DEFINITIONS)
+          '(:SYSTEM
+            (DEFINITIONS)
             (CONSTRAINTS (:EQUAL
-                          (:SUB
-                           (:VAR ((STRING . "a")))
-                           (:CONST 1))
-                          (:NEG
-                           (:VAR ((STRING . "b"))))))))))
+                          (:SUB (:VAR (:SIMPLE "a")) (:CONST 1))
+                          (:NEG (:VAR (:SIMPLE "b")))))))))
 
 ;; sub and neg of numeral and neg of expression
 (assert-event
@@ -91,8 +83,7 @@ boolean_and(w0, w1, w2)")))
    (equal ast
           '(:SYSTEM
             (DEFINITIONS)
-            (CONSTRAINTS (:EQUAL
-                          (:NEG (:CONST 2))
-                          (:SUB
-                           (:CONST 1)
-                           (:NEG (:MUL (:CONST 3) (:CONST 4))))))))))
+            (CONSTRAINTS
+             (:EQUAL (:NEG (:CONST 2))
+              (:SUB (:CONST 1)
+               (:NEG (:MUL (:CONST 3) (:CONST 4))))))))))

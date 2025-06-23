@@ -183,7 +183,9 @@
      a symbol in the Lisp package,
      which cannot be used as an ACL2 name.
      In the future, we may make this mapping more robust."))
-  (b* ((string (name->string name))
+  (b* (((unless (name-case name :simple))
+        (raise "Indexed name ~x0 not supported." (name-fix name)))
+       (string (name-simple->string name))
        (chars (str::explode string))
        (new-chars (lift-var-name-aux chars))
        (new-string (str::implode new-chars)))
@@ -759,8 +761,6 @@
      and set membership in @(tsee omap::keys),
      given things are formulated;
      perhaps there is a way to do this via rewrite rules."))
-
-  :guard-debug t
 
   (b* ((wrld (w state))
        ((definition def) def)

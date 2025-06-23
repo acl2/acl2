@@ -68,7 +68,7 @@
 (define iname ((base stringp) (i natp))
   :returns (name namep)
   :short "Create an indexed name, from a base and an index."
-  (name (str::cat base "_" (str::nat-to-dec-string i)))
+  (name-simple (str::cat base "_" (str::nat-to-dec-string i)))
 
   ///
 
@@ -77,7 +77,7 @@
 
   (defruled iname-not-equal-to-base
     (implies (stringp base)
-             (not (equal (iname base i) (name base))))
+             (not (equal (iname base i) (name-simple base))))
     :enable (string-append-lst
              string-append
              str::equal-of-implode-left-to-equal-of-explode-right
@@ -116,7 +116,7 @@
 
      (defruled base-not-member-of-iname-list-rev
        (implies (stringp base)
-                (not (member-equal (name base) (iname-list-rev base n))))
+                (not (member-equal (name-simple base) (iname-list-rev base n))))
        :induct t
        :enable (iname-list-rev
                 iname-not-equal-to-base))))
@@ -136,7 +136,7 @@
 
   (defruled base-not-member-of-iname-list
     (implies (stringp base)
-             (not (member-equal (name base) (iname-list base n))))
+             (not (member-equal (name-simple base) (iname-list base n))))
     :use base-not-member-of-iname-list-rev
     :enable iname-list))
 
@@ -168,7 +168,7 @@
  (defund iname-to-num (iname base)
    (str::dec-digit-chars-value
     (nthcdr (1+ (length base))
-            (str::explode (name->string iname))))))
+            (str::explode (name-simple->string iname))))))
 
 ; Lift INAME-TO-NUM to lists.
 
