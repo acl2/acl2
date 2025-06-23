@@ -20,10 +20,12 @@
 (include-book "read-bytes-and-write-bytes") ; since this book knows about read-bytes
 (include-book "kestrel/utilities/quote" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
-(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
+(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+;(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/reverse" :dir :system))
+;; (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
 (local (in-theory (disable acl2::reverse-becomes-reverse-list-gen
                            acl2::reverse-becomes-reverse-list
@@ -31,10 +33,11 @@
                            acl2::revappend-removal
                            assoc-equal
                            symbol-alistp
+                           x86isa::byte-listp-becomes-all-unsigned-byte-p ; todo
                            ))) ; todo
 
-(local (in-theory (disable x86isa::byte-listp-becomes-all-unsigned-byte-p ; todo
-                           )))
+(set-induction-depth-limit 1)
+
 (local
   (defthm true-listp-when-byte-listp
     (implies (acl2::byte-listp x)
@@ -74,6 +77,7 @@
 
 ;move this stuff?
 
+;; Usually extends ACC with a pair (cons <address-term> <size>) for the memory that will be occupied by the segment.
 ;; Returns (mv erp maybe-extended-acc).
 (defun elf64-segment-address-and-len (program-header-table-entry relp bvp base-var bytes-len acc)
   (declare (xargs :guard (and (alistp program-header-table-entry)
@@ -100,7 +104,11 @@
         (mv :not-enough-bytes nil)
       (if (< memsz filesz)
           (mv :too-many-bytes-in-file nil)
-        (b* ((address-term (if relp (if bvp (symbolic-bvplus-constant 48 vaddr base-var) (symbolic-add-constant vaddr base-var)) `,vaddr)))
+        (b* ((address-term (if relp
+                               (if bvp
+                                   (symbolic-bvplus-constant 48 vaddr base-var)
+                                 (symbolic-add-constant vaddr base-var))
+                             vaddr)))
           (mv nil
               (cons (cons address-term memsz)
                     acc)))))))
@@ -143,7 +151,7 @@
                               (acl2::byte-listp bytes)
                               (booleanp relp)
                               (symbolp state-var)
-                              (symbolp base-var) ; rename base-address-var?
+                              (symbolp base-var) ; rename base-address-var? ; only used if relp
                               (natp stack-slots-needed)
                               (booleanp bvp)
                               (booleanp new-canonicalp))))
