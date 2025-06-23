@@ -189,6 +189,8 @@
                            pfcs::name-list
                            pfcs::name-listp
                            pfcs::name-list-fix
+                           pfcs::name-simple
+                           pfcs::name-indexed
                            pfcs::pf+
                            pfcs::pf*
                            pfcs::pf=
@@ -196,6 +198,7 @@
                            pfcs::pfconst
                            pfcs::pfdef
                            pfcs::pfmon
+                           pfcs::pfname
                            pfcs::pfvar
                            std::defret-mutual
                            str::string-list)))
