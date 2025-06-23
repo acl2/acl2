@@ -199,6 +199,7 @@
                            pfcs::pfdef
                            pfcs::pfmon
                            pfcs::pfname
+                           pfcs::pfnames
                            pfcs::pfvar
                            std::defret-mutual
                            str::string-list)))
