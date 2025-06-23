@@ -1,6 +1,6 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,7 +12,7 @@
 
 (include-book "core")
 
-(include-book "centaur/fty/top" :dir :system)
+(include-book "kestrel/fty/map" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,6 +58,11 @@
   (fty::deffixequiv in*
     :hints (("Goal" :in-theory (enable in*)))))
 
+(defsection list-in-fix
+  :extension list-in
+  (fty::deffixequiv list-in
+    :hints (("Goal" :in-theory (enable list-in)))))
+
 (defsection lookup-fix
   :extension lookup
   (fty::deffixequiv lookup))
@@ -66,6 +71,11 @@
   :extension lookup*
   (fty::deffixequiv lookup*
     :hints (("Goal" :in-theory (enable lookup*)))))
+
+(defsection list-lookup-fix
+  :extension list-lookup
+  (fty::deffixequiv list-lookup
+    :hints (("Goal" :in-theory (enable list-lookup)))))
 
 (defsection rlookup-fix
   :extension rlookup

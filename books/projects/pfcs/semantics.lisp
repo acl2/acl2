@@ -242,7 +242,25 @@
     :induct t
     :enable (len
              omap::from-lists
-             pfield::nat-listp-when-fe-listp)))
+             pfield::nat-listp-when-fe-listp))
+
+  (defruled fep-of-lookup-when-assignment-wfp
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg prime)
+                  (omap::assoc var asg))
+             (pfield::fep (omap::lookup var asg) prime))
+    :enable (omap::lookup
+             fep-of-cdr-of-in-when-assignment-wfp))
+
+  (defruled fe-listp-of-list-lookup-when-assignment-wfp
+    (implies (and (assignmentp asg)
+                  (assignment-wfp asg prime)
+                  (omap::list-in vars asg))
+             (pfield::fe-listp (omap::list-lookup vars asg) prime))
+    :induct t
+    :enable (omap::list-lookup
+             omap::list-in
+             fep-of-lookup-when-assignment-wfp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -388,7 +406,50 @@
              no-duplicatesp-equal
              omap::from-lists
              acl2::not-reserrp-when-nat-listp
-             eval-expr-list-of-omap-udpate-of-var-not-in-exprs)))
+             eval-expr-list-of-omap-udpate-of-var-not-in-exprs))
+
+  (defruled not-reserrp-of-eval-expr-list-of-atom
+    (implies (and (primep p)
+                  (atom exprs))
+             (not (reserrp (eval-expr-list exprs asg p)))))
+
+  (defruled reserrp-of-eval-expr-list-of-cons
+    (implies (primep p)
+             (equal (reserrp (eval-expr-list (cons expr exprs) asg p))
+                    (or (reserrp (eval-expr expr asg p))
+                        (reserrp (eval-expr-list exprs asg p)))))
+    :enable (acl2::not-reserrp-when-nat-listp
+             acl2::natp-when-nat-resultp-and-not-reserrp
+             acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))
+
+  (defruled reserrp-of-eval-expr-list-of-append
+    (implies (primep p)
+             (equal (reserrp (eval-expr-list (append exprs1 exprs2) asg p))
+                    (or (reserrp (eval-expr-list exprs1 asg p))
+                        (reserrp (eval-expr-list exprs2 asg p)))))
+    :induct t
+    :enable (append
+             not-reserrp-of-eval-expr-list-of-atom
+             reserrp-of-eval-expr-list-of-cons)
+    :disable eval-expr-list)
+
+  (defruled eval-expr-list-of-cons-when-not-error
+    (implies (and (not (reserrp (pfcs::eval-expr expr asg p)))
+                  (not (reserrp (pfcs::eval-expr-list exprs asg p))))
+             (equal (eval-expr-list (cons expr exprs) asg p)
+                    (cons (eval-expr expr asg p)
+                          (eval-expr-list exprs asg p)))))
+
+  (defruled eval-expr-list-of-append-when-not-error
+    (implies (and (primep p)
+                  (not (reserrp (pfcs::eval-expr-list exprs1 asg p)))
+                  (not (reserrp (pfcs::eval-expr-list exprs2 asg p))))
+             (equal (eval-expr-list (append exprs1 exprs2) asg p)
+                    (append (eval-expr-list exprs1 asg p)
+                            (eval-expr-list exprs2 asg p))))
+    :induct t
+    :enable (append
+             reserrp-of-eval-expr-list-of-append)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

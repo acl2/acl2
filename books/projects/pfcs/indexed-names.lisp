@@ -61,6 +61,7 @@
   :returns (name stringp)
   :short "Create an indexed name, from a base and an index."
   (str::cat base "_" (str::nat-to-dec-string i))
+
   ///
 
   (fty::deffixequiv iname
@@ -90,6 +91,7 @@
           (name (iname base n-1))
           (names (iname-list-rev base n-1)))
        (cons name names))
+
      ///
 
      (defret len-of-iname-list-rev
@@ -111,6 +113,7 @@
        :do-not '(preprocess) ; otherwise it throws away the (stringp base) hyp
        :enable (iname-list-rev
                 iname-not-equal-to-base))))
+
   ///
 
   (defret len-of-iname-list

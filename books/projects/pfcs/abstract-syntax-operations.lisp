@@ -38,7 +38,9 @@
   :returns (exprs expression-listp)
   :short "Lift @(tsee expression-var) to lists."
   (expression-var x)
+
   ///
+
   (fty::deffixequiv expression-var-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -87,6 +89,7 @@
         (t (set::union (expression-vars (car exprs))
                        (expression-list-vars (cdr exprs)))))
   :verify-guards :after-returns
+
   ///
 
   (defrule expression-list-vars-of-expression-var-list
@@ -95,7 +98,18 @@
     :induct t
     :enable (expression-vars
              expression-var-list
-             set::mergesort)))
+             set::mergesort))
+
+  (defrule expression-list-vars-of-cons
+    (equal (expression-list-vars (cons expr exprs))
+           (set::union (expression-vars expr)
+                       (expression-list-vars exprs))))
+
+  (defrule expression-list-vars-of-append
+    (equal (expression-list-vars (append exprs1 exprs2))
+           (set::union (expression-list-vars exprs1)
+                       (expression-list-vars exprs2)))
+    :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,7 +130,26 @@
   (cond ((endp constrs) nil)
         (t (set::union (constraint-vars (car constrs))
                        (constraint-list-vars (cdr constrs)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule constraint-list-vars-of-cons
+    (equal (constraint-list-vars (cons constr constrs))
+           (set::union (constraint-vars constr)
+                       (constraint-list-vars constrs))))
+
+  (defrule constraint-list-vars-of-append
+    (equal (constraint-list-vars (append constrs1 constrs2))
+           (set::union (constraint-list-vars constrs1)
+                       (constraint-list-vars constrs2)))
+    :induct t)
+
+  (defrule constraint-list-vars-of-rev
+    (equal (constraint-list-vars (rev constrs))
+           (constraint-list-vars constrs))
+    :induct t
+    :enable set::union-symmetric))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
