@@ -24,7 +24,6 @@
 (include-book "kestrel/fty/nat-option-list-result" :dir :system)
 (include-book "kestrel/fty/natoption-natoptionlist-result" :dir :system)
 (include-book "kestrel/fty/string-result" :dir :system)
-(include-book "kestrel/fty/string-list-result" :dir :system)
 (include-book "projects/abnf/tree-utilities" :dir :system)
 (include-book "std/strings/letter-chars" :dir :system)
 (include-book "std/strings/letter-digit-uscore-chars" :dir :system)
