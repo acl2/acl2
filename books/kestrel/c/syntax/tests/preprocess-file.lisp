@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-; cert_param: (uses-cpp)
+; cert_param: (uses-gcc-c17)
 
 (include-book "std/testing/must-eval-to-t" :dir :system)
 (include-book "std/testing/must-succeed" :dir :system)
