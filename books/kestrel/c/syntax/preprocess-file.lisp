@@ -53,7 +53,7 @@
       and exclude books appropriately. Certification of such books may be
       suppressed by manually undefining the Makefile variable
       \"OS_HAS_GCC_C17\". E.g., to run a regression excluding books calling
-     cpp:")
+     GCC:")
    (xdoc::code
      "OS_HAS_GCC_C17= make regression")
    (xdoc::p
@@ -100,9 +100,9 @@
     't)
    ((preprocessor stringp
                   "The preprocessor executable to use. The default is
-                   \"cpp\". Other reasonable values might be \"gcc\",
+                   \"gcc\". Other reasonable values might be \"gcc\",
                    \"clang\", \"cc\", etc.")
-    '"cpp")
+    '"gcc")
    ((extra-args string-listp
                 "Arguments to pass to the C preprocessor, in addition to
                  \"-E\". The default value is @('(list \"-P\" \"-std=c17\")').
@@ -224,9 +224,9 @@
     ':auto)
    ((preprocessor stringp
                   "The preprocessor executable to use. The default is
-                   \"cpp\". Other reasonable values might be \"gcc\",
+                   \"gcc\". Other reasonable values might be \"cpp\",
                    \"clang\", \"cc\", etc.")
-    '"cpp")
+    '"gcc")
    ((extra-args string-listp
                 "Arguments to pass to the C preprocessor, in addition to
                  \"-E\". The default value is @('(list \"-P\" \"-std=c17\")').
