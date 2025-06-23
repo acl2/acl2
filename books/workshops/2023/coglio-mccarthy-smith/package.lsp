@@ -53,7 +53,7 @@
                             pfcs::iname-list
                             pfcs::lift
                             pfcs::lookup-definition
-                            pfcs::name
+                            pfcs::name-simple
                             pfcs::name-listp
                             pfcs::name-list-fix
                             pfcs::p
@@ -64,6 +64,7 @@
                             pfcs::pfconst
                             pfcs::pfdef
                             pfcs::pfmon
+                            pfcs::pfname
                             pfcs::pfvar
                             r1cs::dot-product
                             r1cs::dot-product-of-append
