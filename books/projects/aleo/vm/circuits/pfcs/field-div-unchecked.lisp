@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -125,7 +126,8 @@
              field-div-unchecked-spec))
 
   (defruled field-div-unchecked-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition (name "field_div_unchecked") defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "field_div_unchecked")
+                                                  defs)
                          (field-div-unchecked-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -133,9 +135,9 @@
                   (pfield::fep z prime)
                   (not (equal y 0)))
              (equal (pfcs::definition-satp
-                      (name "field_div_unchecked") defs (list x y z) prime)
+                      (pfname "field_div_unchecked") defs (list x y z) prime)
                     (field-div-unchecked-spec x y z prime)))
     :in-theory '((:e field-div-unchecked-circuit)
-                 (:e name)
+                 (:e name-simple)
                  definition-satp-to-field-div-unchecked-pred
                  field-div-unchecked-pred-to-spec)))

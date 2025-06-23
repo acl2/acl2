@@ -89,7 +89,7 @@
      we define this construction over an arbitrary list of variable names,
      which are then instantiated to @('(x_0 ... x_<n-1>)')."))
   (cond ((endp xs) nil)
-        (t (cons (pfcall (name "boolean_assert") (pfvar (car xs)))
+        (t (cons (pfcall (pfname "boolean_assert") (pfvar (car xs)))
                  (boolean-assert-all-circuit-body (cdr xs)))))
 
   ///
@@ -200,7 +200,8 @@
 
 
   (defruled constraint-list-satp-to-boolean-assert-all-circuit-body
-    (implies (and (equal (pfcs::lookup-definition (name "boolean_assert") defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "boolean_assert")
+                                                  defs)
                          (boolean-assert-circuit))
                   (primep prime)
                   (name-listp xs-vars)
@@ -233,7 +234,8 @@
                           (iname "boolean_assert_all" (len xs))
                           defs)
                          (boolean-assert-all-circuit (len xs)))
-                  (equal (pfcs::lookup-definition (name "boolean_assert") defs)
+                  (equal (pfcs::lookup-definition (pfname "boolean_assert")
+                                                  defs)
                          (boolean-assert-circuit))
                   (primep prime)
                   (pfield::fe-listp xs prime))
@@ -276,7 +278,8 @@
                           (iname "boolean_assert_all" (len xs))
                           defs)
                          (boolean-assert-all-circuit (len xs)))
-                  (equal (pfcs::lookup-definition (name "boolean_assert") defs)
+                  (equal (pfcs::lookup-definition (pfname "boolean_assert")
+                                                  defs)
                          (boolean-assert-circuit))
                   (primep prime)
                   (pfield::fe-listp xs prime))

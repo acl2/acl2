@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -157,16 +158,17 @@
           field-inv-flagged-pred-completeness))
 
   (defruled field-inv-flagged-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition (name "field_inv_flagged") defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "field_inv_flagged")
+                                                  defs)
                          (field-inv-flagged-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep e prime))
              (equal (pfcs::definition-satp
-                      (name "field_inv_flagged") defs (list x y e) prime)
+                      (pfname "field_inv_flagged") defs (list x y e) prime)
                     (field-inv-flagged-spec x y e prime)))
     :in-theory '((:e field-inv-flagged-circuit)
-                 (:e name)
+                 (:e name-simple)
                  definition-satp-to-field-inv-flagged-pred
                  field-inv-flagged-pred-to-spec)))

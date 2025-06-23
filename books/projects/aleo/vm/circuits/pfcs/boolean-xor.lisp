@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -145,7 +146,7 @@
              bitp))
 
   (defruled boolean-xor-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition (name "boolean_xor") defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "boolean_xor") defs)
                          (boolean-xor-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -154,9 +155,9 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      (name "boolean_xor") defs (list x y z) prime)
+                      (pfname "boolean_xor") defs (list x y z) prime)
                     (boolean-xor-spec x y z prime)))
     :in-theory '((:e boolean-xor-circuit)
-                 (:e name)
+                 (:e name-simple)
                  definition-satp-to-boolean-xor-pred
                  boolean-xor-pred-to-spec)))
