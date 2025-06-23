@@ -109,7 +109,7 @@
     "The first argument must be a string that is used as the base for the names.
      The second argument is a natural number @('n'):
      the list of names has indices 0 to @('n-1'), in that order."))
-  `(names-indexed-below ',base ',n))
+  `(names-indexed-below ,base ,n))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
