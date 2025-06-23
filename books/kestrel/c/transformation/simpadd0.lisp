@@ -3857,18 +3857,18 @@
          ((mv new-specquals (simpadd0-gout gout-specqual))
           (simpadd0-spec/qual-list tyname.specquals gin state))
          (gin (simpadd0-gin-update gin gout-specqual))
-         ((mv new-decl? (simpadd0-gout gout-decl?))
-          (simpadd0-absdeclor-option tyname.decl? gin state)))
+         ((mv new-declor? (simpadd0-gout gout-declor?))
+          (simpadd0-absdeclor-option tyname.declor? gin state)))
       (mv (make-tyname :specquals new-specquals
-                       :decl? new-decl?
+                       :declor? new-declor?
                        :info tyname.info)
           (make-simpadd0-gout
-           :events (append gout-specqual.events gout-decl?.events)
+           :events (append gout-specqual.events gout-declor?.events)
            :thm-name nil
-           :thm-index gout-decl?.thm-index
-           :names-to-avoid gout-decl?.names-to-avoid
-           :vartys (omap::update* gout-specqual.vartys gout-decl?.vartys)
-           :diffp (or gout-specqual.diffp gout-decl?.diffp))))
+           :thm-index gout-declor?.thm-index
+           :names-to-avoid gout-declor?.names-to-avoid
+           :vartys (omap::update* gout-specqual.vartys gout-declor?.vartys)
+           :diffp (or gout-specqual.diffp gout-declor?.diffp))))
     :measure (tyname-count tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

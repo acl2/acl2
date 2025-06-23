@@ -569,7 +569,7 @@
     :returns (free-vars ident-setp)
     (b* (((tyname tyname) tyname))
       (union (free-vars-spec/qual-list tyname.specquals bound-vars)
-             (free-vars-absdeclor-option tyname.decl? bound-vars)))
+             (free-vars-absdeclor-option tyname.declor? bound-vars)))
     :measure (tyname-count tyname))
 
   (define free-vars-strunispec

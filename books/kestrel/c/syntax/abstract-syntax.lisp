@@ -2371,7 +2371,7 @@
       "Type names may be accompanied by some additional information,
        such as the type calculated during validation."))
     ((specquals spec/qual-list)
-     (decl? absdeclor-option)
+     (declor? absdeclor-option)
      (info any))
     :pred tynamep
     :measure (two-nats-measure (acl2-count x) 4))

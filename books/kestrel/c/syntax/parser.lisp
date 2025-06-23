@@ -12295,7 +12295,7 @@
              ((erp absdeclor last-span parstate) ; specquals absdeclor
               (parse-abstract-declarator parstate)))
           (retok (make-tyname :specquals specquals
-                              :decl? absdeclor
+                              :declor? absdeclor
                               :info nil)
                  (span-join span last-span)
                  parstate)))
@@ -12303,7 +12303,7 @@
        (t ; specquals other
         (b* ((parstate (if token (unread-token parstate) parstate)))
           (retok (make-tyname :specquals specquals
-                              :decl? nil
+                              :declor? nil
                               :info nil)
                  span
                  parstate)))))
