@@ -101,6 +101,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmacro+ pfnames (base n)
+  :short "Construct a list of indexed names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first argument must be a string that is used as the base for the names.
+     The second argument is a natural number @('n'):
+     the list of names has indices 0 to @('n-1'), in that order."))
+  `(names-indexed-below ',base ',n))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defmacro+ pfconst (c)
   :short "Construct a constant expression from an integer."
   `(expression-const ,c))
