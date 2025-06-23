@@ -406,11 +406,11 @@
          (dag dag-or-constant) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
          ((mv erp dag-or-constant state) (acl2::maybe-prune-dag-approximately prune-approx
-                                                                            dag
-                                                                            (remove-assumptions-about *non-stp-assumption-functions* assumptions)
-                                                                            print
-                                                                            60000 ; todo: pass in
-                                                                            state))
+                                                                              dag
+                                                                              (remove-assumptions-about *non-stp-assumption-functions* assumptions)
+                                                                              print
+                                                                              60000 ; todo: pass in
+                                                                              state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
@@ -473,12 +473,12 @@
                                                  ;; new:
                                                  x86-fetch-decode-execute
                                                  )
-                                               dag-fns))) ;; stop if the run is done
-         (- (and run-completedp (cw " The run has completed.~%")))
-         )
+                                               dag-fns))))
       (if run-completedp
+          ;; stop if the run is done
           ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
-          (b* ((- (cw "(Doing final simplification:~%"))
+          (b* ((- (cw " The run has completed.~%"))
+               (- (cw "(Doing final simplification:~%"))
                ((mv erp dag-or-constant state) ; todo: check if it is a constant?
                 ;; (if (eq :legacy rewriter)
                 ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
@@ -510,10 +510,20 @@
                   (declare (ignore limits)) ; todo: use the limits?
                   (mv erp result state))
                   ;)
+                ;; todo: also prune here?
                 )
                ((when erp) (mv erp nil state))
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
-               )
+               ;; Check for error branches:
+               (dag-fns (if (quotep dag-or-constant) nil (acl2::dag-fns dag-or-constant)))
+               (error-branch-functions (intersection-eq dag-fns
+                                                        ;; the presence of the indicates that we could not rule out an error branch
+                                                        '(set-ms
+                                                          set-fault)))
+               ((when error-branch-functions)
+                (cw "~X01" dag nil)
+                (er hard? 'repeatedly-run "Unresolved error branches occur (offending functions in the DAG above: ~x0)." error-branch-functions)
+                (mv :unresolved-error-branches nil state)))
             (mv (erp-nil) dag-or-constant state))
         ;; Continue the symbolic execution:
         (b* ((steps-done (+ steps-for-this-iteration steps-done))
@@ -1070,11 +1080,16 @@
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
        (lifter-rules (append (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))       ;todo: only need some of these for 64-bits?
-                             (if new-canonicalp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use these more (e.g., for macho-64)
+                             (if new-canonicalp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use new-canonicalp more
                              lifter-rules))
-       (lifter-rules (if stop-pcs
-                         (append (symbolic-execution-rules-with-stop-pcs) lifter-rules)
-                       lifter-rules))
+       (symbolic-execution-rules (if stop-pcs
+                                     (if 64-bitp
+                                         (symbolic-execution-rules-with-stop-pcs64)
+                                       (symbolic-execution-rules-with-stop-pcs32))
+                                   (if 64-bitp
+                                       (symbolic-execution-rules64)
+                                     (symbolic-execution-rules32))))
+       (lifter-rules (append symbolic-execution-rules lifter-rules))
        ;; Add any extra-rules:
        (- (let ((intersection (intersection-eq extra-rules lifter-rules))) ; todo: optimize (sort and then compare, and also use sorted lists below...)
             (and intersection
