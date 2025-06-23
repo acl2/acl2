@@ -127,7 +127,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are assignments of field elements to variables,
+    "These are assignments of field elements to (names of) variables,
      used to express the semantics of PFCSes
      (see @(see semantics)).")
    (xdoc::p
@@ -136,9 +136,10 @@
      which are a superset of every possible prime field.
      This way, we can have a fixtype of assignments
      (recall that fixtypes cannot be parameterized, currently)."))
-  :key-type string
+  :key-type name
   :val-type nat
   :pred assignmentp
+
   ///
 
   (defrule natp-of-cdr-of-in-when-assignmentp-type
@@ -148,7 +149,7 @@
     :rule-classes :type-prescription)
 
   (defrule assignmentp-of-from-lists
-    (implies (and (string-listp keys)
+    (implies (and (name-listp keys)
                   (nat-listp vals)
                   (equal (len keys) (len vals)))
              (assignmentp (omap::from-lists keys vals)))
@@ -183,6 +184,7 @@
           (and (fep nat p)
                (assignment-wfp (omap::tail asg) p)))))
   :hooks (:fix)
+
   ///
 
   (defruled fep-of-cdr-of-in-when-assignment-wfp
@@ -235,7 +237,7 @@
     :enable omap::delete*)
 
   (defrule assignment-wfp-of-from-lists
-    (implies (and (string-listp keys)
+    (implies (and (name-listp keys)
                   (fe-listp vals p)
                   (equal (len keys) (len vals)))
              (assignment-wfp (omap::from-lists keys vals) p))
@@ -310,6 +312,7 @@
   :hooks (:fix)
   :verify-guards nil ; done below
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
+
   ///
 
   (defrule fep-of-eval-expr
@@ -323,7 +326,7 @@
   (verify-guards eval-expr)
 
   (defruled eval-expr-of-omap-update-of-var-not-in-expr
-    (implies (and (stringp var)
+    (implies (and (namep var)
                   (natp val)
                   (assignmentp asg)
                   (not (set::in var (expression-vars expr))))
@@ -362,6 +365,7 @@
     (in-theory
      (enable acl2::natp-when-nat-resultp-and-not-reserrp
              acl2::nat-listp-when-nat-list-resultp-and-not-reserrp))))
+
   ///
 
   (defrule fe-listp-of-eval-expr-list
@@ -378,7 +382,7 @@
     :hints (("Goal" :induct t :in-theory (enable len))))
 
   (defruled eval-expr-list-of-omap-udpate-of-var-not-in-exprs
-    (implies (and (stringp var)
+    (implies (and (namep var)
                   (natp val)
                   (assignmentp asg)
                   (not (set::in var (expression-list-vars exprs))))
@@ -390,7 +394,7 @@
              eval-expr-of-omap-update-of-var-not-in-expr))
 
   (defruled eval-expr-list-of-expression-var-list-and-omap-from-lists
-    (implies (and (string-listp vars)
+    (implies (and (name-listp vars)
                   (no-duplicatesp-equal vars)
                   (fe-listp vals p)
                   (equal (len vars)
@@ -491,7 +495,9 @@
   :returns (asgs assignment-listp)
   :short "Lift @(tsee assertion->asg) to lists."
   (assertion->asg x)
+
   ///
+
   (fty::deffixequiv assertion-list->asg-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -500,7 +506,9 @@
   :returns (constrs constraint-listp)
   :short "Lift @(tsee assertion->constr) to lists."
   (assertion->constr x)
+
   ///
+
   (fty::deffixequiv assertion-list->constr-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -515,6 +523,7 @@
                  (assertion-list-from (cdr asgs) (cdr constrs)))))
   :guard-hints (("Goal" :in-theory (enable len)))
   :hooks (:fix)
+
   ///
 
   (defrule assertion-list->asg-list-of-assertion-list-from
@@ -599,7 +608,7 @@
              (left expression)
              (right expression)))
     (:relation ((asg assignment)
-                (name string)
+                (name name)
                 (args expression-list)
                 (sub proof-tree-list)
                 (asgfree assignment)))
@@ -884,7 +893,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define definition-satp ((name stringp)
+(define definition-satp ((name namep)
                          (defs definition-listp)
                          (vals (fe-listp vals p))
                          (p primep))

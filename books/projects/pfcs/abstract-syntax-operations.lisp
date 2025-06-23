@@ -13,7 +13,6 @@
 
 (include-book "abstract-syntax-trees")
 
-(include-book "kestrel/fty/string-set" :dir :system)
 (include-book "std/util/deflist" :dir :system)
 
 (local (include-book "std/typed-lists/string-listp" :dir :system))
@@ -33,8 +32,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection expression-var-list (x)
+(std::defprojection name-list (x)
   :guard (string-listp x)
+  :returns (names name-listp)
+  :short "Lift @(tsee name) to lists."
+  (name x)
+
+  ///
+
+  (fty::deffixequiv name-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection expression-var-list (x)
+  :guard (name-listp x)
   :returns (exprs expression-listp)
   :short "Lift @(tsee expression-var) to lists."
   (expression-var x)
@@ -63,7 +74,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expression-vars ((expr expressionp))
-  :returns (vars string-setp)
+  :returns (vars name-setp)
   :short "Set of variables in an expression."
   (expression-case
    expr
@@ -83,7 +94,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define expression-list-vars ((exprs expression-listp))
-  :returns (vars string-setp)
+  :returns (vars name-setp)
   :short "Set of variables in a list of expressions."
   (cond ((endp exprs) nil)
         (t (set::union (expression-vars (car exprs))
@@ -94,7 +105,7 @@
 
   (defrule expression-list-vars-of-expression-var-list
     (equal (expression-list-vars (expression-var-list vars))
-           (set::mergesort (string-list-fix vars)))
+           (set::mergesort (name-list-fix vars)))
     :induct t
     :enable (expression-vars
              expression-var-list
@@ -114,7 +125,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-vars ((constr constraintp))
-  :returns (vars string-setp)
+  :returns (vars name-setp)
   :short "Set of variables in a constraint."
   (constraint-case
    constr
@@ -125,7 +136,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-list-vars ((constrs constraint-listp))
-  :returns (vars string-setp)
+  :returns (vars name-setp)
   :short "Set of variables in a list of constraints."
   (cond ((endp constrs) nil)
         (t (set::union (constraint-vars (car constrs))
@@ -154,7 +165,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define definition-free-vars ((def definitionp))
-  :returns (vars string-setp)
+  :returns (vars name-setp)
   :short "Set of free variables in a definition."
   :long
   (xdoc::topstring
@@ -165,7 +176,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lookup-definition ((name stringp) (defs definition-listp))
+(define lookup-definition ((name namep) (defs definition-listp))
   :returns (def? definition-optionp)
   :short "Look up a definition in a list of definitions."
   :long
@@ -182,7 +193,7 @@
   (b* (((when (endp defs)) nil)
        (def (car defs))
        ((when (equal (definition->name def)
-                     (str-fix name)))
+                     (name-fix name)))
         (definition-fix def)))
     (lookup-definition name (cdr defs)))
   :hooks (:fix))
@@ -197,14 +208,14 @@
     "This is isomorphic to the @(':relation') kind of @(tsee constraint),
      but it is convenient to have a separate fixtype here,
      for certain purposes."))
-  ((name string)
+  ((name name)
    (args expression-list))
   :pred constrelp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset constrel-set
-  :short "Fixtype of osets of relation constraints."
+  :short "Fixtype of sets of relation constraints."
   :elt-type constrel
   :elementp-of-nil nil
   :pred constrel-setp
@@ -250,7 +261,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-rels ((constr constraintp))
-  :returns (rels string-setp)
+  :returns (rels name-setp)
   :short "Set of (names of) relations in a constraint."
   :long
   (xdoc::topstring
@@ -267,7 +278,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define constraint-list-rels ((constrs constraint-listp))
-  :returns (rels string-setp)
+  :returns (rels name-setp)
   :short "Set of (names of) relations in a list of constraints."
   :long
   (xdoc::topstring

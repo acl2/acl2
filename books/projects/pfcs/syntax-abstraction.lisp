@@ -268,16 +268,15 @@
 (define abs-identifier ((tree abnf::treep))
   ;; Right now there is no separate object for identifiers, we just use
   ;; ACL2 strings.
-  :returns (id string-resultp)
+  :returns (id name-resultp)
   :short "Abstract an @('identifier') to an identifier."
   (b* (((okf (abnf::tree-list-tuple2 sub))
         (abnf::check-tree-nonleaf-2 tree "identifier"))
        ((okf letter-tree) (abnf::check-tree-list-1 sub.1st))
        ((okf char) (abs-letter letter-tree))
        ((okf chars) (abs-*-letter/decimaldigit/underscore sub.2nd))
-       (string (str::implode (cons char chars)))
-       )
-    string)
+       (string (str::implode (cons char chars))))
+    (name string))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -285,7 +284,7 @@
 ; Syntax around abs-identifier used for other rules
 
 (define abs-comma-identifier ((tree abnf::treep))
-  :returns (id string-resultp)
+  :returns (id name-resultp)
   :short "Abstract a @('( \",\" identifier )') to a string."
   (b* (((okf (abnf::tree-list-tuple2 sub)) (abnf::check-tree-nonleaf-2 tree nil))
        ((okf tree) (abnf::check-tree-list-1 sub.1st))
@@ -297,13 +296,13 @@
 (define abs-*-comma-identifier ((trees abnf::tree-listp))
   :returns
   (ids
-   string-list-resultp
+   name-list-resultp
    :hints
    (("Goal"
      :in-theory
      (enable
-      acl2::stringp-when-string-resultp-and-not-reserrp
-      acl2::string-listp-when-string-list-resultp-and-not-reserrp))))
+      namep-when-name-resultp-and-not-reserrp
+      name-listp-when-name-list-resultp-and-not-reserrp))))
   :short "Abstract a @('*( \",\" identifier )') to a list of identifiers."
   (b* (((when (endp trees)) nil)
        ((okf id) (abs-comma-identifier (car trees)))
@@ -315,20 +314,20 @@
 
   (defret identifier-listp-of-abs-*-comma-identifier
     (implies (not (reserrp ids))
-             (string-listp ids))))
+             (name-listp ids))))
 
 (define abs-?-identifier-*-comma-identifier ((tree abnf::treep))
   :returns
   (ids
-   string-list-resultp
+   name-list-resultp
    :hints
    (("Goal"
      :in-theory
      (enable
-      acl2::stringp-when-string-resultp-and-not-reserrp
-      acl2::string-listp-when-string-list-resultp-and-not-reserrp))))
+      namep-when-name-resultp-and-not-reserrp
+      name-listp-when-name-list-resultp-and-not-reserrp))))
   :short "Abstract a @('[ identifier *( \",\" identifier ) ]')
-            to a list of identifiers (strings)."
+          to a list of identifiers (strings)."
   (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
        ((when (endp treess)) nil)
        ((okf (abnf::tree-list-tuple2 sub)) (abnf::check-tree-list-list-2 treess))
@@ -340,9 +339,9 @@
 
   ///
 
-  (defret identifier-listp-of-abs-?-identifier-*-comma-identifier
+  (defret name-listp-of-abs-?-identifier-*-comma-identifier
     (implies (not (reserrp ids))
-             (string-listp ids))))
+             (name-listp ids))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -383,14 +382,14 @@
                 ((okf rulename?) (abnf::check-tree-nonleaf? tree)))
              (cond ((equal rulename? "identifier")
                     (let ((id-or-err (abs-identifier tree)))
-                      (if (stringp id-or-err)
+                      (if (namep id-or-err)
                           (make-expression-var :name id-or-err)
-                          id-or-err)))
+                        id-or-err)))
                    ((equal rulename? "numeral")
                     (let ((num-or-err (abs-numeral tree)))
                       (if (natp num-or-err)
                           (make-expression-const :value num-or-err)
-                          num-or-err)))
+                        num-or-err)))
                    (t (reserrf (list :found-subtree
                                      (abnf::tree-info-for-error tree)))))))
         (3 (b* (((okf (abnf::tree-list-tuple3 sub))
@@ -420,8 +419,8 @@
          ((okf expr) (abs-primary-expression tree)))
       (if has-minus-sign?
           (make-expression-neg :arg expr)
-          expr))
-      :measure (abnf::tree-count tree))
+        expr))
+    :measure (abnf::tree-count tree))
 
   ;; multiplication-expression
   ;;   = unary-minus-expression
@@ -430,7 +429,7 @@
   (define abs-multiplication-expression ((tree abnf::treep))
     :returns (expr-or-err expression-resultp)
     :short "Abstract a @('multiplication-expression')."
-    (b* (((okf treess) (abnf::check-tree-nonleaf 
+    (b* (((okf treess) (abnf::check-tree-nonleaf
                         tree "multiplication-expression")))
       (case (len treess)
         (1 (b* (((okf trees) (abnf::check-tree-list-list-1 treess))
@@ -471,10 +470,10 @@
                  (b* (((okf tree) (abnf::check-tree-list-1 sub.3rd))
                       ((okf sub-mult) (abs-multiplication-expression tree)))
                    (make-expression-add :arg1 sub-add-or-sub :arg2 sub-mult))
-                 (b* (((okf &) (abnf::check-tree-schars tree "-"))
-                      ((okf tree) (abnf::check-tree-list-1 sub.3rd))
-                      ((okf sub-mult) (abs-multiplication-expression tree)))
-                   (make-expression-sub :arg1 sub-add-or-sub :arg2 sub-mult)))))
+               (b* (((okf &) (abnf::check-tree-schars tree "-"))
+                    ((okf tree) (abnf::check-tree-list-1 sub.3rd))
+                    ((okf sub-mult) (abs-multiplication-expression tree)))
+                 (make-expression-sub :arg1 sub-add-or-sub :arg2 sub-mult)))))
         (otherwise (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))))
     :measure (abnf::tree-count tree))
 
@@ -772,13 +771,13 @@
 (define abs-*-definition ((trees abnf::tree-listp))
   :returns
   (definitions
-   definition-list-resultp
-   :hints
-   (("Goal"
-     :in-theory
-     (enable
-      definitionp-when-definition-resultp-and-not-reserrp
-      definition-listp-when-definition-list-resultp-and-not-reserrp))))
+    definition-list-resultp
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       definitionp-when-definition-resultp-and-not-reserrp
+       definition-listp-when-definition-list-resultp-and-not-reserrp))))
   :short "Abstract a @('*definition') to a list of definitions."
   (b* (((when (endp trees)) nil)
        ((okf definition) (abs-definition (car trees)))
