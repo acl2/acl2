@@ -339,6 +339,8 @@
 
 (defruled member-equal-of-iname-and-iname-list
   :parents (iname-list)
+  :short "An indexed name is a list of indexed names with the same base
+          iff the index is less than the number of indexed names in the list."
   (implies (stringp base)
            (iff (member-equal (iname base i) (iname-list base n))
                 (< (nfix i) (nfix n))))
