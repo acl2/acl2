@@ -727,7 +727,7 @@
    :return (expr-option-case
             stmt.expr?
             :some (expr-type stmt.expr?.val)
-            :none (type-unknown))
+            :none (type-void))
    :asm (type-unknown))
   :measure (stmt-count stmt)
   :hints (("Goal" :in-theory (enable o< o-finp)))
