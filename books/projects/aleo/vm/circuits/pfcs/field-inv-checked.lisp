@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -100,7 +101,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection field-double-correctness
+(defsection field-inv-checked-correctness
   :short "Correctness of the circuit."
   :long
   (xdoc::topstring
@@ -120,15 +121,16 @@
              field-inv-checked-spec))
 
   (defruled field-inv-checked-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition (name "field_inv_checked") defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "field_inv_checked")
+                                                  defs)
                          (field-inv-checked-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime))
              (equal (pfcs::definition-satp
-                      (name "field_inv_checked") defs (list x y) prime)
+                      (pfname "field_inv_checked") defs (list x y) prime)
                     (field-inv-checked-spec x y prime)))
     :in-theory '((:e field-inv-checked-circuit)
-                 (:e name)
+                 (:e name-simple)
                  definition-satp-to-field-inv-checked-pred
                  field-inv-checked-pred-to-spec)))

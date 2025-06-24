@@ -12,6 +12,7 @@
 (in-package "PFCS")
 
 (include-book "lifting")
+(include-book "convenience-constructors")
 
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 
@@ -36,14 +37,14 @@
 (define make-rel-boolean ()
   :returns (def definitionp)
   (make-definition
-   :name (name "rel-boolean")
-   :para (list (name "b"))
+   :name (pfname "rel-boolean")
+   :para (list (pfname "b"))
    :body (list
           (make-constraint-equal
            :left (expression-mul
                   (expression-sub (expression-const 1)
-                                  (expression-var (name "b")))
-                  (expression-var (name "b")))
+                                  (expression-var (pfname "b")))
+                  (expression-var (pfname "b")))
            :right (expression-const 0)))))
 
 (lift (make-rel-boolean))
@@ -58,14 +59,14 @@
 
 (defruled definition-satp-of-rel-boolean-to-spec
   (implies (and (primep p)
-                (equal (lookup-definition (name "rel-boolean") defs)
+                (equal (lookup-definition (pfname "rel-boolean") defs)
                        (make-rel-boolean))
                 (fep b p))
-           (equal (definition-satp (name "rel-boolean") defs (list b) p)
+           (equal (definition-satp (pfname "rel-boolean") defs (list b) p)
                   (or (equal b 0)
                       (equal b 1))))
   :in-theory '((:e make-rel-boolean)
-               (:e name))
+               (:e name-simple))
   :use (definition-satp-to-rel-boolean
          rel-boolean-to-spec))
 
@@ -76,14 +77,14 @@
 (define make-rel-condeq ()
   :returns (def definitionp)
   (make-definition
-   :name (name "rel-condeq")
-   :para (list (name "a") (name "b") (name "c"))
+   :name (pfname "rel-condeq")
+   :para (list (pfname "a") (pfname "b") (pfname "c"))
    :body (list
           (make-constraint-equal
            :left (expression-mul
-                  (expression-var (name "a"))
-                  (expression-sub (expression-var (name "b"))
-                                  (expression-var (name "c"))))
+                  (expression-var (pfname "a"))
+                  (expression-sub (expression-var (pfname "b"))
+                                  (expression-var (pfname "c"))))
            :right (expression-const 0)))))
 
 (lift (make-rel-condeq))
@@ -100,16 +101,16 @@
 
 (defruled definition-satp-of-rel-condeq-to-spec
   (implies (and (primep p)
-                (equal (lookup-definition (name "rel-condeq") defs)
+                (equal (lookup-definition (pfname "rel-condeq") defs)
                        (make-rel-condeq))
                 (fep a p)
                 (fep b p)
                 (fep c p))
-           (equal (definition-satp (name "rel-condeq") defs (list a b c) p)
+           (equal (definition-satp (pfname "rel-condeq") defs (list a b c) p)
                   (or (equal a 0)
                       (equal b c))))
   :in-theory '((:e make-rel-condeq)
-               (:e name))
+               (:e name-simple))
   :use (definition-satp-to-rel-condeq
          rel-condeq-to-spec))
 
@@ -120,16 +121,16 @@
 (define make-rel-select ()
   :returns (def definitionp)
   (make-definition
-   :name (name "rel-select")
-   :para (list (name "b") (name "x") (name "y") (name "z"))
+   :name (pfname "rel-select")
+   :para (list (pfname "b") (pfname "x") (pfname "y") (pfname "z"))
    :body (list
           (make-constraint-equal
            :left (expression-mul
-                  (expression-var (name "b"))
-                  (expression-sub (expression-var (name "y"))
-                                  (expression-var (name "x"))))
-           :right (expression-sub (expression-var (name "y"))
-                                  (expression-var (name "z")))))))
+                  (expression-var (pfname "b"))
+                  (expression-sub (expression-var (pfname "y"))
+                                  (expression-var (pfname "x"))))
+           :right (expression-sub (expression-var (pfname "y"))
+                                  (expression-var (pfname "z")))))))
 
 (lift (make-rel-select))
 
@@ -150,18 +151,18 @@
 
 (defruled definition-satp-of-rel-select-to-spec
   (implies (and (primep p)
-                (equal (lookup-definition (name "rel-select") defs)
+                (equal (lookup-definition (pfname "rel-select") defs)
                        (make-rel-select))
                 (fep b p)
                 (fep x p)
                 (fep y p)
                 (fep z p)
                 (rel-boolean b p)) ; precondition
-           (equal (definition-satp (name "rel-select") defs (list b x y z) p)
+           (equal (definition-satp (pfname "rel-select") defs (list b x y z) p)
                   (equal z
                          (if (equal b 1) x y))))
   :in-theory '((:e make-rel-select)
-               (:e name))
+               (:e name-simple))
   :use (definition-satp-to-rel-select
          rel-select-to-spec))
 
@@ -172,13 +173,13 @@
 (define make-rel-nonzero ()
   :returns (def definitionp)
   (make-definition
-   :name (name "rel-nonzero")
-   :para (list (name "a"))
+   :name (pfname "rel-nonzero")
+   :para (list (pfname "a"))
    :body (list
           (make-constraint-equal
            :left (expression-mul
-                  (expression-var (name "ainv"))
-                  (expression-var (name "a")))
+                  (expression-var (pfname "ainv"))
+                  (expression-var (pfname "a")))
            :right (expression-const 1)))))
 
 (lift (make-rel-nonzero))
@@ -208,13 +209,13 @@
 
 (defruled definition-satp-of-rel-nonzero-to-spec
   (implies (and (primep p)
-                (equal (lookup-definition (name "rel-nonzero") defs)
+                (equal (lookup-definition (pfname "rel-nonzero") defs)
                        (make-rel-nonzero))
                 (fep a p))
-           (equal (definition-satp (name "rel-nonzero") defs (list a) p)
+           (equal (definition-satp (pfname "rel-nonzero") defs (list a) p)
                   (not (equal a 0))))
   :in-theory '((:e make-rel-nonzero)
-               (:e name))
+               (:e name-simple))
   :use (definition-satp-to-rel-nonzero
          rel-nonzero-to-spec))
 
@@ -225,19 +226,19 @@
 (define make-rel-xor ()
   :returns (def definitionp)
   (make-definition
-   :name (name "rel-xor")
-   :para (list (name "a") (name "b") (name "c"))
+   :name (pfname "rel-xor")
+   :para (list (pfname "a") (pfname "b") (pfname "c"))
    :body (list
           (make-constraint-equal
            :left (expression-mul (expression-mul
                                   (expression-const 2)
-                                  (expression-var (name "a")))
-                                 (expression-var (name "b")))
-           :right (expression-add (expression-var (name "a"))
+                                  (expression-var (pfname "a")))
+                                 (expression-var (pfname "b")))
+           :right (expression-add (expression-var (pfname "a"))
                                   (expression-sub (expression-var
-                                                   (name "b"))
+                                                   (pfname "b"))
                                                   (expression-var
-                                                   (name "c"))))))))
+                                                   (pfname "c"))))))))
 
 (lift (make-rel-xor))
 
@@ -256,7 +257,7 @@
 
 (defruled definition-satp-of-rel-xor-to-spec
   (implies (and (primep p)
-                (equal (lookup-definition (name "rel-xor") defs)
+                (equal (lookup-definition (pfname "rel-xor") defs)
                        (make-rel-xor))
                 (fep a p)
                 (fep b p)
@@ -264,9 +265,9 @@
                 (rel-boolean a p) ; precondition
                 (rel-boolean b p) ; precondition
                 (> p 2)) ; additional precondition
-           (equal (definition-satp (name "rel-xor") defs (list a b c) p)
+           (equal (definition-satp (pfname "rel-xor") defs (list a b c) p)
                   (equal c (if (equal a b) 0 1))))
   :in-theory '((:e make-rel-xor)
-               (:e name))
+               (:e name-simple))
   :use (definition-satp-to-rel-xor
          rel-xor-to-spec))

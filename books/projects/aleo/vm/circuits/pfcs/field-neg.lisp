@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -103,15 +104,15 @@
              field-neg-spec))
 
   (defruled field-neg-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition (name "field_neg") defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "field_neg") defs)
                          (field-neg-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime))
              (equal (pfcs::definition-satp
-                      (name "field_neg") defs (list x y) prime)
+                      (pfname "field_neg") defs (list x y) prime)
                     (field-neg-spec x y prime)))
     :in-theory '((:e field-neg-circuit)
-                 (:e name)
+                 (:e name-simple)
                  definition-satp-to-field-neg-pred
                  field-neg-pred-to-spec)))

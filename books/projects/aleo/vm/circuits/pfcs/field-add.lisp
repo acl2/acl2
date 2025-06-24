@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -105,16 +106,16 @@
              field-add-spec))
 
   (defruled field-add-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition (name "field_add") defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "field_add") defs)
                          (field-add-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep z prime))
              (equal (pfcs::definition-satp
-                      (name "field_add") defs (list x y z) prime)
+                      (pfname "field_add") defs (list x y z) prime)
                     (field-add-spec x y z prime)))
     :in-theory '((:e field-add-circuit)
-                 (:e name)
+                 (:e name-simple)
                  definition-satp-to-field-add-pred
                  field-add-pred-to-spec)))

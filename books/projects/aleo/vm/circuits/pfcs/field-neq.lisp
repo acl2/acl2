@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -156,16 +157,16 @@
           field-neq-pred-completeness))
 
   (defruled field-neq-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition (name "field_neq") defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "field_neq") defs)
                          (field-neq-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep z prime))
              (equal (pfcs::definition-satp
-                      (name "field_neq") defs (list x y z) prime)
+                      (pfname "field_neq") defs (list x y z) prime)
                     (field-neq-spec x y z prime)))
     :in-theory '((:e field-neq-circuit)
-                 (:e name)
+                 (:e name-simple)
                  definition-satp-to-field-neq-pred
                  field-neq-pred-to-spec)))

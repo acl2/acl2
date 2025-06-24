@@ -26,7 +26,6 @@
 (local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
 (local (include-book "std/lists/repeat" :dir :system))
-(local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (in-theory (disable primep)))
 
@@ -162,8 +161,7 @@
   :elt-type assignment
   :true-listp t
   :elementp-of-nil t
-  :pred assignment-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred assignment-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -486,8 +484,7 @@
   :elt-type assertion
   :true-listp t
   :elementp-of-nil nil
-  :pred assertion-listp
-  :prepwork ((local (in-theory (enable nfix)))))
+  :pred assertion-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -619,9 +616,7 @@
     :elt-type proof-tree
     :true-listp t
     :elementp-of-nil nil
-    :pred proof-tree-listp)
-
-  :prepwork ((local (in-theory (enable nfix)))))
+    :pred proof-tree-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
