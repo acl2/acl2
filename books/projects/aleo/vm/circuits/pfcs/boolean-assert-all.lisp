@@ -94,6 +94,12 @@
 
   ///
 
+  (more-returns
+   (constrs pfcs::sr1cs-constraint-listp
+            :hints (("Goal"
+                     :induct t
+                     :in-theory (enable pfcs::sr1cs-constraintp)))))
+
   (defrule constraint-list-vars-of-boolean-assert-all-circuit-body
     (equal (pfcs::constraint-list-vars (boolean-assert-all-circuit-body xs))
            (set::mergesort (str::string-list-fix xs)))
@@ -125,6 +131,10 @@
            (boolean-assert-all-circuit-body para)))
 
   ///
+
+  (more-returns
+   (pdef pfcs::sr1cs-definitionp
+         :hints (("Goal" :in-theory (enable pfcs::sr1cs-definitionp)))))
 
   (defrule definition->name-of-boolean-assert-all-circuit
     (equal (pfcs::definition->name (boolean-assert-all-circuit n))
