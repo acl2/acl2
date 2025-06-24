@@ -83,7 +83,7 @@
        :induct t
        :enable names-indexed-below-rev)
 
-     (defruled member-equal-of-names-indexed-below-rev
+     (defruled member-equal-of-name-indexed-and-names-indexed-below-rev
        (iff (member-equal (name-indexed base i)
                           (names-indexed-below-rev base1 n))
             (and (equal (str-fix base)
@@ -96,7 +96,7 @@
        (no-duplicatesp-equal (names-indexed-below-rev base n))
        :induct t
        :enable (no-duplicatesp-equal
-                member-equal-of-names-indexed-below-rev))))
+                member-equal-of-name-indexed-and-names-indexed-below-rev))))
 
   ///
 
@@ -117,13 +117,13 @@
     :use base-not-member-of-names-indexed-below-rev
     :enable names-indexed-below)
 
-  (defruled member-equal-of-names-indexed-below
+  (defruled member-equal-of-name-indexed-and-names-indexed-below
     (iff (member-equal (name-indexed base i)
                        (names-indexed-below base1 n))
          (and (equal (str-fix base)
                      (str-fix base1))
               (< (nfix i) (nfix n))))
-    :enable member-equal-of-names-indexed-below-rev)
+    :enable member-equal-of-name-indexed-and-names-indexed-below-rev)
 
   (defrule no-duplicatesp-equal-of-names-indexed-below
     (no-duplicatesp-equal (names-indexed-below base n))))
