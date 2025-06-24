@@ -15,7 +15,8 @@
 (include-book "canonical-unsigned")
 (include-book "assumptions") ; todo: for lifter-targetp
 (include-book "assumptions-for-inputs")
-(include-book "assumptions64")  ; reduce?
+;(include-book "assumptions64")  ; reduce?
+(include-book "parsers/parsed-executable-tools")
 (include-book "parsers/elf-tools")
 (include-book "read-bytes-and-write-bytes") ; since this book knows about read-bytes
 (include-book "kestrel/utilities/quote" :dir :system)
@@ -27,9 +28,7 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
-(local (in-theory (disable acl2::reverse-becomes-reverse-list-gen
-                           acl2::reverse-becomes-reverse-list
-                           acl2::reverse-removal
+(local (in-theory (disable acl2::reverse-removal
                            acl2::revappend-removal
                            assoc-equal
                            symbol-alistp

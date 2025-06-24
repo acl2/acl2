@@ -21,7 +21,6 @@
 (include-book "flags")
 (include-book "readers-and-writers")
 (include-book "register-readers-and-writers32")
-(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
@@ -301,7 +300,7 @@
                                    ;segment-is-32-bitsp-intro-2
                                    )))))
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: rename?
 ;; Returns the lowest address in the given segment (a linear address) and the
@@ -429,6 +428,8 @@
   :hints (("Goal" :use (:instance eff-addr-bounds2)
            :in-theory (e/d (32-bit-segment-size) (eff-addr-bounds2)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; A linear address
 (defund 32-bit-segment-start (seg-reg x86)
   (declare (xargs :stobjs x86
@@ -454,6 +455,8 @@
                   (32-bit-segment-start code x86)))
   :hints (("Goal" :in-theory (enable 32-bit-segment-start
                                      32-bit-segment-start-and-size))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Read the byte at effective address EFF-ADDR in the segment indicated by
 ;; SEG-REG.  Just read the byte, don't do any checking.
@@ -538,6 +541,8 @@
                   (nth (- eff-addr eff-addr2)
                        code))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;prove that this follows from the code and stack segment preds
 ;todo: what about expand down segments?  maybe those are covered here too
 (defun well-formed-32-bit-segmentp (seg-reg x86)
@@ -555,9 +560,7 @@
   (implies (well-formed-32-bit-segmentp seg-reg x86)
            (not (< (xr :seg-visible seg-reg x86) 4))))
 
-;;;
-;;; code-segment-readable-bit
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check whether a code segment is readable.
 (defund code-segment-readable-bit (x86)
@@ -578,10 +581,7 @@
   :hints (("Goal" :in-theory (e/d (code-segment-readable-bit)
                                   (code-segment-readable-bit-intro)))))
 
-
-;;;
-;;; code-segment-well-formedp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; These do not depend on the code itself:
 ;; TODO: Maybe add 32 to the name.
@@ -621,9 +621,7 @@
                   0))
   :hints (("Goal" :in-theory (enable code-segment-well-formedp))))
 
-;;;
-;;; code-segment-assumptions32-for-code
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: Do we need to say something about the base+limit not overflowing?
 ;; Says that CODE is present in the code segment, starting at OFFSET.
@@ -1863,9 +1861,6 @@
                 (x86p x86))
            (eff-addrs-okp n eff-addr *cs* x86))
   :hints (("Goal" :in-theory (enable code-segment-assumptions32-for-code))))
-
-(acl2::def-constant-opener seg-regp)
-(acl2::def-constant-opener INTEGER-RANGE-P)
 
 ;could widen these ranges
 (defthm SIGNED-BYTE-P-of-+-of-esp
