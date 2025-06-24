@@ -76,6 +76,11 @@
               (> (nfix n) 0))
        :hints (("Goal" :induct t :in-theory (enable nfix))))
 
+     (defret names-indexed-below-rev-iff
+       (iff names-rev
+            (> (nfix n) 0))
+       :hints (("Goal" :induct t :in-theory (enable nfix))))
+
      (defruled base-not-member-of-names-indexed-below-rev
        (implies (stringp base)
                 (not (member-equal (name-simple base)
@@ -116,6 +121,10 @@
   (defret consp-of-names-indexed-below
     (equal (consp names)
            (> (nfix n) 0)))
+
+  (defret names-indexed-below-iff
+    (iff names
+         (> (nfix n) 0)))
 
   (in-theory (disable consp-of-names-indexed-below
                       consp-of-names-indexed-below-rev))
