@@ -272,7 +272,7 @@
      If the two expressions are syntactically equal,
      the generated theorem just says that
      if the execution of the expression does not yield an error,
-     then the resulting value has type of the expression.
+     then the resulting value has the type of the expression.
      If the two expressions are not syntactically equal,
      the theorem also says that
      if the result of executing the old expression is not an error
