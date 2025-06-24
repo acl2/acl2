@@ -454,6 +454,23 @@ is shifted to the left by @('size') bits before the merge.</p>"
        ;; Could probably use logior instead of +.
        :exec (+ (loghead size i) (ash j size))))
 
+(defsection logappn
+  :short "N-ary version of @(tsee logapp)."
+  :long
+  "<p>This supports readable appending of multiple bit chunks, e.g.</p>
+   <code>
+   (logappn 32 base
+            8 padding
+            24 offset)
+   </code>
+   <p>This belongs to a more general library.</p>"
+  (defun logappn-fn (args)
+    (cond ((endp args) 0)
+          ((endp (cdr args)) 0)
+          (t `(logapp ,(car args) ,(cadr args) ,(logappn-fn (cddr args))))))
+  (defmacro logappn (&rest args)
+    (logappn-fn args)))
+
 (define logrpl
   :short "Logical replace.  @('(logrpl size i j)') replaces the @('size')
   low-order bits of @('j') with the @('size') low-order bits of @('i')."
