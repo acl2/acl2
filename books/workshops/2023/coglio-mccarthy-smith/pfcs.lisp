@@ -57,10 +57,10 @@
 
 (define boolean-assert-gadget ()
   :returns (pdef definitionp)
-  (pfdef "boolean_assert"
-         (list "x")
-         (pf= (pf* (pfvar "x")
-                   (pf+ (pfconst 1) (pfmon -1 "x")))
+  (pfdef (name "boolean_assert")
+         (list (name "x"))
+         (pf= (pf* (pfvar (name "x"))
+                   (pf+ (pfconst 1) (pfmon -1 (name "x"))))
               (pfconst 0))))
 
 ; This deeply embedded gadget can be automatically lifted
@@ -97,18 +97,22 @@
    (IMPLIES
     (AND
      (EQUAL
-      (LOOKUP-DEFINITION "boolean_assert" DEFS)
+      (LOOKUP-DEFINITION '((STRING . "boolean_assert"))
+                         DEFS)
       '(:DEFINITION
-        (PFCS::NAME . "boolean_assert")
-        (PFCS::PARA "x")
+        (NAME (STRING . "boolean_assert"))
+        (PFCS::PARA ((STRING . "x")))
         (PFCS::BODY
-         (:EQUAL (:MUL (:VAR "x")
+         (:EQUAL (:MUL (:VAR ((STRING . "x")))
                   (:ADD (:CONST 1)
-                   (:MUL (:CONST -1) (:VAR "x"))))
+                   (:MUL (:CONST -1)
+                    (:VAR ((STRING . "x"))))))
           (:CONST 0)))))
      (FEP X P)
      (PRIMEP P))
-    (EQUAL (DEFINITION-SATP "boolean_assert" DEFS (LIST X) P)
+    (EQUAL (DEFINITION-SATP '((STRING . "boolean_assert"))
+             DEFS (LIST X)
+             P)
            (BOOLEAN-ASSERT X P)))))
 
 ; Given that the gadget has been lifted,
@@ -132,13 +136,14 @@
 ; (so we enable its executable counterpart here, to bridge the gap).
 
 (defruled boolean-assert-gadget-correctness
-  (implies (and (equal (lookup-definition "boolean_assert" defs)
+  (implies (and (equal (lookup-definition (name "boolean_assert") defs)
                        (boolean-assert-gadget))
                 (primep p)
                 (fep x p))
-           (equal (definition-satp "boolean_assert" defs (list x) p)
+           (equal (definition-satp (name "boolean_assert") defs (list x) p)
                   (bitp x)))
   :in-theory '((:e boolean-assert-gadget)
+               (:e name)
                definition-satp-to-boolean-assert
                boolean-assert-correctness))
 
@@ -151,13 +156,13 @@
 
 (define if-then-else-gadget ()
   :returns (pdef definitionp)
-  (pfdef "if_then_else"
-         (list "w" "x" "y" "z")
-         (pf= (pf* (pfvar "w")
-                   (pf+ (pfvar "x")
-                        (pfmon -1 "y")))
-              (pf+ (pfvar "z")
-                   (pfmon -1 "y")))))
+  (pfdef (name "if_then_else")
+         (list (name "w") (name "x") (name "y") (name "z"))
+         (pf= (pf* (pfvar (name "w"))
+                   (pf+ (pfvar (name "x"))
+                        (pfmon -1 (name "y"))))
+              (pf+ (pfvar (name "z"))
+                   (pfmon -1 (name "y"))))))
 
 ; This gadget is also lifted automatically.
 
@@ -180,22 +185,30 @@
    (IMPLIES
     (AND
      (EQUAL
-      (LOOKUP-DEFINITION "if_then_else" DEFS)
+      (LOOKUP-DEFINITION '((STRING . "if_then_else"))
+                         DEFS)
       '(:DEFINITION
-        (PFCS::NAME . "if_then_else")
-        (PFCS::PARA "w" "x" "y" "z")
+        (NAME (STRING . "if_then_else"))
+        (PFCS::PARA ((STRING . "w"))
+                    ((STRING . "x"))
+                    ((STRING . "y"))
+                    ((STRING . "z")))
         (PFCS::BODY
-         (:EQUAL (:MUL (:VAR "w")
-                  (:ADD (:VAR "x")
-                   (:MUL (:CONST -1) (:VAR "y"))))
-          (:ADD (:VAR "z")
-           (:MUL (:CONST -1) (:VAR "y")))))))
+         (:EQUAL (:MUL (:VAR ((STRING . "w")))
+                  (:ADD (:VAR ((STRING . "x")))
+                   (:MUL (:CONST -1)
+                    (:VAR ((STRING . "y"))))))
+          (:ADD (:VAR ((STRING . "z")))
+           (:MUL (:CONST -1)
+            (:VAR ((STRING . "y")))))))))
      (FEP W P)
      (FEP X P)
      (FEP Y P)
      (FEP Z P)
      (PRIMEP P))
-    (EQUAL (DEFINITION-SATP "if_then_else" DEFS (LIST W X Y Z) P)
+    (EQUAL (DEFINITION-SATP '((STRING . "if_then_else"))
+             DEFS (LIST W X Y Z)
+             P)
            (IF-THEN-ELSE W X Y Z P)))))
 
 ; As with the previous gadget, we (easily) prove correctness,
@@ -216,7 +229,7 @@
 ; This could be generated automatically.
 
 (defruled if-then-else-gadget-correctness
-  (implies (and (equal (lookup-definition "if_then_else" defs)
+  (implies (and (equal (lookup-definition (name "if_then_else") defs)
                        (if-then-else-gadget))
                 (primep p)
                 (fep w p)
@@ -224,9 +237,10 @@
                 (fep y p)
                 (fep z p)
                 (bitp w))
-           (equal (definition-satp "if_then_else" defs (list w x y z) p)
+           (equal (definition-satp (name "if_then_else") defs (list w x y z) p)
                   (equal z (if (equal w 1) x y))))
   :in-theory '((:e if-then-else-gadget)
+               (:e name)
                definition-satp-to-if-then-else
                if-then-else-correctness))
 
@@ -249,17 +263,17 @@
 
 (define equality-test-gadget ()
   :returns (pdef definitionp)
-  (pfdef "equality_test"
-         (list "u" "v" "w")
-         (pfcall "boolean_assert" (pfvar "w"))
-         (pf= (pf* (pf+ (pfvar "u")
-                        (pfmon -1 "v"))
-                   (pfvar "s"))
+  (pfdef (name "equality_test")
+         (list (name "u") (name "v") (name "w"))
+         (pfcall (name "boolean_assert") (pfvar (name "w")))
+         (pf= (pf* (pf+ (pfvar (name "u"))
+                        (pfmon -1 (name "v")))
+                   (pfvar (name "s")))
               (pf+ (pfconst 1)
-                   (pfmon -1 "w")))
-         (pf= (pf* (pf+ (pfvar "u")
-                        (pfmon -1 "v"))
-                   (pf+ (pfvar "w")))
+                   (pfmon -1 (name "w"))))
+         (pf= (pf* (pf+ (pfvar (name "u"))
+                        (pfmon -1 (name "v")))
+                   (pf+ (pfvar (name "w"))))
               (pfconst 0))))
 
 ; This gadget is lifted automatically to the shallow embedding.
@@ -302,36 +316,47 @@
    (IMPLIES
     (AND
      (EQUAL
-      (LOOKUP-DEFINITION "equality_test" DEFS)
+      (LOOKUP-DEFINITION '((STRING . "equality_test"))
+                         DEFS)
       '(:DEFINITION
-        (PFCS::NAME . "equality_test")
-        (PFCS::PARA "u" "v" "w")
+        (NAME (STRING . "equality_test"))
+        (PFCS::PARA ((STRING . "u"))
+                    ((STRING . "v"))
+                    ((STRING . "w")))
         (PFCS::BODY
-         (:RELATION "boolean_assert" ((:VAR "w")))
-         (:EQUAL (:MUL (:ADD (:VAR "u")
-                        (:MUL (:CONST -1) (:VAR "v")))
-                  (:VAR "s"))
+         (:RELATION ((STRING . "boolean_assert"))
+          ((:VAR ((STRING . "w")))))
+         (:EQUAL (:MUL (:ADD (:VAR ((STRING . "u")))
+                        (:MUL (:CONST -1)
+                         (:VAR ((STRING . "v")))))
+                  (:VAR ((STRING . "s"))))
           (:ADD (:CONST 1)
-           (:MUL (:CONST -1) (:VAR "w"))))
-         (:EQUAL (:MUL (:ADD (:VAR "u")
-                        (:MUL (:CONST -1) (:VAR "v")))
-                  (:VAR "w"))
+           (:MUL (:CONST -1)
+            (:VAR ((STRING . "w"))))))
+         (:EQUAL (:MUL (:ADD (:VAR ((STRING . "u")))
+                        (:MUL (:CONST -1)
+                         (:VAR ((STRING . "v")))))
+                  (:VAR ((STRING . "w"))))
           (:CONST 0)))))
      (EQUAL
-      (LOOKUP-DEFINITION "boolean_assert" DEFS)
+      (LOOKUP-DEFINITION '((STRING . "boolean_assert"))
+                         DEFS)
       '(:DEFINITION
-        (PFCS::NAME . "boolean_assert")
-        (PFCS::PARA "x")
+        (NAME (STRING . "boolean_assert"))
+        (PFCS::PARA ((STRING . "x")))
         (PFCS::BODY
-         (:EQUAL (:MUL (:VAR "x")
+         (:EQUAL (:MUL (:VAR ((STRING . "x")))
                   (:ADD (:CONST 1)
-                   (:MUL (:CONST -1) (:VAR "x"))))
+                   (:MUL (:CONST -1)
+                    (:VAR ((STRING . "x"))))))
           (:CONST 0)))))
      (FEP U P)
      (FEP V P)
      (FEP W P)
      (PRIMEP P))
-    (EQUAL (DEFINITION-SATP "equality_test" DEFS (LIST U V W) P)
+    (EQUAL (DEFINITION-SATP '((STRING . "equality_test"))
+             DEFS (LIST U V W)
+             P)
            (EQUALITY-TEST U V W P)))))
 
 ; As above, we first prove the correctness of the shallowly embedded gadget.
@@ -408,18 +433,19 @@
 ; we need hypotheses about the definitions of the sub-gadgets.
 
 (defruled equality-test-gadget-correctness
-  (implies (and (equal (lookup-definition "equality_test" defs)
+  (implies (and (equal (lookup-definition (name "equality_test") defs)
                        (equality-test-gadget))
-                (equal (lookup-definition "boolean_assert" defs)
+                (equal (lookup-definition (name "boolean_assert") defs)
                        (boolean-assert-gadget))
                 (primep p)
                 (fep u p)
                 (fep v p)
                 (fep w p))
-           (equal (definition-satp "equality_test" defs (list u v w) p)
+           (equal (definition-satp (name "equality_test") defs (list u v w) p)
                   (equal w (if (equal u v) 1 0))))
   :in-theory '((:e equality-test-gadget)
                (:e boolean-assert-gadget)
+               (:e name)
                definition-satp-to-equality-test
                equality-test-correctness))
 
@@ -435,10 +461,17 @@
 
 (define if-equal-then-else-gadget ()
   :returns (pdef definitionp)
-  (pfdef "if_equal_then_else"
-         (list "u" "v" "x" "y" "z")
-         (pfcall "if_then_else" (pfvar "w") (pfvar "x") (pfvar "y") (pfvar "z"))
-         (pfcall "equality_test" (pfvar "u") (pfvar "v") (pfvar "w"))))
+  (pfdef (name "if_equal_then_else")
+         (list (name "u") (name "v") (name "x") (name "y") (name "z"))
+         (pfcall (name "if_then_else")
+                 (pfvar (name "w"))
+                 (pfvar (name "x"))
+                 (pfvar (name "y"))
+                 (pfvar (name "z")))
+         (pfcall (name "equality_test")
+                 (pfvar (name "u"))
+                 (pfvar (name "v"))
+                 (pfvar (name "w")))))
 
 ; Lifting is again automatic.
 
@@ -476,62 +509,85 @@
    (IMPLIES
     (AND
      (EQUAL
-      (LOOKUP-DEFINITION "if_equal_then_else" DEFS)
+      (LOOKUP-DEFINITION '((STRING . "if_equal_then_else"))
+                         DEFS)
       '(:DEFINITION
-        (PFCS::NAME . "if_equal_then_else")
-        (PFCS::PARA "u" "v" "x" "y" "z")
-        (PFCS::BODY
-         (:RELATION "if_then_else"
-          ((:VAR "w")
-           (:VAR "x")
-           (:VAR "y")
-           (:VAR "z")))
-         (:RELATION "equality_test"
-          ((:VAR "u") (:VAR "v") (:VAR "w"))))))
+        (NAME (STRING . "if_equal_then_else"))
+        (PFCS::PARA ((STRING . "u"))
+                    ((STRING . "v"))
+                    ((STRING . "x"))
+                    ((STRING . "y"))
+                    ((STRING . "z")))
+        (PFCS::BODY (:RELATION ((STRING . "if_then_else"))
+                     ((:VAR ((STRING . "w")))
+                      (:VAR ((STRING . "x")))
+                      (:VAR ((STRING . "y")))
+                      (:VAR ((STRING . "z")))))
+                    (:RELATION ((STRING . "equality_test"))
+                     ((:VAR ((STRING . "u")))
+                      (:VAR ((STRING . "v")))
+                      (:VAR ((STRING . "w"))))))))
      (EQUAL
-      (LOOKUP-DEFINITION "equality_test" DEFS)
+      (LOOKUP-DEFINITION '((STRING . "equality_test"))
+                         DEFS)
       '(:DEFINITION
-        (PFCS::NAME . "equality_test")
-        (PFCS::PARA "u" "v" "w")
+        (NAME (STRING . "equality_test"))
+        (PFCS::PARA ((STRING . "u"))
+                    ((STRING . "v"))
+                    ((STRING . "w")))
         (PFCS::BODY
-         (:RELATION "boolean_assert" ((:VAR "w")))
-         (:EQUAL (:MUL (:ADD (:VAR "u")
-                        (:MUL (:CONST -1) (:VAR "v")))
-                  (:VAR "s"))
+         (:RELATION ((STRING . "boolean_assert"))
+          ((:VAR ((STRING . "w")))))
+         (:EQUAL (:MUL (:ADD (:VAR ((STRING . "u")))
+                        (:MUL (:CONST -1)
+                         (:VAR ((STRING . "v")))))
+                  (:VAR ((STRING . "s"))))
           (:ADD (:CONST 1)
-           (:MUL (:CONST -1) (:VAR "w"))))
-         (:EQUAL (:MUL (:ADD (:VAR "u")
-                        (:MUL (:CONST -1) (:VAR "v")))
-                  (:VAR "w"))
+           (:MUL (:CONST -1)
+            (:VAR ((STRING . "w"))))))
+         (:EQUAL (:MUL (:ADD (:VAR ((STRING . "u")))
+                        (:MUL (:CONST -1)
+                         (:VAR ((STRING . "v")))))
+                  (:VAR ((STRING . "w"))))
           (:CONST 0)))))
      (EQUAL
-      (LOOKUP-DEFINITION "boolean_assert" DEFS)
+      (LOOKUP-DEFINITION '((STRING . "boolean_assert"))
+                         DEFS)
       '(:DEFINITION
-        (PFCS::NAME . "boolean_assert")
-        (PFCS::PARA "x")
+        (NAME (STRING . "boolean_assert"))
+        (PFCS::PARA ((STRING . "x")))
         (PFCS::BODY
-         (:EQUAL (:MUL (:VAR "x")
+         (:EQUAL (:MUL (:VAR ((STRING . "x")))
                   (:ADD (:CONST 1)
-                   (:MUL (:CONST -1) (:VAR "x"))))
+                   (:MUL (:CONST -1)
+                    (:VAR ((STRING . "x"))))))
           (:CONST 0)))))
      (EQUAL
-      (LOOKUP-DEFINITION "if_then_else" DEFS)
+      (LOOKUP-DEFINITION '((STRING . "if_then_else"))
+                         DEFS)
       '(:DEFINITION
-        (PFCS::NAME . "if_then_else")
-        (PFCS::PARA "w" "x" "y" "z")
+        (NAME (STRING . "if_then_else"))
+        (PFCS::PARA ((STRING . "w"))
+                    ((STRING . "x"))
+                    ((STRING . "y"))
+                    ((STRING . "z")))
         (PFCS::BODY
-         (:EQUAL (:MUL (:VAR "w")
-                  (:ADD (:VAR "x")
-                   (:MUL (:CONST -1) (:VAR "y"))))
-          (:ADD (:VAR "z")
-           (:MUL (:CONST -1) (:VAR "y")))))))
+         (:EQUAL (:MUL (:VAR ((STRING . "w")))
+                  (:ADD (:VAR ((STRING . "x")))
+                   (:MUL (:CONST -1)
+                    (:VAR ((STRING . "y"))))))
+          (:ADD (:VAR ((STRING . "z")))
+           (:MUL (:CONST -1)
+            (:VAR ((STRING . "y")))))))))
      (FEP U P)
      (FEP V P)
      (FEP X P)
      (FEP Y P)
      (FEP Z P)
      (PRIMEP P))
-    (EQUAL (DEFINITION-SATP "if_equal_then_else" DEFS (LIST U V X Y Z) P)
+    (EQUAL (DEFINITION-SATP '((STRING . "if_equal_then_else"))
+             DEFS (LIST U V X Y Z)
+             P)
            (IF-EQUAL-THEN-ELSE U V X Y Z P)))))
 
 ; We prove correctness of the shallowly embedded version, as above.
@@ -587,13 +643,13 @@
 ; in a way that could be automated.
 
 (defruled if-equal-then-else-gadget-correctness
-  (implies (and (equal (lookup-definition "if_equal_then_else" defs)
+  (implies (and (equal (lookup-definition (name "if_equal_then_else") defs)
                        (if-equal-then-else-gadget))
-                (equal (lookup-definition "if_then_else" defs)
+                (equal (lookup-definition (name "if_then_else") defs)
                        (if-then-else-gadget))
-                (equal (lookup-definition "equality_test" defs)
+                (equal (lookup-definition (name "equality_test") defs)
                        (equality-test-gadget))
-                (equal (lookup-definition "boolean_assert" defs)
+                (equal (lookup-definition (name "boolean_assert") defs)
                        (boolean-assert-gadget))
                 (primep p)
                 (fep u p)
@@ -601,12 +657,14 @@
                 (fep x p)
                 (fep y p)
                 (fep z p))
-           (equal (definition-satp "if_equal_then_else" defs (list u v x y z) p)
+           (equal (definition-satp
+                    (name "if_equal_then_else") defs (list u v x y z) p)
                   (equal z (if (equal u v) x y))))
   :in-theory '((:e if-equal-then-else-gadget)
                (:e if-then-else-gadget)
                (:e equality-test-gadget)
                (:e boolean-assert-gadget)
+               (:e name)
                definition-satp-to-if-equal-then-else
                if-equal-then-else-correctness))
 
@@ -672,10 +730,10 @@
          (iname-list "x" n)
          (boolean-assert-list-gadget-aux (iname-list "x" n)))
   :prepwork
-  ((define boolean-assert-list-gadget-aux ((xs string-listp))
+  ((define boolean-assert-list-gadget-aux ((xs name-listp))
      :returns (constrs constraint-listp)
      (cond ((endp xs) nil)
-           (t (cons (pfcall "boolean_assert" (pfvar (car xs)))
+           (t (cons (pfcall (name "boolean_assert") (pfvar (car xs)))
                     (boolean-assert-list-gadget-aux (cdr xs))))))))
 
 ; Our current PFCS lifter only works on the PFCS abstract syntax.
@@ -892,10 +950,10 @@
 ; including some from the PFCS semantics.
 
 (defruled constraint-list-satp-to-boolean-assert-list-gadget-aux
-  (implies (and (equal (lookup-definition "boolean_assert" defs)
+  (implies (and (equal (lookup-definition (name "boolean_assert") defs)
                        (boolean-assert-gadget))
                 (primep p)
-                (string-listp xs-vars)
+                (name-listp xs-vars)
                 (no-duplicatesp-equal xs-vars)
                 (fe-listp xs-vals p)
                 (equal (len xs-vars) (len xs-vals))
@@ -948,7 +1006,7 @@
 
 (defrule constraint-list-vars-of-boolean-assert-list-gadget-aux
   (equal (constraint-list-vars (boolean-assert-list-gadget-aux xs))
-         (set::mergesort (str::string-list-fix xs)))
+         (set::mergesort (name-list-fix xs)))
   :induct t
   :enable (boolean-assert-list-gadget-aux
            constraint-list-vars
@@ -975,7 +1033,7 @@
                         (iname "boolean_assert_list" (len xs))
                         defs)
                        (boolean-assert-list-gadget (len xs)))
-                (equal (lookup-definition "boolean_assert" defs)
+                (equal (lookup-definition (name "boolean_assert") defs)
                        (boolean-assert-gadget))
                 (primep p)
                 (fe-listp xs p))
@@ -1013,7 +1071,7 @@
                         (iname "boolean_assert_list" (len xs))
                         defs)
                        (boolean-assert-list-gadget (len xs)))
-                (equal (lookup-definition "boolean_assert" defs)
+                (equal (lookup-definition (name "boolean_assert") defs)
                        (boolean-assert-gadget))
                 (primep p)
                 (fe-listp xs p))

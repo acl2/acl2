@@ -69,9 +69,11 @@
   (b* ((coeff (first elem))
        (pvar (second elem)))
     (cond ((equal pvar 1) (expression-const coeff))
-          ((equal coeff 1) (expression-var (symbol-name pvar)))
-          (t (make-expression-mul :arg1 (expression-const (first elem))
-                                  :arg2 (expression-var (symbol-name pvar))))))
+          ((equal coeff 1) (expression-var (name (symbol-name pvar))))
+          (t (make-expression-mul
+              :arg1 (expression-const (first elem))
+              :arg2 (expression-var (name (symbol-name pvar)))))))
+
   ///
 
   (more-returns
@@ -105,7 +107,9 @@
                :arg1 (r1cs-vector-to-pfcs-aux (cdr rev-vec))
                :arg2 (r1cs-vec-elem-to-pfcs (car rev-vec)))))
      :verify-guards :after-returns
+
      ///
+
      (more-returns
       (expr r1cs-polynomialp
             :hints (("Goal" :induct t :in-theory (enable r1cs-polynomialp)))))))
@@ -131,6 +135,7 @@
     (make-constraint-equal
      :left (make-expression-mul :arg1 a-expr :arg2 b-expr)
      :right c-expr))
+
   ///
 
   (more-returns
@@ -148,6 +153,7 @@
    (xdoc::p
     "These are translated element-wise."))
   (r1cs-constraint-to-pfcs x)
+
   ///
 
   (more-returns
@@ -170,6 +176,7 @@
   (make-system :definitions nil
                :constraints (r1cs-constraints-to-pfcs
                              (r1cs::r1cs->constraints r1cs)))
+
   ///
 
   (more-returns

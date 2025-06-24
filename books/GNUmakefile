@@ -233,7 +233,7 @@ $(info OS_HAS_GLUCOSE      := $(OS_HAS_GLUCOSE))
 $(info OS_HAS_IPASIR       := $(OS_HAS_IPASIR))
 $(info OS_HAS_SMTLINK      := $(OS_HAS_SMTLINK))
 $(info OS_HAS_STP          := $(OS_HAS_STP))
-$(info OS_HAS_CPP          := $(OS_HAS_CPP))
+$(info OS_HAS_GCC_C17      := $(OS_HAS_GCC_C17))
 $(info USE_QUICKLISP       := $(USE_QUICKLISP))
 $(info ACL2_USELESS_RUNES  := $(ACL2_USELESS_RUNES))
 $(info Done with features.)
@@ -413,9 +413,9 @@ $(info Excluding books that need STP: [$(CERT_PL_USES_STP)])
 OK_CERTS := $(filter-out $(CERT_PL_USES_STP), $(OK_CERTS))
 endif
 
-ifeq ($(OS_HAS_CPP), )
-$(info Excluding books that invoke cpp: [$(CERT_PL_USES_CPP)])
-OK_CERTS := $(filter-out $(CERT_PL_USES_CPP), $(OK_CERTS))
+ifeq ($(OS_HAS_GCC_C17), )
+$(info Excluding books that require a GCC with \"-std=c17\": [$(CERT_PL_USES_GCC_C17)])
+OK_CERTS := $(filter-out $(CERT_PL_USES_GCC_C17), $(OK_CERTS))
 endif
 
 ifeq ($(ACL2_HAS_REALS), )

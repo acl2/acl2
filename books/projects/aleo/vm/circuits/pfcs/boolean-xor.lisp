@@ -145,7 +145,7 @@
              bitp))
 
   (defruled boolean-xor-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_xor" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "boolean_xor") defs)
                          (boolean-xor-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -154,8 +154,9 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      "boolean_xor" defs (list x y z) prime)
+                      (name "boolean_xor") defs (list x y z) prime)
                     (boolean-xor-spec x y z prime)))
     :in-theory '((:e boolean-xor-circuit)
+                 (:e name)
                  definition-satp-to-boolean-xor-pred
                  boolean-xor-pred-to-spec)))

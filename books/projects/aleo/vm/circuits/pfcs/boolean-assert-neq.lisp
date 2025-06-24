@@ -157,13 +157,13 @@
           boolean-assert-neq-pred-completeness))
 
   (defruled boolean-assert-neq-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_assert_neq" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "boolean_assert_neq") defs)
                          (boolean-assert-neq-circuit))
-                  (equal (pfcs::lookup-definition "boolean_assert_true" defs)
+                  (equal (pfcs::lookup-definition (name "boolean_assert_true") defs)
                          (boolean-assert-true-circuit))
-                  (equal (pfcs::lookup-definition "boolean_neq" defs)
+                  (equal (pfcs::lookup-definition (name "boolean_neq") defs)
                          (boolean-neq-circuit))
-                  (equal (pfcs::lookup-definition "boolean_xor" defs)
+                  (equal (pfcs::lookup-definition (name "boolean_xor") defs)
                          (boolean-xor-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -171,11 +171,12 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      "boolean_assert_neq" defs (list x y) prime)
+                      (name "boolean_assert_neq") defs (list x y) prime)
                     (boolean-assert-neq-spec x y prime)))
     :in-theory '((:e boolean-assert-neq-circuit)
                  (:e boolean-assert-true-circuit)
                  (:e boolean-neq-circuit)
                  (:e boolean-xor-circuit)
+                 (:e name)
                  definition-satp-to-boolean-assert-neq-pred
                  boolean-assert-neq-pred-to-spec)))

@@ -156,15 +156,16 @@
           field-neq-pred-completeness))
 
   (defruled field-neq-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_neq" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_neq") defs)
                          (field-neq-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep z prime))
-             (equal (pfcs::definition-satp "field_neq"
-                      defs (list x y z) prime)
+             (equal (pfcs::definition-satp
+                      (name "field_neq") defs (list x y z) prime)
                     (field-neq-spec x y z prime)))
     :in-theory '((:e field-neq-circuit)
+                 (:e name)
                  definition-satp-to-field-neq-pred
                  field-neq-pred-to-spec)))

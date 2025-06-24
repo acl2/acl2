@@ -11,10 +11,10 @@
 
 (in-package "PFCS")
 
+(include-book "abstract-syntax-trees")
+
 (include-book "std/strings/cat-base" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
-(include-book "std/util/defrule" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "kestrel/fty/strings-decimal-fty" :dir :system))
 (local (include-book "kestrel/utilities/lists/append-theorems" :dir :system))
@@ -51,16 +51,24 @@
      useful in proofs about parameterized gadgets.")
    (xdoc::p
     "All of this is really more general than PFCS,
-     so it could be moved to a more central place at some point."))
+     so it could be moved to a more central place at some point.")
+   (xdoc::p
+    "An earlier version of the PFCS library used strings as names directly,
+     i.e. not strings wrapped in the fixtype @(tsee name).
+     Recently we introduced the fixtype @(tsee name)
+     in order to have more structured representations of names than strings.
+     Thus, we plan to rework the indexed names formalized here
+     to take advantage of that generality;
+     but for now we just use names as strings."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iname ((base stringp) (i natp))
-  :returns (name stringp)
+  :returns (name namep)
   :short "Create an indexed name, from a base and an index."
-  (str::cat base "_" (str::nat-to-dec-string i))
+  (name (str::cat base "_" (str::nat-to-dec-string i)))
 
   ///
 
@@ -69,7 +77,7 @@
 
   (defruled iname-not-equal-to-base
     (implies (stringp base)
-             (not (equal (iname base i) base)))
+             (not (equal (iname base i) (name base))))
     :enable (string-append-lst
              string-append
              str::equal-of-implode-left-to-equal-of-explode-right
@@ -78,14 +86,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iname-list ((base stringp) (n natp))
-  :returns (names string-listp)
+  :returns (names name-listp)
   :short "Create a list of indexed names,
           with the same base and indices from 0 to @('n-1')."
   (rev (iname-list-rev base n))
 
   :prepwork
   ((define iname-list-rev ((base stringp) (n natp))
-     :returns (names-rev string-listp)
+     :returns (names-rev name-listp)
      (b* (((when (zp n)) nil)
           (n-1 (1- n))
           (name (iname base n-1))
@@ -108,9 +116,8 @@
 
      (defruled base-not-member-of-iname-list-rev
        (implies (stringp base)
-                (not (member-equal base (iname-list-rev base n))))
+                (not (member-equal (name base) (iname-list-rev base n))))
        :induct t
-       :do-not '(preprocess) ; otherwise it throws away the (stringp base) hyp
        :enable (iname-list-rev
                 iname-not-equal-to-base))))
 
@@ -129,7 +136,7 @@
 
   (defruled base-not-member-of-iname-list
     (implies (stringp base)
-             (not (member-equal base (iname-list base n))))
+             (not (member-equal (name base) (iname-list base n))))
     :use base-not-member-of-iname-list-rev
     :enable iname-list))
 
@@ -161,7 +168,7 @@
  (defund iname-to-num (iname base)
    (str::dec-digit-chars-value
     (nthcdr (1+ (length base))
-            (str::explode iname)))))
+            (str::explode (name->string iname))))))
 
 ; Lift INAME-TO-NUM to lists.
 
@@ -339,6 +346,8 @@
 
 (defruled member-equal-of-iname-and-iname-list
   :parents (iname-list)
+  :short "An indexed name is a list of indexed names with the same base
+          iff the index is less than the number of indexed names in the list."
   (implies (stringp base)
            (iff (member-equal (iname base i) (iname-list base n))
                 (< (nfix i) (nfix n))))

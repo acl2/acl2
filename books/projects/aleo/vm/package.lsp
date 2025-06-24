@@ -183,6 +183,12 @@
                            fty::stack
                            pfcs::iname
                            pfcs::iname-list
+                           pfcs::name
+                           pfcs::namep
+                           pfcs::name-fix
+                           pfcs::name-list
+                           pfcs::name-listp
+                           pfcs::name-list-fix
                            pfcs::pf+
                            pfcs::pf*
                            pfcs::pf=

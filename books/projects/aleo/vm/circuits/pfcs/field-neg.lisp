@@ -103,14 +103,15 @@
              field-neg-spec))
 
   (defruled field-neg-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_neg" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_neg") defs)
                          (field-neg-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime))
              (equal (pfcs::definition-satp
-                      "field_neg" defs (list x y) prime)
+                      (name "field_neg") defs (list x y) prime)
                     (field-neg-spec x y prime)))
     :in-theory '((:e field-neg-circuit)
+                 (:e name)
                  definition-satp-to-field-neg-pred
                  field-neg-pred-to-spec)))

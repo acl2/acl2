@@ -156,21 +156,22 @@
           field-eq-pred-completeness))
 
   (defruled field-eq-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_eq" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "field_eq") defs)
                          (field-eq-circuit))
-                  (equal (pfcs::lookup-definition "field_neq" defs)
+                  (equal (pfcs::lookup-definition (name "field_neq") defs)
                          (field-neq-circuit))
-                  (equal (pfcs::lookup-definition "boolean_not" defs)
+                  (equal (pfcs::lookup-definition (name "boolean_not") defs)
                          (boolean-not-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep z prime))
              (equal (pfcs::definition-satp
-                      "field_eq" defs (list x y z) prime)
+                      (name "field_eq") defs (list x y z) prime)
                     (field-eq-spec x y z prime)))
     :in-theory '((:e field-eq-circuit)
                  (:e field-neq-circuit)
                  (:e boolean-not-circuit)
+                 (:e name)
                  definition-satp-to-field-eq-pred
                  field-eq-pred-to-spec)))

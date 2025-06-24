@@ -113,14 +113,15 @@
              boolean-assert-true-spec))
 
   (defruled boolean-assert-true-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_assert_true" defs)
+    (implies (and (equal (pfcs::lookup-definition (name "boolean_assert_true") defs)
                          (boolean-assert-true-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (bitp x))
              (equal (pfcs::definition-satp
-                      "boolean_assert_true" defs (list x) prime)
+                      (name "boolean_assert_true") defs (list x) prime)
                     (boolean-assert-true-spec x prime)))
     :in-theory '((:e boolean-assert-true-circuit)
+                 (:e name)
                  definition-satp-to-boolean-assert-true-pred
                  boolean-assert-true-pred-to-spec)))
