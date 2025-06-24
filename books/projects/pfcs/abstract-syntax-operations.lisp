@@ -15,6 +15,7 @@
 
 (include-book "std/util/deflist" :dir :system)
 
+(local (include-book "std/lists/no-duplicatesp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -80,7 +81,22 @@
                 (not (member-equal (name-simple base)
                                    (names-indexed-below-rev base n))))
        :induct t
-       :enable names-indexed-below-rev)))
+       :enable names-indexed-below-rev)
+
+     (defruled member-equal-of-names-indexed-below-rev
+       (iff (member-equal (name-indexed base i)
+                          (names-indexed-below-rev base1 n))
+            (and (equal (str-fix base)
+                        (str-fix base1))
+                 (< (nfix i) (nfix n))))
+       :induct t
+       :enable nfix)
+
+     (defrule no-duplicatesp-equal-of-names-indexed-below-rev
+       (no-duplicatesp-equal (names-indexed-below-rev base n))
+       :induct t
+       :enable (no-duplicatesp-equal
+                member-equal-of-names-indexed-below-rev))))
 
   ///
 
@@ -99,7 +115,18 @@
     (implies (stringp base)
              (not (member-equal (name-simple base) (names-indexed-below base n))))
     :use base-not-member-of-names-indexed-below-rev
-    :enable names-indexed-below))
+    :enable names-indexed-below)
+
+  (defruled member-equal-of-names-indexed-below
+    (iff (member-equal (name-indexed base i)
+                       (names-indexed-below base1 n))
+         (and (equal (str-fix base)
+                     (str-fix base1))
+              (< (nfix i) (nfix n))))
+    :enable member-equal-of-names-indexed-below-rev)
+
+  (defrule no-duplicatesp-equal-of-names-indexed-below
+    (no-duplicatesp-equal (names-indexed-below base n))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
