@@ -1020,6 +1020,7 @@
 ;;                     1)))
 ;;   :hints (("Goal" :in-theory (enable bvplus acl2::bvchop-of-sum-cases))))
 
+;; Rephrases RFLAGSBITS (which uses LOGAPP) to use BVCAT instead.
 ;pretty gross (due to gross behaviour of bfix)
 (defthm RFLAGSBITS-rewrite
   (implies (and (unsigned-byte-p 1 x86isa::cf)
@@ -1043,7 +1044,7 @@
                 (unsigned-byte-p 1 X86ISA::RES3)
                 (unsigned-byte-p 1 X86ISA::AF)
                 (unsigned-byte-p 1 X86ISA::RES2))
-           (equal (X86ISA::RFLAGSBITS X86ISA::CF X86ISA::RES1
+           (equal (RFLAGSBITS X86ISA::CF X86ISA::RES1
                                       PF X86ISA::RES2 X86ISA::AF X86ISA::RES3
                                       X86ISA::ZF X86ISA::SF X86ISA::TF
                                       X86ISA::INTF X86ISA::DF X86ISA::OF
@@ -1078,14 +1079,14 @@
                                    X86ISA::10BITS-FIX
                                    X86ISA::2BITS-FIX
                                    )
-                                  ( ;ACL2::ASSOCIATIVITY-OF-LOGAPP-BETTER
+                                  (;;ACL2::ASSOCIATIVITY-OF-LOGAPP-BETTER
                                    ACL2::LOGAPP-EQUAL-REWRITE
                                    ACL2::LOGAPP-EQUAL-REWRITE-16
                                    ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ACL2::BVCHOP-IDENTITY
                                    FTY::LOGAPP-NATP
                                    ACL2::BFIX-WHEN-NOT-1
-;ACL2::BVCAT-EQUAL-REWRITE-ALT
+                                   ;;ACL2::BVCAT-EQUAL-REWRITE-ALT
                                    ACL2::BVCAT-EQUAL-REWRITE
                                    ACL2::BFIX-WHEN-NOT-BITP)))))
 

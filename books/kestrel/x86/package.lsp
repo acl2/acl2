@@ -1369,7 +1369,8 @@
     leftrotate32
     rightrotate32
 
-    acl2::bfix$
+    acl2::bfix
+    ;; acl2::bfix$ ; doesn't seem to exist
     acl2::bfix$inline
 
     binary-logand
