@@ -1984,14 +1984,33 @@
     "We put the new optional expression into a return statement.")
    (xdoc::p
     "We generate a theorem iff
-     the expression is present
-     and a theorem was generated for the expression.
-     The theorem is proved via two general ones proved below."))
+     the expression is absent
+     or a theorem was generated for the expression.
+     Note that the expression if present in the old statement
+     iff it is present in the new statement;
+     also note that, if there is no expression,
+     old and new statements cannot differ.
+     If the expression is present,
+     the theorem is proved via two general ones proved below;
+     if the expression is absent,
+     the theorem is proved via another general one proved below."))
   (b* (((simpadd0-gin gin) gin)
        (stmt (stmt-return expr?))
        (stmt-new (stmt-return expr?-new))
-       ((unless (and expr?
-                     expr?-thm-name))
+       ((unless (iff expr? expr?-new))
+        (raise "Internal error: ~
+                return statement with optional expression ~x0 ~
+                is transformed into ~
+                return statement with optional expression ~x1."
+               expr? expr?-new)
+        (mv (irr-stmt) (irr-simpadd0-gout)))
+       ((when (and (not expr?)
+                   expr?-diffp))
+        (raise "Internal error: ~
+                unchanged return statement marked as changed.")
+        (mv (irr-stmt) (irr-simpadd0-gout)))
+       ((unless (or (not expr?)
+                    expr?-thm-name))
         (mv stmt-new
             (make-simpadd0-gout
              :events expr?-events
@@ -2000,28 +2019,33 @@
              :names-to-avoid gin.names-to-avoid
              :vartys expr?-vartys
              :diffp expr?-diffp)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-stmt)
-                              (:e ldm-expr)
-                              (:e ldm-ident)
-                              (:e ident)
-                              (:e c::expr-kind)
-                              (:e c::stmt-return)
-                              (:e c::type-sint)
-                              (:e c::type-nonchar-integerp))
-                 :use (,expr?-thm-name
-                       (:instance
-                        simpadd0-stmt-return-support-lemma-1
-                        (old-expr (mv-nth 1 (ldm-expr ',expr?)))
-                        (new-expr (mv-nth 1 (ldm-expr ',expr?-new)))
-                        ,@(and (not expr?-diffp)
-                               '((old-fenv fenv)
-                                 (new-fenv fenv))))
-                       (:instance
-                        simpadd0-stmt-return-support-lemma-2
-                        (expr (mv-nth 1 (ldm-expr ',expr?)))
-                        ,@(and expr?-diffp
-                               '((fenv old-fenv))))))))
+       (hints (if expr?
+                  `(("Goal"
+                     :in-theory '((:e ldm-stmt)
+                                  (:e ldm-expr)
+                                  (:e ldm-ident)
+                                  (:e ident)
+                                  (:e c::expr-kind)
+                                  (:e c::stmt-return)
+                                  (:e c::type-sint)
+                                  (:e c::type-nonchar-integerp))
+                     :use (,expr?-thm-name
+                           (:instance
+                            simpadd0-stmt-return-support-lemma-1
+                            (old-expr (mv-nth 1 (ldm-expr ',expr?)))
+                            (new-expr (mv-nth 1 (ldm-expr ',expr?-new)))
+                            ,@(and (not expr?-diffp)
+                                   '((old-fenv fenv)
+                                     (new-fenv fenv))))
+                           (:instance
+                            simpadd0-stmt-return-support-lemma-2
+                            (expr (mv-nth 1 (ldm-expr ',expr?)))
+                            ,@(and expr?-diffp
+                                   '((fenv old-fenv)))))))
+                '(("Goal"
+                   :in-theory '((:e ldm-stmt)
+                                (:e c::stmt-return))
+                   :use simpadd0-stmt-return-support-lemma-3))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
@@ -2042,7 +2066,8 @@
 
   (defret stmt-unambp-of-simpadd0-stmt-return
     (stmt-unambp stmt)
-    :hyp (expr-option-unambp expr?-new))
+    :hyp (expr-option-unambp expr?-new)
+    :hints (("Goal" :in-theory (enable irr-stmt))))
 
   (defruled simpadd0-stmt-return-support-lemma-1
     (b* ((old (c::stmt-return old-expr))
@@ -2084,7 +2109,14 @@
                                       fenv
                                       limit))))
     :expand (c::exec-stmt (c::stmt-return expr) compst fenv limit)
-    :enable c::exec-expr-call-or-pure))
+    :enable c::exec-expr-call-or-pure)
+
+  (defruled simpadd0-stmt-return-support-lemma-3
+    (b* ((stmt (c::stmt-return nil))
+         ((mv result &) (c::exec-stmt stmt compst fenv limit)))
+      (implies (not (c::errorp result))
+               (not result)))
+    :enable c::exec-stmt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2105,7 +2137,8 @@
     "We put the new statement into a block item.")
    (xdoc::p
     "We generate a theorem iff
-     a theorem was generated for the statement.
+     a theorem was generated for the statement
+     and the type of the statement is not @('void').
      That theorem is used to prove the theorem for the block item,
      along with using two general theorems proved below.
      Note that the limit in the theorem for the statement
@@ -2115,7 +2148,8 @@
   (b* (((simpadd0-gin gin) gin)
        (item (block-item-stmt stmt))
        (item-new (block-item-stmt stmt-new))
-       ((unless stmt-thm-name)
+       ((unless (and stmt-thm-name
+                     (not (type-case (stmt-type stmt) :void))))
         (mv item-new
             (make-simpadd0-gout :events stmt-events
                                 :thm-name nil
