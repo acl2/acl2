@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -135,7 +136,7 @@
              boolean-nor-spec))
 
   (defruled boolean-nor-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_nor" defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "boolean_nor") defs)
                          (boolean-nor-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -144,8 +145,9 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      "boolean_nor" defs (list x y z) prime)
+                      (pfname "boolean_nor") defs (list x y z) prime)
                     (boolean-nor-spec x y z prime)))
     :in-theory '((:e boolean-nor-circuit)
+                 (:e name-simple)
                  definition-satp-to-boolean-nor-pred
                  boolean-nor-pred-to-spec)))

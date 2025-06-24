@@ -1,7 +1,7 @@
 ; Package for the Examples in "r1cs.lisp" and "pfcs.lisp"
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; Copyright (C) 2024 Aleo Systems Inc. (https://www.aleo.org)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2023 Aleo Systems Inc. (https://www.aleo.org)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,6 +53,9 @@
                             pfcs::iname-list
                             pfcs::lift
                             pfcs::lookup-definition
+                            pfcs::name-simple
+                            pfcs::name-listp
+                            pfcs::name-list-fix
                             pfcs::p
                             pfcs::pf+
                             pfcs::pf*
@@ -61,6 +64,8 @@
                             pfcs::pfconst
                             pfcs::pfdef
                             pfcs::pfmon
+                            pfcs::pfname
+                            pfcs::pfnames
                             pfcs::pfvar
                             r1cs::dot-product
                             r1cs::dot-product-of-append

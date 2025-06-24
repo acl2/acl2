@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -135,7 +136,7 @@
              boolean-if-spec))
 
   (defruled boolean-if-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_if" defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "boolean_if") defs)
                          (boolean-if-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -146,8 +147,9 @@
                   (bitp y)
                   (bitp z))
              (equal (pfcs::definition-satp
-                      "boolean_if" defs (list x y z w) prime)
+                      (pfname "boolean_if") defs (list x y z w) prime)
                     (boolean-if-spec x y z w prime)))
     :in-theory '((:e boolean-if-circuit)
+                 (:e name-simple)
                  definition-satp-to-boolean-if-pred
                  boolean-if-pred-to-spec)))
