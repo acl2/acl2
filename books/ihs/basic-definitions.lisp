@@ -462,8 +462,7 @@ is shifted to the left by @('size') bits before the merge.</p>"
    (logappn 32 base
             8 padding
             24 offset)
-   </code>
-   <p>This belongs to a more general library.</p>"
+   </code>"
   (defun logappn-fn (args)
     (cond ((endp args) 0)
           ((endp (cdr args)) 0)
