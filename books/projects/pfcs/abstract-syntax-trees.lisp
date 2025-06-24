@@ -64,7 +64,7 @@
      In the meanwhile, indexed names are useful
      to construct parameterized circuits directly in abstract syntax."))
   (:simple ((string string)))
-  (:indexed ((string string)
+  (:indexed ((base string)
              (index nat)))
   :pred namep)
 
