@@ -462,10 +462,15 @@ is shifted to the left by @('size') bits before the merge.</p>"
    (logappn 32 base
             8 padding
             24 offset)
-   </code>"
+   </code>
+   <p>If passed an even number of arguments,
+   which must be alternating bit sizes and integer values of those bits,
+   the resulting nest of @(tsee logapp)s ends with 0.
+   If passed an odd number of arguments,
+   the resulting nest of @(tsee logapp)s with the last argument instead.</p>"
   (defun logappn-fn (args)
     (cond ((endp args) 0)
-          ((endp (cdr args)) 0)
+          ((endp (cdr args)) (car args))
           (t `(logapp ,(car args) ,(cadr args) ,(logappn-fn (cddr args))))))
   (defmacro logappn (&rest args)
     (logappn-fn args)))
