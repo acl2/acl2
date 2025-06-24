@@ -13,7 +13,7 @@
 ; This file contains an ABNF grammar for C
 ; that is based on the grammar in [C17]
 ; but is meant for use by tools that manipulate C code.
-; See :doc concrete-syntax-for-tools for more information.
+; See :doc c$::syntax-for-tools for more information.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
