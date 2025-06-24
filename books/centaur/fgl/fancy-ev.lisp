@@ -366,10 +366,11 @@ any).  This allows all functions that were added using
        ((when diff)
         (er hard? 'fancy-ev-primitive-call "~x0 can modify stobjs ~x1 -- only interp-st and state may be modified"
             fn diff))
-       (bindings (fancy-ev-primitive-bindings argsvar stobjs-in formals 0))
+       (bindings (fancy-ev-primitive-bindings '__tmp_args__ stobjs-in formals 0))
        (call-formals (fancy-ev-primitive-formals stobjs-in formals))
        ((unless (intersectp-eq '(interp-st state) stobjs-out))
-        `(b* (,@bindings
+        `(b* ((__tmp_args__ ,argsvar)
+              ,@bindings
               (result (mbe :logic (non-exec (,fn . ,call-formals))
                            :exec (if ,guard
                                      ,(if (consp (cdr stobjs-out))
@@ -380,7 +381,8 @@ any).  This allows all functions that were added using
            (mv t result interp-st state)))
        (out-bindings (fancy-ev-stobj-out-bindings stobjs-out 0))
        (results (fancy-ev-stobj-out-results stobjs-out out-bindings)))
-    `(b* (,@bindings
+    `(b* ((__tmp_args__ ,argsvar)
+          ,@bindings
           (,@(if (consp (cdr stobjs-out))
                  `((mv . ,out-bindings))
                out-bindings)

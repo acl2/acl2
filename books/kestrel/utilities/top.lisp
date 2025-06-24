@@ -55,6 +55,7 @@
 (include-book "minimize-ruler-extenders")
 ; Skipping the following, because it requires a trust tag:
 ; (include-book "non-ascii-pathnames" :ttags (:non-ascii-pathnames))
+(include-book "ordinals")
 (include-book "orelse")
 (include-book "oset-theorems")
 (include-book "osets")

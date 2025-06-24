@@ -33,9 +33,7 @@ Here" documentation page</a>.</li>
   <LI><A HREF="#Sources">Obtaining the Sources and Community Books</A>
   <LI><A HREF="#Create-Image">Creating or Obtaining an Executable Image</A>
   <UL>
-<!-- The following is only for non-incremental releases. -->
     <LI><A HREF="#Pre-Built-Images">Pre-Built Images</A>
-<!-- End of only for non-incremental releases. -->
     <LI><A HREF="#Other-Unix">Building an Executable image on a Unix-like System</A>
     <LI><A HREF="#Non-Unix">Building an Executable image on Other than
     a Unix-like Systems</A>
@@ -142,13 +140,11 @@ books by joining the GitHub project</a>.
 
 The next step is to create an executable image.  The common approach is to
 build that image from the sources you have already obtained.
-<!-- The following is only for non-incremental releases. -->
 However, you may
 be able to <A HREF="#Pre-Built-Images">take a short cut by downloading an
 ACL2 image</A>, in which case you can skip ahead to the page on
 <A HREF="using.html">Using ACL2</A>.  Otherwise you should click on
 one of the links just below.
-<!-- End of only for non-incremental releases. -->
 Choose the last option if you are using a Common Lisp on which you cannot save
 an image (e.g., a trial version of Allegro Common Lisp).
 
@@ -164,8 +160,6 @@ instructions for building an executable.
 <LI><A HREF="#Running">Running Without Building an Executable Image</A>
 </UL>
 
-<!-- The following is only for non-incremental releases. -->
-
 <BR><HR><BR>
 <H3><A NAME="Pre-Built-Images">Short Cut:  Pre-Built ACL2 Images</A></H3>
 
@@ -179,17 +173,13 @@ links from time to time.
 
 Now proceed to <A HREF="using.html">Using ACL2</A>.
 
-<!-- End of only for non-incremental releases. -->
-
 <BR><HR><BR>
 <H3><A NAME="Other-Unix">Building an Executable Image on a Unix-like System</A></H3>
 
 We assume you have obtained ACL2 and placed it in directory <I>dir</I>, as
 described <A HREF="#Sources">above</A>.
-<!-- The following is only for non-incremental releases. -->
 If you downloaded a <A
 HREF="#Pre-Built-Images">pre-built ACL2 image</A>, you may skip this section.
-<!-- End of only for non-incremental releases. -->
 Change directory to <I>dir</I> as above and execute <BR><BR> <CODE>cd
 acl2-8.6</CODE><BR> <CODE>make LISP=</CODE><I>xxx</I><BR>
 <BR>
@@ -372,10 +362,8 @@ building ACL2 on Windows</A>.  See also
 additional <a href="../../distrib/windows/">information about ACL2 on
 Windows</a>.
 
-<!-- The following is only for non-incremental releases. -->
 Or, you may be able to <a href="#Pre-Built-Images">download a pre-built ACL2 image</a>
 for Windows instead of reading this section.
-<!-- End of only for non-incremental releases. -->
 
 <p>
 
@@ -425,9 +413,6 @@ C:\gcl\gclm\lib\gcl-2.6.2\unixport\saved_gcl.exe -dir C:/gcl/gclm/lib/gcl-2.6.2/
     other than Unix-like systems</A> above, though the resulting file
     may be called
 <code>saved_acl2.exe</code> rather than <code>saved_acl2</code>.
-
-<!-- NOTE to developers: v8-6 below indicates a normal release, which is OK. -->
-<!-- Do not edit that for incremental releases. -->
 
 <li><b>FINALLY</b>, create a file <code>acl2.bat</code> as explained in
 <code><a href="http://www.cs.utexas.edu/users/moore/acl2/v8-6/distrib/images/Readme.html#acl2-bat">
@@ -492,10 +477,8 @@ ACL2.
 We assume you have obtained ACL2 and placed it in directory <I>dir</I>, as
 described above for <A HREF="#Sources">Unix-like systems</A> or <A
 HREF="#Sources-Non-Unix">other</A> platforms.
-<!-- The following is only for non-incremental releases. -->
 (If you downloaded a <A
 HREF="#Pre-Built-Images">pre-built ACL2 image</A>, then you may skip this section.)
-<!-- End of only for non-incremental releases. -->
 Change to subdirectory <CODE>acl2-8.6</CODE> of <I>dir</I>,
 start up your Common Lisp, and compile by executing the following forms.
 <I>This sequence of steps need only be performed once.</I>

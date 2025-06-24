@@ -5,9 +5,6 @@
 
 (in-package "ACL2S")
 (acl2s-defaults :set testing-enabled nil)
-(acl2s-defaults :set cgen-timeout 1)
-(set-defunc-timeout 1000)
-(set-acl2s-property-table-proof-timeout 1000)
 
 #|
  | rule evaluation

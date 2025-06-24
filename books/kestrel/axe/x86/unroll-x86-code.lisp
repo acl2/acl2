@@ -45,6 +45,7 @@
 (include-book "kestrel/x86/read-and-write2" :dir :system)
 (include-book "rule-lists")
 (include-book "kestrel/x86/run-until-return" :dir :system)
+(include-book "kestrel/x86/run-until-return4" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
@@ -467,6 +468,8 @@
                                                  ;; newer scheme:
                                                  run-until-rsp-is-above
                                                  run-until-rsp-is-above-or-reach-pc
+                                                 run-until-esp-is-above
+                                                 run-until-esp-is-above-or-reach-pc
                                                  ;; new:
                                                  x86-fetch-decode-execute
                                                  )
@@ -612,6 +615,19 @@
     (mv nil assumptions assumption-rules state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; In 32-bit mode, the upper 32-bits of the 64-bit register in the model are
+;; unused, so we can assume they are equal to 0, without loss of generality.
+;; Note that WR32 zeros out the upper 32-bits of a register; these assumptions
+;; let us show that that has no effect.
+(defund register-high-bit-assumptions ()
+  (declare (xargs :guard t))
+  '((equal (rax-high x86) 0)
+    (equal (rbx-high x86) 0)
+    (equal (rcx-high x86) 0)
+    (equal (rdx-high x86) 0)
+    (equal (rsp-high x86) 0)
+    (equal (rbp-high x86) 0)))
 
 ;; Returns (mv erp result-dag-or-quotep assumptions input-assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state).
 ;; This is also called by the formal unit tester.
@@ -979,6 +995,12 @@
                                (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
                              ;;todo: add support for :elf-32
                              (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))
+                 ;; Add 32-bit-specific assumptions:
+                 (standard-assumptions (if 64-bitp
+                                           standard-assumptions
+                                         (append (register-high-bit-assumptions)
+                                                 standard-assumptions)))
+
                  ;; maybe we should check suppress-assumptions here, but if they gave an :inputs, they must want the assumptions:
                  ((mv input-assumptions input-assumption-vars)
                   (if (and 64-bitp                                      ; todo
@@ -1031,12 +1053,12 @@
                position-independentp
                (er hard? 'unroll-x86-code-core ":stop-pcs are not supported with position-independentp.")))
        (term-to-simulate (if stop-pcs
-                             ;; `(run-until-return-or-reach-pc ',stop-pcs x86)
-                             ;;`(,(if 64-bitp 'run-until-return-or-reach-pc64 'run-until-return-or-reach-pc32) ',stop-pcs x86)
-                             `(run-until-return-or-reach-pc3 ',stop-pcs x86)
-                           ;;'(run-until-return x86)
-                           ;;`(,(if 64-bitp 'run-until-return64 'run-until-return32) x86)
-                           '(run-until-return3 x86)))
+                             (if 64-bitp
+                                 `(run-until-return-or-reach-pc3 ',stop-pcs x86)
+                               `(run-until-return-or-reach-pc4 ',stop-pcs x86))
+                           (if 64-bitp
+                               '(run-until-return3 x86)
+                             '(run-until-return4 x86))))
        (term-to-simulate (wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
@@ -1228,7 +1250,8 @@
        ;;          state)) ; todo: do this better
        ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return
                                                 run-until-stack-shorter-than-or-reach-pc run-until-return-or-reach-pc
-                                                run-until-rsp-is-above run-until-rsp-is-above-or-reach-pc)))
+                                                run-until-rsp-is-above run-until-rsp-is-above-or-reach-pc
+                                                run-until-esp-is-above run-until-esp-is-above-or-reach-pc)))
         (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
                     (cw "~X01" (let ((term (dag-to-term result-dag)))

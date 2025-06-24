@@ -1561,7 +1561,19 @@
          (<= signed-short-min signed-char-min)
          (<= signed-char-max signed-short-max)
          (<= unsigned-char-max unsigned-short-max)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule integer-format-short-wf-bit-size-lower-bound
+    (implies (integer-format-short-wfp short-format uchar-format schar-fomat)
+             (>= (integer-format->bit-size short-format)
+                 16))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance integer-format->unsigned-max-upper-bound
+                             (format short-format))
+             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1600,7 +1612,19 @@
          (<= signed-int-min signed-short-min)
          (<= signed-short-max signed-int-max)
          (<= unsigned-short-max unsigned-int-max)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule integer-format-int-wf-bit-size-lower-bound
+    (implies (integer-format-int-wfp int-format uchar-format short-fomat)
+             (>= (integer-format->bit-size int-format)
+                 16))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance integer-format->unsigned-max-upper-bound
+                             (format int-format))
+             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1640,7 +1664,19 @@
          (<= signed-long-min signed-int-min)
          (<= signed-int-max signed-long-max)
          (<= unsigned-int-max unsigned-long-max)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule integer-format-long-wf-bit-size-lower-bound
+    (implies (integer-format-long-wfp long-format uchar-format int-fomat)
+             (>= (integer-format->bit-size long-format)
+                 32))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance integer-format->unsigned-max-upper-bound
+                             (format long-format))
+             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1681,7 +1717,19 @@
          (<= signed-llong-min signed-long-min)
          (<= signed-long-max signed-llong-max)
          (<= unsigned-long-max unsigned-llong-max)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule integer-format-llong-wf-bit-size-lower-bound
+    (implies (integer-format-llong-wfp llong-format uchar-format long-fomat)
+             (>= (integer-format->bit-size llong-format)
+                 64))
+    :rule-classes :linear
+    :hints (("Goal"
+             :use (:instance integer-format->unsigned-max-upper-bound
+                             (format llong-format))
+             :in-theory (disable integer-format->unsigned-max-upper-bound)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1936,7 +1984,37 @@
          (integer-format-int-wfp format.int format.uchar format.short)
          (integer-format-long-wfp format.long format.uchar format.int)
          (integer-format-llong-wfp format.llong format.uchar format.long)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule char+short+int+long+llong-format-wf-short-bit-size-lower-bound
+    (implies (char+short+int+long+llong-format-wfp format)
+             (>= (integer-format->bit-size
+                  (char+short+int+long+llong-format->short format))
+                 16))
+    :rule-classes :linear)
+
+  (defrule char+short+int+long+llong-format-wf-int-bit-size-lower-bound
+    (implies (char+short+int+long+llong-format-wfp format)
+             (>= (integer-format->bit-size
+                  (char+short+int+long+llong-format->int format))
+                 16))
+    :rule-classes :linear)
+
+  (defrule char+short+int+long+llong-format-wf-long-bit-size-lower-bound
+    (implies (char+short+int+long+llong-format-wfp format)
+             (>= (integer-format->bit-size
+                  (char+short+int+long+llong-format->long format))
+                 32))
+    :rule-classes :linear)
+
+  (defrule char+short+int+long+llong-format-wf-llong-bit-size-lower-bound
+    (implies (char+short+int+long+llong-format-wfp format)
+             (>= (integer-format->bit-size
+                  (char+short+int+long+llong-format->llong format))
+                 64))
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2162,7 +2240,11 @@
   (defret ienv->short-bit-size-type-prescription
     (and (posp size)
          (> size 1))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret ienv->short-bit-size-lower-bound
+    (>= size 16)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2179,7 +2261,11 @@
   (defret ienv->int-bit-size-type-prescription
     (and (posp size)
          (> size 1))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret ienv->int-bit-size-lower-bound
+    (>= size 16)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2196,7 +2282,11 @@
   (defret ienv->long-bit-size-type-prescription
     (and (posp size)
          (> size 1))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret ienv->long-bit-size-lower-bound
+    (>= size 32)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2213,7 +2303,11 @@
   (defret ienv->llong-bit-size-type-prescription
     (and (posp size)
          (> size 1))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defret ienv->llong-bit-size-lower-bound
+    (>= size 64)
+    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

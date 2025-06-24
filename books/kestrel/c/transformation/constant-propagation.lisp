@@ -1461,7 +1461,8 @@
           (const-prop-absdeclor-option tyname.decl? env)))
       (mv (make-tyname
             :specquals specquals
-            :decl? decl?)
+            :decl? decl?
+            :info tyname.info)
           env))
     :measure (tyname-count tyname))
 

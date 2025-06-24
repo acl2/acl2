@@ -1,0 +1,6 @@
+// The program input for nested-arrays/src/main.leo
+[main]
+a: u8 = 0;
+
+[registers]
+r0: u8 = 0;

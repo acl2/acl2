@@ -98,10 +98,6 @@
                               (interp-st)
                               state)
   :returns (mv new-interp-st new-state)
-  :prepwork ((local (defthm constraint-db-bfrlist-of-fast-alist-fork
-                      (implies (and (not (member v (constraint-db-bfrlist x)))
-                                    (not (member v (constraint-db-bfrlist y))))
-                               (not (member v (constraint-db-bfrlist (fast-alist-fork x y))))))))
   :verify-guards nil
   (b* ((interp-st (interp-st-init interp-st))
        ((fgl-config config))
@@ -109,11 +105,19 @@
        (interp-st (update-interp-st->config config interp-st))
        (interp-st (update-interp-st-prof-enabledp config.prof-enabledp interp-st))
        (interp-st (update-interp-st->user-scratch nil interp-st))
-       (constraint-db (table-alist 'fgl::fgl-bool-constraints (w state)))
-       (interp-st (if (and (constraint-db-p constraint-db)
-                           (not (constraint-db-bfrlist constraint-db)))
+       (constraint-tab (table-alist 'fgl::fgl-bool-constraints (w state)))
+       (constraint-tab-ok (and (constraint-table-p constraint-tab)
+                               (not (constraint-table-bfrlist constraint-tab))))
+       (- (and (not constraint-tab-ok)
+               (raise "Table ~x0 has an error: ~@1~%"
+                      'fgl::fgl-bool-constraints
+                      (if (constraint-table-p constraint-tab)
+                          "Contains Boolean literals"
+                        (msg "Doesn't satisfy ~x0" 'constraint-table-p)))))
+       (interp-st (if constraint-tab-ok
                       (update-interp-st->constraint-db
-                       (gbc-db-make-fast constraint-db) interp-st)
+                       (gbc-db-make-fast (make-constraint-db :tab constraint-tab))
+                       interp-st)
                     interp-st))
        (flags (interp-st->flags interp-st))
        (interp-st (update-interp-st->flags
@@ -148,7 +152,7 @@
 
   (local (defthm interp-st->constraint-db-of-create-interp-st
            (equal (interp-st->constraint-db (create-interp-st))
-                  nil)
+                  (make-constraint-db))
            :hints(("Goal" :in-theory (enable* interp-st-defs)))))
 
   (local (defthm interp-st->equiv-contexts-of-create-interp-st

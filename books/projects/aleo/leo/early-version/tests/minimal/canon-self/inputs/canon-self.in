@@ -1,0 +1,6 @@
+// The program input for canon-self/src/main.leo
+[main]
+a: u32 = 9;
+
+[registers]
+r0: u32 = 0;

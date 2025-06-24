@@ -47,6 +47,7 @@
                            character-resultp
                            define-sk
                            defmacro+
+                           defund-sk
                            defxdoc+
                            enable*
                            impossible
