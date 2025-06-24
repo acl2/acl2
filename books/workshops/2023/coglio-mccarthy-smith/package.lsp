@@ -65,6 +65,7 @@
                             pfcs::pfdef
                             pfcs::pfmon
                             pfcs::pfname
+                            pfcs::pfnames
                             pfcs::pfvar
                             r1cs::dot-product
                             r1cs::dot-product-of-append

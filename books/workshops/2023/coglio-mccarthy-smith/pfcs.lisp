@@ -15,7 +15,6 @@
 
 (include-book "kestrel/utilities/typed-lists/bit-listp" :dir :system)
 (include-book "projects/pfcs/convenience-constructors" :dir :system)
-(include-book "projects/pfcs/indexed-names" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 
@@ -718,18 +717,20 @@
 ; built via the iname-list function from the PFCS library,
 ; which returns a list of names obtained by applying iname
 ; to a base string with increasing indices.
-; For instance, (iname-list "x" 32) returns the list
-; ("x_0" "x_1" ... "x_30" "x_31"),
-; i.e. starting from 0 (inclusive) and ending at n (exclusive).
+; For instance, (pfnames "x" 32) returns a list conceptually of the form
+; ("x[0]" "x[1]" ... "x[30]" "x[31]"),
+; i.e. starting from 0 (inclusive) and ending at n (exclusive);
+; we say 'conceptually' because the list consists of abstract syntax,
+; which currently does not have a corresponding concrete syntax in PFCS.
 ; This list is used as the parameters of the PFCS relation,
 ; and also passed to the auxiliary function,
 ; so it builds the constraints for exactly those variables.
 
 (define boolean-assert-list-gadget ((n natp))
   :returns (pdef definitionp)
-  (pfdef (iname "boolean_assert_list" n)
-         (iname-list "x" n)
-         (boolean-assert-list-gadget-aux (iname-list "x" n)))
+  (pfdef (pfname "boolean_assert_list" n)
+         (pfnames "x" n)
+         (boolean-assert-list-gadget-aux (pfnames "x" n)))
   :prepwork
   ((define boolean-assert-list-gadget-aux ((xs name-listp))
      :returns (constrs constraint-listp)
@@ -988,12 +989,12 @@
 
 (defrule definition->para-of-boolean-assert-list-gadget
   (equal (definition->para (boolean-assert-list-gadget n))
-         (iname-list "x" n))
+         (pfnames "x" n))
   :enable boolean-assert-list-gadget)
 
 (defrule definition->body-of-boolean-assert-list-gadget
   (equal (definition->body (boolean-assert-list-gadget n))
-         (boolean-assert-list-gadget-aux (iname-list "x" n)))
+         (boolean-assert-list-gadget-aux (pfnames "x" n)))
   :enable boolean-assert-list-gadget)
 
 ; We need to know the free variables of the PFCS relation,
@@ -1031,7 +1032,7 @@
 
 (defruled definition-satp-to-boolean-assert-list-gadget
   (implies (and (equal (lookup-definition
-                        (iname "boolean_assert_list" (len xs))
+                        (pfname "boolean_assert_list" (len xs))
                         defs)
                        (boolean-assert-list-gadget (len xs)))
                 (equal (lookup-definition (pfname "boolean_assert") defs)
@@ -1039,7 +1040,7 @@
                 (primep p)
                 (fe-listp xs p))
            (equal (definition-satp
-                    (iname "boolean_assert_list" (len xs)) defs xs p)
+                    (pfname "boolean_assert_list" (len xs)) defs xs p)
                   (boolean-assert-list xs p)))
   :enable (constraint-list-satp-to-boolean-assert-list-gadget-aux
            definition-satp
@@ -1069,7 +1070,7 @@
 
 (defruled boolean-assert-list-gadget-correctness
   (implies (and (equal (lookup-definition
-                        (iname "boolean_assert_list" (len xs))
+                        (pfname "boolean_assert_list" (len xs))
                         defs)
                        (boolean-assert-list-gadget (len xs)))
                 (equal (lookup-definition (pfname "boolean_assert") defs)
@@ -1077,7 +1078,7 @@
                 (primep p)
                 (fe-listp xs p))
            (equal (definition-satp
-                    (iname "boolean_assert_list" (len xs)) defs xs p)
+                    (pfname "boolean_assert_list" (len xs)) defs xs p)
                   (bit-listp xs)))
   :enable (boolean-assert-list-correctness
            definition-satp-to-boolean-assert-list-gadget))
