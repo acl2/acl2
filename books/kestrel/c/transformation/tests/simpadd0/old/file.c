@@ -79,6 +79,10 @@ int cast_long_to_int(long x) {
   return (int) x;
 }
 
+void return_void() {
+  return;
+}
+
 int main() {
   return 0;
 }
