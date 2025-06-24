@@ -467,7 +467,8 @@ is shifted to the left by @('size') bits before the merge.</p>"
    which must be alternating bit sizes and integer values of those bits,
    the resulting nest of @(tsee logapp)s ends with 0.
    If passed an odd number of arguments,
-   the resulting nest of @(tsee logapp)s with the last argument instead.</p>"
+   the resulting nest of @(tsee logapp)s ends
+   with the last argument instead.</p>"
   (defun logappn-fn (args)
     (cond ((endp args) 0)
           ((endp (cdr args)) (car args))
