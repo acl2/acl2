@@ -120,6 +120,7 @@
                               (natp bytes-len)
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
+                                                           acl2::elf-program-header-table-entryp
                                                            acl2::true-listp-when-pseudo-term-listp-2)))))
   (if (endp program-header-table)
       (mv nil (reverse acc))
@@ -299,6 +300,7 @@
                               (booleanp new-canonicalp)
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
+                                                           acl2::elf-program-header-table-entryp
                                                            acl2::true-listp-when-pseudo-term-listp-2)))))
   (if (endp program-header-table)
       (mv nil (reverse acc))
@@ -441,7 +443,8 @@
 
 ;; Generate all the assumptions for an ELF64 file, whether relative or
 ;; absolute.  Returns (mv erp assumptions assumption-vars) where assumptions is
-;; a list of (untranslated) terms.
+;; a list of (untranslated) terms and the assumption-vars are the variables
+;; introduced by the assumptions to represent various state components.
 (defund assumptions-elf64-new (target
                                position-independentp
                                stack-slots-needed
@@ -491,7 +494,6 @@
        ((when erp)
         (er hard? 'assumptions-elf64-new "Error generating addresses-and-lens-of-chunks-disjoint-from-inputs: ~x0." erp)
         (mv erp nil nil))
-
        ;; Decide whether to treat addresses as relative or absolute:
        ;; (file-type (acl2::parsed-elf-type parsed-elf))
        ;; ((when (not (member-eq file-type '(:rel :dyn :exec))))
