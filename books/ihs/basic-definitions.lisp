@@ -463,7 +463,7 @@ is shifted to the left by @('size') bits before the merge.</p>"
    </code>
    <p>expands to a nest of @(tsee logapp)s ending with 0:</p>
    <code>
-   (logapp size1 int1 ... (logapp sizeN intN 0)...))
+   (logapp size1 int1 ... (logapp sizeN intN 0)...)
    </code>
    <p>where the last @(tsee logapp) could be optimized
       as a @(tsee loghead) without 0,
