@@ -15,6 +15,7 @@
 
 (include-book "std/util/deflist" :dir :system)
 
+(local (include-book "std/lists/intersectp" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -110,7 +111,17 @@
        (no-duplicatesp-equal (names-indexed-below-rev base n))
        :induct t
        :enable (no-duplicatesp-equal
-                member-equal-of-name-indexed-and-names-indexed-below-rev))))
+                member-equal-of-name-indexed-and-names-indexed-below-rev))
+
+     (defruled intersectp-equal-of-names-indexed-below-rev
+       (equal (intersectp-equal (names-indexed-below-rev base1 n1)
+                                (names-indexed-below-rev base2 n2))
+              (and (equal (str-fix base1)
+                          (str-fix base2))
+                   (not (zp n1))
+                   (not (zp n2))))
+       :induct t
+       :enable (member-equal-of-names-indexed-below-rev nfix zp))))
 
   ///
 
@@ -152,7 +163,16 @@
     :enable member-equal-of-name-indexed-and-names-indexed-below-rev)
 
   (defrule no-duplicatesp-equal-of-names-indexed-below
-    (no-duplicatesp-equal (names-indexed-below base n))))
+    (no-duplicatesp-equal (names-indexed-below base n)))
+
+  (defruled intersectp-equal-of-names-indexed-below
+    (equal (intersectp-equal (names-indexed-below base1 n1)
+                             (names-indexed-below base2 n2))
+           (and (equal (str-fix base1)
+                       (str-fix base2))
+                (not (zp n1))
+                (not (zp n2))))
+    :enable intersectp-equal-of-names-indexed-below-rev))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
