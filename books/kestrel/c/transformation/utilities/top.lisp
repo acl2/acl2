@@ -17,6 +17,7 @@
 (include-book "collect-idents")
 (include-book "free-vars")
 (include-book "fresh-ident")
+(include-book "subst-free")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
