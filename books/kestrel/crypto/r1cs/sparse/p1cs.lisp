@@ -463,6 +463,12 @@
         next-pos
       (position-if-digit (cdr char-list) (+ next-pos 1)))))
 
+
+(defthm position-if-digit-bounds
+  (implies (and (position-if-digit char-list next-pos)
+                (<= (+ next-pos (len char-list)) original-len))
+           (<= (position-if-digit char-list next-pos) original-len)))
+
 (defun bit-var-base-and-num (bit-var)
   (declare (xargs :guard t))
   ;; If bit-var symbol name is of the form:  nondigit+ digits+
@@ -475,7 +481,6 @@
            (first-digit-pos (position-if-digit chars 0)))
       (and (natp first-digit-pos)
            (> first-digit-pos 0)
-           (< first-digit-pos (length base-name))  ; Added this bound check
            (let ((num (str::strval (subseq base-name first-digit-pos (length base-name)))))
              (if num
                  (list (subseq base-name 0 first-digit-pos) num)
@@ -483,7 +488,7 @@
 
 (defun bit-var-range-starting-with (starting-base-and-num last-num bit-vars)
   (declare (xargs :guard (and (true-listp starting-base-and-num)
-                              (>= (len starting-base-and-num) 2)  
+                              (= (len starting-base-and-num) 2)
                               (stringp (first starting-base-and-num)) ;base is a string  
                               (natp (second starting-base-and-num)) ;start number is natural
                               (natp last-num)
@@ -531,7 +536,6 @@
   (implies (true-listp bit-vars)
            (true-listp (mv-nth 1 (bit-var-range-starting-with starting-base-and-num last-num bit-vars)))))
 
-
 (defun bit-var-ranges (bit-vars)
   (declare (xargs :guard (true-listp bit-vars)
                   :measure (len bit-vars)
@@ -560,7 +564,7 @@
   (cond ((null ranges) "")
         ((null (cdr ranges)) (car ranges))
         (t (concatenate 'string (car ranges) ", " (concatenate-bit-var-ranges (cdr ranges))))))
-  
+
 (defun bit-vars-message (bit-vars)
   (let* ((ranges (bit-var-ranges bit-vars))
          (comma-separated-ranges (concatenate-bit-var-ranges ranges)))
