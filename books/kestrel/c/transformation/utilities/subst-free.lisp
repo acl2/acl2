@@ -354,10 +354,10 @@
      (type-spec-atomic
        (tyname-subst-free (c$::type-spec-atomic->type type-spec)
                           subst bound-vars))
-     :struct (type-spec-struct (strunispec-subst-free
+     :struct (type-spec-struct (struni-spec-subst-free
                                  (c$::type-spec-struct->spec type-spec)
                                  subst bound-vars))
-     :union (type-spec-union (strunispec-subst-free
+     :union (type-spec-union (struni-spec-subst-free
                                (c$::type-spec-union->spec type-spec)
                                subst bound-vars))
      :enum
@@ -664,7 +664,7 @@
     (dirdeclor-case
      dirdeclor
      :ident (mv (dirdeclor-fix dirdeclor)
-                (insert dirdeclor.ident bound-vars)
+                (insert dirdeclor.ident (ident-set-fix bound-vars))
                 nil)
      :paren
      (b* (((mv inner bound-vars -)
@@ -928,23 +928,23 @@
     (tyname
      (spec/qual-list-subst-free (c$::tyname->specquals tyname)
                                 subst bound-vars)
-     (absdeclor-option-subst-free (c$::tyname->decl? tyname)
+     (absdeclor-option-subst-free (c$::tyname->declor? tyname)
                                   subst bound-vars)
      (c$::tyname->info tyname))
     :measure (tyname-count tyname))
 
-  (define strunispec-subst-free ((strunispec strunispecp)
+  (define struni-spec-subst-free ((struni-spec struni-specp)
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
-    (declare (ignorable strunispec subst bound-vars))
-    :returns (result strunispecp)
+    (declare (ignorable struni-spec subst bound-vars))
+    :returns (result struni-specp)
     (b* (((mv members -)
           (structdecl-list-subst-free
-            (c$::strunispec->members strunispec)
+            (c$::struni-spec->members struni-spec)
             subst bound-vars)))
-      (strunispec (c$::strunispec->name strunispec)
+      (struni-spec (c$::struni-spec->name struni-spec)
                   members))
-    :measure (strunispec-count strunispec))
+    :measure (struni-spec-count struni-spec))
 
   (define structdecl-subst-free ((structdecl structdeclp)
                                  (subst ident-expr-mapp)
