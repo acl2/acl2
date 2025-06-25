@@ -312,15 +312,6 @@
 
 ;; (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
 
-;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
-(defund program-at-rules ()
-  (declare (xargs :guard t))
-  '(program-at-of-write
-    x86isa::program-at-of-if
-    program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
-    program-at-of-set-undef ; do we not need something like this?
-    program-at-of-set-mxcsr
-    ))
 
 ;; Now we just go to read
 ;; (defun read-byte-rules ()
@@ -369,6 +360,7 @@
     read-chunks-base
     read-chunks-unroll))
 
+;; Mostly for 64-bit mode
 ;todo: some are only needed with the new normal forms
 (defund write-rules ()
   (declare (xargs :guard t))
@@ -510,10 +502,12 @@
 ;; For both 32-bit and 64-bit
 (defund new-normal-form-rules-common ()
   (declare (xargs :guard t))
-  '(xr-becomes-fault
+  '(;; Introduce fault, etc:
+    xr-becomes-fault
     xr-becomes-ms
     xr-becomes-mxcsr
     xr-becomes-undef
+    ;; Introduce set-fault, etc:
     xw-becomes-set-fault
     xw-becomes-set-ms
     xw-becomes-set-mxcsr
@@ -524,12 +518,14 @@
     !undef-becomes-set-undef))
 
 ;; todo: some of these are write-over-write rules
-(defund read-over-write-rules ()
+;; These are used for both 32 and 64 bit modes.
+;; Most of these are for the new normal form (fault, etc.)
+(defund read-over-write-rules-common ()
   (declare (xargs :guard t))
   '( ; rule to intro app-view?
     x86isa::app-view-of-xw ; needed?
     app-view-of-set-flag
-    ;; app-view-of-set-ms
+    ;; app-view-of-set-ms ;; we don't want to continue once a branch has a call of set-ms
     app-view-of-set-mxcsr
     app-view-of-set-undef
     app-view-of-!rflags
@@ -699,7 +695,6 @@
 (defund state-rules ()
   (declare (xargs :guard t))
   '(
-    ;x86isa::x86p-set-flag
     force ;todo: think about this, could only open force on a constant arg
     ;x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
@@ -1788,7 +1783,19 @@
 ;; Or we could recharacterize things like X86ISA::GPR-ADD-SPEC-8 to just use bvplus.
 (set-axe-rule-priority acl2::bvchop-identity 1)
 
-(defund symbolic-execution-rules ()
+;; for 32-bit mode, with no stop-pcs
+(defund symbolic-execution-rules32 ()
+  (declare (xargs :guard t))
+  '(    ;; newer scheme, 32-bit:
+    run-until-return4
+    run-until-esp-is-above-opener-axe ; not for IFs
+    run-until-esp-is-above-base-axe ; not for IFs
+    run-until-esp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
+    esp-is-abovep
+    ))
+
+;; for 64-bit mode, with no stop-pcs
+(defund symbolic-execution-rules64 ()
   (declare (xargs :guard t))
   '(run-until-return ; we always open this, to expose run-until-stack-shorter-than
     run-until-stack-shorter-than-opener-axe ; not for IFs
@@ -1813,19 +1820,20 @@
     acl2::bvminus-of-bvplus-same-arg2 ; more like this?
     ;; acl2::bvminus-of-+-arg2 ; disabled later due to problems?
     ;; acl2::bvminus-of-+-arg3
-    acl2::bvminus-of-+-cancel-arg3
-
-    ;; newer scheme, 32-bit:
-    run-until-return4
-    run-until-esp-is-above-opener-axe ; not for IFs
-    run-until-esp-is-above-base-axe ; not for IFs
-    run-until-esp-is-above-of-if-arg2 ;careful, this can cause splits, todo: add support for smart IF handling
-    esp-is-abovep
-
-    ))
+    acl2::bvminus-of-+-cancel-arg3))
 
 ;; Extra rules to support the :stop-pcs option:
-(defund symbolic-execution-rules-with-stop-pcs ()
+;;newer-scheme, 32-bits:
+(defund symbolic-execution-rules-with-stop-pcs32 ()
+  (declare (xargs :guard t))
+  '(run-until-return-or-reach-pc4
+    run-until-esp-is-above-or-reach-pc-opener-axe
+    run-until-esp-is-above-or-reach-pc-base-axe
+    run-until-esp-is-above-or-reach-pc-of-if-arg2
+    esp-is-abovep))
+
+;; Extra rules to support the :stop-pcs option:
+(defund symbolic-execution-rules-with-stop-pcs64 ()
   (declare (xargs :guard t))
   '(run-until-return-or-reach-pc ; we always open this, to expose run-until-stack-shorter-than
     run-until-stack-shorter-than-or-reach-pc-opener-axe ; not for IFs
@@ -1850,14 +1858,7 @@
     acl2::bvminus-of-bvplus-same-arg2
     ;; acl2::bvminus-of-+-arg2 ; disabled later due to problems?
     ;; acl2::bvminus-of-+-arg3
-    acl2::bvminus-of-+-cancel-arg3
-
-    ;;newer-scheme, 32-bits:
-    run-until-return-or-reach-pc4
-    run-until-esp-is-above-or-reach-pc-opener-axe
-    run-until-esp-is-above-or-reach-pc-base-axe
-    run-until-esp-is-above-or-reach-pc-of-if-arg2
-    esp-is-abovep))
+    acl2::bvminus-of-+-cancel-arg3))
 
 (defund separate-rules ()
   (declare (xargs :guard t))
@@ -1947,8 +1948,8 @@
     ;;signed-byte-p-of-+-when-canonical-and-canonical ; todo: remove the one just above?
     logext-64-of-+-when-canonical-and-canonical
     ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
-    ;;         canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
-    ;;         canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
+    ;; canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
+    ;; canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
     ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
     ;; x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
     x86isa::canonical-address-p-of-i48
@@ -2019,12 +2020,12 @@
     x86isa::integerp-when-canonical-address-p-cheap ; also in the non-bv case!
     ))
 
+;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
 ;; todo: should this include core-rules-bv (see below)?
 (defund lifter-rules-common ()
   (declare (xargs :guard t))
-  (append (symbolic-execution-rules)
-          (read-over-write-rules) ; todo: don't use all these
+  (append (read-over-write-rules-common) ; todo: don't use all these?
           (shadowed-write-rules) ; requires the x86 rewriter ; todo: not needed for 32-bit?
           (read-write-set-flag-rules) ; requires the x86 rewriter ; todo: not needed for 32-bit?
           (acl2::base-rules)
@@ -2041,7 +2042,7 @@
           (if-rules)
           (decoding-and-dispatch-rules)
           (get-prefixes-openers)
-          (separate-rules)
+          (separate-rules) ; todo: don't always use these
           (x86-type-rules)
           (logops-to-bv-rules)
           (logops-to-bv-rules-x86)
@@ -2063,7 +2064,6 @@
           (acl2::if-becomes-bvif-rules)
           (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
           '(acl2::len-of-cons acl2::nth-of-cons-constant-version) ; add to list-to-bv-array-rules?
-          ;(canonical-rules-non-bv) ; todo
           *unsigned-choppers* ;; these are just logead, aka bvchop
           *signed-choppers* ;; these are just logext
           *unsigned-recognizers* ;; these are just unsigned-byte-p
@@ -2128,8 +2128,6 @@
 
             poor-mans-quotep-constant-opener
 
-
-
             the-check
             ;; get-prefixes:
             ;; todo: drop these if we are no longer using xw:
@@ -2138,8 +2136,6 @@
             x86isa::mv-nth-1-of-get-prefixes-of-xw-of-irrel
 
             ;x86isa::mv-nth-of-cons ;mv-nth ;or do mv-nth of cons.  rules like rb-in-terms-of-nth-and-pos-eric target mv-nth
-
-
 
             inverse-of-+
             x86isa::combine-bytes-when-singleton
@@ -2280,13 +2276,11 @@
             x86isa::combine-bytes-base
             x86isa::if-of-xr-app-view
 
-
 ;            x86isa::set-flag-undefined$inline ;trying this..
 ;            x86isa::xr-set-flag-undefined
  ;           x86isa::program-at-set-flag-undefined
 ;xr-rgf-mv-nth-2-rb
 ;xr-app-view-mv-nth-2-rb
-
 
 ;            x86isa::x86p-of-set-flag-undefined-eric ;x86p-of-set-flag-undefined ;drop?
 ;            x86isa::rb-set-flag-undefined-in-app-view ;drop?
@@ -2323,15 +2317,14 @@
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
             x86isa::elem-p-of-xr-rflags ; unsigned-byte-p-32-of-rflags
              ;targets unsigned-byte-p-of-rflags
-;                    acl2::bvcat-trim-arg4-axe-all
- ;                   acl2::bvcat-trim-arg2-axe-all
+            ;; acl2::bvcat-trim-arg4-axe-all
+            ;; acl2::bvcat-trim-arg2-axe-all
 
             ;x86isa::64-bit-modep-of-mv-nth-1-of-wb
 
             ;;todo: include all of the lifter rules:
 
             x86isa::select-address-size$inline
-
 
             cf-spec64-when-unsigned-byte-p
 
@@ -2755,6 +2748,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Used in loop-lifter (old normal form) and unroller (new normal form)
 ;; todo: move some of these to lifter-rules-common
 (defund lifter-rules32 ()
   (declare (xargs :guard t))
@@ -2811,19 +2805,6 @@
             data-segment-writeable-bit-of-set-undef
             data-segment-writeable-bit-of-write-byte-to-segment
             data-segment-writeable-bit-of-write-to-segment
-            data-segment-writeable-bit-of-set-eip
-            data-segment-writeable-bit-of-set-eax
-            data-segment-writeable-bit-of-set-ebx
-            data-segment-writeable-bit-of-set-ecx
-            data-segment-writeable-bit-of-set-edx
-            data-segment-writeable-bit-of-set-esp
-            data-segment-writeable-bit-of-set-ebp
-            data-segment-writeable-bit-of-set-rax-high
-            data-segment-writeable-bit-of-set-rbx-high
-            data-segment-writeable-bit-of-set-rcx-high
-            data-segment-writeable-bit-of-set-rdx-high
-            data-segment-writeable-bit-of-set-rsp-high
-            data-segment-writeable-bit-of-set-rbp-high
 
             code-segment-descriptor-attributesbits->r-of-bvchop
             data-segment-descriptor-attributesbits->w-of-bvchop
@@ -3015,6 +2996,11 @@
     write-to-segment-of-write-to-segment-included
     ))
 
+;; The new normal form uses:
+;; EAX, etc.
+;; SET-EAX, etc.
+;; RAX-HIGH, etc. (these should go away)
+;; what else?
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 ;; todo: restrict this to memory stuff?
 (defund new-normal-form-rules32 ()
@@ -3061,11 +3047,12 @@
     ;; rsp-high-of-write-bytes-to-segment
     ;; rbp-high-of-write-bytes-to-segment
 
-    ;; Introduce EIP (we put in eip instead of rip since these rules are for 32-bit reasoning, but eip and rip are equivalent)
-    read-*ip-becomes-eip
+    ;; Introduce EIP (we put in eip instead of rip since these rules are for 32-bit reasoning -- eip now returns a u32)
     xr-becomes-eip
     rip-becomes-eip
+    read-*ip-becomes-eip
 
+    ;; Introduce set-eip
     xw-becomes-set-eip
     !rip-becomes-set-eip
 
@@ -3076,6 +3063,20 @@
     xr-becomes-edx
     xr-becomes-ebp
     xr-becomes-esp
+
+    data-segment-writeable-bit-of-set-eip
+    data-segment-writeable-bit-of-set-eax
+    data-segment-writeable-bit-of-set-ebx
+    data-segment-writeable-bit-of-set-ecx
+    data-segment-writeable-bit-of-set-edx
+    data-segment-writeable-bit-of-set-esp
+    data-segment-writeable-bit-of-set-ebp
+    data-segment-writeable-bit-of-set-rax-high
+    data-segment-writeable-bit-of-set-rbx-high
+    data-segment-writeable-bit-of-set-rcx-high
+    data-segment-writeable-bit-of-set-rdx-high
+    data-segment-writeable-bit-of-set-rsp-high
+    data-segment-writeable-bit-of-set-rbp-high
 
     get-flag-of-set-eip
     get-flag-of-set-eax
@@ -3857,11 +3858,11 @@
     segments-separate-of-code-and-stack
     write-*ip-inline-becomes-xw
 
-    ;segment-min-eff-addr32-of-set-undef
-;segment-min-eff-addr32-of-set-eip ;drop?
-;segment-max-eff-addr32-of-set-eip ;drop?
+    ;;segment-min-eff-addr32-of-set-undef
+    ;;segment-min-eff-addr32-of-set-eip ;drop?
+    ;;segment-max-eff-addr32-of-set-eip ;drop?
 
-;    ea-to-la-of-set-eip
+    ;; ea-to-la-of-set-eip
 
     eff-addr-okp-of-xw-irrel
     eff-addr-okp-of-set-eip
@@ -4054,7 +4055,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Used by the unroller and loop-lifter.
+;; Used by the unroller (new normal forms) and loop-lifter (old normal forms).
 (defund lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules-common)
@@ -4088,7 +4089,7 @@
 
 (defund new-normal-form-rules64 ()
   (declare (xargs :guard t))
-  '(;; these target xr-of-rgf:
+  '(;; these target xr-of-rgf and introduce RAX, etc:
     xr-becomes-rax
     xr-becomes-rbx
     xr-becomes-rcx
@@ -5298,86 +5299,86 @@
 ;; (set-axe-rule-priority read-when-program-at-8-bytes 2)
 
 
-;; These rules expand operations on effective addresses, exposing the
-;; underlying operations on linear addresses.
-(defund low-level-rules-32 ()
-    (declare (xargs :guard t))
-  (append (linear-memory-rules)
-          (read-rules)
-          (write-rules)
-          (read-and-write-rules)
-          (read-and-write-rules-non-bv) ; todo: allow the bv version?
-          '(rime08$inline
-            rime16$inline
-            rime32$inline
-            rime64$inline
-            rime-size$inline
+;; ;; These rules expand operations on effective addresses, exposing the
+;; ;; underlying operations on linear addresses.
+;; (defund low-level-rules-32 ()
+;;     (declare (xargs :guard t))
+;;   (append (linear-memory-rules)
+;;           (read-rules)
+;;           (write-rules)
+;;           (read-and-write-rules)
+;;           (read-and-write-rules-non-bv) ; todo: allow the bv version?
+;;           '(rime08$inline
+;;             rime16$inline
+;;             rime32$inline
+;;             rime64$inline
+;;             rime-size$inline
 
-            wime08$inline
-            wime16$inline
-            wime32$inline
-            wime64$inline
-            wime-size$inline
+;;             wime08$inline
+;;             wime16$inline
+;;             wime32$inline
+;;             wime64$inline
+;;             wime-size$inline
 
-            rme08$inline
-            rme16$inline
-            rme32$inline
-            rme48$inline
-            rme64$inline
-            rme80$inline
-            rme128$inline
-            rme256$inline
-            rme-size$inline
+;;             rme08$inline
+;;             rme16$inline
+;;             rme32$inline
+;;             rme48$inline
+;;             rme64$inline
+;;             rme80$inline
+;;             rme128$inline
+;;             rme256$inline
+;;             rme-size$inline
 
-            wme08$inline
-            wme16$inline
-            wme32$inline
-            wme48$inline
-            wme64$inline
-            wme80$inline
-            wme128$inline
-            wme256$inline
-            wme-size$inline
+;;             wme08$inline
+;;             wme16$inline
+;;             wme32$inline
+;;             wme48$inline
+;;             wme64$inline
+;;             wme80$inline
+;;             wme128$inline
+;;             wme256$inline
+;;             wme-size$inline
 
-            ea-to-la$inline
+;;             ea-to-la$inline
 
-            read-*ip$inline
-            write-*ip$inline
-            add-to-*ip$inline
-            read-*sp$inline
-            write-*sp$inline
-            add-to-*sp$inline
+;;             read-*ip$inline
+;;             write-*ip$inline
+;;             add-to-*ip$inline
+;;             read-*sp$inline
+;;             write-*sp$inline
+;;             add-to-*sp$inline
 
-            ;; x86isa::data-segment-descriptor-attributesbits->e$inline
-            ;; x86isa::data-segment-descriptor-attributesbits->d/b$inline
-            ;; x86isa::data-segment-descriptor-attributesbits->w$inline
-            ;; x86isa::code-segment-descriptor-attributesbits->d$inline
-            ;; x86isa::code-segment-descriptor-attributesbits->r$inline
-            ;; x86isa::data-segment-descriptor-attributesbits-fix
-            ;; x86isa::code-segment-descriptor-attributesbits-fix
+;;             ;; x86isa::data-segment-descriptor-attributesbits->e$inline
+;;             ;; x86isa::data-segment-descriptor-attributesbits->d/b$inline
+;;             ;; x86isa::data-segment-descriptor-attributesbits->w$inline
+;;             ;; x86isa::code-segment-descriptor-attributesbits->d$inline
+;;             ;; x86isa::code-segment-descriptor-attributesbits->r$inline
+;;             ;; x86isa::data-segment-descriptor-attributesbits-fix
+;;             ;; x86isa::code-segment-descriptor-attributesbits-fix
 
-            ;x86isa::rflagsbits->res1$inline
-            ;x86isa::rflagsbits->res2$inline
+;;             ;x86isa::rflagsbits->res1$inline
+;;             ;x86isa::rflagsbits->res2$inline
 
-            ;; todo: there are multiple copies of this chunk:
-            ;; Reading/writing registers (or parts of registers).  we leave
-            ;; these enabled to expose rgfi and !rgfi, which then get rewritten
-            ;; to xr and xw.  shilpi seems to do the same.
-            rgfi-size$inline ;dispatches to rr08, etc.
-            rr08$inline ; exposes rgfi
-            rr16$inline ; exposes rgfi
-            rr32$inline ; exposes rgfi
-            rr64$inline ; exposes rgfi
-            rgfi rgfi$a ;exposes xr ; todo: go directly to the right reader
+;;             ;; todo: there are multiple copies of this chunk:
+;;             ;; Reading/writing registers (or parts of registers).  we leave
+;;             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
+;;             ;; to xr and xw.  shilpi seems to do the same.
+;;             rgfi-size$inline ;dispatches to rr08, etc.
+;;             rr08$inline ; exposes rgfi
+;;             rr16$inline ; exposes rgfi
+;;             rr32$inline ; exposes rgfi
+;;             rr64$inline ; exposes rgfi
+;;             rgfi rgfi$a ;exposes xr ; todo: go directly to the right reader
 
-            !rgfi-size$inline ; dispatches to wr08, etc.
-            wr08$inline ; exposes !rgfi
-            wr16$inline ; exposes !rgfi
-            wr32$inline ; exposes !rgfi
-            wr64$inline ; exposes !rgfi
-            !rgfi !rgfi$a ;exposes xw ; todo: go directly to the right writer
+;;             !rgfi-size$inline ; dispatches to wr08, etc.
+;;             wr08$inline ; exposes !rgfi
+;;             wr16$inline ; exposes !rgfi
+;;             wr32$inline ; exposes !rgfi
+;;             wr64$inline ; exposes !rgfi
+;;             !rgfi !rgfi$a ;exposes xw ; todo: go directly to the right writer
 
-            )))
+;;             )))
 
 ;; some commonly monitored stuff:
 ;;   :monitor (acl2::get-prefixes-opener-lemma-no-prefix-byte-conjunct-1 ;todo: handle multi-conjunct rules better
@@ -5781,6 +5782,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
+(defund program-at-rules ()
+  (declare (xargs :guard t))
+  '(program-at-of-write
+    x86isa::program-at-of-if
+    program-at-of-set-flag ; may not be needed, since the corresponding read ignores set-flag and the program-at claim will only be on the initial state
+    program-at-of-set-undef ; do we not need something like this?
+    program-at-of-set-mxcsr
+    ))
+
 (defund extra-loop-lifter-rules ()
   (declare (xargs :guard t))
   (append ;or put these in symbolic-execution-rules-loop ?:
@@ -5840,6 +5851,7 @@
    ))
 
 ;; For the loop lifter
+;; todo: consider making a 32-bit variant (see above)
 (defund symbolic-execution-rules-loop-lifter ()
   (declare (xargs :guard t))
   '(;;run-until-exit-segment-or-hit-loop-header-opener-1
@@ -5881,6 +5893,8 @@
     xr-of-set-mxcsr-irrel ; maybe this normal form is not used?
     ))
 
+;; These are for both 32 and 64 bit modes.
+;; For the old normal form, we expose XR and XW.
 (defund old-normal-form-rules ()
   (declare (xargs :guard t))
   '(fault fault$a ; exposes xr
