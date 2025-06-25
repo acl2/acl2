@@ -3245,15 +3245,6 @@
 
 (local (in-theory (disable ea-to-la)))
 
-
-
-;;;
-
-(defthm xw-of-set-eip-irrel
-  (implies (not (equal fld :rip))
-           (equal (xw fld index val (set-eip eip x86))
-                  (set-eip eip  (xw fld index val x86)))))
-
 ;move
 (defthm set-flag-of-set-eip-irrel
   (equal (set-flag flg val (set-eip eip x86))
@@ -3626,6 +3617,7 @@
 
 (acl2::defopeners write-to-segment)
 (in-theory (disable write-to-segment-unroll))
+
 (acl2::defopeners wb-1)
 
 (defthm mv-nth-1-of-wml08-of-mv-nth-1-of-ea-to-la
@@ -4326,8 +4318,6 @@
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-edx edx x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
   :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
-
-(in-theory (disable set-eip)) ;move up
 
 ;;hyp phrased in terms of sep-eff-addr-ranges
 (defthmd write-to-segment-of-write-byte-to-segment-2
