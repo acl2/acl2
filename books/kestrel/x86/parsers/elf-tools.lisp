@@ -145,9 +145,53 @@
            (byte-listp (parsed-elf-bytes parsed-elf)))
   :hints (("Goal" :in-theory (enable parsed-elf-bytes parsed-elfp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Only checks segments whose :type is :pt_load.
+(defund elf-program-header-table-entries-disjoint-fromp (start size pht)
+  (declare (xargs :guard (and (natp start)
+                              (natp size)
+                              (elf-program-header-tablep pht))
+                  :guard-hints (("Goal" :in-theory (enable elf-program-header-tablep
+                                                           elf-program-header-table-entryp)))))
+  (if (endp pht)
+      t
+    (let* ((entry (first pht))
+           (entry-start (lookup-eq :vaddr entry))
+           (entry-size (lookup-eq :memsz entry))
+           (type (lookup-eq :memsz entry)))
+      ;; we checked elsewhere that these calculations don't wrap:
+      (if (or (not (eq :pt_load type)) ; only check for disjointness of load segments
+              (<= (+ start size) entry-start)
+              (<= (+ entry-start entry-size) start))
+          (elf-program-header-table-entries-disjoint-fromp start size (rest pht))
+        (prog2$ (cw "Overlapping entries in program-header-table.  First start/size: ~x0/~x1.  Second start/size: ~x2/~x3." start size entry-start entry-size)
+                nil)))))
+
+(defund elf-program-header-table-okp (pht)
+  (declare (xargs :guard (elf-program-header-tablep pht)
+                  :guard-hints (("Goal" :in-theory (enable elf-program-header-tablep
+                                                           elf-program-header-table-entryp)))))
+  (if (endp pht)
+      t
+    (let* ((entry (first pht))
+           (start (lookup-eq :vaddr entry))
+           (size (lookup-eq :memsz entry))
+           (type (lookup-eq :memsz entry)))
+      (and (if (eq :pt_load type) ; only check for disjointness of load segments
+               (elf-program-header-table-entries-disjoint-fromp start size (rest pht))
+             t)
+           (elf-program-header-table-okp (rest pht))))))
+
+;; Extracts the program-header-table from the parsed ELF file.
+;; Also checks that no segments overlap
 (defund parsed-elf-program-header-table (parsed-elf)
-  (declare (xargs :guard (parsed-elfp parsed-elf)))
-  (lookup-eq :program-header-table parsed-elf))
+  (declare (xargs :guard (parsed-elfp parsed-elf)
+                  :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
+  (let ((pht (lookup-eq :program-header-table parsed-elf)))
+    (if (not (elf-program-header-table-okp pht)) ; todo: move this check?
+        (er hard? 'parsed-elf-program-header-table "Bad program-header-table (some entries overlap): ~X01." pht nil)
+      pht)))
 
 (defthm program-header-tablep-of-parsed-elf-program-header-table
   (implies (parsed-elfp parsed-elf)

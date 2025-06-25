@@ -15,26 +15,28 @@
 (include-book "canonical-unsigned")
 (include-book "assumptions") ; todo: for lifter-targetp
 (include-book "assumptions-for-inputs")
-(include-book "assumptions64")  ; reduce?
+;(include-book "assumptions64")  ; reduce?
+(include-book "parsers/parsed-executable-tools")
 (include-book "parsers/elf-tools")
 (include-book "read-bytes-and-write-bytes") ; since this book knows about read-bytes
 (include-book "kestrel/utilities/quote" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
-(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
+(local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
+;(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/reverse" :dir :system))
+;; (local (include-book "kestrel/lists-light/reverse" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
+(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 
-(local (in-theory (disable acl2::reverse-becomes-reverse-list-gen
-                           acl2::reverse-becomes-reverse-list
-                           acl2::reverse-removal
+(local (in-theory (disable acl2::reverse-removal
                            acl2::revappend-removal
                            assoc-equal
                            symbol-alistp
+                           x86isa::byte-listp-becomes-all-unsigned-byte-p ; todo
                            ))) ; todo
 
-(local (in-theory (disable x86isa::byte-listp-becomes-all-unsigned-byte-p ; todo
-                           )))
+(set-induction-depth-limit 1)
+
 (local
   (defthm true-listp-when-byte-listp
     (implies (acl2::byte-listp x)
@@ -74,6 +76,7 @@
 
 ;move this stuff?
 
+;; Usually extends ACC with a pair (cons <address-term> <size>) for the memory that will be occupied by the segment.
 ;; Returns (mv erp maybe-extended-acc).
 (defun elf64-segment-address-and-len (program-header-table-entry relp bvp base-var bytes-len acc)
   (declare (xargs :guard (and (alistp program-header-table-entry)
@@ -100,7 +103,11 @@
         (mv :not-enough-bytes nil)
       (if (< memsz filesz)
           (mv :too-many-bytes-in-file nil)
-        (b* ((address-term (if relp (if bvp (symbolic-bvplus-constant 48 vaddr base-var) (symbolic-add-constant vaddr base-var)) `,vaddr)))
+        (b* ((address-term (if relp
+                               (if bvp
+                                   (symbolic-bvplus-constant 48 vaddr base-var)
+                                 (symbolic-add-constant vaddr base-var))
+                             vaddr)))
           (mv nil
               (cons (cons address-term memsz)
                     acc)))))))
@@ -113,6 +120,7 @@
                               (natp bytes-len)
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
+                                                           acl2::elf-program-header-table-entryp
                                                            acl2::true-listp-when-pseudo-term-listp-2)))))
   (if (endp program-header-table)
       (mv nil (reverse acc))
@@ -143,7 +151,7 @@
                               (acl2::byte-listp bytes)
                               (booleanp relp)
                               (symbolp state-var)
-                              (symbolp base-var) ; rename base-address-var?
+                              (symbolp base-var) ; rename base-address-var? ; only used if relp
                               (natp stack-slots-needed)
                               (booleanp bvp)
                               (booleanp new-canonicalp))))
@@ -292,6 +300,7 @@
                               (booleanp new-canonicalp)
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
+                                                           acl2::elf-program-header-table-entryp
                                                            acl2::true-listp-when-pseudo-term-listp-2)))))
   (if (endp program-header-table)
       (mv nil (reverse acc))
@@ -434,7 +443,8 @@
 
 ;; Generate all the assumptions for an ELF64 file, whether relative or
 ;; absolute.  Returns (mv erp assumptions assumption-vars) where assumptions is
-;; a list of (untranslated) terms.
+;; a list of (untranslated) terms and the assumption-vars are the variables
+;; introduced by the assumptions to represent various state components.
 (defund assumptions-elf64-new (target
                                position-independentp
                                stack-slots-needed
@@ -484,7 +494,6 @@
        ((when erp)
         (er hard? 'assumptions-elf64-new "Error generating addresses-and-lens-of-chunks-disjoint-from-inputs: ~x0." erp)
         (mv erp nil nil))
-
        ;; Decide whether to treat addresses as relative or absolute:
        ;; (file-type (acl2::parsed-elf-type parsed-elf))
        ;; ((when (not (member-eq file-type '(:rel :dyn :exec))))

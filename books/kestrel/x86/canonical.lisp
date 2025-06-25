@@ -1,4 +1,4 @@
-; Supporting material for x86 code proofs
+; Theorems related to canonical-address-p.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
 ; Copyright (C) 2020-2025 Kestrel Institute
@@ -17,14 +17,6 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-
-;; in projects/x86isa/machine/decoding-and-spec-utils but misplaced?
-(defthm-signed-byte-p i48p-xr-rip
-    :hyp t
-    :bound 48
-    :concl (xr :rip i x86)
-    :gen-linear t
-    :gen-type t)
 
 ;tighten?
 (defthm x86isa::signed-byte-p-64-when-canonical-address-p-cheap

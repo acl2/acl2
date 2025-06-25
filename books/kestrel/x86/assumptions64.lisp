@@ -175,6 +175,7 @@
          ;; Can't call separate here because (* 8 stack-slots-needed) = 0.
          t)))
 
+;; still used in loop-lifter
 (defun standard-assumptions-mach-o-64 (subroutine-name
                                        parsed-mach-o
                                        stack-slots-needed
@@ -195,6 +196,7 @@
                                   x86)))
 
 ;; TODO: The error below may not be thrown since this gets inserted as an assumption and simplified rather than being executed.
+;; still used in loop-lifter
 (defun standard-assumptions-pe-64 (subroutine-name
                                    parsed-executable
                                    stack-slots-needed

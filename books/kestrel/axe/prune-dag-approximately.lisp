@@ -35,6 +35,7 @@
 (include-book "kestrel/booleans/bool-fix" :dir :system) ; do not remove (since this book knows about bool-fix$inline)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
 (include-book "merge-term-into-dag-array-simple")
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "cars-decreasing-by-1"))
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
