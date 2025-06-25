@@ -457,18 +457,35 @@ is shifted to the left by @('size') bits before the merge.</p>"
 (defsection logappn
   :short "N-ary version of @(tsee logapp)."
   :long
-  "<p>This supports readable appending of multiple bit chunks, e.g.</p>
+  "<p>When passed an even number of arguments,</p>
+   <code>
+   (logappn size1 int1 ... sizeN intN)
+   </code>
+   <p>expands to a nest of @(tsee logapp)s ending with 0:</p>
+   <code>
+   (logapp size1 int1 ... (logapp sizeN intN 0)...))
+   </code>
+   <p>where the last @(tsee logapp) could be optimized
+      as a @(tsee loghead) without 0,
+      but the current form keeps the macro simple and uniform.</p>
+   <p>When passed an odd number of arguments,</p>
+   <code>
+   (logappn size1 int1 ... sizeN intN last)
+   </code>
+   <p>expands to a nest of @(tsee logapp)s ending with @('last'):</p>
+   <code>
+   (logapp size1 int1 ... (logapp sizeN intN last)...)
+   </code>
+   <p>This macro supports the readable appending of bit chunks
+      when passed an even number of arguments, e.g.</p>
    <code>
    (logappn 32 base
             8 padding
             24 offset)
    </code>
-   <p>If passed an even number of arguments,
-   which must be alternating bit sizes and integer values of those bits,
-   the resulting nest of @(tsee logapp)s ends with 0.
-   If passed an odd number of arguments,
-   the resulting nest of @(tsee logapp)s ends
-   with the last argument instead.</p>"
+   <p>The ability to pass an odd number of arguments
+      is in spirit with @(tsee logapp),
+      whose @('j') argument does not have an associated size.</p>"
   (defun logappn-fn (args)
     (cond ((endp args) 0)
           ((endp (cdr args)) (car args))
