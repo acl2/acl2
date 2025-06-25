@@ -21,7 +21,15 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (tau-system))))
 (set-induction-depth-limit 0)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::make-define-config
+  :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,10 +48,6 @@
        structures or unions."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; TODO: add tests beyond its use in the split-fn transformation
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,6 +100,7 @@
      :cast/add-ambig (raise "Unexpected ambiguous expression")
      :cast/sub-ambig (raise "Unexpected ambiguous expression")
      :cast/and-ambig (raise "Unexpected ambiguous expression"))
+    :no-function nil
     :measure (expr-count expr))
 
   (define free-vars-expr-list
@@ -199,6 +204,7 @@
      :typeof-type (free-vars-tyname type-spec.type bound-vars)
      :auto-type nil
      :typeof-ambig (raise "Unexpected ambiguous expression"))
+    :no-function nil
     :measure (type-spec-count type-spec))
 
   (define free-vars-spec/qual
@@ -236,6 +242,7 @@
      :alignas-type (free-vars-tyname align-spec.type bound-vars)
      :alignas-expr (free-vars-const-expr align-spec.expr bound-vars)
      :alignas-ambig (raise "Unexpected ambiguous expression"))
+    :no-function nil
     :measure (align-spec-count align-spec))
 
   (define free-vars-decl-spec
@@ -376,14 +383,16 @@
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a declarator."
     :returns (mv (free-vars ident-setp)
-                 (bound-vars ident-setp))
+                 (bound-vars ident-setp)
+                 (param-bound-vars ident-setp))
     (b* (((declor declor) declor)
          (free-vars0
            (free-vars-typequal/attribspec-list-list declor.pointers bound-vars))
-         ((mv free-vars1 bound-vars)
+         ((mv free-vars1 bound-vars param-bound-vars)
           (free-vars-dirdeclor declor.direct bound-vars)))
       (mv (union free-vars0 free-vars1)
-          bound-vars))
+          bound-vars
+          param-bound-vars))
     :measure (declor-count declor))
 
   (define free-vars-declor-option
@@ -394,7 +403,9 @@
                  (bound-vars ident-setp))
     (declor-option-case
      declor?
-     :some (free-vars-declor declor?.val bound-vars)
+     :some (b* (((mv free-vars bound-vars -)
+                 (free-vars-declor declor?.val bound-vars)))
+             (mv free-vars bound-vars))
      :none (mv nil (ident-set-fix bound-vars)))
     :measure (declor-option-count declor?))
 
@@ -403,53 +414,60 @@
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a direct declarator."
     :returns (mv (free-vars ident-setp)
-                 (bound-vars ident-setp))
+                 (bound-vars ident-setp)
+                 (param-bound-vars ident-setp))
     (dirdeclor-case
      dirdeclor
      :ident (mv nil
-                (insert dirdeclor.ident (ident-set-fix bound-vars)))
+                (insert dirdeclor.ident (ident-set-fix bound-vars))
+                nil)
      :paren (free-vars-declor dirdeclor.inner bound-vars)
      :array
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.qualspecs bound-vars))
           (free-vars1
             (free-vars-expr-option dirdeclor.size? bound-vars))
-          ((mv free-vars2 bound-vars)
+          ((mv free-vars2 bound-vars -)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 (union free-vars1 free-vars2))
-           bound-vars))
+           bound-vars
+           nil))
      :array-static1
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.qualspecs bound-vars))
           (free-vars1
             (free-vars-expr dirdeclor.size bound-vars))
-          ((mv free-vars2 bound-vars)
+          ((mv free-vars2 bound-vars -)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 (union free-vars1 free-vars2))
-           bound-vars))
+           bound-vars
+           nil))
      :array-static2
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.qualspecs bound-vars))
           (free-vars1
             (free-vars-expr dirdeclor.size bound-vars))
-          ((mv free-vars2 bound-vars)
+          ((mv free-vars2 bound-vars -)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 (union free-vars1 free-vars2))
-           bound-vars))
+           bound-vars
+           nil))
      :array-star
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.qualspecs bound-vars))
-          ((mv free-vars1 bound-vars)
+          ((mv free-vars1 bound-vars -)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
        (mv (union free-vars0 free-vars1)
-           bound-vars))
+           bound-vars
+           nil))
      :function-params
-     (b* (((mv free-vars0 bound-vars)
+     (b* (((mv free-vars0 bound-vars -)
            (free-vars-dirdeclor dirdeclor.declor bound-vars))
-          ((mv free-vars1 -)
+          ((mv free-vars1 param-bound-vars)
             (free-vars-param-declon-list dirdeclor.params bound-vars)))
        (mv (union free-vars0 free-vars1)
-           bound-vars))
+           bound-vars
+           param-bound-vars))
      :function-names (free-vars-dirdeclor dirdeclor.declor bound-vars))
     :measure (dirdeclor-count dirdeclor))
 
@@ -549,18 +567,20 @@
   (define free-vars-param-declor
     ((paramdeclor param-declorp)
      (bound-vars ident-setp))
-    :short "Collect free variables appearing in a list of parameter
-            declarations."
+    :short "Collect free variables appearing in a parameter declarator."
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (param-declor-case
      paramdeclor
-     :nonabstract (free-vars-declor paramdeclor.declor bound-vars)
+     :nonabstract (b* (((mv free-vars bound-vars -)
+                        (free-vars-declor paramdeclor.declor bound-vars)))
+                    (mv free-vars bound-vars))
      :abstract (mv (free-vars-absdeclor paramdeclor.declor bound-vars)
                    (ident-set-fix bound-vars))
      :none (mv nil (ident-set-fix bound-vars))
      :ambig (mv (raise "Unexpected ambiguous expression")
                 (ident-set-fix bound-vars)))
+    :no-function nil
     :measure (param-declor-count paramdeclor))
 
   (define free-vars-tyname
@@ -761,7 +781,7 @@
     (b* (((initdeclor initdeclor) initdeclor)
          (free-vars0 (free-vars-initer-option initdeclor.init? bound-vars))
          (free-vars1 (free-vars-attrib-spec-list initdeclor.attribs bound-vars))
-         ((mv free-vars2 bound-vars)
+         ((mv free-vars2 bound-vars -)
           (free-vars-declor initdeclor.declor bound-vars)))
       (mv (union free-vars0 (union free-vars1 free-vars2))
           bound-vars))
@@ -918,6 +938,7 @@
      :return (free-vars-expr-option stmt.expr? bound-vars)
      :asm (free-vars-asm-stmt stmt.unwrap bound-vars)
      :for-ambig (raise "Unexpected ambiguous expression"))
+    :no-function nil
     :measure (stmt-count stmt))
 
   (define free-vars-block-item
@@ -959,10 +980,17 @@
 (define free-vars-fundef
   ((fundef fundefp)
    (bound-vars ident-setp))
-  :short "Collect free variables appearing in a function function definition."
+  :short "Collect free variables appearing in a function definition."
   :returns (free-vars ident-setp)
   (b* (((fundef fundef) fundef)
-       ((mv free-vars bound-vars)
-        (free-vars-decl-list fundef.decls bound-vars)))
-    (union free-vars
-           (free-vars-stmt fundef.body bound-vars))))
+       (free-vars1 (free-vars-decl-spec-list fundef.spec bound-vars))
+       ((mv free-vars2 bound-vars param-bound-vars)
+        (free-vars-declor fundef.declor bound-vars))
+       (bound-vars (union bound-vars param-bound-vars))
+       (free-vars3 (free-vars-attrib-spec-list fundef.attribs bound-vars))
+       ((mv free-vars4 bound-vars)
+        (free-vars-decl-list fundef.decls bound-vars))
+       (free-vars5 (free-vars-stmt fundef.body bound-vars)))
+    (union free-vars1
+           (union free-vars2
+                  (union free-vars3 (union free-vars4 free-vars5))))))
