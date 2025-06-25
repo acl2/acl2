@@ -154,14 +154,21 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable elision-spec-alistp alistp))))
 
-;; Replace with :elided any arg that corresponds with nil in the bools
+;; Replace with :elided any large constant list arg that corresponds with nil in the bools.
+;; todo: clarify the sense of t and nil (nil means maybe don't print)
 (defun apply-elision-spec (args bools)
   (declare (xargs :guard (and (true-listp args)
                               (boolean-listp bools))))
   (if (endp args)
       nil
-      (cons (if (first bools) (first args) :elided)
-            (apply-elision-spec (rest args) (rest bools)))))
+    (cons (if (and (not (first bools))
+                   (let ((arg (first args)))
+                     (and (myquotep arg)
+                          (consp (unquote arg)) ; checks for a fairly long list
+                          (<= 100 (len (unquote arg))))))
+              :elided
+            (first args))
+          (apply-elision-spec (rest args) (rest bools)))))
 
 (defund print-term-elided (term firstp elision-specs)
   (declare (xargs :guard (elision-spec-alistp elision-specs)))
@@ -171,16 +178,16 @@
         ;; eliding:
         (if (not (true-listp term))
             (er hard? 'print-term-elided "Bad term.")
-            (if (not (= (len (rest term)) (len elision-spec))) ; todo: optimize via same-lengthp
-                (er hard? 'print-term-elided "Length mismatch in elision spec, ~x0, for ~x1." elision-spec (car term))
-                (let ((elided-term (cons (car term) (apply-elision-spec (rest term) elision-spec))))
-                  (if firstp
-                      (cw "(~y0" elided-term)
-                      (cw " ~y0" elided-term)))))
-        ;; not eliding (todo: share code with the above):
-        (if firstp
-            (cw "(~y0" term)
-            (cw " ~y0" term)))))
+          (if (not (= (len (rest term)) (len elision-spec))) ; todo: optimize via same-lengthp
+              (er hard? 'print-term-elided "Length mismatch in elision spec, ~x0, for ~x1." elision-spec (car term))
+            (let ((elided-term (cons (car term) (apply-elision-spec (rest term) elision-spec))))
+              (if firstp
+                  (cw "(~y0" elided-term)
+                (cw " ~y0" elided-term)))))
+      ;; not eliding (todo: share code with the above):
+      (if firstp
+          (cw "(~y0" term)
+        (cw " ~y0" term)))))
 
 ;; Prints each of the TERMS, each starting with a space and ending with a newline.
 ;tail recursive, to support printing a large list
@@ -930,6 +937,7 @@
                                                                                              '(;(standard-assumptions-elf-64 t nil t t t t)
                                                                                                (standard-assumptions-mach-o-64 t nil t t t t)
                                                                                                ;(standard-assumptions-pe-64 t nil t t t t)
+                                                                                               (equal t nil)
                                                                                                )) ; todo: more?
                                                                          (cw ")~%"))))
                    ;; Next, we simplify the assumptions.  This allows us to state the
@@ -1036,6 +1044,7 @@
                                                                                            '((standard-assumptions-elf-64 t nil t t t t)
                                                                                              ;; (standard-assumptions-mach-o-64 t nil t t t t)
                                                                                              (standard-assumptions-pe-64 t nil t t t t)
+                                                                                             (equal t nil)
                                                                                              )) ; todo: more?
                                                                        (cw ")~%"))))
                  ;; Next, we simplify the assumptions.  This allows us to state the
@@ -1055,7 +1064,7 @@
                              (if (acl2::print-level-at-least-tp print)
                                  (acl2::print-list assumptions)
                                (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge
-                                                                )))
+                                                                 (equal t nil))))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
        (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
