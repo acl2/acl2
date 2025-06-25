@@ -1539,13 +1539,13 @@
        :complex (retok (type-spec-complex) (dimb-table-fix table))
        :atomic (b* (((erp new-type table) (dimb-tyname tyspec.type table)))
                  (retok (type-spec-atomic new-type) table))
-       :struct (b* (((erp new-strunispec table)
-                     (dimb-strunispec tyspec.spec table)))
-                 (retok (type-spec-struct new-strunispec)
+       :struct (b* (((erp new-struni-spec table)
+                     (dimb-struni-spec tyspec.spec table)))
+                 (retok (type-spec-struct new-struni-spec)
                         table))
-       :union (b* (((erp new-strunispec table)
-                    (dimb-strunispec tyspec.spec table)))
-                (retok (type-spec-union new-strunispec)
+       :union (b* (((erp new-struni-spec table)
+                    (dimb-struni-spec tyspec.spec table)))
+                (retok (type-spec-union new-struni-spec)
                        table))
        :enum (b* (((erp new-enumspec table)
                    (dimb-enumspec tyspec.spec table)))
@@ -2323,8 +2323,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-strunispec ((strunispec strunispecp) (table dimb-tablep))
-    :returns (mv erp (new-strunispec strunispecp) (new-table dimb-tablep))
+  (define dimb-struni-spec ((struni-spec struni-specp) (table dimb-tablep))
+    :returns (mv erp (new-struni-spec struni-specp) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a structure or union specifier."
     :long
@@ -2332,13 +2332,13 @@
      (xdoc::p
       "The disambiguation table is unaffected as we go through the members;
        the table has no information about structure and union members."))
-    (b* (((reterr) (irr-strunispec) (irr-dimb-table))
-         ((strunispec strunispec) strunispec)
+    (b* (((reterr) (irr-struni-spec) (irr-dimb-table))
+         ((struni-spec struni-spec) struni-spec)
          ((erp new-members table)
-          (dimb-structdecl-list strunispec.members table)))
-      (retok (make-strunispec :name strunispec.name :members new-members)
+          (dimb-structdecl-list struni-spec.members table)))
+      (retok (make-struni-spec :name struni-spec.name :members new-members)
              table))
-    :measure (strunispec-count strunispec))
+    :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3179,10 +3179,10 @@
       (implies (not erp)
                (tyname-unambp new-tyname))
       :fn dimb-tyname)
-    (defret strunispec-unambp-of-dimb-strunispec
+    (defret struni-spec-unambp-of-dimb-struni-spec
       (implies (not erp)
-               (strunispec-unambp new-strunispec))
-      :fn dimb-strunispec)
+               (struni-spec-unambp new-struni-spec))
+      :fn dimb-struni-spec)
     (defret structdecl-unambp-of-dimb-structdecl
       (implies (not erp)
                (structdecl-unambp new-structdecl))

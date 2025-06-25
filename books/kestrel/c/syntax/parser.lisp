@@ -10032,7 +10032,7 @@
        ;; If token is the keyword struct,
        ;; we must have a structure type specifier.
        ((token-keywordp token "struct") ; struct
-        (b* (((erp tyspec last-span parstate) ; struct strunispec
+        (b* (((erp tyspec last-span parstate) ; struct struni-spec
               (parse-struct-or-union-specifier t span parstate)))
           (retok (spec/qual-typespec tyspec)
                  (span-join span last-span)
@@ -10040,7 +10040,7 @@
        ;; If token is the keyword union
        ;; we must have a union type specifier.
        ((token-keywordp token "union") ; union
-        (b* (((erp tyspec last-span parstate) ; union strunispec
+        (b* (((erp tyspec last-span parstate) ; union struni-spec
               (parse-struct-or-union-specifier nil span parstate)))
           (retok (spec/qual-typespec tyspec)
                  (span-join span last-span)
@@ -10328,7 +10328,7 @@
        ;; If token is the keyword struct,
        ;; we must have a structure type specifier.
        ((token-keywordp token "struct") ; struct
-        (b* (((erp tyspec last-span parstate) ; struct strunispec
+        (b* (((erp tyspec last-span parstate) ; struct struni-spec
               (parse-struct-or-union-specifier t span parstate)))
           (retok (decl-spec-typespec tyspec)
                  (span-join span last-span)
@@ -10336,7 +10336,7 @@
        ;; If token is the keyword union
        ;; we must have a union type specifier.
        ((token-keywordp token "union") ; union
-        (b* (((erp tyspec last-span parstate) ; union strunispec
+        (b* (((erp tyspec last-span parstate) ; union struni-spec
               (parse-struct-or-union-specifier nil span parstate)))
           (retok (decl-spec-typespec tyspec)
                  (span-join span last-span)
@@ -10737,7 +10737,7 @@
        the parsed structure or union specifier
        with the information from the boolean input.
        The reason why we do that,
-       instead of just returning a @(tsee strunispec)
+       instead of just returning a @(tsee struni-spec)
        and letting the callers build the @(tsee type-spec),
        is that we also accommodate the GCC extension of
        a structure specifier without members (and with optional name);
@@ -10789,8 +10789,8 @@
                           ;; struct ident { structdecls }
                           (read-punctuator "}" parstate)))
                       (retok (type-spec-struct
-                              (make-strunispec :name ident
-                                               :members structdecls))
+                              (make-struni-spec :name ident
+                                                :members structdecls))
                              (span-join struct/union-span last-span)
                              parstate)))))
               ;; if we are parsing a union type specifier
@@ -10805,11 +10805,11 @@
                     (read-punctuator "}" parstate)))
                 (retok (if structp
                            (type-spec-struct
-                             (make-strunispec :name ident
-                                              :members structdecls))
+                             (make-struni-spec :name ident
+                                               :members structdecls))
                          (type-spec-union
-                             (make-strunispec :name ident
-                                              :members structdecls)))
+                             (make-struni-spec :name ident
+                                               :members structdecls)))
                        (span-join struct/union-span last-span)
                        parstate))))
            ;; If token2 is not an open curly brace,
@@ -10820,11 +10820,11 @@
                   (if token2 (unread-token parstate) parstate)))
               (retok (if structp
                          (type-spec-struct
-                          (make-strunispec :name ident
-                                           :members nil))
+                          (make-struni-spec :name ident
+                                            :members nil))
                        (type-spec-union
-                        (make-strunispec :name ident
-                                         :members nil)))
+                        (make-struni-spec :name ident
+                                          :members nil)))
                      (span-join struct/union-span span)
                      parstate))))))
        ;; If token is an open curly brace,
@@ -10860,8 +10860,8 @@
                       ;; struct { structdecls }
                       (read-punctuator "}" parstate)))
                   (retok (type-spec-struct
-                          (make-strunispec :name nil
-                                           :members structdecls))
+                          (make-struni-spec :name nil
+                                            :members structdecls))
                          (span-join struct/union-span last-span)
                          parstate)))))
           ;; If we are parsing a union type specifier
@@ -10873,11 +10873,11 @@
                 (read-punctuator "}" parstate)))
             (retok (if structp
                        (type-spec-struct
-                        (make-strunispec :name nil
-                                         :members structdecls))
+                        (make-struni-spec :name nil
+                                          :members structdecls))
                      (type-spec-union
-                      (make-strunispec :name nil
-                                       :members structdecls)))
+                      (make-struni-spec :name nil
+                                        :members structdecls)))
                    (span-join struct/union-span last-span)
                    parstate))))
        ;; If token is neither an identifier nor an open curly brace,

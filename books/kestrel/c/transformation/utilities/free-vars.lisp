@@ -180,8 +180,8 @@
      :bool nil
      :complex nil
      :atomic (free-vars-tyname type-spec.type bound-vars)
-     :struct (free-vars-strunispec type-spec.spec bound-vars)
-     :union (free-vars-strunispec type-spec.spec bound-vars)
+     :struct (free-vars-struni-spec type-spec.spec bound-vars)
+     :union (free-vars-struni-spec type-spec.spec bound-vars)
      :enum (free-vars-enumspec type-spec.spec bound-vars)
      :typedef (if (in type-spec.name bound-vars)
                 nil
@@ -572,19 +572,19 @@
              (free-vars-absdeclor-option tyname.declor? bound-vars)))
     :measure (tyname-count tyname))
 
-  (define free-vars-strunispec
-    ((strunispec strunispecp)
+  (define free-vars-struni-spec
+    ((struni-spec struni-specp)
      (bound-vars ident-setp))
     :short "Collect free variables appearing in a structure or union
             specifier."
     :returns (free-vars ident-setp)
-    (b* (((strunispec strunispec) strunispec)
+    (b* (((struni-spec struni-spec) struni-spec)
          ((mv free-vars -)
-          (free-vars-structdecl-list strunispec.members bound-vars)))
+          (free-vars-structdecl-list struni-spec.members bound-vars)))
       ;; Note: we are only tracking *ordinary* variables, so we don't add the
       ;;   struct tag to the set of bound variables.
       free-vars)
-    :measure (strunispec-count strunispec))
+    :measure (struni-spec-count struni-spec))
 
   (define free-vars-structdecl
     ((structdecl structdeclp)

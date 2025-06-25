@@ -221,10 +221,10 @@
       (and (consp tyspecs)
            (endp (cdr tyspecs))
            (type-spec-case (car tyspecs) :struct)
-           (b* ((strunispec (type-spec-struct->spec (car tyspecs))))
-             (and (check-strunispec-no-members strunispec)
-                  (ident-formalp (strunispec->name strunispec))))))
-  :guard-hints (("Goal" :in-theory (enable check-strunispec-no-members)))
+           (b* ((struni-spec (type-spec-struct->spec (car tyspecs))))
+             (and (check-struni-spec-no-members struni-spec)
+                  (ident-formalp (struni-spec->name struni-spec))))))
+  :guard-hints (("Goal" :in-theory (enable check-struni-spec-no-members)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -844,8 +844,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define strunispec-formalp ((strunispec strunispecp))
-  :guard (strunispec-unambp strunispec)
+(define struni-spec-formalp ((struni-spec struni-specp))
+  :guard (struni-spec-unambp struni-spec)
   :returns (yes/no booleanp)
   :short "Check if a structure declaration has formal dynamic semantics."
   :long
@@ -853,10 +853,10 @@
    (xdoc::p
     "The name must be present,
      and each structure declaration must be supported."))
-  (b* (((strunispec strunispec) strunispec))
-    (and strunispec.name
-         (ident-formalp strunispec.name)
-         (structdecl-list-formalp strunispec.members)))
+  (b* (((struni-spec struni-spec) struni-spec))
+    (and struni-spec.name
+         (ident-formalp struni-spec.name)
+         (structdecl-list-formalp struni-spec.members)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -882,8 +882,8 @@
               (decl-spec-case (car decl.specs) :typespec)
               (b* ((tyspec (decl-spec-typespec->spec (car decl.specs))))
                 (and (type-spec-case tyspec :struct)
-                     (b* ((strunispec (type-spec-struct->spec tyspec)))
-                       (and (strunispec-formalp strunispec)
+                     (b* ((struni-spec (type-spec-struct->spec tyspec)))
+                       (and (struni-spec-formalp struni-spec)
                             (endp decl.init))))))
    :statassert nil)
   :hooks (:fix))

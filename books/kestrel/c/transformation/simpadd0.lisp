@@ -2933,7 +2933,7 @@
                       :vartys gout-type.vartys
                       :diffp gout-type.diffp)))
        :struct (b* (((mv new-spec (simpadd0-gout gout-spec))
-                     (simpadd0-strunispec tyspec.spec gin state)))
+                     (simpadd0-struni-spec tyspec.spec gin state)))
                  (mv (type-spec-struct new-spec)
                      (make-simpadd0-gout
                       :events gout-spec.events
@@ -2943,7 +2943,7 @@
                       :vartys gout-spec.vartys
                       :diffp gout-spec.diffp)))
        :union (b* (((mv new-spec (simpadd0-gout gout-spec))
-                    (simpadd0-strunispec tyspec.spec gin state)))
+                    (simpadd0-struni-spec tyspec.spec gin state)))
                 (mv (type-spec-union new-spec)
                     (make-simpadd0-gout
                      :events gout-spec.events
@@ -3916,19 +3916,19 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-strunispec ((strunispec strunispecp)
+  (define simpadd0-struni-spec ((struni-spec struni-specp)
                                (gin simpadd0-ginp)
                                state)
-    :guard (strunispec-unambp strunispec)
-    :returns (mv (new-strunispec strunispecp)
+    :guard (struni-spec-unambp struni-spec)
+    :returns (mv (new-struni-spec struni-specp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a structure or union specifier."
     (b* (((simpadd0-gin gin) gin)
-         ((strunispec strunispec) strunispec)
+         ((struni-spec struni-spec) struni-spec)
          ((mv new-members (simpadd0-gout gout-members))
-          (simpadd0-structdecl-list strunispec.members gin state)))
-      (mv (make-strunispec :name strunispec.name
+          (simpadd0-structdecl-list struni-spec.members gin state)))
+      (mv (make-struni-spec :name struni-spec.name
                            :members new-members)
           (make-simpadd0-gout
            :events gout-members.events
@@ -3937,7 +3937,7 @@
            :names-to-avoid gout-members.names-to-avoid
            :vartys gout-members.vartys
            :diffp gout-members.diffp)))
-    :measure (strunispec-count strunispec))
+    :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4807,9 +4807,9 @@
     (defret tyname-unambp-of-simpadd0-tyname
       (tyname-unambp new-tyname)
       :fn simpadd0-tyname)
-    (defret strunispec-unambp-of-simpadd0-strunispec
-      (strunispec-unambp new-strunispec)
-      :fn simpadd0-strunispec)
+    (defret struni-spec-unambp-of-simpadd0-struni-spec
+      (struni-spec-unambp new-struni-spec)
+      :fn simpadd0-struni-spec)
     (defret structdecl-unambp-of-simpadd0-structdecl
       (structdecl-unambp new-structdecl)
       :fn simpadd0-structdecl)
@@ -4888,7 +4888,7 @@
                                        simpadd0-param-declon-list
                                        simpadd0-param-declor
                                        simpadd0-tyname
-                                       simpadd0-strunispec
+                                       simpadd0-struni-spec
                                        simpadd0-structdecl
                                        simpadd0-structdecl-list
                                        simpadd0-structdeclor
