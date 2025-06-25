@@ -13,7 +13,7 @@
 ; This file contains an ABNF grammar for C
 ; that is based on the grammar in [C17]
 ; but is meant for use by tools that manipulate C code.
-; See :doc concrete-syntax-for-tools for more information.
+; See :doc c$::syntax-for-tools for more information.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,7 +34,8 @@
 
 ; Levels
 
-; [C17] presents a lexical grammar [C17:A.1] and a phrase structure grammar [C17:A.2].
+; [C17] presents a lexical grammar [C17:A.1]
+; and a phrase structure grammar [C17:A.2].
 ; This is a typical two-level grammar structure for programming languages:
 ; the first grammar describes how a sequence of characters
 ; is organized into lexical units (identifiers, constants, etc.),
@@ -62,7 +63,8 @@
 ; along with UTF-8 decoding if we start with Unicode files.
 
 ; Our ABNF grammar does not capture the requirement that
-; a non-empty file ends with a new-line character (see phase 3 in [C17:5.1.1.2]).
+; a non-empty file ends with a new-line character
+; (see phase 3 in [C17:5.1.1.2]).
 ; This can be easily enforced outside the grammar as well.
 
 ; [C17:5.1.1.2/6] requires that adjacent string literals are concatenated.
@@ -189,7 +191,7 @@ extended-character = %x24 ; $
                    / carriage-return
                    / safe-nonascii
 
-; This is our initial (source) character set.
+; The following is our initial (source) character set.
 ; This rule name has no direct corresponding nonterminal in [C17],
 ; and is not used in the rest of our ABNF grammar,
 ; but it serves to clarify the character set.

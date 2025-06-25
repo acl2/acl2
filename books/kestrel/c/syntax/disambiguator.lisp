@@ -2311,9 +2311,13 @@
     :short "Disambiguate a type name."
     (b* (((reterr) (irr-tyname) (irr-dimb-table))
          ((tyname tyname) tyname)
-         ((erp new-specquals table) (dimb-spec/qual-list tyname.specquals table))
-         ((erp new-decl? table) (dimb-absdeclor-option tyname.decl? table)))
-      (retok (make-tyname :specquals new-specquals :decl? new-decl? :info nil)
+         ((erp new-specquals table)
+          (dimb-spec/qual-list tyname.specquals table))
+         ((erp new-declor? table)
+          (dimb-absdeclor-option tyname.declor? table)))
+      (retok (make-tyname :specquals new-specquals
+                          :declor? new-declor?
+                          :info nil)
              table))
     :measure (tyname-count tyname))
 

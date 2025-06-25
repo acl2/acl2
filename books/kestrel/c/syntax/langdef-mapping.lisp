@@ -643,10 +643,10 @@
                       in type name ~x0."
                      (tyname-fix tyname))))
        ((erp tyspecseq) (ldm-type-spec-list tyspecs))
-       ((when (not tyname.decl?))
+       ((when (not tyname.declor?))
         (retok (c::make-tyname :tyspec tyspecseq
                                :declor (c::obj-adeclor-none))))
-       ((erp adeclor1) (ldm-absdeclor-obj tyname.decl?)))
+       ((erp adeclor1) (ldm-absdeclor-obj tyname.declor?)))
     (retok (c::make-tyname :tyspec tyspecseq
                            :declor adeclor1)))
   :hooks (:fix)

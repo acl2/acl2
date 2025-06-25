@@ -1346,9 +1346,9 @@
              (spec/qual-list-unambp (tyname->specquals tyname)))
     :expand (tyname-unambp tyname))
 
-  (defrule absdeclor-option-unambp-of-tyname->decl?
+  (defrule absdeclor-option-unambp-of-tyname->declor?
     (implies (tyname-unambp tyname)
-             (absdeclor-option-unambp (tyname->decl? tyname)))
+             (absdeclor-option-unambp (tyname->declor? tyname)))
     :expand (tyname-unambp tyname))
 
   (defrule structdecl-list-unambp-of-strunispec->members

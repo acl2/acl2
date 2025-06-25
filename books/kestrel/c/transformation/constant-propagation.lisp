@@ -1457,11 +1457,11 @@
          ((tyname tyname) tyname)
          ((mv specquals env)
           (const-prop-spec/qual-list tyname.specquals env))
-         ((mv decl? env)
-          (const-prop-absdeclor-option tyname.decl? env)))
+         ((mv declor? env)
+          (const-prop-absdeclor-option tyname.declor? env)))
       (mv (make-tyname
             :specquals specquals
-            :decl? decl?
+            :declor? declor?
             :info tyname.info)
           env))
     :measure (tyname-count tyname))

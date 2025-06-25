@@ -266,7 +266,7 @@
        ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specquals)))
     (and okp
          (type-spec-list-integer-formalp tyspecs)
-         (not tyname.decl?)))
+         (not tyname.declor?)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
