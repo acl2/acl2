@@ -13,8 +13,6 @@
 
 (include-book "instructions")
 
-(include-book "../library-extensions/logappn")
-
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/ubyte3" :dir :system)
