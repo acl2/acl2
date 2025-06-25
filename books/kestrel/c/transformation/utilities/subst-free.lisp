@@ -35,11 +35,15 @@
 
 (defxdoc+ subst-free
   :parents (utilities)
-  :short "todo"
+  :short "A utility to substitute expressions in for free variables in a C
+          AST."
   :long
   (xdoc::topstring
     (xdoc::p
-      "todo"))
+      "This is a mapping operation over C ASTs, which will substitute ordinary
+       free variables according to an identifier-expression "
+      (xdoc::seetopic "omap::omaps" "omap")
+      "."))
   :order-subtopics t
   :default-parent t)
 
@@ -52,23 +56,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (include-book "kestrel/fty/deffold-map" :dir :system)
-;;
-;; (fty::deffold-map subst-free
-;;   :types (c$::exprs/decls/stmts)
-;;   :extra-args
-;;   ((subst ident-expr-mapp)
-;;    (bound-vars ident-setp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; TODO: it may be more natural to remove bound-vars from subst instead of
 ;; tracking them
 (defines exprs/decls/stmts-subst-free
   (define expr-subst-free ((expr exprp)
                            (subst ident-expr-mapp)
                            (bound-vars ident-setp))
-    (declare (ignorable expr subst bound-vars))
     :returns (result exprp)
     (expr-case
      expr
@@ -257,7 +250,6 @@
   (define const-expr-subst-free ((const-expr const-exprp)
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
-    (declare (ignorable const-expr subst bound-vars))
     :returns (result const-exprp)
     (const-expr (expr-subst-free (const-expr->expr const-expr)
                                  subst bound-vars))
@@ -280,7 +272,6 @@
   (define genassoc-subst-free ((genassoc genassocp)
                                (subst ident-expr-mapp)
                                (bound-vars ident-setp))
-    (declare (ignorable genassoc subst bound-vars))
     :returns (result genassocp)
     (genassoc-case
      genassoc
@@ -313,7 +304,6 @@
     ((member-designor member-designorp)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    (declare (ignorable member-designor subst bound-vars))
     :returns (result member-designorp)
     (member-designor-case
      member-designor
@@ -335,7 +325,6 @@
   (define type-spec-subst-free ((type-spec type-specp)
                                 (subst ident-expr-mapp)
                                 (bound-vars ident-setp))
-    (declare (ignorable type-spec subst bound-vars))
     :returns (result type-specp)
     (type-spec-case
      type-spec
@@ -396,7 +385,6 @@
   (define spec/qual-subst-free ((spec/qual spec/qual-p)
                                 (subst ident-expr-mapp)
                                 (bound-vars ident-setp))
-    (declare (ignorable spec/qual subst bound-vars))
     :returns (result spec/qual-p)
     (spec/qual-case
      spec/qual
@@ -429,7 +417,6 @@
   (define align-spec-subst-free ((align-spec align-specp)
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
-    (declare (ignorable align-spec subst bound-vars))
     :returns (result align-specp)
     (align-spec-case
      align-spec
@@ -453,7 +440,6 @@
   (define decl-spec-subst-free ((decl-spec decl-specp)
                                 (subst ident-expr-mapp)
                                 (bound-vars ident-setp))
-    (declare (ignorable decl-spec subst bound-vars))
     :returns (result decl-specp)
     (decl-spec-case
      decl-spec
@@ -491,8 +477,6 @@
     ((typequal/attribspec c$::typequal/attribspec-p)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    (declare (ignorable typequal/attribspec
-                        subst bound-vars))
     :returns (result c$::typequal/attribspec-p)
     (c$::typequal/attribspec-case
      typequal/attribspec
@@ -538,7 +522,6 @@
   (define initer-subst-free ((initer initerp)
                              (subst ident-expr-mapp)
                              (bound-vars ident-setp))
-    (declare (ignorable initer subst bound-vars))
     :returns (result initerp)
     (initer-case
      initer
@@ -569,7 +552,6 @@
   (define desiniter-subst-free ((desiniter desiniterp)
                                 (subst ident-expr-mapp)
                                 (bound-vars ident-setp))
-    (declare (ignorable desiniter subst bound-vars))
     :returns (result desiniterp)
     (desiniter
      (designor-list-subst-free (c$::desiniter->designors desiniter)
@@ -594,7 +576,6 @@
   (define designor-subst-free ((designor designorp)
                                (subst ident-expr-mapp)
                                (bound-vars ident-setp))
-    (declare (ignorable designor subst bound-vars))
     :returns (result designorp)
     (designor-case
      designor
@@ -621,7 +602,6 @@
   (define declor-subst-free ((declor declorp)
                              (subst ident-expr-mapp)
                              (bound-vars ident-setp))
-    (declare (ignorable declor subst bound-vars))
     :returns (mv (result declorp)
                  (bound-vars ident-setp)
                  (param-bound-vars ident-setp))
@@ -657,7 +637,6 @@
   (define dirdeclor-subst-free ((dirdeclor dirdeclorp)
                                 (subst ident-expr-mapp)
                                 (bound-vars ident-setp))
-    (declare (ignorable dirdeclor subst bound-vars))
     :returns (mv (result dirdeclorp)
                  (bound-vars ident-setp)
                  (param-bound-vars ident-setp))
@@ -756,7 +735,6 @@
   (define absdeclor-subst-free ((absdeclor absdeclorp)
                                 (subst ident-expr-mapp)
                                 (bound-vars ident-setp))
-    (declare (ignorable absdeclor subst bound-vars))
     :returns (result absdeclorp)
     (absdeclor (typequal/attribspec-list-list-subst-free
                  (c$::absdeclor->pointers absdeclor)
@@ -783,7 +761,6 @@
   (define dirabsdeclor-subst-free ((dirabsdeclor dirabsdeclorp)
                                    (subst ident-expr-mapp)
                                    (bound-vars ident-setp))
-    (declare (ignorable dirabsdeclor subst bound-vars))
     :returns (result dirabsdeclorp)
     (dirabsdeclor-case
      dirabsdeclor
@@ -860,7 +837,6 @@
   (define param-declon-subst-free ((param-declon param-declonp)
                                    (subst ident-expr-mapp)
                                    (bound-vars ident-setp))
-    (declare (ignorable param-declon subst bound-vars))
     :returns (mv (result param-declonp)
                  (bound-vars ident-setp))
     (b* ((specs (decl-spec-list-subst-free
@@ -893,7 +869,6 @@
   (define param-declor-subst-free ((param-declor param-declorp)
                                    (subst ident-expr-mapp)
                                    (bound-vars ident-setp))
-    (declare (ignorable param-declor subst bound-vars))
     :returns (mv (result param-declorp)
                  (bound-vars ident-setp))
     (param-declor-case
@@ -923,7 +898,6 @@
   (define tyname-subst-free ((tyname tynamep)
                              (subst ident-expr-mapp)
                              (bound-vars ident-setp))
-    (declare (ignorable tyname subst bound-vars))
     :returns (result tynamep)
     (tyname
      (spec/qual-list-subst-free (c$::tyname->specquals tyname)
@@ -936,7 +910,6 @@
   (define struni-spec-subst-free ((struni-spec struni-specp)
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
-    (declare (ignorable struni-spec subst bound-vars))
     :returns (result struni-specp)
     (b* (((mv members -)
           (structdecl-list-subst-free
@@ -949,7 +922,6 @@
   (define structdecl-subst-free ((structdecl structdeclp)
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
-    (declare (ignorable structdecl subst bound-vars))
     :returns (mv (result structdeclp)
                  (bound-vars ident-setp))
     (structdecl-case
@@ -998,7 +970,6 @@
   (define structdeclor-subst-free ((structdeclor structdeclorp)
                                    (subst ident-expr-mapp)
                                    (bound-vars ident-setp))
-    (declare (ignorable structdeclor subst bound-vars))
     :returns (mv (result structdeclorp)
                  (bound-vars ident-setp))
     (b* ((expr? (const-expr-option-subst-free
@@ -1031,7 +1002,6 @@
   (define enumspec-subst-free ((enumspec enumspecp)
                                (subst ident-expr-mapp)
                                (bound-vars ident-setp))
-    (declare (ignorable enumspec subst bound-vars))
     :returns (result enumspecp)
     (enumspec (c$::enumspec->name enumspec)
               (enumer-list-subst-free (c$::enumspec->list enumspec)
@@ -1042,7 +1012,6 @@
   (define enumer-subst-free ((enumer enumerp)
                              (subst ident-expr-mapp)
                              (bound-vars ident-setp))
-    (declare (ignorable enumer subst bound-vars))
     :returns (result enumerp)
     (enumer (c$::enumer->name enumer)
             (const-expr-option-subst-free (c$::enumer->value enumer)
@@ -1064,7 +1033,6 @@
   (define statassert-subst-free ((statassert statassertp)
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
-    (declare (ignorable statassert subst bound-vars))
     :returns (result statassertp)
     (statassert
      (const-expr-subst-free (c$::statassert->test statassert)
@@ -1075,7 +1043,6 @@
   (define attrib-subst-free ((attrib c$::attribp)
                              (subst ident-expr-mapp)
                              (bound-vars ident-setp))
-    (declare (ignorable attrib subst bound-vars))
     :returns (result c$::attribp)
     (c$::attrib-case
      attrib
@@ -1104,7 +1071,6 @@
     ((attrib-spec c$::attrib-specp)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    (declare (ignorable attrib-spec subst bound-vars))
     :returns (result c$::attrib-specp)
     (c$::attrib-spec (c$::attrib-spec->uscores attrib-spec)
                      (attrib-list-subst-free
@@ -1128,7 +1094,6 @@
   (define initdeclor-subst-free ((initdeclor initdeclorp)
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
-    (declare (ignorable initdeclor subst bound-vars))
     :returns (mv (result initdeclorp)
                  (bound-vars ident-setp))
     (b* ((init? (initer-option-subst-free (c$::initdeclor->init? initdeclor)
@@ -1165,7 +1130,6 @@
   (define decl-subst-free ((decl declp)
                            (subst ident-expr-mapp)
                            (bound-vars ident-setp))
-    (declare (ignorable decl subst bound-vars))
     :returns (mv (result declp)
                  (bound-vars ident-setp))
     (decl-case
@@ -1205,7 +1169,6 @@
   (define label-subst-free ((label labelp)
                             (subst ident-expr-mapp)
                             (bound-vars ident-setp))
-    (declare (ignorable label subst bound-vars))
     :returns (result labelp)
     (label-case
      label
@@ -1223,7 +1186,6 @@
   (define asm-output-subst-free ((asm-output c$::asm-outputp)
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
-    (declare (ignorable asm-output subst bound-vars))
     :returns (result c$::asm-outputp)
     (c$::asm-output
      (c$::asm-output->name asm-output)
@@ -1248,7 +1210,6 @@
   (define asm-input-subst-free ((asm-input c$::asm-inputp)
                                 (subst ident-expr-mapp)
                                 (bound-vars ident-setp))
-    (declare (ignorable asm-input subst bound-vars))
     :returns (result c$::asm-inputp)
     (c$::asm-input
      (c$::asm-input->name asm-input)
@@ -1273,7 +1234,6 @@
   (define asm-stmt-subst-free ((asm-stmt c$::asm-stmtp)
                                (subst ident-expr-mapp)
                                (bound-vars ident-setp))
-    (declare (ignorable asm-stmt subst bound-vars))
     :returns (result c$::asm-stmtp)
     (c$::asm-stmt
      (c$::asm-stmt->uscores asm-stmt)
@@ -1292,7 +1252,6 @@
   (define stmt-subst-free ((stmt stmtp)
                            (subst ident-expr-mapp)
                            (bound-vars ident-setp))
-    (declare (ignorable stmt subst bound-vars))
     :returns (result stmtp)
     (stmt-case
      stmt
@@ -1387,7 +1346,6 @@
   (define block-item-subst-free ((block-item block-itemp)
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
-    (declare (ignorable block-item subst bound-vars))
     :returns (mv (result block-itemp)
                  (bound-vars ident-setp))
     (block-item-case
@@ -1430,7 +1388,6 @@
     ((amb-expr/tyname c$::amb-expr/tyname-p)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    (declare (ignorable amb-expr/tyname subst bound-vars))
     :returns (result c$::amb-expr/tyname-p)
     (c$::amb-expr/tyname
      (expr-subst-free
@@ -1445,8 +1402,6 @@
     ((amb-declor/absdeclor c$::amb-declor/absdeclor-p)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    (declare (ignorable amb-declor/absdeclor
-                        subst bound-vars))
     :returns (result c$::amb-declor/absdeclor-p)
     (b* (((mv declor bound-vars -)
           (declor-subst-free
@@ -1463,7 +1418,6 @@
     ((amb-decl/stmt c$::amb-decl/stmt-p)
      (subst ident-expr-mapp)
      (bound-vars ident-setp))
-    (declare (ignorable amb-decl/stmt subst bound-vars))
     :returns (result c$::amb-decl/stmt-p)
     (b* (((mv decl bound-vars)
           (decl-subst-free (c$::amb-decl/stmt->decl amb-decl/stmt)
@@ -1482,7 +1436,8 @@
   ((fundef fundefp)
    (subst ident-expr-mapp)
    (bound-vars ident-setp))
-  ;; :short "Collect free variables appearing in a function definition."
+  :short "Substitute expressions in for free variables appearing in a function
+          definition."
   :returns (mv (result fundefp)
                (bound-vars ident-setp))
   (b* (((fundef fundef) fundef)
