@@ -12,6 +12,8 @@
 (in-package "X")
 
 (include-book "read-and-write")
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
