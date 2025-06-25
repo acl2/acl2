@@ -15,6 +15,7 @@
 
 (include-book "std/util/deflist" :dir :system)
 
+(local (include-book "std/lists/intersectp" :dir :system))
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -76,6 +77,11 @@
               (> (nfix n) 0))
        :hints (("Goal" :induct t :in-theory (enable nfix))))
 
+     (defret names-indexed-below-rev-iff
+       (iff names-rev
+            (> (nfix n) 0))
+       :hints (("Goal" :induct t :in-theory (enable nfix))))
+
      (defruled base-not-member-of-names-indexed-below-rev
        (implies (stringp base)
                 (not (member-equal (name-simple base)
@@ -83,7 +89,7 @@
        :induct t
        :enable names-indexed-below-rev)
 
-     (defruled member-equal-of-names-indexed-below-rev
+     (defruled member-equal-of-name-indexed-and-names-indexed-below-rev
        (iff (member-equal (name-indexed base i)
                           (names-indexed-below-rev base1 n))
             (and (equal (str-fix base)
@@ -92,11 +98,30 @@
        :induct t
        :enable nfix)
 
+     (defruled member-equal-of-names-indexed-below-rev
+       (iff (member-equal x (names-indexed-below-rev base n))
+            (and (namep x)
+                 (equal (name-kind x) :indexed)
+                 (equal (name-indexed->base x) (str-fix base))
+                 (< (name-indexed->index x) (nfix n))))
+       :induct t
+       :enable nfix)
+
      (defrule no-duplicatesp-equal-of-names-indexed-below-rev
        (no-duplicatesp-equal (names-indexed-below-rev base n))
        :induct t
        :enable (no-duplicatesp-equal
-                member-equal-of-names-indexed-below-rev))))
+                member-equal-of-name-indexed-and-names-indexed-below-rev))
+
+     (defruled intersectp-equal-of-names-indexed-below-rev
+       (equal (intersectp-equal (names-indexed-below-rev base1 n1)
+                                (names-indexed-below-rev base2 n2))
+              (and (equal (str-fix base1)
+                          (str-fix base2))
+                   (not (zp n1))
+                   (not (zp n2))))
+       :induct t
+       :enable (member-equal-of-names-indexed-below-rev nfix zp))))
 
   ///
 
@@ -108,6 +133,10 @@
     (equal (consp names)
            (> (nfix n) 0)))
 
+  (defret names-indexed-below-iff
+    (iff names
+         (> (nfix n) 0)))
+
   (in-theory (disable consp-of-names-indexed-below
                       consp-of-names-indexed-below-rev))
 
@@ -118,15 +147,32 @@
     :enable names-indexed-below)
 
   (defruled member-equal-of-names-indexed-below
+    (iff (member-equal x (names-indexed-below base n))
+         (and (namep x)
+              (equal (name-kind x) :indexed)
+              (equal (name-indexed->base x) (str-fix base))
+              (< (name-indexed->index x) (nfix n))))
+    :enable member-equal-of-names-indexed-below-rev)
+
+  (defruled member-equal-of-name-indexed-and-names-indexed-below
     (iff (member-equal (name-indexed base i)
                        (names-indexed-below base1 n))
          (and (equal (str-fix base)
                      (str-fix base1))
               (< (nfix i) (nfix n))))
-    :enable member-equal-of-names-indexed-below-rev)
+    :enable member-equal-of-name-indexed-and-names-indexed-below-rev)
 
   (defrule no-duplicatesp-equal-of-names-indexed-below
-    (no-duplicatesp-equal (names-indexed-below base n))))
+    (no-duplicatesp-equal (names-indexed-below base n)))
+
+  (defruled intersectp-equal-of-names-indexed-below
+    (equal (intersectp-equal (names-indexed-below base1 n1)
+                             (names-indexed-below base2 n2))
+           (and (equal (str-fix base1)
+                       (str-fix base2))
+                (not (zp n1))
+                (not (zp n2))))
+    :enable intersectp-equal-of-names-indexed-below-rev))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
