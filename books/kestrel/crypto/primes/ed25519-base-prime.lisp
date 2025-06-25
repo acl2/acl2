@@ -93,9 +93,14 @@
    (xdoc::codeblock
     "2^255 - 19")
    (xdoc::p
-    "RFC 8032 specifies its value in hexadecimal:")
-   (xdoc::codeblock
-    "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed")))
+    "See also "
+    (xdoc::ahref
+     "https://tools.ietf.org/rfc/rfc8032.txt"
+     "RFC 8032")
+    " and "
+    (xdoc::ahref
+     "https://tools.ietf.org/rfc/rfc7748.txt"
+     "RFC 7748"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

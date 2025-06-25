@@ -86,13 +86,15 @@
   (xdoc::topstring
    (xdoc::p
     "The NIST P-256 group order prime is the order of
-     the Weierstrass elliptic curve NIST P-256. This prime is used as the 
+     the Weierstrass elliptic curve @('NIST P-256'). This prime is used as the 
      scalar field for ECDSA signature operations.")
+   (xdoc::p
+    "The curve @('NIST P-256') is also called @('secp256r1').")
    (xdoc::p
     (xdoc::ahref
      "https://www.secg.org/sec2-v2.pdf"
      "SEC 2: Recommended Elliptic Curve Domain Parameters")
-    " calls it @($n$) and specifies its value in hexadecimal:")
+    " (Section 2.4.2) calls it @($n$) and specifies its value in hexadecimal:")
    (xdoc::codeblock
     "0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551")))
 

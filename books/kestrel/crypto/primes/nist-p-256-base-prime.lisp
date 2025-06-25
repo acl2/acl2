@@ -79,8 +79,10 @@
   (xdoc::topstring
    (xdoc::p
     "The NIST P-256 base field prime is the characteristic of the finite field
-     over which the Weierstrass elliptic curve NIST P-256 is defined. This prime
+     over which the Weierstrass elliptic curve @('NIST P-256') is defined. This prime
      is used for all field arithmetic operations in the curve.")
+   (xdoc::p
+    "The curve @('NIST P-256') is also called @('secp256r1').")
    (xdoc::p
     "The prime is computed as:")
    (xdoc::codeblock
@@ -89,7 +91,7 @@
     (xdoc::ahref
      "https://www.secg.org/sec2-v2.pdf"
      "SEC 2: Recommended Elliptic Curve Domain Parameters")
-    " calls it @($p$) and specifies its value in hexadecimal:")
+    " (Section 2.4.2) calls it @($p$), and specifies its value in hexadecimal:")
    (xdoc::codeblock
     "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff")))
 

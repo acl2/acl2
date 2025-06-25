@@ -99,13 +99,12 @@
      of the Edwards curve Ed25519. This prime is used as the scalar field
      for EdDSA signature operations.")
    (xdoc::p
-    "The prime is computed as:")
+    (xdoc::ahref
+     "https://tools.ietf.org/rfc/rfc8032.txt"
+     "RFC 8032")
+    " states that the group order (called @($L$)) is equal to "
    (xdoc::codeblock
-    "2^252 + 27742317777372353535851937790883648493")
-   (xdoc::p
-    "RFC 8032 specifies its value in hexadecimal:")
-   (xdoc::codeblock
-    "0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed")))
+    "2^252 + 27742317777372353535851937790883648493"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
