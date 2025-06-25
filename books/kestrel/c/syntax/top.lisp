@@ -17,6 +17,7 @@
 (include-book "unambiguity")
 (include-book "validation-information")
 (include-book "ascii-identifiers")
+(include-book "standard")
 (include-book "defpred")
 (include-book "defpred-doc")
 (include-book "preprocess-file")
@@ -152,6 +153,11 @@
      only contain ASCII letters, digits, and underscores,
      and are distinct from keywords.")
    (xdoc::p
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "standard"
+                    "abstract syntax for standard C")
+    ", i.e. that does not use any GCC extensions.")
+   (xdoc::p
     "We provide various "
     (xdoc::seetopic "abstract-syntax-operations"
                     "other operations on the abstract syntax")
@@ -193,6 +199,8 @@
                     abstract-syntax-operations
                     unambiguity
                     validation-information
+                    ascii-identifiers
+                    standard
                     preprocessing
                     parser
                     disambiguator

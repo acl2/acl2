@@ -287,11 +287,11 @@
     tyname
     make-tyname
 
-    strunispecp
-    strunispec-fix
-    strunispec-count
-    strunispec
-    make-strunispec
+    struni-specp
+    struni-spec-fix
+    struni-spec-count
+    struni-spec
+    make-struni-spec
 
     structdeclp
     structdecl-fix
@@ -485,7 +485,7 @@
     param-declon-list-unambp
     param-declor-unambp
     tyname-unambp
-    strunispec-unambp
+    struni-spec-unambp
     structdecl-unambp
     structdecl-list-unambp
     structdeclor-unambp
