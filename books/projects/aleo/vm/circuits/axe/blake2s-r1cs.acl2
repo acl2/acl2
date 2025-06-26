@@ -1,0 +1,11 @@
+; AleoVM Library
+;
+; Copyright (C) 2025 Provable Inc.
+;
+; License: See the LICENSE file distributed with this library.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "kestrel/crypto/r1cs/portcullis" :dir :system)
