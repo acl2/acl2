@@ -1830,6 +1830,32 @@ accumulator:</p>
     :prod-fns ((simple-tree-leaf  (value (lambda (x incr-amount) (+ x (lnfix incr-amount)))))))
  })
 
+<p>This shows an example of using a single @(':ignore') return value with a
+custom B* binder to set up a short-circuiting check on a tree, i.e. if visiting
+the left branch produces NIL then we don't visit the right branch:</p>
+@({
+ ;; This sets up a B* binder such that
+ ;;  (b* (((short-circuiting-bind ignored-var) (my-form)))
+ ;;     (my-rest))
+ ;; expands to (basically)  (and (my-form) (my-rest))
+ (acl2::def-b*-binder short-circuiting-bind
+    :decls ((declare (ignore acl2::args)))
+    :body `(and ,@acl2::forms ,acl2::rest-expr))
+
+ (defvisitor-template short-circuiting-check-no-empty-names ((x :object))
+    ;; This returns spec says to ignore the single return value, except insofar as the
+    ;; B* binder uses it. Return T when we're done with all recursive calls.
+    :returns (ok (:ignore :return t))
+
+    ;; Use short-circuiting-bind to bind all returns from visitors. This effectively
+    ;; ANDs together all the recursive calls (and skips the rest once the first
+    ;; NIL is encountered).
+    :binder short-circuiting-bind
+
+    ;; Check on each leaf that the leaf name is not the empty string.
+    :prod-fns ((simple-tree-leaf (name (lambda (x) (not (equal x "")))))))
+ })
+
 <p>The general form of a @('defvisitor-template') call is:</p>
 @({
  (defvisitor-template template-name formals ... keyword-args)
@@ -1845,7 +1871,8 @@ function and how they are constructed from recursive calls.  The argument to
 an @('(mv ...)'), and each return tuple is similar to a @(see std::define)
 returnspec except that it has an extra form after the return name and before
 the rest of the arguments, describing how it is constructed -- either a
-@(':join'), @(':acc'), or @(':update') form, as in the examples above.</li>
+@(':join'), @(':acc'), @(':update'), or @(':ignore') form, as in the examples
+above.</li>
 
 <li>@(':type-fns') specify base cases for fields of certain types.  The
 argument is a list of pairs @('(type function)'), where the function applied to
@@ -1881,6 +1908,11 @@ congruence (deffixequiv) theorems about the generated functions.</li>
 
 <li>@(':reversep') -- false by default, says whether to reverse the order in
 which fields are processed.</li>
+
+<li>@(':binder') -- A @(see b*) binder that will be wrapped around the bindings
+for every call of a visitor function. If visitors have multiple return values,
+this replaces the @('mv') binder; if only one return value, then this wraps
+around the single variable binding.</li>
 
 <li>@(':wrapper') -- @(':body') by default; gives a form in which to wrap the
 generated body of each function, where @(':body') is replaced by that generated

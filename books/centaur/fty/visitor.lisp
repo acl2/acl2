@@ -67,6 +67,7 @@
    defines-args       ;; extra keyword args to defines
    define-args        ;; extra keyword args to define
    order              ;; topological order ranking for defvisitors under multi
+   binder             ;; b* binder for visitor calls, replaces MV if multi values or wraps around single value
    wrld))
 
 (define visitor-return-binder-aux (returns fldname firstp x)
@@ -82,6 +83,9 @@
        (name (cond ((or (eq type :update)
                         (eq (car type) :update))
                     fldname)
+                   ((or (Eq type :ignore)
+                        (eq (car type) :ignore))
+                    '&)
                    (accum  (car accum))
                    (firstp name)
                    (t      (cdr (assoc name x.join-vars))))))
@@ -94,9 +98,12 @@
                     (cdr returns)
                   (list returns)))
        (lst (visitor-return-binder-aux returns fldname firstp x))
+       (binder (visitorspec->binder x))
        ((when (eql (len returns) 1))
-        (car lst)))
-    (cons 'mv lst)))
+        (if binder
+            `(,binder ,(car lst))
+          (car lst))))
+    (cons (or binder 'mv) lst)))
 
 (define visitor-macroname (x type)
   (b* (((visitorspec x))
@@ -200,6 +207,9 @@
                     update)
                    ((eq (car type) :update)
                     (acl2::template-subst (cadr type) :atom-alist (cons (cons :update update) typeinfo)))
+                   ((eq type :ignore) nil)
+                   ((eq (car type) :ignore)
+                    (cadr (member :return type))) ;; supports (:ignore :return foo)
                    (accum
                     (car accum))
                    (t name))))
@@ -818,6 +828,7 @@
                            "Bad return entry ~x0" x)
                        (mv nil nil nil nil))))
                   (mv nil nil nil nil)))
+      (:ignore (mv nil nil nil nil))
       (otherwise
        (prog2$
         (er hard? 'defvisitor-template
@@ -906,7 +917,8 @@
     :renames
     :fixequivs
     :reversep
-    :wrapper))
+    :wrapper
+    :binder))
 
 (define visitor-process-fnspecs (kwd-alist wrld)
   (b* ((type-fns (cdr (assoc :type-fns kwd-alist)))
@@ -982,6 +994,7 @@
            :reversep (std::getarg :reversep nil kwd-alist)
            :wrapper (std::getarg :wrapper :body kwd-alist)
            :renames (std::getarg :renames nil kwd-alist)
+           :binder (std::getarg :binder nil kwd-alist)
            :macrop macrop)))
     x))
 
