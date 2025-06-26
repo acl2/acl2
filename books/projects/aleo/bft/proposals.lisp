@@ -182,8 +182,8 @@
     ((defruled lemma
        (implies (prop-set-none-author-p author props)
                 (set::emptyp (props-with-author+round author round props)))
-       :enable (set::emptyp-to-not-nonemptyp
-                set::nonemptyp
+       :enable (set-emptyp-to-not-nonemptyp
+                set-nonemptyp
                 in-of-props-with-author+round
                 prop-set-none-author-p-necc)
        :disable props-with-author+round))))
@@ -335,14 +335,14 @@
                                        (proposal->round prop)
                                        props)))))
        :enable (prop-set-unequivp-when-subset
-                set::emptyp-to-not-nonemptyp
-                set::nonemptyp
+                set-emptyp-to-not-nonemptyp
+                set-nonemptyp
                 in-of-props-with-author+round)
        :disable (prop-set-unequivp
                  prop-set-unequivp-necc)
        :use (:instance prop-set-unequivp-necc
                        (prop1 prop)
-                       (prop2 (set::nonempty-witness
+                       (prop2 (set-nonempty-witness
                                (props-with-author+round (proposal->author prop)
                                                         (proposal->round prop)
                                                         props)))
