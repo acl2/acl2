@@ -164,7 +164,7 @@
                         (cert-set->author-set (predecessors cert2 dag2)))))
     (if (set::emptyp common-authors)
         (mv nil nil)
-      (b* ((common-author (set::nonempty-witness common-authors)))
+      (b* ((common-author (set-nonempty-witness common-authors)))
         (mv (cert-with-author+round common-author
                                     (1+ (certificate->round cert1))
                                     dag1)
@@ -172,7 +172,7 @@
                                     (1- (certificate->round cert2))
                                     dag2)))))
   :guard-hints
-  (("Goal" :in-theory (enable set::nonempty-witness-from-not-emptyp)))
+  (("Goal" :in-theory (enable set-nonempty-witness-from-not-emptyp)))
   :hooks (:fix)
 
   ///
@@ -194,7 +194,7 @@
              (set::in succ? (successors cert1 dag1)))
     :hyp (certificate-setp dag1)
     :hints (("Goal"
-             :use ((:instance set::nonempty-witness-from-not-emptyp
+             :use ((:instance set-nonempty-witness-from-not-emptyp
                               (set (intersect (cert-set->author-set
                                                (successors cert1 dag1))
                                               (cert-set->author-set
@@ -202,16 +202,16 @@
                    (:instance cert-with-author+round-subset-superset-same
                               (certs0 (successors cert1 dag1))
                               (certs dag1)
-                              (cert (set::nonempty-witness
+                              (cert (set-nonempty-witness
                                      (certs-with-author
-                                      (set::nonempty-witness
+                                      (set-nonempty-witness
                                        (intersect
                                         (cert-set->author-set
                                          (successors cert1 dag1))
                                         (cert-set->author-set
                                          (predecessors cert2 dag2))))
                                       (successors cert1 dag1))))
-                              (author (set::nonempty-witness
+                              (author (set-nonempty-witness
                                        (intersect
                                         (cert-set->author-set
                                          (successors cert1 dag1))
@@ -220,7 +220,7 @@
                               (round (1+ (certificate->round cert1))))
                    (:instance cert-with-author+round-element
                               (certs (successors cert1 dag1))
-                              (author (set::nonempty-witness
+                              (author (set-nonempty-witness
                                        (intersect
                                         (cert-set->author-set
                                          (successors cert1 dag1))
@@ -235,7 +235,7 @@
              (set::in pred? (predecessors cert2 dag2)))
     :hyp (certificate-setp dag2)
     :hints (("Goal"
-             :use ((:instance set::nonempty-witness-from-not-emptyp
+             :use ((:instance set-nonempty-witness-from-not-emptyp
                               (set (intersect (cert-set->author-set
                                                (successors cert1 dag1))
                                               (cert-set->author-set
@@ -243,16 +243,16 @@
                    (:instance cert-with-author+round-subset-superset-same
                               (certs0 (predecessors cert2 dag2))
                               (certs dag2)
-                              (cert (set::nonempty-witness
+                              (cert (set-nonempty-witness
                                      (certs-with-author
-                                      (set::nonempty-witness
+                                      (set-nonempty-witness
                                        (intersect
                                         (cert-set->author-set
                                          (successors cert1 dag1))
                                         (cert-set->author-set
                                          (predecessors cert2 dag2))))
                                       (predecessors cert2 dag2))))
-                              (author (set::nonempty-witness
+                              (author (set-nonempty-witness
                                        (intersect
                                         (cert-set->author-set
                                          (successors cert1 dag1))
@@ -261,7 +261,7 @@
                               (round (1- (certificate->round cert2))))
                    (:instance cert-with-author+round-element
                               (certs (predecessors cert2 dag2))
-                              (author (set::nonempty-witness
+                              (author (set-nonempty-witness
                                        (intersect
                                         (cert-set->author-set
                                          (successors cert1 dag1))
@@ -342,7 +342,7 @@
              in-of-successors)
     :use (:instance cert-with-author+round-of-cert-in-unequiv-certs
                     (certs dag1)
-                    (cert (set::nonempty-witness
+                    (cert (set-nonempty-witness
                            (certs-with-author common-author
                                               (successors cert1 dag1))))))
 
@@ -359,7 +359,7 @@
              in-of-predecessors)
     :use (:instance cert-with-author+round-of-cert-in-unequiv-certs
                     (certs dag2)
-                    (cert (set::nonempty-witness
+                    (cert (set-nonempty-witness
                            (certs-with-author common-author
                                               (predecessors cert2 dag2))))))
 
@@ -387,8 +387,8 @@
     :enable (pick-successor+predecessor
              committee-quorum-stake
              validators-stake-upper-bound
-             set::not-emptyp-to-nonemptyp
-             set::nonemptyp
+             set-not-emptyp-to-nonemptyp
+             set-nonemptyp
              cert-with-author+round-of-successor
              cert-with-author+round-of-predecessor)
     :use (:instance not-empty-successor-predecessor-author-intersection

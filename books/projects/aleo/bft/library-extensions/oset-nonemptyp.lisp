@@ -23,7 +23,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk set::nonemptyp ((set set::setp))
+(define-sk set-nonemptyp ((set set::setp))
   :returns (yes/no booleanp)
   :parents (library-extensions)
   :short "Check if an oset is not empty, using an existential quantifier."
@@ -34,40 +34,40 @@
      it provides an under-specified witness member of the set,
      which is useful for certain kinds of reasoning."))
   (exists (elem) (set::in elem set))
-  :skolem-name set::nonempty-witness
+  :skolem-name set-nonempty-witness
 
   ///
 
-  (in-theory (disable set::nonemptyp set::nonemptyp-suff))
+  (in-theory (disable set-nonemptyp set-nonemptyp-suff))
 
-  (defruled set::nonemptyp-when-not-emptyp
+  (defruled set-nonemptyp-when-not-emptyp
     (implies (not (set::emptyp set))
-             (set::nonemptyp set))
-    :use (:instance set::nonemptyp-suff (elem (set::head set))))
+             (set-nonemptyp set))
+    :use (:instance set-nonemptyp-suff (elem (set::head set))))
 
-  (defruled set::not-emptyp-when-nonemptyp
-    (implies (set::nonemptyp set)
+  (defruled set-not-emptyp-when-nonemptyp
+    (implies (set-nonemptyp set)
              (not (set::emptyp set)))
-    :enable set::nonemptyp)
+    :enable set-nonemptyp)
 
-  (defruled set::not-emptyp-to-nonemptyp
+  (defruled set-not-emptyp-to-nonemptyp
     (equal (not (set::emptyp set))
-           (set::nonemptyp set))
-    :use (set::nonemptyp-when-not-emptyp
-          set::not-emptyp-when-nonemptyp))
+           (set-nonemptyp set))
+    :use (set-nonemptyp-when-not-emptyp
+          set-not-emptyp-when-nonemptyp))
 
-  (defruled set::emptyp-to-not-nonemptyp
+  (defruled set-emptyp-to-not-nonemptyp
     (equal (set::emptyp set)
-           (not (set::nonemptyp set)))
-    :use (:instance set::not-emptyp-to-nonemptyp (set set))
+           (not (set-nonemptyp set)))
+    :use (:instance set-not-emptyp-to-nonemptyp (set set))
     :enable not)
 
-  (theory-invariant (incompatible (:rewrite set::not-emptyp-to-nonemptyp)
-                                  (:rewrite set::emptyp-to-not-nonemptyp)))
+  (theory-invariant (incompatible (:rewrite set-not-emptyp-to-nonemptyp)
+                                  (:rewrite set-emptyp-to-not-nonemptyp)))
 
-  (defruled set::nonempty-witness-from-not-emptyp
+  (defruled set-nonempty-witness-from-not-emptyp
     (implies (not (set::emptyp set))
-             (set::in (set::nonempty-witness set) set))
+             (set::in (set-nonempty-witness set) set))
     :rule-classes ((:forward-chaining :trigger-terms ((set::emptyp set))))
-    :use set::nonemptyp-when-not-emptyp
-    :enable set::nonemptyp))
+    :use set-nonemptyp-when-not-emptyp
+    :enable set-nonemptyp))
