@@ -1720,3 +1720,262 @@
 ;;           ',visitor
 ;;           (update-type-visitor-fn ',visitor ',type ',fn world)))
 
+
+
+
+
+
+
+
+
+(define find-update-index (returns idx)
+  (if (atom returns)
+      nil
+    (let ((rettype (cadr (car returns))))
+      (if (or (eq rettype :update)
+              (and (consp rettype) (eq (car rettype) :update)))
+          idx
+        (find-update-index (cdr returns) (+ 1 idx))))))
+
+(define prod-acc-updater-theorem (field prod sum visitor wrld)
+  (b* (((flexprod-field field))
+       ((flexprod prod))
+       ((flexsum sum))
+       ((visitorspec visitor))
+       (sum-fn (cdr (assoc sum.name visitor.type-fns)))
+       (field-fn (or
+                  (let ((prod-field-fns (cdr (assoc prod.type-name visitor.prod-fns))))
+                    (cdr (assoc field.name prod-field-fns)))
+                  (cdr (assoc field.name visitor.field-fns))
+                  (cdr (assoc (visitor-normalize-fixtype field.type wrld) visitor.type-fns))))
+       ((unless sum-fn)
+        nil)
+       (update-index (and (consp visitor.returns) (eq (car visitor.returns) 'mv)
+                          (find-update-index (cdr visitor.returns) 0)))
+       (sum-call1 `(,sum-fn . ,(strip-cars visitor.formals)))
+       (sum-call (if update-index
+                     `(mv-nth ,update-index ,sum-call1)
+                   sum-call1))
+       (field-call1 `(,field-fn . ,(strip-cars visitor.formals)))
+       (field-call (if update-index
+                       `(mv-nth ,update-index ,field-call1)
+                     field-call1))
+       (hyp (if (consp (cdr sum.prods))
+                (if sum.kind
+                    `(equal (,sum.kind ,visitor.xvar) ,prod.kind)
+                  (if (eq prod.cond t)
+                      t
+                    `(let ((,sum.xvar ,visitor.xvar)) ,prod.cond)))
+              t)))
+    (list
+     (acl2::template-subst
+      '(defthm <acc>-of-<sum-fn>
+         (implies <hyp>
+                  (equal (<acc> <sum-call>)
+                         (let ((<xvar> (<acc> <xvar>)))
+                           <field-call>)))
+         :hints (("goal" :expand (<sum-call1>))))
+      :atom-alist `((<acc> . ,field.acc-name)
+                    (<sum-call> . ,sum-call)
+                    (<sum-call1> . ,sum-call1)
+                    (<field-call> . ,(if field-fn
+                                         field-call
+                                       visitor.xvar))
+                    (<xvar> . ,visitor.xvar)
+                    (<hyp> . ,hyp)
+                    (<sum-fn> . ,sum-fn))
+      :str-alist `(("<ACC>" . ,(symbol-name field.acc-name))
+                   ("<SUM-FN>" . ,(symbol-name sum-fn)))
+      :pkg-sym visitor.name))))
+
+(define prod-acc-updater-theorems (fields prod sum visitor wrld)
+  (if (atom fields)
+      nil
+    (append (prod-acc-updater-theorem (car fields) prod sum visitor wrld)
+            (prod-acc-updater-theorems (cdr fields) prod sum visitor wrld))))
+
+(define prod-updater-theorems (prods sum visitor wrld)
+  (if (atom prods)
+      nil
+    (append (prod-acc-updater-theorems (flexprod->fields (car prods))
+                                       (car prods) sum visitor wrld)
+            (prod-updater-theorems (cdr prods) sum visitor wrld))))
+
+(define sum-kind-updater-theorem (sum visitor)
+  (b* (((flexsum sum))
+       ((visitorspec visitor))
+       (sum-fn (cdr (assoc sum.name visitor.type-fns)))
+       ((unless sum-fn)
+        nil)
+       ((unless sum.kind) nil)
+       (update-index (and (consp visitor.returns) (eq (car visitor.returns) 'mv)
+                          (find-update-index (cdr visitor.returns) 0)))
+       (sum-call1 `(,sum-fn . ,(strip-cars visitor.formals)))
+       (sum-call (if update-index
+                     `(mv-nth ,update-index ,sum-call1)
+                   sum-call1)))
+    (list
+     (acl2::template-subst
+      '(defthm <kind>-of-<sum-fn>
+         (equal (<kind> <sum-call>)
+                (<kind> <xvar>))
+         :hints (("goal" :expand (<sum-call1>))))
+      :atom-alist `((<kind> . ,sum.kind)
+                    (<sum-call> . ,sum-call)
+                    (<sum-call1> . ,sum-call1)
+                    (<xvar> . ,visitor.xvar))
+      :str-alist `(("<KIND>" . ,(symbol-name sum.kind))
+                   ("<SUM-FN>" . ,(symbol-name sum-fn)))
+      :pkg-sym visitor.name))))
+
+
+(define flexsum-updater-theorems (x visitor wrld)
+  (append (sum-kind-updater-theorem x visitor)
+          (prod-updater-theorems (flexsum->prods x) x visitor wrld)))
+
+(define flexlist-updater-theorems (x visitor wrld)
+  (b* (((flexlist x))
+       ((visitorspec visitor))
+       (list-fn (cdr (assoc x.name visitor.type-fns)))
+       (elt-fn (cdr (assoc (visitor-normalize-fixtype x.elt-type wrld) visitor.type-fns)))
+       ((unless list-fn)
+        nil)
+       (update-index (and (consp visitor.returns) (eq (car visitor.returns) 'mv)
+                          (find-update-index (cdr visitor.returns) 0)))
+       (list-call1 `(,list-fn . ,(strip-cars visitor.formals)))
+       (list-call (if update-index
+                      `(mv-nth ,update-index ,list-call1)
+                    list-call1))
+       (elt-call1 `(,elt-fn . ,(strip-cars visitor.formals)))
+       (elt-call (if update-index
+                     `(mv-nth ,update-index ,elt-call1)
+                   elt-call1)))
+    (list
+     (acl2::template-subst
+      '(progn (defthm car-of-<list-fn>
+                (implies (consp <xvar>)
+                         (equal (car <list-call>)
+                                (let ((<xvar> (car <xvar>)))
+                                  <elt-call>)))
+                :hints (("goal" :expand (<list-call1>))))
+              (defthm cdr-of-<list-fn>
+                (implies (consp <xvar>)
+                         (equal (cdr <list-call>)
+                                (let ((<xvar> (cdr <xvar>)))
+                                  <list-call>)))
+                :hints (("goal" :expand (<list-call1>))))
+              (defthm consp-of-<list-fn>
+                (equal (consp <list-call>)
+                       (consp (<fix> <xvar>)))
+                :hints (("goal" :expand (<list-call1>)))))
+      
+      :atom-alist `((<list-call> . ,list-call)
+                    (<list-call1> . ,list-call1)
+                    (<elt-call> . ,(if elt-fn
+                                       elt-call
+                                     visitor.xvar))
+                    (<xvar> . ,visitor.xvar)
+                    (<list-fn> . ,list-fn)
+                    (<fix> . ,x.fix))
+      :str-alist `(("<LIST-FN>" . ,(symbol-name list-fn)))
+      :pkg-sym visitor.name))))
+
+
+(define flexalist-updater-theorems (x visitor wrld)
+  (b* (((flexalist x))
+       ((visitorspec visitor))
+       (alist-fn (cdr (assoc x.name visitor.type-fns)))
+       (key-fn (cdr (assoc (visitor-normalize-fixtype x.key-type wrld) visitor.type-fns)))
+       (val-fn (cdr (assoc (visitor-normalize-fixtype x.val-type wrld) visitor.type-fns)))
+       ((unless (and alist-fn (or key-fn val-fn)))
+        nil)
+       (update-index (and (consp visitor.returns) (eq (car visitor.returns) 'mv)
+                          (find-update-index (cdr visitor.returns) 0)))
+       (alist-call1 `(,alist-fn . ,(strip-cars visitor.formals)))
+       (alist-call (if update-index
+                       `(mv-nth ,update-index ,alist-call1)
+                     alist-call1))
+       (key-call1 `(,key-fn . ,(strip-cars visitor.formals)))
+       (key-call (if update-index
+                     `(mv-nth ,update-index ,key-call1)
+                   key-call1))
+       
+       (val-call1 `(,val-fn . ,(strip-cars visitor.formals)))
+       (val-call (if update-index
+                     `(mv-nth ,update-index ,val-call1)
+                   val-call1)))
+    (list
+     (acl2::template-subst
+      '(progn (:@ :key
+               (defthm caar-of-<alist-fn>
+                 (implies (consp (<fix> <xvar>))
+                          (equal (caar <alist-call>)
+                                 (let ((<xvar> (caar (<fix> <xvar>))))
+                                   <key-call>)))
+                 :hints (("goal" :expand (<alist-call1>)))))
+              (:@ :val
+               (defthm caar-of-<alist-fn>
+                 (implies (consp (<fix> <xvar>))
+                          (equal (cdar <alist-call>)
+                                 (let ((<xvar> (cdar (<fix> <xvar>))))
+                                   <val-call>)))
+                 :hints (("goal" :expand (<alist-call1>)))))
+              (defthm cdr-of-<alist-fn>
+                (equal (cdr <alist-call>)
+                       (let ((<xvar> (<fix> <xvar>)))
+                         (and (consp <xvar>)
+                              (let ((<xvar> (cdr <xvar>)))
+                                <alist-call>))))
+                :hints (("goal" :expand (<alist-call1>))))
+              (defthm consp-of-<alist-fn>
+                (equal (consp <alist-call>)
+                       (consp (<fix> <xvar>)))
+                :hints (("goal" :expand (<alist-call1>)))))
+      :atom-alist `((<alist-call> . ,alist-call)
+                    (<alist-call1> . ,alist-call1)
+                    (<key-call> . ,key-call)
+                    (<val-call> . ,val-call)
+                    (<xvar> . ,visitor.xvar)
+                    (<alist-fn> . ,alist-fn)
+                    (<fix> . ,x.fix))
+      :str-alist `(("<ALIST-FN>" . ,(symbol-name alist-fn)))
+      :features (append (and key-fn '(:key))
+                        (and val-fn '(:val)))
+      :pkg-sym visitor.name))))
+
+(define type-updater-theorems (type visitor wrld)
+  (case (tag type)
+    (:list (flexlist-updater-theorems type visitor wrld))
+    (:sum (flexsum-updater-theorems type visitor wrld))
+    (:alist (flexalist-updater-theorems type visitor wrld))
+    (otherwise nil)))
+
+(define typename-updater-theorems (typename visitor wrld)
+  (b* ((deftypes-table (table-alist  'flextypes-table wrld))
+       ((mv & type) (search-deftypes-table typename deftypes-table)))
+    (type-updater-theorems type visitor wrld)))
+
+(define typenames-updater-theorems (typenames visitor wrld)
+  (if (atom typenames)
+      nil
+    (append (typename-updater-theorems (car typenames) visitor wrld)
+            (typenames-updater-theorems (cdr typenames) visitor wrld))))
+
+(define visitor-updater-theorems-fn (name wrld)
+  (b* (((visitorspec visitor) (cdr (assoc name (table-alist 'visitor-templates wrld)))))
+    (cons 'progn (typenames-updater-theorems (strip-cars visitor.type-fns) visitor wrld))))
+
+(defmacro def-visitor-updater-theorems (name)
+  `(make-event
+    (visitor-updater-theorems-fn ',name (w state))))
+
+
+(defxdoc def-visitor-updater-theorems
+  :parents (defvisitors)
+  :short "(Beta) Generate theorems relating the result of an updater visitor to the input object"
+  :long "<p>If you have a simple visitor that updates some object by a simple transform
+such as stripping out some field,this can automatically prove rewrite rules
+such as, e.g., an accessor of the transform of some object equals the transform
+of the accessor of the object. Not yet tested in more complex cases. It
+generates such theorems for all types for which the visitor has been
+defined.</p>")
