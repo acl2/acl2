@@ -2703,13 +2703,7 @@ off looking at the source code.</p>")
 
 
 (defsection logsquash**
-
-  ;; Squashes to 0 the lowest N bits of I.
-  (defund-inline logsquash (n i)
-    (declare (xargs :guard (and (natp n)
-                                (integerp i))))
-    (logand i (ash -1 (nfix n))))
-
+  
   (defthmd logsquash**
     (equal (logsquash size i)
            (if (zp size)
@@ -2718,8 +2712,8 @@ off looking at the source code.</p>")
                       (logsquash (1- size) (logcdr i)))))
     :hints(("Goal" :in-theory (enable logsquash)))
     :rule-classes ((:definition
-                    :clique (logsquash$inline)
-                    :controller-alist ((logsquash$inline t nil)))))
+                    :clique (acl2::logsquash$inline)
+                    :controller-alist ((acl2::logsquash$inline t nil)))))
 
   (add-to-ruleset ihsext-recursive-redefs '(logsquash**))
   (add-to-ruleset ihsext-redefs '(logsquash**))

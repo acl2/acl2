@@ -642,6 +642,14 @@ natural numbers.</p>"
   :inline t
   (loghead size (lognot i)))
 
+
+(define logsquash ((n natp) (i integerp))
+  :short "Squashes to 0 the lowest @('n') bits of @('i')."
+  :inline t
+  :returns (val integerp :rule-classes :type-prescription)
+  (logand i (ash -1 (nfix n))))
+
+
 (define ashu
   :short "Arithmetic shift, unsigned version."
   ((size (and (integerp size)
