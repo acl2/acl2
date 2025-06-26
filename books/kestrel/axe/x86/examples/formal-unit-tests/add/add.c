@@ -10,3 +10,6 @@ unsigned long unsigned_long_add (unsigned long x, unsigned long y) {
 bool test_unsigned_long_add_commutative (unsigned long x, unsigned long y) {
   return unsigned_long_add(x, y) == unsigned_long_add(y, x);
 }
+
+// dummy main function, to allow us to link the executable
+int main () { return 0;}
