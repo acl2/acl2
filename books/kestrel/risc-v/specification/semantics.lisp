@@ -321,6 +321,19 @@
 
   ///
 
+  (defruled exec-ori-alt-def
+    (equal (exec-ori rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (logior rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc))
+
   (defret stat-validp-of-exec-ori
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
