@@ -1,8 +1,8 @@
-; Formal specification of BLAKE2s
+; AleoVM Library
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2025 Provable Inc.
 ;
-; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+; License: See the LICENSE file distributed with this library.
 ;
 ; Author: Eric Smith (eric.smith@kestrel.edu)
 
