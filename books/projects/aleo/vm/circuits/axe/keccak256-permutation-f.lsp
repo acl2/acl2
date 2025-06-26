@@ -8,9 +8,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Note, this file is dependent on
+; ../samples/sha3-samples.lisp,
+; which is now tracked by git lfs.
+; See ../samples/README.md for more information.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "R1CS")
 
-(include-book "support-keccak-poseidon")
+(include-book "support")
 (include-book "../samples/sha3-component-samples") ;drop?
 (include-book "../samples/sha3-samples")
 (include-book "kestrel/axe/unroll-spec" :dir :system) ;drop?
