@@ -293,6 +293,22 @@ results in at most n+1 bits.</p>"
     (equal (limshift-loghead-of-logapp full-width concat-width x y)
            (loghead full-width (logapp concat-width x y)))))
 
+(define limshift-loghead-of-logsquash ((full-width natp)
+                                       (squash-width natp)
+                                       (x integerp))
+  :returns (shifted integerp :rule-classes :type-prescription)
+  :short "Computes (loghead full-width (logsquash squash-width x))."
+  (b* ((squash-width (lnfix squash-width))
+       (full-width (lnfix full-width))
+       (x (lifix x))
+       (squash-width-limited (logcollapse (integer-length full-width) squash-width)))
+    (loghead full-width (logsquash squash-width-limited x)))
+  ///
+  (defthm limshift-loghead-of-logsquash-correct
+    (equal (limshift-loghead-of-logsquash full-width squash-width x)
+           (loghead full-width (logsquash squash-width x)))
+    :hints(("Goal" :in-theory (enable logsquash)))))
+
 (define limshift-logext-of-logapp ((full-width posp)
                           (concat-width natp)
                           (x integerp)
