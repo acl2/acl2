@@ -1806,7 +1806,8 @@
                                    )))))
 
 ;slow
-(defthm esp-of-xw-irrel
+;mixed normal forms
+(defthmd esp-of-xw-irrel
   (implies (not (and (equal :rgf fld)
                      (equal *rsp* index)))
            (equal (esp (xw fld index val x86))
@@ -1814,7 +1815,8 @@
   :hints (("Goal" :in-theory (enable esp))))
 
 ;move?
-(defthm esp-of-xw-of-rgf-and-rsp
+;mixed normal forms
+(defthmd esp-of-xw-of-rgf-and-rsp
   (equal (esp (xw :rgf *rsp* val x86))
          (bvchop 32 val))
   :hints (("Goal" :in-theory (enable esp))))
