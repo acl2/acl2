@@ -254,8 +254,7 @@
     "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
      We sign-extend the 12-bit immediate to @('XLEN') bits,
      obtaining a (signed or unsigned) @('XLEN')-bit integer.
-     We perform a bitwise `and' of
-     the two unsigned @('XLEN')-bit integers.
+     We perform a bitwise `and' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -303,11 +302,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned @('XLEN')-bit integer from @('rs1').
+    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining an unsigned @('XLEN')-bit integer.
-     We perform a bitwise inclusive `or' of
-     the two unsigned @('XLEN')-bit integers.
+     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     We perform a bitwise inclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
