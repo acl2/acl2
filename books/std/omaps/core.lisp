@@ -748,6 +748,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define list-notin ((keys true-listp) (map mapp))
+  :returns (yes/no booleanp)
+  :short "Check if none of the keys in a list is in an omap."
+  (or (endp keys)
+      (and (not (assoc (car keys) map))
+           (list-notin (cdr keys) map)))
+
+  ///
+
+  (defruled not-assoc-map-when-member-of-list-notin
+    (implies (and (list-notin keys map)
+                  (member-equal key keys))
+             (not (assoc key map)))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection omap-order-rules
   :short "Some rules involving the ordering in omaps."
 
