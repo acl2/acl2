@@ -13,7 +13,7 @@ test_dir_path = 'yaml_test/'
 
 def preprocess(working_dir, input):
     cpp = sp.run(['g++', '-D__RAC__', '-C', '-E', '-std=c++14', '-I../../../include',
-    input, '-o', input + '.i'], capture_output=True, text=True, cwd=working_dir)
+        input, '-o', input + '.i'], capture_output=True, text=True, cwd=working_dir)
     assert cpp.returncode == 0, 'Preprocessor failed:\n' + cpp.stderr
 
 def run_parser(bin_path, working_dir, input, timeout, env):

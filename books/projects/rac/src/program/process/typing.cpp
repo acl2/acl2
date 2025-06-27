@@ -841,6 +841,21 @@ bool TypingAction::VisitArrayType(const ArrayType *t) {
   return true;
 }
 
+bool TypingAction::VisitStructType(const StructType *t) {
+
+  for (auto f : t->fields()) {
+
+    if (auto default_val = f->get_default_value()) {
+      if (!check_assignement(t->get_original_location(),
+            f->get_type(),
+            (*default_val)->get_type())) {
+        return error();
+      }
+    }
+  }
+  return true;
+}
+
 bool TypingAction::check_assignement(const Location &where, const Type *left,
                                      const Type *right) {
 
@@ -852,6 +867,30 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
     if (auto array = dynamic_cast<const ArrayType *>(left)) {
 
       unsigned array_size = array->dim->evalConst();
+
+      // Array initializer for a std::array must be a double initializer list
+      // since std::array in an agregate of agregate (array<T, 3> is an
+      // agregate of T[3] which is an agregate of T).
+      //
+      // To be correct, the initializer should be composed of a single element:
+      // an initializer list.
+      if (array->isSTDArray()) {
+        const InitializerType *underlying_initializer = nullptr;
+        if (t->size() == 1) {
+          underlying_initializer = dynamic_cast<const InitializerType *>(*t->types().begin());
+        }
+        if (!underlying_initializer) {
+          diag_
+            .new_error(
+                where,
+                "Expected a initializer list (array should use a double "
+                "initializer list")
+            .note("Instead of using `{ ... }`, try `{{ ... }}`")
+            .report();
+          return error();
+        }
+        t = underlying_initializer;
+      }
 
       if (t->size() > array_size) {
         diag_

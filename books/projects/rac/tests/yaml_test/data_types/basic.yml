@@ -139,6 +139,8 @@
   should_report_error: true
 
 - name: struct-default-values
+- name: struct-default-values-incompatible
+  should_report_error: true
 - name: struct-default-values-partially-init
 
 - name: struct-default-values-no-init-list

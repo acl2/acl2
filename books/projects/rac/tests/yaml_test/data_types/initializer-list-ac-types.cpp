@@ -14,7 +14,7 @@ tuple<ui2, ui2> foo() {
 }
 
 array<ui2, 2> bar() {
-  array<ui2, 2> t = { 1, 4 };
+  array<ui2, 2> t = {{ 1, 4 }};
   return t;
 }
 

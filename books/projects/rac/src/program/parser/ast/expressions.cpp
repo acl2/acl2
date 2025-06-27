@@ -320,7 +320,13 @@ void Initializer::display(std::ostream &os) const {
     if (!first) {
       os << ", ";
     }
-    v->ACL2Expr()->display(os);
+
+    if (auto init = dynamic_cast<const Initializer *>(v)) {
+      init->display(os);
+    } else {
+      v->ACL2Expr()->display(os);
+    }
+
     first = false;
   }
   os << '}';
