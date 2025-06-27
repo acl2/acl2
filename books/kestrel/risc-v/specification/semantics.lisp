@@ -251,11 +251,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned @('XLEN')-bit integer from @('rs1').
+    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining an unsigned @('XLEN')-bit integer.
-     We perform a bitwise `and' of
-     the two unsigned @('XLEN')-bit integers.
+     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     We perform a bitwise `and' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -268,6 +267,19 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-andi-alt-def
+    (equal (exec-andi rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (logand rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc))
 
   (defret stat-validp-of-exec-andi
     (stat-validp new-stat feat)
@@ -290,11 +302,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned @('XLEN')-bit integer from @('rs1').
+    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining an unsigned @('XLEN')-bit integer.
-     We perform a bitwise inclusive `or' of
-     the two unsigned @('XLEN')-bit integers.
+     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     We perform a bitwise inclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -307,6 +318,19 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-ori-alt-def
+    (equal (exec-ori rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (logior rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc))
 
   (defret stat-validp-of-exec-ori
     (stat-validp new-stat feat)
@@ -329,11 +353,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned @('XLEN')-bit integer from @('rs1').
+    "We read a (signed or unsigned) @('XLEN')-bit integer from @('rs1').
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining an unsigned @('XLEN')-bit integer.
-     We perform a bitwise exclusive `or' of
-     the two unsigned @('XLEN')-bit integers.
+     obtaining a (signed or unsigned) @('XLEN')-bit integer.
+     We perform a bitwise exclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -346,6 +369,19 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-xori-alt-def
+    (equal (exec-xori rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (logxor rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc))
 
   (defret stat-validp-of-exec-xori
     (stat-validp new-stat feat)
