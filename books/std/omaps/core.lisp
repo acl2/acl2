@@ -842,7 +842,23 @@
     (implies (assoc key (tail map))
              (equal (lookup key (tail map))
                     (lookup key map)))
-    :enable assoc-of-tail-when-assoc-of-tail))
+    :enable assoc-of-tail-when-assoc-of-tail)
+
+  (defruled lookup-of-update
+    (equal (lookup key1 (update key val map))
+           (if (equal key1 key)
+               val
+             (lookup key1 map)))
+    :enable lookup)
+
+  (defruled lookup-of-update*
+    (equal (lookup key (update* map1 map2))
+           (if (assoc key map1)
+               (lookup key map1)
+             (lookup key (mfix map2))))
+    :induct t
+    :enable (update*
+             lookup-of-update)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
