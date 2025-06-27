@@ -86,7 +86,8 @@
              (proposed-endorser-other-p (propose-next prop dests systate)))
     :enable (proposed-endorser-other-p
              proposed-endorser-other-p-necc
-             validator-state->proposed-of-propose-next))
+             validator-state->proposed-of-propose-next
+             omap::lookup-of-update))
 
   (defruled proposed-endorser-other-p-of-endorse-next
     (implies (proposed-endorser-other-p systate)
@@ -110,7 +111,8 @@
     :enable (proposed-endorser-other-p
              validator-state->proposed-of-augment-next
              augment-possiblep
-             omap::assoc-to-in-of-keys))
+             omap::assoc-to-in-of-keys
+             omap::lookup-of-update))
 
   (defruled proposed-endorser-other-p-of-certify-next
     (implies (proposed-endorser-other-p systate)

@@ -99,7 +99,8 @@
     :enable (propose-possiblep
              proposed-endorser-in-committee-p
              proposed-endorser-in-committee-p-necc
-             validator-state->proposed-of-propose-next))
+             validator-state->proposed-of-propose-next
+             omap::lookup-of-update))
 
   (defruled proposed-endorser-in-committee-p-of-endorse-next
     (implies (proposed-endorser-in-committee-p systate)
@@ -121,7 +122,8 @@
              augment-possiblep
              proposed-endorser-in-committee-p-necc
              validator-state->proposed-of-augment-next
-             omap::assoc-to-in-of-keys))
+             omap::assoc-to-in-of-keys
+             omap::lookup-of-update))
 
   (defruled proposed-endorser-in-committee-p-of-certify-next
     (implies (proposed-endorser-in-committee-p systate)
