@@ -17,11 +17,22 @@
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
+(local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled ubyte8p-of-logtail-8-of-ubyte16
+  (implies (ubyte16p x)
+           (ubyte8p (logtail 8 x)))
+  :enable (ubyte16p
+           ubyte8p
+           logtail)
+  :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -571,16 +582,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only provide one theorem, about bytes,
-     since the other memory read and write operations
-     are defined in terms of the ones for bytes.
-     We may provide additional ones in the future,
-     but note that, for non-bytes,
-     the formulation is a bit complicated because addresses
-     may be disjoint or partially overlap or completely overlap.")
+    "The theorem involving a single byte has a simple form.
+     Theorems involving multiple bytes have more complex forms,
+     because addresses may be disjoint or they may partially or totally overlap.
+     We add a few theorems for now, but we plan to add the remaining ones.")
    (xdoc::p
-    "We provide a ruleset with just the one rule for now,
-     but we will extend it if we add more rules."))
+    "We provide a ruleset with these theorems."))
 
   (defruled read-memory-unsigned8-pf-write-memory-unsigned8
     (implies (stat-validp stat feat)
@@ -597,8 +604,66 @@
              max
              nfix))
 
+  (defruled read-memory-unsigned8-of-write-memory-unsigned16
+    (implies (stat-validp stat feat)
+             (equal (read-memory-unsigned8 addr1
+                                           (write-memory-unsigned16
+                                            addr2 val stat feat)
+                                           feat)
+                    (cond ((equal (loghead (feat->xlen feat) addr1)
+                                  (loghead (feat->xlen feat) addr2))
+                           (cond ((feat-little-endianp feat)
+                                  (part-select (ubyte16-fix val)
+                                               :low 0 :high 7))
+                                 ((feat-big-endianp feat)
+                                  (part-select (ubyte16-fix val)
+                                               :low 8 :high 15))))
+                          ((equal (loghead (feat->xlen feat) addr1)
+                                  (loghead (feat->xlen feat) (1+ (ifix addr2))))
+                           (cond ((feat-little-endianp feat)
+                                  (part-select (ubyte16-fix val)
+                                               :low 8 :high 15))
+                                 ((feat-big-endianp feat)
+                                  (part-select (ubyte16-fix val)
+                                               :low 0 :high 7))))
+                          (t (read-memory-unsigned8 addr1 stat feat)))))
+    :use (:instance lemma (addr2 (ifix addr2)))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (stat-validp stat feat)
+                     (integerp addr2))
+                (equal (read-memory-unsigned8 addr1
+                                              (write-memory-unsigned16
+                                               addr2 val stat feat)
+                                              feat)
+                       (cond ((equal (loghead (feat->xlen feat) addr1)
+                                     (loghead (feat->xlen feat) addr2))
+                              (cond ((feat-little-endianp feat)
+                                     (part-select (ubyte16-fix val)
+                                                  :low 0 :high 7))
+                                    ((feat-big-endianp feat)
+                                     (part-select (ubyte16-fix val)
+                                                  :low 8 :high 15))))
+                             ((equal (loghead (feat->xlen feat) addr1)
+                                     (loghead (feat->xlen feat) (1+ addr2)))
+                              (cond ((feat-little-endianp feat)
+                                     (part-select (ubyte16-fix val)
+                                                  :low 8 :high 15))
+                                    ((feat-big-endianp feat)
+                                     (part-select (ubyte16-fix val)
+                                                  :low 0 :high 7))))
+                             (t (read-memory-unsigned8 addr1 stat feat)))))
+       :enable (read-memory-unsigned8
+                write-memory-unsigned8
+                write-memory-unsigned16
+                loghead-upper-bound
+                loghead-plus-1-differs
+                ubyte8p-of-logtail-8-of-ubyte16
+                max))))
+
   (def-ruleset read-memory-of-write-memory
-    '(read-memory-unsigned8-pf-write-memory-unsigned8)))
+    '(read-memory-unsigned8-pf-write-memory-unsigned8
+      read-memory-unsigned8-of-write-memory-unsigned16)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
