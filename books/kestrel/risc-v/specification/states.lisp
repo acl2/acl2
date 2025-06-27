@@ -13,8 +13,6 @@
 
 (include-book "features")
 
-(include-book "../library-extensions/logappn")
-
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/sbyte64" :dir :system)

@@ -1,0 +1,149 @@
+# AleoVM Library
+#
+# Copyright (C) 2025 Provable Inc.
+#
+# License: See the LICENSE file distributed with this library.
+#
+# Authors: Alessandro Coglio (www.alessandrocoglio.info)
+#          Eric McCarthy (bendyarm on GitHub)
+
+# This file was in .github/workflows/
+#
+# It defines a manually-triggered workflow
+# that you can invoke from GitHub Actions.
+#
+# The purpose is to build an ACL2 image that has leo-acl2 and tgc in it,
+# and to build a leo-acl2-bin release.
+
+name: make-tgc-bundle
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch,
+  # but for now this is commented out because we want manual trigger.
+  #push:
+  #  branches: [ master ]
+  #pull_request:
+  #  branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel.
+# For this one we currently have a single job.
+jobs:
+  main:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # This makes sure the following environment variables will shared between steps of the job
+    env:
+      CCL_DEFAULT_DIRECTORY:
+      this_ccl:
+      ACL2:
+      ACL2_SYSTEM_BOOKS:
+      SAVETEMP:
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+
+      # Checks-out the leo-acl2 repository under $GITHUB_WORKSPACE/leo-acl2
+      - name: checkout leo-acl2
+        uses: actions/checkout@v2
+        with:
+          path: 'leo-acl2'
+
+      # Checks out the acl2 repository under $GITHUB_WORKSPACE/leo-acl2
+      - name: checkout acl2
+        uses: actions/checkout@v2
+        with:
+          repository: 'acl2/acl2'
+          path: 'acl2'
+
+      # Note, if we wanted to actually build ccl here, we would not need to do
+      # everything that we do with a Docker build,
+      # because the ubuntu github runner comes already updated and provisioned
+      # with wget, git, build-essential, and m4.
+      #
+      # However, for just loading ccl, we can use the prebuilt tarball
+      # without the extra git info.
+      #
+      - name: install ccl
+        run: |
+          curl -L -O https://github.com/Clozure/ccl/releases/download/v1.12.1/ccl-1.12.1-linuxx86.tar.gz
+          # wget https://github.com/Clozure/ccl/releases/ccl-1.12.1-linuxx86.tar.gz
+          tar xzf ccl-1.12.1-linuxx86.tar.gz
+          cd ccl
+          # took out "export" on the next line since it should already be exported due to the env: declaration above
+          CCL_DEFAULT_DIRECTORY=`pwd`
+          echo -e '(rebuild-ccl :full t)\n(quit)' | ./lx86cl64
+          this_ccl=`pwd`/lx86cl64
+          # Apparently even with the env: this_ccl: declaration above,
+          # the value of this_ccl is not preserved from one step to the next.
+          # So we need to put it into $GITHUB_ENV:
+          echo "this_ccl=${this_ccl}" >> $GITHUB_ENV
+
+      - name: build acl2
+        run: |
+          cd acl2
+          make update LISP="$this_ccl"
+          ACL2=`pwd`/saved_acl2
+          echo "ACL2=${ACL2}" >> $GITHUB_ENV
+          ACL2_SYSTEM_BOOKS=`pwd`/books
+          echo "ACL2_SYSTEM_BOOKS=${ACL2_SYSTEM_BOOKS}" >> $GITHUB_ENV
+
+      - name: certify leo-acl2 books
+        run: |
+          cd leo-acl2
+          # add cert.pl's directory to PATH
+          PATH="${ACL2_SYSTEM_BOOKS}"/build:"${PATH}"
+          cert.pl -j2 top
+
+      - name: make custom acl2 executable
+        run: |
+          mkdir savetemp
+          SAVETEMP=`pwd`/savetemp
+          cd leo-acl2
+          # here-document allowing parameter substitution
+          ACL2_CUSTOMIZATION=NONE $ACL2 << EOF
+          (include-book "top")
+          :q
+          (save-exec "${SAVETEMP}/leo-acl2" "Included leo-acl2/top")
+          EOF
+          # now savetemp/leo-acl2.lx86cl64 has been created
+
+      # For now, we gather commit information in the log here;
+      # later we can write it to a file included with the distribution bundle.
+      - name: Show build information
+        run: |
+          echo ccl version:
+          ccl/lx86cl64 --version
+          cd acl2
+          echo acl2 commit:
+          git branch --list master -v
+          echo leo-acl2 commit:
+          cd ../leo-acl2
+          git branch --list master -v
+
+      # Make release tarball
+      - name: Make release tarball
+        run: |
+          mkdir leo-acl2-releases
+          cd leo-acl2-releases
+          # The following will need to take release params for M, m, and p.
+          # For now, it is a placeholder.
+          mkdir vM.m.p
+          cd vM.m.p
+          cp ${GITHUB_WORKSPACE}/savetemp/leo-acl2.lx86cl64 .
+          cp ${GITHUB_WORKSPACE}/ccl/lx86cl64 .
+          cp ${GITHUB_WORKSPACE}/leo-acl2/testing/bin/{tgc,theorem-template-canonicalization.tl,theorem-template-type-inference.tl} .
+          tar czf leo-acl2--vM.m.p.tgz leo-acl2.lx86cl64 lx86cl64 tgc theorem-template-canonicalization.tl theorem-template-type-inference.tl
+
+      # Upload release tarball.
+      # Later, change this stop to upload directly to the leo-acl2-bin releases,
+      # possibly with the 
+      - name: Upload release tarball
+        uses: actions/upload-artifact@v2
+        with:
+          name: leo-acl2-bin-release
+          path: |
+            leo-acl2-releases/vM.m.p/leo-acl2--vM.m.p.tgz

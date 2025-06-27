@@ -1,6 +1,6 @@
 ; Ordered Maps (Omaps) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -17,7 +17,9 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "misc/total-order" :dir :system))
+(local (include-book "std/basic/inductions" :dir :system))
 (local (include-book "std/lists/acl2-count" :dir :system))
+(local (include-book "std/lists/top" :dir :system))
 (local (include-book "tools/rulesets" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -748,6 +750,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define list-notin ((keys true-listp) (map mapp))
+  :returns (yes/no booleanp)
+  :short "Check if none of the keys in a list is in an omap."
+  (or (endp keys)
+      (and (not (assoc (car keys) map))
+           (list-notin (cdr keys) map)))
+
+  ///
+
+  (defruled not-assoc-map-when-member-of-list-notin
+    (implies (and (list-notin keys map)
+                  (member-equal key keys))
+             (not (assoc key map)))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection omap-order-rules
   :short "Some rules involving the ordering in omaps."
 
@@ -842,7 +861,23 @@
     (implies (assoc key (tail map))
              (equal (lookup key (tail map))
                     (lookup key map)))
-    :enable assoc-of-tail-when-assoc-of-tail))
+    :enable assoc-of-tail-when-assoc-of-tail)
+
+  (defruled lookup-of-update
+    (equal (lookup key1 (update key val map))
+           (if (equal key1 key)
+               val
+             (lookup key1 map)))
+    :enable lookup)
+
+  (defruled lookup-of-update*
+    (equal (lookup key (update* map1 map2))
+           (if (assoc key map1)
+               (lookup key map1)
+             (lookup key (mfix map2))))
+    :induct t
+    :enable (update*
+             lookup-of-update)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -905,7 +940,30 @@
            (rev (list-lookup keys map)))
     :induct t
     :enable (rev
-             list-lookup-of-append)))
+             list-lookup-of-append))
+
+  (defruled list-lookup-of-update*-when-list-in
+    (implies (list-in keys map1)
+             (equal (list-lookup keys (update* map1 map2))
+                    (list-lookup keys map1)))
+    :induct t
+    :enable (list-in
+             lookup-of-update*))
+
+  (defruled list-lookup-of-update*-when-list-notin
+    (implies (list-notin keys map1)
+             (equal (list-lookup keys (update* map1 map2))
+                    (list-lookup keys (mfix map2))))
+    :induct t
+    :enable (list-notin
+             lookup-of-update*))
+
+  (defruled list-lookup-of-update-of-non-member
+    (implies (not (member-equal key keys))
+             (equal (list-lookup keys (update key val map))
+                    (list-lookup keys map)))
+    :induct t
+    :enable lookup-of-update))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1297,7 +1355,32 @@
      the leftmost key, and the corresponding value,
      will be in the resulting omap."))
   (cond ((endp keys) nil)
-        (t (update (car keys) (car vals) (from-lists (cdr keys) (cdr vals))))))
+        (t (update (car keys) (car vals) (from-lists (cdr keys) (cdr vals)))))
+
+  ///
+
+  (defruled list-lookup-of-from-lists-of-append-first
+    (implies (and (equal (len keys1) (len vals1))
+                  (no-duplicatesp-equal keys1))
+             (equal (list-lookup keys1
+                                 (from-lists (append keys1 keys2)
+                                             (append vals1 vals2)))
+                    (true-list-fix vals1)))
+    :induct (acl2::cdr-cdr-induct keys1 vals1)
+    :enable (list-lookup
+             lookup-of-update
+             list-lookup-of-update-of-non-member))
+
+  (defruled list-lookup-of-from-lists-of-append-second
+    (implies (and (equal (len keys1) (len vals1))
+                  (not (intersectp-equal keys keys1)))
+             (equal (list-lookup keys
+                                 (from-lists (append keys1 keys2)
+                                             (append vals1 vals2)))
+                    (list-lookup keys (from-lists keys2 vals2))))
+    :induct (acl2::cdr-cdr-induct keys1 vals1)
+    :enable (list-lookup
+             list-lookup-of-update-of-non-member)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

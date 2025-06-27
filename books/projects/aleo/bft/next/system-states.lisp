@@ -243,7 +243,8 @@
            (if (equal (address-fix val) (address-fix val1))
                (validator-state-fix vstate)
              (get-validator-state val1 systate)))
-    :enable get-validator-state)
+    :enable (get-validator-state
+             omap::lookup-of-update))
 
   (defrule get-validator-state-of-update-validator-state-same
     (equal (get-validator-state val
@@ -251,7 +252,8 @@
                                                         vstate
                                                         systate))
            (validator-state-fix vstate))
-    :enable get-validator-state)
+    :enable (get-validator-state
+             omap::lookup-of-update))
 
   (defrule get-validator-state-of-update-validator-state-diff
     (implies (not (equal (address-fix val) (address-fix val1)))
@@ -260,7 +262,8 @@
                                                                  vstate
                                                                  systate))
                     (get-validator-state val1 systate)))
-    :enable get-validator-state))
+    :enable (get-validator-state
+             omap::lookup-of-update)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
