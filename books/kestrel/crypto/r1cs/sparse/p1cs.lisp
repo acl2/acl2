@@ -455,13 +455,22 @@
 (defconst *digits* '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9))
 
 (defun position-if-digit (char-list next-pos)
+  (declare (xargs :guard (and (character-listp char-list)
+                              (natp next-pos))))
   (if (endp char-list)
       nil
     (if (member (car char-list) *digits*)
         next-pos
       (position-if-digit (cdr char-list) (+ next-pos 1)))))
 
+
+(defthm position-if-digit-bounds
+  (implies (and (position-if-digit char-list next-pos)
+                (<= (+ next-pos (len char-list)) original-len))
+           (<= (position-if-digit char-list next-pos) original-len)))
+
 (defun bit-var-base-and-num (bit-var)
+  (declare (xargs :guard t))
   ;; If bit-var symbol name is of the form:  nondigit+ digits+
   ;; then return a list of the base string and the number.
   ;; Otherwise return nil.
@@ -478,7 +487,13 @@
                nil))))))
 
 (defun bit-var-range-starting-with (starting-base-and-num last-num bit-vars)
-  (declare (xargs :measure (len bit-vars)))
+  (declare (xargs :guard (and (true-listp starting-base-and-num)
+                              (= (len starting-base-and-num) 2)
+                              (stringp (first starting-base-and-num)) ;base is a string  
+                              (natp (second starting-base-and-num)) ;start number is natural
+                              (natp last-num)
+                              (true-listp bit-vars))
+                  :measure (len bit-vars)))
   (b* ((base (first starting-base-and-num))
        (start-num (second starting-base-and-num))
        ((acl2::when (endp bit-vars))
@@ -496,9 +511,40 @@
     (bit-var-range-starting-with starting-base-and-num (+ last-num 1) (cdr bit-vars))))
 
 ; TODO: move remaining code to logic mode
-(program)
+;(program)
+
+
+;lemmas 
+(defthm len-of-bit-var-range-starting-with
+    (<= (len (mv-nth 1 (bit-var-range-starting-with x y bit-vars)))
+        (len bit-vars))
+  :rule-classes :linear)
+
+(defthm len-of-bit-var-base-and-num
+  (implies (bit-var-base-and-num bit-var)
+           (equal (len (bit-var-base-and-num bit-var)) 2)))
+
+(defthm car-of-bit-var-base-and-num-is-string
+  (implies (bit-var-base-and-num bit-var)
+           (stringp (car (bit-var-base-and-num bit-var)))))
+
+(defthm cadr-of-bit-var-base-and-num-is-natp
+  (implies (bit-var-base-and-num bit-var)
+           (natp (cadr (bit-var-base-and-num bit-var)))))
+
+(defthm mv-nth-1-of-bit-var-range-starting-with-is-true-listp
+  (implies (true-listp bit-vars)
+           (true-listp (mv-nth 1 (bit-var-range-starting-with starting-base-and-num last-num bit-vars)))))
 
 (defun bit-var-ranges (bit-vars)
+  (declare (xargs :guard (true-listp bit-vars)
+                  :measure (len bit-vars)
+                  :hints (("Goal" :in-theory (disable
+                                              bit-var-range-starting-with
+                                              bit-var-base-and-num)))
+                  :guard-hints (("Goal" :in-theory (disable
+                                                    bit-var-range-starting-with
+                                                    bit-var-base-and-num)))))
   (b* (((acl2::when (endp bit-vars)) nil)
        (base-and-num (bit-var-base-and-num (car bit-vars)))
        ((acl2::when (null base-and-num))
@@ -514,6 +560,7 @@
           (bit-var-ranges rest-bit-vars))))
 
 (defun concatenate-bit-var-ranges (ranges) ; each range is a string; can be a singleton var
+  (declare (xargs :guard (string-listp ranges)))
   (cond ((null ranges) "")
         ((null (cdr ranges)) (car ranges))
         (t (concatenate 'string (car ranges) ", " (concatenate-bit-var-ranges (cdr ranges))))))
