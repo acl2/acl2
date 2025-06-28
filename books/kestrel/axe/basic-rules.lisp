@@ -110,6 +110,9 @@
 (defthmd acl2-numberp-of-fix
   (acl2-numberp (fix x)))
 
+(defthmd integerp-of-ifix
+  (integerp (ifix x)))
+
 ;; Can't phrase this as just (equal x x), as that is not a legal rewrite rule.
 (defthmd equal-same
   (equal (equal x x)
