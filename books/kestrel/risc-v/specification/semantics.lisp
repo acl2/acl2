@@ -1366,7 +1366,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) @('XLEN')-bit integers
+     from @('rs1') and @('rs2').
      In 32-bit mode,
      the low 5 bits of the second integer are the shift amount, from 0 to 31;
      in 64-bit mode,
@@ -1388,6 +1389,26 @@
   :hooks (:fix)
 
   ///
+
+  (defruled exec-sll-alt-def
+    (equal (exec-sll rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (shift-amount
+                 (cond ((feat-32p feat) (loghead 5 rs2-operand))
+                       ((feat-64p feat) (loghead 6 rs2-operand))
+                       (t (impossible))))
+                (result (ash rs1-operand shift-amount))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc
+             bitops::loghead-of-ash
+             loghead-upper-bound)
+    :disable acl2::ash-to-floor)
 
   (defret stat-validp-of-exec-sll
     (stat-validp new-stat feat)
