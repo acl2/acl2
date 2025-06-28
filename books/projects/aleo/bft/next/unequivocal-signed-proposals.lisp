@@ -110,7 +110,7 @@
      Part (i) follows from the assumption of the invariant in the old state.
      Part (ii) is proved by contradition:
      assuming that a proposal can be retrieved from the original set
-     (i.e. the witness of @(tsee set-nonemptyp)),
+     (i.e. the witness of @(tsee set::nonemptyp)),
      then by the invariant @(see signed-in-signer)
      the proposing or endorsing validator
      must have, in its state, the author-round pair of the proposal,
@@ -135,13 +135,13 @@
     :expand (unequiv-signed-props-p (propose-next prop dests systate))
     :enable (signed-props-of-propose-next
              prop-set-unequivp-of-insert
-             set-emptyp-to-not-nonemptyp
-             set-nonemptyp
+             set::emptyp-to-not-nonemptyp
+             set::nonemptyp
              in-of-props-with-author+round
              not-validator-has-author+round-p-when-propose-possiblep)
     :use (:instance validator-has-author+round-p-when-signed-in-signer-p
                     (signer (proposal->author prop))
-                    (prop (set-nonempty-witness
+                    (prop (set::nonemptyp-witness
                            (props-with-author+round
                             (proposal->author prop)
                             (proposal->round prop)
@@ -158,12 +158,12 @@
     :enable (signed-props-of-endorse-next
              prop-set-unequivp-of-insert
              unequiv-signed-props-p-necc-with-address-fix
-             set-emptyp-to-not-nonemptyp
-             set-nonemptyp
+             set::emptyp-to-not-nonemptyp
+             set::nonemptyp
              in-of-props-with-author+round)
     :use ((:instance validator-has-author+round-p-when-signed-in-signer-p
                      (signer (address-fix endor))
-                     (prop (set-nonempty-witness
+                     (prop (set::nonemptyp-witness
                             (props-with-author+round
                              (proposal->author prop)
                              (proposal->round prop)

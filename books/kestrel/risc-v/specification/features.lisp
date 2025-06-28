@@ -118,7 +118,7 @@
 
 (defruled feat-32p-or-64p
   :parents (feat-32p feat-64p)
-  :short "One of @(tsee feat-32p) and @(tsee feat-64p) always holds."
+  :short "At least one of @(tsee feat-32p) and @(tsee feat-64p) holds."
   (or (feat-32p feat)
       (feat-64p feat))
   :rule-classes (:rewrite
@@ -132,7 +132,7 @@
 
 (defrule not-feat-32p-and-feat-64p
   :parents (feat-32p feat-64p)
-  :short "Both of @(tsee feat-32p) and @(tsee feat-64p) cannot hold."
+  :short "At most one of @(tsee feat-32p) and @(tsee feat-64p) holds."
   (or (not (feat-32p feat))
       (not (feat-64p feat)))
   :rule-classes ((:forward-chaining :trigger-terms ((feat-32p feat)
