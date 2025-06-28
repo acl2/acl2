@@ -2052,7 +2052,7 @@
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
           (if-lifting-rules)
-          (acl2::convert-to-bv-rules)
+          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
           '(acl2::boolor-of-non-nil)
           (segment-base-and-bounds-rules-general)
           (float-rules)
@@ -2209,7 +2209,6 @@
             ;x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
-            ;acl2::fix-when-acl2-numberp
             ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
             ;; x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
             ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
@@ -5477,127 +5476,123 @@
 ;; these are used both for lifting and proving
 (defund extra-tester-rules ()
   (declare (xargs :guard t))
-  (append '(acl2::integerp-of-expt
-            acl2::integerp-of-*                 ; for array index calcs
-            acl2::my-integerp-<-non-integerp    ; for array index calcs
-            acl2::bvsx-when-bvlt
-            ;; x86isa::canonical-address-p-between-special5 ; todo: move these
-            ;; x86isa::canonical-address-p-between-special5-alt
-            ;; x86isa::canonical-address-p-between-special6
-            ;; x86isa::canonical-address-p-between-special7
-            bitops::ash-is-expt-*-x
-            acl2::natp-of-*
-            acl2::<-of-constant-and-+-of-constant ; for address calcs
-            acl2::<-of-15-and-*-of-4
-            acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
-            acl2::not-bvlt-of-max-arg2
-            acl2::<-of-*-when-constant-integers
+  '(acl2::integerp-of-expt
+    acl2::integerp-of-*                 ; for array index calcs
+    acl2::my-integerp-<-non-integerp    ; for array index calcs
+    acl2::bvsx-when-bvlt
+    ;; x86isa::canonical-address-p-between-special5 ; todo: move these
+    ;; x86isa::canonical-address-p-between-special5-alt
+    ;; x86isa::canonical-address-p-between-special6
+    ;; x86isa::canonical-address-p-between-special7
+    bitops::ash-is-expt-*-x
+    acl2::natp-of-*
+    acl2::<-of-constant-and-+-of-constant ; for address calcs
+    acl2::<-of-15-and-*-of-4
+    acl2::unsigned-byte-p-2-of-bvchop-when-bvlt-of-4
+    acl2::not-bvlt-of-max-arg2
+    acl2::<-of-*-when-constant-integers
             ;separate-when-separate-2 ; todo: drop? but that caused problems
-            acl2::collect-constants-over-<-2
-            acl2::commutativity-of-*-when-constant
-            acl2::<-of-*-of-constant-and-constant
-            acl2::rationalp-when-integerp
-            acl2::+-of-+-of---same
-            acl2::<-of-minus-and-constant ; ensure needed
-            acl2::fix-when-acl2-numberp
-            acl2::acl2-numberp-of--
-            acl2::acl2-numberp-of-*
-            bitops::ash-of-0-c ; at least for now
-            ;;rflagsbits->af-of-myif
-            ;;rflagsbits->af-of-if
+    acl2::collect-constants-over-<-2
+    acl2::commutativity-of-*-when-constant
+    acl2::<-of-*-of-constant-and-constant
+    acl2::rationalp-when-integerp
+    acl2::+-of-+-of---same
+    acl2::<-of-minus-and-constant ; ensure needed
+    acl2::acl2-numberp-of--
+    acl2::acl2-numberp-of-*
+    bitops::ash-of-0-c ; at least for now
+    ;;rflagsbits->af-of-myif
+    ;;rflagsbits->af-of-if
 
-            ;; acl2::equal-of-constant-and-bvuminus
-            ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
-            ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
-            ;; acl2::bvif-of-myif-arg3 ; introduces bvif
-            ;; acl2::bvif-of-myif-arg4 ; introduces bvif
-            ;; help to show that divisions don't overflow or underflow:
-            acl2::not-sbvlt-of-constant-and-sbvdiv-32-64
-            acl2::not-sbvlt-of-sbvdiv-and-minus-constant-32-64
-            acl2::not-bvlt-of-constant-and-bvdiv-64-128
-            acl2::not-bvlt-of-constant-and-bvdiv-32-64
-            acl2::slice-of-bvsx-high ; move back, but this introduces repeatbit
-            acl2::bvcat-of-repeatbit-of-getbit-of-bvsx-same
-            acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-8
-            acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-16
-            acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-32
-            acl2::not-sbvlt-of-bvsx-of-constant-arg2-128-64
-            acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-8
-            acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-16
-            acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-32
-            acl2::not-sbvlt-of-bvsx-of-constant-arg3-128-64
-            acl2::floor-of-1-when-integerp ; simplified something that showed up in an error case?
-            unicity-of-1 ; simplified something that showed up in an error case
-            acl2::bvcat-of-repeatbit-of-getbit-becomes-bvsx
-            acl2::bvcat-of-repeatbit-tighten-64-32 ;gen!
-            acl2::bvlt-of-bvsx-arg2
-            acl2::sbvlt-of-bvsx-32-16-constant
-            acl2::sbvlt-false-when-sbvlt-gen ; did nothing?
-            acl2::if-of-sbvlt-and-not-sbvlt-helper
-            if-of-set-flag-and-set-flag
-            xr-of-!rflags-irrel ; todo: better normal form?
+    ;; acl2::equal-of-constant-and-bvuminus
+    ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
+    ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
+    ;; acl2::bvif-of-myif-arg3 ; introduces bvif
+    ;; acl2::bvif-of-myif-arg4 ; introduces bvif
+    ;; help to show that divisions don't overflow or underflow:
+    acl2::not-sbvlt-of-constant-and-sbvdiv-32-64
+    acl2::not-sbvlt-of-sbvdiv-and-minus-constant-32-64
+    acl2::not-bvlt-of-constant-and-bvdiv-64-128
+    acl2::not-bvlt-of-constant-and-bvdiv-32-64
+    acl2::slice-of-bvsx-high ; move back, but this introduces repeatbit
+    acl2::bvcat-of-repeatbit-of-getbit-of-bvsx-same
+    acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-8
+    acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-16
+    acl2::not-sbvlt-of-bvsx-of-constant-arg2-64-32
+    acl2::not-sbvlt-of-bvsx-of-constant-arg2-128-64
+    acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-8
+    acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-16
+    acl2::not-sbvlt-of-bvsx-of-constant-arg3-64-32
+    acl2::not-sbvlt-of-bvsx-of-constant-arg3-128-64
+    acl2::floor-of-1-when-integerp ; simplified something that showed up in an error case?
+    unicity-of-1 ; simplified something that showed up in an error case
+    acl2::bvcat-of-repeatbit-of-getbit-becomes-bvsx
+    acl2::bvcat-of-repeatbit-tighten-64-32 ;gen!
+    acl2::bvlt-of-bvsx-arg2
+    acl2::sbvlt-of-bvsx-32-16-constant
+    acl2::sbvlt-false-when-sbvlt-gen ; did nothing?
+    acl2::if-of-sbvlt-and-not-sbvlt-helper
+    if-of-set-flag-and-set-flag
+    xr-of-!rflags-irrel ; todo: better normal form?
 
-            acl2::logext-of-+-of-bvplus-same-size
-            acl2::logext-of-+-of-+-of-mult-same-size
+    acl2::logext-of-+-of-bvplus-same-size
+    acl2::logext-of-+-of-+-of-mult-same-size
             ;acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
-            acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op
-            acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
-            acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
-            acl2::nth-becomes-bv-array-read-strong2
-            acl2::bvplus-of-*-arg2 ; introduces bvmult -- todo: alt version?
-            not-equal-of-+-and-+-when-separate
-            not-equal-of-+-of-+-and-+-when-separate
-            not-equal-of-+-of-+-and-+-when-separate-gen
-            acl2::<-of-negative-constant-and-bv
-            ;;read-1-of-write-1-both
-            acl2::not-bvlt-of-constant-when-usb-dag ; rename
-            ;; separate-of-1-and-1 ; do we ever need this?
-            acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
-            ;; acl2::equal-of-myif-arg1-safe
-            ;; acl2::equal-of-myif-arg2-safe
-            acl2::bvminus-of-bvplus-and-bvplus-same-2-2
-            acl2::bvplus-of-unary-minus
-            acl2::bvplus-of-unary-minus-arg2
-            acl2::if-becomes-bvif-1-axe
-            ;; acl2::boolif-of-t-and-nil-when-booleanp
-            acl2::slice-of-bvand-of-constant
-            ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
-            acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
-            acl2::equal-of-bvplus-constant-and-constant
-            acl2::equal-of-bvplus-constant-and-constant-alt
-            acl2::bvchop-of-bvshr-same
-            acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
-            acl2::bvif-of-if-constants-nil-nonnil
-            acl2::bvif-of-if-constants-nonnil-nil
-            acl2::equal-of-constant-and-bitand
-            acl2::equal-of-bitand-and-constant
+    acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op
+    acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
+    acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
+    acl2::nth-becomes-bv-array-read-strong2
+    acl2::bvplus-of-*-arg1 ; introduces bvmult
+    acl2::bvplus-of-*-arg2 ; introduces bvmult -- todo: alt version?
+    not-equal-of-+-and-+-when-separate
+    not-equal-of-+-of-+-and-+-when-separate
+    not-equal-of-+-of-+-and-+-when-separate-gen
+    acl2::<-of-negative-constant-and-bv
+    ;;read-1-of-write-1-both
+    acl2::not-bvlt-of-constant-when-usb-dag ; rename
+    ;; separate-of-1-and-1 ; do we ever need this?
+    acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
+    ;; acl2::equal-of-myif-arg1-safe
+    ;; acl2::equal-of-myif-arg2-safe
+    acl2::bvminus-of-bvplus-and-bvplus-same-2-2
+    acl2::bvplus-of-unary-minus
+    acl2::bvplus-of-unary-minus-arg2
+    acl2::if-becomes-bvif-1-axe
+    ;; acl2::boolif-of-t-and-nil-when-booleanp
+    acl2::slice-of-bvand-of-constant
+    ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
+    acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
+    acl2::equal-of-bvplus-constant-and-constant
+    acl2::equal-of-bvplus-constant-and-constant-alt
+    acl2::bvchop-of-bvshr-same
+    acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
+    acl2::bvif-of-if-constants-nil-nonnil
+    acl2::bvif-of-if-constants-nonnil-nil
+    acl2::equal-of-constant-and-bitand
+    acl2::equal-of-bitand-and-constant
             ;acl2::boolif-of-nil-and-t
-            ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
-            acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
-            acl2::bitxor-of-1-becomes-bitnot-arg2 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
-            ;; these next few did seem needed after lifting (todo: either add the rest like this or drop these):
-            booleanp-of-jp-condition
-            booleanp-of-jnp-condition
-            booleanp-of-jz-condition
-            booleanp-of-jnz-condition
-            acl2::getbit-0-of-bool-to-bit
-            acl2::equal-of-bool-to-bit-and-0 ; alt version needed, or do equals get turned around?
-            acl2::equal-of-bool-to-bit-and-1 ; alt version needed, or do equals get turned around?
-            acl2::equal-of-1-and-bitnot ; todo: add 0 version
-            ;;acl2::bvif-of-1-and-0-becomes-bool-to-bit ; introduces bool-to-bit?  maybe bad.
-            ;; todo: just include boolean-rules?:
-            ;; acl2::bvmult-tighten-when-power-of-2p-axe ; todo: uncomment
-            acl2::bvchop-of-bool-to-bit ;todo: drop
-            acl2::logext-of-bool-to-bit
-            acl2::<-of-if-arg1-safe
-            ;; acl2::<-of-if-arg2-safe
-            acl2::equal-of-bvif-safe2
-            acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
-            )
-          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
-          (acl2::booleanp-rules)
-          (acl2::boolean-rules-safe)
-          (acl2::type-rules)))
+    ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
+    acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
+    acl2::bitxor-of-1-becomes-bitnot-arg2 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
+    ;; these next few did seem needed after lifting (todo: either add the rest like this or drop these):
+    booleanp-of-jp-condition
+    booleanp-of-jnp-condition
+    booleanp-of-jz-condition
+    booleanp-of-jnz-condition
+    acl2::getbit-0-of-bool-to-bit
+    acl2::equal-of-bool-to-bit-and-0 ; alt version needed, or do equals get turned around?
+    acl2::equal-of-bool-to-bit-and-1 ; alt version needed, or do equals get turned around?
+    acl2::equal-of-1-and-bitnot ; todo: add 0 version
+    ;;acl2::bvif-of-1-and-0-becomes-bool-to-bit ; introduces bool-to-bit?  maybe bad.
+    ;; todo: just include boolean-rules?:
+    ;; acl2::bvmult-tighten-when-power-of-2p-axe ; todo: uncomment
+    acl2::bvchop-of-bool-to-bit ;todo: drop
+    acl2::logext-of-bool-to-bit
+    acl2::<-of-if-arg1-safe
+    ;; acl2::<-of-if-arg2-safe
+    acl2::equal-of-bvif-safe2
+    acl2::unsigned-byte-p-of-+-becomes-unsigned-byte-p-of-bvplus-axe ; needed?
+    ))
 
 ;; beyond what def-unrolled uses
 (defund extra-tester-lifting-rules ()
@@ -5769,6 +5764,10 @@
           (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
           (float-rules) ; i need booleanp-of-isnan, at least
           (extra-tester-rules)
+          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
+          (acl2::booleanp-rules)
+          (acl2::boolean-rules-safe)
+          (acl2::type-rules)
           (new-normal-form-rules64) ; overkill?
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
