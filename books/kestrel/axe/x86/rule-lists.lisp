@@ -2052,7 +2052,7 @@
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
           (if-lifting-rules)
-          (acl2::convert-to-bv-rules)
+          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
           '(acl2::boolor-of-non-nil)
           (segment-base-and-bounds-rules-general)
           (float-rules)
@@ -2209,7 +2209,6 @@
             ;x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
-            ;acl2::fix-when-acl2-numberp
             ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
             ;; x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
             ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
@@ -5499,7 +5498,6 @@
     acl2::rationalp-when-integerp
     acl2::+-of-+-of---same
     acl2::<-of-minus-and-constant ; ensure needed
-    acl2::fix-when-acl2-numberp
     acl2::acl2-numberp-of--
     acl2::acl2-numberp-of-*
     bitops::ash-of-0-c ; at least for now
@@ -5544,6 +5542,7 @@
     acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
     acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
     acl2::nth-becomes-bv-array-read-strong2
+    acl2::bvplus-of-*-arg1 ; introduces bvmult
     acl2::bvplus-of-*-arg2 ; introduces bvmult -- todo: alt version?
     not-equal-of-+-and-+-when-separate
     not-equal-of-+-of-+-and-+-when-separate
@@ -5600,10 +5599,6 @@
   (declare (xargs :guard t))
   (append ;(new-normal-form-rules64) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
           (extra-tester-rules)
-          (acl2::convert-to-bv-rules) ; turns things like logxor into things like bvxor
-          (acl2::booleanp-rules)
-          (acl2::boolean-rules-safe)
-          (acl2::type-rules)
           '(<-of-fp-to-rat ; do we want this?
 
             !rflags-of-if-arg1 ; do we want this?
