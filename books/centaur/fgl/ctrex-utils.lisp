@@ -1292,76 +1292,92 @@
     :rule-classes :linear))
 
 
-(defines magic-fgl-object-eval
-  (define magic-fgl-object-eval ((x fgl-object-p)
-                                (env$)
-                                &optional
-                                (logicman 'logicman)
-                                (state 'state))
+
+
+(defines magic-fgl-object-eval-memo
+  :ruler-extenders :lambdas
+  (define magic-fgl-object-eval-memo ((x fgl-object-p)
+                                      (env$)
+                                      &optional
+                                      (memo 'memo)
+                                      (logicman 'logicman)
+                                      (state 'state))
     :guard (and (bfr-env$-p env$ (logicman->bfrstate))
                 (lbfr-listp (fgl-object-bfrlist x)))
-    :returns (mv err val)
+    :returns (mv err val new-memo)
     :verify-guards nil
-    :measure (acl2::two-nats-measure (fgl-object-count x) 0)
+    :measure (acl2::two-nats-measure (fgl-object-count x) 1)
     (fgl-object-case x
-      :g-concrete (mv nil x.val)
-      :g-boolean (mv nil (bfr-eval-fast x.bool env$))
-      :g-integer (mv nil (bools->int (bfr-list-eval-fast x.bits env$)))
-      :g-ite (b* (((mv err test) (magic-fgl-object-eval x.test env$))
-                  ((when err) (mv err nil)))
-               (if test
-                   (magic-fgl-object-eval x.then env$)
-                 (magic-fgl-object-eval x.else env$)))
-      :g-cons (b* (((mv err car) (magic-fgl-object-eval x.car env$))
-                   ((when err) (mv err nil))
-                   ((mv err cdr) (magic-fgl-object-eval x.cdr env$))
-                   ((when err) (mv err nil)))
-                (mv nil (cons car cdr)))
-      :g-map (magic-fgl-object-alist-eval x.alist env$)
-      :g-var (mv nil (cdr (assoc-eq x.name (env$->obj-alist env$))))
-      :g-apply (b* (((mv err args) (magic-fgl-objectlist-eval x.args env$))
-                    ((when err) (mv err nil)))
-                 (magitastic-ev-fncall x.fn args 1000 state t t))))
-
-  (define magic-fgl-objectlist-eval ((x fgl-objectlist-p)
+      :g-concrete (mv nil x.val memo)
+      :g-boolean (mv nil (bfr-eval-fast x.bool env$) memo)
+      :g-integer (mv nil (bools->int (bfr-list-eval-fast x.bits env$)) memo)
+      :g-var (mv nil (cdr (assoc-eq x.name (env$->obj-alist env$))) memo)
+      :otherwise
+      (b* ((look (hons-get (fgl-object-fix x) memo))
+           ((when look) (mv nil (cdr look) memo))
+           ((mv err val memo)
+            (fgl::fgl-object-case x
+              :g-ite (b* (((mv err test memo) (magic-fgl-object-eval-memo x.test env$))
+                          ((when err) (mv err nil memo)))
+                       (if test
+                           (magic-fgl-object-eval-memo x.then env$)
+                         (magic-fgl-object-eval-memo x.else env$)))
+              :g-cons (b* (((mv err car memo) (magic-fgl-object-eval-memo x.car env$))
+                           ((when err) (mv err nil memo))
+                           ((mv err cdr memo) (magic-fgl-object-eval-memo x.cdr env$))
+                           ((when err) (mv err nil memo)))
+                        (mv nil (cons car cdr) memo))
+              :g-map (magic-fgl-object-alist-eval-memo x.alist env$)
+              :g-apply (b* (((mv err args memo) (magic-fgl-objectlist-eval-memo x.args env$))
+                            ((when err) (mv err nil memo))
+                            ((mv err val) (magitastic-ev-fncall x.fn args 1000 state t t)))
+                         (mv err val memo))
+              :otherwise (mv "impossible" nil memo)))
+           ((when err) (mv err nil memo))
+           (memo (hons-acons (fgl-object-fix x) val memo)))
+        (mv nil val memo))))
+      
+  (define magic-fgl-objectlist-eval-memo ((x fgl-objectlist-p)
                                     (env$)
                                     &optional
+                                    (memo 'memo)
                                     (logicman 'logicman)
                                     (state 'state))
     :guard (and (bfr-env$-p env$ (logicman->bfrstate))
                 (lbfr-listp (fgl-objectlist-bfrlist x)))
-    :returns (mv err (val true-listp))
+    :returns (mv err (val true-listp :rule-classes :type-prescription) new-memo)
     :measure (acl2::two-nats-measure (fgl-objectlist-count x) 0)
-    (b* (((when (atom x)) (mv nil nil))
-         ((mv err car) (magic-fgl-object-eval (car x) env$))
-         ((when err) (mv err nil))
-         ((mv err cdr) (magic-fgl-objectlist-eval (cdr x) env$))
-         ((when err) (mv err nil)))
-      (mv nil (cons car cdr))))
+    (b* (((when (atom x)) (mv nil nil memo))
+         ((mv err car memo) (magic-fgl-object-eval-memo (car x) env$))
+         ((when err) (mv err nil memo))
+         ((mv err cdr memo) (magic-fgl-objectlist-eval-memo (cdr x) env$))
+         ((when err) (mv err nil memo)))
+      (mv nil (cons car cdr) memo)))
 
-  (define magic-fgl-object-alist-eval ((x fgl-object-alist-p)
+  (define magic-fgl-object-alist-eval-memo ((x fgl-object-alist-p)
                                       (env$)
                                       &optional
+                                      (memo 'memo)
                                       (logicman 'logicman)
                                       (state 'state))
     :guard (and (bfr-env$-p env$ (logicman->bfrstate))
                 (lbfr-listp (fgl-object-alist-bfrlist x)))
-    :returns (mv err val)
+    :returns (mv err val new-memo)
     :measure (acl2::two-nats-measure (fgl-object-alist-count x) (len x))
-    (b* (((when (atom x)) (mv nil x))
+    (b* (((when (atom x)) (mv nil x memo))
          ((unless (mbt (consp (car x))))
-          (magic-fgl-object-alist-eval (cdr x) env$))
-         ((mv err val1) (magic-fgl-object-eval (cdar x) env$))
-         ((when err) (mv err nil))
-         ((mv err rest) (magic-fgl-object-alist-eval (cdr x) env$))
-         ((when err) (mv err nil)))
-      (mv nil (cons (cons (caar x) val1) rest))))
+          (magic-fgl-object-alist-eval-memo (cdr x) env$))
+         ((mv err val1 memo) (magic-fgl-object-eval-memo (cdar x) env$))
+         ((when err) (mv err nil memo))
+         ((mv err rest memo) (magic-fgl-object-alist-eval-memo (cdr x) env$))
+         ((when err) (mv err nil memo)))
+      (mv nil (cons (cons (caar x) val1) rest) memo)))
   ///
-  (verify-guards magic-fgl-object-eval-fn
+  (verify-guards magic-fgl-object-eval-memo-fn
     :hints (("goal" :expand (fgl-object-bfrlist x)
-             :in-theory (disable magic-fgl-object-eval-fn
-                                 magic-fgl-objectlist-eval
-                                 magic-fgl-object-alist-eval))))
+             :in-theory (disable magic-fgl-object-eval-memo-fn
+                                 magic-fgl-objectlist-eval-memo
+                                 magic-fgl-object-alist-eval-memo))))
 
   (local (defthm fgl-object-alist-fix-when-bad-car
            (implies (and (consp X)
@@ -1370,7 +1386,32 @@
                            (fgl-object-alist-fix (cdr x))))
            :hints(("Goal" :in-theory (enable fgl-object-alist-fix)))))
 
-  (fty::deffixequiv-mutual magic-fgl-object-eval))
+  (fty::deffixequiv-mutual magic-fgl-object-eval-memo))
+
+(define magic-fgl-object-eval ((x fgl-object-p)
+                               (env$)
+                               &optional
+                               (logicman 'logicman)
+                               (state 'state))
+  :returns (mv err val)
+  :guard (and (bfr-env$-p env$ (logicman->bfrstate))
+              (lbfr-listp (fgl-object-bfrlist x)))
+  (b* (((mv err val memo) (magic-fgl-object-eval-memo x env$ nil)))
+    (fast-alist-free memo)
+    (mv err val)))
+
+(define magic-fgl-objectlist-eval ((x fgl-objectlist-p)
+                                   (env$)
+                                   &optional
+                                   (logicman 'logicman)
+                                   (state 'state))
+  :returns (mv err (val true-listp :rule-classes :type-prescription))
+  :guard (and (bfr-env$-p env$ (logicman->bfrstate))
+              (lbfr-listp (fgl-objectlist-bfrlist x)))
+  (b* (((mv err val memo) (magic-fgl-objectlist-eval-memo x env$ nil)))
+    (fast-alist-free memo)
+    (mv err val)))
+
 
 
 (define cgraph-set-error ((x fgl-object-p)
@@ -2603,7 +2644,7 @@ compute a value for @('x').</p>
 
 
 (define bvar-db-check-ctrex-consistency ((n natp)
-                                         bvar-db logicman env$ state
+                                         bvar-db memo logicman env$ state
                                          (acc bvar-db-consistency-errorlist-p))
   :guard (and (<= (base-bvar bvar-db) n)
               (<= n (next-bvar bvar-db))
@@ -2617,18 +2658,19 @@ compute a value for @('x').</p>
   (b* ((acc (bvar-db-consistency-errorlist-fix acc))
        ((when (mbe :logic (zp (- (next-bvar bvar-db) (nfix n)))
                    :exec (eql n (next-bvar bvar-db))))
+        (fast-alist-free memo)
         acc)
        (var (bfr-var n logicman))
        (obj (get-bvar->term n bvar-db))
        (var-val (bfr-eval-fast var env$))
-       ((mv eval-err obj-val) (magic-fgl-object-eval obj env$))
+       ((mv eval-err obj-val memo) (magic-fgl-object-eval-memo obj env$ memo))
        (acc (cond (eval-err (cons (make-bvar-db-consistency-error-eval-error :obj obj :msg eval-err)
                                   acc))
                   ((xor var-val obj-val)
                    (cons (make-bvar-db-consistency-error-inconsistency :obj obj :var-val var-val :obj-val obj-val)
                          acc))
                   (t acc))))
-    (bvar-db-check-ctrex-consistency (1+ (lnfix n)) bvar-db logicman env$ state acc)))
+    (bvar-db-check-ctrex-consistency (1+ (lnfix n)) bvar-db memo logicman env$ state acc)))
 
 
 (define interp-st-check-bvar-db-ctrex-consistency ((interp-st interp-st-bfrs-ok)
@@ -2642,7 +2684,7 @@ compute a value for @('x').</p>
                    (mv "Bad counterexample env" nil)))
                (mv nil
                    (bvar-db-check-ctrex-consistency
-                    (base-bvar bvar-db) bvar-db logicman env$ state nil)))
+                    (base-bvar bvar-db) bvar-db nil logicman env$ state nil)))
              (b* (((when err)
                    (cw "Error checking bvar-db consistency: ~@0" err)
                    interp-st)
