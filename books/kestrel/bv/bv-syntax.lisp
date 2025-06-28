@@ -188,4 +188,4 @@
 ;; TODO: Consider adding logext
 ;; WARNING: Keep this in sync with the rules in convert-to-bv-rules.lisp.
 (defconst *functions-convertible-to-bv*
-  '(binary-logand binary-logior binary-logxor lognot binary-+ unary--))
+  '(binary-logand binary-logior binary-logxor lognot binary-+ unary-- binary-*))
