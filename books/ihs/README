@@ -2,23 +2,6 @@
 
 ===============================================================================
 
-Installation
-
-The files in this directory all assume that this library is installed in the
-local directory environment that exists in the ACL2 source distribution,
-i.e., that `..' is the main directory of ACL2 books, and ../data-structures
-and ../arithmetic are the data-structures and math library directories.  If
-for some reason you move IHS away from here, things will start to break. You
-will have to edit (at least) ihs-init.lisp, ihs-init.acl2, and math-lemmas.lisp.
-
-Type
-
-% cert.pl *.lisp
-
-to certify all books.
-
-===============================================================================
-
 Notes
 
 This directory contains an integrated ACL2 library supporting Integer
