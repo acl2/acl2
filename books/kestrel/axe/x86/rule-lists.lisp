@@ -865,6 +865,14 @@
     !rflags-does-nothing
 ;;     x86isa::!rflags$inline
 
+    ;; For these, we can look inside !rflagsbits->cf, because it is not an argument to !rflags
+    getbit-of-!rflagsbits->af
+    getbit-of-!rflagsbits->cf
+    getbit-of-!rflagsbits->pf
+    getbit-of-!rflagsbits->of
+    getbit-of-!rflagsbits->sf
+    getbit-of-!rflagsbits->zf
+
 ;;     x86isa::!rflagsbits->ac$inline
 ;;     x86isa::!rflagsbits->af$inline
 ;;     x86isa::!rflagsbits->cf$inline ;it would be better if these called rflagsbits?
@@ -5760,7 +5768,22 @@
             jp-condition
             jnp-condition
             jz-condition
-            jnz-condition)
+            jnz-condition
+            ;; todo: it would be good to turn these into BVs earlier, during symbolic execution when not passed to rflags
+            ;; todo: need rules like these for all the sub-xxx functions too
+            add-af-spec8-becomes-bvlt
+            add-af-spec16-becomes-bvlt
+            add-af-spec32-becomes-bvlt
+            add-af-spec64-becomes-bvlt
+            cf-spec64-becomes-getbit ;cf-spec64$inline ; todo: more!
+            sf-spec8-becomes-getbit
+            sf-spec16-becomes-getbit
+            sf-spec32-becomes-getbit
+            sf-spec64-becomes-getbit
+            zf-spec$inline
+            ;; todo: how to open the other flags, like pf, to bv notions?
+            )
+          (x86-type-rules) ; since some of these functions may survive to the proof stage
           (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
           (float-rules) ; i need booleanp-of-isnan, at least
           (extra-tester-rules)
