@@ -18,6 +18,7 @@
 (include-book "states")
 (include-book "reads-over-writes")
 (include-book "semantics")
+(include-book "semantics-equivalences")
 (include-book "execution")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -54,4 +55,5 @@
                     states
                     reads-over-writes
                     semantics
+                    semantics-equivalences
                     execution))
