@@ -190,6 +190,7 @@
             fix-when-acl2-numberp
             acl2-numberp-of-+
             acl2-numberp-of-fix
+            integerp-of-ifix
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
             eq ; introduces EQUAL
@@ -501,6 +502,7 @@
     trim-of-logxor-becomes-bvxor
     trim-of-lognot-becomes-bvnot
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
+    trim-of-*-becomes-bvmult
     trim-of-unary---becomes-bvuminus
     ))
 
@@ -736,6 +738,8 @@
      bvminus-cancel-3-2 ; todo: more!
 
      bvplus-of-0-arg2
+     bvplus-of-ifix-arg2
+     bvplus-of-ifix-arg3
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
@@ -883,6 +887,7 @@
      equal-of-slice-and-slice-same-low
 
      getbit-of-bvcat-all ;newly moved here
+     getbit-of-bvmult-of-expt-constant-version
 
 ;slice-of-bvplus-cases-no-split-case-no-carry-constant-version ;new
      bitxor-of-ifix-arg1
@@ -957,6 +962,9 @@
 
      bvmult-of-0-arg2
      bvmult-of-1-arg2
+     bvmult-of-ifix-arg2
+     bvmult-of-ifix-arg3
+
 
      bvminus-solve ;don't we get rid of bvminus?
 ;    bvminus-solve-for-dag2 ;drop, if we commute constants to the front of the equal?
@@ -1096,6 +1104,8 @@
 ; trying without these... todo: do we want these or not?:
      ;; getbit-of-bvor-eric
      ;; getbit-of-bvor-eric-2
+     getbit-of-bvor-when-narrow-arg2-axe
+     getbit-of-bvor-when-narrow-arg3-axe
      ;; getbit-of-bvand-eric
      ;; getbit-of-bvand-eric-2
      ;; getbit-0-of-bvxor-eric

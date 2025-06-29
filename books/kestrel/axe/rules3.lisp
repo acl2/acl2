@@ -10791,34 +10791,6 @@
                             power-of-2p)
                            (bv-array-read-of-bvchop)))))
 
-(defthm getbit-of-bvmult-of-expt
-  (implies (and (< n (+ 1 size))
-                (>= size2 (+ 1 size))
-                (integerp x)
-                (natp size)
-                (natp size2)
-                (natp n))
-           (equal (getbit size (bvmult size2 (expt 2 n) x))
-                  (getbit (- size n) x)))
-  :hints (("Goal" :in-theory (e/d (bvmult getbit
-                                          natp ;yuck
-                                          )
-                                  ()))))
-
-(defthm getbit-of-bvmult-of-expt-constant-version
-  (implies (and (syntaxp (quotep k))
-                (power-of-2p k)
-                (< (lg k) (+ 1 size))
-                (>= size2 (+ 1 size))
-                (integerp x)
-                (natp size)
-                (natp size2)
-                (natp (lg k)))
-           (equal (getbit size (bvmult size2 k x))
-                  (getbit (- size (lg k)) x)))
-  :hints (("Goal" :use (:instance getbit-of-bvmult-of-expt (n (lg k)))
-           :in-theory (disable getbit-of-bvmult-of-expt))))
-
 ;fragile - what if the disjuncts get out of order or other ones intervene?
 (defthm boolor-adjacent-ranges-sha1-hack
   (implies (unsigned-byte-p 31 x) ;drop?

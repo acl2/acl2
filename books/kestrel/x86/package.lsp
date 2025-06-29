@@ -1343,6 +1343,7 @@
     putbit
     putbyte
     trim
+    bvcount
 
     bool->bit$inline
     bool->bit
