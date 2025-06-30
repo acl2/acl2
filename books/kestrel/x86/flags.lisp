@@ -1002,3 +1002,33 @@
                       zf
                     (getbit n rflags))))
   :hints (("Goal" :in-theory (enable !rflagsbits->zf bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->res1
+  (implies (and (unsigned-byte-p 1 res1)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->res1 res1 rflags))
+                  (if (equal n 1)
+                      res1
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res1 bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->res2
+  (implies (and (unsigned-byte-p 1 res2)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->res2 res2 rflags))
+                  (if (equal n 3)
+                      res2
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res2 bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->res3
+  (implies (and (unsigned-byte-p 1 res3)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->res3 res3 rflags))
+                  (if (equal n 5)
+                      res3
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res3 bfix rflagsbits-fix))))
