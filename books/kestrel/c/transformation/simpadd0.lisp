@@ -4032,8 +4032,8 @@
          ((struni-spec struni-spec) struni-spec)
          ((mv new-members (simpadd0-gout gout-members))
           (simpadd0-structdecl-list struni-spec.members gin state)))
-      (mv (make-struni-spec :name struni-spec.name
-                           :members new-members)
+      (mv (make-struni-spec :name? struni-spec.name?
+                            :members new-members)
           (make-simpadd0-gout
            :events gout-members.events
            :thm-name nil

@@ -224,7 +224,7 @@
            (type-spec-case (car tyspecs) :struct)
            (b* ((struni-spec (type-spec-struct->spec (car tyspecs))))
              (and (check-struni-spec-no-members struni-spec)
-                  (ident-formalp (struni-spec->name struni-spec)))))
+                  (ident-formalp (struni-spec->name? struni-spec)))))
       (and (equal (type-spec-list-fix tyspecs)
                   (list (type-spec-void)))))
   :guard-hints (("Goal" :in-theory (enable check-struni-spec-no-members)))
@@ -857,8 +857,8 @@
     "The name must be present,
      and each structure declaration must be supported."))
   (b* (((struni-spec struni-spec) struni-spec))
-    (and struni-spec.name
-         (ident-formalp struni-spec.name)
+    (and struni-spec.name?
+         (ident-formalp struni-spec.name?)
          (structdecl-list-formalp struni-spec.members)))
   :hooks (:fix))
 

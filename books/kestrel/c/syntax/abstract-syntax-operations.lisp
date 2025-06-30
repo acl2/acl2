@@ -581,9 +581,9 @@
      because the specifier does not conform to the concrete syntax."))
   (b* (((struni-spec struni-spec) struni-spec)
        ((when struni-spec.members) nil)
-       ((unless struni-spec.name)
+       ((unless struni-spec.name?)
         (raise "Misusage error: empty structure or union specifier.")))
-    struni-spec.name)
+    struni-spec.name?)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

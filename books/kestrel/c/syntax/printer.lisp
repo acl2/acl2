@@ -2640,15 +2640,15 @@
        e.g. when it is a lone top-level construct,
        we should print it on multiple lines."))
     (b* (((struni-spec struni-spec) struni-spec)
-         ((unless (or (ident-option-case struni-spec.name :some)
+         ((unless (or (ident-option-case struni-spec.name? :some)
                       struni-spec.members))
           (raise "Misusage error: empty structure or union specifier.")
           (pristate-fix pstate))
          (pstate (ident-option-case
-                  struni-spec.name
-                  :some (print-ident struni-spec.name.val pstate)
+                  struni-spec.name?
+                  :some (print-ident struni-spec.name?.val pstate)
                   :none pstate))
-         (pstate (if (and struni-spec.name
+         (pstate (if (and struni-spec.name?
                           struni-spec.members)
                      (print-astring " " pstate)
                    pstate))
