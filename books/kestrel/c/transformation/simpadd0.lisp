@@ -374,7 +374,7 @@
      then the theorem says that execution returns @('nil'),
      according to our formal dynamic semantics.
      If old and new statements are not equal, the theorem also says that
-     their execution returns equal values (or @('nil'))
+     their execution returns equal values (or both @('nil'))
      and equal computation states,
      and that the execution of the new statement does not yield an error."))
   (b* ((old (stmt-fix old))
@@ -462,9 +462,13 @@
     "The theorem says that
      the old block item returns a value of the appropriate type,
      regardless of whether old and new block items
-     are syntactically equal or not.
-     If they are not, the theorem also says that
-     their execution returns equal values and equal computation states,
+     are syntactically equal or not;
+     if the type is @('void'),
+     then the theorem says that execution returns @('nil'),
+     according to our formal dynamic semantics.
+     If old and new block items are not equal, the theorem also says that
+     their execution returns equal values (or both @('nil'))
+     and equal computation states,
      and that the execution of the new block item does not yield an error."))
   (b* ((old (block-item-fix old))
        (new (block-item-fix new))
@@ -495,8 +499,10 @@
                   ((mv result &) (c::exec-block-item item compst fenv limit)))
                (implies (and ,@hyps
                              (not (c::errorp result)))
-                        (and result
-                             (equal (c::type-of-value result) ',ctype))))
+                        ,(if (type-case type :void)
+                             '(not result)
+                           `(and result
+                                 (equal (c::type-of-value result) ',ctype)))))
           `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
                 (new-item (mv-nth 1 (ldm-block-item ',new)))
                 ((mv old-result old-compst)
@@ -508,8 +514,11 @@
                       (and (not (c::errorp new-result))
                            (equal old-result new-result)
                            (equal old-compst new-compst)
-                           old-result
-                           (equal (c::type-of-value old-result) ',ctype))))))
+                           ,@(if (type-case type :void)
+                                 '((not old-result))
+                               `(old-result
+                                 (equal (c::type-of-value old-result)
+                                        ',ctype))))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
