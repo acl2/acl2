@@ -1120,11 +1120,6 @@
   :hints (("Goal" :use (apply-intro-lemma)
            :in-theory (enable in-domain-rewrite))))
 
-(theory-invariant (not (and (active-runep '(:rewrite in-domain-rewrite))
-                            (active-runep '(:rewrite in-cons-apply))))
-                  :key apply-intro-vs-relation-p-necd
-                  :error t)
-
 (defthmz inverse-inverse
   (implies (relation-p r)
            (equal (inverse (inverse r))
@@ -1297,6 +1292,25 @@
 
 (defthmz ordinal-p-omega
   (ordinal-p (omega)))
+
+(defthmz natp-implies-transitive
+  (implies (natp n)
+           (transitive n))
+  :hints (("Goal" :in-theory (enable subset))))
+
+(defthmz natp-implies-ordinal-p
+  (implies (natp n)
+           (ordinal-p n)))
+
+(defthmz natp-<-implies-in
+
+; This is a weaker version of in-natp that we will likely keep enabled.
+
+  (implies (and (natp i)
+                (natp j)
+                (< i j))
+           (in i j))
+  :hints (("Goal" :in-theory (enable in-natp))))
 
 (in-theory (disable in-natp))
 
@@ -2509,3 +2523,137 @@
                   (equal r 0)))
   :props (zfc domain$prop inverse$prop prod2$prop)
   :hints (("Goal" :in-theory (enable image))))
+
+(defthmz pair-non-empty ; needed for in-asymmetric-3
+  (not (equal (pair x y)
+              0))
+  :hints (("Goal"
+           :use ((:instance in-pair (a x)))
+           :in-theory (disable in-pair
+                               subset-preserves-in-1))))
+
+(encapsulate
+  ()
+
+; It turns out that we don't need in-asymmetric for ordinals-closure-2 in
+; ordinals.lisp, as I'd originally thought.  However, we need something like
+; it, and it's not a bad rule, so I'll keep it.
+
+; Proof of in-asymmetric.  Consider (min-in (pair x y)).  It's either x or y;
+; wlog, say, x.  Then by min-in-2, y \notin x.
+
+  (local (defthmz in-asymmetric-1
+           (implies (and (in x y)
+                         (equal (min-in (pair x y)) x))
+                    (not (in y x)))
+           :rule-classes nil))
+
+  (local (defthmz in-asymmetric-2
+           (implies (and (in x y)
+                         (equal (min-in (pair x y)) y))
+                    (not (in y x)))
+           :rule-classes nil))
+
+  (local (defthmz in-asymmetric-3
+           (or (equal (min-in (pair x y)) x)
+               (equal (min-in (pair x y)) y))
+           :hints (("Goal"
+                    :use ((:instance min-in-1
+                                     (z (pair x y))))
+                    :in-theory (disable min-in-1)))
+           :rule-classes nil))
+
+  (defthmz in-asymmetric
+    (implies (in x y)
+             (not (in y x)))
+    :hints (("Goal" :use (in-asymmetric-1
+                          in-asymmetric-2
+                          in-asymmetric-3)))
+    :rule-classes (:forward-chaining
+                   (:rewrite :backchain-limit-lst 0))))
+
+(defthmz in-irreflexive ; follows by forward-chaining from in-asymmetric
+  (not (in x x)))
+
+(defthmz <=-implies-subset-on-natps
+
+; A stronger version is subset-is-<=-on-natps, below.  But we keep that one
+; disabled since we might not always want to trade subset for <= (or
+; vice-versa, for that matter).
+
+  (implies (and (natp i)
+                (natp j)
+                (<= i j))
+           (subset i j))
+  :hints (("Goal" :in-theory (enable subset in-natp))))
+
+(local (defthmz subset-is-<=-on-natps-lemma
+         (implies (and (natp i)
+                       (natp j)
+                       (<= j i)
+                       (subset i j))
+                  (equal i j))
+         :hints (("Goal" :in-theory (enable extensionality-rewrite)))
+         :rule-classes nil))
+
+(defthmdz subset-is-<=-on-natps
+
+; See comment in <=-implies-subset-on-natps regarding why the current lemma is
+; disabled by default.
+
+  (implies (and (natp i)
+                (natp j))
+           (equal (subset i j)
+                  (<= i j)))
+  :hints (("Goal" :use subset-is-<=-on-natps-lemma)))
+
+(defthmz relationp-pair
+; This is needed for hp-list-cdr-hp-cons in projects/hol-in-acl2/acl2/hol.lisp.
+; The converse is surely true but we'll wait on proving that until we need it.
+  (implies (and (consp x)
+                (consp y))
+           (relation-p (pair x y)))
+  :hints (("Goal" :in-theory (enable relation-p))))
+
+(defthmdz n+1-as-union2-reversed ; n+1 = n U {n}
+  (implies (natp n)
+           (equal (union2 n (pair n n))
+                  (+ 1 n)))
+  :hints (("Goal" :in-theory (enable n+1-as-union2))))
+
+(defthmz posp-domain
+
+; This is perhaps a rather specialized rule, but it seems reasonable as a
+; forward-chaining rule.
+
+  (implies (and (natp (domain fn))
+                (funp fn)
+                (not (equal fn 0)))
+           (posp (domain fn)))
+  :props (zfc domain$prop)
+  :rule-classes :forward-chaining)
+
+(defthmz in-cons-apply ; to prove image-inverse-2
+  (equal (in (cons x (apply f x))
+             f)
+         (in x (domain f)))
+  :props (zfc domain$prop)
+  :hints (("Goal" :in-theory (enable in-domain-rewrite))))
+
+(theory-invariant (not (and (active-runep '(:rewrite in-domain-rewrite))
+                            (active-runep '(:rewrite in-cons-apply))))
+                  :key in-domain-rewrite-vs-in-cons-apply
+                  :error t)
+
+(defthmz domain-pair-lemma
+  (implies (in x (domain (pair (cons a1 b1) (cons a2 b2))))
+           (in x (pair a1 a2)))
+  :hints (("Goal" :in-theory (e/d (in-domain-rewrite)
+                                  (in-cons-apply))))
+  :props (zfc domain$prop))
+
+(defthmz domain-pair
+  (equal (domain (pair (cons a1 b1) (cons a2 b2)))
+         (pair a1 a2))
+  :hints (("Goal" :in-theory (enable extensionality-rewrite subset)))
+  :props (zfc domain$prop))

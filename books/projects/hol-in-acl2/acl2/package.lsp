@@ -24,6 +24,10 @@
     defthm defthmd defconst defgoal set-enforce-redundancy
     implies not and or
     force type in-theory enable disable e/d
+    let let* mv-let
+; Others from hol.lisp:
+    hp-cons hp-list-p hp-nil-p hp-cons-p hp-list-car hp-list-cdr
+    hp-comma hp-comma-p hp-hash-car hp-hash-cdr
 ; But we deliberately avoid importing t and nil, so that they can be used as
 ; variable names.
     ))

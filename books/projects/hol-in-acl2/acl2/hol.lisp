@@ -294,8 +294,7 @@
                 (len x))))
 
 (defthm hol-typep-forward-to-weak-hol-typep
-  (implies (and (hol-typep x hta groundp)
-                (symbol-alistp hta))
+  (implies (hol-typep x hta groundp)
            (weak-hol-typep x groundp))
   :rule-classes :forward-chaining)
 
@@ -378,7 +377,7 @@
   (hap*-fn fn arg1 args))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Support for primitives
+;;; Basic support for primitives
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This section defines ACL2 functions that operate on hol-pairs (hp objects).
@@ -515,3 +514,271 @@
 (defun hp-false ()
   (declare (xargs :guard t))
   (make-hp nil :bool))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; HOL analogues of list car and cdr
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun hol-list-typep (x)
+  (declare (xargs :guard t))
+  (and (weak-hol-typep x t)
+       (consp x)
+       (eq (car x) :list)))
+
+(defun hol-list-element-type (x)
+  (declare (xargs :guard (hol-list-typep x)))
+  (cadr x))
+
+(defun hp-list-car (x)
+
+; Returns a weak-hpp if x is a non-empty list, else 0.
+
+  (declare (xargs :guard (and (weak-hpp x)
+                              (hol-list-typep (hp-type x)))))
+  (let ((fn (hp-value x)))
+    (if (and (funp fn)
+             (posp (domain fn)))
+        (make-hp (apply fn (1- (domain fn)))
+                 (hol-list-element-type (hp-type x)))
+      0)))
+
+(defun hp-list-cdr (x)
+  (declare (xargs :guard (and (weak-hpp x)
+                              (hol-list-typep (hp-type x)))))
+  (let ((fn (hp-value x))
+        (typ (hp-type x)))
+    (if (and (funp fn)
+             (posp (domain fn)))
+        (make-hp (restrict fn (1- (domain fn)))
+                 typ)
+      (hp-nil (hol-list-element-type typ)))))
+
+(defthmz relation-p-hp-cons
+  (implies (relation-p fn)
+           (relation-p (union2 fn
+                               (pair (cons x1 y1)
+                                     (cons x2 y2)))))
+  :hints (("Goal"
+           :in-theory (disable relation-p-union2)
+           :expand ((relation-p (union2 fn
+                                        (pair (cons x1 y1)
+                                              (cons x2 y2))))))))
+
+(defthmz domain-not-in-domain-lemma
+  (implies (and (relation-p fn)
+                (in p fn))
+           (in (car p) (domain fn)))
+  :props (zfc domain$prop)
+  :rule-classes nil)
+
+(defthmz domain-not-in-domain
+  (implies (and (relation-p fn)
+                (in p fn))
+           (not (equal (car p) (domain fn))))
+  :hints (("Goal"
+           :in-theory (disable in-irreflexive IN-IMPLIES-CAR-IN-DOMAIN)
+           :use domain-not-in-domain-lemma))
+  :props (zfc domain$prop))
+
+(defthmz funp-hp-cons-lemma
+  (implies (and (funp fn)
+                (natp (domain fn)))
+           (let ((fn2 (union2 fn
+                              (pair (cons (domain fn) val)
+                                    (cons (domain fn) val)))))
+             (implies (and (in p1 fn2)
+                           (in p2 fn2)
+                           (equal (car p1) (car p2)))
+                      (equal (equal p1 p2)
+                             t))))
+  :props (zfc domain$prop))
+
+(defthmz funp-hp-cons
+  (implies (and (funp fn)
+                (equal dom (domain fn))
+                (natp dom))
+           (funp (union2 fn
+                         (pair (cons dom val)
+                               (cons dom val)))))
+  :hints (("Goal"
+           :expand ((funp (union2 fn
+                                  (pair (cons (domain fn) val)
+                                        (cons (domain fn) val)))))
+           :restrict ((funp-hp-cons-lemma ((fn fn) (val val))))))
+  :props (zfc domain$prop))
+
+(defthmz hp-list-car-hp-cons
+  (implies (and (force (hol-list-typep (hp-type y)))
+                (force (equal (hol-list-element-type (hp-type y))
+                              (hp-type x)))
+                (force (funp (hp-value y)))
+                (force (natp (domain (hp-value y)))))
+           (equal (hp-list-car (hp-cons x y))
+                  x))
+  :hints (("Goal" :in-theory (e/d (n+1-as-union2-reversed)
+                                  (ordinal-proper-subset-is-element))))
+  :props (zfc domain$prop))
+
+(defthmz hp-list-cdr-hp-cons
+  (implies (and (force (hol-list-typep (hp-type y)))
+                (force (funp (hp-value y)))
+                (force (natp (domain (hp-value y)))))
+           (equal (hp-list-cdr (hp-cons x y))
+                  y))
+  :hints (("Goal" :in-theory (enable n+1-as-union2-reversed)))
+  :props (zfc domain$prop restrict$prop))
+
+(defun hp-list-p (x)
+
+; This is a weak predicate.  See also the stronger predicate hp-cons-p, which
+; suffices to guarantee the property in hp-cons-hp-list-car-hp-list-cdr.
+
+  (declare (xargs :guard t))
+  (and (weak-hpp x)
+       (hol-list-typep (hp-type x))))
+
+(defun hp-nil-p (x typ)
+  (equal x (hp-nil typ)))
+
+(defthmz hp-list-p-hp-cons
+  (implies (and (force (weak-hpp x))
+                (force (hp-list-p y)))
+           (hp-list-p (hp-cons x y))))
+
+(defthm hp-list-p-hp-nil
+  (implies (force (weak-hol-typep type t))
+           (hp-list-p (hp-nil type))))
+
+(defun hp-cons-p (x)
+  (declare (xargs :guard (weak-hpp x)))
+  (and (hol-list-typep (hp-type x))
+       (funp (hp-value x))
+       (posp (domain (hp-value x)))))
+
+(local (defthm equal-len-hack
+         (implies (and (true-listp x)
+                       (acl2-numberp n))
+                  (equal (equal (+ n (len x)) n)
+                         (equal x nil)))))
+
+(defthmz hp-cons-p-cdr
+  (implies (and (hp-cons-p x)
+                (not (equal (hp-list-cdr x)
+                            (hp-nil (hol-list-element-type (hp-type x))))))
+           (hp-cons-p (hp-list-cdr x)))
+  :hints (("Goal" :expand ((weak-hol-typep (cdr x) t)
+                           (weak-hol-typep (caddr x) t))))
+  :props (zfc restrict$prop diff$prop domain$prop))
+
+(local
+ (defthmz hp-cons-hp-list-car-hp-list-cdr-lemma-1-1-1
+   (implies (and (funp fn)
+                 (posp (domain fn))
+                 (in pair fn))
+            (in pair
+                (union2 (restrict fn (+ -1 (domain fn)))
+                        (pair (cons (+ -1 (domain fn))
+                                    (apply fn (+ -1 (domain fn))))
+                              (cons (+ -1 (domain fn))
+                                    (apply fn (+ -1 (domain fn))))))))
+   :hints (("Goal"
+            :in-theory (enable subset)
+            :cases ((equal (car pair)
+                           (1- (domain fn))))))
+   :props (zfc domain$prop restrict$prop diff$prop)))
+
+(local
+ (defthmz hp-cons-hp-list-car-hp-list-cdr-lemma-1-1
+   (implies (and (funp fn)
+                 (posp (domain fn)))
+            (subset fn
+                    (union2 (restrict fn (+ -1 (domain fn)))
+                            (pair (cons (+ -1 (domain fn))
+                                        (apply fn (+ -1 (domain fn))))
+                                  (cons (+ -1 (domain fn))
+                                        (apply fn (+ -1 (domain fn))))))))
+   :hints (("Goal"
+            :in-theory (enable subset)))
+   :props (zfc domain$prop restrict$prop diff$prop)))
+
+(local
+ (defthmz hp-cons-hp-list-car-hp-list-cdr-lemma-1
+   (implies (and (funp fn)
+                 (posp (domain fn)))
+            (equal (union2 (restrict fn (+ -1 (domain fn)))
+                           (pair (cons (+ -1 (domain fn))
+                                       (apply fn (+ -1 (domain fn))))
+                                 (cons (+ -1 (domain fn))
+                                       (apply fn (+ -1 (domain fn))))))
+                   fn))
+   :hints (("Goal" :in-theory (e/d (extensionality-rewrite)
+                                   (subset-x-0))))
+   :props (zfc domain$prop restrict$prop diff$prop)))
+
+(defthmz hp-cons-hp-list-car-hp-list-cdr
+  (implies (force (hp-cons-p x))
+           (equal (hp-cons (hp-list-car x)
+                           (hp-list-cdr x))
+                  x))
+  :hints (("Goal" :in-theory (enable extensionality-rewrite subset)))
+  :props (zfc domain$prop restrict$prop diff$prop))
+
+; We leave hp-cons-p enabled to support proofs in ../examples/.
+(in-theory (disable hp-cons hp-list-p hp-list-car hp-list-cdr))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; HOL analogues of hash car and cdr
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun hol-hash-typep (x)
+  (declare (xargs :guard t))
+  (and (weak-hol-typep x t)
+       (consp x)
+       (eq (car x) :hash)))
+
+(defun hp-hash-car (x)
+  (declare (xargs :guard (and (weak-hpp x)
+                              (hol-hash-typep (hp-type x)))))
+  (let ((val (hp-value x))
+        (typ (hp-type x)))
+    (make-hp (ec-call (car val))
+             (cadr typ))))
+
+(defun hp-hash-cdr (x)
+  (declare (xargs :guard (and (weak-hpp x)
+                              (hol-hash-typep (hp-type x)))))
+  (let ((val (hp-value x))
+        (typ (hp-type x)))
+    (make-hp (ec-call (cdr val))
+             (caddr typ))))
+
+(defthm hp-hash-car-hp-comma
+  (implies (force (weak-hpp x))
+           (equal (hp-hash-car (hp-comma x y))
+                  x)))
+
+(defthm hp-hash-cdr-hp-comma
+  (implies (force (weak-hpp y))
+           (equal (hp-hash-cdr (hp-comma x y))
+                  y)))
+
+(defun hp-comma-p (x)
+  (declare (xargs :guard t))
+  (and (weak-hpp x)
+       (hol-hash-typep (hp-type x))
+       (consp (hp-value x))))
+
+(defthm hp-comma-p-hp-comma
+  (implies (and (force (weak-hpp x))
+                (force (weak-hpp y)))
+           (hp-comma-p (hp-comma x y))))
+
+(defthm hp-comma-hp-hash-car-hp-hash-cdr
+  (implies (force (hp-comma-p x))
+           (equal (hp-comma (hp-hash-car x)
+                            (hp-hash-cdr x))
+                  x))
+  :hints (("Goal" :expand ((weak-hol-typep (cdr x) t)))))
+
+; We leave hp-comma-p enabled to support proofs in ../examples/.
+(in-theory (disable hp-comma hp-hash-car hp-hash-cdr))

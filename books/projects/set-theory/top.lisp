@@ -10,6 +10,7 @@
 (include-book "defthmz-plus")
 ; (include-book "change-pkg") ; not used and kind of a hack.
 (include-book "doc")
+(include-book "finseqs")
 (include-book "foldr")
 (include-book "fun-space")
 (include-book "identity")
@@ -25,4 +26,4 @@
 (include-book "tc")
 (include-book "zify")
 ; (include-book "zify-motivation") ; incompatible with "zify"
-(include-book "finseqs")
+
