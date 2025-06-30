@@ -144,26 +144,24 @@
                 (integerp c)
                 (natp places))
            (equal (bvchop places (ash i c))
-                  (acl2::bvshr (- places c) i (- c))))
-  :hints (("Goal" :in-theory (e/d (ash acl2::bvshr slice logtail ifix)
+                  (bvshr (- places c) i (- c))))
+  :hints (("Goal" :in-theory (e/d (ash bvshr slice logtail ifix)
                                   (acl2::bvchop-of-logtail-becomes-slice acl2::floor-of-2-becomes-logtail-of-1)))))
-
-
 
 ;; (thm
 ;;  (implies (zp amt)
-;;           (equal (acl2::bvshr 32 x amt)
+;;           (equal (bvshr 32 x amt)
 ;;                  (bvchop 32 x)))
-;;  :hints (("Goal" :in-theory (enable acl2::bvshr zp))))
+;;  :hints (("Goal" :in-theory (enable bvshr zp))))
 
 (defthm bvchop-of-ash-right-shift
   (implies (and (< n 0)
                 (natp size)
                 (integerp n))
-           (equal (acl2::bvchop size (ash x n))
-                  (acl2::slice (+ -1 size (- n)) (- n) x)))
+           (equal (bvchop size (ash x n))
+                  (slice (+ -1 size (- n)) (- n) x)))
   :hints (("Goal" :cases ((integerp x))
-           :in-theory (e/d (ash acl2::slice logtail ifix)
+           :in-theory (e/d (ash slice logtail ifix)
                            (acl2::bvchop-of-logtail-becomes-slice)))))
 
 ;move
