@@ -872,6 +872,9 @@
     getbit-of-!rflagsbits->of
     getbit-of-!rflagsbits->sf
     getbit-of-!rflagsbits->zf
+    getbit-of-!rflagsbits->res1
+    getbit-of-!rflagsbits->res2
+    getbit-of-!rflagsbits->res3
 
 ;;     x86isa::!rflagsbits->ac$inline
 ;;     x86isa::!rflagsbits->af$inline
