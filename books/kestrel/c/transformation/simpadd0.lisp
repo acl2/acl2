@@ -2146,8 +2146,7 @@
     "We put the new statement into a block item.")
    (xdoc::p
     "We generate a theorem iff
-     a theorem was generated for the statement
-     and the type of the statement is not @('void').
+     a theorem was generated for the statement.
      That theorem is used to prove the theorem for the block item,
      along with using two general theorems proved below.
      Note that the limit in the theorem for the statement
@@ -2157,8 +2156,7 @@
   (b* (((simpadd0-gin gin) gin)
        (item (block-item-stmt stmt))
        (item-new (block-item-stmt stmt-new))
-       ((unless (and stmt-thm-name
-                     (not (type-case (stmt-type stmt) :void))))
+       ((unless stmt-thm-name)
         (mv item-new
             (make-simpadd0-gout :events stmt-events
                                 :thm-name nil
@@ -2166,27 +2164,48 @@
                                 :names-to-avoid gin.names-to-avoid
                                 :vartys stmt-vartys
                                 :diffp stmt-diffp)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-block-item)
-                              (:e ldm-stmt)
-                              (:e ldm-ident)
-                              (:e ident)
-                              (:e c::block-item-stmt)
-                              (:e c::type-sint)
-                              (:e c::type-nonchar-integerp))
-                 :use ((:instance ,stmt-thm-name (limit (1- limit)))
-                       (:instance
-                        simpadd0-block-item-stmt-support-lemma-1
-                        (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
-                        ,@(and (not stmt-diffp)
-                               '((old-fenv fenv)
-                                 (new-fenv fenv))))
-                       (:instance
-                        simpadd0-block-item-stmt-support-lemma-2
-                        (stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        ,@(and stmt-diffp
-                               '((fenv old-fenv))))))))
+       (type (stmt-type stmt))
+       (hints (if (type-case type :void)
+                  `(("Goal"
+                     :in-theory '((:e ldm-block-item)
+                                  (:e ldm-stmt)
+                                  (:e ldm-ident)
+                                  (:e ident)
+                                  (:e c::block-item-stmt))
+                     :use ((:instance ,stmt-thm-name (limit (1- limit)))
+                           (:instance
+                            simpadd0-block-item-stmt-support-lemma-3
+                            (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                            (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
+                            ,@(and (not stmt-diffp)
+                                   '((old-fenv fenv)
+                                     (new-fenv fenv))))
+                           (:instance
+                            simpadd0-block-item-stmt-support-lemma-2
+                            (stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                            ,@(and stmt-diffp
+                                   '((fenv old-fenv)))))))
+                `(("Goal"
+                   :in-theory '((:e ldm-block-item)
+                                (:e ldm-stmt)
+                                (:e ldm-ident)
+                                (:e ident)
+                                (:e c::block-item-stmt)
+                                (:e c::type-sint)
+                                (:e c::type-nonchar-integerp))
+                   :use ((:instance ,stmt-thm-name (limit (1- limit)))
+                         (:instance
+                          simpadd0-block-item-stmt-support-lemma-1
+                          (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                          (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
+                          ,@(and (not stmt-diffp)
+                                 '((old-fenv fenv)
+                                   (new-fenv fenv))))
+                         (:instance
+                          simpadd0-block-item-stmt-support-lemma-2
+                          (stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                          ,@(and stmt-diffp
+                                 '((fenv old-fenv)))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-thm item
                                      item-new
@@ -2241,7 +2260,31 @@
              (c::errorp
               (mv-nth 0 (c::exec-block-item
                          (c::block-item-stmt stmt) compst fenv limit))))
-    :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit)))
+    :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit))
+
+  (defruled simpadd0-block-item-stmt-support-lemma-3
+    (b* ((old (c::block-item-stmt old-stmt))
+         (new (c::block-item-stmt new-stmt))
+         ((mv old-stmt-result old-stmt-compst)
+          (c::exec-stmt old-stmt compst old-fenv (1- limit)))
+         ((mv new-stmt-result new-stmt-compst)
+          (c::exec-stmt new-stmt compst new-fenv (1- limit)))
+         ((mv old-result old-compst)
+          (c::exec-block-item old compst old-fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-block-item new compst new-fenv limit)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-stmt-result))
+                    (equal old-stmt-result new-stmt-result)
+                    (equal old-stmt-compst new-stmt-compst)
+                    (not old-stmt-result))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (not old-result))))
+    :expand
+    ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
+     (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2260,7 +2303,8 @@
   (xdoc::topstring
    (xdoc::p
     "We generate a theorem iff
-     a theorem was generated for the block item.
+     a theorem was generated for the block item
+     and the type is not @('void').
      That theorem is used to prove the theorem for the block item,
      along with using two general theorems proved below.
      Note that the limit in the theorem for the block item
@@ -2270,7 +2314,8 @@
   (b* (((simpadd0-gin gin) gin)
        (items (list (block-item-fix item)))
        (items-new (list (block-item-fix item-new)))
-       ((unless item-thm-name)
+       ((unless (and item-thm-name
+                     (not (type-case (block-item-type item) :void))))
         (mv items-new
             (make-simpadd0-gout :events item-events
                                 :thm-name nil
