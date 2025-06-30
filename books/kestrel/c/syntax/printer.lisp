@@ -3698,6 +3698,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-filepath-transunit-map ((tunitmap filepath-transunit-mapp)
+                                      (options prioptp))
+  :guard (filepath-transunit-map-unambp tunitmap)
+  :returns (filemap filepath-filedata-mapp)
+  :short "Print the files in a file set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input is a map from file paths to translation units,
+     i.e. the core content of a translation unit ensemble.
+     We also pass the printer options as additional input.
+     We go through each translation unit in the map and print it,
+     obtaining a file for each.
+     We return a map from file paths to files
+     that corresponds to the map from file paths to translation units.
+     The two maps have the same keys."))
+  (b* (((when (omap::emptyp tunitmap)) nil)
+       ((mv filepath tunit) (omap::head tunitmap))
+       (data (print-file tunit options))
+       (filemap (print-filepath-transunit-map (omap::tail tunitmap) options)))
+    (omap::update (filepath-fix filepath) (filedata data) filemap))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret keys-of-print-filepath-transunit-map
+    (equal (omap::keys filemap)
+           (omap::keys tunitmap))
+    :hyp (filepath-transunit-mapp tunitmap)
+    :hints (("Goal" :induct t)))
+
+  (fty::deffixequiv print-filepath-transunit-map
+    :args ((options prioptp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-fileset ((tunits transunit-ensemblep) (options prioptp))
   :guard (transunit-ensemble-unambp tunits)
   :returns (fileset filesetp)
@@ -3707,38 +3743,12 @@
    (xdoc::p
     "The input is a translation unit ensemble in the abstract syntax.
      We also pass the printer options as additional input.
-     We go through each translation unit in the ensemble and print it,
-     obtaining a file for each.
-     We return a file set that corresponds to the translation unit ensemble.
-     The file paths are the same
-     for the translation unit ensemble and for the file set
-     (they are the keys of the maps)."))
-  (fileset (print-fileset-loop (transunit-ensemble->unwrap tunits) options))
+     We unwrap the translation unit ensemble obtainining a map,
+     we print the translation units of the map to files into a file map,
+     and we wrap the file map into a file set."))
+  (fileset
+   (print-filepath-transunit-map (transunit-ensemble->unwrap tunits) options))
   :hooks (:fix)
-
-  :prepwork
-  ((define print-fileset-loop ((tunitmap filepath-transunit-mapp)
-                               (options prioptp))
-     :guard (filepath-transunit-map-unambp tunitmap)
-     :returns (filemap filepath-filedata-mapp)
-     :parents nil
-     (b* (((when (omap::emptyp tunitmap)) nil)
-          ((mv filepath tunit) (omap::head tunitmap))
-          (data (print-file tunit options))
-          (filemap (print-fileset-loop (omap::tail tunitmap) options)))
-       (omap::update (filepath-fix filepath) (filedata data) filemap))
-     :verify-guards :after-returns
-
-     ///
-
-     (defret keys-of-print-fileset-loop
-       (equal (omap::keys filemap)
-              (omap::keys tunitmap))
-       :hyp (filepath-transunit-mapp tunitmap)
-       :hints (("Goal" :induct t)))
-
-     (fty::deffixequiv print-fileset-loop
-       :args ((options prioptp)))))
 
   ///
 
