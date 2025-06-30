@@ -915,7 +915,7 @@
           (structdecl-list-subst-free
             (c$::struni-spec->members struni-spec)
             subst bound-vars)))
-      (struni-spec (c$::struni-spec->name struni-spec)
+      (struni-spec (c$::struni-spec->name? struni-spec)
                   members))
     :measure (struni-spec-count struni-spec))
 

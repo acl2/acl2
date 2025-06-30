@@ -2670,7 +2670,7 @@
                      (valid-struni-spec tyspec.spec table ienv))
                     ((struni-spec tyspec.spec) tyspec.spec))
                  (retok (type-spec-struct new-spec)
-                        (type-struct tyspec.spec.name)
+                        (type-struct tyspec.spec.name?)
                         nil
                         types
                         table))
@@ -4418,15 +4418,15 @@
        However, we validate the members, if present."))
     (b* (((reterr) (irr-struni-spec) nil (irr-valid-table))
          ((struni-spec struni-spec) struni-spec)
-         ((when (and (not struni-spec.name)
+         ((when (and (not struni-spec.name?)
                      (endp struni-spec.members)))
           (reterr (msg "The structure or union specifier ~x0 ~
                         has no name and no members."
                        (struni-spec-fix struni-spec))))
          ((erp new-members types table)
           (valid-structdecl-list struni-spec.members nil table ienv)))
-      (retok (make-struni-spec :name struni-spec.name
-                              :members new-members)
+      (retok (make-struni-spec :name? struni-spec.name?
+                               :members new-members)
              types
              table))
     :measure (struni-spec-count struni-spec))

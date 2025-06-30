@@ -296,7 +296,7 @@
               (type-spec-case
                 type-spec?
                 :struct (b* (((struni-spec struni-spec) type-spec?.spec)
-                             (match (equal struni-spec.name original))
+                             (match (equal struni-spec.name? original))
                              ((unless match)
                               (retok nil nil nil nil nil))
                              ((erp remanining-struct-decls split-struct-decls)
@@ -304,8 +304,8 @@
                               ;;   all in the struct.
                               (split-structdecl-list split-members
                                                      struni-spec.members))
-                             (new1 (or new1 struni-spec.name (ident "new_struct")))
-                             (new2 (or new2 struni-spec.name (ident "new_struct")))
+                             (new1 (or new1 struni-spec.name? (ident "new_struct")))
+                             (new2 (or new2 struni-spec.name? (ident "new_struct")))
                              ((list new1 new2)
                               (fresh-idents (list new1 new2) blacklist)))
                           (retok t new1 new2 remanining-struct-decls split-struct-decls))
@@ -320,13 +320,13 @@
                        :specs (list (c$::decl-spec-typespec
                                       (c$::type-spec-struct
                                         (c$::make-struni-spec
-                                          :name new1
+                                          :name? new1
                                           :members remanining-struct-decls)))))
                      (c$::make-decl-decl
                        :specs (list (c$::decl-spec-typespec
                                       (c$::type-spec-struct
                                         (c$::make-struni-spec
-                                          :name new2
+                                          :name? new2
                                           :members split-struct-decls))))))))
       :statassert (retok nil nil (list (decl-fix decl)))))
   ///
@@ -694,12 +694,12 @@
              (c$::decl-spec-typespec
                (c$::type-spec-struct
                  (c$::make-struni-spec
-                   :name new1-type))))
+                   :name? new1-type))))
            (decl-new2-type
              (c$::decl-spec-typespec
                (c$::type-spec-struct
                  (c$::make-struni-spec
-                   :name new2-type)))))
+                   :name? new2-type)))))
         (retok
           t
           (list (c$::make-decl-decl
