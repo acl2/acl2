@@ -5044,9 +5044,10 @@
    (xdoc::p
     "If the body of the function underwent no transformation,
      which we can see from the @('diffp') component of @(tsee simpadd0-gout),
-     the theorem generated for the body just talks about its type,
+     the theorem generated for the body just talks about its type
+     (or @('nil') if the body returns no value),
      but the theorem for the function always involves
-     an equality between @(tsee c::exec-fun).
+     an equality between @(tsee c::exec-fun) calls.
      If @('diffp') is @('nil'),
      we make use of a theorem from the language formalization
      that says that execution without function calls
@@ -5104,10 +5105,16 @@
        ((declor declor) fundef.declor)
        ((when (consp declor.pointers))
         (mv new-fundef gout-no-thm))
-       ((unless (dirdeclor-case declor.direct :function-params))
+       ((mv okp params dirdeclor)
+        (dirdeclor-case
+         declor.direct
+         :function-params (mv t declor.direct.params declor.direct.declor)
+         :function-names (mv (endp declor.direct.names)
+                             nil
+                             declor.direct.declor)
+         :otherwise (mv nil nil (irr-dirdeclor))))
+       ((unless okp)
         (mv new-fundef gout-no-thm))
-       (params (dirdeclor-function-params->params declor.direct))
-       (dirdeclor (dirdeclor-function-params->declor declor.direct))
        ((unless (dirdeclor-case dirdeclor :ident))
         (raise "Internal error: ~x0 is not just the function name."
                dirdeclor)
@@ -5123,7 +5130,6 @@
         (raise "Internal error: function ~x0 returns ~x1."
                (fundef-fix fundef) type)
         (mv (irr-fundef) (irr-simpadd0-gout)))
-       ((when (type-case type :void)) (mv new-fundef gout-no-thm))
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
        ((mv okp args parargs arg-types arg-types-compst)
         (simpadd0-gen-from-params ldm-params gin))
@@ -5155,8 +5161,11 @@
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
                          (equal old-compst new-compst)
-                         old-result
-                         (equal (c::type-of-value old-result) ',ctype)))))
+                         ,@(if (type-case type :void)
+                               '((not old-result))
+                             `(old-result
+                               (equal (c::type-of-value old-result)
+                                      ',ctype)))))))
        (hints
         `(("Goal"
            :expand ((c::exec-fun
