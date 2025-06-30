@@ -1171,6 +1171,7 @@
 
     ;;todo: not x86-specific
     acl2::integerp-of-logext
+    acl2::signed-byte-p-of-logext
     acl2::integerp-of--))
 
 (defund arith-to-bv-rules ()
