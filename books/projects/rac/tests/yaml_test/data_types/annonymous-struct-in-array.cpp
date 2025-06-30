@@ -4,7 +4,7 @@ int foo() {
   array < struct {
     int a;
     int b;
-  }, 4 > arr = {};
+  }, 4 > arr = {{}};
   return 0;
 }
 

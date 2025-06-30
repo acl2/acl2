@@ -13,6 +13,6 @@ int bar(const array<int, 3> a) {
 }
 
 int foo() {
-  const fast_array<int, 3> a_fast_local = { 1, 2, 3 };
+  const fast_array<int, 3> a_fast_local = {{ 1, 2, 3 }};
   return bar(a_fast_local);
 }
