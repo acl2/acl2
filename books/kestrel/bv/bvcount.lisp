@@ -1,7 +1,7 @@
 ; Counting the number of 1 bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (include-book "bvcat-def")
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
+(local (include-book "getbit"))
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -57,14 +58,77 @@
 ;;            :do-not '(generalize eliminate-destructors)
 ;;            :in-theory (enable expt expt-of-+))))
 
-;; ;;sanity check
+(local
+  (defun ind (x i)
+    (cond ((zip x) (list x i))
+          ((< x 0) (ind (lognot x) (+ -1 i)))
+          ((evenp x)
+           (ind (nonnegative-integer-quotient x 2) (+ -1 i)))
+          (t (1+ (ind (nonnegative-integer-quotient x 2) (+ -1 i)))))))
+
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+
+;move
+(defthm logcount-of-nonnegative-integer-quotient
+  (implies (natp x)
+           (equal (logcount (nonnegative-integer-quotient x 2))
+                  (if (evenp x)
+                      (logcount x)
+                    (+ -1 (logcount x))))))
+
+;(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+
+;; (thm
+;;   (implies (and (unsigned-byte-p size x)
+;;                 ;(posp size)
+;;                 )
+;;            (equal (logcount x)
+;;                   (+ (logcount (slice (+ -1 size) 1 x))
+;;                      (getbit 0 x))))
+;;   :hints (("Goal" :induct (ind x size)
+;;            :in-theory (enable logcount))))
+
+;; (thm
+;;   (implies (and (natp highval)
+;;                 (natp small)
+;;                 ;(< small (expt 2 size))
+;;                 (natp size))
+;;            (equal (logcount (+ (mod small (expt 2 size)) (* (expt 2 size) highval)))
+;;                   (+ (logcount (mod small (expt 2 size)))
+;;                      (logcount highval))))
+;;   :hints (("Goal" ;:induct (ind highval size)
+;;            :expand (logcount (+ (* highval (expt 2 size))
+;;                                 (mod small (expt 2 size))))
+
+;;            :in-theory (disable logcount-of-nonnegative-integer-quotient)
+;;            )))
+
+
+;; (thm
+;;   (equal (logcount (bvcat highsize highval lowsize lowval))
+;;          (+ (logcount (bvchop highsize highval))
+;;             (logcount (bvchop lowsize lowval))))
+;;   :hints (("Goal" :in-theory (enable logcount bvcat))))
+
+;; (thm
+;;   (implies (and (posp size)
+;;                 (unsigned-byte-p size x))
+;;            (equal (logcount x)
+;;                   (+ (getbit (+ -1 size) x)
+;;                      (logcount (bvchop (+ -1 size) x)))))
+;;   :hints (("Goal" :induct (ind x size)
+;;            :in-theory (enable logcount
+;;                               nonnegative-integer-quotient-becomes-floor))))
+
+;; ;; ;;sanity check
 ;; (defthmd bvcount-is-logcount
-;;   (implies (unsigned-byte-p size x)
+;;   (implies t;(unsigned-byte-p size x)
 ;;            (equal (bvcount size x)
-;;                   (logcount x)))
-;;   :hints (("Goal" :use (:instance logcount-bound (n size))
+;;                   (logcount (bvchop size x))))
+;;   :hints (("Goal" ;:use (:instance logcount-bound (n size))
 ;;            :in-theory (e/d (unsigned-byte-p bvcount)
-;;                            (logcount-bound)))))
+;;                            (;logcount-bound
+;;                             )))))
 
 ;; (defthm evenp-of-bvchop
 ;;   (implies (posp size)

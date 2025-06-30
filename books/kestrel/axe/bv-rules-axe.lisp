@@ -2647,3 +2647,33 @@
            (equal (bvmult size x y)
                   (bvmult (+ (lg x) ysize) x y)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced bvmult power-of-2p posp lg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: make versions of these for other bitwise ops:
+
+;; For when x is obviously too narrow
+(defthm getbit-of-bvor-when-narrow-arg2-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (<= xsize n)
+                (< n size)
+                (integerp n)
+                (integerp size)
+                (integerp xsize)
+                (unsigned-byte-p-forced xsize x))
+           (equal (getbit n (bvor size x y))
+                  (getbit n y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
+
+;; For when y is obviously too narrow
+(defthm getbit-of-bvor-when-narrow-arg3-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (<= ysize n)
+                (< n size)
+                (integerp n)
+                (integerp size)
+                (integerp xsize)
+                (unsigned-byte-p-forced ysize y))
+           (equal (getbit n (bvor size x y))
+                  (getbit n x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))

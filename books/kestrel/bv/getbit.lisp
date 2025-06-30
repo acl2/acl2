@@ -700,3 +700,13 @@
   (implies (and (not (equal 0 (getbit free x)))
                 (natp free))
            (not (equal 0 x))))
+
+;; todo; prove via a rule about slice
+(defthm getbit-of-floor-of-2
+  (implies (and (integerp n)
+                (integerp x))
+           (equal (getbit n (floor x 2))
+                  (if (< n 0)
+                      (getbit 1 x) ; odd case
+                    (getbit (+ 1 n) x))))
+  :hints (("Goal" :in-theory (enable getbit slice logtail$inline expt))))
