@@ -1,6 +1,6 @@
 ; A trivial example of calling the x86 Formal Unit Tester
 ;
-; Copyright (C) 2025 Kestrel Institutea
+; Copyright (C) 2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
