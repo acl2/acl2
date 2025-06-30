@@ -82,8 +82,9 @@
 ; As mentioned above, our ABNF grammar aims at capturing code
 ; in a form that includes the phrase structure
 ; with at least some preprocessing constructs.
-; Actually, right now we do not capture any preprocessing construct,
-; but we plan to do that soon; this is just an initial version.
+; Actually, right now we do not support any actual mix of
+; preprocessing and non-preprocessing constructs,
+; but we plan to do that soon.
 
 ; However, C preprocessing operates at a low lexical level,
 ; so it may be difficult or impossible to capture
@@ -92,9 +93,12 @@
 ; and then use this grammar, without preprocessing constructs.
 ; This ABNF grammar covers at least all preprocessed code.
 
-; In that case, the preprocessing may be done via an external tool,
+; The preprocessing may be done via an external tool,
 ; e.g. (a component of) some existing C compiler.
 ; We may also build our own preprocessor in ACL2 at some point.
+
+; We also include the grammar rules for preprocessing constructs in the grammar,
+; in support for future extensions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -372,6 +376,35 @@ white-space = space
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Header Names [C17:6.4.7] [C17:1.8]
+
+header-name = "<" h-char-sequence ">"
+            / double-quote q-char-sequence double-quote
+
+h-char-sequence = h-char
+                / h-char-sequence h-char
+
+h-char = character-not-greater-than-or-new-line
+
+q-char-sequence = q-char
+                / q-char-sequence q-char
+
+q-char = character-not-double-quote-or-new-line
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Preprocessing Numbers [C17:6.4.8] [C17:A.1.9]
+
+pp-number = digit
+          / "." digit
+          / pp-number digit
+          / pp-number identifier-nondigit
+          / pp-number %i"e" sign
+          / pp-number %i"p" sign
+          / pp-number "."
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Comments [C17:6.4.9]
 
 ; [C17] does not provide grammar rules for comments;
@@ -398,18 +431,19 @@ line-comment = "//" *character-not-new-line
 
 ; Lexical Elements [C17:A.1.1] [C17:6.4]
 
-; In the grammar in [C17], tokens and preprocessing tokens overlap,
-; and are meant to describe the language in different translation phases.
-; However, in this grammar, as explained in 'Purpose' above,
-; we mix together preprocessing tokens and (non-preprocessing) tokens.
-; Currently they are all (non-preprocessing) tokens,
-; but will add some preprocessing tokens.
-
 token = keyword
       / identifier
       / constant
       / string-literal
       / punctuator
+
+preprocessing-token = header-name
+                    / identifier
+                    / pp-number
+                    / character-constant
+                    / string-literal
+                    / punctuator
+                    / character ; non-white-space none of the above
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1497,6 +1531,58 @@ declaration-list = declaration
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing Directives [C17:A.3]
+; Preprocessing Directives [C17:6.10] [C17:A.3]
 
-; We will capture (some forms of) these in the future.
+; We omit the rule for 'new-line' here because it is already under 'Characters'.
+
+preprocessing-file = [ group ]
+
+group = group-part
+      / group group-part
+
+group-part = if-section
+           / control-line
+           / text-line
+           / "#" non-directive
+
+if-section = if-group [ elif-groups ] [ else-group ] endif-line
+
+if-group = "#" %s"if" constant-expression new-line [ group ]
+         / "#" %s"ifdef" identifier new-line [ group ]
+         / "#" %s"ifndef" identifier new-line [ group ]
+
+elif-groups = elif-group
+            / elif-groups elif-group
+
+elif-group = "#" %s"elif" constant-expression new-line [ group ]
+
+else-group = "#" %s"else" new-line [ group ]
+
+endif-line = "#" %s"endif" new-line
+
+control-line = "#" %s"include" pp-tokens new-line
+             / "#" %s"define" identifier replacement-list new-line
+             / "#" %s"define" identifier lparen [ identifier-list ] ")"
+               replacement-list new-line
+             / "#" %s"define" identifier lparen "..." ")"
+               replacement-list new-line
+             / "#" %s"define" identifier lparen identifier-list "," "..." ")"
+               replacement-list new-line
+             / "#" %s"undef" identifier new-line
+             / "#" %s"line" pp-tokens new-line
+             / "#" %s"error" [ pp-tokens ] new-line
+             / "#" %s"pragma" [ pp-tokens ] new-line
+             / "#" new-line
+
+text-line = [ pp-tokens ] new-line
+
+non-directive = pp-tokens new-line
+
+lparen = "(" ; not immediately preceded by white space
+
+replacement-list = [ pp-tokens ]
+
+pp-tokens = preprocessing-token
+          / pp-tokens preprocessing-token
+
+on-off-switch = %s"ON" / %s"OFF" / %s"DEFAULT"
