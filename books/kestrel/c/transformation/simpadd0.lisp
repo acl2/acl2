@@ -1250,7 +1250,7 @@
                               (:e member-equal))
                  :use (,arg-thm-name
                        (:instance
-                        simpadd0-expr-unary-support-lemma-1
+                        simpadd0-expr-unary-support-lemma
                         (op ',(unop-case
                                op
                                :plus (c::unop-plus)
@@ -1261,7 +1261,7 @@
                         (old-arg (mv-nth 1 (ldm-expr ',arg)))
                         (new-arg (mv-nth 1 (ldm-expr ',arg-new))))
                        (:instance
-                        simpadd0-expr-unary-support-lemma-2
+                        simpadd0-expr-unary-support-lemma-error
                         (op ',(unop-case
                                op
                                :plus (c::unop-plus)
@@ -1311,7 +1311,7 @@
              c::value-signed-integerp
              c::value-unsigned-integerp))
 
-  (defruled simpadd0-expr-unary-support-lemma-1
+  (defruled simpadd0-expr-unary-support-lemma
     (b* ((old (c::expr-unary op old-arg))
          (new (c::expr-unary op new-arg))
          (old-arg-result (c::exec-expr-pure old-arg compst))
@@ -1349,7 +1349,7 @@
              c::lognot-value-lemma
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-unary-support-lemma-2
+  (defruled simpadd0-expr-unary-support-lemma-error
     (implies (c::errorp (c::exec-expr-pure arg compst))
              (c::errorp (c::exec-expr-pure (c::expr-unary op arg) compst)))
     :expand (c::exec-expr-pure (c::expr-unary op arg) compst)))
@@ -1431,12 +1431,12 @@
                               (:e c::type-nonchar-integerp))
                  :use (,arg-thm-name
                        (:instance
-                        simpadd0-expr-cast-support-lemma-1
+                        simpadd0-expr-cast-support-lemma
                         (tyname (mv-nth 1 (ldm-tyname ',type)))
                         (old-arg (mv-nth 1 (ldm-expr ',arg)))
                         (new-arg (mv-nth 1 (ldm-expr ',arg-new))))
                        (:instance
-                        simpadd0-expr-cast-support-lemma-2
+                        simpadd0-expr-cast-support-lemma-error
                         (tyname (mv-nth 1 (ldm-tyname ',type)))
                         (arg (mv-nth 1 (ldm-expr ',arg))))))))
        ((mv thm-event thm-name thm-index)
@@ -1464,7 +1464,7 @@
               (expr-unambp arg-new))
     :hints (("Goal" :in-theory (enable irr-expr))))
 
-  (defruled simpadd0-expr-cast-support-lemma-1
+  (defruled simpadd0-expr-cast-support-lemma
     (b* ((old (c::expr-cast tyname old-arg))
          (new (c::expr-cast tyname new-arg))
          (old-arg-result (c::exec-expr-pure old-arg compst))
@@ -1493,7 +1493,7 @@
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-cast-support-lemma-2
+  (defruled simpadd0-expr-cast-support-lemma-error
     (implies (c::errorp (c::exec-expr-pure arg compst))
              (c::errorp (c::exec-expr-pure (c::expr-cast tyname arg) compst)))
     :expand ((c::exec-expr-pure (c::expr-cast tyname arg) compst))))
@@ -1591,19 +1591,19 @@
                  :use (,arg1-thm-name
                        ,arg2-thm-name
                        (:instance
-                        simpadd0-expr-binary-support-lemma-1
+                        simpadd0-expr-binary-support-lemma
                         (op ',(ldm-binop op))
                         (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
                         (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
                         (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
                         (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
                        (:instance
-                        simpadd0-expr-binary-support-lemma-2
+                        simpadd0-expr-binary-support-lemma-error
                         (op ',(ldm-binop op))
                         (arg1 (mv-nth 1 (ldm-expr ',arg1)))
                         (arg2 (mv-nth 1 (ldm-expr ',arg2))))
                        (:instance
-                        simpadd0-expr-binary-support-lemma-3
+                        simpadd0-expr-binary-support-lemma-simp
                         (expr (mv-nth 1 (ldm-expr ',arg1-new))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
@@ -1630,7 +1630,7 @@
               (expr-unambp arg2-new))
     :hints (("Goal" :in-theory (enable irr-expr))))
 
-  (defruled simpadd0-expr-binary-support-lemma-1
+  (defruled simpadd0-expr-binary-support-lemma
     (b* ((old (c::expr-binary op old-arg1 old-arg2))
          (new (c::expr-binary op new-arg1 new-arg2))
          (old-arg1-result (c::exec-expr-pure old-arg1 compst))
@@ -1677,7 +1677,7 @@
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-binary-support-lemma-2
+  (defruled simpadd0-expr-binary-support-lemma-error
     (implies (and (c::binop-strictp op)
                   (or (c::errorp (c::exec-expr-pure arg1 compst))
                       (c::errorp (c::exec-expr-pure arg2 compst))))
@@ -1705,7 +1705,7 @@
              fix
              ifix))
 
-  (defruled simpadd0-expr-binary-support-lemma-3
+  (defruled simpadd0-expr-binary-support-lemma-simp
     (b* ((zero (c::expr-const
                 (c::const-int
                  (c::make-iconst
@@ -1812,7 +1812,7 @@
                        ,then-thm-name
                        ,else-thm-name
                        (:instance
-                        simpadd0-expr-cond-support-lemma-1
+                        simpadd0-expr-cond-support-lemma-true
                         (old-test (mv-nth 1 (ldm-expr ',test)))
                         (old-then (mv-nth 1 (ldm-expr ',then)))
                         (old-else (mv-nth 1 (ldm-expr ',else)))
@@ -1820,7 +1820,7 @@
                         (new-then (mv-nth 1 (ldm-expr ',then-new)))
                         (new-else (mv-nth 1 (ldm-expr ',else-new))))
                        (:instance
-                        simpadd0-expr-cond-support-lemma-2
+                        simpadd0-expr-cond-support-lemma-false
                         (old-test (mv-nth 1 (ldm-expr ',test)))
                         (old-then (mv-nth 1 (ldm-expr ',then)))
                         (old-else (mv-nth 1 (ldm-expr ',else)))
@@ -1828,17 +1828,17 @@
                         (new-then (mv-nth 1 (ldm-expr ',then-new)))
                         (new-else (mv-nth 1 (ldm-expr ',else-new))))
                        (:instance
-                        simpadd0-expr-cond-support-lemma-3
+                        simpadd0-expr-cond-support-lemma-error-test
                         (test (mv-nth 1 (ldm-expr ',test)))
                         (then (mv-nth 1 (ldm-expr ',then)))
                         (else (mv-nth 1 (ldm-expr ',else))))
                        (:instance
-                        simpadd0-expr-cond-support-lemma-4
+                        simpadd0-expr-cond-support-lemma-error-then
                         (test (mv-nth 1 (ldm-expr ',test)))
                         (then (mv-nth 1 (ldm-expr ',then)))
                         (else (mv-nth 1 (ldm-expr ',else))))
                        (:instance
-                        simpadd0-expr-cond-support-lemma-5
+                        simpadd0-expr-cond-support-lemma-error-else
                         (test (mv-nth 1 (ldm-expr ',test)))
                         (then (mv-nth 1 (ldm-expr ',then)))
                         (else (mv-nth 1 (ldm-expr ',else))))))))
@@ -1869,7 +1869,7 @@
               (expr-unambp else-new))
     :hints (("Goal" :in-theory (enable irr-expr))))
 
-  (defruled simpadd0-expr-cond-support-lemma-1
+  (defruled simpadd0-expr-cond-support-lemma-true
     (b* ((old (c::expr-cond old-test old-then old-else))
          (new (c::expr-cond new-test new-then new-else))
          (old-test-result (c::exec-expr-pure old-test compst))
@@ -1904,7 +1904,7 @@
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-cond-support-lemma-2
+  (defruled simpadd0-expr-cond-support-lemma-false
     (b* ((old (c::expr-cond old-test old-then old-else))
          (new (c::expr-cond new-test new-then new-else))
          (old-test-result (c::exec-expr-pure old-test compst))
@@ -1939,13 +1939,13 @@
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-cond-support-lemma-3
+  (defruled simpadd0-expr-cond-support-lemma-error-test
     (implies (c::errorp (c::exec-expr-pure test compst))
              (c::errorp
               (c::exec-expr-pure (c::expr-cond test then else) compst)))
     :expand (c::exec-expr-pure (c::expr-cond test then else) compst))
 
-  (defruled simpadd0-expr-cond-support-lemma-4
+  (defruled simpadd0-expr-cond-support-lemma-error-then
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -1959,7 +1959,7 @@
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-cond-support-lemma-5
+  (defruled simpadd0-expr-cond-support-lemma-error-else
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -2040,21 +2040,21 @@
                                   (:e c::type-nonchar-integerp))
                      :use (,expr?-thm-name
                            (:instance
-                            simpadd0-stmt-return-support-lemma-1
+                            simpadd0-stmt-return-support-lemma-value
                             (old-expr (mv-nth 1 (ldm-expr ',expr?)))
                             (new-expr (mv-nth 1 (ldm-expr ',expr?-new)))
                             ,@(and (not expr?-diffp)
                                    '((old-fenv fenv)
                                      (new-fenv fenv))))
                            (:instance
-                            simpadd0-stmt-return-support-lemma-2
+                            simpadd0-stmt-return-support-lemma-error
                             (expr (mv-nth 1 (ldm-expr ',expr?)))
                             ,@(and expr?-diffp
                                    '((fenv old-fenv)))))))
                 '(("Goal"
                    :in-theory '((:e ldm-stmt)
                                 (:e c::stmt-return))
-                   :use simpadd0-stmt-return-support-lemma-3))))
+                   :use simpadd0-stmt-return-support-lemma-novalue))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
@@ -2078,7 +2078,7 @@
     :hyp (expr-option-unambp expr?-new)
     :hints (("Goal" :in-theory (enable irr-stmt))))
 
-  (defruled simpadd0-stmt-return-support-lemma-1
+  (defruled simpadd0-stmt-return-support-lemma-value
     (b* ((old (c::stmt-return old-expr))
          (new (c::stmt-return new-expr))
          (old-expr-result (c::exec-expr-pure old-expr compst))
@@ -2108,7 +2108,14 @@
              c::apconvert-expr-value-when-not-array
              c::type-nonchar-integerp))
 
-  (defruled simpadd0-stmt-return-support-lemma-2
+  (defruled simpadd0-stmt-return-support-lemma-novalue
+    (b* ((stmt (c::stmt-return nil))
+         ((mv result &) (c::exec-stmt stmt compst fenv limit)))
+      (implies (not (c::errorp result))
+               (not result)))
+    :enable c::exec-stmt)
+
+  (defruled simpadd0-stmt-return-support-lemma-error
     (implies (and expr
                   (not (equal (c::expr-kind expr) :call))
                   (c::errorp (c::exec-expr-pure expr compst)))
@@ -2118,14 +2125,7 @@
                                       fenv
                                       limit))))
     :expand (c::exec-stmt (c::stmt-return expr) compst fenv limit)
-    :enable c::exec-expr-call-or-pure)
-
-  (defruled simpadd0-stmt-return-support-lemma-3
-    (b* ((stmt (c::stmt-return nil))
-         ((mv result &) (c::exec-stmt stmt compst fenv limit)))
-      (implies (not (c::errorp result))
-               (not result)))
-    :enable c::exec-stmt))
+    :enable c::exec-expr-call-or-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2174,14 +2174,14 @@
                                   (:e c::block-item-stmt))
                      :use ((:instance ,stmt-thm-name (limit (1- limit)))
                            (:instance
-                            simpadd0-block-item-stmt-support-lemma-3
+                            simpadd0-block-item-stmt-support-lemma-novalue
                             (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
                             (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
                             ,@(and (not stmt-diffp)
                                    '((old-fenv fenv)
                                      (new-fenv fenv))))
                            (:instance
-                            simpadd0-block-item-stmt-support-lemma-2
+                            simpadd0-block-item-stmt-support-lemma-error
                             (stmt (mv-nth 1 (ldm-stmt ',stmt)))
                             ,@(and stmt-diffp
                                    '((fenv old-fenv)))))))
@@ -2195,14 +2195,14 @@
                                 (:e c::type-nonchar-integerp))
                    :use ((:instance ,stmt-thm-name (limit (1- limit)))
                          (:instance
-                          simpadd0-block-item-stmt-support-lemma-1
+                          simpadd0-block-item-stmt-support-lemma-value
                           (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
                           (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
                           ,@(and (not stmt-diffp)
                                  '((old-fenv fenv)
                                    (new-fenv fenv))))
                          (:instance
-                          simpadd0-block-item-stmt-support-lemma-2
+                          simpadd0-block-item-stmt-support-lemma-error
                           (stmt (mv-nth 1 (ldm-stmt ',stmt)))
                           ,@(and stmt-diffp
                                  '((fenv old-fenv)))))))))
@@ -2228,7 +2228,7 @@
     (block-item-unambp item)
     :hyp (stmt-unambp stmt-new))
 
-  (defruled simpadd0-block-item-stmt-support-lemma-1
+  (defruled simpadd0-block-item-stmt-support-lemma-value
     (b* ((old (c::block-item-stmt old-stmt))
          (new (c::block-item-stmt new-stmt))
          ((mv old-stmt-result old-stmt-compst)
@@ -2255,14 +2255,7 @@
     ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
      (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
 
-  (defruled simpadd0-block-item-stmt-support-lemma-2
-    (implies (c::errorp (mv-nth 0 (c::exec-stmt stmt compst fenv (1- limit))))
-             (c::errorp
-              (mv-nth 0 (c::exec-block-item
-                         (c::block-item-stmt stmt) compst fenv limit))))
-    :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit))
-
-  (defruled simpadd0-block-item-stmt-support-lemma-3
+  (defruled simpadd0-block-item-stmt-support-lemma-novalue
     (b* ((old (c::block-item-stmt old-stmt))
          (new (c::block-item-stmt new-stmt))
          ((mv old-stmt-result old-stmt-compst)
@@ -2284,7 +2277,14 @@
                     (not old-result))))
     :expand
     ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
-     (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit))))
+     (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
+
+  (defruled simpadd0-block-item-stmt-support-lemma-error
+    (implies (c::errorp (mv-nth 0 (c::exec-stmt stmt compst fenv (1- limit))))
+             (c::errorp
+              (mv-nth 0 (c::exec-block-item
+                         (c::block-item-stmt stmt) compst fenv limit))))
+    :expand (c::exec-block-item (c::block-item-stmt stmt) compst fenv limit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2332,14 +2332,14 @@
                               (:e c::type-nonchar-integerp))
                  :use ((:instance ,item-thm-name (limit (1- limit)))
                        (:instance
-                        simpadd0-block-item-list-support-lemma-1
+                        simpadd0-block-item-list-support-lemma
                         (old-item (mv-nth 1 (ldm-block-item ',item)))
                         (new-item (mv-nth 1 (ldm-block-item ',item-new)))
                         ,@(and (not item-diffp)
                                '((old-fenv fenv)
                                  (new-fenv fenv))))
                        (:instance
-                        simpadd0-block-item-list-support-lemma-2
+                        simpadd0-block-item-list-support-lemma-error
                         (item (mv-nth 1 (ldm-block-item ',item)))
                         ,@(and item-diffp
                                '((fenv old-fenv))))))))
@@ -2365,7 +2365,7 @@
     (block-item-list-unambp items)
     :hyp (block-item-unambp item-new))
 
-  (defruled simpadd0-block-item-list-support-lemma-1
+  (defruled simpadd0-block-item-list-support-lemma
     (b* ((old (list old-item))
          (new (list new-item))
          ((mv old-item-result old-item-compst)
@@ -2393,7 +2393,7 @@
     :enable (c::exec-block-item-list
              c::value-optionp-when-value-option-resultp-and-not-errorp))
 
-  (defruled simpadd0-block-item-list-support-lemma-2
+  (defruled simpadd0-block-item-list-support-lemma-error
     (implies (c::errorp
               (mv-nth 0 (c::exec-block-item item compst fenv (1- limit))))
              (c::errorp
