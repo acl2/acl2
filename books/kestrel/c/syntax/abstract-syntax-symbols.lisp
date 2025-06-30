@@ -441,6 +441,7 @@
     irr-const-expr
     irr-type-spec
     irr-align-spec
+    irr-dirdeclor
     irr-absdeclor
     irr-dirabsdeclor
     irr-param-declon

@@ -396,7 +396,7 @@ line-comment = "//" *character-not-new-line
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Lexical elements [C17:A.1.1] [C17:6.4]
+; Lexical Elements [C17:A.1.1] [C17:6.4]
 
 ; In the grammar in [C17], tokens and preprocessing tokens overlap,
 ; and are meant to describe the language in different translation phases.
@@ -697,7 +697,7 @@ hexadecimal-escape-sequence = %s"\x" hexadecimal-digit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; String literals [C17:A.1.6] [C17:6.4.5]
+; String Literals [C17:A.1.6] [C17:6.4.5]
 
 string-literal =
     [ encoding-prefix ] double-quote [ s-char-sequence ] double-quote
@@ -773,13 +773,13 @@ punctuator = "["
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Header names [C17:A.1.8] [C17:6.4.7]
+; Header Names [C17:A.1.8] [C17:6.4.7]
 
 ; We omit these for now, but we will add them to represent #include directives.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing numbers [C17:A.1.9] [C17:6.4.8]
+; Preprocessing Numbers [C17:A.1.9] [C17:6.4.8]
 
 ; We omit these, because, as explained in 'Purpose' above,
 ; the goal of this grammar is to represent C code in a form
@@ -1451,7 +1451,7 @@ jump-statement = %s"goto" identifier ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; External definitions [C17:A.2.4]
+; External Definitions [C17:A.2.4]
 
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a function definition.
@@ -1497,6 +1497,6 @@ declaration-list = declaration
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing directives [C17:A.3]
+; Preprocessing Directives [C17:A.3]
 
 ; We will capture (some forms of) these in the future.

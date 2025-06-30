@@ -71,7 +71,7 @@
      (type-spec-case
        type-spec?
        :struct (b* (((struni-spec struni-spec) type-spec?.spec))
-                 (if (equal struni-spec.name struct-tag)
+                 (if (equal struni-spec.name? struct-tag)
                      (structdecls-find-first-field-name struni-spec.members)
                    nil))
        :otherwise nil))

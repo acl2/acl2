@@ -99,7 +99,8 @@ int fib(int x) {
                                 (c$::ident "bar")))
 
   (c$::output-files :const *new*
-                    :path "new")
+                    :path "new"
+                    :gcc t)
 
   (assert-file-contents
     :file "new/generic-selection.c"

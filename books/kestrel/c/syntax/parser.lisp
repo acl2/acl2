@@ -10789,7 +10789,7 @@
                           ;; struct ident { structdecls }
                           (read-punctuator "}" parstate)))
                       (retok (type-spec-struct
-                              (make-struni-spec :name ident
+                              (make-struni-spec :name? ident
                                                 :members structdecls))
                              (span-join struct/union-span last-span)
                              parstate)))))
@@ -10805,10 +10805,10 @@
                     (read-punctuator "}" parstate)))
                 (retok (if structp
                            (type-spec-struct
-                             (make-struni-spec :name ident
+                             (make-struni-spec :name? ident
                                                :members structdecls))
                          (type-spec-union
-                             (make-struni-spec :name ident
+                             (make-struni-spec :name? ident
                                                :members structdecls)))
                        (span-join struct/union-span last-span)
                        parstate))))
@@ -10820,10 +10820,10 @@
                   (if token2 (unread-token parstate) parstate)))
               (retok (if structp
                          (type-spec-struct
-                          (make-struni-spec :name ident
+                          (make-struni-spec :name? ident
                                             :members nil))
                        (type-spec-union
-                        (make-struni-spec :name ident
+                        (make-struni-spec :name? ident
                                           :members nil)))
                      (span-join struct/union-span span)
                      parstate))))))
@@ -10860,7 +10860,7 @@
                       ;; struct { structdecls }
                       (read-punctuator "}" parstate)))
                   (retok (type-spec-struct
-                          (make-struni-spec :name nil
+                          (make-struni-spec :name? nil
                                             :members structdecls))
                          (span-join struct/union-span last-span)
                          parstate)))))
@@ -10873,10 +10873,10 @@
                 (read-punctuator "}" parstate)))
             (retok (if structp
                        (type-spec-struct
-                        (make-struni-spec :name nil
+                        (make-struni-spec :name? nil
                                           :members structdecls))
                      (type-spec-union
-                      (make-struni-spec :name nil
+                      (make-struni-spec :name? nil
                                         :members structdecls)))
                    (span-join struct/union-span last-span)
                    parstate))))

@@ -1477,7 +1477,7 @@
          ((mv members env)
           (const-prop-structdecl-list struni-spec.members env)))
       (mv (make-struni-spec
-            :name struni-spec.name
+            :name? struni-spec.name?
             :members members)
           env))
     :measure (struni-spec-count struni-spec))
