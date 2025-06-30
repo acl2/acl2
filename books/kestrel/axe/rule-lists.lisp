@@ -506,6 +506,9 @@
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
     trim-of-*-becomes-bvmult
     trim-of-unary---becomes-bvuminus
+    ;; todo: replace these with a more general scheme:
+    bvplus-of-logext-arg2-convert-to-bv
+    bvplus-of-logext-arg3-convert-to-bv
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
