@@ -144,7 +144,7 @@
        should be accepted or not.")
      (xdoc::p
       "This affects the aforementioned checks for ASCII identifiers:
-       GCC extensions turns some otherwise legal identifiers into keywords.")))
+       GCC extensions turn some otherwise legal identifiers into keywords.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
