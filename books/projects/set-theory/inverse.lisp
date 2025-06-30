@@ -109,20 +109,9 @@
   :hints (("Goal"
            :expand ((subset (domain (inverse (inverse r)))
                             (domain r)))
-           :in-theory (enable image in-domain-rewrite)))
+           :in-theory (e/d (image in-domain-rewrite)
+                           (in-cons-apply))))
   :props (zfc prod2$prop inverse$prop domain$prop))
-
-(defthmz in-cons-apply ; to prove image-inverse-2
-  (equal (in (cons x (apply f x))
-             f)
-         (in x (domain f)))
-  :props (zfc domain$prop)
-  :hints (("Goal" :in-theory (enable in-domain-rewrite))))
-
-(theory-invariant (not (and (active-runep '(:rewrite in-domain-rewrite))
-                            (active-runep '(:rewrite in-cons-apply))))
-                  :key in-domain-rewrite-vs-in-cons-apply
-                  :error t)
 
 (defthmz image-inverse-2
   (subset (domain r)
