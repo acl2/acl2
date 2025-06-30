@@ -403,14 +403,14 @@
     :expand (type-spec-unambp (type-spec-atomic tyname)))
 
   (defrule type-spec-unambp-of-type-spec-struct
-    (equal (type-spec-unambp (type-spec-struct strunispec))
-           (strunispec-unambp strunispec))
-    :expand (type-spec-unambp (type-spec-struct strunispec)))
+    (equal (type-spec-unambp (type-spec-struct struni-spec))
+           (struni-spec-unambp struni-spec))
+    :expand (type-spec-unambp (type-spec-struct struni-spec)))
 
   (defrule type-spec-unambp-of-type-spec-union
-    (equal (type-spec-unambp (type-spec-union strunispec))
-           (strunispec-unambp strunispec))
-    :expand (type-spec-unambp (type-spec-union strunispec)))
+    (equal (type-spec-unambp (type-spec-union struni-spec))
+           (struni-spec-unambp struni-spec))
+    :expand (type-spec-unambp (type-spec-union struni-spec)))
 
   (defrule type-spec-unambp-of-type-spec-enum
     (equal (type-spec-unambp (type-spec-enum enumspec))
@@ -624,10 +624,10 @@
                 (absdeclor-option-unambp decl?)))
     :expand (tyname-unambp (tyname specqual decl? info)))
 
-  (defrule strunispec-unambp-of-strunispec
-    (equal (strunispec-unambp (strunispec name members))
+  (defrule struni-spec-unambp-of-struni-spec
+    (equal (struni-spec-unambp (struni-spec name members))
            (structdecl-list-unambp members))
-    :expand (strunispec-unambp (strunispec name members)))
+    :expand (struni-spec-unambp (struni-spec name members)))
 
   (defrule structdecl-unambp-of-structdecl-member
     (equal (structdecl-unambp
@@ -1094,16 +1094,16 @@
              (tyname-unambp (type-spec-atomic->type tyspec)))
     :expand (type-spec-unambp tyspec))
 
-  (defrule strunispec-unambp-of-type-spec-struct->spec
+  (defrule struni-spec-unambp-of-type-spec-struct->spec
     (implies (and (type-spec-unambp tyspec)
                   (type-spec-case tyspec :struct))
-             (strunispec-unambp (type-spec-struct->spec tyspec)))
+             (struni-spec-unambp (type-spec-struct->spec tyspec)))
     :expand (type-spec-unambp tyspec))
 
-  (defrule strunispec-unambp-of-type-spec-union->spec
+  (defrule struni-spec-unambp-of-type-spec-union->spec
     (implies (and (type-spec-unambp tyspec)
                   (type-spec-case tyspec :union))
-             (strunispec-unambp (type-spec-union->spec tyspec)))
+             (struni-spec-unambp (type-spec-union->spec tyspec)))
     :expand (type-spec-unambp tyspec))
 
   (defrule enumspec-unambp-of-type-spec-enum->spec
@@ -1346,15 +1346,15 @@
              (spec/qual-list-unambp (tyname->specquals tyname)))
     :expand (tyname-unambp tyname))
 
-  (defrule absdeclor-option-unambp-of-tyname->decl?
+  (defrule absdeclor-option-unambp-of-tyname->declor?
     (implies (tyname-unambp tyname)
-             (absdeclor-option-unambp (tyname->decl? tyname)))
+             (absdeclor-option-unambp (tyname->declor? tyname)))
     :expand (tyname-unambp tyname))
 
-  (defrule structdecl-list-unambp-of-strunispec->members
-    (implies (strunispec-unambp strunispec)
-             (structdecl-list-unambp (strunispec->members strunispec)))
-    :expand (strunispec-unambp strunispec))
+  (defrule structdecl-list-unambp-of-struni-spec->members
+    (implies (struni-spec-unambp struni-spec)
+             (structdecl-list-unambp (struni-spec->members struni-spec)))
+    :expand (struni-spec-unambp struni-spec))
 
   (defrule spec/qual-list-unambp-of-structdecl-member->specqual
     (implies (and (structdecl-unambp structdecl)

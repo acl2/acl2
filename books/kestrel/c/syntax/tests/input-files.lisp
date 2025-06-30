@@ -10,7 +10,7 @@
 
 (in-package "C$")
 
-; cert_param: (uses-cpp)
+; cert_param: (uses-gcc-c17)
 
 (include-book "../input-files")
 

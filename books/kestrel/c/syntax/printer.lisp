@@ -1951,10 +1951,10 @@
                   (pstate (print-astring ")" pstate)))
                pstate)
      :struct (b* ((pstate (print-astring "struct " pstate))
-                  (pstate (print-strunispec tyspec.spec pstate)))
+                  (pstate (print-struni-spec tyspec.spec pstate)))
                pstate)
      :union (b* ((pstate (print-astring "union " pstate))
-                 (pstate (print-strunispec tyspec.spec pstate)))
+                 (pstate (print-struni-spec tyspec.spec pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enumspec tyspec.spec pstate)))
@@ -2604,17 +2604,17 @@
           (raise "Misusage error: empty list of specifiers and qualifiers.")
           (pristate-fix pstate))
          (pstate (print-spec/qual-list tyname.specquals pstate))
-         ((unless (absdeclor-option-case tyname.decl? :some)) pstate)
+         ((unless (absdeclor-option-case tyname.declor? :some)) pstate)
          (pstate (print-astring " " pstate))
-         (pstate (print-absdeclor (absdeclor-option-some->val tyname.decl?)
+         (pstate (print-absdeclor (absdeclor-option-some->val tyname.declor?)
                                   pstate)))
       pstate)
     :measure (two-nats-measure (tyname-count tyname) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-strunispec ((strunispec strunispecp) (pstate pristatep))
-    :guard (strunispec-unambp strunispec)
+  (define print-struni-spec ((struni-spec struni-specp) (pstate pristatep))
+    :guard (struni-spec-unambp struni-spec)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure or union specifier."
@@ -2639,25 +2639,25 @@
        Nonetheless, under certain conditions,
        e.g. when it is a lone top-level construct,
        we should print it on multiple lines."))
-    (b* (((strunispec strunispec) strunispec)
-         ((unless (or (ident-option-case strunispec.name :some)
-                      strunispec.members))
+    (b* (((struni-spec struni-spec) struni-spec)
+         ((unless (or (ident-option-case struni-spec.name :some)
+                      struni-spec.members))
           (raise "Misusage error: empty structure or union specifier.")
           (pristate-fix pstate))
          (pstate (ident-option-case
-                  strunispec.name
-                  :some (print-ident strunispec.name.val pstate)
+                  struni-spec.name
+                  :some (print-ident struni-spec.name.val pstate)
                   :none pstate))
-         (pstate (if (and strunispec.name
-                          strunispec.members)
+         (pstate (if (and struni-spec.name
+                          struni-spec.members)
                      (print-astring " " pstate)
                    pstate))
-         ((when (not strunispec.members)) pstate)
+         ((when (not struni-spec.members)) pstate)
          (pstate (print-astring "{ " pstate))
-         (pstate (print-structdecl-list strunispec.members pstate))
+         (pstate (print-structdecl-list struni-spec.members pstate))
          (pstate (print-astring " }" pstate)))
       pstate)
-    :measure (two-nats-measure (strunispec-count strunispec) 0))
+    :measure (two-nats-measure (struni-spec-count struni-spec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2713,7 +2713,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "As mentioned in @(tsee print-strunispec),
+      "As mentioned in @(tsee print-struni-spec),
        for now we print all of them in one line,
        since a structure or union specifier may occur
        in the middle of a list of declaration specifiers,

@@ -14,7 +14,6 @@
 (include-book "arithmetic-theorems")
 (include-book "oset-theorems")
 (include-book "omap-theorems")
-(include-book "oset-nonemptyp")
 (include-book "lists-noforkp")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -36,6 +35,5 @@
   :order-subtopics (arithmetic-theorems
                     oset-theorems
                     omap-theorems
-                    set::nonemptyp
                     lists-noforkp)
   :default-parent t)

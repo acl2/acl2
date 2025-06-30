@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -113,14 +114,16 @@
              boolean-assert-true-spec))
 
   (defruled boolean-assert-true-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_assert_true" defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "boolean_assert_true")
+                                                  defs)
                          (boolean-assert-true-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (bitp x))
              (equal (pfcs::definition-satp
-                      "boolean_assert_true" defs (list x) prime)
+                      (pfname "boolean_assert_true") defs (list x) prime)
                     (boolean-assert-true-spec x prime)))
     :in-theory '((:e boolean-assert-true-circuit)
+                 (:e name-simple)
                  definition-satp-to-boolean-assert-true-pred
                  boolean-assert-true-pred-to-spec)))

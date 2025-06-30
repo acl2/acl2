@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -124,7 +125,7 @@
              field-if-spec))
 
   (defruled field-if-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_if" defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "field_if") defs)
                          (field-if-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -133,8 +134,9 @@
                   (pfield::fep w prime)
                   (bitp x))
              (equal (pfcs::definition-satp
-                      "field_if" defs (list x y z w) prime)
+                      (pfname "field_if") defs (list x y z w) prime)
                     (field-if-spec x y z w prime)))
     :in-theory '((:e field-if-circuit)
+                 (:e name-simple)
                  definition-satp-to-field-if-pred
                  field-if-pred-to-spec)))

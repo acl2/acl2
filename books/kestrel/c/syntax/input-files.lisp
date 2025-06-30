@@ -175,7 +175,7 @@
                       but it is ~x0 instead."
                      preprocess)))
        (preprocessor (if (eq preprocess :auto)
-                         "cpp"
+                         "gcc"
                        preprocess)))
     (retok preprocessor)))
 

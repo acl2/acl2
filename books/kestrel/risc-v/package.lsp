@@ -28,6 +28,7 @@
                           lifix
                           lnfix
                           logapp
+                          logappn
                           logbit
                           logext
                           loghead

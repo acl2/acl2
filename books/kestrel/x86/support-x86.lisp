@@ -24,7 +24,6 @@
 ;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 ;(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
 (include-book "kestrel/utilities/defopeners" :dir :system)
-;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 ;; todo: ideally, this book should not include non-x86isa books, like these:
 (include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-weaken
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
@@ -113,6 +112,9 @@
                     x86isa::create-canonical-address-list
                     (:e x86isa::create-canonical-address-list)
                     zf-spec))
+
+;why?
+(in-theory (disable x86isa::program-at-xw-in-app-view))
 
 (defthm unsigned-byte-p-8-of-car-when-byte-listp
   (implies (byte-listp bytes)
@@ -393,9 +395,7 @@
            (EQUAL (PROGRAM-AT X86ISA::ADDR X86ISA::BYTES
                               (XW X86ISA::FLD X86ISA::INDEX VALUE X86))
                   (PROGRAM-AT X86ISA::ADDR X86ISA::BYTES X86)))
-  :HINTS (("Goal" :IN-THEORY (ACL2::E/D* NIL (RB)))))
-
-(in-theory (disable X86ISA::PROGRAM-AT-XW-IN-APP-VIEW))
+  :HINTS (("Goal" :IN-THEORY (ACL2::E/D* (x86isa::program-at-xw-in-app-view) (RB)))))
 
 ;gen
 (local
@@ -1118,8 +1118,6 @@
 (defthm unsigned-byte-p-1-of-rflagsbits->AF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->AF$inline rflags)))
 (defthm unsigned-byte-p-1-of-rflagsbits->RES2$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES2$inline rflags)))
 (defthm unsigned-byte-p-2-of-rflagsbits->iopl$inline (unsigned-byte-p 2 (x86isa::rflagsbits->iopl$inline rflags)))
-
-
 
 
 ;seems needed - todo

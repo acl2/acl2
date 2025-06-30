@@ -63,6 +63,11 @@
   (fty::deffixequiv list-in
     :hints (("Goal" :in-theory (enable list-in)))))
 
+(defsection list-notin-fix
+  :extension list-notin
+  (fty::deffixequiv list-notin
+    :hints (("Goal" :in-theory (enable list-notin)))))
+
 (defsection lookup-fix
   :extension lookup
   (fty::deffixequiv lookup))

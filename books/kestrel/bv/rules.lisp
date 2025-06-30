@@ -1168,7 +1168,7 @@
            (equal (< x y)
                   (< (* x z) (* y z)))))
 
-(defthm small-int-hack
+(defthmd small-int-hack
   (implies (and (< 0 small)
                 (< small 1)
                 (integerp i)

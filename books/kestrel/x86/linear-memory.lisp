@@ -1,7 +1,7 @@
 ; Rules about memory
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -188,10 +188,11 @@
 ;;               (true-listp bytes)))
 ;;   :hints (("Goal" :in-theory (enable acl2::all-unsigned-byte-p byte-listp))))
 
-(defun combine-bytes-n-induct (bytes n)
-  (if (endp bytes)
-      (list bytes n)
-      (combine-bytes-n-induct (cdr bytes) (+ -8 n))))
+(local
+  (defun combine-bytes-n-induct (bytes n)
+    (if (endp bytes)
+        (list bytes n)
+      (combine-bytes-n-induct (cdr bytes) (+ -8 n)))))
 
 (defthm unsigned-byte-p-of-combine-bytes-better
   (implies (and (acl2::all-unsigned-byte-p 8 bytes)

@@ -28,7 +28,6 @@
 (include-book "kestrel/bv/rules10" :dir :system)
 (include-book "kestrel/bv-lists/unpackbv" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/lists-light/finalcdr" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)

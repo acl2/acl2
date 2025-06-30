@@ -19,6 +19,7 @@
 (include-book "bvminus")
 (include-book "bvnot")
 (include-book "bvshr-def")
+(include-book "bvmult-def")
 (local (include-book "bvshr"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
@@ -83,6 +84,13 @@
            (equal (trim size (+ x y))
                   (bvplus size x y)))
   :hints (("Goal" :in-theory (enable trim bvplus))))
+
+(defthmd trim-of-*-becomes-bvmult
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (trim size (* x y))
+                  (bvmult size x y)))
+  :hints (("Goal" :in-theory (enable trim bvmult))))
 
 (defthmd trim-of-unary---becomes-bvuminus
   (implies (integerp x)

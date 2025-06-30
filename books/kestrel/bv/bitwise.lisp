@@ -21,6 +21,8 @@
 (include-book "bitor")
 (include-book "bvcat")
 (include-book "bvif")
+(include-book "bv-syntax")
+(include-book "unsigned-byte-p-forced")
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
 (local (include-book "logxor-b"))
@@ -526,6 +528,32 @@
                 (natp size))
            (equal (getbit n (bvor size y x))
                   (getbit n y))))
+
+;; For when x is obviously too narrow
+(defthm getbit-of-bvor-when-narrow-arg2
+  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (<= xsize n)
+                (< n size)
+                (integerp n)
+                (integerp size)
+                (integerp xsize)
+                (unsigned-byte-p-forced xsize x))
+           (equal (getbit n (bvor size x y))
+                  (getbit n y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
+
+;; For when y is obviously too narrow
+(defthm getbit-of-bvor-when-narrow-arg3
+  (implies (and (bind-free (bind-var-to-bv-term-size 'ysize y) (ysize))
+                (<= ysize n)
+                (< n size)
+                (integerp n)
+                (integerp size)
+                (integerp xsize)
+                (unsigned-byte-p-forced ysize y))
+           (equal (getbit n (bvor size x y))
+                  (getbit n x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
 
 (defthm bvxor-of-slice-tighten
   (implies (and (<= size (- high low))

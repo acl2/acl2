@@ -186,4 +186,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled loghead-upper-bound
+  (implies (natp n)
+           (<= (loghead n x)
+               (1- (expt 2 n))))
+  :rule-classes ((:linear :trigger-terms ((loghead n x))))
+  :enable (loghead ifix nfix)
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled loghead-plus-1-differs
+  (implies (and (> (nfix n) 1)
+                (integerp x))
+           (not (equal (loghead n (1+ x))
+                       (loghead n x))))
+  :enable loghead
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable loghead logext))
