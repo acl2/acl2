@@ -43,6 +43,9 @@
 (include-book "logext")
 (include-book "logops")
 
+;; Books about underlying functions and BV functions:
+(include-book "ash")
+
 ;; Functions to break down and create BVs:
 (include-book "bvchop-def")
 (include-book "bvchop")

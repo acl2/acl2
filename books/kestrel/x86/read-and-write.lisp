@@ -40,6 +40,7 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/bv/intro" :dir :system))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
+(local (include-book "kestrel/bv/ash" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
