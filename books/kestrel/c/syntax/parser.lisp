@@ -2867,9 +2867,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-stringlit ((eprefix? eprefix-optionp)
-                       (first-pos positionp)
-                       (parstate parstatep))
+(define lex-string-literal ((eprefix? eprefix-optionp)
+                            (first-pos positionp)
+                            (parstate parstatep))
   :returns (mv erp
                (lexeme lexemep)
                (span spanp)
@@ -2896,12 +2896,12 @@
 
   ///
 
-  (defret parsize-of-lex-stringlit-uncond
+  (defret parsize-of-lex-string-literal-uncond
     (<= (parsize new-parstate)
         (parsize parstate))
     :rule-classes :linear)
 
-  (defret parsize-of-lex-stringlit-cond
+  (defret parsize-of-lex-string-literal-cond
     (implies (not erp)
              (<= (parsize new-parstate)
                  (1- (parsize parstate))))
@@ -4663,7 +4663,7 @@
          ((= char2 (char-code #\')) ; u '
           (lex-character-constant (cprefix-locase-u) first-pos parstate))
          ((= char2 (char-code #\")) ; u "
-          (lex-stringlit (eprefix-locase-u) first-pos parstate))
+          (lex-string-literal (eprefix-locase-u) first-pos parstate))
          ((= char2 (char-code #\8)) ; u 8
           (b* (((erp char3 & parstate) (read-char parstate)))
             (cond
@@ -4672,7 +4672,7 @@
                      (make-span :start first-pos :end pos2)
                      parstate))
              ((= char3 (char-code #\")) ; u 8 "
-              (lex-stringlit (eprefix-locase-u8) first-pos parstate))
+              (lex-string-literal (eprefix-locase-u8) first-pos parstate))
              (t ; u 8 other
               (b* ((parstate (unread-char parstate)) ; u 8
                    (parstate (unread-char parstate))) ; u
@@ -4691,7 +4691,7 @@
          ((= char2 (char-code #\')) ; U '
           (lex-character-constant (cprefix-upcase-u) first-pos parstate))
          ((= char2 (char-code #\")) ; U "
-          (lex-stringlit (eprefix-upcase-u) first-pos parstate))
+          (lex-string-literal (eprefix-upcase-u) first-pos parstate))
          (t ; U other
           (b* ((parstate (unread-char parstate))) ; U
             (lex-identifier/keyword char first-pos parstate))))))
@@ -4706,7 +4706,7 @@
          ((= char2 (char-code #\')) ; L '
           (lex-character-constant (cprefix-upcase-l) first-pos parstate))
          ((= char2 (char-code #\")) ; L "
-          (lex-stringlit (eprefix-upcase-l) first-pos parstate))
+          (lex-string-literal (eprefix-upcase-l) first-pos parstate))
          (t ; L other
           (b* ((parstate (unread-char parstate))) ; L
             (lex-identifier/keyword char first-pos parstate))))))
@@ -4764,7 +4764,7 @@
       (lex-character-constant nil first-pos parstate))
 
      ((= char (char-code #\")) ; "
-      (lex-stringlit nil first-pos parstate))
+      (lex-string-literal nil first-pos parstate))
 
      ((= char (char-code #\/)) ; /
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
