@@ -138,33 +138,13 @@
 ;;            (equal (set-flag i2 v2 (set-flag i1 v1 x86))
 ;;                   (set-flag i1 v1 (set-flag i2 v2 x86)))))
 
-;move
-(defthm bvchop-of-ash-when-negative-becomes-bvshr
-  (implies (and (< c 0)
-                (integerp c)
-                (natp places))
-           (equal (bvchop places (ash i c))
-                  (acl2::bvshr (- places c) i (- c))))
-  :hints (("Goal" :in-theory (e/d (ash acl2::bvshr slice logtail ifix)
-                                  (acl2::bvchop-of-logtail-becomes-slice acl2::floor-of-2-becomes-logtail-of-1)))))
-
-
-
 ;; (thm
 ;;  (implies (zp amt)
-;;           (equal (acl2::bvshr 32 x amt)
+;;           (equal (bvshr 32 x amt)
 ;;                  (bvchop 32 x)))
-;;  :hints (("Goal" :in-theory (enable acl2::bvshr zp))))
+;;  :hints (("Goal" :in-theory (enable bvshr zp))))
 
-(defthm bvchop-of-ash-right-shift
-  (implies (and (< n 0)
-                (natp size)
-                (integerp n))
-           (equal (acl2::bvchop size (ash x n))
-                  (acl2::slice (+ -1 size (- n)) (- n) x)))
-  :hints (("Goal" :cases ((integerp x))
-           :in-theory (e/d (ash acl2::slice logtail ifix)
-                           (acl2::bvchop-of-logtail-becomes-slice)))))
+
 
 ;move
 (defthm slice-of-minus-of-expt-same-as-low

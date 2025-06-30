@@ -28,7 +28,8 @@
 (include-book "kestrel/utilities/polarity" :dir :system)
 (local (include-book "support-bv"))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
-(local (include-book "kestrel/bv/rules10" :dir :system)) ; for acl2::bvchop-of-ash ; rename becomes-bvcat
+(local (include-book "kestrel/bv/rules10" :dir :system)) ; why? for acl2::bvplus-of-constant-when-overflow
+(local (include-book "kestrel/bv/ash" :dir :system)) ; for acl2::bvchop-of-ash ; rename becomes-bvcat
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/bv/signed-byte-p" :dir :system)) ; so we can disable below
