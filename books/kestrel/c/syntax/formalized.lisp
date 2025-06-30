@@ -216,14 +216,17 @@
      that denote integer types except plain @('char').
      For the other uses, we also allow
      type specifier sequences that denote structure types,
-     of the form supported by @(tsee ldm-type-spec-list)."))
+     of the form supported by @(tsee ldm-type-spec-list).
+     We also allow @('void'), needed, in particular, for function types."))
   (or (type-spec-list-integer-formalp tyspecs)
       (and (consp tyspecs)
            (endp (cdr tyspecs))
            (type-spec-case (car tyspecs) :struct)
            (b* ((struni-spec (type-spec-struct->spec (car tyspecs))))
              (and (check-struni-spec-no-members struni-spec)
-                  (ident-formalp (struni-spec->name struni-spec))))))
+                  (ident-formalp (struni-spec->name struni-spec)))))
+      (and (equal (type-spec-list-fix tyspecs)
+                  (list (type-spec-void)))))
   :guard-hints (("Goal" :in-theory (enable check-struni-spec-no-members)))
   :hooks (:fix))
 
