@@ -2311,8 +2311,7 @@
   (xdoc::topstring
    (xdoc::p
     "We generate a theorem iff
-     a theorem was generated for the block item
-     and the type is not @('void').
+     a theorem was generated for the block item.
      That theorem is used to prove the theorem for the block item,
      along with using two general theorems proved below.
      Note that the limit in the theorem for the block item
@@ -2322,8 +2321,8 @@
   (b* (((simpadd0-gin gin) gin)
        (items (list (block-item-fix item)))
        (items-new (list (block-item-fix item-new)))
-       ((unless (and item-thm-name
-                     (not (type-case (block-item-type item) :void))))
+       (type (block-item-type item))
+       ((unless item-thm-name)
         (mv items-new
             (make-simpadd0-gout :events item-events
                                 :thm-name nil
@@ -2331,26 +2330,45 @@
                                 :names-to-avoid gin.names-to-avoid
                                 :vartys item-vartys
                                 :diffp item-diffp)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-block-item-list)
-                              (:e ldm-block-item)
-                              (:e ldm-ident)
-                              (:e ident)
-                              (:e c::type-sint)
-                              (:e c::type-nonchar-integerp))
-                 :use ((:instance ,item-thm-name (limit (1- limit)))
-                       (:instance
-                        simpadd0-block-item-list-support-lemma
-                        (old-item (mv-nth 1 (ldm-block-item ',item)))
-                        (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                        ,@(and (not item-diffp)
-                               '((old-fenv fenv)
-                                 (new-fenv fenv))))
-                       (:instance
-                        simpadd0-block-item-list-support-lemma-error
-                        (item (mv-nth 1 (ldm-block-item ',item)))
-                        ,@(and item-diffp
-                               '((fenv old-fenv))))))))
+       (hints (if (type-case type :void)
+                  `(("Goal"
+                     :in-theory '((:e ldm-block-item-list)
+                                  (:e ldm-block-item)
+                                  (:e ldm-ident)
+                                  (:e ident))
+                     :use ((:instance ,item-thm-name (limit (1- limit)))
+                           (:instance
+                            simpadd0-block-item-list-support-lemma-novalue
+                            (old-item (mv-nth 1 (ldm-block-item ',item)))
+                            (new-item (mv-nth 1 (ldm-block-item ',item-new)))
+                            ,@(and (not item-diffp)
+                                   '((old-fenv fenv)
+                                     (new-fenv fenv))))
+                           (:instance
+                            simpadd0-block-item-list-support-lemma-error
+                            (item (mv-nth 1 (ldm-block-item ',item)))
+                            ,@(and item-diffp
+                                   '((fenv old-fenv)))))))
+                `(("Goal"
+                   :in-theory '((:e ldm-block-item-list)
+                                (:e ldm-block-item)
+                                (:e ldm-ident)
+                                (:e ident)
+                                (:e c::type-sint)
+                                (:e c::type-nonchar-integerp))
+                   :use ((:instance ,item-thm-name (limit (1- limit)))
+                         (:instance
+                          simpadd0-block-item-list-support-lemma-value
+                          (old-item (mv-nth 1 (ldm-block-item ',item)))
+                          (new-item (mv-nth 1 (ldm-block-item ',item-new)))
+                          ,@(and (not item-diffp)
+                                 '((old-fenv fenv)
+                                   (new-fenv fenv))))
+                         (:instance
+                          simpadd0-block-item-list-support-lemma-error
+                          (item (mv-nth 1 (ldm-block-item ',item)))
+                          ,@(and item-diffp
+                                 '((fenv old-fenv)))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-list-thm items
                                           items-new
@@ -2373,7 +2391,7 @@
     (block-item-list-unambp items)
     :hyp (block-item-unambp item-new))
 
-  (defruled simpadd0-block-item-list-support-lemma
+  (defruled simpadd0-block-item-list-support-lemma-value
     (b* ((old (list old-item))
          (new (list new-item))
          ((mv old-item-result old-item-compst)
@@ -2400,6 +2418,30 @@
              (c::exec-block-item-list (list new-item) compst new-fenv limit))
     :enable (c::exec-block-item-list
              c::value-optionp-when-value-option-resultp-and-not-errorp))
+
+  (defruled simpadd0-block-item-list-support-lemma-novalue
+    (b* ((old (list old-item))
+         (new (list new-item))
+         ((mv old-item-result old-item-compst)
+          (c::exec-block-item old-item compst old-fenv (1- limit)))
+         ((mv new-item-result new-item-compst)
+          (c::exec-block-item new-item compst new-fenv (1- limit)))
+         ((mv old-result old-compst)
+          (c::exec-block-item-list old compst old-fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-block-item-list new compst new-fenv limit)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-item-result))
+                    (equal old-item-result new-item-result)
+                    (equal old-item-compst new-item-compst)
+                    (not old-item-result))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (not old-result))))
+    :expand ((c::exec-block-item-list (list old-item) compst old-fenv limit)
+             (c::exec-block-item-list (list new-item) compst new-fenv limit))
+    :enable c::exec-block-item-list)
 
   (defruled simpadd0-block-item-list-support-lemma-error
     (implies (c::errorp
@@ -5081,6 +5123,7 @@
         (raise "Internal error: function ~x0 returns ~x1."
                (fundef-fix fundef) type)
         (mv (irr-fundef) (irr-simpadd0-gout)))
+       ((when (type-case type :void)) (mv new-fundef gout-no-thm))
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because TYPE-FORMALP holds
        ((mv okp args parargs arg-types arg-types-compst)
         (simpadd0-gen-from-params ldm-params gin))
