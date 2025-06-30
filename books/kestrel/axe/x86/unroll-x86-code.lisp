@@ -143,11 +143,11 @@
   (declare (xargs :guard t))
   (if (atom alist)
       (null alist)
-      (let ((entry (first alist)))
-        (and (consp entry)
-             (symbolp (car entry))
-             (boolean-listp (cdr entry))
-             (elision-spec-alistp (rest alist))))))
+    (let ((entry (first alist)))
+      (and (consp entry)
+           (symbolp (car entry))
+           (boolean-listp (cdr entry))
+           (elision-spec-alistp (rest alist))))))
 
 (defthm elision-spec-alistp-forward-to-alistp
     (implies (elision-spec-alistp alist)
