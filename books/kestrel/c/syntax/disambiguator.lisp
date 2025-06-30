@@ -1039,15 +1039,14 @@
      but that identifier does not identify a @('typedef') name in scope.
      This means that, for example, if we have two identifiers @('x') and @('y'),
      one of which is a @('typedef') name but the other one is not,
-     the re-classification to names fails;
-     one @('typedef') name suffices to re-classify the parameters to names.
+     the re-classification to names fails.
      [C17:6.7.6.3/11] says that @('typedef') names have priority,
      but strictly speaking it mentions only parameter declarations,
      not also identifier lists;
      nonetheless, some simple experiments with GCC show that
      this priority of @('typedef') names also applies to
      the choice between parameter declarations and identifier lists,
-     and not just withing parameter declarations
+     and not just within parameter declarations
      (this aspect is dealt with elsewhere,
      in the code to disambiguate parameter declarations).
      So, in the example above with @('x') and @('y'),
@@ -1055,10 +1054,10 @@
    (xdoc::p
     "This ACL2 function returns a boolean saying whether
      the parameter declarations are re-classified into names,
-     and in this case it also returns the list of names, whieh may be empty.
-     If the check for any element of the list,
+     and in this case it also returns the list of names, which may be empty.
+     If the check fails for any element of the list,
      the re-classification fails,
-     and the caller will do its own processing and disamguation
+     and the caller will do its own processing and disambiguation
      of the (non-empty) list of parameter declarations,
      which will then remain parameter declarations (not names)
      after that processing and disambiguation."))
