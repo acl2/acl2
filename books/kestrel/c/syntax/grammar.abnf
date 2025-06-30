@@ -245,6 +245,23 @@ graphic-character-not-star = %x21-23 ; ! " #
                            / %x7b-7e ; { | } ~
                            ; cf. graphic-character
 
+graphic-character-not-greater-than = %x21-23 ; ! " #
+                                   / %x25-2f ; % & ' ( ) * + , - . /
+                                   / %x3a-3d ; : ; < =
+                                   ; omit >
+                                   / %x3f ; ?
+                                   / %x5b-5f ; [ \ ] ^ _
+                                   / %x7b-7e ; { | } ~
+                                   ; cf. graphic-character
+
+graphic-character-not-double-quote = %x21 ; !
+                                   ; omit "
+                                   / %x23 ; #
+                                   / %x25-2f ; % & ' ( ) * + , - . /
+                                   / %x3a-3f ; : ; < = > ?
+                                   / %x5b-5f ; [ \ ] ^ _
+                                   / %x7b-7e ; { | } ~
+
 graphic-character-not-star-or-slash = %x21-23 ; ! " #
                                     / %x25-29 ; % & ' ( )
                                     ; omit *
@@ -282,6 +299,18 @@ basic-character-not-star = letter
                          / space
                          / control-character
 
+basic-character-not-greater-than = letter
+                                 / digit
+                                 / graphic-character-not-greater-than
+                                 / space
+                                 / control-character
+
+basic-character-not-double-quote = letter
+                                 / digit
+                                 / graphic-character-not-double-quote
+                                 / space
+                                 / control-character
+
 basic-character-not-star-or-slash = letter
                                   / digit
                                   / graphic-character-not-star-or-slash
@@ -310,6 +339,12 @@ character-not-star = basic-character-not-star
 
 character-not-star-or-slash = basic-character-not-star-or-slash
                             / extended-character
+
+character-not-greater-than-or-new-line = basic-character-not-greater-than
+                                       / extended-character-not-new-line
+
+character-not-double-quote-or-new-line = basic-character-not-double-quote
+                                       / extended-character-not-new-line
 
 character-not-single-quote-or-backslash-or-new-line =
       basic-character-not-single-quote-or-backslash
