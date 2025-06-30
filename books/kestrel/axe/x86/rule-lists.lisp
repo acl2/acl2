@@ -2023,7 +2023,7 @@
     ;;set-rip-of-+-of-logext
     set-rip-of-+-of-bvplus
     ;;x86isa::logext-48-does-nothing-when-canonical-address-p
-    acl2::bvplus-of-+-of-logext-arg3 ; crucial
+    acl2::bvplus-of-logext-arg3-convert-to-bv ; crucial
     acl2::bvsx-convert-arg3-to-bv-axe ; crucial
 
     x86isa::integerp-when-canonical-address-p-cheap ; also in the non-bv case!

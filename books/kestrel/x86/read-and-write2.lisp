@@ -504,8 +504,17 @@
   :hints (("Goal" :in-theory (enable bvplus))))
 
 ; add to bv-intro rules?
-(defthm acl2::bvplus-of-+-of-logext-arg3
-  (implies (and (<= size2 size)
+(defthm acl2::bvplus-of-logext-arg2-convert-to-bv
+  (implies (and (< size2 size) ; could allow =
+                (integerp size)
+                (posp size2))
+           (equal (bvplus size (logext size2 x) y)
+                  (bvplus size (bvsx size size2 x) y)))
+  :hints (("Goal" :cases ((equal size size2)))))
+
+; add to bv-intro rules?
+(defthm acl2::bvplus-of-logext-arg3-convert-to-bv
+  (implies (and (< size2 size) ; could allow =
                 (integerp size)
                 (posp size2))
            (equal (bvplus size x (logext size2 y))
