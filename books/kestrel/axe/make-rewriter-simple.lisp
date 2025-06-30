@@ -963,7 +963,7 @@
                                   ;; instantiated-hyp is now fully instantiated.  It is an axe-tree with leaves that are quoteps and nodenums (from vars already bound)
                                   ((when (fquotep instantiated-hyp)) ;; we know the instantiated-hyp is a cons, because hyp is
                                    ;; The instantiated-hyp is a quoted constant:
-                                   (if (unquote instantiated-hyp)
+                                   (if (unquote$ instantiated-hyp)
                                        ;; The instantiated-hyp is a non-nil constant, so it counts as relieved:
                                        (mv (erp-nil) t rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
                                      ;; The instantiated-hyp is 'nil, so it failed to be relieved:
@@ -4922,7 +4922,8 @@
                                      member-equal-when-member-equal-and-subsetp-equal
                                      ;all-natp-when-nat-listp
                                      pseudo-termp-of-cadr-when-axe-smt ;axe-treep-of-cadr-when-axe-smt
-                                     free-vars-in-term-of-cadr-when-axe-smt)
+                                     free-vars-in-term-of-cadr-when-axe-smt
+                                     myquotep-when-axe-treep)
                                     (dargp
                                      dargp-less-than
                                      natp
