@@ -5837,7 +5837,7 @@
      If all the checks pass, we add the function to the table,
      which overwrites the previous entry,
      but the only information actually overwritten
-     is the definition status, from undefined to defiend,
+     is the definition status, from undefined to defined,
      which is appropriate.")
    (xdoc::p
     "The declarations between declarator and body should be present
