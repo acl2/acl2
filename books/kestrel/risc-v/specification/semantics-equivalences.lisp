@@ -111,7 +111,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-andi-alt-defs
-  :ahort "Equivalent semantic definitions of @('ANDI')."
+  :short "Equivalent semantic definitions of @('ANDI')."
 
   (defruled exec-andi-alt-def
     (equal (exec-andi rd rs1 imm stat feat)
@@ -130,7 +130,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-ori-alt-defs
-  :ahort "Equivalent semantic definitions of @('ORI')."
+  :short "Equivalent semantic definitions of @('ORI')."
 
   (defruled exec-ori-alt-def
     (equal (exec-ori rd rs1 imm stat feat)
@@ -149,7 +149,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-xori-alt-defs
-  :ahort "Equivalent semantic definitions of @('XORI')."
+  :short "Equivalent semantic definitions of @('XORI')."
 
   (defruled exec-xori-alt-def
     (equal (exec-xori rd rs1 imm stat feat)
@@ -168,7 +168,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-add-alt-defs
-  :ahort "Equivalent semantic definitions of @('ADD')."
+  :short "Equivalent semantic definitions of @('ADD')."
 
   (defruled exec-add-alt-def
     (equal (exec-add rd rs1 rs2 stat feat)
@@ -189,7 +189,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-sub-alt-defs
-  :ahort "Equivalent semantic definitions of @('SUB')."
+  :short "Equivalent semantic definitions of @('SUB')."
 
   (defruled exec-sub-alt-def
     (equal (exec-sub rd rs1 rs2 stat feat)
@@ -210,7 +210,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-and-alt-defs
-  :ahort "Equivalent semantic definitions of @('AND')."
+  :short "Equivalent semantic definitions of @('AND')."
 
   (defruled exec-and-alt-def-signed-signed
     (equal (exec-and rd rs1 rs2 stat feat)
@@ -292,12 +292,36 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-xor-alt-defs
-  :ahort "Equivalent semantic definitions of @('XOR')."
+  :short "Equivalent semantic definitions of @('XOR')."
 
-  (defruled exec-xor-alt-def
+  (defruled exec-xor-alt-def-signed-signed
     (equal (exec-xor rd rs1 rs2 stat feat)
            (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
                 (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logxor rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-xor
+             read-xreg-signed
+             write-xreg))
+
+  (defruled exec-xor-alt-def-unsigned-signed
+    (equal (exec-xor rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logxor rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-xor
+             read-xreg-signed
+             write-xreg))
+
+  (defruled exec-xor-alt-def-signed-unsigned
+    (equal (exec-xor rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
                 (result (logxor rs1-operand rs2-operand))
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
@@ -309,7 +333,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection exec-sll-alt-defs
-  :ahort "Equivalent semantic definitions of @('SLL')."
+  :short "Equivalent semantic definitions of @('SLL')."
 
   (defruled exec-sll-alt-def
     (equal (exec-sll rd rs1 rs2 stat feat)
