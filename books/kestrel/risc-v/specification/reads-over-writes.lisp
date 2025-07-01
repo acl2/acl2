@@ -26,13 +26,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruledl ubyte8p-of-logtail-8-of-ubyte16
-  (implies (ubyte16p x)
-           (ubyte8p (logtail 8 x)))
-  :enable (ubyte16p
-           ubyte8p
-           logtail)
-  :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+(local
+
+ (encapsulate
+   ()
+
+   (local (include-book "arithmetic-5/top" :dir :system))
+
+   (defruled ubyte8p-of-logtail-8-of-ubyte16
+     (implies (ubyte16p x)
+              (ubyte8p (logtail 8 x)))
+     :enable (ubyte16p
+              ubyte8p
+              logtail))
+
+   (defruled loghead-plus-1-differs
+     (implies (and (> (nfix n) 1)
+                   (integerp x))
+              (not (equal (loghead n (1+ x))
+                          (loghead n x))))
+     :enable loghead)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
