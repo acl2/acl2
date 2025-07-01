@@ -5787,9 +5787,9 @@
             sf-spec64-becomes-getbit
             zf-spec$inline
             ;; todo: how to open the other flags, like pf, to bv notions?
+            acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
             acl2::bvplus-convert-arg2-to-bv-axe ; would like to do this earlier, but it might cause problems
             acl2::bvplus-convert-arg3-to-bv-axe
-            acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
             acl2::slice-convert-arg3-to-bv-axe
             !rflagsbits->af-opener
             !rflagsbits->cf-opener
