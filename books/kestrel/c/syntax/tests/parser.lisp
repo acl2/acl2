@@ -1096,10 +1096,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; lex-stringlit
+; lex-string-literal
 
 (test-lex
- lex-stringlit
+ lex-string-literal
  "\""
  :pos (position 1 1)
  :more-inputs (nil (position 1 0))
@@ -1109,7 +1109,7 @@
                 (stringlit nil nil)))))
 
 (test-lex
- lex-stringlit
+ lex-string-literal
  "helo\""
  :pos (position 10 10)
  :more-inputs ((eprefix-upcase-l) (position 10 9))
@@ -1123,12 +1123,12 @@
                                  (s-char-char (char-code #\o))))))))
 
 (test-lex-fail
- lex-stringlit
+ lex-string-literal
  "wrong'"
  :more-inputs (nil (position 1 0)))
 
 (test-lex-fail
- lex-stringlit
+ lex-string-literal
  (list 10 (char-code #\"))
  :more-inputs (nil (position 1 0)))
 

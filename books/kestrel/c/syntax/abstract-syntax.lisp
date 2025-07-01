@@ -2398,7 +2398,7 @@
       "This fixtype does not cover structure types with no members,
        which is a GCC extension;
        this is covered as a separate case in @(tsee type-spec)."))
-    ((name ident-option)
+    ((name? ident-option)
      (members structdecl-list))
     :pred struni-specp
     :measure (two-nats-measure (acl2-count x) 1))

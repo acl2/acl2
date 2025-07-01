@@ -29,7 +29,10 @@
     "Instructions are encoded as specified in [ISA] and [ISAP],
      and as formalized in @(see encoding).
      We declaratively define a decoder as non-executable inverse of the encoder;
-     see @(see decoding-executable) for an equivalent executable decoder."))
+     see @(see decoding-executable) for an equivalent executable decoder.")
+   (xdoc::p
+    "See @(see encoding-decoding-illustration)
+     for an illustration of encoding and decoding."))
   :order-subtopics t
   :default-parent t)
 

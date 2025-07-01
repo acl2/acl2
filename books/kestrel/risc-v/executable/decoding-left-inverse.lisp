@@ -46,7 +46,10 @@
      As a consequence, encoding is injective over valid instructions:
      if two different instructions were encoded in the same way,
      the decoder would have to restore both from the same encoding,
-     which is impossible since decoding is a function."))
+     which is impossible since decoding is a function.")
+   (xdoc::p
+    "See @(see encoding-decoding-illustration)
+     for an illustration of encoding and decoding."))
   :default-parent t
   :order-subtopics t)
 

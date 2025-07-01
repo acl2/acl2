@@ -196,14 +196,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled loghead-plus-1-differs
-  (implies (and (> (nfix n) 1)
-                (integerp x))
-           (not (equal (loghead n (1+ x))
-                       (loghead n x))))
-  :enable loghead
-  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-theory (disable loghead logext))

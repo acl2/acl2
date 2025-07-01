@@ -75,7 +75,8 @@
                 (generic-prop))
            (subset (domain (generic-rel))
                    (generic-dom)))
-  :hints (("Goal" :in-theory (enable subset in-domain-rewrite))))
+  :hints (("Goal" :in-theory (e/d (subset in-domain-rewrite)
+                                  (in-cons-apply)))))
 
 (defthm subset-generic-dom-domain-generic-rel-lemma
   (implies (and (in x (generic-dom))

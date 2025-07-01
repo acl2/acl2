@@ -625,9 +625,9 @@
     :expand (tyname-unambp (tyname specqual decl? info)))
 
   (defrule struni-spec-unambp-of-struni-spec
-    (equal (struni-spec-unambp (struni-spec name members))
+    (equal (struni-spec-unambp (struni-spec name? members))
            (structdecl-list-unambp members))
-    :expand (struni-spec-unambp (struni-spec name members)))
+    :expand (struni-spec-unambp (struni-spec name? members)))
 
   (defrule structdecl-unambp-of-structdecl-member
     (equal (structdecl-unambp
