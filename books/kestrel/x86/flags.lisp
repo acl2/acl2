@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/bv/bvchop" :dir :system)
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
+(include-book "kestrel/bv/putbits" :dir :system) ; todo: split out putbit
 ;(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; to tighten a bvcat?
@@ -1032,3 +1033,47 @@
                       res3
                     (getbit n rflags))))
   :hints (("Goal" :in-theory (enable !rflagsbits->res3 bfix rflagsbits-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd !rflagsbits->af-opener
+  (implies (unsigned-byte-p 1 af)
+           (equal (!rflagsbits->af af rflags)
+                  (putbit 32 4 af rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->af
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->cf-opener
+  (implies (unsigned-byte-p 1 cf)
+           (equal (!rflagsbits->cf cf rflags)
+                  (putbit 32 0 cf rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->cf
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->of-opener
+  (implies (unsigned-byte-p 1 of)
+           (equal (!rflagsbits->of of rflags)
+                  (putbit 32 11 of rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->of
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->pf-opener
+  (implies (unsigned-byte-p 1 pf)
+           (equal (!rflagsbits->pf pf rflags)
+                  (putbit 32 2 pf rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->pf
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->sf-opener
+  (implies (unsigned-byte-p 1 sf)
+           (equal (!rflagsbits->sf sf rflags)
+                  (putbit 32 7 sf rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->sf
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->zf-opener
+  (implies (unsigned-byte-p 1 zf)
+           (equal (!rflagsbits->zf zf rflags)
+                  (putbit 32 6 zf rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->zf
+                                     rflagsbits-fix))))

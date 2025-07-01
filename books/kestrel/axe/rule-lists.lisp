@@ -1196,6 +1196,7 @@
 
      ;; for now, we open these to expose bvcat:
      putbyte
+     putbit
      putbits
 
      unsigned-byte-p-of-bvmult-of-expt2-constant-version
