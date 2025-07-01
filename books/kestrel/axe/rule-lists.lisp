@@ -1216,7 +1216,8 @@
 
      ;; this made one of the mavlink dags much longer (too big) but the culprit was the subsequent xor normalization:
      getbit-of-bvif-quoteps ; more like this?  slice bvchop, etc.?  any term with everything constant but the bvif, like (bvcat 8 1 8 (bvif 8 test 5 7))?
-     )))
+
+     unsigned-byte-p-of-+-with-carry)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?

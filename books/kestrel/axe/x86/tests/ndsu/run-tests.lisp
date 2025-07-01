@@ -17,3 +17,45 @@
 
 ;; (depends-on "add-CF.elf64")
 (test-file "add-CF.elf64")
+
+;; (depends-on "add-ZF.elf64")
+(test-file "add-ZF.elf64")
+
+;; (depends-on "add-SF.elf64")
+;(test-file "add-SF.elf64")
+
+;; (depends-on "add-PF=1.elf64")
+(test-file "add-PF=1.elf64")
+
+;; (depends-on "add-PF=0.elf64")
+(test-file "add-PF=0.elf64")
+
+;; (depends-on "add-AF.elf64")
+(test-file "add-AF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "adc-CF.elf64")
+(test-file "adc-CF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "or-ZF.elf64")
+(test-file "or-ZF.elf64")
+
+;; (depends-on "or-SF.elf64")
+;(test-file "or-SF.elf64")
+
+;; (depends-on "or-CF.elf64")
+(test-file "or-CF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "and-ZF.elf64")
+(test-file "and-ZF.elf64")
+
+;; (depends-on "and-SF.elf64")
+;(test-file "and-SF.elf64")
+
+;; (depends-on "and-CF.elf64")
+(test-file "and-CF.elf64")
