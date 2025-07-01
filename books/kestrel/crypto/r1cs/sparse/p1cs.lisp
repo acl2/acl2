@@ -24,7 +24,7 @@
 (include-book "std/strings/pretty" :dir :system)
 
 (local
- (include-book "kestrel/alists-light/top" :dir :system)
+ (include-book "kestrel/alists-light/assoc-equal" :dir :system)
  )
 
 ; These should be in std/lists without a backchain limit
@@ -208,7 +208,7 @@
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
                               (sparse-vector-elementp term))
                   :guard-hints (("Goal" :in-theory (e/d (nums-to-strings) (assoc-equal) )))))
-  
+
   ;; first looks up in *nums-to-strings*
   (let ((nums-to-strings (cond ((= fp (fp1))
                                 (first (nums-to-strings)))
@@ -231,7 +231,7 @@
     (implies (p1cs-negative fp x)
              (stringp (p1cs-negative fp x))))
 
-;prove that the components of nums-to-strings have the right format 
+;prove that the components of nums-to-strings have the right format
 (defthm first-nums-to-strings-formatp
   (natural-to-singleton-string-list-alistp (car (nums-to-strings)))
   :hints (("Goal" :in-theory (enable nums-to-strings))))
@@ -291,7 +291,7 @@
 ;; print the rest of an r1cs sparse vector
 (defun p1cs-sv-rest (fp sv)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
-                              (sparse-vectorp sv))))           
+                              (sparse-vectorp sv))))
   (if (atom sv) ""
       (let* ((term (first sv))
              (printed-term (p1cs-term fp term))
@@ -309,7 +309,7 @@
 ;; (R1CS::A (coeff var) (coeff var) ..)
 (defun p1cs-sv (fp sv)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
-                              (sparse-vectorp sv))))      
+                              (sparse-vectorp sv))))
   (if (atom sv) ""
       (let ((term (first sv)))
         (str::cat
@@ -599,7 +599,7 @@
 (defun bit-var-range-starting-with (starting-base-and-num last-num bit-vars)
   (declare (xargs :guard (and (true-listp starting-base-and-num)
                               (= (len starting-base-and-num) 2)
-                              (stringp (first starting-base-and-num)) ;base is a string  
+                              (stringp (first starting-base-and-num)) ;base is a string
                               (natp (second starting-base-and-num)) ;start number is natural
                               (natp last-num)
                               (true-listp bit-vars))
@@ -623,7 +623,7 @@
 ; TODO: move remaining code to logic mode
 ;(program)
 
-;lemmas 
+;lemmas
 (defthm len-of-bit-var-range-starting-with
     (<= (len (mv-nth 1 (bit-var-range-starting-with x y bit-vars)))
         (len bit-vars))
@@ -706,7 +706,7 @@
 ;; (p1cs (fp1) (list (make-selection-constraint 'b 'x 'y 'z)))
 
 ;; 2^200
-;; (p1cs (fp1) (list (r1cs-constraint 
+;; (p1cs (fp1) (list (r1cs-constraint
 ;;                            (list (list (expt 2 200) 'x))
 ;;                            (list (list 1 'y))
 ;;                            (list (list 1 'z)))))
@@ -714,11 +714,11 @@
 ;; (1/2)^200
 ;; (defun test-half-power-200-constraint ()
 ;;   (let* ((fp (fp1))
-;;          (inv-2 (/ (+ fp 1) 2))     
+;;          (inv-2 (/ (+ fp 1) 2))
 ;;          (half-200 (mod (expt inv-2 200) fp)))
-;;     (r1cs-constraint 
-;;       (list (list half-200 'x))     
-;;       (list (list 1 'y))          
+;;     (r1cs-constraint
+;;       (list (list half-200 'x))
+;;       (list (list 1 'y))
 ;;       (list (list 1 'z)))))
 
 ;; (p1cs (fp1) (list (test-half-power-200-constraint)))
@@ -727,10 +727,10 @@
 ;; (defun test-neg-2-power-199-constraint ()
 ;;   (let* ((fp (fp1))
 ;;          (pos-power (mod (expt 2 199) fp))
-;;          (neg-power (mod (- fp pos-power) fp))) 
-;;     (r1cs-constraint 
-;;       (list (list neg-power 'x))     
-;;       (list (list 1 'y))           
-;;       (list (list 1 'z)))))  
+;;          (neg-power (mod (- fp pos-power) fp)))
+;;     (r1cs-constraint
+;;       (list (list neg-power 'x))
+;;       (list (list 1 'y))
+;;       (list (list 1 'z)))))
 
 ;; (p1cs (fp1) (list (test-neg-2-power-199-constraint)))
