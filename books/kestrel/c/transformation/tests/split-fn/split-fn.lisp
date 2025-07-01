@@ -126,8 +126,6 @@ int foo(int x) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: test function parameter.
-
 (acl2::must-succeed*
   (c$::input-files :files ("test4.c")
                    :process :parse

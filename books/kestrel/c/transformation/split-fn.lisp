@@ -93,7 +93,7 @@
 
 (define map-address-ident-list
   ((idents ident-listp))
-  :short "Map @(tsee c$:expr-unary) @(tsee c$::unop-address) over a list of
+  :short "Map @(tsee c$::expr-unary) @(tsee c$::unop-address) over a list of
           identifiers."
   :returns (exprs expr-listp)
   (if (endp idents)
