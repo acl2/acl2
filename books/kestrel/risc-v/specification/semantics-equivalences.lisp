@@ -212,10 +212,34 @@
 (defsection exec-and-alt-defs
   :ahort "Equivalent semantic definitions of @('AND')."
 
-  (defruled exec-and-alt-def
+  (defruled exec-and-alt-def-signed-signed
     (equal (exec-and rd rs1 rs2 stat feat)
            (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
                 (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logand rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-and
+             read-xreg-signed
+             write-xreg))
+
+  (defruled exec-and-alt-def-unsigned-signed
+    (equal (exec-and rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (logand rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-and
+             read-xreg-signed
+             write-xreg))
+
+  (defruled exec-and-alt-def-signed-unsigned
+    (equal (exec-and rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
                 (result (logand rs1-operand rs2-operand))
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
