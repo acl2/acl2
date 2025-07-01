@@ -1,4 +1,4 @@
-; A trivial example of calling the x86 Formal Unit Tester
+; Tests of the x86 Formal Unit Tester and x86 instruction models
 ;
 ; Copyright (C) 2025 Kestrel Institute
 ;
@@ -10,11 +10,10 @@
 
 (in-package "X") ; X is the package for doing x86 proofs with Axe
 
+;; cert_param: (uses-stp)
+
 ;; Include the Axe Formal Unit Tester for x86:
 (include-book "kestrel/axe/x86/tester" :dir :system)
 
-;; (depends-on "add.elf64")
-
-;; The Formal Unit Tester proves that the function always returns 1, for all
-;; inputs (subject to reasonable assumptions):
-(test-function "test_unsigned_long_add_commutative" "add.elf64")
+;; (depends-on "add-CF.elf64")
+(test-file "add-CF.elf64")

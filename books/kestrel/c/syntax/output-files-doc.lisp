@@ -143,8 +143,12 @@
       "Boolean flag saying whether certain GCC extensions
        should be accepted or not.")
      (xdoc::p
-      "This affects the aforementioned checks for ASCII identifiers:
-       GCC extensions turns some otherwise legal identifiers into keywords.")))
+      "If this flag is @('nil'),
+       the translation unit ensemble must use @(see standard) syntax,
+       i.e. no GCC exensions.")
+     (xdoc::p
+      "This flag also affects the aforementioned checks for ASCII identifiers:
+       GCC extensions turn some otherwise legal identifiers into keywords.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

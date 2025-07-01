@@ -50,17 +50,6 @@
            (equal (+ (- y) x)
                   k)))
 
-;; (defthm getbit-of-ash
-;;   (implies (and (natp c)
-;;                 (natp i)
-;;                 (natp n))
-;;            (equal (getbit n (ash i c))
-;;                   (getbit n (bvcat (+ 1 n (- C)) i c 0))))
-;;   :hints (("Goal" :in-theory (e/d (ash GETBIT BVCAT logapp SLICE
-;;                                        BVCHOP-OF-LOGTAIL)
-;;                                   (
-;;
-;;                                    )))))
 
 ;(in-theory (enable logext-of-sum-trim-constant))
 
@@ -85,11 +74,7 @@
                                    (n n)))
            :in-theory (disable getbit-of-slice))))
 
-;gen the -1
-(defthm ash-of-bvchop-32-and-minus1
-  (equal (ash (bvchop 32 x) -1)
-         (slice 31 1 x))
-  :hints (("Goal" :in-theory (enable ash LOGTAIL-BECOMES-SLICE-BIND-FREE floor-of-2-becomes-logtail-of-1))))
+
 
 (defthm integerp-of-*-of-1/2
   (implies (integerp x)
@@ -98,33 +83,8 @@
   :hints (("Goal" :in-theory (e/d (getbit
                                    bvchop
                                    ifix)
-                                  (
+                                  ()))))
 
-                                   )))))
-
-
-(defthm UNSIGNED-BYTE-P-shift-lemma
-  (IMPLIES (AND (natp n)
-                (UNSIGNED-BYTE-P XSIZE X)
-                (<= N XSIZE))
-           (UNSIGNED-BYTE-P (- XSIZE n)
-                            (FLOOR (* X (EXPT 2 (- N))) 1)))
-  :hints (("Goal" :in-theory (enable UNSIGNED-BYTE-P))))
-
-(defthm ash-negative-becomes-slice
-  (implies (and (< n 0)
-                (bind-free (bind-var-to-bv-term-size 'xsize x))
-                (unsigned-byte-p xsize x)
-                (<= (- n) xsize)
-                (integerp n)
-                )
-           (equal (ash x n)
-                  (slice (+ -1 xsize) (- n) x)))
-  :hints (("Goal"
-           :use (:instance UNSIGNED-BYTE-P-shift-lemma (n (- n)))
-           :in-theory (e/d (ash SLICE LOGTAIL ;floor
-                                )
-                           ()))))
 
 (defthmd bvand-of-+-arg2
   (implies (and (natp width)
@@ -168,29 +128,7 @@
                   0))
   :hints (("Goal" :in-theory (e/d (slice)
                                   (repeatbit
-
                                    logtail-of-plus)))))
-
-(defthm ash-becomes-bvcat
-  (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x)) ;only works for constant size?
-                (force (unsigned-byte-p xsize x))
-                (natp amt))
-           (equal (ash x amt)
-                  (bvcat (+ xsize amt)
-                               x
-                               amt
-                               0)))
-  :hints (("Goal" :in-theory (enable bvcat ash))))
-
-(defthm ash-of-ones
-  (implies (and (natp n)
-                (natp low))
-           (equal (ASH (+ -1 (EXPT 2 n)) LOW)
-                  (bvcat n (+ -1 (EXPT 2 n))
-                               low 0)))
-  :hints (("Goal" :in-theory (e/d (bvcat ash BVUMINUS BVMINUS)
-                                  (;BVPLUS-OF-UNARY-MINUS-ARG2
-                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 ;helpful for address calculations (yikes, this almost seems to violate our normal form)
 (defthmd logext-of-bvplus-64
@@ -209,15 +147,6 @@
                   (if test
                       (unsigned-byte-p n x1)
                       (unsigned-byte-p n x2)))))
-
-
-(defthm bvchop-of-ash
-  (implies (and (natp size)
-                (natp n))
-           (equal (bvchop size (ash x n))
-                  (bvcat (- size n) x n 0)))
-  :hints (("Goal" :in-theory (e/d (ash slice logtail)
-                                  ()))))
 
 ;used by axe
 (defthmd natp-of-+
@@ -271,20 +200,6 @@
                   (equal (logext 64 k) ;gets computed
                          x)))
   :hints (("Goal" :in-theory (enable signed-byte-p))))
-
-(defthm ash-of-bvcat
-  (implies (and (natp lowsize)
-                (natp highsize)
-                (natp amt))
-           (equal (ash (bvcat highsize highval lowsize lowval) amt)
-                  (bvcat (+ lowsize highsize)
-                               (bvcat highsize highval lowsize lowval)
-                               amt
-                               0)))
-  :hints (("Goal" :cases ((and (equal 0 lowsize) (equal 0 highsize))
-                          (and (not (equal 0 lowsize)) (equal 0 highsize))
-                          (and (equal 0 lowsize) (not (equal 0 highsize))))
-           :in-theory (enable ash))))
 
 ;gen
 (defthm signed-byte-p-of-one-more
@@ -413,12 +328,6 @@
          (if test
              (slice high low v1)
              (slice high low v2))))
-
-(defthm ash-of-if
-  (equal (ash (if test i1 i2) c)
-         (if test
-             (ash i1 c)
-           (ash i2 c))))
 
 (defthm bvchop-of-if-when-constants
   (implies (syntaxp (and (quotep n)

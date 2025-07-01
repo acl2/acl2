@@ -84,6 +84,7 @@
 (include-book "kestrel/arithmetic-light/ash" :dir :system) ; for ash-of-0, mentioned in a rule-list
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/bv/bvif2" :dir :system)
+(include-book "kestrel/bv/ash" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
@@ -142,11 +143,11 @@
   (declare (xargs :guard t))
   (if (atom alist)
       (null alist)
-      (let ((entry (first alist)))
-        (and (consp entry)
-             (symbolp (car entry))
-             (boolean-listp (cdr entry))
-             (elision-spec-alistp (rest alist))))))
+    (let ((entry (first alist)))
+      (and (consp entry)
+           (symbolp (car entry))
+           (boolean-listp (cdr entry))
+           (elision-spec-alistp (rest alist))))))
 
 (defthm elision-spec-alistp-forward-to-alistp
     (implies (elision-spec-alistp alist)
