@@ -15,6 +15,7 @@
 (include-book "instructions")
 (include-book "encoding")
 (include-book "decoding")
+(include-book "encoding-decoding-illustration")
 (include-book "states")
 (include-book "reads-over-writes")
 (include-book "semantics")
