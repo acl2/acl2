@@ -26,7 +26,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled ubyte8p-of-logtail-8-of-ubyte16
+(defruledl ubyte8p-of-logtail-8-of-ubyte16
   (implies (ubyte16p x)
            (ubyte8p (logtail 8 x)))
   :enable (ubyte16p
