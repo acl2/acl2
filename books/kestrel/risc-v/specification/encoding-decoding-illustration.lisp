@@ -59,7 +59,7 @@
      a valid instruction in the darker blue oval,
      indicated by the dot in that oval,
      whose encoding is the one in the green oval.
-     Based solely on the definition of @(tsee encdoding-validp),
+     Based solely on the definition of @(tsee encoding-validp),
      there is no guarantee that the valid instruction is unique
      (this is proved elsewhere, as explained shortly),
      but we know that @(tsee encode) takes us
