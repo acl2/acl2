@@ -2044,7 +2044,6 @@
                                   (:e ident)
                                   (:e c::expr-kind)
                                   (:e c::stmt-return)
-                                  (:e c::type-sint)
                                   (:e c::type-nonchar-integerp))
                      :use (,expr?-thm-name
                            (:instance
@@ -2199,7 +2198,6 @@
                                 (:e ldm-ident)
                                 (:e ident)
                                 (:e c::block-item-stmt)
-                                (:e c::type-sint)
                                 (:e c::type-nonchar-integerp))
                    :use ((:instance ,stmt-thm-name (limit (1- limit)))
                          (:instance
@@ -2354,7 +2352,6 @@
                                 (:e ldm-block-item)
                                 (:e ldm-ident)
                                 (:e ident)
-                                (:e c::type-sint)
                                 (:e c::type-nonchar-integerp))
                    :use ((:instance ,item-thm-name (limit (1- limit)))
                          (:instance
@@ -5214,7 +5211,6 @@
                         (:e ldm-type)
                         (:e ldm-block-item-list)
                         (:e c::tyname-to-type)
-                        (:e c::type-sint)
                         (:e c::block-item-list-nocallsp)
                         c::errorp-of-error))))
        (thm-event `(defruled ,thm-name
