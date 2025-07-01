@@ -1853,7 +1853,7 @@ the left branch produces NIL then we don't visit the right branch:</p>
     :binder short-circuiting-bind
 
     ;; Check on each leaf that the leaf name is not the empty string.
-    :prod-fns ((simple-tree-leaf (name (lambda (x) (not (equal x "")))))))
+    :prod-fns ((simple-tree-leaf (name (lambda (x) (not (equal x \"\")))))))
  })
 
 <p>The general form of a @('defvisitor-template') call is:</p>
