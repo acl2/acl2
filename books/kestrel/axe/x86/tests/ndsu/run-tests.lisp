@@ -17,3 +17,6 @@
 
 ;; (depends-on "add-CF.elf64")
 (test-file "add-CF.elf64")
+
+;; (depends-on "adc-CF.elf64")
+(test-file "adc-CF.elf64")
