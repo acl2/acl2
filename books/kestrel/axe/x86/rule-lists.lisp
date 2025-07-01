@@ -5786,8 +5786,8 @@
             sf-spec64-becomes-getbit
             zf-spec$inline
             ;; todo: how to open the other flags, like pf, to bv notions?
-
             acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
+            acl2::slice-convert-arg3-to-bv-axe
             )
           (x86-type-rules) ; since some of these functions may survive to the proof stage
           (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
