@@ -2345,6 +2345,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd bvcat-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp high nil dag-array))
+           (equal (bvcat highsize high lowsize low)
+                  (bvcat highsize (trim highsize high) lowsize low)))
+  :hints (("Goal" :in-theory (enable trim bvcat))))
+
+(defthmd bvcat-convert-arg4-to-bv-axe
+  (implies (and (axe-syntaxp (term-should-be-converted-to-bvp low nil dag-array))
+                (integerp lowsize))
+           (equal (bvcat highsize high lowsize low)
+                  (bvcat highsize high lowsize (trim lowsize low))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Only needed for Axe.  TODO: Add such rules for all bvs?  Or do they already exist?
 (defthmd bvuminus-less-than-true
   (implies (and (syntaxp (quotep k))
