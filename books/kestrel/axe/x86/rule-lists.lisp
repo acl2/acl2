@@ -1170,6 +1170,16 @@
 
     acl2::unsigned-byte-p-of-+ ; can work with cf-spec64-becomes-getbit
 
+    integerp-of-!rflagsbits->af
+    integerp-of-!rflagsbits->cf
+    integerp-of-!rflagsbits->of
+    integerp-of-!rflagsbits->pf
+    integerp-of-!rflagsbits->sf
+    integerp-of-!rflagsbits->zf
+    integerp-of-!rflagsbits->res1
+    integerp-of-!rflagsbits->res2
+    integerp-of-!rflagsbits->res3
+
     ;;todo: not x86-specific
     acl2::integerp-of-logext
     acl2::signed-byte-p-of-logext
@@ -5757,6 +5767,7 @@
             acl2::bvchop-subst-constant-alt
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
+            bool->bit$inline ; from sub-cf-spec8, etc. (todo: go to bool-to-bit)
             ;; If any of these survive to the proof stage, we should probably open them up:
             js-condition
             jns-condition
@@ -5780,12 +5791,40 @@
             add-af-spec16-becomes-bvlt
             add-af-spec32-becomes-bvlt
             add-af-spec64-becomes-bvlt
+            sub-af-spec8-becomes-bvlt
+            sub-af-spec16-becomes-bvlt
+            sub-af-spec32-becomes-bvlt
+            sub-af-spec64-becomes-bvlt
             cf-spec64-becomes-getbit ;cf-spec64$inline ; todo: more!
             sf-spec8-becomes-getbit
             sf-spec16-becomes-getbit
             sf-spec32-becomes-getbit
             sf-spec64-becomes-getbit
             zf-spec$inline
+            ;;sub-af-spec8$inline
+            sub-cf-spec8
+            sub-of-spec8
+            sub-pf-spec8
+            sub-sf-spec8
+            sub-zf-spec8
+            ;;sub-af-spec16$inline
+            sub-cf-spec16
+            sub-of-spec16
+            sub-pf-spec16
+            sub-sf-spec16
+            sub-zf-spec16
+            ;;sub-af-spec32$inline
+            sub-cf-spec32
+            sub-of-spec32
+            sub-pf-spec32
+            sub-sf-spec32
+            sub-zf-spec32
+            ;;sub-af-spec64$inline
+            sub-cf-spec64
+            sub-of-spec64
+            sub-pf-spec64
+            sub-sf-spec64
+            sub-zf-spec64
             ;; todo: how to open the other flags, like pf, to bv notions?
             acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
             acl2::bvplus-convert-arg2-to-bv-axe ; would like to do this earlier, but it might cause problems
@@ -5800,6 +5839,21 @@
             !rflagsbits->res1-opener
             !rflagsbits->res2-opener
             !rflagsbits->res3-opener)
+          ;; todo: this stuff is duplicated in the lifter-rules:
+          *unsigned-choppers* ;; these are just logead, aka bvchop
+          *signed-choppers* ;; these are just logext
+          *unsigned-recognizers* ;; these are just unsigned-byte-p
+          *signed-recognizers* ;; these are just signed-byte-p
+          ;; These are just logext: ; todo: more!
+          '(x86isa::n08-to-i08$inline
+            x86isa::n16-to-i16$inline
+            x86isa::n32-to-i32$inline
+            x86isa::n64-to-i64$inline
+            x86isa::n128-to-i128$inline
+            x86isa::n256-to-i256$inline
+            x86isa::n512-to-i512$inline)
+          (logops-to-bv-rules)
+
           (x86-type-rules) ; since some of these functions may survive to the proof stage
           (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
           (float-rules) ; i need booleanp-of-isnan, at least
