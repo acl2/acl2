@@ -18,6 +18,10 @@ gcc or-ZF.c -o or-ZF.elf64
 gcc or-SF.c -o or-SF.elf64
 gcc or-CF.c -o or-CF.elf64
 
+gcc test-CF.c -o test-CF.elf64
+gcc test-SF.c -o test-SF.elf64
+gcc test-ZF.c -o test-ZF.elf64
+
 gcc and-ZF.c -o and-ZF.elf64
 gcc and-SF.c -o and-SF.elf64
 gcc and-CF.c -o and-CF.elf64
