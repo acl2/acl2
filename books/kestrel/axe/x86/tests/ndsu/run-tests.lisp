@@ -70,6 +70,15 @@
 ;; (depends-on "sub-CF.elf64")
 (test-file "sub-CF.elf64")
 
+;; (depends-on "sub-OF.elf64")
+;todo: (test-file "sub-OF.elf64")
+
+;; (depends-on "sub-PF0.elf64")
+(test-file "sub-PF0.elf64")
+
+;; (depends-on "sub-PF1.elf64")
+(test-file "sub-PF1.elf64")
+
 ;; (depends-on "sub-SF.elf64")
 (test-file "sub-SF.elf64")
 
