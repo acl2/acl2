@@ -13,6 +13,7 @@
 
 (include-book "specification/execution")
 (include-book "specification/reads-over-writes")
+(include-book "specification/semantics-equivalences")
 (include-book "executable/decoding-correct")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

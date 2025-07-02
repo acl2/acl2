@@ -503,15 +503,6 @@
                   (bvchop size (+ x y z))))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-; add to bv-intro rules?
-(defthm acl2::bvplus-of-+-of-logext-arg3
-  (implies (and (<= size2 size)
-                (integerp size)
-                (posp size2))
-           (equal (bvplus size x (logext size2 y))
-                  (bvplus size x (bvsx size size2 y))))
-  :hints (("Goal" :cases ((equal size size2)))))
-
 ;; or we could tigthen the inner size, but removing it seems good to allow the pluses to possibly combine
 (defthm acl2::logext-of-+-of-bvplus
   (implies (and (<= size size2)

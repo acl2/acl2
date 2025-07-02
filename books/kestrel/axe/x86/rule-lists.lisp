@@ -68,10 +68,11 @@
             x86isa::gpr-adc-spec-2-alt-def
             x86isa::gpr-adc-spec-4-alt-def
             x86isa::gpr-adc-spec-8-alt-def ;x86isa::gpr-adc-spec-8$inline
-            open-carry-of-cf-spec8 ; open the cf function when used in certain places, like gpr-adc-spec-8
-            open-carry-of-cf-spec16
-            open-carry-of-cf-spec32
-            open-carry-of-cf-spec64
+            x86isa::open-carry-of-rflagsbits->cf
+            ;; open-carry-of-cf-spec8 ; open the cf function when used in certain places, like gpr-adc-spec-8
+            ;; open-carry-of-cf-spec16
+            ;; open-carry-of-cf-spec32
+            ;; open-carry-of-cf-spec64
             open-carry-constant-opener ; also open when applied to a constant (or refrain from even this?)
             integerp-of-open-carry
 
@@ -884,27 +885,27 @@
 ;;     x86isa::!rflagsbits->sf$inline
 ;;     x86isa::!rflagsbits->zf$inline
 
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->res1$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->cf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->pf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->id$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->vip$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->vif$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->ac$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->vm$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->rf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->res4$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->nt$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->of$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->df$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->intf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->tf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->sf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->zf$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->res3$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->af$inline
-;;     x86isa::unsigned-byte-p-1-of-rflagsbits->res2$inline
-;;     x86isa::unsigned-byte-p-2-of-rflagsbits->iopl$inline ;this one is 2 bits
+    x86isa::unsigned-byte-p-1-of-rflagsbits->res1$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->cf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->pf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->id$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->vip$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->vif$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->ac$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->vm$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->rf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->res4$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->nt$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->of$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->df$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->intf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->tf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->sf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->zf$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->res3$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->af$inline
+    x86isa::unsigned-byte-p-1-of-rflagsbits->res2$inline
+    x86isa::unsigned-byte-p-2-of-rflagsbits->iopl$inline ;this one is 2 bits
 
 ;;     ;x86isa::rflagsbits->ac$inline
 ;;     ;X86ISA::RFLAGSBITS$INLINE
@@ -1171,6 +1172,7 @@
 
     ;;todo: not x86-specific
     acl2::integerp-of-logext
+    acl2::signed-byte-p-of-logext
     acl2::integerp-of--))
 
 (defund arith-to-bv-rules ()
@@ -2023,7 +2025,7 @@
     ;;set-rip-of-+-of-logext
     set-rip-of-+-of-bvplus
     ;;x86isa::logext-48-does-nothing-when-canonical-address-p
-    acl2::bvplus-of-+-of-logext-arg3 ; crucial
+    acl2::bvplus-of-logext-arg3-convert-to-bv ; crucial
     acl2::bvsx-convert-arg3-to-bv-axe ; crucial
 
     x86isa::integerp-when-canonical-address-p-cheap ; also in the non-bv case!
@@ -5785,6 +5787,9 @@
             sf-spec64-becomes-getbit
             zf-spec$inline
             ;; todo: how to open the other flags, like pf, to bv notions?
+            acl2::bvplus-convert-arg2-to-bv-axe ; would like to do this earlier, but it might cause problems
+            acl2::bvplus-convert-arg3-to-bv-axe
+            acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
             )
           (x86-type-rules) ; since some of these functions may survive to the proof stage
           (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage

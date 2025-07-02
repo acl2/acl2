@@ -17,6 +17,7 @@
 (include-book "bvminus")
 (include-book "bv-syntax")
 (include-book "bvcat-def")
+(include-book "bvsx-def")
 (include-book "bvif")
 (include-book "defs-bitwise")
 (include-book "unsigned-byte-p-forced")
@@ -186,3 +187,23 @@
            (equal (bvif size test z (- x))
                   (bvif size test z (bvuminus size x))))
   :hints (("Goal" :in-theory (enable bvif bvuminus bvminus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; replace with a general rule?
+(defthm bvplus-of-logext-arg2-convert-to-bv
+  (implies (and (< size2 size) ; could allow =
+                (integerp size)
+                (posp size2))
+           (equal (bvplus size (logext size2 x) y)
+                  (bvplus size (bvsx size size2 x) y)))
+  :hints (("Goal" :cases ((equal size size2)))))
+
+;; replace with a general rule?
+(defthm bvplus-of-logext-arg3-convert-to-bv
+  (implies (and (< size2 size) ; could allow =
+                (integerp size)
+                (posp size2))
+           (equal (bvplus size x (logext size2 y))
+                  (bvplus size x (bvsx size size2 y))))
+  :hints (("Goal" :cases ((equal size size2)))))

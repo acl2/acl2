@@ -4,7 +4,7 @@ using namespace std;
 // RAC begin
 
 struct S1 {
-  array<int, 4> a = {1, 2, 3, 4};
+  array<int, 4> a = {{1, 2, 3, 4}};
 };
 
 int foo() {

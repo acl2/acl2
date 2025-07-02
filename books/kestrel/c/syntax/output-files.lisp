@@ -13,6 +13,7 @@
 (include-book "files")
 (include-book "printer")
 (include-book "ascii-identifiers")
+(include-book "standard")
 
 (include-book "kestrel/file-io-light/write-bytes-to-file-bang" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
@@ -61,7 +62,8 @@
   :short "Keyword options accepted by @(tsee output-files)."
   (list :const
         :path
-        :printer-options)
+        :printer-options
+        :gcc)
   ///
   (assert-event (keyword-listp *output-files-allowed-options*))
   (assert-event (no-duplicatesp-eq *output-files-allowed-options*)))
@@ -119,6 +121,12 @@
        ((unless (transunit-ensemble-aidentp tunits gcc))
         (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
                       contains non-all-ASCII identifiers."
+                     tunits desc)))
+       ((unless (or gcc
+                    (transunit-ensemble-standardp tunits)))
+        (reterr (msg "The translation unit ensemble ~x0 passed as ~@1 ~
+                      uses non-standard syntax (i.e. GCC extensions), ~
+                      but the :GCC input is NIL."
                      tunits desc))))
     (retok tunits))
 

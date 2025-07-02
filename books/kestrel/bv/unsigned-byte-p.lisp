@@ -316,3 +316,11 @@
                        (<= x (expt 2 size))
                        (natp size))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+
+;; todo: 2 more commuted forms
+(defthm unsigned-byte-p-of-+-with-carry
+  (implies (and (unsigned-byte-p (+ -1 size) x)
+                (unsigned-byte-p (+ -1 size) y)
+                (unsigned-byte-p 1 bit))
+           (unsigned-byte-p size (+ x y bit)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))

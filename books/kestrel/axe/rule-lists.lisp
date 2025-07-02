@@ -494,7 +494,9 @@
     bvor-convert-arg3-to-bv-axe
     bvxor-convert-arg2-to-bv-axe
     bvxor-convert-arg3-to-bv-axe
-    getbit-convert-arg2-to-bv-axe ; todo: more!
+    getbit-convert-arg2-to-bv-axe
+    ;bvcat-convert-arg2-to-bv-axe ; todo: these seemed to cause problems
+    ;bvcat-convert-arg4-to-bv-axe ; todo: more!
     ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
     ;; keep this list in sync with *functions-convertible-to-bv*:
     trim-of-logand-becomes-bvand
@@ -504,6 +506,9 @@
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
     trim-of-*-becomes-bvmult
     trim-of-unary---becomes-bvuminus
+    ;; todo: replace these with a more general scheme:
+    bvplus-of-logext-arg2-convert-to-bv
+    bvplus-of-logext-arg3-convert-to-bv
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
@@ -1209,7 +1214,8 @@
 
      ;; this made one of the mavlink dags much longer (too big) but the culprit was the subsequent xor normalization:
      getbit-of-bvif-quoteps ; more like this?  slice bvchop, etc.?  any term with everything constant but the bvif, like (bvcat 8 1 8 (bvif 8 test 5 7))?
-     )))
+
+     unsigned-byte-p-of-+-with-carry)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?

@@ -1,0 +1,61 @@
+; Tests of the x86 Formal Unit Tester and x86 instruction models
+;
+; Copyright (C) 2025 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "X") ; X is the package for doing x86 proofs with Axe
+
+;; cert_param: (uses-stp)
+
+;; Include the Axe Formal Unit Tester for x86:
+(include-book "kestrel/axe/x86/tester" :dir :system)
+
+;; (depends-on "add-CF.elf64")
+(test-file "add-CF.elf64")
+
+;; (depends-on "add-ZF.elf64")
+(test-file "add-ZF.elf64")
+
+;; (depends-on "add-SF.elf64")
+;(test-file "add-SF.elf64")
+
+;; (depends-on "add-PF=1.elf64")
+(test-file "add-PF=1.elf64")
+
+;; (depends-on "add-PF=0.elf64")
+(test-file "add-PF=0.elf64")
+
+;; (depends-on "add-AF.elf64")
+(test-file "add-AF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "adc-CF.elf64")
+(test-file "adc-CF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "or-ZF.elf64")
+(test-file "or-ZF.elf64")
+
+;; (depends-on "or-SF.elf64")
+;(test-file "or-SF.elf64")
+
+;; (depends-on "or-CF.elf64")
+(test-file "or-CF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "and-ZF.elf64")
+(test-file "and-ZF.elf64")
+
+;; (depends-on "and-SF.elf64")
+;(test-file "and-SF.elf64")
+
+;; (depends-on "and-CF.elf64")
+(test-file "and-CF.elf64")
