@@ -85,6 +85,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; (depends-on "test-CF.elf64")
+(test-file "test-CF.elf64")
+
+;; (depends-on "test-SF.elf64")
+(test-file "test-SF.elf64")
+
+;; (depends-on "test-ZF.elf64")
+(test-file "test-ZF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; (depends-on "xor-CF.elf64")
 (test-file "xor-CF.elf64")
 
