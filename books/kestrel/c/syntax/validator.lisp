@@ -3597,7 +3597,7 @@
        when this function is called
        to validate the declarator of a function definition,
        and only when the parameters of the function have not been validated yet.
-       Its new value @('fundef-params-p'), returned as result,
+       Its new value @('new-fundef-params-p'), returned as result,
        stays @('t') if the parameters of the function
        have still not been validated yet,
        because they are not found in this declarator;
@@ -3661,7 +3661,7 @@
        Otherwise, we validate the declarator,
        using a separate validation function.")
      (xdoc::p
-      "This function does not take a return a @('fundef-params-p') flag
+      "This function does not take or return a @('fundef-params-p') flag
        because optional declarators are not used in function parameters."))
     (b* (((reterr) nil (irr-type) nil nil (irr-valid-table)))
       (declor-option-case
