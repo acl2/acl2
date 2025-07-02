@@ -5646,7 +5646,6 @@
             ;;stuff related to flags changes:
 
             ;acl2::logand-of-1-becomes-getbit-arg2 ;move
-            ;; acl2::ifix-when-integerp
             of-spec-of-logext-32
             acl2::unsigned-byte-p-of-if
             ;acl2::unsigned-byte-p-of-bvplus ;todo: more
