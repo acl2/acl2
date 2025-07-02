@@ -318,7 +318,6 @@
 ;(xdoc::change-parents data-definitions (macro-libraries projects debugging))
 ;(xdoc::change-parents with-timeout (data-definitions))
 ;(xdoc::change-parents testing (cgen))
-;; (xdoc::change-parents data-structures (macro-libraries))
 
 #!XDOC
 (defun fix-redundant-acl2-parents (all-topics)
