@@ -1546,8 +1546,7 @@
      theorems were generated for both argument expressions,
      and the binary operator is pure and non-strict.
      The theorem is proved via three general ones that we prove below;
-     the third one is only needed if there is an actual simplification,
-     but we always use it in the proof for simplicity."))
+     the third one is only needed if there is an actual simplification."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (binop-case op :add)
@@ -1611,9 +1610,10 @@
                         (op ',(ldm-binop op))
                         (arg1 (mv-nth 1 (ldm-expr ',arg1)))
                         (arg2 (mv-nth 1 (ldm-expr ',arg2))))
-                       (:instance
-                        simpadd0-expr-binary-support-lemma-simp
-                        (expr (mv-nth 1 (ldm-expr ',arg1-new))))))))
+                       ,@(and simpp
+                              `((:instance
+                                 simpadd0-expr-binary-support-lemma-simp
+                                 (expr (mv-nth 1 (ldm-expr ',arg1-new))))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-expr-pure-thm expr
                                     expr-new
