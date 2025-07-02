@@ -1634,6 +1634,10 @@
                                                       gin.names-to-avoid)
                                 :vartys vartys
                                 :diffp diffp))))
+     ((member-eq (binop-kind op) '(:logand :logor))
+      (mv expr-new gout-no-thm))
+     ((eq (binop-kind op) :asg)
+      (mv expr-new gout-no-thm))
      (t (mv expr-new gout-no-thm))))
 
   ///
