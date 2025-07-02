@@ -21,3 +21,8 @@ gcc or-CF.c -o or-CF.elf64
 gcc and-ZF.c -o and-ZF.elf64
 gcc and-SF.c -o and-SF.elf64
 gcc and-CF.c -o and-CF.elf64
+
+;; Done on Kestrel machine osprey:
+gcc sub-ZF.c -o sub-ZF.elf64
+gcc sub-SF.c -o sub-SF.elf64
+gcc add-OF.c -o add-OF.elf64

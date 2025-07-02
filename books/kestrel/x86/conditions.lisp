@@ -1970,3 +1970,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;(defthm pf-spec8-becomes-bvcount (equal (pf-spec8 result) (acl2::bvcount 8 result)) :hints (("Goal" :in-theory (enable pf-spec8 acl2::bvcount))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm sub-af-spec8-becomes-bvlt (equal (sub-af-spec8 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec8 bvlt bvminus acl2::bvchop-of-sum-cases))))
+(defthm sub-af-spec16-becomes-bvlt (equal (sub-af-spec16 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec16 bvlt bvminus acl2::bvchop-of-sum-cases))))
+(defthm sub-af-spec32-becomes-bvlt (equal (sub-af-spec32 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec32 bvlt bvminus acl2::bvchop-of-sum-cases))))
+(defthm sub-af-spec64-becomes-bvlt (equal (sub-af-spec64 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec64 bvlt bvminus acl2::bvchop-of-sum-cases))))
