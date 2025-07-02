@@ -21,11 +21,15 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "utilities/free-vars")
+(include-book "utilities/subst-free")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (tau-system))))
 (set-induction-depth-limit 0)
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,6 +53,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(std::make-define-config
+  :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled ident-listp-when-ident-setp
   (implies (ident-setp set)
            (ident-listp set))
@@ -62,38 +71,40 @@
 (encapsulate ()
   (set-induction-depth-limit 1)
 
-  (fty::defomap ident-paramdeclon-map
+  (fty::defomap ident-param-declon-map
     :key-type ident
     :val-type param-declon
-    :pred ident-paramdeclon-mapp))
+    :pred ident-param-declon-mapp))
 
-(defrulel ident-listp-of-keys-when-ident-paramdeclon-mapp
-  (implies (ident-paramdeclon-mapp map)
+(defrulel ident-listp-of-keys-when-ident-param-declon-mapp
+  (implies (ident-param-declon-mapp map)
            (ident-listp (omap::keys map)))
   :induct t
   :enable omap::keys)
 
-(defrulel param-declon-listp-of-strip-cdrs-when-ident-paramdeclon-mapp
-  (implies (ident-paramdeclon-mapp map)
+(defrulel param-declon-listp-of-strip-cdrs-when-ident-param-declon-mapp
+  (implies (ident-param-declon-mapp map)
            (param-declon-listp (strip-cdrs map)))
   :induct t
   :enable (strip-cdrs
-           ident-paramdeclon-mapp))
+           ident-param-declon-mapp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-ident-list
+(define map-address-ident-list
   ((idents ident-listp))
-  :short "Map @(tsee c$::expr-list) over a list."
+  :short "Map @(tsee c$::expr-unary) @(tsee c$::unop-address) over a list of
+          identifiers."
   :returns (exprs expr-listp)
   (if (endp idents)
       nil
-    (cons (make-expr-ident :ident (first idents) :info nil)
-          (expr-ident-list (rest idents)))))
+    (cons (make-expr-unary :op (c$::unop-address)
+                           :arg (make-expr-ident :ident (first idents)))
+          (map-address-ident-list (rest idents)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define param-declon-to-ident-paramdeclon-map
+(define param-declon-to-ident-param-declon-map
   ((paramdecl param-declonp))
   :short "Convert a parameter declaration into a singleton omap associating the
           declared identifier to the declaration."
@@ -102,7 +113,7 @@
    (xdoc::p
      "If the parameter declaration is unnamed, or if it has not been
       disambiguated, the empty map is returned instead."))
-  :returns (map ident-paramdeclon-mapp)
+  :returns (map ident-param-declon-mapp)
   (b* (((param-declon paramdecl) paramdecl))
     (param-declor-case
       paramdecl.declor
@@ -111,19 +122,19 @@
                                  nil)
       :otherwise nil)))
 
-(define param-declon-list-to-ident-paramdeclon-map
+(define param-declon-list-to-ident-param-declon-map
   ((paramdecls param-declon-listp))
-  :short "Fold @(tsee param-declon-to-ident-paramdeclon-map) over a list."
-  :returns (map ident-paramdeclon-mapp)
+  :short "Fold @(tsee param-declon-to-ident-param-declon-map) over a list."
+  :returns (map ident-param-declon-mapp)
   (if (endp paramdecls)
         nil
-    (omap::update* (param-declon-to-ident-paramdeclon-map (first paramdecls))
-                   (param-declon-list-to-ident-paramdeclon-map (rest paramdecls))))
+    (omap::update* (param-declon-to-ident-param-declon-map (first paramdecls))
+                   (param-declon-list-to-ident-param-declon-map (rest paramdecls))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decl-to-ident-paramdeclon-map
+(define decl-to-ident-param-declon-map
   ((decl declp))
   :short "Convert a regular declaration into an omap of identifiers to
           parameter declarations."
@@ -145,17 +156,17 @@
      "This is used by @(tsee split-fn) to track declared variables and to
       create parameters for the newly generated function (with the subset of
       declared variables which are used)."))
-  :returns (map ident-paramdeclon-mapp)
+  :returns (map ident-param-declon-mapp)
   (decl-case
    decl
-   :decl (decl-to-ident-paramdeclon-map0 decl.specs decl.init)
+   :decl (decl-to-ident-param-declon-map0 decl.specs decl.init)
    :statassert nil)
   :prepwork
-  ((define decl-to-ident-paramdeclon-map0
+  ((define decl-to-ident-param-declon-map0
      ((declspecs decl-spec-listp)
       (initdeclors initdeclor-listp))
      :returns
-     (map ident-paramdeclon-mapp)
+     (map ident-param-declon-mapp)
      (b* (((when (endp initdeclors))
            nil)
           ((initdeclor initdeclor) (first initdeclors))
@@ -165,27 +176,118 @@
          (make-param-declon
            :specs declspecs
            :declor (param-declor-nonabstract initdeclor.declor))
-         (decl-to-ident-paramdeclon-map0 declspecs (rest initdeclors))))
+         (decl-to-ident-param-declon-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
-(define decl-list-to-ident-paramdeclon-map
+(define decl-list-to-ident-param-declon-map
   ((decls decl-listp))
-  :short "Fold @(tsee decl-to-ident-paramdeclon-map) over a list."
-  :returns (map ident-paramdeclon-mapp)
+  :short "Fold @(tsee decl-to-ident-param-declon-map) over a list."
+  :returns (map ident-param-declon-mapp)
   (if (endp decls)
         nil
-    (omap::update* (decl-to-ident-paramdeclon-map (first decls))
-                   (decl-list-to-ident-paramdeclon-map (rest decls))))
+    (omap::update* (decl-to-ident-param-declon-map (first decls))
+                   (decl-list-to-ident-param-declon-map (rest decls))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; TODO: avoid excessive parentheses
+(defines add-pointer-declor/dirdeclor
+  (define add-pointer-declor
+    ((declor declorp))
+    :returns (declor$ declorp)
+    (b* (((declor declor) declor))
+      (dirdeclor-case
+        declor.direct
+        :ident (make-declor
+                 :pointers (append declor.pointers (list nil))
+                 :direct declor.direct)
+        :otherwise (make-declor
+                     :pointers declor.pointers
+                     :direct (add-pointer-dirdeclor declor.direct))))
+    :measure (declor-count declor))
+
+  (define add-pointer-dirdeclor
+    ((dirdeclor dirdeclorp))
+    :returns (dirdeclor$ dirdeclorp)
+    (dirdeclor-case
+     dirdeclor
+     :ident (dirdeclor-paren (make-declor :pointers (list nil)
+                                          :direct (dirdeclor-fix dirdeclor)))
+     :paren (dirdeclor-paren (add-pointer-declor dirdeclor.inner))
+     :array (make-dirdeclor-array
+              :declor (add-pointer-dirdeclor dirdeclor.declor)
+              :qualspecs dirdeclor.qualspecs
+              :size? dirdeclor.size?)
+     :array-static1 (make-dirdeclor-array-static1
+                      :declor (add-pointer-dirdeclor dirdeclor.declor)
+                      :qualspecs dirdeclor.qualspecs
+                      :size dirdeclor.size)
+     :array-static2 (make-dirdeclor-array-static2
+                      :declor (add-pointer-dirdeclor dirdeclor.declor)
+                      :qualspecs dirdeclor.qualspecs
+                      :size dirdeclor.size)
+     :array-star (make-dirdeclor-array-star
+                   :declor (add-pointer-dirdeclor dirdeclor.declor)
+                   :qualspecs dirdeclor.qualspecs)
+     :function-params (make-dirdeclor-function-params
+                        :declor (add-pointer-dirdeclor dirdeclor.declor)
+                        :params dirdeclor.params
+                        :ellipsis dirdeclor.ellipsis)
+     :function-names (make-dirdeclor-function-names
+                        :declor (add-pointer-dirdeclor dirdeclor.declor)
+                        :names dirdeclor.names))
+    :measure (dirdeclor-count dirdeclor))
+
+  :verify-guards :after-returns)
+
+(define add-pointer-param-declon
+  ((param-declon param-declonp))
+  :returns (param-declon$ param-declonp)
+  (b* (((param-declon param-declon) param-declon))
+    (make-param-declon
+      :specs param-declon.specs
+      :declor (param-declor-case
+                param-declon.declor
+                :nonabstract (param-declor-nonabstract
+                               (add-pointer-declor param-declon.declor.declor))
+                ;; TODO (not used here, but should be implemented for a general
+                ;; utility).
+                :abstract (param-declor-fix param-declon.declor)
+                :none (param-declor-fix param-declon.declor)
+                :ambig (param-declor-fix param-declon.declor)))))
+
+(define map-add-pointer-param-declon
+  ((param-declons param-declon-listp))
+  :returns (param-declons$ param-declon-listp)
+  (if (endp param-declons)
+      nil
+    (cons (add-pointer-param-declon (first param-declons))
+          (map-add-pointer-param-declon (rest param-declons)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-deref-subst
+  ((idents ident-listp))
+  :returns (subst ident-expr-mapp)
+  (if (endp idents)
+      nil
+    (omap::update (ident-fix (first idents))
+                  (expr-paren
+                    (c$::make-expr-unary
+                      :op (c$::unop-indir)
+                      :arg (make-expr-ident :ident (first idents))))
+                  (make-deref-subst (rest idents))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define abstract-fn
   ((new-fn-name identp)
    (spec decl-spec-listp)
    (pointers typequal/attribspec-list-listp)
    (items block-item-listp)
-   (decls ident-paramdeclon-mapp))
+   (decls ident-param-declon-mapp))
   :short "Create a new function from the block items following the @(tsee
           split-fn) split point."
   :long
@@ -210,11 +312,14 @@
   (b* (((reterr) nil (c$::irr-fundef))
        ((mv idents -)
         (free-vars-block-item-list items nil))
-       (decls (ident-paramdeclon-map-filter decls idents))
+       (decls (ident-param-declon-map-filter decls idents))
        (idents (omap::keys decls))
        ;; We use strip-cdrs instead of omap::values because we need these in
        ;; the same order as idents.
-       (params (strip-cdrs decls)))
+       (params (strip-cdrs decls))
+       (deref-subst (make-deref-subst idents))
+       ((mv items -)
+        (block-item-list-subst-free items deref-subst nil)))
     (retok
       idents
       (make-fundef
@@ -223,14 +328,15 @@
                   :pointers pointers
                   :direct (make-dirdeclor-function-params
                             :declor (dirdeclor-ident new-fn-name)
-                            :params params))
+                            :params (map-add-pointer-param-declon params)))
         :body (stmt-compound items))))
+  :guard-hints (("Goal" :in-theory (enable omap::alistp-when-mapp)))
   :prepwork
-  ((define ident-paramdeclon-map-filter
-     ((map ident-paramdeclon-mapp)
+  ((define ident-param-declon-map-filter
+     ((map ident-param-declon-mapp)
       (idents ident-setp))
-     :returns (new-map ident-paramdeclon-mapp)
-     (b* ((map (ident-paramdeclon-map-fix map))
+     :returns (new-map ident-param-declon-mapp)
+     (b* ((map (ident-param-declon-map-fix map))
           ((when (omap::emptyp map))
            nil)
           ((mv key val)
@@ -238,12 +344,11 @@
        (if (in key idents)
            (omap::update key
                          val
-                         (ident-paramdeclon-map-filter (omap::tail map) idents))
-         (ident-paramdeclon-map-filter
+                         (ident-param-declon-map-filter (omap::tail map) idents))
+         (ident-param-declon-map-filter
            (omap::tail map)
            idents)))
-     :measure (acl2-count (ident-paramdeclon-map-fix map))
-     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :measure (acl2-count (ident-param-declon-map-fix map))
      :verify-guards :after-returns)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -253,7 +358,7 @@
    (items block-item-listp)
    (spec decl-spec-listp)
    (pointers typequal/attribspec-list-listp)
-   (decls ident-paramdeclon-mapp)
+   (decls ident-param-declon-mapp)
    (split-point natp))
   :short "Transform a list of block items."
   :long
@@ -281,15 +386,15 @@
                      (stmt-return
                        (make-expr-funcall
                          :fun (make-expr-ident :ident new-fn-name :info nil)
-                         :args (expr-ident-list idents))))))))
+                         :args (map-address-ident-list idents))))))))
        ((when (endp items))
         (reterr (msg "Bad split point specifier")))
        (item (first items))
        (decls
         (block-item-case
           item
-          :decl (omap::update* (decl-to-ident-paramdeclon-map item.unwrap)
-                               (ident-paramdeclon-map-fix decls))
+          :decl (omap::update* (decl-to-ident-param-declon-map item.unwrap)
+                               (ident-param-declon-map-fix decls))
           :otherwise decls))
        ((erp new-fn truncated-items)
         (split-fn-block-item-list new-fn-name
@@ -302,9 +407,7 @@
            (cons (first items)
                  truncated-items)))
   :measure (block-item-list-count items)
-  :hints (("Goal" :in-theory (enable o<
-                                     o-finp
-                                     block-item-list-fix))))
+  :hints (("Goal" :in-theory (enable block-item-list-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -335,7 +438,7 @@
                 fundef.body.items
                 fundef.spec
                 fundef.declor.pointers
-                (param-declon-list-to-ident-paramdeclon-map fundef.declor.direct.params)
+                (param-declon-list-to-ident-param-declon-map fundef.declor.direct.params)
                 split-point)))
           (retok new-fn
                  (make-fundef
@@ -374,7 +477,10 @@
                   :none (retok nil (list (extdecl-fundef fundef1)))))
       :decl (retok nil (list (extdecl-fix extdecl)))
       :empty (retok nil (list (extdecl-fix extdecl)))
-      :asm (retok nil (list (extdecl-fix extdecl))))))
+      :asm (retok nil (list (extdecl-fix extdecl)))))
+  ///
+  (more-returns
+   (extdecls true-listp :rule-classes :type-prescription)))
 
 (define split-fn-extdecl-list
   ((target-fn identp)
