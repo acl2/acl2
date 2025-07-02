@@ -5802,25 +5802,25 @@
             sf-spec64-becomes-getbit
             zf-spec$inline
             ;;sub-af-spec8$inline
-            sub-cf-spec8
+            x86isa::sub-cf-spec8-opener
             sub-of-spec8
             sub-pf-spec8
             sub-sf-spec8
             sub-zf-spec8
             ;;sub-af-spec16$inline
-            sub-cf-spec16
+            x86isa::sub-cf-spec16-opener
             sub-of-spec16
             sub-pf-spec16
             sub-sf-spec16
             sub-zf-spec16
             ;;sub-af-spec32$inline
-            sub-cf-spec32
+            x86isa::sub-cf-spec32-opener
             sub-of-spec32
             sub-pf-spec32
             sub-sf-spec32
             sub-zf-spec32
             ;;sub-af-spec64$inline
-            sub-cf-spec64
+            x86isa::sub-cf-spec64-opener
             sub-of-spec64
             sub-pf-spec64
             sub-sf-spec64

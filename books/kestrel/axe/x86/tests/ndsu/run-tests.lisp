@@ -67,6 +67,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; (depends-on "sub-CF.elf64")
+(test-file "sub-CF.elf64")
+
 ;; (depends-on "sub-SF.elf64")
 (test-file "sub-SF.elf64")
 

@@ -28,6 +28,7 @@ gcc or-CF.c -o or-CF.elf64
 gcc or-SF.c -o or-SF.elf64
 gcc or-ZF.c -o or-ZF.elf64
 
+gcc sub-CF.c -o sub-CF.elf64
 gcc sub-SF.c -o sub-SF.elf64
 gcc sub-ZF.c -o sub-ZF.elf64
 
