@@ -6160,3 +6160,11 @@
                   (and (sbvle (+ 1 size) (bvplus (+ 1 size) x y) (+ -1 (expt 2 (+ -1 size))))
                        (sbvle (+ 1 size) (- (expt 2 (+ -1 size))) (bvplus (+ 1 size) x y)))))
   :hints (("Goal" :in-theory (enable sbvlt bvplus signed-byte-p))))
+
+(defthmd signed-byte-p-of-+-of---becomes-bv-claim
+  (implies (and (signed-byte-p size x)
+                (signed-byte-p size y))
+           (equal (signed-byte-p size (+ x (- y)))
+                  (and (sbvle (+ 1 size) (bvminus (+ 1 size) x y) (+ -1 (expt 2 (+ -1 size))))
+                       (sbvle (+ 1 size) (- (expt 2 (+ -1 size))) (bvminus (+ 1 size) x y)))))
+  :hints (("Goal" :in-theory (enable sbvlt bvplus bvminus signed-byte-p))))
