@@ -2704,3 +2704,29 @@
            (equal (getbit n (bvor size x y))
                   (getbit n x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
+
+;; For when x is obviously too narrow
+(defthm slice-of-bvor-when-narrow-arg2-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (<= xsize low)
+                (< high size)
+                (natp low)
+                (natp high)
+                (integerp size)
+                (unsigned-byte-p-forced xsize x))
+           (equal (slice high low (bvor size x y))
+                  (slice high low y)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
+
+;; For when y is obviously too narrow
+(defthm slice-of-bvor-when-narrow-arg3-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (<= ysize low)
+                (< high size)
+                (natp low)
+                (natp high)
+                (integerp size)
+                (unsigned-byte-p-forced ysize y))
+           (equal (slice high low (bvor size x y))
+                  (slice high low x)))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
