@@ -24,6 +24,9 @@
 ;; (depends-on "add-SF.elf64")
 (test-file "add-SF.elf64")
 
+;; (depends-on "add-OF.elf64")
+(test-file "add-OF.elf64")
+
 ;; (depends-on "add-PF=1.elf64")
 (test-file "add-PF=1.elf64")
 
