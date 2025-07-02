@@ -1566,19 +1566,20 @@
         (mv (irr-expr) (irr-simpadd0-gout)))
        (vartys (omap::update* arg1-vartys arg2-vartys))
        (diffp (or arg1-diffp arg2-diffp simpp))
+       (gout-no-thm
+        (make-simpadd0-gout :events (append arg1-events arg2-events)
+                            :thm-name nil
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
+                            :vartys vartys
+                            :diffp diffp))
        ((unless (and arg1-thm-name
                      arg2-thm-name
                      (member-eq (binop-kind op)
                                 '(:mul :div :rem :add :sub :shl :shr
                                   :lt :gt :le :ge :eq :ne
                                   :bitand :bitxor :bitior))))
-        (mv expr-new
-            (make-simpadd0-gout :events (append arg1-events arg2-events)
-                                :thm-name nil
-                                :thm-index gin.thm-index
-                                :names-to-avoid gin.names-to-avoid
-                                :vartys vartys
-                                :diffp diffp)))
+        (mv expr-new gout-no-thm))
        (hints `(("Goal"
                  :in-theory '((:e ldm-expr)
                               (:e c::iconst-length-none)
@@ -1983,6 +1984,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-stmt-expr ((expr? expr-optionp)
+                            (expr?-new expr-optionp)
+                            (expr?-events pseudo-event-form-listp)
+                            (expr?-thm-name symbolp)
+                            (expr?-vartys ident-type-mapp)
+                            (expr?-diffp booleanp)
+                            (gin simpadd0-ginp))
+  :guard (and (expr-option-unambp expr?)
+              (expr-option-unambp expr?-new)
+              (iff expr? expr?-new))
+  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
+  :short "Transform an expression statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We put the optional expression into an expression statement."))
+  (declare (ignore expr?-thm-name))
+  (b* (((simpadd0-gin gin) gin)
+       ;; (stmt (stmt-expr expr?))
+       (stmt-new (stmt-expr expr?-new))
+       ((unless (iff expr? expr?-new))
+        (raise "Internal error: ~
+                return statement with optional expression ~x0 ~
+                is transformed into ~
+                return statement with optional expression ~x1."
+               expr? expr?-new)
+        (mv (irr-stmt) (irr-simpadd0-gout)))
+       ((when (and (not expr?)
+                   expr?-diffp))
+        (raise "Internal error: ~
+                unchanged return statement marked as changed.")
+        (mv (irr-stmt) (irr-simpadd0-gout))))
+    (mv stmt-new
+        (make-simpadd0-gout
+         :events expr?-events
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :vartys expr?-vartys
+         :diffp expr?-diffp)))
+
+  ///
+
+  (defret stmt-unambp-of-simpadd0-stmt-expr
+    (stmt-unambp stmt)
+    :hyp (expr-option-unambp expr?-new)
+    :hints (("Goal" :in-theory (enable irr-stmt)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-stmt-return ((expr? expr-optionp)
                               (expr?-new expr-optionp)
                               (expr?-events pseudo-event-form-listp)
@@ -2044,7 +2095,6 @@
                                   (:e ident)
                                   (:e c::expr-kind)
                                   (:e c::stmt-return)
-                                  (:e c::type-sint)
                                   (:e c::type-nonchar-integerp))
                      :use (,expr?-thm-name
                            (:instance
@@ -2199,7 +2249,6 @@
                                 (:e ldm-ident)
                                 (:e ident)
                                 (:e c::block-item-stmt)
-                                (:e c::type-sint)
                                 (:e c::type-nonchar-integerp))
                    :use ((:instance ,stmt-thm-name (limit (1- limit)))
                          (:instance
@@ -2354,7 +2403,6 @@
                                 (:e ldm-block-item)
                                 (:e ldm-ident)
                                 (:e ident)
-                                (:e c::type-sint)
                                 (:e c::type-nonchar-integerp))
                    :use ((:instance ,item-thm-name (limit (1- limit)))
                          (:instance
@@ -4524,15 +4572,15 @@
                         :vartys gout-items.vartys
                         :diffp gout-items.diffp)))
        :expr (b* (((mv new-expr? (simpadd0-gout gout-expr?))
-                   (simpadd0-expr-option stmt.expr? gin state)))
-               (mv (stmt-expr new-expr?)
-                   (make-simpadd0-gout
-                    :events gout-expr?.events
-                    :thm-name nil
-                    :thm-index gout-expr?.thm-index
-                    :names-to-avoid gout-expr?.names-to-avoid
-                    :vartys gout-expr?.vartys
-                    :diffp gout-expr?.diffp)))
+                   (simpadd0-expr-option stmt.expr? gin state))
+                  (gin (simpadd0-gin-update gin gout-expr?)))
+               (simpadd0-stmt-expr stmt.expr?
+                                   new-expr?
+                                   gout-expr?.events
+                                   gout-expr?.thm-name
+                                   gout-expr?.vartys
+                                   gout-expr?.diffp
+                                   gin))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
                  (simpadd0-expr stmt.test gin state))
                 (gin (simpadd0-gin-update gin gout-test))
@@ -5214,7 +5262,6 @@
                         (:e ldm-type)
                         (:e ldm-block-item-list)
                         (:e c::tyname-to-type)
-                        (:e c::type-sint)
                         (:e c::block-item-list-nocallsp)
                         c::errorp-of-error))))
        (thm-event `(defruled ,thm-name
