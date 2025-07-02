@@ -22,6 +22,7 @@
 (include-book "bvmult-def")
 (include-book "bvcat-def")
 (local (include-book "bvcat"))
+(local (include-book "slice"))
 (local (include-book "bvshr"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
@@ -123,4 +124,17 @@
                 (integerp lowsize))
            (equal (bvcat highsize high lowsize low)
                   (bvcat highsize high lowsize (trim lowsize low))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd slice-convert-arg3-to-bv
+  (implies (and (syntaxp (and (consp x)
+                              (member-eq (ffn-symb x) *functions-convertible-to-bv*)
+                              (quotep high)
+                              (quotep low)))
+                (natp high)
+                (natp low))
+           (equal (slice high low x)
+                  (slice high low (trim (+ 1 high) x))))
   :hints (("Goal" :in-theory (enable trim))))
