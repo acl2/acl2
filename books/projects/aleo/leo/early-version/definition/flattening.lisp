@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ flattening
-  :parents (language)
+  :parents (definition)
   :short "Flattening of Leo."
   :long
   (xdoc::topstring
