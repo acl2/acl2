@@ -2360,6 +2360,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd slice-convert-arg3-to-bv-axe
+  (implies (and (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+                (syntaxp (and (quotep high)
+                              (quotep low)))
+                (natp high)
+                (natp low))
+           (equal (slice high low x)
+                  (slice high low (trim (+ 1 high) x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Only needed for Axe.  TODO: Add such rules for all bvs?  Or do they already exist?
 (defthmd bvuminus-less-than-true
   (implies (and (syntaxp (quotep k))
