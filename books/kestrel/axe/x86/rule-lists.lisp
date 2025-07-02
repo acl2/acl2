@@ -5791,12 +5791,15 @@
             acl2::bvplus-convert-arg2-to-bv-axe ; would like to do this earlier, but it might cause problems
             acl2::bvplus-convert-arg3-to-bv-axe
             acl2::slice-convert-arg3-to-bv-axe
-            !rflagsbits->af-opener
+            !rflagsbits->af-opener ; todo: open before proof stage?
             !rflagsbits->cf-opener
             !rflagsbits->of-opener
             !rflagsbits->pf-opener
             !rflagsbits->sf-opener
-            !rflagsbits->zf-opener)
+            !rflagsbits->zf-opener
+            !rflagsbits->res1-opener
+            !rflagsbits->res2-opener
+            !rflagsbits->res3-opener)
           (x86-type-rules) ; since some of these functions may survive to the proof stage
           (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
           (float-rules) ; i need booleanp-of-isnan, at least

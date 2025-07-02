@@ -1077,3 +1077,24 @@
                   (putbit 32 6 zf rflags)))
   :hints (("Goal" :in-theory (enable !rflagsbits->zf
                                      rflagsbits-fix))))
+
+(defthmd !rflagsbits->res1-opener
+  (implies (unsigned-byte-p 1 res1)
+           (equal (!rflagsbits->res1 res1 rflags)
+                  (putbit 32 1 res1 rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res1
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->res2-opener
+  (implies (unsigned-byte-p 1 res2)
+           (equal (!rflagsbits->res2 res2 rflags)
+                  (putbit 32 3 res2 rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res2
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->res3-opener
+  (implies (unsigned-byte-p 1 res3)
+           (equal (!rflagsbits->res3 res3 rflags)
+                  (putbit 32 5 res3 rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res3
+                                     rflagsbits-fix))))
