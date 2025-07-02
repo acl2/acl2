@@ -11,7 +11,7 @@
 
 (in-package "RISCV")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "state-stobj")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,4 +26,4 @@
      In @(see executable), the specification is refined to be executable.
      Here, we perform further refinements
      to make the specification efficiently executable."))
-  :order-subtopics ())
+  :order-subtopics (state-stobj))
