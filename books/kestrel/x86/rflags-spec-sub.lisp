@@ -15,10 +15,13 @@
 
 ;(include-book "std/basic/arith-equiv-defs" :dir :system) ; for bool->bit
 (include-book "projects/x86isa/machine/rflags-spec" :dir :system)
+(include-book "kestrel/bv/bvlt-def" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 ;; These are in the X86ISA package, because we are going to suggest adding them to the model.
+
+(local (in-theory (enable unsigned-byte-p)))
 
 ;; new flag functions that take dst and src and can be disabled to prevent
 ;; simplification of things like (- dst src) or (< dst src).  These could be
@@ -509,3 +512,33 @@
            (equal (sub-zf-spec64 dst src)
                   0))
   :hints (("Goal" :in-theory (enable sub-zf-spec64))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm sub-cf-spec8-opener
+  (implies (and (unsigned-byte-p 8 dst)
+                (unsigned-byte-p 8 src))
+           (equal (sub-cf-spec8 dst src)
+                  (bool->bit (acl2::bvlt 8 dst src))))
+  :hints (("Goal" :in-theory (enable sub-cf-spec8 acl2::bvlt))))
+
+(defthm sub-cf-spec16-opener
+  (implies (and (unsigned-byte-p 16 dst)
+                (unsigned-byte-p 16 src))
+           (equal (sub-cf-spec16 dst src)
+                  (bool->bit (acl2::bvlt 16 dst src))))
+  :hints (("Goal" :in-theory (enable sub-cf-spec16 acl2::bvlt))))
+
+(defthm sub-cf-spec32-opener
+  (implies (and (unsigned-byte-p 32 dst)
+                (unsigned-byte-p 32 src))
+           (equal (sub-cf-spec32 dst src)
+                  (bool->bit (acl2::bvlt 32 dst src))))
+  :hints (("Goal" :in-theory (enable sub-cf-spec32 acl2::bvlt))))
+
+(defthm sub-cf-spec64-opener
+  (implies (and (unsigned-byte-p 64 dst)
+                (unsigned-byte-p 64 src))
+           (equal (sub-cf-spec64 dst src)
+                  (bool->bit (acl2::bvlt 64 dst src))))
+  :hints (("Goal" :in-theory (enable sub-cf-spec64 acl2::bvlt))))
