@@ -59,3 +59,11 @@
 
 ;; (depends-on "and-CF.elf64")
 (test-file "and-CF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "sub-ZF.elf64")
+(test-file "sub-ZF.elf64")
+
+;; (depends-on "sub-SF.elf64")
+(test-file "sub-SF.elf64")
