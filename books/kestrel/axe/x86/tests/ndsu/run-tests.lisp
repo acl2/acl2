@@ -77,3 +77,19 @@
 
 ;; (depends-on "add-commutative.elf64")
 (test-file "add-commutative.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "inc_dec.elf64")
+(test-file "inc_dec.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "xor-CF.elf64")
+(test-file "xor-CF.elf64")
+
+;; (depends-on "xor-SF.elf64")
+(test-file "xor-SF.elf64")
+
+;; (depends-on "xor-ZF.elf64")
+(test-file "xor-ZF.elf64")
