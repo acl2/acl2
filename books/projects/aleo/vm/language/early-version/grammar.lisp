@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ grammar
-  :parents (aleo-instructions)
+  :parents (concrete-syntax)
   :short "ABNF grammar of Aleo instructions."
   :long
   (xdoc::topstring
