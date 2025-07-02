@@ -72,3 +72,8 @@
 
 ;; (depends-on "sub-ZF.elf64")
 (test-file "sub-ZF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "add-commutative.elf64")
+(test-file "add-commutative.elf64")
