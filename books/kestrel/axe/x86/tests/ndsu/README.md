@@ -28,7 +28,6 @@ gcc and-CF.c -o and-CF.elf64
 
 gcc add-commutative.c -o add-commutative.elf64
 
-;; Done on Kestrel machine osprey:
 gcc sub-ZF.c -o sub-ZF.elf64
 gcc sub-SF.c -o sub-SF.elf64
 gcc add-OF.c -o add-OF.elf64
