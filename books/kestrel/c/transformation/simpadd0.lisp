@@ -1542,11 +1542,12 @@
      in which case the resulting expression is just that expression.
      This is the core of this simple transformation.")
    (xdoc::p
-    "We generate a theorem iff
-     theorems were generated for both argument expressions,
-     and the binary operator is pure and non-strict.
-     The theorem is proved via three general ones that we prove below;
-     the third one is only needed if there is an actual simplification."))
+    "We generate a theorem only if
+     theorems were generated for both argument expressions.
+     For now we only generate theorems for pure non-strict operators;
+     we plan to add support for pure non-strict operators,
+     as well as for assignment operators under certain conditions.
+     The theorem is proved via general ones that we prove below."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (binop-case op :add)
