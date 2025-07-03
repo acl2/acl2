@@ -1601,14 +1601,14 @@
                      :use (,arg1-thm-name
                            ,arg2-thm-name
                            (:instance
-                            simpadd0-expr-binary-support-lemma
+                            simpadd0-expr-binary-pure-strict-support-lemma
                             (op ',(ldm-binop op))
                             (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
                             (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
                             (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
                             (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
                            (:instance
-                            simpadd0-expr-binary-support-lemma-error
+                            simpadd0-expr-binary-pure-strict-support-lemma-error
                             (op ',(ldm-binop op))
                             (arg1 (mv-nth 1 (ldm-expr ',arg1)))
                             (arg2 (mv-nth 1 (ldm-expr ',arg2))))
@@ -1648,7 +1648,7 @@
               (expr-unambp arg2-new))
     :hints (("Goal" :in-theory (enable irr-expr))))
 
-  (defruled simpadd0-expr-binary-support-lemma
+  (defruled simpadd0-expr-binary-pure-strict-support-lemma
     (b* ((old (c::expr-binary op old-arg1 old-arg2))
          (new (c::expr-binary op new-arg1 new-arg2))
          (old-arg1-result (c::exec-expr-pure old-arg1 compst))
@@ -1695,7 +1695,7 @@
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-binary-support-lemma-error
+  (defruled simpadd0-expr-binary-pure-strict-support-lemma-error
     (implies (and (c::binop-strictp op)
                   (or (c::errorp (c::exec-expr-pure arg1 compst))
                       (c::errorp (c::exec-expr-pure arg2 compst))))
