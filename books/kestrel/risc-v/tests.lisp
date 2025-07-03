@@ -38,7 +38,8 @@
 ; Generate a test theorem for a single instruction execution,
 ; supplying instruction, preconditions, postconditions, and hints.
 
-(defmacro test-instr-thm (&key instr pre post enable disable cases)
+(defmacro test-instr-thm (&key instr pre post
+                               enable disable cases)
   `(test-thm
     (implies (and (not (errorp stat feat))
                   (equal (read-pc stat feat)
@@ -49,7 +50,12 @@
              (b* ((stat1 (step stat feat)))
                (and (not (errorp stat1 feat))
                     ,@post)))
-    :enable ,enable
+    :enable (step
+             encode
+             decode-is-decodex
+             decodex
+             exec-instr
+             ,@enable)
     :disable ,disable
     :cases ,cases))
 
@@ -65,12 +71,7 @@
        (equal (read-xreg-unsigned 2 stat feat) 22))
  :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
         (equal (read-xreg-unsigned 3 stat1 feat) 33))
- :enable (step
-          encode
-          decode-is-decodex
-          decodex
-          exec-instr
-          exec-op
+ :enable (exec-op
           exec-add
           read-xreg-of-write-xreg
           read-xreg-signed
@@ -86,12 +87,7 @@
        (equal (read-xreg-signed 5 stat feat) -22))
  :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
         (equal (read-xreg-signed 6 stat1 feat) -33))
- :enable (step
-          encode
-          decode-is-decodex
-          decodex
-          exec-instr
-          exec-op
+ :enable (exec-op
           exec-add-alt-def
           read-xreg-of-write-xreg
           read-pc-of-inc4-pc)
@@ -110,12 +106,7 @@
        (equal (read-xreg-unsigned 2 stat feat) 23))
  :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
         (equal (read-xreg-unsigned 3 stat1 feat) 31))
- :enable (step
-          encode
-          decode-is-decodex
-          decodex
-          exec-instr
-          exec-op
+ :enable (exec-op
           exec-sub
           read-xreg-of-write-xreg
           read-xreg-signed
@@ -131,12 +122,7 @@
        (equal (read-xreg-signed 5 stat feat) 22))
  :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
         (equal (read-xreg-signed 6 stat1 feat) -11))
- :enable (step
-          encode
-          decode-is-decodex
-          decodex
-          exec-instr
-          exec-op
+ :enable (exec-op
           exec-sub-alt-def
           read-xreg-of-write-xreg
           read-pc-of-inc4-pc)
