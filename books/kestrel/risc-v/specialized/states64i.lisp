@@ -25,6 +25,10 @@
 (defxdoc+ states64i
   :parents (specialized-states)
   :short "Specialized states for features with the RV64I base."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We define a recognizer for the valid states for the RV64I base."))
   :order-subtopics t
   :default-parent t)
 

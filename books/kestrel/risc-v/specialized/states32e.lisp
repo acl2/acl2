@@ -25,6 +25,10 @@
 (defxdoc+ states32e
   :parents (specialized-states)
   :short "Specialized states for features with the RV32E base."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We define a recognizer for the valid states for the RV32E base."))
   :order-subtopics t
   :default-parent t)
 
