@@ -1542,12 +1542,12 @@
      in which case the resulting expression is just that expression.
      This is the core of this simple transformation.")
    (xdoc::p
-    "We generate a theorem iff
-     theorems were generated for both argument expressions,
-     and the binary operator is pure and non-strict.
-     The theorem is proved via three general ones that we prove below;
-     the third one is only needed if there is an actual simplification,
-     but we always use it in the proof for simplicity."))
+    "We generate a theorem only if
+     theorems were generated for both argument expressions.
+     For now we only generate theorems for pure non-strict operators;
+     we plan to add support for pure non-strict operators,
+     as well as for assignment operators under certain conditions.
+     The theorem is proved via general ones that we prove below."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (binop-case op :add)
@@ -1566,69 +1566,79 @@
         (mv (irr-expr) (irr-simpadd0-gout)))
        (vartys (omap::update* arg1-vartys arg2-vartys))
        (diffp (or arg1-diffp arg2-diffp simpp))
-       ((unless (and arg1-thm-name
-                     arg2-thm-name
-                     (member-eq (binop-kind op)
-                                '(:mul :div :rem :add :sub :shl :shr
-                                  :lt :gt :le :ge :eq :ne
-                                  :bitand :bitxor :bitior))))
-        (mv expr-new
-            (make-simpadd0-gout :events (append arg1-events arg2-events)
-                                :thm-name nil
-                                :thm-index gin.thm-index
-                                :names-to-avoid gin.names-to-avoid
-                                :vartys vartys
-                                :diffp diffp)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-expr)
-                              (:e c::iconst-length-none)
-                              (:e c::iconst-base-oct)
-                              (:e c::iconst)
-                              (:e c::const-int)
-                              (:e c::expr-const)
-                              (:e c::binop-kind)
-                              (:e c::binop-add)
-                              (:e c::binop-purep)
-                              (:e c::binop-strictp)
-                              (:e c::expr-binary)
-                              (:e c::type-nonchar-integerp)
-                              (:e c::promote-type)
-                              (:e c::uaconvert-types)
-                              (:e c::type-sint)
-                              (:e member-equal))
-                 :use (,arg1-thm-name
-                       ,arg2-thm-name
-                       (:instance
-                        simpadd0-expr-binary-support-lemma
-                        (op ',(ldm-binop op))
-                        (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                        (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
-                        (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
-                        (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
-                       (:instance
-                        simpadd0-expr-binary-support-lemma-error
-                        (op ',(ldm-binop op))
-                        (arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                        (arg2 (mv-nth 1 (ldm-expr ',arg2))))
-                       (:instance
-                        simpadd0-expr-binary-support-lemma-simp
-                        (expr (mv-nth 1 (ldm-expr ',arg1-new))))))))
-       ((mv thm-event thm-name thm-index)
-        (simpadd0-gen-expr-pure-thm expr
-                                    expr-new
-                                    vartys
-                                    gin.const-new
-                                    gin.thm-index
-                                    hints)))
-    (mv expr-new
-        (make-simpadd0-gout :events (append arg1-events
-                                            arg2-events
-                                            (list thm-event))
-                            :thm-name thm-name
-                            :thm-index thm-index
-                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+       (gout-no-thm
+        (make-simpadd0-gout :events (append arg1-events arg2-events)
+                            :thm-name nil
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
                             :vartys vartys
-                            :diffp diffp)))
+                            :diffp diffp))
+       ((unless (and arg1-thm-name
+                     arg2-thm-name))
+        (mv expr-new gout-no-thm)))
+    (cond
+     ((member-eq (binop-kind op)
+                 '(:mul :div :rem :add :sub :shl :shr
+                   :lt :gt :le :ge :eq :ne
+                   :bitand :bitxor :bitior))
+      (b* ((hints `(("Goal"
+                     :in-theory '((:e ldm-expr)
+                                  (:e c::iconst-length-none)
+                                  (:e c::iconst-base-oct)
+                                  (:e c::iconst)
+                                  (:e c::const-int)
+                                  (:e c::expr-const)
+                                  (:e c::binop-kind)
+                                  (:e c::binop-add)
+                                  (:e c::binop-purep)
+                                  (:e c::binop-strictp)
+                                  (:e c::expr-binary)
+                                  (:e c::type-nonchar-integerp)
+                                  (:e c::promote-type)
+                                  (:e c::uaconvert-types)
+                                  (:e c::type-sint)
+                                  (:e member-equal))
+                     :use (,arg1-thm-name
+                           ,arg2-thm-name
+                           (:instance
+                            simpadd0-expr-binary-support-lemma
+                            (op ',(ldm-binop op))
+                            (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                            (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
+                            (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
+                            (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
+                           (:instance
+                            simpadd0-expr-binary-support-lemma-error
+                            (op ',(ldm-binop op))
+                            (arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                            (arg2 (mv-nth 1 (ldm-expr ',arg2))))
+                           ,@(and simpp
+                                  `((:instance
+                                     simpadd0-expr-binary-support-lemma-simp
+                                     (expr (mv-nth 1 (ldm-expr
+                                                      ',arg1-new))))))))))
+           ((mv thm-event thm-name thm-index)
+            (simpadd0-gen-expr-pure-thm expr
+                                        expr-new
+                                        vartys
+                                        gin.const-new
+                                        gin.thm-index
+                                        hints)))
+        (mv expr-new
+            (make-simpadd0-gout :events (append arg1-events
+                                                arg2-events
+                                                (list thm-event))
+                                :thm-name thm-name
+                                :thm-index thm-index
+                                :names-to-avoid (cons thm-name
+                                                      gin.names-to-avoid)
+                                :vartys vartys
+                                :diffp diffp))))
+     ((member-eq (binop-kind op) '(:logand :logor))
+      (mv expr-new gout-no-thm))
+     ((eq (binop-kind op) :asg)
+      (mv expr-new gout-no-thm))
+     (t (mv expr-new gout-no-thm))))
 
   ///
 
@@ -1983,6 +1993,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-stmt-expr ((expr? expr-optionp)
+                            (expr?-new expr-optionp)
+                            (expr?-events pseudo-event-form-listp)
+                            (expr?-thm-name symbolp)
+                            (expr?-vartys ident-type-mapp)
+                            (expr?-diffp booleanp)
+                            (gin simpadd0-ginp))
+  :guard (and (expr-option-unambp expr?)
+              (expr-option-unambp expr?-new)
+              (iff expr? expr?-new))
+  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
+  :short "Transform an expression statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We put the optional expression into an expression statement."))
+  (declare (ignore expr?-thm-name))
+  (b* (((simpadd0-gin gin) gin)
+       ;; (stmt (stmt-expr expr?))
+       (stmt-new (stmt-expr expr?-new))
+       ((unless (iff expr? expr?-new))
+        (raise "Internal error: ~
+                return statement with optional expression ~x0 ~
+                is transformed into ~
+                return statement with optional expression ~x1."
+               expr? expr?-new)
+        (mv (irr-stmt) (irr-simpadd0-gout)))
+       ((when (and (not expr?)
+                   expr?-diffp))
+        (raise "Internal error: ~
+                unchanged return statement marked as changed.")
+        (mv (irr-stmt) (irr-simpadd0-gout))))
+    (mv stmt-new
+        (make-simpadd0-gout
+         :events expr?-events
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :vartys expr?-vartys
+         :diffp expr?-diffp)))
+
+  ///
+
+  (defret stmt-unambp-of-simpadd0-stmt-expr
+    (stmt-unambp stmt)
+    :hyp (expr-option-unambp expr?-new)
+    :hints (("Goal" :in-theory (enable irr-stmt)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-stmt-return ((expr? expr-optionp)
                               (expr?-new expr-optionp)
                               (expr?-events pseudo-event-form-listp)
@@ -2044,7 +2104,6 @@
                                   (:e ident)
                                   (:e c::expr-kind)
                                   (:e c::stmt-return)
-                                  (:e c::type-sint)
                                   (:e c::type-nonchar-integerp))
                      :use (,expr?-thm-name
                            (:instance
@@ -2199,7 +2258,6 @@
                                 (:e ldm-ident)
                                 (:e ident)
                                 (:e c::block-item-stmt)
-                                (:e c::type-sint)
                                 (:e c::type-nonchar-integerp))
                    :use ((:instance ,stmt-thm-name (limit (1- limit)))
                          (:instance
@@ -2354,7 +2412,6 @@
                                 (:e ldm-block-item)
                                 (:e ldm-ident)
                                 (:e ident)
-                                (:e c::type-sint)
                                 (:e c::type-nonchar-integerp))
                    :use ((:instance ,item-thm-name (limit (1- limit)))
                          (:instance
@@ -4524,15 +4581,15 @@
                         :vartys gout-items.vartys
                         :diffp gout-items.diffp)))
        :expr (b* (((mv new-expr? (simpadd0-gout gout-expr?))
-                   (simpadd0-expr-option stmt.expr? gin state)))
-               (mv (stmt-expr new-expr?)
-                   (make-simpadd0-gout
-                    :events gout-expr?.events
-                    :thm-name nil
-                    :thm-index gout-expr?.thm-index
-                    :names-to-avoid gout-expr?.names-to-avoid
-                    :vartys gout-expr?.vartys
-                    :diffp gout-expr?.diffp)))
+                   (simpadd0-expr-option stmt.expr? gin state))
+                  (gin (simpadd0-gin-update gin gout-expr?)))
+               (simpadd0-stmt-expr stmt.expr?
+                                   new-expr?
+                                   gout-expr?.events
+                                   gout-expr?.thm-name
+                                   gout-expr?.vartys
+                                   gout-expr?.diffp
+                                   gin))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
                  (simpadd0-expr stmt.test gin state))
                 (gin (simpadd0-gin-update gin gout-test))
@@ -5214,7 +5271,6 @@
                         (:e ldm-type)
                         (:e ldm-block-item-list)
                         (:e c::tyname-to-type)
-                        (:e c::type-sint)
                         (:e c::block-item-list-nocallsp)
                         c::errorp-of-error))))
        (thm-event `(defruled ,thm-name

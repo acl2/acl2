@@ -207,3 +207,23 @@
            (equal (bvplus size x (logext size2 y))
                   (bvplus size x (bvsx size size2 y))))
   :hints (("Goal" :cases ((equal size size2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; replace with a general rule?
+(defthm bvminus-of-logext-arg2-convert-to-bv
+  (implies (and (< size2 size) ; could allow =
+                (integerp size)
+                (posp size2))
+           (equal (bvminus size (logext size2 x) y)
+                  (bvminus size (bvsx size size2 x) y)))
+  :hints (("Goal" :cases ((equal size size2)))))
+
+;; replace with a general rule?
+(defthm bvminus-of-logext-arg3-convert-to-bv
+  (implies (and (< size2 size) ; could allow =
+                (integerp size)
+                (posp size2))
+           (equal (bvminus size x (logext size2 y))
+                  (bvminus size x (bvsx size size2 y))))
+  :hints (("Goal" :cases ((equal size size2)))))

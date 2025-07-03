@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ compilation
-  :parents (language)
+  :parents (definition)
   :short "Compilation of Leo."
   :long
   (xdoc::topstring
