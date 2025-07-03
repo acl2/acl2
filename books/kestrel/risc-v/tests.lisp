@@ -59,20 +59,49 @@
     :disable ,disable
     :cases ,cases))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate a test theorem for a single OP instruction execution,
+; supplying function,
+; source and destination registers,
+; source values,
+; destination value,
+; whether source and destination values are signed or unsigned,
+; and hints.
+
+(defmacro test-instr-op-thm (&key funct rs1 rs2 rd
+                                  src1 src2 dst
+                                  src1-signedp src2-signedp dst-signedp
+                                  enable disable cases)
+  (b* ((read-rs1 (if src1-signedp 'read-xreg-signed 'read-xreg-unsigned))
+       (read-rs2 (if src2-signedp 'read-xreg-signed 'read-xreg-unsigned))
+       (read-rd (if dst-signedp 'read-xreg-signed 'read-xreg-unsigned)))
+    `(test-instr-thm
+      :instr (make-instr-op :funct ,funct :rd ,rd :rs1 ,rs1 :rs2 ,rs2)
+      :pre ((equal (,read-rs1 ,rs1 stat feat) ,src1)
+            (equal (,read-rs2 ,rs2 stat feat) ,src2))
+      :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
+             (equal (,read-rd ,rd stat1 feat) ,dst))
+      :enable (exec-op
+               ,@enable)
+      :disable ,disable
+      :cases ,cases)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; add
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-instr-thm
- :instr (instr-op (op-funct-add) 3 1 2)
- :pre ((equal (read-xreg-unsigned 1 stat feat) 11)
-       (equal (read-xreg-unsigned 2 stat feat) 22))
- :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
-        (equal (read-xreg-unsigned 3 stat1 feat) 33))
- :enable (exec-op
-          exec-add
+(test-instr-op-thm
+ :funct (op-funct-add)
+ :rs1 1
+ :rs2 2
+ :rd 3
+ :src1 11
+ :src2 22
+ :dst 33
+ :enable (exec-add
           read-xreg-of-write-xreg
           read-xreg-signed
           read-pc-of-inc4-pc)
@@ -81,14 +110,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-instr-thm
- :instr (instr-op (op-funct-add) 6 4 5)
- :pre ((equal (read-xreg-signed 4 stat feat) -11)
-       (equal (read-xreg-signed 5 stat feat) -22))
- :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
-        (equal (read-xreg-signed 6 stat1 feat) -33))
- :enable (exec-op
-          exec-add-alt-def
+(test-instr-op-thm
+ :funct (op-funct-add)
+ :rs1 4
+ :rs2 5
+ :rd 6
+ :src1 -11
+ :src2 -22
+ :dst -33
+ :src1-signedp t
+ :src2-signedp t
+ :dst-signedp t
+ :enable (exec-add-alt-def
           read-xreg-of-write-xreg
           read-pc-of-inc4-pc)
  :disable ((:e tau-system)) ; for speed
@@ -100,14 +133,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-instr-thm
- :instr (instr-op (op-funct-sub) 3 1 2)
- :pre ((equal (read-xreg-unsigned 1 stat feat) 54)
-       (equal (read-xreg-unsigned 2 stat feat) 23))
- :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
-        (equal (read-xreg-unsigned 3 stat1 feat) 31))
- :enable (exec-op
-          exec-sub
+(test-instr-op-thm
+ :funct (op-funct-sub)
+ :rs1 1
+ :rs2 2
+ :rd 3
+ :src1 54
+ :src2 23
+ :dst 31
+ :enable (exec-sub
           read-xreg-of-write-xreg
           read-xreg-signed
           read-pc-of-inc4-pc)
@@ -116,14 +150,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-instr-thm
- :instr (instr-op (op-funct-sub) 6 4 5)
- :pre ((equal (read-xreg-signed 4 stat feat) 11)
-       (equal (read-xreg-signed 5 stat feat) 22))
- :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
-        (equal (read-xreg-signed 6 stat1 feat) -11))
- :enable (exec-op
-          exec-sub-alt-def
+(test-instr-op-thm
+ :funct (op-funct-sub)
+ :rs1 4
+ :rs2 5
+ :rd 6
+ :src1 11
+ :src2 22
+ :dst -11
+ :src1-signedp t
+ :src2-signedp t
+ :dst-signedp t
+ :enable (exec-sub-alt-def
           read-xreg-of-write-xreg
           read-pc-of-inc4-pc)
  :disable ((:e tau-system)) ; for speed
