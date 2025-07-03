@@ -31,28 +31,35 @@
 (defmacro test-thm (formula &rest hints)
   `(encapsulate () (defrulel _test_ ,formula ,@hints)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro test-instr-thm (&key instr pre post enable disable cases)
+  `(test-thm
+    (implies (and (not (errorp stat feat))
+                  (equal (read-pc stat feat)
+                         pc)
+                  (equal (read-instruction pc stat feat)
+                         (encode ,instr feat))
+                  ,@pre)
+             (b* ((stat1 (step stat feat)))
+               (and (not (errorp stat1 feat))
+                    ,@post)))
+    :enable ,enable
+    :disable ,disable
+    :cases ,cases))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; add
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-thm
- (implies (and (not (errorp stat feat))
-               (equal (read-pc stat feat)
-                      pc)
-               (equal (read-instruction pc stat feat)
-                      (encode (instr-op (op-funct-add) 3 1 2) feat))
-               (equal (read-xreg-unsigned 1 stat feat)
-                      11)
-               (equal (read-xreg-unsigned 2 stat feat)
-                      22))
-          (b* ((stat1 (step stat feat)))
-            (and (not (errorp stat1 feat))
-                 (equal (read-pc stat1 feat)
-                        (loghead (feat->xlen feat) (+ 4 pc)))
-                 (equal (read-xreg-unsigned 3 stat1 feat)
-                        33))))
+(test-instr-thm
+ :instr (instr-op (op-funct-add) 3 1 2)
+ :pre ((equal (read-xreg-unsigned 1 stat feat) 11)
+       (equal (read-xreg-unsigned 2 stat feat) 22))
+ :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
+        (equal (read-xreg-unsigned 3 stat1 feat) 33))
  :enable (step
           encode
           decode-is-decodex
@@ -68,22 +75,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-thm
- (implies (and (not (errorp stat feat))
-               (equal (read-pc stat feat)
-                      pc)
-               (equal (read-instruction pc stat feat)
-                      (encode (instr-op (op-funct-add) 6 4 5) feat))
-               (equal (read-xreg-signed 4 stat feat)
-                      -11)
-               (equal (read-xreg-signed 5 stat feat)
-                      -22))
-          (b* ((stat1 (step stat feat)))
-            (and (not (errorp stat1 feat))
-                 (equal (read-pc stat1 feat)
-                        (loghead (feat->xlen feat) (+ 4 pc)))
-                 (equal (read-xreg-signed 6 stat1 feat)
-                        -33))))
+(test-instr-thm
+ :instr (instr-op (op-funct-add) 6 4 5)
+ :pre ((equal (read-xreg-signed 4 stat feat) -11)
+       (equal (read-xreg-signed 5 stat feat) -22))
+ :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
+        (equal (read-xreg-signed 6 stat1 feat) -33))
  :enable (step
           encode
           decode-is-decodex
@@ -102,22 +99,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-thm
- (implies (and (not (errorp stat feat))
-               (equal (read-pc stat feat)
-                      pc)
-               (equal (read-instruction pc stat feat)
-                      (encode (instr-op (op-funct-sub) 3 1 2) feat))
-               (equal (read-xreg-unsigned 1 stat feat)
-                      54)
-               (equal (read-xreg-unsigned 2 stat feat)
-                      23))
-          (b* ((stat1 (step stat feat)))
-            (and (not (errorp stat1 feat))
-                 (equal (read-pc stat1 feat)
-                        (loghead (feat->xlen feat) (+ 4 pc)))
-                 (equal (read-xreg-unsigned 3 stat1 feat)
-                        31))))
+(test-instr-thm
+ :instr (instr-op (op-funct-sub) 3 1 2)
+ :pre ((equal (read-xreg-unsigned 1 stat feat) 54)
+       (equal (read-xreg-unsigned 2 stat feat) 23))
+ :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
+        (equal (read-xreg-unsigned 3 stat1 feat) 31))
  :enable (step
           encode
           decode-is-decodex
@@ -133,22 +120,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-thm
- (implies (and (not (errorp stat feat))
-               (equal (read-pc stat feat)
-                      pc)
-               (equal (read-instruction pc stat feat)
-                      (encode (instr-op (op-funct-sub) 6 4 5) feat))
-               (equal (read-xreg-signed 4 stat feat)
-                      11)
-               (equal (read-xreg-signed 5 stat feat)
-                      22))
-          (b* ((stat1 (step stat feat)))
-            (and (not (errorp stat1 feat))
-                 (equal (read-pc stat1 feat)
-                        (loghead (feat->xlen feat) (+ 4 pc)))
-                 (equal (read-xreg-signed 6 stat1 feat)
-                        -11))))
+(test-instr-thm
+ :instr (instr-op (op-funct-sub) 6 4 5)
+ :pre ((equal (read-xreg-signed 4 stat feat) 11)
+       (equal (read-xreg-signed 5 stat feat) 22))
+ :post ((equal (read-pc stat1 feat) (loghead (feat->xlen feat) (+ 4 pc)))
+        (equal (read-xreg-signed 6 stat1 feat) -11))
  :enable (step
           encode
           decode-is-decodex
