@@ -176,6 +176,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;todo: why doesn't this get handled automatically when ACL2 generates a :type-prescription rule?
 ;todo: package prefixes
 (defthm x86isa::bitp-of-sub-cf-spec8 (bitp (x86isa::sub-cf-spec8 dst src)))
 (defthm x86isa::bitp-of-sub-cf-spec16 (bitp (x86isa::sub-cf-spec16 dst src)))
@@ -401,29 +402,6 @@
   (equal (x86isa::sub-zf-spec32 x x)
          1)
   :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec32))))
-
-;;;;;;;;;;
-
-;todo: why doesn't this get generated automatically when ACL2 generates a :type-prescription rule?
-(defthm x86isa::bitp-of-sub-cf-spec64
-  (bitp (x86isa::sub-cf-spec64 dst src))
-  :hints (("Goal" :in-theory (enable x86isa::sub-cf-spec64))))
-
-(defthm x86isa::bitp-of-sub-of-spec64
-  (bitp (x86isa::sub-of-spec64 dst src))
-  :hints (("Goal" :in-theory (enable x86isa::sub-of-spec64))))
-
-(defthm x86isa::bitp-of-sub-pf-spec64
-  (bitp (x86isa::sub-pf-spec64 dst src))
-  :hints (("Goal" :in-theory (enable x86isa::sub-pf-spec64))))
-
-(defthm x86isa::bitp-of-sub-sf-spec64
-  (bitp (x86isa::sub-sf-spec64 dst src))
-  :hints (("Goal" :in-theory (enable x86isa::sub-sf-spec64))))
-
-(defthm x86isa::bitp-of-sub-zf-spec64
-  (bitp (x86isa::sub-zf-spec64 dst src))
-  :hints (("Goal" :in-theory (enable x86isa::sub-zf-spec64))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
