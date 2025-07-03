@@ -1736,7 +1736,10 @@
       (mv expr-new gout-no-thm))
      ((eq (binop-kind op) :asg)
       (b* (((unless (and (expr-case arg1 :ident)
-                         (expr-purep arg2)))
+                         (expr-purep arg2)
+                         (equal (expr-type arg1)
+                                (expr-type arg2))
+                         (type-integerp (expr-type arg1))))
             (mv expr-new gout-no-thm))
            (hints `(("Goal"
                      :in-theory '((:e ldm-expr)
