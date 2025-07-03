@@ -27,28 +27,154 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
+; Contributing author: Grant Jurgensen <grant@kestrel.edu>
 
 (in-package "ACL2")
+(include-book "xdoc/constructors" :dir :system)
 (include-book "xdoc/top" :dir :system)
 
 (defxdoc best-practices
   :parents (books)
   :short "Recommended best practices for ACL2 books."
 
-  :long "<h2>DRAFT</h2>
-
-<p>This is a preliminary document.  Feedback is very much welcome and
-appreciated.  Please direct feedback to the acl2-books list or to Jared
-Davis.</p>
-
-<p>We recommend the use of the Standard Libraries (@(see std)) to ease your
-burden of modeling and reasoning in a formal sytem.  See other subtopics below
-for other best practices.</p>
-
-<p>If you expect your library to be used at all by other people, put your code
-in a package.  Jared, Rager, and Kaufmann spend a large amount of time just
-dealing with name clashes, and it leaves them grumpy.  See @(see
-working-with-packages).</p>")
+  :long
+  (xdoc::topstring
+   (xdoc::p "Here we summarize various style and formatting principles commonly
+             accepted and employed across the ACL2 repository. The goal is to
+             avoid opinionated rules and only highlight conventions which are
+             widely agreed upon. The advice included here is intended to apply
+             to the majority of cases. There may be exceptions in which a given
+             rule ought be ignored. Use your best judgment.")
+   (xdoc::p "See the @(see developers-guide-style) for a more specific style
+             guide for changes to the core ACL2 system (not necessary if you
+             are just developing books).")
+   (xdoc::h3 "Whitespace and Special Characters")
+   (xdoc::ul
+    (xdoc::li "Avoid using tabs, as they may render inconsistently across
+               machines and editors. Use spaces instead.")
+    (xdoc::li "Do not leave ``trailing whitespace'' at the end of your lines
+               (see @(see remove-whitespace)). Trailing whitespace can add
+               noise to Git commits and disrupt navigation in the editor.")
+    (xdoc::li "Unicode characters should be avoided in identifiers, but are
+               permissible in comments and strings. (Keep in mind that some
+               string utilities may not behave as expected, for instance @(tsee
+               length) may return the number of bytes instead of the number of
+               unicode code points.)")
+    (xdoc::li "Avoid consecutive blank lines.")
+    (xdoc::li "Line breaks should use the posix-style newline
+               (i.e. @('\"\\n\"'), not @('\"\\r\\n\"')). Linux and Mac
+               developers should not need to worry about this. Windows
+               developers may need to be more careful that their editor or
+               other tools uses posix-style newlines.")
+    (xdoc::li "Files should end with a newline. (Note, we mean a newline, not a
+               blank line.) This is a posix-standard. Most editors should
+               handle this automatically."))
+   (xdoc::h3 "Comments")
+   (xdoc::ul
+    (xdoc::li "Comments should begin with a single space. E.g.:"
+              (xdoc::codeblock "; This is a comment.")
+              (xdoc::i "not")
+              (xdoc::codeblock ";This is a comment."))
+    (xdoc::li "Books should begin with a copyright and licensing header (which
+               may just point to the repository's top-level LICENSE file).")
+    (xdoc::li "Inline comments which are intended to be indented at the same
+               level as a form would be at a given position should begin with
+               two semicolons. This is a standard practice in Common Lisp, and
+               editors like Emacs will indent such comments appropriately.")
+    (xdoc::li "Avoid commented code which would disrupt the s-expression
+               balance if uncommented. For instance, instead of this:"
+              (xdoc::codeblock
+               "(let ((x foo)"
+               "      ;; (y bar))"
+               "      )"
+               "  baz"
+               "  )")
+              "do this:"
+              (xdoc::codeblock
+               "(let ((x foo)"
+               "      ;; (y bar)"
+               "      )"
+               "  baz"
+               "  )"))
+    (xdoc::li "Consider whether comments would be more appropriate as "
+              (xdoc::seetopic "xdoc" "XDOC")
+              " documentation."))
+   (xdoc::h3 "Documentation")
+   (xdoc::ul
+    (xdoc::li (xdoc::seetopic "xdoc" "XDOC")
+              " short forms should end with a period, even if they are not a
+               full sentence."))
+   (xdoc::h3 "Naming Conventions")
+   (xdoc::ul
+    (xdoc::li "Consider ending predicates with ``p'' (or ``-p'', especially if
+               needed for clarity). This is a convention inherited from Common
+               Lisp.")
+    (xdoc::li "For ordinary identifiers, avoid uppercase and use hyphens to
+               delimit words (a style sometimes called ``dash-case'',
+               ``kebab-case'', or ``lisp-case''). E.g., ``my cool function''
+               would be rendered @('my-cool-function').")
+    (xdoc::li "See @(see naming-rewrite-rules) for recommendations regarding
+               the naming of rewrite rules."))
+   (xdoc::h3 "Formatting")
+   (xdoc::ul
+    (xdoc::li "Multiline @('if') forms should be formatted as follows:"
+              (xdoc::codeblock
+               "(if x"
+               "    y"
+               "  z)")
+              "That is, 4 spaces for the ``then'' term, and 2 spaces for the
+               ``else'' term. Emacs may indent this incorrectly by default."))
+   (xdoc::h3 "Packages")
+   (xdoc::ul
+    (xdoc::li "The use of packages is highly encouraged if you expect your
+               library to be used by others. This helps to avoid name clashes
+               and polluting the default namespace. See @(see
+               working-with-packages) for further guidance.")
+    (xdoc::li "If you are defining a new package name, check to see that the
+               name is not already in use."))
+   (xdoc::h3 "Theory Events")
+   (xdoc::ul
+    (xdoc::li "Top-level @('include-book') and @('in-theory') events should be
+               at the top of the book. Intermixing @('include-book') and
+               @('in-theory') events with function definitions and theorems can
+               make it more difficult for the maintainer to understand the
+               state of the current theory.")
+    (xdoc::li "@('include-book') and @('in-theory') events should be @(see
+               local) where possible, unless they support the main purpose of
+               the book and are intended to be \"exported\". This allows
+               libraries to be more modular and avoids cluttering the
+               end-user's world.")
+    (xdoc::li "Most functions (especially non-recursive function) should be
+               disabled by default, unless they are best understood as simple
+               aliases/wrappers.")
+    (xdoc::li "Sets of rules which are known to cause rewrite loops should be
+               declared @(see incompatible) as a @(see theory-invariant).")
+    (xdoc::li "See also @(see theory-management)."))
+   (xdoc::h3 "Proofs")
+   (xdoc::ul
+    (xdoc::li "Try to avoid subgoal hints. These can make proofs brittle and
+               difficult to maintain. If it is not sufficient to apply hints to
+               the top-level goal, consider factoring out a subgoal into an
+               auxiliary lemma.")
+    (xdoc::li "Generally speaking, the less hints for a proof, the
+               better. Consider whether @(':use') or @(':expand') hints may
+               suggest good general-purpose rules (this is not always the
+               case).")
+    (xdoc::li "Try to avoid brittle @(see proof-builder) instruction hints
+               which may be difficult to maintain.")
+    (xdoc::li "Avoid short proof timeout windows which could fail on slower
+               machines."))
+   (xdoc::h3 "Book Style Consistency")
+   (xdoc::ul
+    (xdoc::li "There are certain styles which are not universal across the
+               repository, but which should be consistent within a given book
+               or library. Book style should be respected when making edits.")
+    (xdoc::li "Try to match the line width of a file. Common line widths are 79
+               or 80.")
+    (xdoc::li "A book should use either @(tsee defun) or @(tsee define), not
+               both.")
+    (xdoc::li "A book should use either @(tsee defthm) or @(tsee defrule), not
+               both."))))
 
 (local (xdoc::set-default-parents best-practices))
 
