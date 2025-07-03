@@ -77,10 +77,10 @@
               (xdoc::codeblock ";This is a comment."))
     (xdoc::li "Books should begin with a copyright and licensing header (which
                may just point to the repository's top-level LICENSE file).")
-    (xdoc::li "Inline comments which are intended to be indented at the same
-               level as a form would be at a given position should begin with
-               two semicolons. This is a standard practice in Common Lisp, and
-               editors like Emacs will indent such comments appropriately.")
+    (xdoc::li "Use two semicolons for inline comments which should be indented
+               as a form would be. This is a standard practice in Common Lisp,
+               and editors like Emacs will indent such comments
+               appropriately.")
     (xdoc::li "Avoid commented code which would disrupt the s-expression
                balance if uncommented. For instance, instead of this:"
               (xdoc::codeblock
@@ -102,11 +102,15 @@
    (xdoc::h3 "Documentation")
    (xdoc::ul
     (xdoc::li (xdoc::seetopic "xdoc" "XDOC")
-              " short forms should end with a period, even if they are not a
-               full sentence."))
+              " short forms should be in ``sentence case,'' not ``title case.''
+               They should end with a period, even if they are not a full
+               sentence.")
+    (xdoc::li (xdoc::seetopic "xdoc" "XDOC")
+              " short forms should not span multiple paragraphs, or include
+               code blocks, tables, headers, etc."))
    (xdoc::h3 "Naming Conventions")
    (xdoc::ul
-    (xdoc::li "Consider ending predicates with ``p'' (or ``-p'', especially if
+    (xdoc::li "Consider ending predicates with ``p'' (or ``-p,'' especially if
                needed for clarity). This is a convention inherited from Common
                Lisp.")
     (xdoc::li "For ordinary identifiers, avoid uppercase and use hyphens to
@@ -123,15 +127,24 @@
                "    y"
                "  z)")
               "That is, 4 spaces for the ``then'' term, and 2 spaces for the
-               ``else'' term. Emacs may indent this incorrectly by default."))
+               ``else'' term. If your Emacs auto-indents such forms
+               incorrectly, consider adding the following to your Emacs
+               configuration:"
+              (xdoc::codeblock
+               "(eval-after-load 'cl-indent"
+               "  '(put 'if 'common-lisp-indent-function 2))")))
    (xdoc::h3 "Packages")
    (xdoc::ul
-    (xdoc::li "The use of packages is highly encouraged if you expect your
-               library to be used by others. This helps to avoid name clashes
-               and polluting the default namespace. See @(see
+    (xdoc::li "The use of packages is highly encouraged. This helps to avoid
+               name clashes and polluting the default namespace. See @(see
                working-with-packages) for further guidance.")
     (xdoc::li "If you are defining a new package name, check to see that the
-               name is not already in use."))
+               name is not already in use. You can list all packages defined
+               across the repository using the following @('grep') command:"
+              (xdoc::codeblock
+                "grep -hr --include='*.lsp' --include='*.acl2' -E '\\(defpkg \"[^\"]*\"' . \\"
+                "  | sed -n 's/[^\"]*\"\\([^\"]*\\)\".*/\\1/p' \\"
+                "  | sort | uniq")))
    (xdoc::h3 "Theory Events")
    (xdoc::ul
     (xdoc::li "Top-level @('include-book') and @('in-theory') events should be
@@ -141,7 +154,7 @@
                state of the current theory.")
     (xdoc::li "@('include-book') and @('in-theory') events should be @(see
                local) where possible, unless they support the main purpose of
-               the book and are intended to be \"exported\". This allows
+               the book and are intended to be ``exported.'' This allows
                libraries to be more modular and avoids cluttering the
                end-user's world.")
     (xdoc::li "Most functions (especially non-recursive function) should be
@@ -160,8 +173,11 @@
                better. Consider whether @(':use') or @(':expand') hints may
                suggest good general-purpose rules (this is not always the
                case).")
-    (xdoc::li "Try to avoid brittle @(see proof-builder) instruction hints
-               which may be difficult to maintain.")
+    (xdoc::li "Try to avoid brittle @(see proof-builder) instructions (given as
+               an argument to the @(':instructions') keyword argument of either
+               @(tsee defthm) or a goal "
+              (xdoc::seetopic "hints" "hint")
+              ") which may be difficult to maintain.")
     (xdoc::li "Avoid short proof timeout windows which could fail on slower
                machines."))
    (xdoc::h3 "Book Style Consistency")
