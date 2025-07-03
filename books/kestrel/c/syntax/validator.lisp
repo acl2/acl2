@@ -5849,6 +5849,10 @@
      (ensuring they return no types),
      which will add entries to the block scope in the validation table.")
    (xdoc::p
+    "We extend the validation table with the identifier @('__func__')
+     [C17:6.4.2.2].
+     In our currently approximate type system, this has array type.")
+   (xdoc::p
     "We ensure that the body is a compound statement,
      and we validate directly the block items;
      this way, we do not push an extra scope,
@@ -5935,6 +5939,12 @@
         (reterr (msg "The declarations of the function definition ~x0 ~
                       contain return statements."
                      (fundef-fix fundef))))
+       (table (valid-add-ord (ident "__func__")
+                             (make-valid-ord-info-objfun
+                              :type (type-array)
+                              :linkage (linkage-none)
+                              :defstatus (valid-defstatus-defined))
+                             table))
        ((unless (stmt-case fundef.body :compound))
         (reterr (msg "The function definition ~x0 ~
                       does not have a compound statement as body."
