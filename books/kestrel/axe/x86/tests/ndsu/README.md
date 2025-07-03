@@ -23,6 +23,12 @@ gcc and-OF.c -o and-OF.elf64
 gcc and-SF.c -o and-SF.elf64
 gcc and-ZF.c -o and-ZF.elf64
 
+gcc cmp-CF.c -o cmp-CF.elf64
+gcc cmp-PF0.c -o cmp-PF0.elf64
+gcc cmp-PF1.c -o cmp-PF1.elf64
+gcc cmp-SF.c -o cmp-SF.elf64
+gcc cmp-ZF.c -o cmp-ZF.elf64
+
 gcc inc_dec.c -o inc_dec.elf64
 
 gcc or-CF.c -o or-CF.elf64

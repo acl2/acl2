@@ -59,6 +59,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; (depends-on "cmp-CF.elf64")
+(test-file "cmp-CF.elf64")
+
+;; (depends-on "cmp-PF0.elf64")
+(test-file "cmp-PF0.elf64")
+
+;; (depends-on "cmp-PF1.elf64")
+(test-file "cmp-PF1.elf64")
+
+;; (depends-on "cmp-SF.elf64")
+(test-file "cmp-SF.elf64")
+
+;; (depends-on "cmp-ZF.elf64")
+(test-file "cmp-ZF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; (depends-on "or-CF.elf64")
 (test-file "or-CF.elf64")
 
