@@ -57,7 +57,7 @@
              exec-instr
              ,@enable)
     :disable ,disable
-    :cases ,cases))
+    ,@(and cases (list :cases cases))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
