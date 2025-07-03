@@ -94,7 +94,7 @@
 (test-file "sub-CF.elf64")
 
 ;; (depends-on "sub-OF.elf64")
-;todo: (test-file "sub-OF.elf64")
+(test-file "sub-OF.elf64")
 
 ;; (depends-on "sub-PF0.elf64")
 (test-file "sub-PF0.elf64")

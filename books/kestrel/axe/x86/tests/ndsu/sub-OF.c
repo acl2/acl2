@@ -27,8 +27,8 @@ bool test_long_sub_OF (long x, long y) {
     long diff = x - y;
     unsigned char of = get_overflow_flag(x, y);
 
-    if (((x <  0) && (y > 0) && (diff > 0)) ||
-	((x > 0) && (y < 0) && (diff <  0))) {
+    if (((x <  0) && (y >= 0) && (diff >= 0)) ||
+	((x >= 0) && (y < 0) && (diff <  0))) {
       return of==1; }
     else { return of==0;}
     return false; 
