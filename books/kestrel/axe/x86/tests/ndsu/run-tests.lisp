@@ -48,6 +48,9 @@
 ;; (depends-on "and-CF.elf64")
 (test-file "and-CF.elf64")
 
+;; (depends-on "and-OF.elf64")
+(test-file "and-OF.elf64")
+
 ;; (depends-on "and-SF.elf64")
 (test-file "and-SF.elf64")
 
@@ -58,6 +61,9 @@
 
 ;; (depends-on "or-CF.elf64")
 (test-file "or-CF.elf64")
+
+;; (depends-on "or-OF.elf64")
+(test-file "or-OF.elf64")
 
 ;; (depends-on "or-SF.elf64")
 (test-file "or-SF.elf64")
@@ -100,6 +106,9 @@
 ;; (depends-on "test-CF.elf64")
 (test-file "test-CF.elf64")
 
+;; (depends-on "test-OF.elf64")
+(test-file "test-OF.elf64")
+
 ;; (depends-on "test-SF.elf64")
 (test-file "test-SF.elf64")
 
@@ -110,6 +119,9 @@
 
 ;; (depends-on "xor-CF.elf64")
 (test-file "xor-CF.elf64")
+
+;; (depends-on "xor-OF.elf64")
+(test-file "xor-OF.elf64")
 
 ;; (depends-on "xor-SF.elf64")
 (test-file "xor-SF.elf64")

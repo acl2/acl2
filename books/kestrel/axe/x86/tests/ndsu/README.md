@@ -19,12 +19,14 @@ gcc add-SF.c -o add-SF.elf64
 gcc add-ZF.c -o add-ZF.elf64
 
 gcc and-CF.c -o and-CF.elf64
+gcc and-OF.c -o and-OF.elf64
 gcc and-SF.c -o and-SF.elf64
 gcc and-ZF.c -o and-ZF.elf64
 
 gcc inc_dec.c -o inc_dec.elf64
 
 gcc or-CF.c -o or-CF.elf64
+gcc or-OF.c -o or-OF.elf64
 gcc or-SF.c -o or-SF.elf64
 gcc or-ZF.c -o or-ZF.elf64
 
@@ -36,9 +38,11 @@ gcc sub-SF.c -o sub-SF.elf64
 gcc sub-ZF.c -o sub-ZF.elf64
 
 gcc test-CF.c -o test-CF.elf64
+gcc test-OF.c -o test-OF.elf64
 gcc test-SF.c -o test-SF.elf64
 gcc test-ZF.c -o test-ZF.elf64
 
 gcc xor-CF.c -o xor-CF.elf64
+gcc xor-OF.c -o xor-OF.elf64
 gcc xor-SF.c -o xor-SF.elf64
 gcc xor-ZF.c -o xor-ZF.elf64
