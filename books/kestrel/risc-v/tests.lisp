@@ -89,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; add
+; ADD
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,7 +129,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; sub
+; SUB
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,6 +162,46 @@
  :src2-signedp t
  :dst-signedp t
  :enable (exec-sub-alt-def
+          read-xreg-of-write-xreg
+          read-pc-of-inc4-pc)
+ :disable ((:e tau-system)) ; for speed
+ :cases ((feat-32p feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; SLT
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-instr-op-thm
+ :funct (op-funct-slt)
+ :rs1 11
+ :rs2 12
+ :rd 13
+ :src1 78
+ :src2 934
+ :dst 1
+ :src1-signedp t
+ :src2-signedp t
+ :enable (exec-slt
+          read-xreg-of-write-xreg
+          read-pc-of-inc4-pc)
+ :disable ((:e tau-system)) ; for speed
+ :cases ((feat-32p feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-instr-op-thm
+ :funct (op-funct-slt)
+ :rs1 11
+ :rs2 12
+ :rd 11
+ :src1 78
+ :src2 -934
+ :dst 0
+ :src1-signedp t
+ :src2-signedp t
+ :enable (exec-slt
           read-xreg-of-write-xreg
           read-pc-of-inc4-pc)
  :disable ((:e tau-system)) ; for speed
