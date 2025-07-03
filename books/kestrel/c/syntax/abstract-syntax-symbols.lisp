@@ -550,6 +550,7 @@
     type-formalp
     ldm-type
     type-to-value-kind
+    type-integerp
 
     iconst-info
     coerce-iconst-info
