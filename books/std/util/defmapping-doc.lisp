@@ -237,7 +237,8 @@
        only to those theorems that are rewrite rules;
        it is ignored for theorems that are not rewrite rules.")
      (xdoc::p
-      "Note that the first and last option could be described as a single one,
+      "Note that the first and last of the four options above
+       could be described as a single one,
        namely as a possibly empty list of theorem keywords,
        where the empty list @('nil') enables no theorem.
        The @(':all') option is provided for completeness,
