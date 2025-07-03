@@ -307,18 +307,6 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 (include-book "xdoc/alter" :dir :system)
 
-
-; These are legacy defdoc topics that need to be incorporated into the
-; hierarchy at some sensible places.  These changes are not controversial, so
-; we'll do them globally, so they'll be included, e.g., in the Emacs version of
-; the combined manual.
-
-; data-definitions went away.  It might be reasonable to place with-timeout
-; under defdata, if that still exists.
-;(xdoc::change-parents data-definitions (macro-libraries projects debugging))
-;(xdoc::change-parents with-timeout (data-definitions))
-;(xdoc::change-parents testing (cgen))
-
 #!XDOC
 (defun fix-redundant-acl2-parents (all-topics)
 
@@ -388,7 +376,6 @@
 ; for custom manuals.
 
  (include-book "top-topic"))
-
 
 (comp t)
 
