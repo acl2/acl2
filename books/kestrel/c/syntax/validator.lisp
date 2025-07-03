@@ -3606,7 +3606,7 @@
        then @('new-fundef-params-p') is @('nil') as well.
        The exact handling of this flag,
        and the exact treatment of the parameters of function declarations,
-       are explained in the code that actually makes use of the flag.")
+       are explained in @(tsee valid-dirdeclor).")
      (xdoc::p
       "In our currently approximate type system,
        we do not validate type qualifiers, or attributes.
