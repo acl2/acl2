@@ -83,6 +83,9 @@
     make-expr-alignof
     make-expr-cast
     make-expr-binary
+    expr-binary->op
+    expr-binary->arg1
+    expr-binary->arg2
     make-expr-cond
     make-expr-comma
     expr-stmt
@@ -510,9 +513,13 @@
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
 
+    ;; purity:
+    expr-purep
+
     ;; formalized:
 
     expr-pure-formalp
+    expr-asg-formalp
     stmt-formalp
     block-item-formalp
     block-item-list-formalp
