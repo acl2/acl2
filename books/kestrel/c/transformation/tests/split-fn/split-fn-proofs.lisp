@@ -38,12 +38,12 @@
 
   (assert-file-contents
     :file "new/test1.c"
-    :content "int bar(int x, int y) {
-  return x + y;
+    :content "int bar(int *x, int *y) {
+  return (*x) + (*y);
 }
 int foo(int y) {
   int x = 5;
-  return bar(x, y);
+  return bar(&x, &y);
 }
 ")
 
@@ -67,18 +67,18 @@ int foo(int y) {
 
   (assert-file-contents
     :file "new/test2.c"
-    :content "unsigned long sub_all(long arr[], unsigned int len, long total) {
-  for (unsigned int i = 0; i < len; i++) {
-    total -= arr[i];
+    :content "unsigned long sub_all(long (*arr)[], unsigned int *len, long *total) {
+  for (unsigned int i = 0; i < (*len); i++) {
+    (*total) -= (*arr)[i];
   }
-  return (unsigned long) total;
+  return (unsigned long) (*total);
 }
 unsigned long add_and_sub_all(long arr[], unsigned int len) {
   long total = 0l;
   for (unsigned int i = 0; i < len; i++) {
     total += arr[i];
   }
-  return sub_all(arr, len, total);
+  return sub_all(&arr, &len, &total);
 }
 ")
 
@@ -104,13 +104,77 @@ unsigned long add_and_sub_all(long arr[], unsigned int len) {
   (assert-file-contents
     :file "new/test3.c"
     :content "int w = 42;
-int baz(int x, long y, long z) {
-  y = bar(x);
-  return x + y + z;
+int baz(int *x, long *y, long *z) {
+  (*y) = bar((*x));
+  return (*x) + (*y) + (*z);
 }
 int foo(int x) {
   long y = 0, z = 5;
-  return baz(x, y, z);
+  return baz(&x, &y, &z);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("test4.c")
+                   :process :parse
+                   :const *old*)
+
+  (split-fn
+    *old*
+    *new*
+    (c$::ident "foo")
+    (c$::ident "baz")
+    1)
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  (assert-file-contents
+    :file "new/test4.c"
+    :content "int bar(void);
+int baz(int (* const (*arr)[])(void)) {
+  int ret = (*arr)[0]();
+  return ret;
+}
+int foo(int x) {
+  int (* const arr[])(void) = {bar};
+  return baz(&arr);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("alias.c")
+                   :process :parse
+                   :const *old*)
+
+  (split-fn
+    *old*
+    *new*
+    (c$::ident "main")
+    (c$::ident "main_0")
+    2)
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  (assert-file-contents
+    :file "new/alias.c"
+    :content "int main_0(int *x, int **y) {
+  (*x)++;
+  return *(*y);
+}
+int main(void) {
+  int x = 0;
+  int *y = &x;
+  return main_0(&x, &y);
 }
 ")
 

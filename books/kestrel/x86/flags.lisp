@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/bv/bvchop" :dir :system)
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
+(include-book "kestrel/bv/putbits" :dir :system) ; todo: split out putbit
 ;(local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; to tighten a bvcat?
@@ -924,3 +925,176 @@
   (equal (memi addr (set-flag flag val x86))
          (memi addr x86))
   :hints (("Goal" :in-theory (enable memi set-flag))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: more like this
+;; or should we use a "convert-to-bv" function?
+;; todo: install these in a rule-list
+(defthm trim-of-!rflagsbits->cf
+  (implies (and (unsigned-byte-p 1 cf)
+                (<= 1 size)
+                (<= size 32)
+                (integerp size))
+           (equal (trim size (!rflagsbits->cf cf rflags))
+                  (bvcat (+ -1 size) (slice 31 1 rflags)
+                         1 cf)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->cf bfix rflagsbits-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: more like this
+(defthm getbit-of-!rflagsbits->af
+  (implies (and (unsigned-byte-p 1 af)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->af af rflags))
+                  (if (equal n 4)
+                      af
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->af bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->cf
+  (implies (and (unsigned-byte-p 1 cf)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->cf cf rflags))
+                  (if (equal n 0)
+                      cf
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->cf bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->of
+  (implies (and (unsigned-byte-p 1 of)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->of of rflags))
+                  (if (equal n 11)
+                      of
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->of bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->pf
+  (implies (and (unsigned-byte-p 1 pf)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->pf pf rflags))
+                  (if (equal n 2)
+                      pf
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->pf bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->sf
+  (implies (and (unsigned-byte-p 1 sf)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->sf sf rflags))
+                  (if (equal n 7)
+                      sf
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->sf bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->zf
+  (implies (and (unsigned-byte-p 1 zf)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->zf zf rflags))
+                  (if (equal n 6)
+                      zf
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->zf bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->res1
+  (implies (and (unsigned-byte-p 1 res1)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->res1 res1 rflags))
+                  (if (equal n 1)
+                      res1
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res1 bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->res2
+  (implies (and (unsigned-byte-p 1 res2)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->res2 res2 rflags))
+                  (if (equal n 3)
+                      res2
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res2 bfix rflagsbits-fix))))
+
+(defthm getbit-of-!rflagsbits->res3
+  (implies (and (unsigned-byte-p 1 res3)
+                (natp n)
+                (< n 32))
+           (equal (getbit n (!rflagsbits->res3 res3 rflags))
+                  (if (equal n 5)
+                      res3
+                    (getbit n rflags))))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res3 bfix rflagsbits-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd !rflagsbits->af-opener
+  (implies (unsigned-byte-p 1 af)
+           (equal (!rflagsbits->af af rflags)
+                  (putbit 32 4 af rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->af
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->cf-opener
+  (implies (unsigned-byte-p 1 cf)
+           (equal (!rflagsbits->cf cf rflags)
+                  (putbit 32 0 cf rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->cf
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->of-opener
+  (implies (unsigned-byte-p 1 of)
+           (equal (!rflagsbits->of of rflags)
+                  (putbit 32 11 of rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->of
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->pf-opener
+  (implies (unsigned-byte-p 1 pf)
+           (equal (!rflagsbits->pf pf rflags)
+                  (putbit 32 2 pf rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->pf
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->sf-opener
+  (implies (unsigned-byte-p 1 sf)
+           (equal (!rflagsbits->sf sf rflags)
+                  (putbit 32 7 sf rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->sf
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->zf-opener
+  (implies (unsigned-byte-p 1 zf)
+           (equal (!rflagsbits->zf zf rflags)
+                  (putbit 32 6 zf rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->zf
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->res1-opener
+  (implies (unsigned-byte-p 1 res1)
+           (equal (!rflagsbits->res1 res1 rflags)
+                  (putbit 32 1 res1 rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res1
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->res2-opener
+  (implies (unsigned-byte-p 1 res2)
+           (equal (!rflagsbits->res2 res2 rflags)
+                  (putbit 32 3 res2 rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res2
+                                     rflagsbits-fix))))
+
+(defthmd !rflagsbits->res3-opener
+  (implies (unsigned-byte-p 1 res3)
+           (equal (!rflagsbits->res3 res3 rflags)
+                  (putbit 32 5 res3 rflags)))
+  :hints (("Goal" :in-theory (enable !rflagsbits->res3
+                                     rflagsbits-fix))))

@@ -569,7 +569,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-strunispec-no-members ((strunispec strunispecp))
+(define check-struni-spec-no-members ((struni-spec struni-specp))
   :returns (ident? ident-optionp)
   :short "Check if a structure or union specifier has no members,
           returning the name if the check passes."
@@ -579,11 +579,11 @@
     "If the specifier is empty (i.e. has no members or name),
      we throw a hard error,
      because the specifier does not conform to the concrete syntax."))
-  (b* (((strunispec strunispec) strunispec)
-       ((when strunispec.members) nil)
-       ((unless strunispec.name)
+  (b* (((struni-spec struni-spec) struni-spec)
+       ((when struni-spec.members) nil)
+       ((unless struni-spec.name?)
         (raise "Misusage error: empty structure or union specifier.")))
-    strunispec.name)
+    struni-spec.name?)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

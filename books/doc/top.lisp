@@ -31,59 +31,59 @@
 (in-package "ACL2")
 
 (progn ;; group together include-books to see total time
-(include-book "build/ifdef" :dir :system)
+  (include-book "build/ifdef" :dir :system)
 
 ; Note, 7/28/2014: if we include
 ; (include-book "std/system/top" :dir :system)
 ; instead of the following, we get a name conflict.
-(include-book "std/system/non-parallel-book" :dir :system)
+  (include-book "std/system/non-parallel-book" :dir :system)
 
-(include-book "xdoc/defxdoc-raw" :dir :system) ; for xdoc::all-xdoc-topics
+  (include-book "xdoc/defxdoc-raw" :dir :system) ; for xdoc::all-xdoc-topics
 
- ;; Disabling waterfall parallelism because the include-books are too slow with
- ;; it enabled, since waterfall parallelism unmemoizes the six or so functions
- ;; that ACL2(h) memoizes by default (in particular, fchecksum-obj needs to be
- ;; memoized to include centaur/esim/tutorial/alu16-book).
+  ;; Disabling waterfall parallelism because the include-books are too slow with
+  ;; it enabled, since waterfall parallelism unmemoizes the six or so functions
+  ;; that ACL2(h) memoizes by default (in particular, fchecksum-obj needs to be
+  ;; memoized to include centaur/esim/tutorial/alu16-book).
 
- ;; [Jared] BOZO: is the above comment about include books even true anymore?
- ;; If so, maybe waterfall parallelism doesn't have to do this with the new
- ;; thread-safe memo code?
+  ;; [Jared] BOZO: is the above comment about include books even true anymore?
+  ;; If so, maybe waterfall parallelism doesn't have to do this with the new
+  ;; thread-safe memo code?
 
- ;; [Jared] BOZO: even if waterfall parallelism still disables this memoization,
- ;; do we care?  The alu16-book demo has been removed from the manual.  (Maybe
- ;; we should put it back in.  Do we care how long the manual takes to build?)
-(non-parallel-book)
+  ;; [Jared] BOZO: even if waterfall parallelism still disables this memoization,
+  ;; do we care?  The alu16-book demo has been removed from the manual.  (Maybe
+  ;; we should put it back in.  Do we care how long the manual takes to build?)
+  (non-parallel-book)
 
-(include-book "centaur/misc/tshell" :dir :system)
-(include-book "centaur/misc/tshell-unsound" :dir :system)
-(value-triple (acl2::tshell-ensure))
+  (include-book "centaur/misc/tshell" :dir :system)
+  (include-book "centaur/misc/tshell-unsound" :dir :system)
+  (value-triple (acl2::tshell-ensure))
 
-(include-book "centaur/misc/memory-mgmt" :dir :system)
-(value-triple (set-max-mem (* 10 (expt 2 30))))
+  (include-book "centaur/misc/memory-mgmt" :dir :system)
+  (value-triple (set-max-mem (* 10 (expt 2 30))))
 
-;; this is included in some other books, but I'm putting it here so we never
-;; accidentally leave it out -- important for getting reasonable performance
-;; when building the final documentation.
-(include-book "std/strings/fast-cat" :dir :system)
+  ;; this is included in some other books, but I'm putting it here so we never
+  ;; accidentally leave it out -- important for getting reasonable performance
+  ;; when building the final documentation.
+  (include-book "std/strings/fast-cat" :dir :system)
 
-(include-book "relnotes")
-(include-book "practices")
-(include-book "publications")
+  (include-book "relnotes")
+  (include-book "practices")
+  (include-book "publications")
 
-(include-book "100-theorems")
+  (include-book "100-theorems")
 
-(include-book "xdoc/save" :dir :system)
-(include-book "xdoc/archive" :dir :system)
+  (include-book "xdoc/save" :dir :system)
+  (include-book "xdoc/archive" :dir :system)
 
-(include-book "build/doc" :dir :system)
+  (include-book "build/doc" :dir :system)
 
-(include-book "clause-processors/stobj-preservation" :dir :system)
+  (include-book "clause-processors/stobj-preservation" :dir :system)
 
 ; The rest of ihs is included elsewhere transitively.
 ; We load logops-lemmas first so that the old style :doc-strings don't get
 ; stripped away when they're loaded redundantly later.
-(include-book "ihs/logops-lemmas" :dir :system)
-(include-book "ihs/math-lemmas" :dir :system)
+  (include-book "ihs/logops-lemmas" :dir :system)
+  (include-book "ihs/math-lemmas" :dir :system)
 
 ; Matt K. comment, July 2021.  I considered using xdoc::archive-matching-topics
 ; to create an analogue of centaur/bitops/top-doc.lisp to include in
@@ -96,198 +96,198 @@
 ; centaur/bitops/top-doc.lisp (and similarly for centaur/satlink/), leading to
 ; the duplication.
 
-(include-book "centaur/bitops/top" :dir :system) ; see July 2021 comment above
-(include-book "centaur/bitops/congruences" :dir :system)
-(include-book "centaur/bitops/defaults" :dir :system)
-(include-book "centaur/bitops/sparseint" :dir :system)
-(include-book "centaur/bitops/limited-shifts" :dir :system)
+  (include-book "centaur/bitops/top" :dir :system) ; see July 2021 comment above
+  (include-book "centaur/bitops/congruences" :dir :system)
+  (include-book "centaur/bitops/defaults" :dir :system)
+  (include-book "centaur/bitops/sparseint" :dir :system)
+  (include-book "centaur/bitops/limited-shifts" :dir :system)
 
-(include-book "centaur/acre/top" :dir :system)
+  (include-book "centaur/acre/top" :dir :system)
 
-(include-book "centaur/bigmems/top" :dir :system)
+  (include-book "centaur/bigmems/top" :dir :system)
 
-(include-book "centaur/bridge/top" :dir :system)
+  (include-book "centaur/bridge/top" :dir :system)
 
-(include-book "centaur/clex/example" :dir :system)
-(include-book "centaur/nrev/demo" :dir :system)
-(include-book "centaur/lispfloat/top" :dir :system)
+  (include-book "centaur/clex/example" :dir :system)
+  (include-book "centaur/nrev/demo" :dir :system)
+  (include-book "centaur/lispfloat/top" :dir :system)
 
-(include-book "centaur/defrstobj/defrstobj" :dir :system)
-(include-book "centaur/defrstobj2/defrstobj" :dir :system)
-
-
-(include-book "centaur/getopt/top" :dir :system)
-(include-book "centaur/getopt/demo" :dir :system)
-(include-book "centaur/getopt/demo2" :dir :system)
-(include-book "centaur/bed/top" :dir :system)
-(include-book "centaur/misc/def-bounds" :dir :system)
-
-(include-book "centaur/satlink/top" :dir :system) ; see July 2021 comment above
-(include-book "centaur/satlink/check-config" :dir :system)
-(include-book "centaur/satlink/benchmarks" :dir :system)
-
-(include-book "centaur/depgraph/top" :dir :system)
-
-(include-book "quicklisp/top" :dir :system)
-
-(include-book "centaur/misc/top" :dir :system)
-(include-book "centaur/misc/smm" :dir :system)
-(include-book "centaur/misc/tailrec" :dir :system)
-(include-book "centaur/misc/hons-remove-dups" :dir :system)
-(include-book "centaur/misc/seed-random" :dir :system)
-(include-book "centaur/misc/load-stobj" :dir :system)
-(include-book "centaur/misc/load-stobj-tests" :dir :system)
-(include-book "centaur/misc/count-up" :dir :system)
-(include-book "centaur/misc/fast-alist-pop" :dir :system)
-(include-book "centaur/misc/spacewalk" :dir :system)
-(include-book "centaur/misc/dag-measure" :dir :system)
-(include-book "centaur/misc/alphanum-sort" :dir :system)
-
-(include-book "centaur/svl/top-doc" :dir :system)
-
-;; BOZO conflicts with something in 4v-sexpr?
-
-;; (include-book "misc/remove-assoc")
-;; (include-book "misc/sparsemap")
-;; (include-book "misc/sparsemap-impl")
-(include-book "centaur/misc/stobj-swap" :dir :system)
-
-(include-book "oslib/top" :dir :system)
-
-(include-book "std/top" :dir :system)
-(include-book "std/basic/inductions" :dir :system)
-(include-book "std/io/unsound-read" :dir :system)
-(include-book "std/bitsets/top" :dir :system)
-(include-book "std/util/defretgen" :dir :system)
-
-(include-book "std/strings/top" :dir :system)
-(include-book "std/strings/base64" :dir :system)
-(include-book "std/strings/pretty" :dir :system)
+  (include-book "centaur/defrstobj/defrstobj" :dir :system)
+  (include-book "centaur/defrstobj2/defrstobj" :dir :system)
 
 
-(include-book "centaur/ubdds/lite" :dir :system)
-(include-book "centaur/ubdds/param" :dir :system)
+  (include-book "centaur/getopt/top" :dir :system)
+  (include-book "centaur/getopt/demo" :dir :system)
+  (include-book "centaur/getopt/demo2" :dir :system)
+  (include-book "centaur/bed/top" :dir :system)
+  (include-book "centaur/misc/def-bounds" :dir :system)
+
+  (include-book "centaur/satlink/top" :dir :system) ; see July 2021 comment above
+  (include-book "centaur/satlink/check-config" :dir :system)
+  (include-book "centaur/satlink/benchmarks" :dir :system)
+
+  (include-book "centaur/depgraph/top" :dir :system)
+
+  (include-book "quicklisp/top" :dir :system)
+
+  (include-book "centaur/misc/top" :dir :system)
+  (include-book "centaur/misc/smm" :dir :system)
+  (include-book "centaur/misc/tailrec" :dir :system)
+  (include-book "centaur/misc/hons-remove-dups" :dir :system)
+  (include-book "centaur/misc/seed-random" :dir :system)
+  (include-book "centaur/misc/load-stobj" :dir :system)
+  (include-book "centaur/misc/load-stobj-tests" :dir :system)
+  (include-book "centaur/misc/count-up" :dir :system)
+  (include-book "centaur/misc/fast-alist-pop" :dir :system)
+  (include-book "centaur/misc/spacewalk" :dir :system)
+  (include-book "centaur/misc/dag-measure" :dir :system)
+  (include-book "centaur/misc/alphanum-sort" :dir :system)
+
+  (include-book "centaur/svl/top-doc" :dir :system)
+
+  ;; BOZO conflicts with something in 4v-sexpr?
+
+  ;; (include-book "misc/remove-assoc")
+  ;; (include-book "misc/sparsemap")
+  ;; (include-book "misc/sparsemap-impl")
+  (include-book "centaur/misc/stobj-swap" :dir :system)
+
+  (include-book "oslib/top" :dir :system)
+
+  (include-book "std/top" :dir :system)
+  (include-book "std/basic/inductions" :dir :system)
+  (include-book "std/io/unsound-read" :dir :system)
+  (include-book "std/bitsets/top" :dir :system)
+  (include-book "std/util/defretgen" :dir :system)
+
+  (include-book "std/strings/top" :dir :system)
+  (include-book "std/strings/base64" :dir :system)
+  (include-book "std/strings/pretty" :dir :system)
 
 
-;; BOZO conflict with prefix-hash stuff above.  Need to fix this.  Also, are
-;; these being used at all?
+  (include-book "centaur/ubdds/lite" :dir :system)
+  (include-book "centaur/ubdds/param" :dir :system)
 
-;; (include-book "centaur/vl2014/util/prefixp" :dir :system)
 
-(include-book "hacking/all" :dir :system)
-(include-book "hints/consider-hint" :dir :system)
-(include-book "hints/hint-wrapper" :dir :system)
+  ;; BOZO conflict with prefix-hash stuff above.  Need to fix this.  Also, are
+  ;; these being used at all?
 
-(include-book "ordinals/e0-ordinal" :dir :system)
+  ;; (include-book "centaur/vl2014/util/prefixp" :dir :system)
 
-;; todo: consider making a tools/doc and including it here instead:
-(include-book "tools/top" :dir :system)
+  (include-book "hacking/all" :dir :system)
+  (include-book "hints/consider-hint" :dir :system)
+  (include-book "hints/hint-wrapper" :dir :system)
 
-(include-book "coi/util/rewrite-equiv" :dir :system)
+  (include-book "ordinals/e0-ordinal" :dir :system)
 
-(include-book "clause-processors/doc" :dir :system)
-(include-book "system/event-names" :dir :system)
-(include-book "system/acl2-system-exports" :dir :system)
-(include-book "system/doc/developers-guide" :dir :system)
-(include-book "system/pseudo-tests-and-calls-listp" :dir :system)
-(include-book "workshops/2025/whats-new-in-acl2-2025" :dir :system)
-(include-book "demos/divp-by-casting" :dir :system)
-(include-book "demos/majority-vote" :dir :system)
+  ;; todo: consider making a tools/doc and including it here instead:
+  (include-book "tools/top" :dir :system)
 
-;; [Jared] removing these to speed up the manual build
-;; BOZO should we put them back in?
-;(include-book "centaur/esim/tutorial/intro" :dir :system)
-;(include-book "centaur/esim/tutorial/alu16-book" :dir :system)
-;(include-book "centaur/esim/tutorial/counter" :dir :system)
+  (include-book "coi/util/rewrite-equiv" :dir :system)
 
-;; [Jared] removed this to avoid depending on glucose and to speed up
-;; the manual build
+  (include-book "clause-processors/doc" :dir :system)
+  (include-book "system/event-names" :dir :system)
+  (include-book "system/acl2-system-exports" :dir :system)
+  (include-book "system/doc/developers-guide" :dir :system)
+  (include-book "system/pseudo-tests-and-calls-listp" :dir :system)
+  (include-book "workshops/2025/whats-new-in-acl2-2025" :dir :system)
+  (include-book "demos/divp-by-casting" :dir :system)
+  (include-book "demos/majority-vote" :dir :system)
+
+  ;; [Jared] removing these to speed up the manual build
+  ;; BOZO should we put them back in?
+  ;(include-book "centaur/esim/tutorial/intro" :dir :system)
+  ;(include-book "centaur/esim/tutorial/alu16-book" :dir :system)
+  ;(include-book "centaur/esim/tutorial/counter" :dir :system)
+
+  ;; [Jared] removed this to avoid depending on glucose and to speed up
+  ;; the manual build
 ; (include-book "centaur/esim/tests/common" :dir :system)
 
 
-;; Not much doc here, but some theorems from arithmetic-5 are referenced by
-;; other topics...
-(include-book "arithmetic-5/top" :dir :system)
-(include-book "arithmetic/top" :dir :system)
+  ;; Not much doc here, but some theorems from arithmetic-5 are referenced by
+  ;; other topics...
+  (include-book "arithmetic-5/top" :dir :system)
+  (include-book "arithmetic/top" :dir :system)
 
-(include-book "centaur/fty/top" :dir :system)
-(include-book "centaur/fty/bitstruct" :dir :system)
+  (include-book "centaur/fty/top" :dir :system)
+  (include-book "centaur/fty/bitstruct" :dir :system)
 
-(include-book "std/testing/assert" :dir :system)
-(include-book "misc/bash" :dir :system)
-(include-book "misc/defmac" :dir :system)
-(include-book "misc/defopener" :dir :system)
-(include-book "misc/defpm" :dir :system)
-(include-book "misc/defpun" :dir :system)
-(include-book "misc/dft" :dir :system)
-(include-book "misc/dump-events" :dir :system)
-(include-book "std/testing/eval" :dir :system)
-(include-book "misc/expander" :dir :system)
-(include-book "misc/file-io-doc" :dir :system)
-(include-book "misc/find-lemmas" :dir :system)
-(include-book "misc/hons-help" :dir :system)
+  (include-book "std/testing/assert" :dir :system)
+  (include-book "misc/bash" :dir :system)
+  (include-book "misc/defmac" :dir :system)
+  (include-book "misc/defopener" :dir :system)
+  (include-book "misc/defpm" :dir :system)
+  (include-book "misc/defpun" :dir :system)
+  (include-book "misc/dft" :dir :system)
+  (include-book "misc/dump-events" :dir :system)
+  (include-book "std/testing/eval" :dir :system)
+  (include-book "misc/expander" :dir :system)
+  (include-book "misc/file-io-doc" :dir :system)
+  (include-book "misc/find-lemmas" :dir :system)
+  (include-book "misc/hons-help" :dir :system)
 ; The definition of QCAR in misc/hons-tests.lisp conflicts with that
 ; in centaur/ubdds/core.lisp.
 ; (include-book "misc/hons-tests" :dir :system)
-(include-book "misc/install-not-normalized" :dir :system)
-(include-book "misc/meta-lemmas" :dir :system)
-(include-book "misc/records" :dir :system)
-(include-book "misc/seq" :dir :system)
-(include-book "misc/seqw" :dir :system)
-(include-book "misc/simp" :dir :system)
-(include-book "misc/sin-cos" :dir :system)
-(include-book "misc/total-order" :dir :system)
-(include-book "misc/trace-star" :dir :system)
-(include-book "misc/untranslate-patterns" :dir :system)
-(include-book "misc/with-waterfall-parallelism" :dir :system)
-(include-book "misc/without-waterfall-parallelism" :dir :system)
+  (include-book "misc/install-not-normalized" :dir :system)
+  (include-book "misc/meta-lemmas" :dir :system)
+  (include-book "misc/records" :dir :system)
+  (include-book "misc/seq" :dir :system)
+  (include-book "misc/seqw" :dir :system)
+  (include-book "misc/simp" :dir :system)
+  (include-book "misc/sin-cos" :dir :system)
+  (include-book "misc/total-order" :dir :system)
+  (include-book "misc/trace-star" :dir :system)
+  (include-book "misc/untranslate-patterns" :dir :system)
+  (include-book "misc/with-waterfall-parallelism" :dir :system)
+  (include-book "misc/without-waterfall-parallelism" :dir :system)
 
-(include-book "make-event/proof-by-arith" :dir :system)
-(include-book "make-event/eval-check" :dir :system)
+  (include-book "make-event/proof-by-arith" :dir :system)
+  (include-book "make-event/eval-check" :dir :system)
 
-(include-book "centaur/memoize/old/profile" :dir :system)
-(include-book "centaur/memoize/old/watch" :dir :system)
+  (include-book "centaur/memoize/old/profile" :dir :system)
+  (include-book "centaur/memoize/old/watch" :dir :system)
 
-(include-book "acl2s/top-doc" :dir :system)
-(include-book "projects/smtlink/top-doc" :dir :system :ttags :all)
+  (include-book "acl2s/top-doc" :dir :system)
+  (include-book "projects/smtlink/top-doc" :dir :system :ttags :all)
 
-(include-book "centaur/ipasir/ipasir-tools" :dir :system)
-(include-book "clause-processors/pseudo-term-fty" :dir :system)
+  (include-book "centaur/ipasir/ipasir-tools" :dir :system)
+  (include-book "clause-processors/pseudo-term-fty" :dir :system)
 
-;; [Jared] keep these near the end to avoid expensive type prescription rules,
-;; especially related to consp-append.
-(include-book "data-structures/top" :dir :system)
-(include-book "data-structures/memories/memory" :dir :system)
+  ;; [Jared] keep these near the end to avoid expensive type prescription rules,
+  ;; especially related to consp-append.
+  (include-book "data-structures/top" :dir :system)
+  (include-book "data-structures/memories/memory" :dir :system)
 
-(include-book "coi/documentation" :dir :system)
+  (include-book "coi/documentation" :dir :system)
 
-(include-book "centaur/aignet/top-doc" :dir :system)
-(include-book "centaur/gl/top-doc" :dir :system)
-(include-book "centaur/vl/top-doc" :dir :system)
-(include-book "centaur/sv/top-doc" :dir :system)
-(include-book "centaur/fgl/top-doc" :dir :system)
-(include-book "centaur/vl2014/top-doc" :dir :system)
-(include-book "projects/top-doc" :dir :system)
-(include-book "kestrel/top-doc" :dir :system)
-(include-book "rtl/rel11/lib/top-doc" :dir :system)
-(include-book "centaur/esim/top-doc" :dir :system)
-(include-book "centaur/aig/top-doc" :dir :system)
-(include-book "std/util/termhints" :dir :system)
+  (include-book "centaur/aignet/top-doc" :dir :system)
+  (include-book "centaur/gl/top-doc" :dir :system)
+  (include-book "centaur/vl/top-doc" :dir :system)
+  (include-book "centaur/sv/top-doc" :dir :system)
+  (include-book "centaur/fgl/top-doc" :dir :system)
+  (include-book "centaur/vl2014/top-doc" :dir :system)
+  (include-book "projects/top-doc" :dir :system)
+  (include-book "kestrel/top-doc" :dir :system)
+  (include-book "rtl/rel11/lib/top-doc" :dir :system)
+  (include-book "centaur/esim/top-doc" :dir :system)
+  (include-book "centaur/aig/top-doc" :dir :system)
+  (include-book "std/util/termhints" :dir :system)
 
-;; omitted from gl
-(include-book "centaur/misc/outer-local" :dir :system)
+  ;; omitted from gl
+  (include-book "centaur/misc/outer-local" :dir :system)
 
-;; omitted from aignet
-(include-book "std/stobjs/nested-stobjs" :dir :system)
-(include-book "std/stobjs/updater-independence" :dir :system)
-(include-book "centaur/misc/iter" :dir :system)
-(include-book "centaur/misc/nth-equiv" :dir :system)
+  ;; omitted from aignet
+  (include-book "std/stobjs/nested-stobjs" :dir :system)
+  (include-book "std/stobjs/updater-independence" :dir :system)
+  (include-book "centaur/misc/iter" :dir :system)
+  (include-book "centaur/misc/nth-equiv" :dir :system)
 
-;; omitted from aig
-(include-book "system/random" :dir :system)
-(include-book "std/util/defretgen" :dir :system)
+  ;; omitted from aig
+  (include-book "system/random" :dir :system)
+  (include-book "std/util/defretgen" :dir :system)
 
-) ;; end progn so we can see total include-book time
+  ) ;; end progn so we can see total include-book time
 
 
 (defpointer assocs patbind-assocs)
@@ -306,19 +306,6 @@
 (include-book "xdoc/constructors" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 (include-book "xdoc/alter" :dir :system)
-
-
-; These are legacy defdoc topics that need to be incorporated into the
-; hierarchy at some sensible places.  These changes are not controversial, so
-; we'll do them globally, so they'll be included, e.g., in the Emacs version of
-; the combined manual.
-
-; data-definitions went away.  It might be reasonable to place with-timeout
-; under defdata, if that still exists.
-;(xdoc::change-parents data-definitions (macro-libraries projects debugging))
-;(xdoc::change-parents with-timeout (data-definitions))
-;(xdoc::change-parents testing (cgen))
-;; (xdoc::change-parents data-structures (macro-libraries))
 
 #!XDOC
 (defun fix-redundant-acl2-parents (all-topics)
@@ -389,7 +376,6 @@
 ; for custom manuals.
 
  (include-book "top-topic"))
-
 
 (comp t)
 
@@ -524,13 +510,14 @@
 
 (defconsts (& *acl2_doc_generate_supporting_files* state)
   (getenv$ "ACL2_DOC_GENERATE_SUPPORTING_FILES" state))
-(make-event (if (or (null *acl2_doc_generate_supporting_files*)
-                    (member-string-equal *acl2_doc_generate_supporting_files*
-                                         '("" "SKIP")))
-                '(value-triple :SKIP-ACL2_DOC_GENERATE_SUPPORTING_FILES)
-; else build the supporting files for acl2-doc
-(quote
-(progn
+
+(make-event
+  (if (or (null *acl2_doc_generate_supporting_files*)
+          (member-string-equal *acl2_doc_generate_supporting_files*
+                               '("" "SKIP")))
+      '(value-triple :SKIP-ACL2_DOC_GENERATE_SUPPORTING_FILES)
+    ;; else build the supporting files for acl2-doc
+    '(progn
 
 ; Historically this was part of system/doc/render-doc-combined.lisp.  However,
 ; that file ended up being quite expensive and in the critical path.  Most of
@@ -540,12 +527,12 @@
 ; So now, instead, to improve performance, we just merge the export of the
 ; text-based manual into doc/top.lisp.
 
-(include-book "system/doc/render-doc-base" :dir :system)
+       (include-book "system/doc/render-doc-base" :dir :system)
 
-(include-book "xdoc/save-rendered" :dir :system)
+       (include-book "xdoc/save-rendered" :dir :system)
 
-(defconst *rendered-doc-combined-header*
-  "; Documentation for acl2+books
+       (defconst *rendered-doc-combined-header*
+         "; Documentation for acl2+books
 ; WARNING: GENERATED FILE, DO NOT HAND EDIT!
 ; The contents of this file are derived from the full acl2+books
 ; documentation.  For license and copyright information, see community book
@@ -557,21 +544,21 @@
 ; LICENSE for more details.
 ")
 
-(encapsulate
-  ()
-(defttag :save-rendered-event)
+       (encapsulate
+           ()
+         (defttag :save-rendered-event)
 
-(defconsts (& *tags-acl2-doc* state) (getenv$ "TAGS_ACL2_DOC" state))
+         (defconsts (& *tags-acl2-doc* state) (getenv$ "TAGS_ACL2_DOC" state))
 
-(xdoc::save-rendered-event
- (extend-pathname (cbd)
-                  "../system/doc/rendered-doc-combined.lsp"
-                  state)
- *rendered-doc-combined-header*
- '*acl2+books-documentation*
- t ; error if there is any xdoc-error
- :timep t
- :write-acl2-doc-search-file t
+         (xdoc::save-rendered-event
+           (extend-pathname (cbd)
+                            "../system/doc/rendered-doc-combined.lsp"
+                            state)
+           *rendered-doc-combined-header*
+           '*acl2+books-documentation*
+           t ; error if there is any xdoc-error
+           :timep t
+           :write-acl2-doc-search-file t
 
 ; The following assumes that the community books are in the books/ subdirectory
 ; of the local ACL2 distribution.  We use the same environment variable,
@@ -588,13 +575,12 @@
 ; below against the empty string (or nil) instead, and users who want
 ; TAGS-acl2-doc could explicitly set TAGS_ACL2_DOC if they want the tags table.
 
- :script-file
- (and (not (equal *tags-acl2-doc* "SKIP")) ; e.g., for build server
-      (extend-pathname (cbd)
-                       "../../bin/make-tags-acl2-doc.sh"
-                       state)) )
-) ; end encapsulate
-) ; end progn
-) ; end quote
-) ; end if
-) ; end make-event
+           :script-file
+           (and (not (equal *tags-acl2-doc* "SKIP")) ; e.g., for build server
+                (extend-pathname (cbd)
+                                 "../../bin/make-tags-acl2-doc.sh"
+                                 state)) )
+         ) ; end encapsulate
+       ) ; end progn
+    ) ; end if
+  ) ; end make-event

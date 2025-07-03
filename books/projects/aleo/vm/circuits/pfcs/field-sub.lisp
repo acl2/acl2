@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -105,15 +106,16 @@
              field-sub-spec))
 
   (defruled field-sub-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "field_sub" defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "field_sub") defs)
                          (field-sub-circuit))
                   (primep prime)
                   (pfield::fep x prime)
                   (pfield::fep y prime)
                   (pfield::fep z prime))
              (equal (pfcs::definition-satp
-                      "field_sub" defs (list x y z) prime)
+                      (pfname "field_sub") defs (list x y z) prime)
                     (field-sub-spec x y z prime)))
     :in-theory '((:e field-sub-circuit)
+                 (:e name-simple)
                  definition-satp-to-field-sub-pred
                  field-sub-pred-to-spec)))

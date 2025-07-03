@@ -960,10 +960,10 @@
                       (const-prop-tyname tyspec.type env)))
                   (mv (type-spec-atomic type) env))
         :struct (b* (((mv spec env)
-                      (const-prop-strunispec tyspec.spec env)))
+                      (const-prop-struni-spec tyspec.spec env)))
                   (mv (type-spec-struct spec) env))
         :union (b* (((mv spec env)
-                     (const-prop-strunispec tyspec.spec env)))
+                     (const-prop-struni-spec tyspec.spec env)))
                  (mv (type-spec-union spec) env))
         :enum (b* (((mv spec env)
                     (const-prop-enumspec tyspec.spec env)))
@@ -1457,30 +1457,30 @@
          ((tyname tyname) tyname)
          ((mv specquals env)
           (const-prop-spec/qual-list tyname.specquals env))
-         ((mv decl? env)
-          (const-prop-absdeclor-option tyname.decl? env)))
+         ((mv declor? env)
+          (const-prop-absdeclor-option tyname.declor? env)))
       (mv (make-tyname
             :specquals specquals
-            :decl? decl?
+            :declor? declor?
             :info tyname.info)
           env))
     :measure (tyname-count tyname))
 
-  (define const-prop-strunispec
-    ((strunispec strunispecp)
+  (define const-prop-struni-spec
+    ((struni-spec struni-specp)
      (env envp))
-    :short "Propagate a constant through a @(see c$::strunispec)."
-    :returns (mv (new-strunispec strunispecp)
+    :short "Propagate a constant through a @(see c$::struni-spec)."
+    :returns (mv (new-struni-spec struni-specp)
                  (new-env envp))
     (b* ((env (env-fix env))
-         ((strunispec strunispec) strunispec)
+         ((struni-spec struni-spec) struni-spec)
          ((mv members env)
-          (const-prop-structdecl-list strunispec.members env)))
-      (mv (make-strunispec
-            :name strunispec.name
+          (const-prop-structdecl-list struni-spec.members env)))
+      (mv (make-struni-spec
+            :name? struni-spec.name?
             :members members)
           env))
-    :measure (strunispec-count strunispec))
+    :measure (struni-spec-count struni-spec))
 
   (define const-prop-structdecl
     ((structdecl structdeclp)

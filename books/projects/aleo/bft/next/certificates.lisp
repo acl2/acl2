@@ -13,9 +13,8 @@
 
 (include-book "proposals")
 
-(include-book "../library-extensions/oset-nonemptyp")
-
 (include-book "kestrel/fty/pos-set" :dir :system)
+(include-book "std/osets/nonemptyp" :dir :system)
 
 (local (include-book "../library-extensions/oset-theorems"))
 
@@ -409,7 +408,7 @@
   (defruled in-of-cert-set->prop-set
     (implies (certificate-setp certs)
              (equal (set::in prop (cert-set->prop-set certs))
-                    (b* ((cert (set::nonempty-witness
+                    (b* ((cert (set::nonemptyp-witness
                                 (certs-with-prop prop certs))))
                       (and (set::in cert certs)
                            (equal (certificate->proposal cert)
@@ -421,7 +420,7 @@
     ((defruled only-if-part
        (implies (certificate-setp certs)
                 (implies (set::in prop (cert-set->prop-set certs))
-                         (b* ((cert (set::nonempty-witness
+                         (b* ((cert (set::nonemptyp-witness
                                      (certs-with-prop prop certs))))
                            (and (set::in cert certs)
                                 (equal (certificate->proposal cert)
@@ -434,14 +433,14 @@
 
      (defruled if-part
        (implies (certificate-setp certs)
-                (b* ((cert (set::nonempty-witness
+                (b* ((cert (set::nonemptyp-witness
                             (certs-with-prop prop certs))))
                   (implies (and (set::in cert certs)
                                 (equal (certificate->proposal cert)
                                        prop))
                            (set::in prop (cert-set->prop-set certs)))))
        :use (:instance certificate->proposal-in-cert-set->prop-set
-                       (cert (set::nonempty-witness
+                       (cert (set::nonemptyp-witness
                               (certs-with-prop prop certs))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -532,7 +531,7 @@
   (defruled in-of-cert-set->author-set
     (implies (certificate-setp certs)
              (equal (set::in author (cert-set->author-set certs))
-                    (b* ((cert (set::nonempty-witness
+                    (b* ((cert (set::nonemptyp-witness
                                 (certs-with-author author certs))))
                       (and (set::in cert certs)
                            (equal (certificate->author cert)
@@ -544,7 +543,7 @@
     ((defruled only-if-part
        (implies (certificate-setp certs)
                 (implies (set::in author (cert-set->author-set certs))
-                         (b* ((cert (set::nonempty-witness
+                         (b* ((cert (set::nonemptyp-witness
                                      (certs-with-author author certs))))
                            (and (set::in cert certs)
                                 (equal (certificate->author cert)
@@ -557,14 +556,14 @@
 
      (defruled if-part
        (implies (certificate-setp certs)
-                (b* ((cert (set::nonempty-witness
+                (b* ((cert (set::nonemptyp-witness
                             (certs-with-author author certs))))
                   (implies (and (set::in cert certs)
                                 (equal (certificate->author cert)
                                        author))
                            (set::in author (cert-set->author-set certs)))))
        :use (:instance certificate->author-in-cert-set->author-set
-                       (cert (set::nonempty-witness
+                       (cert (set::nonemptyp-witness
                               (certs-with-author author certs))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -655,7 +654,7 @@
   (defruled in-of-cert-set->round-set
     (implies (certificate-setp certs)
              (equal (set::in round (cert-set->round-set certs))
-                    (b* ((cert (set::nonempty-witness
+                    (b* ((cert (set::nonemptyp-witness
                                 (certs-with-round round certs))))
                       (and (set::in cert certs)
                            (equal (certificate->round cert)
@@ -667,7 +666,7 @@
     ((defruled only-if-part
        (implies (certificate-setp certs)
                 (implies (set::in round (cert-set->round-set certs))
-                         (b* ((cert (set::nonempty-witness
+                         (b* ((cert (set::nonemptyp-witness
                                      (certs-with-round round certs))))
                            (and (set::in cert certs)
                                 (equal (certificate->round cert)
@@ -680,14 +679,14 @@
 
      (defruled if-part
        (implies (certificate-setp certs)
-                (b* ((cert (set::nonempty-witness
+                (b* ((cert (set::nonemptyp-witness
                             (certs-with-round round certs))))
                   (implies (and (set::in cert certs)
                                 (equal (certificate->round cert)
                                        round))
                            (set::in round (cert-set->round-set certs)))))
        :use (:instance certificate->round-in-cert-set->round-set
-                       (cert (set::nonempty-witness
+                       (cert (set::nonemptyp-witness
                               (certs-with-round round certs))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1160,7 +1159,7 @@
                                   (props-with-author+round
                                    author round (cert-set->prop-set certs)))))
        :use (:instance certificate->proposal-in-cert-set->prop-set
-                       (cert (SET::NONEMPTY-WITNESS
+                       (cert (SET::NONEMPTYP-WITNESS
                               (certs-with-prop
                                prop (certs-with-author+round
                                      author round certs)))))
@@ -1180,7 +1179,7 @@
                                    (certs-with-author+round
                                     author round certs)))))
        :use (:instance certificate->proposal-in-cert-set->prop-set
-                       (cert (set::nonempty-witness
+                       (cert (set::nonemptyp-witness
                               (certs-with-prop prop certs)))
                        (certs (certs-with-author+round author round certs)))
        :enable (in-of-props-with-author+round
@@ -1410,7 +1409,7 @@
                  cert-set-unequivp-necc)
        :use (:instance cert-set-unequivp-necc
                        (cert1 cert)
-                       (cert2 (set::nonempty-witness
+                       (cert2 (set::nonemptyp-witness
                                (certs-with-author+round
                                 (certificate->author cert)
                                 (certificate->round cert)
@@ -1543,16 +1542,16 @@
                            (cert-set->author-set certs2))))
           (:instance equal-cert-authors-when-unequivp-and-same-round
                      (certs (set::union certs1 certs2))
-                     (cert1 (set::nonempty-witness
+                     (cert1 (set::nonemptyp-witness
                              (certs-with-author
-                              (set::nonempty-witness
+                              (set::nonemptyp-witness
                                (set::intersect
                                 (cert-set->author-set certs1)
                                 (cert-set->author-set certs2)))
                               certs1)))
-                     (cert2 (set::nonempty-witness
+                     (cert2 (set::nonemptyp-witness
                              (certs-with-author
-                              (set::nonempty-witness
+                              (set::nonemptyp-witness
                                (set::intersect
                                 (cert-set->author-set certs1)
                                 (cert-set->author-set certs2)))
@@ -1579,16 +1578,16 @@
                            (cert-set->round-set certs2))))
           (:instance equal-cert-rounds-when-unequivp-and-same-author
                      (certs (set::union certs1 certs2))
-                     (cert1 (set::nonempty-witness
+                     (cert1 (set::nonemptyp-witness
                              (certs-with-round
-                              (set::nonempty-witness
+                              (set::nonemptyp-witness
                                (set::intersect
                                 (cert-set->round-set certs1)
                                 (cert-set->round-set certs2)))
                               certs1)))
-                     (cert2 (set::nonempty-witness
+                     (cert2 (set::nonemptyp-witness
                              (certs-with-round
-                              (set::nonempty-witness
+                              (set::nonemptyp-witness
                                (set::intersect
                                 (cert-set->round-set certs1)
                                 (cert-set->round-set certs2)))
@@ -1657,10 +1656,10 @@
                            (certs-with-author+round author round certs0))))
                 (set::subset (certs-with-author+round author round certs)
                              (certs-with-author+round author round certs0)))
-       :use ((:instance set::nonempty-witness-from-not-emptyp
+       :use ((:instance set::nonemptyp-witness-from-not-emptyp
                         (set (certs-with-author+round author round certs0)))
              (:instance cert-set-unequivp-necc
-                        (cert1 (set::nonempty-witness
+                        (cert1 (set::nonemptyp-witness
                                 (certs-with-author+round author round certs0)))
                         (cert2 (set::subset-witness
                                 (certs-with-author+round author round certs)

@@ -32,6 +32,7 @@
 (include-book "support-x86")
 (include-book "x86-changes")
 (include-book "support32")
+(include-book "memory32")
 (include-book "read-over-write-rules")
 (include-book "write-over-write-rules")
 (include-book "read-over-write-rules32")

@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -167,7 +167,8 @@
      (xdoc::p
       "If @(':print') is @(':error') or @(':result') or @(':info'),
        @('deftreeops') suppresses all kinds of outputs (via @(tsee with-output))
-       except for error and comment output.
+       except for error and comment output
+       (the latter is used for the @(':result') and @(':info') output).
        Otherwise, @('deftreeops') does not suppress any output.
        However, the actual output depends on
        which outputs are enabled or not prior to the call of @('deftreeops'),

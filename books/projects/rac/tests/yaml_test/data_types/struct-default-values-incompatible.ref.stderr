@@ -1,0 +1,3 @@
+struct-default-values-incompatible.cpp:3 (17-18): syntax error, unexpected ']'
+ 3 | struct S { int a[] = 3; }
+   |                  ^

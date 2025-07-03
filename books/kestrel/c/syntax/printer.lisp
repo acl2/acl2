@@ -1951,10 +1951,10 @@
                   (pstate (print-astring ")" pstate)))
                pstate)
      :struct (b* ((pstate (print-astring "struct " pstate))
-                  (pstate (print-strunispec tyspec.spec pstate)))
+                  (pstate (print-struni-spec tyspec.spec pstate)))
                pstate)
      :union (b* ((pstate (print-astring "union " pstate))
-                 (pstate (print-strunispec tyspec.spec pstate)))
+                 (pstate (print-struni-spec tyspec.spec pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enumspec tyspec.spec pstate)))
@@ -2604,17 +2604,17 @@
           (raise "Misusage error: empty list of specifiers and qualifiers.")
           (pristate-fix pstate))
          (pstate (print-spec/qual-list tyname.specquals pstate))
-         ((unless (absdeclor-option-case tyname.decl? :some)) pstate)
+         ((unless (absdeclor-option-case tyname.declor? :some)) pstate)
          (pstate (print-astring " " pstate))
-         (pstate (print-absdeclor (absdeclor-option-some->val tyname.decl?)
+         (pstate (print-absdeclor (absdeclor-option-some->val tyname.declor?)
                                   pstate)))
       pstate)
     :measure (two-nats-measure (tyname-count tyname) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-strunispec ((strunispec strunispecp) (pstate pristatep))
-    :guard (strunispec-unambp strunispec)
+  (define print-struni-spec ((struni-spec struni-specp) (pstate pristatep))
+    :guard (struni-spec-unambp struni-spec)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a structure or union specifier."
@@ -2639,25 +2639,25 @@
        Nonetheless, under certain conditions,
        e.g. when it is a lone top-level construct,
        we should print it on multiple lines."))
-    (b* (((strunispec strunispec) strunispec)
-         ((unless (or (ident-option-case strunispec.name :some)
-                      strunispec.members))
+    (b* (((struni-spec struni-spec) struni-spec)
+         ((unless (or (ident-option-case struni-spec.name? :some)
+                      struni-spec.members))
           (raise "Misusage error: empty structure or union specifier.")
           (pristate-fix pstate))
          (pstate (ident-option-case
-                  strunispec.name
-                  :some (print-ident strunispec.name.val pstate)
+                  struni-spec.name?
+                  :some (print-ident struni-spec.name?.val pstate)
                   :none pstate))
-         (pstate (if (and strunispec.name
-                          strunispec.members)
+         (pstate (if (and struni-spec.name?
+                          struni-spec.members)
                      (print-astring " " pstate)
                    pstate))
-         ((when (not strunispec.members)) pstate)
+         ((when (not struni-spec.members)) pstate)
          (pstate (print-astring "{ " pstate))
-         (pstate (print-structdecl-list strunispec.members pstate))
+         (pstate (print-structdecl-list struni-spec.members pstate))
          (pstate (print-astring " }" pstate)))
       pstate)
-    :measure (two-nats-measure (strunispec-count strunispec) 0))
+    :measure (two-nats-measure (struni-spec-count struni-spec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2713,7 +2713,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "As mentioned in @(tsee print-strunispec),
+      "As mentioned in @(tsee print-struni-spec),
        for now we print all of them in one line,
        since a structure or union specifier may occur
        in the middle of a list of declaration specifiers,
@@ -3698,6 +3698,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define print-filepath-transunit-map ((tunitmap filepath-transunit-mapp)
+                                      (options prioptp))
+  :guard (filepath-transunit-map-unambp tunitmap)
+  :returns (filemap filepath-filedata-mapp)
+  :short "Print the files in a file set."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input is a map from file paths to translation units,
+     i.e. the core content of a translation unit ensemble.
+     We also pass the printer options as additional input.
+     We go through each translation unit in the map and print it,
+     obtaining a file for each.
+     We return a map from file paths to files
+     that corresponds to the map from file paths to translation units.
+     The two maps have the same keys."))
+  (b* (((when (omap::emptyp tunitmap)) nil)
+       ((mv filepath tunit) (omap::head tunitmap))
+       (data (print-file tunit options))
+       (filemap (print-filepath-transunit-map (omap::tail tunitmap) options)))
+    (omap::update (filepath-fix filepath) (filedata data) filemap))
+  :verify-guards :after-returns
+
+  ///
+
+  (defret keys-of-print-filepath-transunit-map
+    (equal (omap::keys filemap)
+           (omap::keys tunitmap))
+    :hyp (filepath-transunit-mapp tunitmap)
+    :hints (("Goal" :induct t)))
+
+  (fty::deffixequiv print-filepath-transunit-map
+    :args ((options prioptp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define print-fileset ((tunits transunit-ensemblep) (options prioptp))
   :guard (transunit-ensemble-unambp tunits)
   :returns (fileset filesetp)
@@ -3707,38 +3743,12 @@
    (xdoc::p
     "The input is a translation unit ensemble in the abstract syntax.
      We also pass the printer options as additional input.
-     We go through each translation unit in the ensemble and print it,
-     obtaining a file for each.
-     We return a file set that corresponds to the translation unit ensemble.
-     The file paths are the same
-     for the translation unit ensemble and for the file set
-     (they are the keys of the maps)."))
-  (fileset (print-fileset-loop (transunit-ensemble->unwrap tunits) options))
+     We unwrap the translation unit ensemble obtainining a map,
+     we print the translation units of the map to files into a file map,
+     and we wrap the file map into a file set."))
+  (fileset
+   (print-filepath-transunit-map (transunit-ensemble->unwrap tunits) options))
   :hooks (:fix)
-
-  :prepwork
-  ((define print-fileset-loop ((tunitmap filepath-transunit-mapp)
-                               (options prioptp))
-     :guard (filepath-transunit-map-unambp tunitmap)
-     :returns (filemap filepath-filedata-mapp)
-     :parents nil
-     (b* (((when (omap::emptyp tunitmap)) nil)
-          ((mv filepath tunit) (omap::head tunitmap))
-          (data (print-file tunit options))
-          (filemap (print-fileset-loop (omap::tail tunitmap) options)))
-       (omap::update (filepath-fix filepath) (filedata data) filemap))
-     :verify-guards :after-returns
-
-     ///
-
-     (defret keys-of-print-fileset-loop
-       (equal (omap::keys filemap)
-              (omap::keys tunitmap))
-       :hyp (filepath-transunit-mapp tunitmap)
-       :hints (("Goal" :induct t)))
-
-     (fty::deffixequiv print-fileset-loop
-       :args ((options prioptp)))))
 
   ///
 

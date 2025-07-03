@@ -190,6 +190,7 @@
             fix-when-acl2-numberp
             acl2-numberp-of-+
             acl2-numberp-of-fix
+            integerp-of-ifix
             = ; introduces EQUAL
             eql ; introduces EQUAL ; EQL can arise from CASE
             eq ; introduces EQUAL
@@ -493,7 +494,10 @@
     bvor-convert-arg3-to-bv-axe
     bvxor-convert-arg2-to-bv-axe
     bvxor-convert-arg3-to-bv-axe
-    getbit-convert-arg2-to-bv-axe ; todo: more!
+    getbit-convert-arg2-to-bv-axe
+    ;bvcat-convert-arg2-to-bv-axe ; todo: these seemed to cause problems
+    ;bvcat-convert-arg4-to-bv-axe ; todo: more!
+    ;slice-convert-arg3-to-bv-axe caused-problems with increments to RSP
     ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
     ;; keep this list in sync with *functions-convertible-to-bv*:
     trim-of-logand-becomes-bvand
@@ -501,7 +505,13 @@
     trim-of-logxor-becomes-bvxor
     trim-of-lognot-becomes-bvnot
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
+    trim-of-*-becomes-bvmult
     trim-of-unary---becomes-bvuminus
+    ;; todo: replace these with a more general scheme:
+    bvplus-of-logext-arg2-convert-to-bv
+    bvplus-of-logext-arg3-convert-to-bv
+    bvminus-of-logext-arg2-convert-to-bv
+    bvminus-of-logext-arg3-convert-to-bv
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
@@ -736,6 +746,8 @@
      bvminus-cancel-3-2 ; todo: more!
 
      bvplus-of-0-arg2
+     bvplus-of-ifix-arg2
+     bvplus-of-ifix-arg3
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
@@ -883,6 +895,7 @@
      equal-of-slice-and-slice-same-low
 
      getbit-of-bvcat-all ;newly moved here
+     getbit-of-bvmult-of-expt-constant-version
 
 ;slice-of-bvplus-cases-no-split-case-no-carry-constant-version ;new
      bitxor-of-ifix-arg1
@@ -957,6 +970,9 @@
 
      bvmult-of-0-arg2
      bvmult-of-1-arg2
+     bvmult-of-ifix-arg2
+     bvmult-of-ifix-arg3
+
 
      bvminus-solve ;don't we get rid of bvminus?
 ;    bvminus-solve-for-dag2 ;drop, if we commute constants to the front of the equal?
@@ -1096,6 +1112,8 @@
 ; trying without these... todo: do we want these or not?:
      ;; getbit-of-bvor-eric
      ;; getbit-of-bvor-eric-2
+     getbit-of-bvor-when-narrow-arg2-axe
+     getbit-of-bvor-when-narrow-arg3-axe
      ;; getbit-of-bvand-eric
      ;; getbit-of-bvand-eric-2
      ;; getbit-0-of-bvxor-eric
@@ -1180,6 +1198,7 @@
 
      ;; for now, we open these to expose bvcat:
      putbyte
+     putbit
      putbits
 
      unsigned-byte-p-of-bvmult-of-expt2-constant-version
@@ -1199,7 +1218,8 @@
 
      ;; this made one of the mavlink dags much longer (too big) but the culprit was the subsequent xor normalization:
      getbit-of-bvif-quoteps ; more like this?  slice bvchop, etc.?  any term with everything constant but the bvif, like (bvcat 8 1 8 (bvif 8 test 5 7))?
-     )))
+
+     unsigned-byte-p-of-+-with-carry)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?

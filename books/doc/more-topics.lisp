@@ -197,7 +197,7 @@ of proofs.")
 <p>ACL2 is developed via <a href=\"https://github.com/acl2/acl2\">the ACL2 GitHub project</a>, which also contains the ACL2 libraries maintained by the community (see @(see community-books)).  The GitHub repository is very active, with thousands of commits per year.  Users are invited to contribute new developments, usually in the form of new @(see books) (collections of definitions, proofs, etc.), so that the community can benefit from them.  Collaboration occurs via <a href=\"https://github.com/acl2/acl2/pulls\">Pull Requests</a> and <a href=\"https://github.com/acl2/acl2/issues\">GitHub Issues</a>.  See also @(see git-quick-start).</p>
 
 <h3>Mailing Lists</h3>
-<p>We maintain several mailing lists for ACL2 announcements, discussions, and questions.  See <a href=\"https://www.cs.utexas.edu/~moore/acl2/current/HTML/installation/misc.html#Addresses\">this page</a>.</p>
+<p>We maintain several mailing lists for ACL2 announcements, discussions, and questions (see @(see mailing-lists)).</p>
 
 <h3>Zulip Chat</h3>
 <p>Zulip is a chat application similar to Slack.  We use it to discuss many ACL2 topics and to help each other with ACL2 issues.   It is accessible at <a href=\"https://acl2.zulip.kestrel.institute\">this page</a> or via the Zulip desktop or mobile app.  Email Eric Smith at @('eric.smith@kestrel.edu') for an invitation.  As an anti-spam measure, please include in your email a sentence or two about how you heard about ACL2 and/or how you plan to use it.</p>

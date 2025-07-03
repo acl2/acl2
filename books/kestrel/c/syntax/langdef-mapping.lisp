@@ -308,7 +308,7 @@
            (endp (cdr tyspecs))
            (type-spec-case (car tyspecs) :struct))
       (b* ((tyspec (car tyspecs))
-           (ident (check-strunispec-no-members
+           (ident (check-struni-spec-no-members
                    (type-spec-struct->spec tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
@@ -320,7 +320,7 @@
            (endp (cdr tyspecs))
            (type-spec-case (car tyspecs) :union))
       (b* ((tyspec (car tyspecs))
-           (ident (check-strunispec-no-members
+           (ident (check-struni-spec-no-members
                    (type-spec-union->spec tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
@@ -362,7 +362,7 @@
     :hyp (type-spec-list-formalp tyspecs)
     :hints (("Goal" :in-theory (enable type-spec-list-formalp
                                        type-spec-list-integer-formalp
-                                       check-strunispec-no-members)))))
+                                       check-struni-spec-no-members)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -643,10 +643,10 @@
                       in type name ~x0."
                      (tyname-fix tyname))))
        ((erp tyspecseq) (ldm-type-spec-list tyspecs))
-       ((when (not tyname.decl?))
+       ((when (not tyname.declor?))
         (retok (c::make-tyname :tyspec tyspecseq
                                :declor (c::obj-adeclor-none))))
-       ((erp adeclor1) (ldm-absdeclor-obj tyname.decl?)))
+       ((erp adeclor1) (ldm-absdeclor-obj tyname.declor?)))
     (retok (c::make-tyname :tyspec tyspecseq
                            :declor adeclor1)))
   :hooks (:fix)
@@ -1020,18 +1020,18 @@
                      declspec)))
        (tyspec (decl-spec-typespec->spec declspec))
        ((when (type-spec-case tyspec :struct))
-        (b* (((strunispec strunispec) (type-spec-struct->spec tyspec))
-             ((unless strunispec.name)
+        (b* (((struni-spec struni-spec) (type-spec-struct->spec tyspec))
+             ((unless struni-spec.name?)
               (reterr (msg "Unsupported structure declaration without name.")))
-             ((erp name1) (ldm-ident strunispec.name))
-             ((erp members1) (ldm-structdecl-list strunispec.members)))
+             ((erp name1) (ldm-ident struni-spec.name?))
+             ((erp members1) (ldm-structdecl-list struni-spec.members)))
           (retok (c::make-tag-declon-struct :tag name1 :members members1))))
        ((when (type-spec-case tyspec :union))
-        (b* (((strunispec strunispec) (type-spec-union->spec tyspec))
-             ((unless strunispec.name)
+        (b* (((struni-spec struni-spec) (type-spec-union->spec tyspec))
+             ((unless struni-spec.name?)
               (reterr (msg "Unsupported union declaration without name.")))
-             ((erp name1) (ldm-ident strunispec.name))
-             ((erp members1) (ldm-structdecl-list strunispec.members)))
+             ((erp name1) (ldm-ident struni-spec.name?))
+             ((erp members1) (ldm-structdecl-list struni-spec.members)))
           (retok (c::make-tag-declon-union :tag name1 :members members1))))
        ((when (type-spec-case tyspec :enum))
         (b* (((enumspec enumspec) (type-spec-enum->spec tyspec))
@@ -1052,7 +1052,7 @@
     (not erp)
     :hyp (decl-struct-formalp decl)
     :hints (("Goal" :in-theory (enable decl-struct-formalp
-                                       strunispec-formalp)))))
+                                       struni-spec-formalp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

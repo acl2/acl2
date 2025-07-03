@@ -19,6 +19,10 @@
 (include-book "bvminus")
 (include-book "bvnot")
 (include-book "bvshr-def")
+(include-book "bvmult-def")
+(include-book "bvcat-def")
+(local (include-book "bvcat"))
+(local (include-book "slice"))
 (local (include-book "bvshr"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
@@ -84,6 +88,13 @@
                   (bvplus size x y)))
   :hints (("Goal" :in-theory (enable trim bvplus))))
 
+(defthmd trim-of-*-becomes-bvmult
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (trim size (* x y))
+                  (bvmult size x y)))
+  :hints (("Goal" :in-theory (enable trim bvmult))))
+
 (defthmd trim-of-unary---becomes-bvuminus
   (implies (integerp x)
            (equal (trim size (- x))
@@ -99,3 +110,31 @@
 ;;   :hints (("Goal" :in-theory (enable trim bvminus))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvcat-convert-arg2-to-bv
+  (implies (syntaxp (and (consp high)
+                         (member-eq (ffn-symb high) *functions-convertible-to-bv*)))
+           (equal (bvcat highsize high lowsize low)
+                  (bvcat highsize (trim highsize high) lowsize low)))
+  :hints (("Goal" :in-theory (enable trim bvcat))))
+
+(defthmd bvcat-convert-arg4-to-bv
+  (implies (and (syntaxp (and (consp low)
+                              (member-eq (ffn-symb low) *functions-convertible-to-bv*)))
+                (integerp lowsize))
+           (equal (bvcat highsize high lowsize low)
+                  (bvcat highsize high lowsize (trim lowsize low))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd slice-convert-arg3-to-bv
+  (implies (and (syntaxp (and (consp x)
+                              (member-eq (ffn-symb x) *functions-convertible-to-bv*)
+                              (quotep high)
+                              (quotep low)))
+                (natp high)
+                (natp low))
+           (equal (slice high low x)
+                  (slice high low (trim (+ 1 high) x))))
+  :hints (("Goal" :in-theory (enable trim))))

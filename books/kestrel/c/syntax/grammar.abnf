@@ -13,7 +13,7 @@
 ; This file contains an ABNF grammar for C
 ; that is based on the grammar in [C17]
 ; but is meant for use by tools that manipulate C code.
-; See :doc concrete-syntax-for-tools for more information.
+; See :doc c$::syntax-for-tools for more information.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,7 +34,8 @@
 
 ; Levels
 
-; [C17] presents a lexical grammar [C17:A.1] and a phrase structure grammar [C17:A.2].
+; [C17] presents a lexical grammar [C17:A.1]
+; and a phrase structure grammar [C17:A.2].
 ; This is a typical two-level grammar structure for programming languages:
 ; the first grammar describes how a sequence of characters
 ; is organized into lexical units (identifiers, constants, etc.),
@@ -62,7 +63,8 @@
 ; along with UTF-8 decoding if we start with Unicode files.
 
 ; Our ABNF grammar does not capture the requirement that
-; a non-empty file ends with a new-line character (see phase 3 in [C17:5.1.1.2]).
+; a non-empty file ends with a new-line character
+; (see phase 3 in [C17:5.1.1.2]).
 ; This can be easily enforced outside the grammar as well.
 
 ; [C17:5.1.1.2/6] requires that adjacent string literals are concatenated.
@@ -80,8 +82,9 @@
 ; As mentioned above, our ABNF grammar aims at capturing code
 ; in a form that includes the phrase structure
 ; with at least some preprocessing constructs.
-; Actually, right now we do not capture any preprocessing construct,
-; but we plan to do that soon; this is just an initial version.
+; Actually, right now we do not support any actual mix of
+; preprocessing and non-preprocessing constructs,
+; but we plan to do that soon.
 
 ; However, C preprocessing operates at a low lexical level,
 ; so it may be difficult or impossible to capture
@@ -90,9 +93,12 @@
 ; and then use this grammar, without preprocessing constructs.
 ; This ABNF grammar covers at least all preprocessed code.
 
-; In that case, the preprocessing may be done via an external tool,
+; The preprocessing may be done via an external tool,
 ; e.g. (a component of) some existing C compiler.
 ; We may also build our own preprocessor in ACL2 at some point.
+
+; We also include the grammar rules for preprocessing constructs in the grammar,
+; in support for future extensions.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,7 +195,7 @@ extended-character = %x24 ; $
                    / carriage-return
                    / safe-nonascii
 
-; This is our initial (source) character set.
+; The following is our initial (source) character set.
 ; This rule name has no direct corresponding nonterminal in [C17],
 ; and is not used in the rest of our ABNF grammar,
 ; but it serves to clarify the character set.
@@ -243,6 +249,23 @@ graphic-character-not-star = %x21-23 ; ! " #
                            / %x7b-7e ; { | } ~
                            ; cf. graphic-character
 
+graphic-character-not-greater-than = %x21-23 ; ! " #
+                                   / %x25-2f ; % & ' ( ) * + , - . /
+                                   / %x3a-3d ; : ; < =
+                                   ; omit >
+                                   / %x3f ; ?
+                                   / %x5b-5f ; [ \ ] ^ _
+                                   / %x7b-7e ; { | } ~
+                                   ; cf. graphic-character
+
+graphic-character-not-double-quote = %x21 ; !
+                                   ; omit "
+                                   / %x23 ; #
+                                   / %x25-2f ; % & ' ( ) * + , - . /
+                                   / %x3a-3f ; : ; < = > ?
+                                   / %x5b-5f ; [ \ ] ^ _
+                                   / %x7b-7e ; { | } ~
+
 graphic-character-not-star-or-slash = %x21-23 ; ! " #
                                     / %x25-29 ; % & ' ( )
                                     ; omit *
@@ -280,6 +303,18 @@ basic-character-not-star = letter
                          / space
                          / control-character
 
+basic-character-not-greater-than = letter
+                                 / digit
+                                 / graphic-character-not-greater-than
+                                 / space
+                                 / control-character
+
+basic-character-not-double-quote = letter
+                                 / digit
+                                 / graphic-character-not-double-quote
+                                 / space
+                                 / control-character
+
 basic-character-not-star-or-slash = letter
                                   / digit
                                   / graphic-character-not-star-or-slash
@@ -309,6 +344,12 @@ character-not-star = basic-character-not-star
 character-not-star-or-slash = basic-character-not-star-or-slash
                             / extended-character
 
+character-not-greater-than-or-new-line = basic-character-not-greater-than
+                                       / extended-character-not-new-line
+
+character-not-double-quote-or-new-line = basic-character-not-double-quote
+                                       / extended-character-not-new-line
+
 character-not-single-quote-or-backslash-or-new-line =
       basic-character-not-single-quote-or-backslash
     / extended-character-not-new-line
@@ -332,6 +373,35 @@ white-space = space
             / vertical-tab
             / form-feed
             / new-line
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Header Names [C17:6.4.7] [C17:1.8]
+
+header-name = "<" h-char-sequence ">"
+            / double-quote q-char-sequence double-quote
+
+h-char-sequence = h-char
+                / h-char-sequence h-char
+
+h-char = character-not-greater-than-or-new-line
+
+q-char-sequence = q-char
+                / q-char-sequence q-char
+
+q-char = character-not-double-quote-or-new-line
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Preprocessing Numbers [C17:6.4.8] [C17:A.1.9]
+
+pp-number = digit
+          / "." digit
+          / pp-number digit
+          / pp-number identifier-nondigit
+          / pp-number %i"e" sign
+          / pp-number %i"p" sign
+          / pp-number "."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -359,20 +429,21 @@ line-comment = "//" *character-not-new-line
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Lexical elements [C17:A.1.1] [C17:6.4]
-
-; In the grammar in [C17], tokens and preprocessing tokens overlap,
-; and are meant to describe the language in different translation phases.
-; However, in this grammar, as explained in 'Purpose' above,
-; we mix together preprocessing tokens and (non-preprocessing) tokens.
-; Currently they are all (non-preprocessing) tokens,
-; but will add some preprocessing tokens.
+; Lexical Elements [C17:A.1.1] [C17:6.4]
 
 token = keyword
       / identifier
       / constant
       / string-literal
       / punctuator
+
+preprocessing-token = header-name
+                    / identifier
+                    / pp-number
+                    / character-constant
+                    / string-literal
+                    / punctuator
+                    / character ; non-white-space none of the above
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -660,7 +731,7 @@ hexadecimal-escape-sequence = %s"\x" hexadecimal-digit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; String literals [C17:A.1.6] [C17:6.4.5]
+; String Literals [C17:A.1.6] [C17:6.4.5]
 
 string-literal =
     [ encoding-prefix ] double-quote [ s-char-sequence ] double-quote
@@ -736,13 +807,13 @@ punctuator = "["
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Header names [C17:A.1.8] [C17:6.4.7]
+; Header Names [C17:A.1.8] [C17:6.4.7]
 
 ; We omit these for now, but we will add them to represent #include directives.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing numbers [C17:A.1.9] [C17:6.4.8]
+; Preprocessing Numbers [C17:A.1.9] [C17:6.4.8]
 
 ; We omit these, because, as explained in 'Purpose' above,
 ; the goal of this grammar is to represent C code in a form
@@ -1414,7 +1485,7 @@ jump-statement = %s"goto" identifier ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; External definitions [C17:A.2.4]
+; External Definitions [C17:A.2.4]
 
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a function definition.
@@ -1460,6 +1531,58 @@ declaration-list = declaration
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing directives [C17:A.3]
+; Preprocessing Directives [C17:6.10] [C17:A.3]
 
-; We will capture (some forms of) these in the future.
+; We omit the rule for 'new-line' here because it is already under 'Characters'.
+
+preprocessing-file = [ group ]
+
+group = group-part
+      / group group-part
+
+group-part = if-section
+           / control-line
+           / text-line
+           / "#" non-directive
+
+if-section = if-group [ elif-groups ] [ else-group ] endif-line
+
+if-group = "#" %s"if" constant-expression new-line [ group ]
+         / "#" %s"ifdef" identifier new-line [ group ]
+         / "#" %s"ifndef" identifier new-line [ group ]
+
+elif-groups = elif-group
+            / elif-groups elif-group
+
+elif-group = "#" %s"elif" constant-expression new-line [ group ]
+
+else-group = "#" %s"else" new-line [ group ]
+
+endif-line = "#" %s"endif" new-line
+
+control-line = "#" %s"include" pp-tokens new-line
+             / "#" %s"define" identifier replacement-list new-line
+             / "#" %s"define" identifier lparen [ identifier-list ] ")"
+               replacement-list new-line
+             / "#" %s"define" identifier lparen "..." ")"
+               replacement-list new-line
+             / "#" %s"define" identifier lparen identifier-list "," "..." ")"
+               replacement-list new-line
+             / "#" %s"undef" identifier new-line
+             / "#" %s"line" pp-tokens new-line
+             / "#" %s"error" [ pp-tokens ] new-line
+             / "#" %s"pragma" [ pp-tokens ] new-line
+             / "#" new-line
+
+text-line = [ pp-tokens ] new-line
+
+non-directive = pp-tokens new-line
+
+lparen = "(" ; not immediately preceded by white space
+
+replacement-list = [ pp-tokens ]
+
+pp-tokens = preprocessing-token
+          / pp-tokens preprocessing-token
+
+on-off-switch = %s"ON" / %s"OFF" / %s"DEFAULT"

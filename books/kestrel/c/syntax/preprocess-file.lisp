@@ -45,19 +45,20 @@
      "A collection of tools to invoke an external C preprocessor.")
    (xdoc::p
      "These tools appeal to a configurable C preprocessor, and the prerequisite
-      dependencies may not be present on all systems. For books which use the
-      default preprocessor \"cpp\", certification may be controlled with
-      the @(see build::uses-cpp) @(see build::cert_param) flag.")
+      dependencies may not be present on all systems. For books which use GCC
+      (the default), certification may be controlled with the
+      @(see build::uses-gcc-c17) @(see build::cert_param) flag.")
    (xdoc::p
-     "The community books Makefile will autodetect whether \"cpp\" is
-      available, and exclude books appropriately. Certification of such books
-      may be suppressed by manually undefining the Makefile variable
-      \"OS_HAS_CPP\". E.g., to run a regression excluding books calling cpp:")
+     "The community books Makefile will autodetect whether GCC is available,
+      and exclude books appropriately. Certification of such books may be
+      suppressed by manually undefining the Makefile variable
+      \"OS_HAS_GCC_C17\". E.g., to run a regression excluding books calling
+     GCC:")
    (xdoc::code
-     "OS_HAS_CPP= make regression")
+     "OS_HAS_GCC_C17= make regression")
    (xdoc::p
      "Further @(see build::cert_param) flags may need to be defined if using a
-      C preprocessor other than \"cpp\"."))
+      C preprocessor other than GCC."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,9 +100,9 @@
     't)
    ((preprocessor stringp
                   "The preprocessor executable to use. The default is
-                   \"cpp\". Other reasonable values might be \"gcc\",
+                   \"gcc\". Other reasonable values might be \"gcc\",
                    \"clang\", \"cc\", etc.")
-    '"cpp")
+    '"gcc")
    ((extra-args string-listp
                 "Arguments to pass to the C preprocessor, in addition to
                  \"-E\". The default value is @('(list \"-P\" \"-std=c17\")').
@@ -223,9 +224,9 @@
     ':auto)
    ((preprocessor stringp
                   "The preprocessor executable to use. The default is
-                   \"cpp\". Other reasonable values might be \"gcc\",
+                   \"gcc\". Other reasonable values might be \"cpp\",
                    \"clang\", \"cc\", etc.")
-    '"cpp")
+    '"gcc")
    ((extra-args string-listp
                 "Arguments to pass to the C preprocessor, in addition to
                  \"-E\". The default value is @('(list \"-P\" \"-std=c17\")').

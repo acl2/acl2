@@ -1836,8 +1836,8 @@
     (:bool ())
     (:complex ())
     (:atomic ((type tyname)))
-    (:struct ((spec strunispec)))
-    (:union ((spec strunispec)))
+    (:struct ((spec struni-spec)))
+    (:union ((spec struni-spec)))
     (:enum ((spec enumspec)))
     (:typedef ((name ident)))
     ;; GCC extensions:
@@ -2371,14 +2371,14 @@
       "Type names may be accompanied by some additional information,
        such as the type calculated during validation."))
     ((specquals spec/qual-list)
-     (decl? absdeclor-option)
+     (declor? absdeclor-option)
      (info any))
     :pred tynamep
     :measure (two-nats-measure (acl2-count x) 4))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::defprod strunispec
+  (fty::defprod struni-spec
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of structure or union specifiers [C17:6.7.2.1] [C17:A.2.2]."
     :long
@@ -2398,9 +2398,9 @@
       "This fixtype does not cover structure types with no members,
        which is a GCC extension;
        this is covered as a separate case in @(tsee type-spec)."))
-    ((name ident-option)
+    ((name? ident-option)
      (members structdecl-list))
-    :pred strunispecp
+    :pred struni-specp
     :measure (two-nats-measure (acl2-count x) 1))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

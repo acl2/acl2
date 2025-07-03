@@ -272,7 +272,7 @@
      If the two expressions are syntactically equal,
      the generated theorem just says that
      if the execution of the expression does not yield an error,
-     then the resulting value has type of the expression.
+     then the resulting value has the type of the expression.
      If the two expressions are not syntactically equal,
      the theorem also says that
      if the result of executing the old expression is not an error
@@ -369,9 +369,13 @@
     "The theorem says that
      the old statement returns a value of the appropriate type,
      regardless of whether old and new statements
-     are syntactically equal or not.
-     If they are not, the theorem also says that
-     their execution returns equal values and equal computation states,
+     are syntactically equal or not;
+     if the type is @('void'),
+     then the theorem says that execution returns @('nil'),
+     according to our formal dynamic semantics.
+     If old and new statements are not equal, the theorem also says that
+     their execution returns equal values (or both @('nil'))
+     and equal computation states,
      and that the execution of the new statement does not yield an error."))
   (b* ((old (stmt-fix old))
        (new (stmt-fix new))
@@ -402,8 +406,10 @@
                   ((mv result &) (c::exec-stmt stmt compst fenv limit)))
                (implies (and ,@hyps
                              (not (c::errorp result)))
-                        (and result
-                             (equal (c::type-of-value result) ',ctype))))
+                        ,(if (type-case type :void)
+                             '(not result)
+                           `(and result
+                                 (equal (c::type-of-value result) ',ctype)))))
           `(b* ((old-stmt (mv-nth 1 (ldm-stmt ',old)))
                 (new-stmt (mv-nth 1 (ldm-stmt ',new)))
                 ((mv old-result old-compst)
@@ -415,8 +421,11 @@
                       (and (not (c::errorp new-result))
                            (equal old-result new-result)
                            (equal old-compst new-compst)
-                           old-result
-                           (equal (c::type-of-value old-result) ',ctype))))))
+                           ,@(if (type-case type :void)
+                                 '((not old-result))
+                               `(old-result
+                                 (equal (c::type-of-value old-result)
+                                        ',ctype))))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -453,9 +462,13 @@
     "The theorem says that
      the old block item returns a value of the appropriate type,
      regardless of whether old and new block items
-     are syntactically equal or not.
-     If they are not, the theorem also says that
-     their execution returns equal values and equal computation states,
+     are syntactically equal or not;
+     if the type is @('void'),
+     then the theorem says that execution returns @('nil'),
+     according to our formal dynamic semantics.
+     If old and new block items are not equal, the theorem also says that
+     their execution returns equal values (or both @('nil'))
+     and equal computation states,
      and that the execution of the new block item does not yield an error."))
   (b* ((old (block-item-fix old))
        (new (block-item-fix new))
@@ -486,8 +499,10 @@
                   ((mv result &) (c::exec-block-item item compst fenv limit)))
                (implies (and ,@hyps
                              (not (c::errorp result)))
-                        (and result
-                             (equal (c::type-of-value result) ',ctype))))
+                        ,(if (type-case type :void)
+                             '(not result)
+                           `(and result
+                                 (equal (c::type-of-value result) ',ctype)))))
           `(b* ((old-item (mv-nth 1 (ldm-block-item ',old)))
                 (new-item (mv-nth 1 (ldm-block-item ',new)))
                 ((mv old-result old-compst)
@@ -499,8 +514,11 @@
                       (and (not (c::errorp new-result))
                            (equal old-result new-result)
                            (equal old-compst new-compst)
-                           old-result
-                           (equal (c::type-of-value old-result) ',ctype))))))
+                           ,@(if (type-case type :void)
+                                 '((not old-result))
+                               `(old-result
+                                 (equal (c::type-of-value old-result)
+                                        ',ctype))))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -537,8 +555,11 @@
     "The theorem says that
      the old block item list returns a value of the appropriate type,
      regardless of whether old and new block item lists
-     are syntactically equal or not.
-     If they are not, the theorem also says that
+     are syntactically equal or not;
+     if the type is @('void'),
+     then the theorem says that execution returns @('nil'),
+     according to our formal dynamic semantics.
+     If old and new block item lists are not equal, the theorem also says that
      their execution returns equal values and equal computation states,
      and that the execution of the new block item list
      does not yield an error."))
@@ -572,8 +593,10 @@
                    (c::exec-block-item-list items compst fenv limit)))
                (implies (and ,@hyps
                              (not (c::errorp result)))
-                        (and result
-                             (equal (c::type-of-value result) ',ctype))))
+                        ,(if (type-case type :void)
+                             '(not result)
+                           `(and result
+                                 (equal (c::type-of-value result) ',ctype)))))
           `(b* ((old-items (mv-nth 1 (ldm-block-item-list ',old)))
                 (new-items (mv-nth 1 (ldm-block-item-list ',new)))
                 ((mv old-result old-compst)
@@ -585,8 +608,11 @@
                       (and (not (c::errorp new-result))
                            (equal old-result new-result)
                            (equal old-compst new-compst)
-                           old-result
-                           (equal (c::type-of-value old-result) ',ctype))))))
+                           ,@(if (type-case type :void)
+                                 '((not old-result))
+                               `(old-result
+                                 (equal (c::type-of-value old-result)
+                                        ',ctype))))))))
        (thm-name
         (packn-pos (list const-new '-thm- thm-index) const-new))
        (thm-index (1+ (pos-fix thm-index)))
@@ -1232,7 +1258,7 @@
                               (:e member-equal))
                  :use (,arg-thm-name
                        (:instance
-                        simpadd0-expr-unary-support-lemma-1
+                        simpadd0-expr-unary-support-lemma
                         (op ',(unop-case
                                op
                                :plus (c::unop-plus)
@@ -1243,7 +1269,7 @@
                         (old-arg (mv-nth 1 (ldm-expr ',arg)))
                         (new-arg (mv-nth 1 (ldm-expr ',arg-new))))
                        (:instance
-                        simpadd0-expr-unary-support-lemma-2
+                        simpadd0-expr-unary-support-lemma-error
                         (op ',(unop-case
                                op
                                :plus (c::unop-plus)
@@ -1293,7 +1319,7 @@
              c::value-signed-integerp
              c::value-unsigned-integerp))
 
-  (defruled simpadd0-expr-unary-support-lemma-1
+  (defruled simpadd0-expr-unary-support-lemma
     (b* ((old (c::expr-unary op old-arg))
          (new (c::expr-unary op new-arg))
          (old-arg-result (c::exec-expr-pure old-arg compst))
@@ -1331,7 +1357,7 @@
              c::lognot-value-lemma
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-unary-support-lemma-2
+  (defruled simpadd0-expr-unary-support-lemma-error
     (implies (c::errorp (c::exec-expr-pure arg compst))
              (c::errorp (c::exec-expr-pure (c::expr-unary op arg) compst)))
     :expand (c::exec-expr-pure (c::expr-unary op arg) compst)))
@@ -1413,12 +1439,12 @@
                               (:e c::type-nonchar-integerp))
                  :use (,arg-thm-name
                        (:instance
-                        simpadd0-expr-cast-support-lemma-1
+                        simpadd0-expr-cast-support-lemma
                         (tyname (mv-nth 1 (ldm-tyname ',type)))
                         (old-arg (mv-nth 1 (ldm-expr ',arg)))
                         (new-arg (mv-nth 1 (ldm-expr ',arg-new))))
                        (:instance
-                        simpadd0-expr-cast-support-lemma-2
+                        simpadd0-expr-cast-support-lemma-error
                         (tyname (mv-nth 1 (ldm-tyname ',type)))
                         (arg (mv-nth 1 (ldm-expr ',arg))))))))
        ((mv thm-event thm-name thm-index)
@@ -1446,7 +1472,7 @@
               (expr-unambp arg-new))
     :hints (("Goal" :in-theory (enable irr-expr))))
 
-  (defruled simpadd0-expr-cast-support-lemma-1
+  (defruled simpadd0-expr-cast-support-lemma
     (b* ((old (c::expr-cast tyname old-arg))
          (new (c::expr-cast tyname new-arg))
          (old-arg-result (c::exec-expr-pure old-arg compst))
@@ -1475,7 +1501,7 @@
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-cast-support-lemma-2
+  (defruled simpadd0-expr-cast-support-lemma-error
     (implies (c::errorp (c::exec-expr-pure arg compst))
              (c::errorp (c::exec-expr-pure (c::expr-cast tyname arg) compst)))
     :expand ((c::exec-expr-pure (c::expr-cast tyname arg) compst))))
@@ -1516,12 +1542,12 @@
      in which case the resulting expression is just that expression.
      This is the core of this simple transformation.")
    (xdoc::p
-    "We generate a theorem iff
-     theorems were generated for both argument expressions,
-     and the binary operator is pure and non-strict.
-     The theorem is proved via three general ones that we prove below;
-     the third one is only needed if there is an actual simplification,
-     but we always use it in the proof for simplicity."))
+    "We generate a theorem only if
+     theorems were generated for both argument expressions.
+     For now we only generate theorems for pure non-strict operators;
+     we plan to add support for pure non-strict operators,
+     as well as for assignment operators under certain conditions.
+     The theorem is proved via general ones that we prove below."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (binop-case op :add)
@@ -1540,69 +1566,79 @@
         (mv (irr-expr) (irr-simpadd0-gout)))
        (vartys (omap::update* arg1-vartys arg2-vartys))
        (diffp (or arg1-diffp arg2-diffp simpp))
-       ((unless (and arg1-thm-name
-                     arg2-thm-name
-                     (member-eq (binop-kind op)
-                                '(:mul :div :rem :add :sub :shl :shr
-                                  :lt :gt :le :ge :eq :ne
-                                  :bitand :bitxor :bitior))))
-        (mv expr-new
-            (make-simpadd0-gout :events (append arg1-events arg2-events)
-                                :thm-name nil
-                                :thm-index gin.thm-index
-                                :names-to-avoid gin.names-to-avoid
-                                :vartys vartys
-                                :diffp diffp)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-expr)
-                              (:e c::iconst-length-none)
-                              (:e c::iconst-base-oct)
-                              (:e c::iconst)
-                              (:e c::const-int)
-                              (:e c::expr-const)
-                              (:e c::binop-kind)
-                              (:e c::binop-add)
-                              (:e c::binop-purep)
-                              (:e c::binop-strictp)
-                              (:e c::expr-binary)
-                              (:e c::type-nonchar-integerp)
-                              (:e c::promote-type)
-                              (:e c::uaconvert-types)
-                              (:e c::type-sint)
-                              (:e member-equal))
-                 :use (,arg1-thm-name
-                       ,arg2-thm-name
-                       (:instance
-                        simpadd0-expr-binary-support-lemma-1
-                        (op ',(ldm-binop op))
-                        (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                        (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
-                        (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
-                        (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
-                       (:instance
-                        simpadd0-expr-binary-support-lemma-2
-                        (op ',(ldm-binop op))
-                        (arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                        (arg2 (mv-nth 1 (ldm-expr ',arg2))))
-                       (:instance
-                        simpadd0-expr-binary-support-lemma-3
-                        (expr (mv-nth 1 (ldm-expr ',arg1-new))))))))
-       ((mv thm-event thm-name thm-index)
-        (simpadd0-gen-expr-pure-thm expr
-                                    expr-new
-                                    vartys
-                                    gin.const-new
-                                    gin.thm-index
-                                    hints)))
-    (mv expr-new
-        (make-simpadd0-gout :events (append arg1-events
-                                            arg2-events
-                                            (list thm-event))
-                            :thm-name thm-name
-                            :thm-index thm-index
-                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+       (gout-no-thm
+        (make-simpadd0-gout :events (append arg1-events arg2-events)
+                            :thm-name nil
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
                             :vartys vartys
-                            :diffp diffp)))
+                            :diffp diffp))
+       ((unless (and arg1-thm-name
+                     arg2-thm-name))
+        (mv expr-new gout-no-thm)))
+    (cond
+     ((member-eq (binop-kind op)
+                 '(:mul :div :rem :add :sub :shl :shr
+                   :lt :gt :le :ge :eq :ne
+                   :bitand :bitxor :bitior))
+      (b* ((hints `(("Goal"
+                     :in-theory '((:e ldm-expr)
+                                  (:e c::iconst-length-none)
+                                  (:e c::iconst-base-oct)
+                                  (:e c::iconst)
+                                  (:e c::const-int)
+                                  (:e c::expr-const)
+                                  (:e c::binop-kind)
+                                  (:e c::binop-add)
+                                  (:e c::binop-purep)
+                                  (:e c::binop-strictp)
+                                  (:e c::expr-binary)
+                                  (:e c::type-nonchar-integerp)
+                                  (:e c::promote-type)
+                                  (:e c::uaconvert-types)
+                                  (:e c::type-sint)
+                                  (:e member-equal))
+                     :use (,arg1-thm-name
+                           ,arg2-thm-name
+                           (:instance
+                            simpadd0-expr-binary-support-lemma
+                            (op ',(ldm-binop op))
+                            (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                            (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
+                            (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
+                            (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
+                           (:instance
+                            simpadd0-expr-binary-support-lemma-error
+                            (op ',(ldm-binop op))
+                            (arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                            (arg2 (mv-nth 1 (ldm-expr ',arg2))))
+                           ,@(and simpp
+                                  `((:instance
+                                     simpadd0-expr-binary-support-lemma-simp
+                                     (expr (mv-nth 1 (ldm-expr
+                                                      ',arg1-new))))))))))
+           ((mv thm-event thm-name thm-index)
+            (simpadd0-gen-expr-pure-thm expr
+                                        expr-new
+                                        vartys
+                                        gin.const-new
+                                        gin.thm-index
+                                        hints)))
+        (mv expr-new
+            (make-simpadd0-gout :events (append arg1-events
+                                                arg2-events
+                                                (list thm-event))
+                                :thm-name thm-name
+                                :thm-index thm-index
+                                :names-to-avoid (cons thm-name
+                                                      gin.names-to-avoid)
+                                :vartys vartys
+                                :diffp diffp))))
+     ((member-eq (binop-kind op) '(:logand :logor))
+      (mv expr-new gout-no-thm))
+     ((eq (binop-kind op) :asg)
+      (mv expr-new gout-no-thm))
+     (t (mv expr-new gout-no-thm))))
 
   ///
 
@@ -1612,7 +1648,7 @@
               (expr-unambp arg2-new))
     :hints (("Goal" :in-theory (enable irr-expr))))
 
-  (defruled simpadd0-expr-binary-support-lemma-1
+  (defruled simpadd0-expr-binary-support-lemma
     (b* ((old (c::expr-binary op old-arg1 old-arg2))
          (new (c::expr-binary op new-arg1 new-arg2))
          (old-arg1-result (c::exec-expr-pure old-arg1 compst))
@@ -1659,7 +1695,7 @@
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-binary-support-lemma-2
+  (defruled simpadd0-expr-binary-support-lemma-error
     (implies (and (c::binop-strictp op)
                   (or (c::errorp (c::exec-expr-pure arg1 compst))
                       (c::errorp (c::exec-expr-pure arg2 compst))))
@@ -1687,7 +1723,7 @@
              fix
              ifix))
 
-  (defruled simpadd0-expr-binary-support-lemma-3
+  (defruled simpadd0-expr-binary-support-lemma-simp
     (b* ((zero (c::expr-const
                 (c::const-int
                  (c::make-iconst
@@ -1794,7 +1830,7 @@
                        ,then-thm-name
                        ,else-thm-name
                        (:instance
-                        simpadd0-expr-cond-support-lemma-1
+                        simpadd0-expr-cond-support-lemma-true
                         (old-test (mv-nth 1 (ldm-expr ',test)))
                         (old-then (mv-nth 1 (ldm-expr ',then)))
                         (old-else (mv-nth 1 (ldm-expr ',else)))
@@ -1802,7 +1838,7 @@
                         (new-then (mv-nth 1 (ldm-expr ',then-new)))
                         (new-else (mv-nth 1 (ldm-expr ',else-new))))
                        (:instance
-                        simpadd0-expr-cond-support-lemma-2
+                        simpadd0-expr-cond-support-lemma-false
                         (old-test (mv-nth 1 (ldm-expr ',test)))
                         (old-then (mv-nth 1 (ldm-expr ',then)))
                         (old-else (mv-nth 1 (ldm-expr ',else)))
@@ -1810,17 +1846,17 @@
                         (new-then (mv-nth 1 (ldm-expr ',then-new)))
                         (new-else (mv-nth 1 (ldm-expr ',else-new))))
                        (:instance
-                        simpadd0-expr-cond-support-lemma-3
+                        simpadd0-expr-cond-support-lemma-error-test
                         (test (mv-nth 1 (ldm-expr ',test)))
                         (then (mv-nth 1 (ldm-expr ',then)))
                         (else (mv-nth 1 (ldm-expr ',else))))
                        (:instance
-                        simpadd0-expr-cond-support-lemma-4
+                        simpadd0-expr-cond-support-lemma-error-then
                         (test (mv-nth 1 (ldm-expr ',test)))
                         (then (mv-nth 1 (ldm-expr ',then)))
                         (else (mv-nth 1 (ldm-expr ',else))))
                        (:instance
-                        simpadd0-expr-cond-support-lemma-5
+                        simpadd0-expr-cond-support-lemma-error-else
                         (test (mv-nth 1 (ldm-expr ',test)))
                         (then (mv-nth 1 (ldm-expr ',then)))
                         (else (mv-nth 1 (ldm-expr ',else))))))))
@@ -1851,7 +1887,7 @@
               (expr-unambp else-new))
     :hints (("Goal" :in-theory (enable irr-expr))))
 
-  (defruled simpadd0-expr-cond-support-lemma-1
+  (defruled simpadd0-expr-cond-support-lemma-true
     (b* ((old (c::expr-cond old-test old-then old-else))
          (new (c::expr-cond new-test new-then new-else))
          (old-test-result (c::exec-expr-pure old-test compst))
@@ -1886,7 +1922,7 @@
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-cond-support-lemma-2
+  (defruled simpadd0-expr-cond-support-lemma-false
     (b* ((old (c::expr-cond old-test old-then old-else))
          (new (c::expr-cond new-test new-then new-else))
          (old-test-result (c::exec-expr-pure old-test compst))
@@ -1921,13 +1957,13 @@
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-cond-support-lemma-3
+  (defruled simpadd0-expr-cond-support-lemma-error-test
     (implies (c::errorp (c::exec-expr-pure test compst))
              (c::errorp
               (c::exec-expr-pure (c::expr-cond test then else) compst)))
     :expand (c::exec-expr-pure (c::expr-cond test then else) compst))
 
-  (defruled simpadd0-expr-cond-support-lemma-4
+  (defruled simpadd0-expr-cond-support-lemma-error-then
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -1941,7 +1977,7 @@
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-cond-support-lemma-5
+  (defruled simpadd0-expr-cond-support-lemma-error-else
     (implies (and (not (c::errorp (c::exec-expr-pure test compst)))
                   (c::type-nonchar-integerp
                    (c::type-of-value
@@ -1954,6 +1990,56 @@
     :expand (c::exec-expr-pure (c::expr-cond test then else) compst)
     :enable (c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-stmt-expr ((expr? expr-optionp)
+                            (expr?-new expr-optionp)
+                            (expr?-events pseudo-event-form-listp)
+                            (expr?-thm-name symbolp)
+                            (expr?-vartys ident-type-mapp)
+                            (expr?-diffp booleanp)
+                            (gin simpadd0-ginp))
+  :guard (and (expr-option-unambp expr?)
+              (expr-option-unambp expr?-new)
+              (iff expr? expr?-new))
+  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
+  :short "Transform an expression statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We put the optional expression into an expression statement."))
+  (declare (ignore expr?-thm-name))
+  (b* (((simpadd0-gin gin) gin)
+       ;; (stmt (stmt-expr expr?))
+       (stmt-new (stmt-expr expr?-new))
+       ((unless (iff expr? expr?-new))
+        (raise "Internal error: ~
+                return statement with optional expression ~x0 ~
+                is transformed into ~
+                return statement with optional expression ~x1."
+               expr? expr?-new)
+        (mv (irr-stmt) (irr-simpadd0-gout)))
+       ((when (and (not expr?)
+                   expr?-diffp))
+        (raise "Internal error: ~
+                unchanged return statement marked as changed.")
+        (mv (irr-stmt) (irr-simpadd0-gout))))
+    (mv stmt-new
+        (make-simpadd0-gout
+         :events expr?-events
+         :thm-name nil
+         :thm-index gin.thm-index
+         :names-to-avoid gin.names-to-avoid
+         :vartys expr?-vartys
+         :diffp expr?-diffp)))
+
+  ///
+
+  (defret stmt-unambp-of-simpadd0-stmt-expr
+    (stmt-unambp stmt)
+    :hyp (expr-option-unambp expr?-new)
+    :hints (("Goal" :in-theory (enable irr-stmt)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1975,14 +2061,33 @@
     "We put the new optional expression into a return statement.")
    (xdoc::p
     "We generate a theorem iff
-     the expression is present
-     and a theorem was generated for the expression.
-     The theorem is proved via two general ones proved below."))
+     the expression is absent
+     or a theorem was generated for the expression.
+     Note that the expression if present in the old statement
+     iff it is present in the new statement;
+     also note that, if there is no expression,
+     old and new statements cannot differ.
+     If the expression is present,
+     the theorem is proved via two general ones proved below;
+     if the expression is absent,
+     the theorem is proved via another general one proved below."))
   (b* (((simpadd0-gin gin) gin)
        (stmt (stmt-return expr?))
        (stmt-new (stmt-return expr?-new))
-       ((unless (and expr?
-                     expr?-thm-name))
+       ((unless (iff expr? expr?-new))
+        (raise "Internal error: ~
+                return statement with optional expression ~x0 ~
+                is transformed into ~
+                return statement with optional expression ~x1."
+               expr? expr?-new)
+        (mv (irr-stmt) (irr-simpadd0-gout)))
+       ((when (and (not expr?)
+                   expr?-diffp))
+        (raise "Internal error: ~
+                unchanged return statement marked as changed.")
+        (mv (irr-stmt) (irr-simpadd0-gout)))
+       ((unless (or (not expr?)
+                    expr?-thm-name))
         (mv stmt-new
             (make-simpadd0-gout
              :events expr?-events
@@ -1991,28 +2096,32 @@
              :names-to-avoid gin.names-to-avoid
              :vartys expr?-vartys
              :diffp expr?-diffp)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-stmt)
-                              (:e ldm-expr)
-                              (:e ldm-ident)
-                              (:e ident)
-                              (:e c::expr-kind)
-                              (:e c::stmt-return)
-                              (:e c::type-sint)
-                              (:e c::type-nonchar-integerp))
-                 :use (,expr?-thm-name
-                       (:instance
-                        simpadd0-stmt-return-support-lemma-1
-                        (old-expr (mv-nth 1 (ldm-expr ',expr?)))
-                        (new-expr (mv-nth 1 (ldm-expr ',expr?-new)))
-                        ,@(and (not expr?-diffp)
-                               '((old-fenv fenv)
-                                 (new-fenv fenv))))
-                       (:instance
-                        simpadd0-stmt-return-support-lemma-2
-                        (expr (mv-nth 1 (ldm-expr ',expr?)))
-                        ,@(and expr?-diffp
-                               '((fenv old-fenv))))))))
+       (hints (if expr?
+                  `(("Goal"
+                     :in-theory '((:e ldm-stmt)
+                                  (:e ldm-expr)
+                                  (:e ldm-ident)
+                                  (:e ident)
+                                  (:e c::expr-kind)
+                                  (:e c::stmt-return)
+                                  (:e c::type-nonchar-integerp))
+                     :use (,expr?-thm-name
+                           (:instance
+                            simpadd0-stmt-return-support-lemma-value
+                            (old-expr (mv-nth 1 (ldm-expr ',expr?)))
+                            (new-expr (mv-nth 1 (ldm-expr ',expr?-new)))
+                            ,@(and (not expr?-diffp)
+                                   '((old-fenv fenv)
+                                     (new-fenv fenv))))
+                           (:instance
+                            simpadd0-stmt-return-support-lemma-error
+                            (expr (mv-nth 1 (ldm-expr ',expr?)))
+                            ,@(and expr?-diffp
+                                   '((fenv old-fenv)))))))
+                '(("Goal"
+                   :in-theory '((:e ldm-stmt)
+                                (:e c::stmt-return))
+                   :use simpadd0-stmt-return-support-lemma-novalue))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
@@ -2033,9 +2142,10 @@
 
   (defret stmt-unambp-of-simpadd0-stmt-return
     (stmt-unambp stmt)
-    :hyp (expr-option-unambp expr?-new))
+    :hyp (expr-option-unambp expr?-new)
+    :hints (("Goal" :in-theory (enable irr-stmt))))
 
-  (defruled simpadd0-stmt-return-support-lemma-1
+  (defruled simpadd0-stmt-return-support-lemma-value
     (b* ((old (c::stmt-return old-expr))
          (new (c::stmt-return new-expr))
          (old-expr-result (c::exec-expr-pure old-expr compst))
@@ -2065,7 +2175,14 @@
              c::apconvert-expr-value-when-not-array
              c::type-nonchar-integerp))
 
-  (defruled simpadd0-stmt-return-support-lemma-2
+  (defruled simpadd0-stmt-return-support-lemma-novalue
+    (b* ((stmt (c::stmt-return nil))
+         ((mv result &) (c::exec-stmt stmt compst fenv limit)))
+      (implies (not (c::errorp result))
+               (not result)))
+    :enable c::exec-stmt)
+
+  (defruled simpadd0-stmt-return-support-lemma-error
     (implies (and expr
                   (not (equal (c::expr-kind expr) :call))
                   (c::errorp (c::exec-expr-pure expr compst)))
@@ -2114,27 +2231,47 @@
                                 :names-to-avoid gin.names-to-avoid
                                 :vartys stmt-vartys
                                 :diffp stmt-diffp)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-block-item)
-                              (:e ldm-stmt)
-                              (:e ldm-ident)
-                              (:e ident)
-                              (:e c::block-item-stmt)
-                              (:e c::type-sint)
-                              (:e c::type-nonchar-integerp))
-                 :use ((:instance ,stmt-thm-name (limit (1- limit)))
-                       (:instance
-                        simpadd0-block-item-stmt-support-lemma-1
-                        (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
-                        ,@(and (not stmt-diffp)
-                               '((old-fenv fenv)
-                                 (new-fenv fenv))))
-                       (:instance
-                        simpadd0-block-item-stmt-support-lemma-2
-                        (stmt (mv-nth 1 (ldm-stmt ',stmt)))
-                        ,@(and stmt-diffp
-                               '((fenv old-fenv))))))))
+       (type (stmt-type stmt))
+       (hints (if (type-case type :void)
+                  `(("Goal"
+                     :in-theory '((:e ldm-block-item)
+                                  (:e ldm-stmt)
+                                  (:e ldm-ident)
+                                  (:e ident)
+                                  (:e c::block-item-stmt))
+                     :use ((:instance ,stmt-thm-name (limit (1- limit)))
+                           (:instance
+                            simpadd0-block-item-stmt-support-lemma-novalue
+                            (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                            (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
+                            ,@(and (not stmt-diffp)
+                                   '((old-fenv fenv)
+                                     (new-fenv fenv))))
+                           (:instance
+                            simpadd0-block-item-stmt-support-lemma-error
+                            (stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                            ,@(and stmt-diffp
+                                   '((fenv old-fenv)))))))
+                `(("Goal"
+                   :in-theory '((:e ldm-block-item)
+                                (:e ldm-stmt)
+                                (:e ldm-ident)
+                                (:e ident)
+                                (:e c::block-item-stmt)
+                                (:e c::type-nonchar-integerp))
+                   :use ((:instance ,stmt-thm-name (limit (1- limit)))
+                         (:instance
+                          simpadd0-block-item-stmt-support-lemma-value
+                          (old-stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                          (new-stmt (mv-nth 1 (ldm-stmt ',stmt-new)))
+                          ,@(and (not stmt-diffp)
+                                 '((old-fenv fenv)
+                                   (new-fenv fenv))))
+                         (:instance
+                          simpadd0-block-item-stmt-support-lemma-error
+                          (stmt (mv-nth 1 (ldm-stmt ',stmt)))
+                          ,@(and stmt-diffp
+                                 '((fenv old-fenv)))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-thm item
                                      item-new
@@ -2157,7 +2294,7 @@
     (block-item-unambp item)
     :hyp (stmt-unambp stmt-new))
 
-  (defruled simpadd0-block-item-stmt-support-lemma-1
+  (defruled simpadd0-block-item-stmt-support-lemma-value
     (b* ((old (c::block-item-stmt old-stmt))
          (new (c::block-item-stmt new-stmt))
          ((mv old-stmt-result old-stmt-compst)
@@ -2184,7 +2321,31 @@
     ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
      (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
 
-  (defruled simpadd0-block-item-stmt-support-lemma-2
+  (defruled simpadd0-block-item-stmt-support-lemma-novalue
+    (b* ((old (c::block-item-stmt old-stmt))
+         (new (c::block-item-stmt new-stmt))
+         ((mv old-stmt-result old-stmt-compst)
+          (c::exec-stmt old-stmt compst old-fenv (1- limit)))
+         ((mv new-stmt-result new-stmt-compst)
+          (c::exec-stmt new-stmt compst new-fenv (1- limit)))
+         ((mv old-result old-compst)
+          (c::exec-block-item old compst old-fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-block-item new compst new-fenv limit)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-stmt-result))
+                    (equal old-stmt-result new-stmt-result)
+                    (equal old-stmt-compst new-stmt-compst)
+                    (not old-stmt-result))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (not old-result))))
+    :expand
+    ((c::exec-block-item (c::block-item-stmt old-stmt) compst old-fenv limit)
+     (c::exec-block-item (c::block-item-stmt new-stmt) compst new-fenv limit)))
+
+  (defruled simpadd0-block-item-stmt-support-lemma-error
     (implies (c::errorp (mv-nth 0 (c::exec-stmt stmt compst fenv (1- limit))))
              (c::errorp
               (mv-nth 0 (c::exec-block-item
@@ -2218,6 +2379,7 @@
   (b* (((simpadd0-gin gin) gin)
        (items (list (block-item-fix item)))
        (items-new (list (block-item-fix item-new)))
+       (type (block-item-type item))
        ((unless item-thm-name)
         (mv items-new
             (make-simpadd0-gout :events item-events
@@ -2226,26 +2388,44 @@
                                 :names-to-avoid gin.names-to-avoid
                                 :vartys item-vartys
                                 :diffp item-diffp)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-block-item-list)
-                              (:e ldm-block-item)
-                              (:e ldm-ident)
-                              (:e ident)
-                              (:e c::type-sint)
-                              (:e c::type-nonchar-integerp))
-                 :use ((:instance ,item-thm-name (limit (1- limit)))
-                       (:instance
-                        simpadd0-block-item-list-support-lemma-1
-                        (old-item (mv-nth 1 (ldm-block-item ',item)))
-                        (new-item (mv-nth 1 (ldm-block-item ',item-new)))
-                        ,@(and (not item-diffp)
-                               '((old-fenv fenv)
-                                 (new-fenv fenv))))
-                       (:instance
-                        simpadd0-block-item-list-support-lemma-2
-                        (item (mv-nth 1 (ldm-block-item ',item)))
-                        ,@(and item-diffp
-                               '((fenv old-fenv))))))))
+       (hints (if (type-case type :void)
+                  `(("Goal"
+                     :in-theory '((:e ldm-block-item-list)
+                                  (:e ldm-block-item)
+                                  (:e ldm-ident)
+                                  (:e ident))
+                     :use ((:instance ,item-thm-name (limit (1- limit)))
+                           (:instance
+                            simpadd0-block-item-list-support-lemma-novalue
+                            (old-item (mv-nth 1 (ldm-block-item ',item)))
+                            (new-item (mv-nth 1 (ldm-block-item ',item-new)))
+                            ,@(and (not item-diffp)
+                                   '((old-fenv fenv)
+                                     (new-fenv fenv))))
+                           (:instance
+                            simpadd0-block-item-list-support-lemma-error
+                            (item (mv-nth 1 (ldm-block-item ',item)))
+                            ,@(and item-diffp
+                                   '((fenv old-fenv)))))))
+                `(("Goal"
+                   :in-theory '((:e ldm-block-item-list)
+                                (:e ldm-block-item)
+                                (:e ldm-ident)
+                                (:e ident)
+                                (:e c::type-nonchar-integerp))
+                   :use ((:instance ,item-thm-name (limit (1- limit)))
+                         (:instance
+                          simpadd0-block-item-list-support-lemma-value
+                          (old-item (mv-nth 1 (ldm-block-item ',item)))
+                          (new-item (mv-nth 1 (ldm-block-item ',item-new)))
+                          ,@(and (not item-diffp)
+                                 '((old-fenv fenv)
+                                   (new-fenv fenv))))
+                         (:instance
+                          simpadd0-block-item-list-support-lemma-error
+                          (item (mv-nth 1 (ldm-block-item ',item)))
+                          ,@(and item-diffp
+                                 '((fenv old-fenv)))))))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-block-item-list-thm items
                                           items-new
@@ -2268,7 +2448,7 @@
     (block-item-list-unambp items)
     :hyp (block-item-unambp item-new))
 
-  (defruled simpadd0-block-item-list-support-lemma-1
+  (defruled simpadd0-block-item-list-support-lemma-value
     (b* ((old (list old-item))
          (new (list new-item))
          ((mv old-item-result old-item-compst)
@@ -2296,7 +2476,31 @@
     :enable (c::exec-block-item-list
              c::value-optionp-when-value-option-resultp-and-not-errorp))
 
-  (defruled simpadd0-block-item-list-support-lemma-2
+  (defruled simpadd0-block-item-list-support-lemma-novalue
+    (b* ((old (list old-item))
+         (new (list new-item))
+         ((mv old-item-result old-item-compst)
+          (c::exec-block-item old-item compst old-fenv (1- limit)))
+         ((mv new-item-result new-item-compst)
+          (c::exec-block-item new-item compst new-fenv (1- limit)))
+         ((mv old-result old-compst)
+          (c::exec-block-item-list old compst old-fenv limit))
+         ((mv new-result new-compst)
+          (c::exec-block-item-list new compst new-fenv limit)))
+      (implies (and (not (c::errorp old-result))
+                    (not (c::errorp new-item-result))
+                    (equal old-item-result new-item-result)
+                    (equal old-item-compst new-item-compst)
+                    (not old-item-result))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (not old-result))))
+    :expand ((c::exec-block-item-list (list old-item) compst old-fenv limit)
+             (c::exec-block-item-list (list new-item) compst new-fenv limit))
+    :enable c::exec-block-item-list)
+
+  (defruled simpadd0-block-item-list-support-lemma-error
     (implies (c::errorp
               (mv-nth 0 (c::exec-block-item item compst fenv (1- limit))))
              (c::errorp
@@ -2890,7 +3094,7 @@
                       :vartys gout-type.vartys
                       :diffp gout-type.diffp)))
        :struct (b* (((mv new-spec (simpadd0-gout gout-spec))
-                     (simpadd0-strunispec tyspec.spec gin state)))
+                     (simpadd0-struni-spec tyspec.spec gin state)))
                  (mv (type-spec-struct new-spec)
                      (make-simpadd0-gout
                       :events gout-spec.events
@@ -2900,7 +3104,7 @@
                       :vartys gout-spec.vartys
                       :diffp gout-spec.diffp)))
        :union (b* (((mv new-spec (simpadd0-gout gout-spec))
-                    (simpadd0-strunispec tyspec.spec gin state)))
+                    (simpadd0-struni-spec tyspec.spec gin state)))
                 (mv (type-spec-union new-spec)
                     (make-simpadd0-gout
                      :events gout-spec.events
@@ -3857,36 +4061,36 @@
          ((mv new-specquals (simpadd0-gout gout-specqual))
           (simpadd0-spec/qual-list tyname.specquals gin state))
          (gin (simpadd0-gin-update gin gout-specqual))
-         ((mv new-decl? (simpadd0-gout gout-decl?))
-          (simpadd0-absdeclor-option tyname.decl? gin state)))
+         ((mv new-declor? (simpadd0-gout gout-declor?))
+          (simpadd0-absdeclor-option tyname.declor? gin state)))
       (mv (make-tyname :specquals new-specquals
-                       :decl? new-decl?
+                       :declor? new-declor?
                        :info tyname.info)
           (make-simpadd0-gout
-           :events (append gout-specqual.events gout-decl?.events)
+           :events (append gout-specqual.events gout-declor?.events)
            :thm-name nil
-           :thm-index gout-decl?.thm-index
-           :names-to-avoid gout-decl?.names-to-avoid
-           :vartys (omap::update* gout-specqual.vartys gout-decl?.vartys)
-           :diffp (or gout-specqual.diffp gout-decl?.diffp))))
+           :thm-index gout-declor?.thm-index
+           :names-to-avoid gout-declor?.names-to-avoid
+           :vartys (omap::update* gout-specqual.vartys gout-declor?.vartys)
+           :diffp (or gout-specqual.diffp gout-declor?.diffp))))
     :measure (tyname-count tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-strunispec ((strunispec strunispecp)
+  (define simpadd0-struni-spec ((struni-spec struni-specp)
                                (gin simpadd0-ginp)
                                state)
-    :guard (strunispec-unambp strunispec)
-    :returns (mv (new-strunispec strunispecp)
+    :guard (struni-spec-unambp struni-spec)
+    :returns (mv (new-struni-spec struni-specp)
                  (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a structure or union specifier."
     (b* (((simpadd0-gin gin) gin)
-         ((strunispec strunispec) strunispec)
+         ((struni-spec struni-spec) struni-spec)
          ((mv new-members (simpadd0-gout gout-members))
-          (simpadd0-structdecl-list strunispec.members gin state)))
-      (mv (make-strunispec :name strunispec.name
-                           :members new-members)
+          (simpadd0-structdecl-list struni-spec.members gin state)))
+      (mv (make-struni-spec :name? struni-spec.name?
+                            :members new-members)
           (make-simpadd0-gout
            :events gout-members.events
            :thm-name nil
@@ -3894,7 +4098,7 @@
            :names-to-avoid gout-members.names-to-avoid
            :vartys gout-members.vartys
            :diffp gout-members.diffp)))
-    :measure (strunispec-count strunispec))
+    :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4377,15 +4581,15 @@
                         :vartys gout-items.vartys
                         :diffp gout-items.diffp)))
        :expr (b* (((mv new-expr? (simpadd0-gout gout-expr?))
-                   (simpadd0-expr-option stmt.expr? gin state)))
-               (mv (stmt-expr new-expr?)
-                   (make-simpadd0-gout
-                    :events gout-expr?.events
-                    :thm-name nil
-                    :thm-index gout-expr?.thm-index
-                    :names-to-avoid gout-expr?.names-to-avoid
-                    :vartys gout-expr?.vartys
-                    :diffp gout-expr?.diffp)))
+                   (simpadd0-expr-option stmt.expr? gin state))
+                  (gin (simpadd0-gin-update gin gout-expr?)))
+               (simpadd0-stmt-expr stmt.expr?
+                                   new-expr?
+                                   gout-expr?.events
+                                   gout-expr?.thm-name
+                                   gout-expr?.vartys
+                                   gout-expr?.diffp
+                                   gin))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
                  (simpadd0-expr stmt.test gin state))
                 (gin (simpadd0-gin-update gin gout-test))
@@ -4764,9 +4968,9 @@
     (defret tyname-unambp-of-simpadd0-tyname
       (tyname-unambp new-tyname)
       :fn simpadd0-tyname)
-    (defret strunispec-unambp-of-simpadd0-strunispec
-      (strunispec-unambp new-strunispec)
-      :fn simpadd0-strunispec)
+    (defret struni-spec-unambp-of-simpadd0-struni-spec
+      (struni-spec-unambp new-struni-spec)
+      :fn simpadd0-struni-spec)
     (defret structdecl-unambp-of-simpadd0-structdecl
       (structdecl-unambp new-structdecl)
       :fn simpadd0-structdecl)
@@ -4845,7 +5049,7 @@
                                        simpadd0-param-declon-list
                                        simpadd0-param-declor
                                        simpadd0-tyname
-                                       simpadd0-strunispec
+                                       simpadd0-struni-spec
                                        simpadd0-structdecl
                                        simpadd0-structdecl-list
                                        simpadd0-structdeclor
@@ -4897,9 +5101,10 @@
    (xdoc::p
     "If the body of the function underwent no transformation,
      which we can see from the @('diffp') component of @(tsee simpadd0-gout),
-     the theorem generated for the body just talks about its type,
+     the theorem generated for the body just talks about its type
+     (or @('nil') if the body returns no value),
      but the theorem for the function always involves
-     an equality between @(tsee c::exec-fun).
+     an equality between @(tsee c::exec-fun) calls.
      If @('diffp') is @('nil'),
      we make use of a theorem from the language formalization
      that says that execution without function calls
@@ -4957,10 +5162,16 @@
        ((declor declor) fundef.declor)
        ((when (consp declor.pointers))
         (mv new-fundef gout-no-thm))
-       ((unless (dirdeclor-case declor.direct :function-params))
+       ((mv okp params dirdeclor)
+        (dirdeclor-case
+         declor.direct
+         :function-params (mv t declor.direct.params declor.direct.declor)
+         :function-names (mv (endp declor.direct.names)
+                             nil
+                             declor.direct.declor)
+         :otherwise (mv nil nil (irr-dirdeclor))))
+       ((unless okp)
         (mv new-fundef gout-no-thm))
-       (params (dirdeclor-function-params->params declor.direct))
-       (dirdeclor (dirdeclor-function-params->declor declor.direct))
        ((unless (dirdeclor-case dirdeclor :ident))
         (raise "Internal error: ~x0 is not just the function name."
                dirdeclor)
@@ -5007,8 +5218,11 @@
                     (and (not (c::errorp new-result))
                          (equal old-result new-result)
                          (equal old-compst new-compst)
-                         old-result
-                         (equal (c::type-of-value old-result) ',ctype)))))
+                         ,@(if (type-case type :void)
+                               '((not old-result))
+                             `(old-result
+                               (equal (c::type-of-value old-result)
+                                      ',ctype)))))))
        (hints
         `(("Goal"
            :expand ((c::exec-fun
@@ -5057,7 +5271,6 @@
                         (:e ldm-type)
                         (:e ldm-block-item-list)
                         (:e c::tyname-to-type)
-                        (:e c::type-sint)
                         (:e c::block-item-list-nocallsp)
                         c::errorp-of-error))))
        (thm-event `(defruled ,thm-name

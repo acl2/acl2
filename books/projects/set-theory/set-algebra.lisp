@@ -32,6 +32,8 @@
 (defun int2 (x y)
   (diff x (diff x y)))
 
+(in-theory (disable (:e int2)))
+
 (defthmz in-int2
   (equal (in a (int2 x y))
          (and (in a x)
@@ -204,7 +206,8 @@
      (subset (domain (union2 r s))
              (union2 (domain r) (domain s)))
      :props (zfc domain$prop)
-     :hints (("Goal" :in-theory (enable subset in-domain-rewrite)))))
+     :hints (("Goal" :in-theory (e/d (subset in-domain-rewrite)
+                                     (in-cons-apply))))))
 
   (local (defthmz domain-union2-2-1
            (implies (subset r1 r2)
@@ -233,7 +236,8 @@
      (subset (union2 (domain r) (domain s))
              (domain (union2 r s)))
      :props (zfc domain$prop)
-     :hints (("Goal" :in-theory (enable subset in-domain-rewrite)))))
+     :hints (("Goal" :in-theory (e/d (subset in-domain-rewrite)
+                                     (in-cons-apply))))))
 
   (defthmz domain-union2
     (equal (domain (union2 r s))
@@ -307,3 +311,58 @@
   :hints (("Goal"
            :in-theory (enable in-in)
            :expand ((subset (union s1) (union s2))))))
+
+(local (defthmz subset-int2-lemma
+         (implies (and (subset x y)
+                       (subset x z))
+                  (subset x (int2 y z)))
+         :props (zfc diff$prop)
+         :hints (("Goal" :expand ((subset x (int2 y z)))))
+         :rule-classes nil))
+
+(defthmz subset-int2
+  (equal (subset x (int2 y z))
+         (and (subset x y)
+              (subset x z)))
+  :props (zfc diff$prop)
+  :hints (("Goal" :use (subset-int2-lemma))))
+
+(defthmz int2-when-subset
+  (implies (subset x y)
+           (equal (int2 x y) x))
+  :props (zfc diff$prop)
+  :hints (("Goal" :in-theory (enable extensionality-rewrite))))
+
+(defthmz int2-when-subset-commuted
+  (implies (subset y x)
+           (equal (int2 x y) y))
+  :props (zfc diff$prop)
+  :hints (("Goal" :in-theory (enable extensionality-rewrite))))
+
+(defthmz union2-0
+  (equal (union2 0 x)
+         x)
+  :hints (("Goal" :in-theory (enable extensionality-rewrite))))
+
+(defthmdz int2-predecessor-natp
+
+; This could presumably be generalized to ordinals if we define a notion of
+; predecessor for ordinals.
+
+  (implies (posp n)
+           (equal (int2 n (1- n))
+                  (1- n)))
+  :props (zfc diff$prop))
+
+(defthmz int2-natp
+
+; This could presumably be generalized to all ordinals, using a suitable
+; version of min.
+
+  (implies (and (natp x)
+                (natp y))
+           (equal (int2 x y)
+                  (min x y)))
+  :hints (("Goal"
+           :in-theory (enable subset in-natp extensionality-rewrite)))
+  :props (zfc diff$prop))
