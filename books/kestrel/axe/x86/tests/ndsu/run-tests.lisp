@@ -31,11 +31,11 @@
 ;; (depends-on "add-OF.elf64")
 (test-file "add-OF.elf64")
 
-;; (depends-on "add-PF1.elf64")
-(test-file "add-PF1.elf64")
-
 ;; (depends-on "add-PF0.elf64")
 (test-file "add-PF0.elf64")
+
+;; (depends-on "add-PF1.elf64")
+(test-file "add-PF1.elf64")
 
 ;; (depends-on "add-SF.elf64")
 (test-file "add-SF.elf64")

@@ -13,8 +13,8 @@ gcc add-commutative.c -o add-commutative.elf64
 gcc add-AF.c -o add-AF.elf64
 gcc add-CF.c -o add-CF.elf64
 gcc add-OF.c -o add-OF.elf64
-gcc add-PF1.c -o add-PF1.elf64
 gcc add-PF0.c -o add-PF0.elf64
+gcc add-PF1.c -o add-PF1.elf64
 gcc add-SF.c -o add-SF.elf64
 gcc add-ZF.c -o add-ZF.elf64
 
