@@ -510,6 +510,8 @@
     ;; todo: replace these with a more general scheme:
     bvplus-of-logext-arg2-convert-to-bv
     bvplus-of-logext-arg3-convert-to-bv
+    bvminus-of-logext-arg2-convert-to-bv
+    bvminus-of-logext-arg3-convert-to-bv
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
