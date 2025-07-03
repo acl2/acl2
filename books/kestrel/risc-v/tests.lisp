@@ -28,10 +28,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Generate a test theorem of any form.
+
 (defmacro test-thm (formula &rest hints)
   `(encapsulate () (defrulel _test_ ,formula ,@hints)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Generate a test theorem for a single instruction execution,
+; supplying instruction, preconditions, postconditions, and hints.
 
 (defmacro test-instr-thm (&key instr pre post enable disable cases)
   `(test-thm
