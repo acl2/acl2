@@ -31,11 +31,11 @@
 ;; (depends-on "add-OF.elf64")
 (test-file "add-OF.elf64")
 
-;; (depends-on "add-PF=1.elf64")
-(test-file "add-PF=1.elf64")
+;; (depends-on "add-PF0.elf64")
+(test-file "add-PF0.elf64")
 
-;; (depends-on "add-PF=0.elf64")
-(test-file "add-PF=0.elf64")
+;; (depends-on "add-PF1.elf64")
+(test-file "add-PF1.elf64")
 
 ;; (depends-on "add-SF.elf64")
 (test-file "add-SF.elf64")
@@ -48,6 +48,9 @@
 ;; (depends-on "and-CF.elf64")
 (test-file "and-CF.elf64")
 
+;; (depends-on "and-OF.elf64")
+(test-file "and-OF.elf64")
+
 ;; (depends-on "and-SF.elf64")
 (test-file "and-SF.elf64")
 
@@ -56,8 +59,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; (depends-on "cmp-CF.elf64")
+(test-file "cmp-CF.elf64")
+
+;; (depends-on "cmp-PF0.elf64")
+(test-file "cmp-PF0.elf64")
+
+;; (depends-on "cmp-PF1.elf64")
+(test-file "cmp-PF1.elf64")
+
+;; (depends-on "cmp-SF.elf64")
+(test-file "cmp-SF.elf64")
+
+;; (depends-on "cmp-ZF.elf64")
+(test-file "cmp-ZF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; (depends-on "or-CF.elf64")
 (test-file "or-CF.elf64")
+
+;; (depends-on "or-OF.elf64")
+(test-file "or-OF.elf64")
 
 ;; (depends-on "or-SF.elf64")
 (test-file "or-SF.elf64")
@@ -69,6 +92,15 @@
 
 ;; (depends-on "sub-CF.elf64")
 (test-file "sub-CF.elf64")
+
+;; (depends-on "sub-OF.elf64")
+;todo: (test-file "sub-OF.elf64")
+
+;; (depends-on "sub-PF0.elf64")
+(test-file "sub-PF0.elf64")
+
+;; (depends-on "sub-PF1.elf64")
+(test-file "sub-PF1.elf64")
 
 ;; (depends-on "sub-SF.elf64")
 (test-file "sub-SF.elf64")
@@ -91,6 +123,9 @@
 ;; (depends-on "test-CF.elf64")
 (test-file "test-CF.elf64")
 
+;; (depends-on "test-OF.elf64")
+(test-file "test-OF.elf64")
+
 ;; (depends-on "test-SF.elf64")
 (test-file "test-SF.elf64")
 
@@ -101,6 +136,9 @@
 
 ;; (depends-on "xor-CF.elf64")
 (test-file "xor-CF.elf64")
+
+;; (depends-on "xor-OF.elf64")
+(test-file "xor-OF.elf64")
 
 ;; (depends-on "xor-SF.elf64")
 (test-file "xor-SF.elf64")

@@ -5827,6 +5827,7 @@
             sub-zf-spec64
             ;; todo: how to open the other flags, like pf, to bv notions?
             acl2::signed-byte-p-of-+-becomes-bv-claim ; todo: can't include during symbolic execution?
+            acl2::signed-byte-p-of-+-of---becomes-bv-claim
             acl2::bvplus-convert-arg2-to-bv-axe ; would like to do this earlier, but it might cause problems
             acl2::bvplus-convert-arg3-to-bv-axe
             acl2::slice-convert-arg3-to-bv-axe
