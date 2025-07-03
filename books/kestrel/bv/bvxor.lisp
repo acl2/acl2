@@ -239,9 +239,7 @@
            (equal (getbit n (bvxor size x y))
                   (bvxor 1 (getbit n x) (getbit n y))))
   :hints (("Goal"
-           :in-theory (e/d (getbit slice bvxor
-                                   bvchop-of-logtail)
-                           ()))))
+           :in-theory (enable getbit slice bvxor bvchop-of-logtail))))
 
 ;if the size is 1 this rebuilds the term (bvxor 1 x y) - may be a bit innefficient
 (defthm getbit-0-of-bvxor
@@ -267,6 +265,16 @@
                   (if (equal 0 n)
                       (bvxor 1 x y) ;better to not push the getbits inside in this case (could just go to bitxor)
                     (bvxor 1 (getbit n x) (getbit n y)))))
+  :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
+
+;; Seems safe because the (getbit n x) in the conclusion gets computed (could further simplify the RHS).
+(defthmd getbit-of-bvxor-when-quotep
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep n)))
+                (< n size)
+                (posp size))
+           (equal (getbit n (bvxor size x y))
+                  (bvxor 1 (getbit n x) (getbit n y))))
   :hints (("Goal" :in-theory (enable getbit-of-bvxor-core))))
 
 (defthm bvxor-numeric-bound
