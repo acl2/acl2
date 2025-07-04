@@ -118,7 +118,17 @@
    (pc ubyte32)
    (memory memory32i)
    (error bool))
-  :pred stat32ip)
+  :pred stat32ip
+
+  ///
+
+  (defrule len-of-stat32i->xregs
+    (equal (len (stat32i->xregs stat))
+           31))
+
+  (defrule len-of-stat32i->memory
+    (equal (len (stat32i->memory stat))
+           4294967296)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
