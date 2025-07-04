@@ -329,11 +329,12 @@ Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  Subsumption reduces that number to two.
 One of these has a score higher than the other.  
 
-We will induct according to a scheme suggested by (LEN ST6).
+We will induct according to a scheme suggested by (LEN ST6), while
+accommodating (TRUE-LISTP ST6).
 
-This suggestion was produced using the :induction rules LEN and TRUE-LISTP.
-If we let (:P KEY ST5 ST6) denote *1 above then the induction scheme
-we'll use is
+These suggestions were produced using the :induction rules LEN and
+TRUE-LISTP.  If we let (:P KEY ST5 ST6) denote *1 above then the induction
+scheme we'll use is
 (AND (IMPLIES (NOT (CONSP ST6))
               (:P KEY ST5 ST6))
      (IMPLIES (AND (CONSP ST6) (:P KEY ST5 (CDR ST6)))
