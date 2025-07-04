@@ -212,77 +212,72 @@
                                            stat1p
                                            stat1->error))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection stat-stat1-inversions
-  :short "Inversion theorems between @(tsee stat) and @(tsee stat1)."
-
-  (defrule stat-from-stat1-of-stat1-from-stat
-    (implies (statp stat)
-             (equal (stat-from-stat1 (stat1-from-stat stat))
-                    stat))
-    :enable (stat1-from-stat
-             stat-from-stat1
-             make-stat1
-             stat1->xregs
-             stat1->pc
-             stat1->memory
-             stat1->error))
-
-  (defrule stat1-from-stat-of-stat-from-stat1
-    (implies (stat1p stat1)
-             (equal (stat1-from-stat (stat-from-stat1 stat1))
-                    stat1))
-    :enable (stat-from-stat1
-             stat1-from-stat
-             make-stat1
-             stat1->xregs
-             stat1->pc
-             stat1->memory
-             stat1->error
-             stat1p
-             length
-             len
-             ubyte8-listp-to-stat1-memory-p
-             booleanp-to-stat1-error-p)
-    :prep-lemmas
-    ((defrule lemma
-       (implies (and (true-listp x)
-                     (equal (len x) 4)
-                     (equal (nth 0 x) a)
-                     (equal (nth 1 x) b)
-                     (equal (nth 2 x) c)
-                     (equal (nth 3 x) d))
-                (equal (list a b c d) x))
-       :prep-books ((include-book "std/lists/len" :dir :system)
-                    (include-book "arithmetic/top" :dir :system))
-       :prep-lemmas
-       ((defrule lemma-lemma
-          (equal (equal (cons a b) x)
-                 (and (consp x)
-                      (equal a (car x))
-                      (equal b (cdr x))))))))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; We would like to use DEFISO to create an isomorphism between STAT and STAT1,
-; but currently DEFISO does not support stobjs.
+(defsection stat1-iso
+  :short "Isomorphism between @(tsee stat) and @(tsee stat1)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @(tsee stat1-from-stat) and @(tsee stat-from-stat1) functions
+     are the isomorphic conversions.")
+   (xdoc::p
+    "We prove a local lemma to prove @('stat1-from-stat-of-stat-from-stat1')."))
 
-;; (acl2::defiso stat-stat1-iso
-;;   statp
-;;   stat1p
-;;   stat1-from-stat
-;;   stat-from-stat1)
+  (defrulel lemma
+    (implies (and (true-listp x)
+                  (equal (len x) 4)
+                  (equal (nth 0 x) a)
+                  (equal (nth 1 x) b)
+                  (equal (nth 2 x) c)
+                  (equal (nth 3 x) d))
+             (equal (list a b c d) x))
+    :prep-books ((include-book "std/lists/len" :dir :system)
+                 (include-book "arithmetic/top" :dir :system))
+    :prep-lemmas
+    ((defrule lemma-lemma
+       (equal (equal (cons a b) x)
+              (and (consp x)
+                   (equal a (car x))
+                   (equal b (cdr x)))))))
 
-; For now we can manually simulate the desired effect of DEFISO.
-; In particular, we have the inversion theorems above.
+  (acl2::defiso stat-stat1-iso
+    statp
+    stat1p
+    stat1-from-stat
+    stat-from-stat1
+    :thm-names (:beta-of-alpha stat-from-stat1-of-stat1-from-stat
+                :alpha-of-beta stat1-from-stat-of-stat-from-stat1
+                :alpha-injective stat1-from-stat-injective
+                :beta-injective stat-from-stat1-injective)
+    :hints (:beta-of-alpha (("Goal"
+                             :in-theory (enable stat1-from-stat
+                                                stat-from-stat1
+                                                make-stat1
+                                                stat1->xregs
+                                                stat1->pc
+                                                stat1->memory
+                                                stat1->error)))
+            :alpha-of-beta (("Goal"
+                             :in-theory (enable stat-from-stat1
+                                                stat1-from-stat
+                                                make-stat1
+                                                stat1->xregs
+                                                stat1->pc
+                                                stat1->memory
+                                                stat1->error
+                                                stat1p
+                                                length
+                                                len
+                                                ubyte8-listp-to-stat1-memory-p
+                                                booleanp-to-stat1-error-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Given a DEFISO, we would like to use APT's ISODATA
 ; to refine the operations on states to operate on the stobj.
-; But ISODATA requires a DEFISO, which currently is cannot be used (see above).
-; So for now we manually simulate the desired effect of ISODATA.
+; But currently ISODATA does not support stobjs;
+; so for now we manually simulate the desired effect of ISODATA.
 
 (define stat1-validp (stat1 feat)
   :guard (and (stat1p stat1)
