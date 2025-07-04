@@ -57,19 +57,25 @@
     (equal (stat-rv32i-p x)
            (and (statp x)
                 (stat-validp x (feat-rv32i-be))))
-    :enable stat-validp)
+    :enable (stat-validp
+             (:e feat-rv32i-le)
+             (:e feat-rv32i-be)))
 
   (defruled stat-rv32i-p-alt-def-m-le
     (equal (stat-rv32i-p x)
            (and (statp x)
                 (stat-validp x (feat-rv32im-le))))
-    :enable stat-validp)
+    :enable (stat-validp
+             (:e feat-rv32i-le)
+             (:e feat-rv32im-le)))
 
   (defruled stat-rv32i-p-alt-def-m-be
     (equal (stat-rv32i-p x)
            (and (statp x)
                 (stat-validp x (feat-rv32im-be))))
-    :enable stat-validp))
+    :enable (stat-validp
+             (:e feat-rv32i-le)
+             (:e feat-rv32im-be))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,7 +136,8 @@
                        xregs32ip
                        acl2::ubyte32-listp-rewrite-unsigned-byte-listp
                        memory32ip
-                       ubyte32p))))
+                       ubyte32p
+                       (:e feat-rv32i-le)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,7 +149,8 @@
                    (enable stat-rv32i-p
                            stat-validp
                            acl2::unsigned-byte-listp-rewrite-ubyte32-listp
-                           acl2::unsigned-byte-p-rewrite-ubyte32p))))
+                           acl2::unsigned-byte-p-rewrite-ubyte32p
+                           (:e feat-rv32i-le)))))
   :short "Convert from @(tsee stat32i) to @(tsee stat-rv32i-p)."
   (make-stat :xregs (stat32i->xregs stat32i)
              :pc (stat32i->pc stat32i)
@@ -172,7 +180,8 @@
                                                        stat32i-from-stat
                                                        stat-rv32i-p
                                                        xregs32ip
-                                                       memory32ip)))
+                                                       memory32ip
+                                                       (:e feat-rv32i-le))))
             :alpha-of-beta (("Goal" :in-theory (enable stat-from-stat32i
                                                        stat32i-from-stat))))))
 
