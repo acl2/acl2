@@ -31,8 +31,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define step32 ((stat state32p))
-  :returns (new-stat state32p)
+(define step32 ((stat stat32ip))
+  :returns (new-stat stat32ip)
   :short "Single-step execution."
   :long
   (xdoc::topstring
@@ -44,7 +44,7 @@
      we decode it, and, if we obtain an instruction,
      we run the semantic function of the instruction;
      if decoding fails, we set the error flag instead."))
-  (b* (((when (error32p stat)) (state32-fix stat))
+  (b* (((when (error32p stat)) (stat32i-fix stat))
        (pc (read32-pc stat))
        (enc (read32-mem-ubyte32-lendian pc stat))
        (instr? (decodex enc (feat-rv32im-le)))
@@ -54,8 +54,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define step32n ((n natp) (stat state32p))
-  :returns (new-stat state32p)
+(define step32n ((n natp) (stat stat32ip))
+  :returns (new-stat stat32ip)
   :short "Multi-step execution."
   :long
   (xdoc::topstring
@@ -63,7 +63,7 @@
     "We perform @('n') steps,
      or fewer if the error flag is or gets set.
      If @('n') is 0, we return the state unchanged."))
-  (cond ((zp n) (state32-fix stat))
-        ((error32p stat) (state32-fix stat))
+  (cond ((zp n) (stat32i-fix stat))
+        ((error32p stat) (stat32i-fix stat))
         (t (step32n (1- n) (step32 stat))))
   :hooks (:fix))

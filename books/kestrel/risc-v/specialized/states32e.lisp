@@ -51,16 +51,22 @@
     (equal (stat-rv32e-p x)
            (and (statp x)
                 (stat-validp x (feat-rv32e-be))))
-    :enable stat-validp)
+    :enable (stat-validp
+             (:e feat-rv32e-le)
+             (:e feat-rv32e-be)))
 
   (defruled stat-rv32e-p-alt-def-m-le
     (equal (stat-rv32e-p x)
            (and (statp x)
                 (stat-validp x (feat-rv32em-le))))
-    :enable stat-validp)
+    :enable (stat-validp
+             (:e feat-rv32e-le)
+             (:e feat-rv32em-le)))
 
   (defruled stat-rv32e-p-alt-def-m-be
     (equal (stat-rv32e-p x)
            (and (statp x)
                 (stat-validp x (feat-rv32em-be))))
-    :enable stat-validp))
+    :enable (stat-validp
+             (:e feat-rv32e-le)
+             (:e feat-rv32em-be))))
