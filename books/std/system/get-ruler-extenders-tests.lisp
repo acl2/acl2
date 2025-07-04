@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,14 +10,14 @@
 
 (in-package "ACL2")
 
-(include-book "ruler-extenders")
+(include-book "get-ruler-extenders")
 
 (include-book "std/testing/assert-equal" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (ruler-extenders 'len (w state)) *basic-ruler-extenders*)
+(assert-equal (get-ruler-extenders 'len (w state)) *basic-ruler-extenders*)
 
 (must-succeed*
  (defun f (x)
@@ -26,7 +26,7 @@
          (if (consp x)
              (f (cdr x))
            nil)))
- (assert-equal (ruler-extenders 'f (w state)) '(cons)))
+ (assert-equal (get-ruler-extenders 'f (w state)) '(cons)))
 
 (must-succeed*
  (defun f (x)
@@ -35,7 +35,7 @@
          (if (consp x)
              (f (cdr x))
            nil)))
- (assert-equal (ruler-extenders 'f (w state)) :all))
+ (assert-equal (get-ruler-extenders 'f (w state)) :all))
 
 (must-succeed*
  (defun fact (n)
@@ -44,4 +44,4 @@
         (if (posp n)
             (* n (fact (1- n)))
           1)))
- (assert-equal (ruler-extenders 'fact (w state)) '(:lambdas)))
+ (assert-equal (get-ruler-extenders 'fact (w state)) '(:lambdas)))

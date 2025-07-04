@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,14 +10,14 @@
 
 (in-package "ACL2")
 
-(include-book "measure-plus")
+(include-book "get-measure")
 
 (include-book "std/testing/assert-equal" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (measure+ 'len (w state)) '(acl2-count x))
+(assert-equal (get-measure 'len (w state)) '(acl2-count x))
 
 (must-succeed*
  (defun f (x)
@@ -25,5 +25,5 @@
    (if (and (natp x) (< x 10))
        (f (1+ x))
      nil))
- (assert-equal (measure+ 'f (w state))
+ (assert-equal (get-measure 'f (w state))
                '(nfix (binary-+ '10 (unary-- x)))))

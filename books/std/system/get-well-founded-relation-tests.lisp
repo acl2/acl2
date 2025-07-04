@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,14 +10,14 @@
 
 (in-package "ACL2")
 
-(include-book "well-founded-relation")
+(include-book "get-well-founded-relation")
 
 (include-book "std/testing/assert-equal" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(assert-equal (well-founded-relation 'len (w state)) 'o<)
+(assert-equal (get-well-founded-relation 'len (w state)) 'o<)
 
 (must-succeed*
  (defun f (x)
@@ -25,7 +25,7 @@
    (if (and (natp x) (< x 10))
        (f (1+ x))
      nil))
- (assert-equal (well-founded-relation 'f (w state)) 'o<))
+ (assert-equal (get-well-founded-relation 'f (w state)) 'o<))
 
 (must-succeed*
  ;; well-founded relation:
@@ -46,4 +46,4 @@
        nil
      (f (1- x))))
  ;; test:
- (assert-equal (well-founded-relation 'f (w state)) 'o<$))
+ (assert-equal (get-well-founded-relation 'f (w state)) 'o<$))

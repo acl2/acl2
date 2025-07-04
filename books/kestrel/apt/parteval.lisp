@@ -1,10 +1,10 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,7 +33,7 @@
 (include-book "std/system/pseudo-tests-and-call-listp" :dir :system)
 (include-book "std/system/recursive-calls" :dir :system)
 (include-book "std/system/uguard" :dir :system)
-(include-book "std/system/well-founded-relation" :dir :system)
+(include-book "std/system/get-well-founded-relation" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate" :dir :system)
 (include-book "kestrel/utilities/doublets" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
@@ -562,9 +562,9 @@
                ((nil) body)
                (t (untranslate body nil wrld))))
        (wfrel? (and (= case 2)
-                    (well-founded-relation old$ wrld)))
+                    (get-well-founded-relation old$ wrld)))
        (measure? (and (= case 2)
-                      (untranslate (fsublis-var static$ (measure old$ wrld)) nil wrld)))
+                      (untranslate (fsublis-var static$ (get-measure old$ wrld)) nil wrld)))
        (termination-hints? (and (= case 2)
                                 `(("Goal"
                                    :in-theory nil

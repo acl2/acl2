@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,13 +14,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define well-founded-relation+ ((fn symbolp) (wrld plist-worldp))
+(define get-well-founded-relation+ ((fn symbolp) (wrld plist-worldp))
   :returns (well-founded-relation symbolp)
   :parents (std/system/function-queries)
-  :short "Enhanced variant of @(tsee well-founded-relation)."
+  :short "Enhanced variant of @(tsee get-well-founded-relation)."
   :long
   (xdoc::topstring-p
-   "This returns the same result as @(tsee well-founded-relation),
+   "This returns the same result as @(tsee get-well-founded-relation),
     but it is guard-verified
     and includes a run-time check (which should always succeed) on the result
     that allows us to prove the return type theorem

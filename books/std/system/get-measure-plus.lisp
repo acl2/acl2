@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,14 +14,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ruler-extenders+ ((fn symbolp) (wrld plist-worldp))
-  :returns (ruler-extenders (or (symbol-listp ruler-extenders)
-                                (equal ruler-extenders :all)))
+(define get-measure+ ((fn symbolp) (wrld plist-worldp))
+  :returns (measure pseudo-termp)
   :parents (std/system/function-queries)
-  :short "Enhanced variant of @(tsee ruler-extenders)."
+  :short "Enhanced variant of @(tsee get-measure)."
   :long
   (xdoc::topstring-p
-   "This returns the same result as @(tsee ruler-extenders),
+   "This returns the same result as @(tsee get-measure),
     but it is guard-verified
     and includes a run-time check (which should always succeed) on the result
     that allows us to prove the return type theorem
@@ -33,19 +32,17 @@
     Furthermore, this utility causes an error if called on a symbol
     that does not name a recursive logic-mode function;
     the reason for ensuring logic-mode is that
-    recursive program-mode functions do not have ruler extenders.")
+    recursive program-mode functions do not have a measure.")
   (if (not (irecursivep+ fn wrld))
       (raise "The function ~x0 is not recursive." fn)
     (b* ((justification (getpropc fn 'justification nil wrld))
          ((unless (weak-justification-p justification))
           (raise "Internal error: ~
-                  the 'JUSTIFICATION property ~x0 of ~x1 is not well-formed."
+                  the JUSTIFICATION property ~x0 of ~x1 is not well-formed."
                  justification fn))
-         (ruler-extenders (access justification justification :ruler-extenders))
-         ((unless (or (symbol-listp ruler-extenders)
-                      (eq ruler-extenders :all)))
+         (measure (access justification justification :measure))
+         ((unless (pseudo-termp measure))
           (raise "Internal error: ~
-                  the well-founded relation ~x0 of ~x1 ~
-                  is neither a true list of symbols nor :ALL."
-                 ruler-extenders fn)))
-      ruler-extenders)))
+                  the measure ~x0 of ~x1 is not a pseudo-term."
+                 measure fn)))
+      measure)))

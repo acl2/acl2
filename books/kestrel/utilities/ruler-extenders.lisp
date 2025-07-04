@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "std/system/ruler-extenders" :dir :system)
+(include-book "std/system/get-ruler-extenders" :dir :system)
 
 ;; Merges two values of :ruler-extenders args, conceptually giving the union of the two sets of ruler extenders.
 ;; Each argument is :basic, :lambdas, :all, or a list of symbols (possibly including :lambda)
@@ -31,7 +31,7 @@
                                       ;; TODO: ruler-extenders seems to de-sugar :basic and :lambdas
                                       ;; It would be better to use a variant of the function ruler-extenders that
                                       ;; gets the actual xarg.
-                                      (union-ruler-extenders (ruler-extenders (first fns) wrld)
+                                      (union-ruler-extenders (get-ruler-extenders (first fns) wrld)
                                                              acc))))
 
 ;; Merge the :ruler-extender xargs for all the FNS in WRLD.

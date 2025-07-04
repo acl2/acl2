@@ -1187,7 +1187,7 @@
        (declares (acl2::get-declares-from-defun event-defun))
        (body (fn-ubody1 fun body0 world event-defun))
        (body (clean-body body))
-       (measure (and recursivep (acl2::measure+ fun world)))
+       (measure (and recursivep (get-measure+ fun world)))
        (guard-verifiedp (and (not dont-verify-guards)
                              (acl2::event-demands-guard-verificationp event-defun)))
        (old-guard (guard fun nil world))

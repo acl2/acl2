@@ -1,6 +1,6 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -31,7 +31,7 @@
 (include-book "std/system/recursive-calls" :dir :system)
 (include-book "std/system/term-guard-obligation" :dir :system)
 (include-book "std/system/unwrapped-nonexec-body" :dir :system)
-(include-book "std/system/well-founded-relation" :dir :system)
+(include-book "std/system/get-well-founded-relation" :dir :system)
 (include-book "kestrel/utilities/error-checking/top" :dir :system)
 (include-book "kestrel/utilities/keyword-value-lists" :dir :system)
 (include-book "kestrel/utilities/orelse" :dir :system)
@@ -499,9 +499,9 @@
        (new-body (untranslate new-body nil wrld))
        (recursive (recursivep old nil wrld))
        (wfrel? (and recursive
-                    (well-founded-relation old wrld)))
+                    (get-well-founded-relation old wrld)))
        (measure? (and recursive
-                      (untranslate (measure old wrld) nil wrld)))
+                      (untranslate (get-measure old wrld) nil wrld)))
        (termination-hints? (and recursive
                                 `(("Goal"
                                    :in-theory nil

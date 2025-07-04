@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,7 +15,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define well-founded-relation ((fn symbolp) (wrld plist-worldp))
+(define get-well-founded-relation ((fn symbolp) (wrld plist-worldp))
   :returns (well-founded-relation "A @(tsee symbolp).")
   :verify-guards nil
   :parents (std/system/function-queries)
@@ -25,9 +25,13 @@
    (xdoc::p
     "See @(see well-founded-relation-rule)
      for a discussion of well-founded relations in ACL2,
-      including the @(':well-founded-relation') rule class.")
+     including the @(':well-founded-relation') rule class.")
    (xdoc::p
-    "See @(tsee well-founded-relation+) for
-     an enhanced variant of this utility."))
+    "See @(tsee get-well-founded-relation+) for
+     an enhanced variant of this utility.")
+   (xdoc::p
+    "This is called @('get-well-founded-relation')
+     instead of just @('well-founded-relation')
+     to avoid a topic conflict with the XDOC manual."))
   (b* ((justification (getpropc fn 'justification nil wrld)))
     (access justification justification :rel)))
