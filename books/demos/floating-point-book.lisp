@@ -1,3 +1,6 @@
+; Avoid apparent but in SBCL 2.5.6, at least for now:
+; cert_param: (non-sbcl)
+
 (in-package "ACL2")
 (assert-event
 (identical-files-p "floating-point-log.txt" "floating-point-log.out"))
