@@ -52,3 +52,8 @@ gcc xor-CF.c -o xor-CF.elf64
 gcc xor-OF.c -o xor-OF.elf64
 gcc xor-SF.c -o xor-SF.elf64
 gcc xor-ZF.c -o xor-ZF.elf64
+
+===
+
+gcc add.c -o add.elf64
+gcc add-r-imm.c -o add-r-imm.elf64

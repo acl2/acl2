@@ -145,3 +145,11 @@
 
 ;; (depends-on "xor-ZF.elf64")
 (test-file "xor-ZF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "add.elf64")
+(test-file "add.elf64")
+
+;; (depends-on "add-r-imm.elf64")
+(test-file "add-r-imm.elf64")
