@@ -6363,6 +6363,8 @@
 
 (defun proclaim-dfs (fn &aux (wrld (w *the-live-state*)))
 
+; This function can enhance efficiency of df computations.
+
 ; We understand, from Stas Boukarev, that the use of &optional to terminate the
 ; input and output types allows SBCL to make use of these declarations to avoid
 ; memory usage caused by double-floats crossing function boundaries.  This has
@@ -6376,6 +6378,12 @@
 ; Also see *proclaim-dfs-ht*.
 
   (cond
+   #+sbcl
+   ((string>= (lisp-implementation-version) "2.5.6")
+; Work around SBCL Bug #2115955.  When the bug is fixed, we should add a
+; conjunct to the test,
+; (string< (lisp-implementation-version) "<fixed_version>").
+    nil)
    ((member-eq fn *stobjs-out-invalid*)
     nil)
    (t (let ((stobjs-in (getpropc fn 'stobjs-in nil wrld))
