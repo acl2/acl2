@@ -118,7 +118,7 @@
 
 #|
 
-Professional Method:
+Proof Sketch Using the Professional Method 
            
 (M x)
 = { Def M }
@@ -164,17 +164,6 @@ isort-ap-even
 = { Def I }
 (I x)
 
-Rubric:
- Professional method: 20 pts
-
- Top-level proof: 4 points
- Identify mrge-isort lemma or equivalent: 4 points 
-   Prove lemma: 4 points
- Identify isort-ap-even lemma or equivalent: 4 points 
-   Prove lemma: 4 points 
- 
- Proofs: 18 pts
- 
 |#
 
 (property mrge-insert-list (e :all x :tl)
