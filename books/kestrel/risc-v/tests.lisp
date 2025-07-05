@@ -224,3 +224,55 @@
           read-pc-of-inc4-pc)
  :disable ((:e tau-system)) ; for speed
  :cases ((feat-32p feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; SLTU
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-instr-op-thm
+ :funct (op-funct-sltu)
+ :rs1 14
+ :rs2 1
+ :rd 1
+ :src1 78
+ :src2 934
+ :dst 1
+ :enable (exec-sltu
+          read-xreg-of-write-xreg
+          read-pc-of-inc4-pc)
+ :disable ((:e tau-system)) ; for speed
+ :cases ((feat-32p feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-instr-op-thm
+ :funct (op-funct-sltu)
+ :rs1 5
+ :rs2 3
+ :rd 5
+ :src1 1000
+ :src2 1000
+ :dst 0
+ :enable (exec-sltu
+          read-xreg-of-write-xreg
+          read-pc-of-inc4-pc)
+ :disable ((:e tau-system)) ; for speed
+ :cases ((feat-32p feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-instr-op-thm
+ :funct (op-funct-sltu)
+ :rs1 14
+ :rs2 1
+ :rd 1
+ :src1 20000
+ :src2 19999
+ :dst 0
+ :enable (exec-sltu
+          read-xreg-of-write-xreg
+          read-pc-of-inc4-pc)
+ :disable ((:e tau-system)) ; for speed
+ :cases ((feat-32p feat)))
