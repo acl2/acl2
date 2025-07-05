@@ -207,10 +207,38 @@
 (defsection exec-xori-alt-defs
   :short "Equivalent semantic definitions of @('XORI')."
 
-  (defruled exec-xori-alt-def
+  (defruled exec-xori-alt-def-signed-signed
     (equal (exec-xori rd rs1 imm stat feat)
            (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
                 (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (logxor rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-xori
+             read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc))
+
+  (defruled exec-xori-alt-def-unsigned-signed
+    (equal (exec-xori rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (logxor rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-xori
+             write-xreg
+             inc4-pc
+             write-pc))
+
+  (defruled exec-xori-alt-def-signed-unsigned
+    (equal (exec-xori rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (imm-operand
+                 (loghead (feat->xlen feat) (logext 12 (ubyte12-fix imm))))
                 (result (logxor rs1-operand imm-operand))
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
