@@ -160,10 +160,38 @@
 (defsection exec-ori-alt-defs
   :short "Equivalent semantic definitions of @('ORI')."
 
-  (defruled exec-ori-alt-def
+  (defruled exec-ori-alt-def-signed-signed
     (equal (exec-ori rd rs1 imm stat feat)
            (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
                 (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (logior rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-ori
+             read-xreg-signed
+             write-xreg
+             inc4-pc
+             write-pc))
+
+  (defruled exec-ori-alt-def-unsigned-signed
+    (equal (exec-ori rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (logior rs1-operand imm-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-ori
+             write-xreg
+             inc4-pc
+             write-pc))
+
+  (defruled exec-ori-alt-def-signed-unsigned
+    (equal (exec-ori rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (imm-operand
+                 (loghead (feat->xlen feat) (logext 12 (ubyte12-fix imm))))
                 (result (logior rs1-operand imm-operand))
                 (stat (write-xreg (ubyte5-fix rd) result stat feat))
                 (stat (inc4-pc stat feat)))
