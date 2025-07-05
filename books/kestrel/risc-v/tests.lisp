@@ -195,6 +195,24 @@
  :funct (op-funct-slt)
  :rs1 11
  :rs2 12
+ :rd 13
+ :src1 1000
+ :src2 1000
+ :dst 0
+ :src1-signedp t
+ :src2-signedp t
+ :enable (exec-slt
+          read-xreg-of-write-xreg
+          read-pc-of-inc4-pc)
+ :disable ((:e tau-system)) ; for speed
+ :cases ((feat-32p feat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-instr-op-thm
+ :funct (op-funct-slt)
+ :rs1 11
+ :rs2 12
  :rd 11
  :src1 78
  :src2 -934
