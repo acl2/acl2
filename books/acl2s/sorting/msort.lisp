@@ -2,14 +2,14 @@
 
  Author: Pete Manolios
  
- This is a book with merge sort and insertion sort, along with version
- that do not include duplicates. 
+ This is a book with merge sort and insertion sort for lists
+ containing arbitrary objects.
 
  I use definec and all functions have their contracts checked, so
  guards are verified.
 
- The book does not currently include correctness proofs and was
- primarily developed for defdata.
+ The book includes a proof of equivalence between merge sort and
+ insertion sort.
 
 |#
 
