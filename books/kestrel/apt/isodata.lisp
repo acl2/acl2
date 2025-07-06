@@ -270,12 +270,23 @@
                state)
   :mode :program
   :short "Process the @('old') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We explicitly exclude the functions in @('acl2::*stobjs-out-invalid*'),
+     because otherwise calling @(tsee stobjs-out) would throw an error."))
   (b* (((er old$) (ensure-function-name-or-numbered-wildcard$
                    old "The first input" t nil))
        (description (msg "The target function ~x0" old$))
        ((er &) (ensure-function-is-logic-mode$ old$ description t nil))
        ((er &) (ensure-function-is-defined$ old$ description t nil))
        ((er &) (ensure-function-has-args$ old$ description t nil))
+       ((er &) (if (member-eq old acl2::*stobjs-out-invalid*)
+                   (er-soft+ ctx t nil
+                             "The first input cannot be one of ~v0, ~
+                              for which output stobjs cannot be calculated."
+                             acl2::*stobjs-out-invalid*)
+                 (value nil)))
        ((er &) (ensure-function-no-stobjs$ old$ description t nil))
        ((er &) (if (eq predicate t)
                    (ensure-function-number-of-results$ old$ 1
