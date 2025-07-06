@@ -1152,7 +1152,7 @@
                   ((when (errorp compst/error))
                    (mv compst/error (compustate-fix compst))))
                (mv nil compst/error))
-       :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :null (mv nil (compustate-fix compst))
        :if (b* ((test (exec-expr-pure s.test compst))
                 ((when (errorp test)) (mv test (compustate-fix compst)))
                 (test (apconvert-expr-value test))
