@@ -1,10 +1,10 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Contributing Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,10 +141,8 @@
     (xdoc::desc-apt-input-old
      (xdoc::p
       "@('old') must
-       be in logic mode,
-       be " (xdoc::seetopic "acl2::function-definedness" "defined") ", and
-       have no input or output "
-      (xdoc::seetopic "acl2::stobj" "stobjs")
+       be in logic mode and be "
+      (xdoc::seetopic "acl2::function-definedness" "defined")
       ". If the @(':predicate') input (see below) is @('t'),
        then @('old') must return
        a non-" (xdoc::seetopic "mv" "multiple") " value.
@@ -395,27 +393,40 @@
       "It must be one of the following:")
      (xdoc::ul
       (xdoc::li
-       "@(':auto'), to use @('nil') or @('(mv nil ... nil)') for single-value
-        and multi-value functions respectively.")
+       "@(':auto'),
+        to use @('out') or @('(mv out1 ... outm)')
+        for single-value and multi-value functions respectively
+        (recall that @('m') is the number of results),
+        where each of @('out') or ('outi') is
+        either @('nil') if the function does not return a stobj
+        as the corresponding result,
+        or the stobj name that the function returns
+        as the corresponding results.
+        In other words, this is the @(tsee stobjs-out) of @('old).")
       (xdoc::li
-       "@(':base-case-then'), to search for a base-case within the domain of the new
-        function. A base-case of a term may be be the whole term when the term
-        does not include any recursive calls, or it may be a base-case of the
-        `then' or `else' branch when the translated term is an `if'. This
-        search for a base-case is biased toward `then' branches.")
+       "@(':base-case-then'),
+        to search for a base case within the domain of the new function.
+        A base case of a term may be the whole term
+        when the term does not include any recursive calls,
+        or it may be a base case of the `then' or `else' branch
+        when the translated term is an @(tsee if).
+        This search for a base case is biased toward `then' branches.")
       (xdoc::li
-       "@(':base-case-else'), to search for a base-case with a bias toward
-        `else' branches.")
+       "@(':base-case-else'),
+        to search for a base case as above
+        but with a bias toward `else' branches.")
       (xdoc::li
-       "Any other term. It must be a term that only references logic-mode
-        functions and that includes no free variables other than
-        @('x1'), ..., @('xn'). This term must have no output
-        @(see acl2::stobj)s. This term must return the same number of results
-        as @('old'). This term must not reference @('old')."))
+       "Any other term.
+        It must be a term that only references logic-mode functions
+        and that includes no free variables
+        other than @('x1'), ..., @('xn').
+        This term must return the same number of results as @('old'),
+        and the same stobjs if any.
+        This term must not reference @('old')."))
      (xdoc::p
-      "If one wishes to use the term @(':auto') as the undefined result, this
-       may be accomplished by providing the quoted constant @('\':auto'). The
-       same applies for @(':base-case-then') and @(':base-case-else').")
+      "If one wishes to use the term @(':auto') as the undefined result,
+       this may be accomplished by providing the quoted constant @('\':auto').
+       The same applies for @(':base-case-then') and @(':base-case-else').")
      (xdoc::p
       "Even if the generated function is guard-verified
        (which is determined by the @(':verify-guards') input; see below),
@@ -424,8 +435,8 @@
        (see the generated new function, below),
        the verification of its guards always succeeds trivially.")
      (xdoc::p
-      "In the rest of this documentation page, let @('undefined') be this term
-       specified by @(':undefined')."))
+      "In the rest of this documentation page,
+       let @('undefined') be this term specified by @(':undefined')."))
 
     (xdoc::desc-apt-input-new-name)
 
@@ -819,7 +830,19 @@
         @('new') is defined to map
         each argument tuple in the new representation
         to the same or isomorphic value that @('old') maps
-        the isomorphic argument tuple in the old representation.")))
+        the isomorphic argument tuple in the old representation."))
+     (xdoc::p
+      "If @('old') has input or output "
+      (xdoc::seetopic "acl2::stobj" "stobjs")
+      " whose representation is being transformed,
+       @('new') is "
+      (xdoc::seetopic "acl2::non-executable" "non-executable")
+      ": it is generated as a @(tsee defun-nx) instead of a @(tsee defun).
+       The reason is that, by applying the conversions to/from the stobjs,
+       @('new') may not respect the stobj restrictions for executable code.
+       Further refinement steps may be used to
+       make the function respect the stobj restrictions,
+       and turned into an executable version."))
 
     (xdoc::desc
      "@('new-to-old')"

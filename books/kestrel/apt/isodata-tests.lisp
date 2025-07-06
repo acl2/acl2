@@ -308,12 +308,6 @@
   (must-fail (isodata do$ ((arg (oldp newp forth back)))))
   (must-fail (isodata read-user-stobj-alist ((arg (oldp newp forth back))))))
 
- ;; OLD has stobjs:
- (must-succeed*
-  (defun f (state) (declare (xargs :stobjs state)) state)
-  (must-fail (isodata f ((arg (oldp newp forth back)))))
-  (must-fail (isodata f ((arg iso)))))
-
  :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -443,11 +437,6 @@
  ;; OLDP is a non-unary function:
  (must-fail (isodata f ((x (cons newp forth back)))))
 
- ;; OLDP is a function with stobjs:
- (must-succeed*
-  (defun oldp (state) (declare (xargs :stobjs state)) state)
-  (must-fail (isodata f ((x (oldp newp forth back))))))
-
  ;; OLDP is a non-guard-verified function:
  (must-succeed*
   (defun oldp (x) (declare (xargs :verify-guards nil)) x)
@@ -462,11 +451,6 @@
  ;; OLDP is a non-closed lambda expression:
  (must-fail (isodata f ((x ((lambda (x) (+ x y)) newp forth back)))))
 
- ;; OLDP is a lambda expression with stobjs:
- (must-succeed*
-  (defun g (state) (declare (xargs :stobjs state)) state)
-  (must-fail (isodata f ((x ((lambda (state) (g state)) newp forth back))))))
-
  ;; OLDP is a lambda expression with non-guard-verified functions:
  (must-succeed*
   (defun g (x) (declare (xargs :verify-guards nil)) x)
@@ -478,12 +462,6 @@
 
  ;; OLDP is a macro that abbreviates a lambda expression in program mode:
  (must-fail (isodata f ((x (digit-char-p newp forth back)))))
-
- ;; OLDP is a macro that abbreviates a lambda expression with stobjs:
- (must-succeed*
-  (defun g (state) (declare (xargs :stobjs state)) (declare (ignore state)) nil)
-  (defmacro m (state) `(g ,state))
-  (must-fail (isodata f ((x (m newp forth back))))))
 
  ;; OLDP is a macro that abbreviates a non-closed lambda expression:
  (must-succeed*
@@ -524,11 +502,6 @@
  ;; NEWP is a non-unary function:
  (must-fail (isodata f ((x (natp cons forth back)))))
 
- ;; NEWP is a function with stobjs:
- (must-succeed*
-  (defun newp (state) (declare (xargs :stobjs state)) state)
-  (must-fail (isodata f ((x (natp newp forth back))))))
-
  ;; NEWP is a non-guard-verified function:
  (must-succeed*
   (defun newp (x) (declare (xargs :verify-guards nil)) x)
@@ -543,11 +516,6 @@
  ;; NEWP is a non-closed lambda expression:
  (must-fail (isodata f ((x (natp (lambda (x) (+ x y)) forth back)))))
 
- ;; NEWP is a lambda expression with stobjs:
- (must-succeed*
-  (defun g (state) (declare (xargs :stobjs state)) state)
-  (must-fail (isodata f ((x (natp (lambda (state) (g state)) forth back))))))
-
  ;; NEWP is a lambda expression with non-guard-verified functions:
  (must-succeed*
   (defun g (x) (declare (xargs :verify-guards nil)) x)
@@ -559,12 +527,6 @@
 
  ;; NEWP is a macro that abbreviates a lambda expression in program mode:
  (must-fail (isodata f ((x (natp digit-char-p forth back)))))
-
- ;; NEWP is a macro that abbreviates a lambda expression with stobjs:
- (must-succeed*
-  (defun g (state) (declare (xargs :stobjs state)) (declare (ignore state)) nil)
-  (defmacro m (state) `(g ,state))
-  (must-fail (isodata f ((x (natp m forth back))))))
 
  ;; NEWP is a macro that abbreviates a non-closed lambda expression:
  (must-succeed*
@@ -605,11 +567,6 @@
  ;; FORTH is a non-unary function:
  (must-fail (isodata f ((x (natp natp cons back)))))
 
- ;; FORTH is a function with stobjs:
- (must-succeed*
-  (defun forth (state) (declare (xargs :stobjs state)) state)
-  (must-fail (isodata f ((x (natp natp forth back))))))
-
  ;; FORTH is a non-guard-verified function:
  (must-succeed*
   (defun forth (x) (declare (xargs :verify-guards nil)) x)
@@ -624,11 +581,6 @@
  ;; FORTH is a non-closed lambda expression:
  (must-fail (isodata f ((x (natp natp (lambda (x) (+ x y)) back)))))
 
- ;; FORTH is a lambda expression with stobjs:
- (must-succeed*
-  (defun g (state) (declare (xargs :stobjs state)) state)
-  (must-fail (isodata f ((x (natp natp (lambda (state) (g state)) back))))))
-
  ;; FORTH is a lambda expression with non-guard-verified functions:
  (must-succeed*
   (defun g (x) (declare (xargs :verify-guards nil)) x)
@@ -640,12 +592,6 @@
 
  ;; FORTH is a macro that abbreviates a lambda expression in program mode:
  (must-fail (isodata f ((x (natp natp digit-char-p back)))))
-
- ;; FORTH is a macro that abbreviates a lambda expression with stobjs:
- (must-succeed*
-  (defun g (state) (declare (xargs :stobjs state)) (declare (ignore state)) nil)
-  (defmacro m (state) `(g ,state))
-  (must-fail (isodata f ((x (natp natp m back))))))
 
  ;; FORTH is a macro that abbreviates a non-closed lambda expression:
  (must-succeed*
@@ -686,11 +632,6 @@
  ;; BACK is a non-unary function:
  (must-fail (isodata f ((x (natp natp identity cons)))))
 
- ;; BACK is a function with stobjs:
- (must-succeed*
-  (defun back (state) (declare (xargs :stobjs state)) state)
-  (must-fail (isodata f ((x (natp natp identity back))))))
-
  ;; BACK is a non-guard-verified function:
  (must-succeed*
   (defun back (x) (declare (xargs :verify-guards nil)) x)
@@ -706,11 +647,6 @@
  ;; BACK is a non-closed lambda expression:
  (must-fail (isodata f ((x (natp natp identity (lambda (x) (+ x y)))))))
 
- ;; BACK is a lambda expression with stobjs:
- (must-succeed*
-  (defun g (state) (declare (xargs :stobjs state)) state)
-  (must-fail (isodata f ((x (natp natp identity (lambda (state) (g state))))))))
-
  ;; BACK is a lambda expression with non-guard-verified functions:
  (must-succeed*
   (defun g (x) (declare (xargs :verify-guards nil)) x)
@@ -722,12 +658,6 @@
 
  ;; BACK is a macro that abbreviates a lambda expression in program mode:
  (must-fail (isodata f ((x (natp natp identity digit-char-p)))))
-
- ;; BACK is a macro that abbreviates a lambda expression with stobjs:
- (must-succeed*
-  (defun g (state) (declare (xargs :stobjs state)) (declare (ignore state)) nil)
-  (defmacro m (state) `(g ,state))
-  (must-fail (isodata f ((x (natp natp identity m))))))
 
  ;; BACK is a macro that abbreviates a non-closed lambda expression:
  (must-succeed*
