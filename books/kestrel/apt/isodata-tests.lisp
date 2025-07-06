@@ -1,10 +1,10 @@
 ; APT (Automated Program Transformations) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Main Author: Alessandro Coglio (coglio@kestrel.edu)
+; Main Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Contributing Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -300,6 +300,13 @@
                  (p (1- x))))))
    (must-fail (isodata p ((((arg (oldp newp forth back)))))))
    (must-fail (isodata p ((((arg iso))))))))
+
+ ;; OLD is in *STOBJS-OUT-INVALID*:
+ (must-succeed*
+  (must-fail (isodata if ((arg (oldp newp forth back)))))
+  (must-fail (isodata return-last ((arg (oldp newp forth back)))))
+  (must-fail (isodata do$ ((arg (oldp newp forth back)))))
+  (must-fail (isodata read-user-stobj-alist ((arg (oldp newp forth back))))))
 
  ;; OLD has stobjs:
  (must-succeed*
