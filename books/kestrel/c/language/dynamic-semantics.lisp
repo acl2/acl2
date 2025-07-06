@@ -1133,9 +1133,6 @@
      (xdoc::p
       "For now we only support the execution of certain statements.")
      (xdoc::p
-      "We only allow, and in fact require,
-       assignment expressions in expression statements.")
-     (xdoc::p
       "For a compound statement (i.e. a block),
        we enter a new (empty) scope prior to executing the block items,
        and we exit that scope after executing the block items."))
