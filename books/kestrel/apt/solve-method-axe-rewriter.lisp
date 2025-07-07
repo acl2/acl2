@@ -82,6 +82,7 @@
                         nil ; count-hits
                         nil ; print
                         nil ; monitored-symbols
+                        nil ; no-warn-ground-functions
                         nil ; fns-to-elide
                         ))
        ((when erp) (er-soft+ ctx t nil

@@ -309,7 +309,7 @@
        (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
 
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       (- (cw "(Testing ~x0.~%" function-name-string))
+       (- (cw "~%(Testing ~x0.~%" function-name-string))
        ;; Check the param names, if any:
        ((when (not (or (eq :none param-names)
                        (and (symbol-listp param-names)

@@ -150,6 +150,7 @@
                              count-hits
                              print
                              monitor
+                             nil ; no-warn-ground-functions
                              nil ; fns-to-elide
                              ))
        ;; Print the result: todo: print as a term when small
