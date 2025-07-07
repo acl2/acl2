@@ -139,11 +139,11 @@
                             (str::cat "1-(1/2^" (str::int-to-dec-string exp-from) ")")))
                   (negative-powers-of-1/2-and-strings fp (+ 1 exp-from) exp-to addend))))))
 
-;; The first element in the list is nums-to-strings for bn-254,
-;; and the second element is nums-to-strings for bls12-377 scalar field prime.
-(defund nums-to-strings ()
-  (declare (xargs :guard t))
-  (macrolet ((nums-to-strings (fp)
+;; Generate the nums-to-strings data structure for the given prime.
+;; PRIME should be one of the supported primes (currently fp1 and fp2).
+(defund nums-to-strings (prime)
+  (declare (xargs :guard (member prime (list (fp1) (fp2)))))
+  (macrolet ((nums-to-strings-for-prime (fp)
                `(append
                  ;; Display all numbers of the form 2^n, (2^n)+1, (2^n)-1, like that,
                  ;; for 11 <= n < 254.
@@ -161,17 +161,24 @@
                  (negative-powers-of-1/2-and-strings ,fp 2 254 0)
                  (powers-of-1/2-and-strings ,fp 2 254 1)
                  (negative-powers-of-1/2-and-strings ,fp 2 254 1))))
-    (list (nums-to-strings (fp1))
-          (nums-to-strings (fp2)))))
+    (cond ((equal prime (fp1)) (nums-to-strings-for-prime (fp1)))
+          ((equal prime (fp2)) (nums-to-strings-for-prime (fp2)))
+          (t (er hard 'nums-to-strings
+                 "Unsupported prime: ~x0. Currently supported primes are ~x1 and ~x2."
+                 prime (fp1) (fp2))))))
+
+;; Cache the results for the two current primes
+(ACL2::add-io-pairs (((nums-to-strings (fp1)) (nums-to-strings (fp1)))
+                     ((nums-to-strings (fp2)) (nums-to-strings (fp2)))))
 
 (in-theory (disable (:e nums-to-strings)))
 
-(defthm alistp-of-first-nums-to-strings
-    (alistp (car (nums-to-strings)))
+(defthm alistp-of-nums-to-strings-fp1
+    (alistp (nums-to-strings (fp1)))
   :hints (("Goal" :in-theory (enable nums-to-strings))))
 
-(defthm alistp-of-second-nums-to-strings
-    (alistp (cadr (nums-to-strings)))
+(defthm alistp-of-nums-to-strings-fp2
+    (alistp (nums-to-strings (fp2)))
   :hints (("Goal" :in-theory (enable nums-to-strings))))
 
 ;generalized predicate for alist format of nums-to-strings
@@ -195,8 +202,8 @@
            (stringp (cadr (assoc-equal key alist))))
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
-;; This shows there are no collisions:
-;; (assert-equal (len *nums-to-strings*) (len (remove-duplicates (strip-cars *nums-to-strings*))))
+;;This shows there are no collisions:
+;;(assert-equal (len *nums-to-strings*) (len (remove-duplicates (strip-cars *nums-to-strings*))))
 
 (defun p1cs-negative (fp x)
   (declare (xargs :guard (and (natp fp) (< 1 fp) (integerp x))))
@@ -207,21 +214,17 @@
 (defun p1cs-coefficient (fp term)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
                               (sparse-vector-elementp term))
-                  :guard-hints (("Goal" :in-theory (e/d (nums-to-strings) (assoc-equal) )))))
+                  :guard-hints (("Goal" :in-theory (e/d (nums-to-strings) (assoc-equal))))))
 
-  ;; first looks up in *nums-to-strings*
-  (let ((nums-to-strings (cond ((= fp (fp1))
-                                (first (nums-to-strings)))
-                               ((= fp (fp2))
-                                (second (nums-to-strings)))
-                               (t nil))))
-    (let ((pair (assoc (first term) nums-to-strings)))
+  ;; Look up in nums-to-strings for the given prime
+  (let ((nums-to-strings-for-prime (nums-to-strings fp)))
+    (let ((pair (assoc (first term) nums-to-strings-for-prime)))
       (if pair
           (second pair)
-          ;; next try p1cs-negative
+          ;; Next try p1cs-negative
           (let ((possible-negative (p1cs-negative fp (first term))))
             (or possible-negative
-                ;; otherwise just print the integer normally
+                ;; Otherwise just print the integer normally
                 (str::int-to-dec-string (first term))))))))
 ;;  TODO: try Dave Greve's minimal fraction code (ACL2 Workshop 2020).
 ;;  Does it work for small negative fractions?
@@ -231,23 +234,16 @@
     (implies (p1cs-negative fp x)
              (stringp (p1cs-negative fp x))))
 
-;prove that the components of nums-to-strings have the right format
-(defthm first-nums-to-strings-formatp
-  (natural-to-singleton-string-list-alistp (car (nums-to-strings)))
-  :hints (("Goal" :in-theory (enable nums-to-strings))))
-
-(defthm second-nums-to-strings-formatp
-  (natural-to-singleton-string-list-alistp (cadr (nums-to-strings)))
-  :hints (("Goal" :in-theory (enable nums-to-strings))))
-
 ;these theorems become much more efficient
-(defthm stringp-of-first-nums-to-strings-values
-    (implies (assoc-equal x (car (nums-to-strings)))
-             (stringp (cadr (assoc-equal x (car (nums-to-strings)))))))
+(defthm stringp-of-nums-to-strings-fp1-values
+  (implies (assoc-equal x (nums-to-strings (fp1)))
+           (stringp (cadr (assoc-equal x (nums-to-strings (fp1))))))
+  :hints (("Goal" :in-theory (enable nums-to-strings))))
 
-(defthm stringp-of-second-nums-to-strings-values
-    (implies (assoc-equal x (cadr (nums-to-strings)))
-             (stringp (cadr (assoc-equal x (cadr (nums-to-strings)))))))
+(defthm stringp-of-nums-to-strings-fp2-values
+  (implies (assoc-equal x (nums-to-strings (fp2)))
+           (stringp (cadr (assoc-equal x (nums-to-strings (fp2))))))
+  :hints (("Goal" :in-theory (enable nums-to-strings))))
 
 (defun p1cs-var (term)
   (declare (xargs :guard (sparse-vector-elementp term)))
@@ -266,8 +262,8 @@
     (implies (and (member fp (list (fp1) (fp2)))
                   (sparse-vector-elementp term))
              (stringp (p1cs-coefficient fp term)))
-  :hints (("Goal" :in-theory (disable p1cs-negative
-                                      assoc-equal))))
+  :hints (("Goal" :in-theory (e/d (nums-to-strings)
+                                  (p1cs-negative assoc-equal)))))
 
 (defun p1cs-term (fp term)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
