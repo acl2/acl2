@@ -839,10 +839,15 @@
       (xdoc::seetopic "acl2::non-executable" "non-executable")
       ": it is generated as a @(tsee defun-nx) instead of a @(tsee defun).
        The reason is that, by applying the conversions to/from the stobjs,
-       @('new') may not respect the stobj restrictions for executable code.
-       Further refinement steps may be used to
+       @('new') may not respect the stobj restrictions for executable code;
+       further refinement steps may be used to
        make the function respect the stobj restrictions,
-       and turned into an executable version."))
+       and turned into an executable version.
+       If @('new') is non-executable,
+       its generated guard is also wrapped in @(tsee non-exec),
+       because the guard does not respect the stobjs restriction,
+       and despite the function itself being marked as non-executable,
+       the guard still needs to respect those restrictions."))
 
     (xdoc::desc
      "@('new-to-old')"

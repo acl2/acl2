@@ -2400,23 +2400,28 @@
 
 (define isodata-gen-new-fn-guard ((old$ symbolp)
                                   (arg-isomaps isodata-symbol-isomap-alistp)
+                                  (xform-stobjs-p booleanp)
                                   (predicate$ booleanp)
                                   (wrld plist-worldp))
   :returns (new-guard "A @(tsee pseudo-termp).")
   :mode :program
   :short "Generate the guard of the new function."
   (b* ((x1...xn (formals old$ wrld))
-       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps)))
-    (if predicate$
-        (conjoin newp-of-x1...xn)
-      (b* ((old-guard (uguard old$ wrld))
-           (old-guard-with-back-of-x1...xn
-            (isodata-gen-subst-x1...xn-with-back-of-x1...xn old-guard
-                                                            old$
-                                                            arg-isomaps
-                                                            wrld)))
-        (conjoin (append newp-of-x1...xn
-                         (list old-guard-with-back-of-x1...xn)))))))
+       (newp-of-x1...xn (isodata-gen-newp-of-terms x1...xn arg-isomaps))
+       (guard
+        (if predicate$
+            (conjoin newp-of-x1...xn)
+          (b* ((old-guard (uguard old$ wrld))
+               (old-guard-with-back-of-x1...xn
+                (isodata-gen-subst-x1...xn-with-back-of-x1...xn old-guard
+                                                                old$
+                                                                arg-isomaps
+                                                                wrld)))
+            (conjoin (append newp-of-x1...xn
+                             (list old-guard-with-back-of-x1...xn)))))))
+    (if xform-stobjs-p
+        `(non-exec ,guard)
+      guard)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2675,7 +2680,8 @@
                  (ibody old$ wrld) (ubody old$ wrld) body nil nil wrld))
                ((nil) body)
                (t (untranslate body nil wrld))))
-       (guard (isodata-gen-new-fn-guard old$ arg-isomaps predicate$ wrld))
+       (guard (isodata-gen-new-fn-guard
+               old$ arg-isomaps xform-stobjs-p predicate$ wrld))
        (guard (conjoin (flatten-ands-in-lit guard)))
        (guard (untranslate guard nil wrld))
        (recursive (recursivep old$ nil wrld))
