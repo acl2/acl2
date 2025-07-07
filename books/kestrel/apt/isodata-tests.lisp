@@ -3031,3 +3031,30 @@
   (isodata i (((y :result3 z) nat/int))))
 
  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Stobjs.")
+
+ ;;;;;;;;;;
+
+ (defun f (state)
+   (declare (xargs :stobjs state))
+   (w state))
+
+ (must-succeed*
+  (isodata f ((state (state-p state-p identity identity)))))
+
+ ;;;;;;;;;;
+
+ (defun g (state)
+   (declare (xargs :stobjs state))
+   state)
+
+ (must-succeed*
+  (isodata g ((state (state-p state-p identity identity)))))
+
+ (must-succeed*
+  (isodata g (((state :result) (state-p state-p identity identity))))))
