@@ -130,3 +130,8 @@
 
 ;; (depends-on "add-r-imm.elf64")
 (test-file "add-r-imm.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "add-r32-m32.elf64")
+(test-file "add-r32-m32.elf64")
