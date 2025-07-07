@@ -2212,10 +2212,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We put the optional expression into an expression statement."))
+    "We put the optional expression into an expression statement.")
+   (xdoc::p
+    "We generate a theorem if there is no expression,
+     i.e. if we have the null statement."))
   (declare (ignore expr?-thm-name))
   (b* (((simpadd0-gin gin) gin)
-       ;; (stmt (stmt-expr expr?))
+       (stmt (stmt-expr expr?))
        (stmt-new (stmt-expr expr?-new))
        ((unless (iff expr? expr?-new))
         (raise "Internal error: ~
@@ -2228,22 +2231,49 @@
                    expr?-diffp))
         (raise "Internal error: ~
                 unchanged return statement marked as changed.")
-        (mv (irr-stmt) (irr-simpadd0-gout))))
+        (mv (irr-stmt) (irr-simpadd0-gout)))
+       ((when expr?)
+        (mv stmt-new
+            (make-simpadd0-gout
+             :events expr?-events
+             :thm-name nil
+             :thm-index gin.thm-index
+             :names-to-avoid gin.names-to-avoid
+             :vartys expr?-vartys
+             :diffp expr?-diffp)))
+       (hints `(("Goal"
+                 :in-theory '((:e ldm-stmt)
+                              (:e c::stmt-null))
+                 :use simpadd0-stmt-null-support-lemma)))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-stmt-thm stmt
+                               stmt-new
+                               expr?-vartys
+                               gin.const-new
+                               gin.thm-index
+                               hints)))
     (mv stmt-new
-        (make-simpadd0-gout
-         :events expr?-events
-         :thm-name nil
-         :thm-index gin.thm-index
-         :names-to-avoid gin.names-to-avoid
-         :vartys expr?-vartys
-         :diffp expr?-diffp)))
+        (make-simpadd0-gout :events (append expr?-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+                            :vartys expr?-vartys
+                            :diffp expr?-diffp)))
 
   ///
 
   (defret stmt-unambp-of-simpadd0-stmt-expr
     (stmt-unambp stmt)
     :hyp (expr-option-unambp expr?-new)
-    :hints (("Goal" :in-theory (enable irr-stmt)))))
+    :hints (("Goal" :in-theory (enable irr-stmt))))
+
+  (defruled simpadd0-stmt-null-support-lemma
+    (b* ((stmt (c::stmt-null))
+         ((mv result &) (c::exec-stmt stmt compst fenv limit)))
+      (implies (not (c::errorp result))
+               (not result)))
+    :enable c::exec-stmt))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
