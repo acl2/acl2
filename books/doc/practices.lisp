@@ -179,7 +179,10 @@
               (xdoc::seetopic "hints" "hint")
               ") which may be difficult to maintain.")
     (xdoc::li "Avoid short proof timeout windows which could fail on slower
-               machines."))
+               machines (e.g. via @(tsee with-prover-time-limit), @(tsee
+               acl2s::set-defunc-timeout), etc.). If possible, avoid timeout
+               windows altogether, or use step limits instead (e.g. @(tsee
+               with-prover-step-limit))."))
    (xdoc::h3 "Book Style Consistency")
    (xdoc::ul
     (xdoc::li "There are certain styles which are not universal across the
