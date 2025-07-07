@@ -2214,7 +2214,8 @@
    (xdoc::p
     "We put the optional expression into an expression statement.")
    (xdoc::p
-    "We generate a theorem if there is no expression."))
+    "We generate a theorem if there is no expression,
+     i.e. if we have the null statement."))
   (declare (ignore expr?-thm-name))
   (b* (((simpadd0-gin gin) gin)
        (stmt (stmt-expr expr?))
@@ -2243,7 +2244,7 @@
        (hints `(("Goal"
                  :in-theory '((:e ldm-stmt)
                               (:e c::stmt-null))
-                 :use simpadd0-stmt-expr-support-lemma-null)))
+                 :use simpadd0-stmt-null-support-lemma)))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
@@ -2267,7 +2268,7 @@
     :hyp (expr-option-unambp expr?-new)
     :hints (("Goal" :in-theory (enable irr-stmt))))
 
-  (defruled simpadd0-stmt-expr-support-lemma-null
+  (defruled simpadd0-stmt-null-support-lemma
     (b* ((stmt (c::stmt-null))
          ((mv result &) (c::exec-stmt stmt compst fenv limit)))
       (implies (not (c::errorp result))
