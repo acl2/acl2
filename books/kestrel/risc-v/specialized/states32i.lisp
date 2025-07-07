@@ -225,7 +225,8 @@
 
   (apt::parteval read-xreg-unsigned
                  ((feat (feat-rv32i-le)))
-                 :new-name read32i-xreg-unsigned{0}))
+                 :new-name read32i-xreg-unsigned{0}
+                 :thm-enable nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -240,6 +241,7 @@
     :new-name read32i-xreg-unsigned{1}
     :simplify-guard t
     :assumptions :guard
+    :thm-enable nil
     :enable (unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
              (:e feat-rv32i-le))
     :disable (lnfix
@@ -260,7 +262,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection read32i-xreg-unsigned{3}
+(defsection read32i-xreg-unsigned
   :short "Simplify @(tsee read32i-xreg-unsigned{2})
           after the isomorphic state transformation."
   :long
@@ -270,14 +272,37 @@
      the outer @(tsee if) with @(tsee mbt) added by @(tsee apt::isodata).")
    (xdoc::p
     "We simplify the guard to eliminate @(tsee stat-validp) from it,
-     which is implied by @(tsee stat32ip)."))
+     which is implied by @(tsee stat32ip).")
+   (xdoc::p
+    "This is the final refinement for this function,
+     so we use the name @('read32i-xreg-unsigned') without numeric index."))
 
   (apt::simplify read32i-xreg-unsigned{2}
-    :new-name read32i-xreg-unsigned{3}
+    :new-name read32i-xreg-unsigned
     :assumptions :guard
     :simplify-guard t
+    :thm-enable nil
     :enable (stat-from-stat32i
              stat-validp
              unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
              acl2::unsigned-byte-listp-rewrite-ubyte32-listp
              acl2::unsigned-byte-p-rewrite-ubyte32p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled read-xreg-unsigned-to-read32i-xreg-unsigned
+  :short "Rewriting of @(tsee read-xreg-unsigned)
+          to @(tsee read32i-xreg-unsigned)."
+  (implies (and (statp stat)
+                (stat-validp stat (feat-rv32i-le))
+                (natp reg)
+                (< reg 32))
+           (equal (read-xreg-unsigned reg stat (feat-rv32i-le))
+                  (read32i-xreg-unsigned reg (stat32i-from-stat stat))))
+  :enable (read-xreg-unsigned-becomes-read32i-xreg-unsigned{0}
+           read32i-xreg-unsigned{0}-becomes-read32i-xreg-unsigned{1}
+           read32i-xreg-unsigned{1}-to-read32i-xreg-unsigned{2}
+           read32i-xreg-unsigned{2}-becomes-read32i-xreg-unsigned
+           (:e feat-rv32i-le)
+           stat-rv32i-p
+           stat-from-stat32i-of-stat32i-from-stat))
