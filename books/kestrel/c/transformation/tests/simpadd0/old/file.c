@@ -88,6 +88,11 @@ void asg_int(int x, int y) {
   x = y + 0;
 }
 
+int stmt_null(int x) {
+  ; // null statement
+  return x;
+}
+
 int main() {
   return 0;
 }
