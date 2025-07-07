@@ -260,4 +260,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: simplify to remove conversions and old state accessor
+(defsection read32i-xreg-unsigned{3}
+  :short "Simplify @(tsee read32i-xreg-unsigned{2})
+          after the isomorphic state transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We assume the guard so that we eliminate
+     the outer @(tsee if) with @(tsee mbt) added by @(tsee apt::isodata).")
+   (xdoc::p
+    "We simplify the guard to eliminate @(tsee stat-validp) from it,
+     which is implied by @(tsee stat32ip)."))
+
+  (apt::simplify read32i-xreg-unsigned{2}
+    :new-name read32i-xreg-unsigned{3}
+    :assumptions :guard
+    :simplify-guard t
+    :enable (stat-from-stat32i
+             stat-validp
+             unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
+             acl2::unsigned-byte-listp-rewrite-ubyte32-listp
+             acl2::unsigned-byte-p-rewrite-ubyte32p)))
