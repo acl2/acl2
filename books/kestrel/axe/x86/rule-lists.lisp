@@ -459,6 +459,8 @@
   '(read-of-write-when-disjoint-regions48p-gen
     read-of-write-when-disjoint-regions48p-gen-alt
     read-of-write-when-disjoint-regions48p ; for different regions with the same base address?
+    read-of-write-of-write-irrel-inner-bv ; can clarify failures
+    read-of-write-of-write-of-write-same-middle-bv ; can clarify failures
     in-region48p-of-+-arg1
     in-region48p-of-+-arg3
     in-region48p-of-logext-arg1
