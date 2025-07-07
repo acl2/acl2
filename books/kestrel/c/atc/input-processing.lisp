@@ -28,7 +28,7 @@
 (include-book "std/system/irecursivep-plus" :dir :system)
 (include-book "std/system/ubody-plus" :dir :system)
 (include-book "std/system/uguard-plus" :dir :system)
-(include-book "std/system/well-founded-relation-plus" :dir :system)
+(include-book "std/system/get-well-founded-relation-plus" :dir :system)
 (include-book "oslib/catpath" :dir :system)
 (include-book "oslib/dirname" :dir :system :ttags ((:quicklisp) :oslib))
 (include-book "oslib/file-types" :dir :system :ttags ((:quicklisp) (:quicklisp.osicat) :oslib))
@@ -161,14 +161,14 @@
                       but it is mutually recursive with ~x1 instead."
                      fn (remove-eq fn rec))))
        ((when (and rec
-                   (not (equal (well-founded-relation+ fn wrld)
+                   (not (equal (get-well-founded-relation+ fn wrld)
                                'o<))))
         (reterr (msg "The well-founded relation ~
                       of the recursive target function ~x0 ~
                       must be O<, but it ~x1 instead. ~
                       Only recursive functions with well-founded relation O< ~
                       are currently supported by ATC."
-                     fn (well-founded-relation+ fn wrld))))
+                     fn (get-well-founded-relation+ fn wrld))))
        (uncalled-fns (atc-remove-called-fns uncalled-fns (ubody+ fn wrld)))
        (uncalled-fns (if rec
                          (cons fn uncalled-fns)

@@ -15,6 +15,9 @@
 
 (include-book "../specification/states")
 
+(include-book "kestrel/apt/isodata" :dir :system)
+(include-book "kestrel/apt/parteval" :dir :system)
+(include-book "kestrel/apt/simplify" :dir :system)
 (include-book "kestrel/fty/deflist-of-len" :dir :system)
 (include-book "std/util/defiso" :dir :system)
 
@@ -22,6 +25,13 @@
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel lnfix-when-natp
+  (implies (natp x)
+           (equal (lnfix x) x))
+  :enable nfix)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,19 +67,32 @@
     (equal (stat-rv32i-p x)
            (and (statp x)
                 (stat-validp x (feat-rv32i-be))))
-    :enable stat-validp)
+    :enable (stat-validp
+             (:e feat-rv32i-le)
+             (:e feat-rv32i-be)))
 
   (defruled stat-rv32i-p-alt-def-m-le
     (equal (stat-rv32i-p x)
            (and (statp x)
                 (stat-validp x (feat-rv32im-le))))
-    :enable stat-validp)
+    :enable (stat-validp
+             (:e feat-rv32i-le)
+             (:e feat-rv32im-le)))
 
   (defruled stat-rv32i-p-alt-def-m-be
     (equal (stat-rv32i-p x)
            (and (statp x)
                 (stat-validp x (feat-rv32im-be))))
-    :enable stat-validp))
+    :enable (stat-validp
+             (:e feat-rv32i-le)
+             (:e feat-rv32im-be)))
+
+  (defruled unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
+    (implies (and (stat-validp stat (feat-rv32i-le))
+                  (natp reg)
+                  (< reg 32))
+             (unsigned-byte-p 32 (nth (1- reg) (stat->xregs stat))))
+    :enable (stat-validp nfix (:e feat-rv32i-le))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,7 +135,17 @@
    (pc ubyte32)
    (memory memory32i)
    (error bool))
-  :pred stat32ip)
+  :pred stat32ip
+
+  ///
+
+  (defrule len-of-stat32i->xregs
+    (equal (len (stat32i->xregs stat))
+           31))
+
+  (defrule len-of-stat32i->memory
+    (equal (len (stat32i->memory stat))
+           4294967296)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -130,7 +163,8 @@
                        xregs32ip
                        acl2::ubyte32-listp-rewrite-unsigned-byte-listp
                        memory32ip
-                       ubyte32p))))
+                       ubyte32p
+                       (:e feat-rv32i-le)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,7 +176,8 @@
                    (enable stat-rv32i-p
                            stat-validp
                            acl2::unsigned-byte-listp-rewrite-ubyte32-listp
-                           acl2::unsigned-byte-p-rewrite-ubyte32p))))
+                           acl2::unsigned-byte-p-rewrite-ubyte32p
+                           (:e feat-rv32i-le)))))
   :short "Convert from @(tsee stat32i) to @(tsee stat-rv32i-p)."
   (make-stat :xregs (stat32i->xregs stat32i)
              :pc (stat32i->pc stat32i)
@@ -172,10 +207,57 @@
                                                        stat32i-from-stat
                                                        stat-rv32i-p
                                                        xregs32ip
-                                                       memory32ip)))
+                                                       memory32ip
+                                                       (:e feat-rv32i-le))))
             :alpha-of-beta (("Goal" :in-theory (enable stat-from-stat32i
                                                        stat32i-from-stat))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: specialize and refine operations on states
+(defsection read32i-xreg-unsigned{0}
+  :short "Partially evaluate @(tsee read-xreg-unsigned)
+          for the RV32I base."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pick @(tsee feat-rv32i-le),
+     but we could have picked any of the variants for RV32I."))
+
+  (apt::parteval read-xreg-unsigned
+                 ((feat (feat-rv32i-le)))
+                 :new-name read32i-xreg-unsigned{0}))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read32i-xreg-unsigned{1}
+  :short "Simplify @(tsee read32i-xreg-unsigned{0}) after partial evaluation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We assume the guard so that we can eliminate the fixers."))
+
+  (apt::simplify read32i-xreg-unsigned{0}
+    :new-name read32i-xreg-unsigned{1}
+    :simplify-guard t
+    :assumptions :guard
+    :enable (unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
+             (:e feat-rv32i-le))
+    :disable (lnfix
+              unsigned-byte-fix)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection read32i-xreg-unsigned{2}
+  :short "Refine @(tsee read32i-xreg-unsigned{1})
+          to use the isomorphic states @(tsee stat32i)."
+
+  (apt::isodata read32i-xreg-unsigned{1}
+                ((stat stat32i-iso))
+                :undefined 0
+                :new-name read32i-xreg-unsigned{2}
+                :hints (("Goal" :in-theory (enable stat-rv32i-p
+                                                   (:e feat-rv32i-le))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; TODO: simplify to remove conversions and old state accessor

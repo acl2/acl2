@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "irecursivep")
-(include-book "ruler-extenders")
+(include-book "get-ruler-extenders")
 (include-book "ubody")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -45,7 +45,7 @@
      Otherwise, we pass the default ruler extenders."))
   (b* ((ruler-extenders (if (and (logicp fn wrld)
                                  (irecursivep fn wrld))
-                            (ruler-extenders fn wrld)
+                            (get-ruler-extenders fn wrld)
                           (default-ruler-extenders wrld))))
     (termination-machine
      nil nil ; loop$-recursion-checkep = nil --> arglists irrel

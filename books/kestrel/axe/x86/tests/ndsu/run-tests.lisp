@@ -22,29 +22,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (depends-on "add-AF.elf64")
-(test-file "add-AF.elf64")
-
-;; (depends-on "add-CF.elf64")
-(test-file "add-CF.elf64")
-
-;; (depends-on "add-OF.elf64")
-(test-file "add-OF.elf64")
-
-;; (depends-on "add-PF0.elf64")
-(test-file "add-PF0.elf64")
-
-;; (depends-on "add-PF1.elf64")
-(test-file "add-PF1.elf64")
-
-;; (depends-on "add-SF.elf64")
-(test-file "add-SF.elf64")
-
-;; (depends-on "add-ZF.elf64")
-(test-file "add-ZF.elf64")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; (depends-on "and-CF.elf64")
 (test-file "and-CF.elf64")
 
@@ -145,3 +122,11 @@
 
 ;; (depends-on "xor-ZF.elf64")
 (test-file "xor-ZF.elf64")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; (depends-on "add.elf64")
+(test-file "add.elf64")
+
+;; (depends-on "add-r-imm.elf64")
+(test-file "add-r-imm.elf64")

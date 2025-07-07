@@ -123,6 +123,7 @@
        the conversion @($\\beta$) from @($B$) to @($A$).")
      (xdoc::evmac-desc-function/lambda/macro
       :subject "Each"
+      :stobjs t
       :guard "the @(':guard-thms') input is @('t')")
      (xdoc::p
       "Let @('n') be the arity of @('doma'),

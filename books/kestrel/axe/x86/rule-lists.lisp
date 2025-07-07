@@ -5646,7 +5646,6 @@
             ;;stuff related to flags changes:
 
             ;acl2::logand-of-1-becomes-getbit-arg2 ;move
-            ;; acl2::ifix-when-integerp
             of-spec-of-logext-32
             acl2::unsigned-byte-p-of-if
             ;acl2::unsigned-byte-p-of-bvplus ;todo: more
@@ -5795,7 +5794,10 @@
             sub-af-spec16-becomes-bvlt
             sub-af-spec32-becomes-bvlt
             sub-af-spec64-becomes-bvlt
-            cf-spec64-becomes-getbit ;cf-spec64$inline ; todo: more!
+            cf-spec8-becomes-getbit  ; cf-spec8$inline
+            cf-spec16-becomes-getbit ; cf-spec16$inline
+            cf-spec32-becomes-getbit ; cf-spec32$inline
+            cf-spec64-becomes-getbit ; cf-spec64$inline
             sf-spec8-becomes-getbit
             sf-spec16-becomes-getbit
             sf-spec32-becomes-getbit

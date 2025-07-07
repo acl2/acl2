@@ -842,6 +842,7 @@
      equal-of-0-and-bvxor
      ;; equal-of-0-and-bitxor
      bvxor-tighten-axe-bind-and-bind ;Sat Jan 22 07:15:44 2011
+     getbit-of-bvxor-when-quotep
 
      bitxor-of-unary-minus-arg1 ;fixme lots of others like this, or use trim!
      bitxor-of-unary-minus-arg2
@@ -1112,8 +1113,10 @@
 ; trying without these... todo: do we want these or not?:
      ;; getbit-of-bvor-eric
      ;; getbit-of-bvor-eric-2
-     getbit-of-bvor-when-narrow-arg2-axe
+     getbit-of-bvor-when-narrow-arg2-axe  ; todo: make versions for AND and XOR
      getbit-of-bvor-when-narrow-arg3-axe
+     slice-of-bvor-when-narrow-arg2-axe
+     slice-of-bvor-when-narrow-arg3-axe
      ;; getbit-of-bvand-eric
      ;; getbit-of-bvand-eric-2
      ;; getbit-0-of-bvxor-eric

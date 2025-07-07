@@ -51,16 +51,22 @@
     (equal (stat-rv64i-p x)
            (and (statp x)
                 (stat-validp x (feat-rv64i-be))))
-    :enable stat-validp)
+    :enable (stat-validp
+             (:e feat-rv64i-le)
+             (:e feat-rv64i-be)))
 
   (defruled stat-rv64i-p-alt-def-m-le
     (equal (stat-rv64i-p x)
            (and (statp x)
                 (stat-validp x (feat-rv64im-le))))
-    :enable stat-validp)
+    :enable (stat-validp
+             (:e feat-rv64i-le)
+             (:e feat-rv64im-le)))
 
   (defruled stat-rv64i-p-alt-def-m-be
     (equal (stat-rv64i-p x)
            (and (statp x)
                 (stat-validp x (feat-rv64im-be))))
-    :enable stat-validp))
+    :enable (stat-validp
+             (:e feat-rv64i-le)
+             (:e feat-rv64im-be))))

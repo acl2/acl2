@@ -11,9 +11,10 @@
 
 (in-package "RISCV")
 
+(include-book "states32i")
+
 (include-book "../library-extensions/theorems")
 
-(include-book "kestrel/fty/deflist-of-len" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/ubyte5" :dir :system)
 (include-book "kestrel/fty/ubyte16" :dir :system)
@@ -38,96 +39,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Along with the model of states,
+    "Along with the model of states, which we take from @(see states32i),
      we define some operations on the states."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist-of-len xregfile32
-  :short "Fixtype of the @('x') register file [ISA:2.1]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "There are 32 registers, each of which consists of 32 bits.
-     We model the content of each register as an unsigned 32-bit integer,
-     which can be interpreted in different ways (see operations on states).")
-   (xdoc::p
-    "The @('x0') register is always 0; writing to it is a no-op.
-     We build this invariant into this fixtype
-     by only modeling 31 registers, namely @('x1') to @('x31'),
-     and leaving @('x0') implicit."))
-  :list-type ubyte32-list
-  :length 31
-  :pred xregfile32p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defval *mem32-size*
-  :short "Size of (the address space of) the memory [ISA:1.4]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The address space consists of 32 bits."))
-  (expt 2 32))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(make-event
- `(fty::deflist-of-len memory32
-    :short "Fixtype of memories [ISA:1.4]."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We model the memory as a list of @($2^{32}$) unsigned bytes,
-       which can be interpreted in different ways (see operations on states).")
-     (xdoc::p
-      "This is the whole address space,
-       although not all of it may be accessible,
-       and parts of it may be dedicated to different purposes
-       [ISA:1.4].
-       Modeling these aspects
-       (probably via some kind of parameterization of the model)
-       is future work."))
-    :list-type ubyte8-list
-    :length ,*mem32-size*
-    :pred memory32p))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod state32
-  :short "Fixtype of (unprivileged) processor states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This consists of the register file,
-     the program counter
-     (which is an unsigned 32-bit integer, addressing the memory space),
-     and the memory.
-     We also include a flag that is set when there is an error;
-     this is an artifact of the model, not part of the RISC-V standard."))
-  ((xregfile xregfile32)
-   (pc ubyte32)
-   (mem memory32)
-   (error bool))
-  :layout :list
-  :tag :state32
-  :pred state32p
-
-  ///
-
-  (defrule len-of-state32->xregfile
-    (equal (len (state32->xregfile stat))
-           31))
-
-  (defrule len-of-state32->mem
-    (equal (len (state32->mem stat))
-           *mem32-size*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define read32-xreg-unsigned ((reg ubyte5p) (stat state32p))
+(define read32-xreg-unsigned ((reg ubyte5p) (stat stat32ip))
   :returns (val ubyte32p
                 :hints (("Goal" :in-theory (enable ubyte5-fix ubyte5p))))
   :short "Read an unsigned 32-bit integer from an @('x') register."
@@ -142,7 +61,7 @@
   (b* ((reg (ubyte5-fix reg)))
     (if (= reg 0)
         0
-      (nth (1- reg) (state32->xregfile stat))))
+      (nth (1- reg) (stat32i->xregs stat))))
   :hooks (:fix)
 
   ///
@@ -154,7 +73,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-xreg-signed ((reg ubyte5p) (stat state32p))
+(define read32-xreg-signed ((reg ubyte5p) (stat stat32ip))
   :returns (val sbyte32p)
   :short "Read a signed 32-bit integer from an @('x') register."
   :long
@@ -168,8 +87,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write32-xreg ((reg ubyte5p) (val integerp) (stat state32p))
-  :returns (new-stat state32p)
+(define write32-xreg ((reg ubyte5p) (val integerp) (stat stat32ip))
+  :returns (new-stat stat32ip)
   :short "Write a 32-bit integer to an @('x') register."
   :long
   (xdoc::topstring
@@ -189,13 +108,13 @@
      and let this writer function convert the integer for the register."))
   (b* ((reg (ubyte5-fix reg)))
     (if (= reg 0)
-        (state32-fix stat)
-      (change-state32 stat :xregfile (update-nth (1-  reg)
-                                                 (loghead 32 val)
-                                                 (state32->xregfile stat)))))
-  :guard-hints (("Goal" :in-theory (enable xregfile32p
-                                           state32p
-                                           state32->xregfile
+        (stat32i-fix stat)
+      (change-stat32i stat :xregs (update-nth (1-  reg)
+                                              (loghead 32 val)
+                                              (stat32i->xregs stat)))))
+  :guard-hints (("Goal" :in-theory (enable xregs32ip
+                                           stat32ip
+                                           stat32i->xregs
                                            ubyte5p)))
   ///
   (fty::deffixequiv write32-xreg
@@ -203,7 +122,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-pc ((stat state32p))
+(define read32-pc ((stat stat32ip))
   :returns (pc ubyte32p)
   :short "Read the program counter."
   :long
@@ -211,13 +130,13 @@
    (xdoc::p
     "The result is an unsigned 32-bit integer,
      read directly from the register."))
-  (state32->pc stat)
+  (stat32i->pc stat)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write32-pc ((pc integerp) (stat state32p))
-  :returns (new-stat state32p)
+(define write32-pc ((pc integerp) (stat stat32ip))
+  :returns (new-stat stat32ip)
   :short "Write the program counter."
   :long
   (xdoc::topstring
@@ -231,15 +150,15 @@
      and let this writer function convert the integer for the register.
      [ISA:1.4] says that address computations wrap round ignoring overflow,
      i.e. the last address in the address space is adjacent to address 0."))
-  (change-state32 stat :pc (loghead 32 pc))
+  (change-stat32i stat :pc (loghead 32 pc))
   ///
   (fty::deffixequiv write32-pc
     :hints (("Goal" :in-theory (enable loghead)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define inc32-pc ((stat state32p))
-  :returns (new-stat state32p)
+(define inc32-pc ((stat stat32ip))
+  :returns (new-stat stat32ip)
   :short "Increment the program counter."
   :long
   (xdoc::topstring
@@ -257,7 +176,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-mem-ubyte8 ((addr integerp) (stat state32p))
+(define read32-mem-ubyte8 ((addr integerp) (stat stat32ip))
   :returns (val ubyte8p)
   :short "Read an unsigned 8-bit integer from memory."
   :long
@@ -266,7 +185,7 @@
     "The address is any integer, which we turn into a 32-bit unsigned address.
      We return the byte at that memory address, directly."))
   (b* ((addr (loghead 32 addr)))
-    (nth addr (state32->mem stat)))
+    (nth addr (stat32i->memory stat)))
 
   ///
 
@@ -289,7 +208,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-mem-ubyte16-lendian ((addr integerp) (stat state32p))
+(define read32-mem-ubyte16-lendian ((addr integerp) (stat stat32ip))
   :returns (val ubyte16p :hints (("Goal" :in-theory (enable ubyte16p))))
   :short "Read an unsigned 16-bit little endian integer from memory."
   :long
@@ -307,7 +226,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define read32-mem-ubyte32-lendian ((addr integerp) (stat state32p))
+(define read32-mem-ubyte32-lendian ((addr integerp) (stat stat32ip))
   :returns (val ubyte32p :hints (("Goal" :in-theory (enable ubyte32p))))
   :short "Read an unsigned 32-bit little endian integer from memory."
   :long
@@ -327,18 +246,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define write32-mem-ubyte8 ((addr integerp) (val ubyte8p) (stat state32p))
-  :returns (new-stat state32p)
+(define write32-mem-ubyte8 ((addr integerp) (val ubyte8p) (stat stat32ip))
+  :returns (new-stat stat32ip)
   :short "Write an unsigned 8-bit integer to memory."
   :long
   (xdoc::topstring
    (xdoc::p
     "The address is any integer,
      which we turn into a 32-bit unsigned address."))
-  (change-state32 stat :mem (update-nth (loghead 32 addr)
-                                        (ubyte8-fix val)
-                                        (state32->mem stat)))
-  :guard-hints (("Goal" :in-theory (enable memory32p)))
+  (change-stat32i stat :memory (update-nth (loghead 32 addr)
+                                           (ubyte8-fix val)
+                                           (stat32i->memory stat)))
+  :guard-hints (("Goal" :in-theory (enable memory32ip)))
 
   ///
 
@@ -349,8 +268,8 @@
 
 (define write32-mem-ubyte16-lendian ((addr integerp)
                                      (val ubyte16p)
-                                     (stat state32p))
-  :returns (new-stat state32p)
+                                     (stat stat32ip))
+  :returns (new-stat stat32ip)
   :short "Write an unsigned 16-bit little endian integer to memory."
   :long
   (xdoc::topstring
@@ -372,8 +291,8 @@
 
 (define write32-mem-ubyte32-lendian ((addr integerp)
                                      (val ubyte32p)
-                                     (stat state32p))
-  :returns (new-stat state32p)
+                                     (stat stat32ip))
+  :returns (new-stat stat32ip)
   :short "Write an unsigned 32-bit little endian integer to memory."
   :long
   (xdoc::topstring
@@ -395,16 +314,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define error32p ((stat state32p))
+(define error32p ((stat stat32ip))
   :returns (yes/no booleanp)
   :short "Check if the error flag in the state is set."
-  (state32->error stat)
+  (stat32i->error stat)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define error32 ((stat state32p))
-  :returns (new-stat state32p)
+(define error32 ((stat stat32ip))
+  :returns (new-stat stat32ip)
   :short "Set the error flag in the state."
-  (change-state32 stat :error t)
+  (change-stat32i stat :error t)
   :hooks (:fix))

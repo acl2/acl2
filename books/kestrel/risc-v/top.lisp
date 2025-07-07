@@ -19,8 +19,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ riscv
-  :parents (acl2::projects)
-  :short "A library for RISC-V."
+  :parents (acl2::projects acl2::kestrel-books)
+  :short "An ACL2 library for RISC-V."
   :long
   (xdoc::topstring
    (xdoc::p
