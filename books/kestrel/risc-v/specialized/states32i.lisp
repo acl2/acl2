@@ -286,7 +286,13 @@
              stat-validp
              unsigned-byte-p-32-of-nth-of-stat-rv32i->xregs
              acl2::unsigned-byte-listp-rewrite-ubyte32-listp
-             acl2::unsigned-byte-p-rewrite-ubyte32p)))
+             acl2::unsigned-byte-p-rewrite-ubyte32p))
+
+  (defrule ubyte32p-of-read32i-xreg-unsigned
+    (implies (and (natp reg)
+                  (< reg 32))
+             (ubyte32p (read32i-xreg-unsigned reg stat)))
+    :enable (read32i-xreg-unsigned nfix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
