@@ -1241,6 +1241,16 @@
          (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
   :hints (("Goal" :in-theory (enable set-rax))))
 
+(defthm mv-nth-0-of-get-prefixes-of-set-rbx
+  (equal (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rbx rbx x86)))
+         (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rbx))))
+
+(defthm mv-nth-0-of-get-prefixes-of-set-rcx
+  (equal (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rcx rcx x86)))
+         (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rcx))))
+
 (defthm mv-nth-0-of-get-prefixes-of-set-rdx
   (equal (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rdx rdx x86)))
          (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
@@ -1278,6 +1288,16 @@
   (equal (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rax rax x86)))
          (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
   :hints (("Goal" :in-theory (enable set-rax))))
+
+(defthm mv-nth-1-of-get-prefixes-of-set-rbx
+  (equal (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rbx rbx x86)))
+         (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rbx))))
+
+(defthm mv-nth-1-of-get-prefixes-of-set-rcx
+  (equal (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rcx rcx x86)))
+         (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)))
+  :hints (("Goal" :in-theory (enable set-rcx))))
 
 (defthm mv-nth-1-of-get-prefixes-of-set-rdx
   (equal (mv-nth 1 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (set-rdx rdx x86)))

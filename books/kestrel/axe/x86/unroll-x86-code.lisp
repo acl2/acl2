@@ -307,6 +307,8 @@
 (thm (equal (len (step-opener-rules32)) 1))
 (thm (equal (len (step-opener-rules64)) 1))
 
+(defconst *no-warn-ground-functions* '(feature-flag))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -391,6 +393,7 @@
                                   count-hits
                                   print
                                   rules-to-monitor
+                                  *no-warn-ground-functions*
                                   '(program-at) ; fns-to-elide
                                   state)
             ;)
@@ -513,6 +516,7 @@
                                           count-hits
                                           print
                                           rules-to-monitor
+                                          *no-warn-ground-functions*
                                           '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                           state)
                   (declare (ignore limits)) ; todo: use the limits?
@@ -619,6 +623,7 @@
           assumption-rule-alist
           (acl2::known-booleans (w state))
           nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
+          nil ; no-warn-ground-functions
           nil ; don't memoize (avoids time spent making empty-memoizations)
           count-hits
           t   ; todo: warn just once
@@ -741,7 +746,7 @@
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil nil nil state))
-       (- (if position-independentp (cw "Using position-independent lifting.~%") (cw "Using non-position-independent lifting.~%")))
+       (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
        (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
                                         ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
                                         (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
@@ -749,7 +754,7 @@
        (new-canonicalp (or new-style-elf-assumptionsp ; for now
                            (eq :mach-o-64 executable-type)
                            ))
-       (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw "Using new-style ELF64 assumptions.~%")  (cw "Not using new-style ELF64 assumptions.~%"))))
+       (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw " Using new-style ELF64 assumptions.~%")  (cw " Not using new-style ELF64 assumptions.~%"))))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))

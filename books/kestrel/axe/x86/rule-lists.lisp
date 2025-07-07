@@ -950,11 +950,14 @@
     x86isa::prefixes->adr$inline
     x86isa::prefixes->nxt$inline
     ;; x86isa::prefixes->rep$inline-constant-opener ; for floating point?
-
-    x86isa::!prefixes->nxt$inline ; why are these needed?
-    x86isa::!prefixes->num$inline
-    x86isa::!prefixes->opr$inline
+    x86isa::!prefixes->num$inline ; why are these needed?
     x86isa::!prefixes->lck$inline
+    x86isa::!prefixes->rep$inline
+    x86isa::!prefixes->seg$inline
+    x86isa::!prefixes->opr$inline
+    x86isa::!prefixes->adr$inline
+    x86isa::!prefixes->nxt$inline
+
     ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
     X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
     x86isa::!prefixes->seg$inline-constant-opener
@@ -1553,20 +1556,23 @@
     in-region48p-constant-opener
     disjoint-regions48p-constant-opener))
 
+;; too: update this list
 (defund get-prefixes-openers ()
   (declare (xargs :guard t))
-  '(x86isa::get-prefixes-base-1
+  '(;; x86isa::get-prefixes-base-1; error case
     ;; x86isa::get-prefixes-base-2 ; error case
     ;; x86isa::get-prefixes-base-3 ; error case
     x86isa::get-prefixes-base-4
     ;; x86isa::get-prefixes-base-5 ; error case
-    x86isa::get-prefixes-base-6
+    ;; x86isa::get-prefixes-base-6 ; error case
     ;; x86isa::get-prefixes-base-7 ; error case
     ;; x86isa::get-prefixes-base-8 ; error case
+    ;; x86isa::get-prefixes-base-9 ; error case
     x86isa::get-prefixes-unroll-1
     x86isa::get-prefixes-unroll-2
     x86isa::get-prefixes-unroll-3
     x86isa::get-prefixes-unroll-4
+    x86isa::get-prefixes-unroll-5
     ;; x86isa::get-prefixes-opener-lemma-no-prefix-byte
     ;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple
     ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple
@@ -1631,10 +1637,13 @@
     segment-base-and-bounds-of-write-byte-to-segment))
 
 ;; are these only for making failures clearer?
+;; todo: more?
 (defund get-prefixes-rules64 ()
   (declare (xargs :guard t))
   '(mv-nth-0-of-get-prefixes-of-set-rip
     mv-nth-0-of-get-prefixes-of-set-rax
+    mv-nth-0-of-get-prefixes-of-set-rbx
+    mv-nth-0-of-get-prefixes-of-set-rcx
     mv-nth-0-of-get-prefixes-of-set-rdx
     mv-nth-0-of-get-prefixes-of-set-rsi
     mv-nth-0-of-get-prefixes-of-set-rdi
@@ -1642,6 +1651,8 @@
     mv-nth-0-of-get-prefixes-of-set-rbp
     mv-nth-1-of-get-prefixes-of-set-rip
     mv-nth-1-of-get-prefixes-of-set-rax
+    mv-nth-1-of-get-prefixes-of-set-rbx
+    mv-nth-1-of-get-prefixes-of-set-rcx
     mv-nth-1-of-get-prefixes-of-set-rdx
     mv-nth-1-of-get-prefixes-of-set-rsi
     mv-nth-1-of-get-prefixes-of-set-rdi

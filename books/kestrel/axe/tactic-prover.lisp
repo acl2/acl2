@@ -344,6 +344,7 @@
                              t ; count-hits ; todo: pass in
                              print
                              monitor
+                             nil ; no-warn-ground-functions
                              nil ; fns-to-elide
                              ))
        ((when erp) (mv *error* nil state))
@@ -595,6 +596,7 @@
                             nil ; count-hits
                             print
                             monitor ; monitored-symbols
+                            nil ; no-warn-ground-functions
                             nil ; fns-to-elide
                             ))
        ((when erp) (mv *error* nil state))

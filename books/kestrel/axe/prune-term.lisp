@@ -272,6 +272,7 @@
                              nil ; count-hits
                              nil ; print
                              monitored-rules
+                             nil ; no-warn-ground-functions
                              nil ; fns-to-elide
                              ))
        ((when erp)
