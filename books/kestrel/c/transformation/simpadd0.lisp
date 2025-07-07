@@ -2214,9 +2214,13 @@
    (xdoc::p
     "We put the optional expression into an expression statement.")
    (xdoc::p
-    "We generate a theorem if there is no expression,
-     i.e. if we have the null statement."))
-  (declare (ignore expr?-thm-name))
+    "We generate a theorem if there is no expression
+     or if there is an assignment expression
+     for which a theorem was generated.
+     When instantiating the theorem for the assignment expression,
+     we use @(':extra-bindings-ok') because
+     that theorem may be a dummy @('t')
+     (see @(tsee simpadd0-gen-expr-asg-thm))."))
   (b* (((simpadd0-gin gin) gin)
        (stmt (stmt-expr expr?))
        (stmt-new (stmt-expr expr?-new))
@@ -2232,7 +2236,9 @@
         (raise "Internal error: ~
                 unchanged return statement marked as changed.")
         (mv (irr-stmt) (irr-simpadd0-gout)))
-       ((when expr?)
+       ((unless (or (not expr?)
+                    (and expr?-thm-name
+                         (not (expr-purep expr?)))))
         (mv stmt-new
             (make-simpadd0-gout
              :events expr?-events
@@ -2241,10 +2247,34 @@
              :names-to-avoid gin.names-to-avoid
              :vartys expr?-vartys
              :diffp expr?-diffp)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-stmt)
-                              (:e c::stmt-null))
-                 :use simpadd0-stmt-null-support-lemma)))
+       (hints
+        (if expr?
+            `(("Goal"
+               :in-theory '((:e ldm-stmt)
+                            (:e ldm-expr)
+                            (:e ident)
+                            (:e c::expr-kind)
+                            (:e c::stmt-expr))
+               :use ((:instance
+                      ,expr?-thm-name
+                      :extra-bindings-ok
+                      (limit (- limit 2)))
+                     (:instance
+                      simpadd0-stmt-expr-asg-support-lemma
+                      (old-expr (mv-nth 1 (ldm-expr ',expr?)))
+                      (new-expr (mv-nth 1 (ldm-expr ',expr?-new)))
+                      ,@(and (not expr?-diffp)
+                             '((old-fenv fenv)
+                               (new-fenv fenv))))
+                     (:instance
+                      simpadd0-stmt-expr-asg-support-lemma-error
+                      (expr (mv-nth 1 (ldm-expr ',expr?)))
+                      ,@(and expr?-diffp
+                             '((fenv old-fenv)))))))
+          `(("Goal"
+             :in-theory '((:e ldm-stmt)
+                          (:e c::stmt-null))
+             :use simpadd0-stmt-null-support-lemma))))
        ((mv thm-event thm-name thm-index)
         (simpadd0-gen-stmt-thm stmt
                                stmt-new
@@ -2273,7 +2303,37 @@
          ((mv result &) (c::exec-stmt stmt compst fenv limit)))
       (implies (not (c::errorp result))
                (not result)))
-    :enable c::exec-stmt))
+    :enable c::exec-stmt)
+
+  (defruled simpadd0-stmt-expr-asg-support-lemma
+    (b* ((old (c::stmt-expr old-expr))
+         (new (c::stmt-expr new-expr))
+         (old-expr-compst (c::exec-expr-asg
+                           old-expr compst old-fenv (- limit 2)))
+         (new-expr-compst (c::exec-expr-asg
+                           new-expr compst new-fenv (- limit 2)))
+         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
+      (implies (and (not (equal (c::expr-kind old-expr) :call))
+                    (not (equal (c::expr-kind new-expr) :call))
+                    (not (c::errorp old-result))
+                    (not (c::errorp new-expr-compst))
+                    (equal old-expr-compst new-expr-compst))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (not old-result))))
+    :expand ((c::exec-stmt (c::stmt-expr old-expr) compst old-fenv limit)
+             (c::exec-stmt (c::stmt-expr new-expr) compst new-fenv limit))
+    :enable (c::exec-expr-call-or-asg))
+
+  (defruled simpadd0-stmt-expr-asg-support-lemma-error
+    (implies (and (not (equal (c::expr-kind expr) :call))
+                  (c::errorp (c::exec-expr-asg expr compst fenv (- limit 2))))
+             (c::errorp
+              (mv-nth 0 (c::exec-stmt (c::stmt-expr expr) compst fenv limit))))
+    :expand (c::exec-stmt (c::stmt-expr expr) compst fenv limit)
+    :enable c::exec-expr-call-or-asg))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
