@@ -488,6 +488,8 @@
     ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
     ;; bvminus-convert-arg3-to-bv-axe
     bvuminus-convert-arg2-to-bv-axe
+    bvnot-convert-arg2-to-bv-axe
+    bitnot-convert-arg1-to-bv-axe
     bvand-convert-arg2-to-bv-axe
     bvand-convert-arg3-to-bv-axe
     bvor-convert-arg2-to-bv-axe
@@ -512,6 +514,8 @@
     bvplus-of-logext-arg3-convert-to-bv
     bvminus-of-logext-arg2-convert-to-bv
     bvminus-of-logext-arg3-convert-to-bv
+    bool->bit$inline ; todo: handle better?
+    acl2::logbitp-to-getbit-equal-1
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
