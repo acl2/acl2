@@ -2207,6 +2207,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd bvnot-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvnot size x)
+                  (bvnot size (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bitnot-convert-arg1-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bitnot x)
+                  (bitnot (trim 1 x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthmd bvand-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvand size x y)
