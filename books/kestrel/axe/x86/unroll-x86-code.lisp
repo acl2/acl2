@@ -60,6 +60,7 @@
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "../arithmetic-rules-axe")
+(include-book "../convert-to-bv-rules-axe")
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
 (include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
 (include-book "../evaluator") ; todo: this book has skip-proofs
