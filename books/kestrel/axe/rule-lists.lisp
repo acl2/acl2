@@ -496,7 +496,18 @@
     bvor-convert-arg3-to-bv-axe
     bvxor-convert-arg2-to-bv-axe
     bvxor-convert-arg3-to-bv-axe
+    bitand-convert-arg1-to-bv-axe
+    bitand-convert-arg2-to-bv-axe
+    bitor-convert-arg1-to-bv-axe
+    bitor-convert-arg2-to-bv-axe
+    bitxor-convert-arg1-to-bv-axe
+    bitxor-convert-arg2-to-bv-axe
     getbit-convert-arg2-to-bv-axe
+    bvif-convert-arg3-to-bv-axe
+    bvif-convert-arg4-to-bv-axe
+    bvshl-convert-arg2-to-bv-axe
+    bvshr-convert-arg2-to-bv-axe
+    bvashr-convert-arg2-to-bv-axe
     ;bvcat-convert-arg2-to-bv-axe ; todo: these seemed to cause problems
     ;bvcat-convert-arg4-to-bv-axe ; todo: more!
     ;slice-convert-arg3-to-bv-axe caused-problems with increments to RSP
