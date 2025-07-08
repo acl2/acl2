@@ -193,23 +193,23 @@ of proofs.")
   :short "The ACL2 Community."
   :long "<p>ACL2 has an active user community that welcomes new users.  There are several ways to get involved.</p>
 
-<h3>GitHub Project</h3>
-<p>ACL2 is developed via <a href=\"https://github.com/acl2/acl2\">the ACL2 GitHub project</a>, which also contains the ACL2 libraries maintained by the community (see @(see community-books)).  The GitHub repository is very active, with thousands of commits per year.  Users are invited to contribute new developments, usually in the form of new @(see books) (collections of definitions, proofs, etc.), so that the community can benefit from them.  Collaboration occurs via <a href=\"https://github.com/acl2/acl2/pulls\">Pull Requests</a> and <a href=\"https://github.com/acl2/acl2/issues\">GitHub Issues</a>.  See also @(see git-quick-start).</p>
+ <h3>GitHub Project</h3>
+ <p>ACL2 is developed via <a href=\"https://github.com/acl2/acl2\">the ACL2 GitHub project</a>, which also contains the ACL2 libraries maintained by the community (see @(see community-books)).  The GitHub repository is very active, with thousands of commits per year.  Users are invited to contribute new developments, in the form of new @(see books) (collections of definitions, proofs, etc.), so that the community can benefit from them.  See @(see how-to-contribute), and see @(see git-quick-start).  Problems with ACL2 or with books can be reported as <a href=\"https://github.com/acl2/acl2/issues\">GitHub Issues</a>.</p>
 
-<h3>Mailing Lists</h3>
-<p>We maintain several mailing lists for ACL2 announcements, discussions, and questions (see @(see mailing-lists)).</p>
+ <h3>Mailing Lists</h3>
+ <p>We maintain several mailing lists for ACL2 announcements, discussions, and questions (see @(see mailing-lists)).</p>
 
-<h3>Zulip Chat</h3>
-<p>Zulip is a chat application similar to Slack.  We use it to discuss many ACL2 topics and to help each other with ACL2 issues.   It is accessible at <a href=\"https://acl2.zulip.kestrel.institute\">this page</a> or via the Zulip desktop or mobile app.  Email Eric Smith at @('eric.smith@kestrel.edu') for an invitation.  As an anti-spam measure, please include in your email a sentence or two about how you heard about ACL2 and/or how you plan to use it.</p>
+ <h3>Zulip Chat</h3>
+ <p>Zulip is a chat application similar to Slack.  We use it to discuss many ACL2 topics and to help each other with ACL2 issues.   It is accessible at <a href=\"https://acl2.zulip.kestrel.institute\">this page</a> or via the Zulip desktop or mobile app.  Email Eric Smith at @('eric.smith@kestrel.edu') for an invitation.  As an anti-spam measure, please include in your email a sentence or two about how you heard about ACL2 and/or how you plan to use it.</p>
 
-<h3>ACL2 Workshops</h3>
-<p>ACL2 users gather to present their work at the ACL2 Workshops, which have taken place approximately every 18 months since 1999.  See @(see workshops) for more information.</p>
+ <h3>ACL2 Workshops</h3>
+ <p>ACL2 users gather to present their work at the ACL2 Workshops, which have taken place approximately every 18 months since 1999.  See @(see workshops) for more information.</p>
 
-<h3>The 100 Theorems page</h3>
-<p>We maintain a list of the theorems from the <a href=\"https://www.cs.ru.nl/~freek/100/\">Formalizing 100 Theorems</a> page that have been proved in ACL2.  See @(see 100-theorems).  Users are invited to attempt to prove additional theorems from the list, though this may be challenging!</p>
+ <h3>The 100 Theorems page</h3>
+ <p>We maintain a list of the theorems from the <a href=\"https://www.cs.ru.nl/~freek/100/\">Formalizing 100 Theorems</a> page that have been proved in ACL2.  See @(see 100-theorems).  Users are invited to attempt to prove additional theorems from the list, though this may be challenging!</p>
 
-<h3>Stack Exchange</h3>
-<p>The <a href=\"https://proofassistants.stackexchange.com/questions/tagged/acl2\">Proof Assistants Stack Exchange</a> has some questions and answers about ACL2, but the ACL2 Zulip (see above) and @('acl2-help') mailing list (see above, under Mailing Lists) are more popular.</p>")
+ <h3>Stack Exchange</h3>
+ <p>The <a href=\"https://proofassistants.stackexchange.com/questions/tagged/acl2\">Proof Assistants Stack Exchange</a> has some questions and answers about ACL2, but the ACL2 Zulip (see above) and @('acl2-help') mailing list (see above, under Mailing Lists) are more popular.</p>")
 
 (defxdoc workshops
   :parents (community)
@@ -372,4 +372,3 @@ href='http://www.cs.utexas.edu/users/hunt/FMCAD/FMCAD15/index.shtml'>FMCAD
  specifically, in its <a
  href='https://github.com/acl2/acl2/tree/master/books/workshops/'>subdirectory
  for workshop contributions</a>.</p>")
-
