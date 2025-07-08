@@ -7,7 +7,7 @@
 ;
 ; Author: Eric McCarthy (bendyarm on GitHub)
 
-(In-package "R1CS")
+(in-package "R1CS")
 
 (include-book "kestrel/crypto/r1cs/sparse/r1cs" :dir :system)
 
