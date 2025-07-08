@@ -5811,6 +5811,11 @@
             cf-spec16-becomes-getbit ; cf-spec16$inline
             cf-spec32-becomes-getbit ; cf-spec32$inline
             cf-spec64-becomes-getbit ; cf-spec64$inline
+            pf-spec8$inline ; these expose logcount, which logcount-opener-8 then opens
+            pf-spec16$inline
+            pf-spec32$inline
+            pf-spec64$inline
+            logcount-opener-8 ; improve?
             sf-spec8-becomes-getbit
             sf-spec16-becomes-getbit
             sf-spec32-becomes-getbit
