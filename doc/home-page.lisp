@@ -38,10 +38,10 @@
                  (topic-to-url-list url (cdr chars) (cdr names))))))
 
 (defconst *combined-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/")
+  "https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/")
 
 (defconst *bleeding-edge-manual*
-  "http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/")
+  "https://www.cs.utexas.edu/users/moore/acl2/manuals/latest/")
 
 (defconst *home-page-references*
   '(tours                               ;;; a
@@ -52,7 +52,7 @@
     books                               ;;; f
     note-8-6                            ;;; g   ; current release notes
     the-method                          ;;; h
-    introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
+    git-quick-start                     ;;; i
     interesting-applications            ;;; j
     acknowledgments                     ;;; k
     real                                ;;; l
@@ -67,6 +67,9 @@
     git-quick-start                     ;;; u
     talks                               ;;; v
     start-here                          ;;; w
+    publications                        ;;; x
+    mailing-lists                       ;;; y
+    installation                        ;;; z
   ))
 
 (defconst *home-page*
@@ -217,11 +220,11 @@ entry is left blank.
 
 <tr>
 <td align=center valign=MIDDLE>
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PUBLICATIONS\">
+<a href=\"~sx\">
 <img src=\"HTML/doc03.gif\" alt=\"papers icon\" border=0></a>
 </td>
 <td>
-<a href=\"http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PUBLICATIONS\">
+<a href=\"~sx\">
 Publications about ACL2 and Its Applications</a>
 </td>
 
@@ -243,11 +246,11 @@ and <a href=\"http://www.cs.utexas.edu/users/moore/publications/hyper-card.html\
 </td>
 
 <td align=center valign=MIDDLE>
-<a href=\"HTML/installation/misc.html#Addresses\"><img
+<a href=\"~sy\"><img
 src=\"HTML/mailbox1.gif\" alt=\"mailbox icon\"  border=0></a>
 </td>
 <td>
-<a href=\"HTML/installation/misc.html#Addresses\">Mailing Lists</a>
+<a href=\"~sy\">Mailing Lists</a>
 </td>
 </tr>
 
@@ -261,11 +264,11 @@ src=\"HTML/mailbox1.gif\" alt=\"mailbox icon\"  border=0></a>
 Recent changes to this page</a>
 </td>
 <td align=center valign=MIDDLE>
-<a href=\"HTML/installation/installation.html\"><img src=\"HTML/ftp2.gif\"
+<a href=\"~sz\"><img src=\"HTML/ftp2.gif\"
 alt=\"FTP icon\" border=0></a>
 </td>
 <td>
-<a href=\"HTML/installation/installation.html\">Obtaining, Installing, and License</a>
+<a href=\"~sz\">Obtaining, Installing, and License</a>
 </td>
 
 </tr>
@@ -383,7 +386,7 @@ href=\"~ss\">DOCUMENTATION</a></CODE>.
 <li><a href=\"~s2\">ACL2+Books Manual</a> (Version 8.6)</li>
 
 <li><a href=\"~s3\">ACL2+Books Manual</a> (for
-<a href=\"HTML/installation/obtaining-and-installing.html#GitHub\">GitHub</a> distributions)</li>
+<a href=\"~si\">GitHub</a> distributions)</li>
 
 </ul>
 
@@ -414,12 +417,11 @@ some books contain ACL2 tools built by users to help with reasoning,
 programming, interfaces, debugging, and testing; see <a
 href='http://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html'>
 the documentation</a>.  Some relevant papers may be found by following links in
-the pages on <a
-href='http://www.cs.utexas.edu/users/moore/acl2/manuals/current/manual/index.html?topic=ACL2____PUBLICATIONS'>
-Books and Papers about ACL2 and Its Applications</a> and the <a
+the pages on <a href='~sx'> Books and Papers about ACL2 and Its
+Applications</a> and the <a
 href='http://www.cs.utexas.edu/users/moore/acl2/workshops.html'>ACL2 Workshops
-Series</a>.  The <a href=\"HTML/installation/installation.html\">installation
-instructions</a> explain how to download and install the community books.
+Series</a>.  The <a href=\"~sz\">installation instructions</a> explain how to
+download and install the community books.
 
 <p>
 
@@ -447,7 +449,7 @@ href=\"http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/\">ACL2
 Manual</a> allow you to search the short strings of the documentation (which
 are typically summaries of a line or so).  To search the full content for a
 string or regular expression, you may use the Emacs-based <a
-href=\"manual/index.html?topic=ACL2____ACL2-DOC\">ACL2-Doc browser</a>.
+href=\"~so\">ACL2-Doc browser</a>.
 
 <br><br>
 <hr>
