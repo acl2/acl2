@@ -36,6 +36,7 @@
 (include-book "list-rules-axe") ;for BOOLEANP-OF-ITEMS-HAVE-LEN
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe") ;for BVPLUS-COMMUTATIVE-AXE, etc
+(include-book "convert-to-bv-rules-axe")
 (include-book "bv-intro-rules")
 (include-book "bv-list-rules-axe") ;for BVXOR-LIST-BASE
 (include-book "bv-array-rules-axe") ;for CONS-OF-BV-ARRAY-WRITE-GEN -- drop?
