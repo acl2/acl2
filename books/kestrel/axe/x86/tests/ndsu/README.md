@@ -12,6 +12,7 @@ gcc add-commutative.c -o add-commutative.elf64
 
 gcc and-CF.c -o and-CF.elf64
 gcc and-OF.c -o and-OF.elf64
+gcc and-PF.c -o and-PF.elf64
 gcc and-SF.c -o and-SF.elf64
 gcc and-ZF.c -o and-ZF.elf64
 

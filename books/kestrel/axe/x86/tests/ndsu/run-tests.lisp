@@ -28,6 +28,9 @@
 ;; (depends-on "and-OF.elf64")
 (test-file "and-OF.elf64")
 
+;; (depends-on "and-PF.elf64")
+;; todo: (test-file "and-PF.elf64")
+
 ;; (depends-on "and-SF.elf64")
 (test-file "and-SF.elf64")
 

@@ -1098,3 +1098,54 @@
                   (putbit 32 5 res3 rflags)))
   :hints (("Goal" :in-theory (enable !rflagsbits->res3
                                      rflagsbits-fix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: express in terms of bvcount?
+(include-book "projects/x86isa/machine/rflags-spec" :dir :system)
+
+;move
+(local
+  (defthmd logcdr-becomes-logtail
+    (equal (acl2::logcdr x)
+           (logtail 1 x))
+    :hints (("Goal" :in-theory (enable logtail acl2::logcdr)))))
+
+(defthmd logcount-opener-8
+  (implies (unsigned-byte-p 8 x)
+           (equal (logcount x)
+                  (+ (getbit 0 x)
+                     (getbit 1 x)
+                     (getbit 2 x)
+                     (getbit 3 x)
+                     (getbit 4 x)
+                     (getbit 5 x)
+                     (getbit 6 x)
+                     (getbit 7 x))))
+  :hints (("Goal" :expand ((logcount x)
+                           (logcount (logtail 1 x))
+                           (logcount (logtail 2 x))
+                           (logcount (logtail 3 x))
+                           (logcount (logtail 4 x))
+                           (logcount (logtail 5 x))
+                           (logcount (logtail 6 x))
+                           (logcount (logtail 7 x)))
+           :in-theory (e/d (zp acl2::logcar logcdr-becomes-logtail)
+                           ((:i x86isa::bitcount8)
+                            bitops::logcdr-of-+
+                            acl2::logcount**)))))
+
+;; (defthm x86isa::bitcount8-opener
+;;   (implies (unsigned-byte-p 8 x)
+;;            (equal (x86isa::bitcount8 x)
+;;                   (+ (getbit 0 x)
+;;                      (getbit 1 x)
+;;                      (getbit 2 x)
+;;                      (getbit 3 x)
+;;                      (getbit 4 x)
+;;                      (getbit 5 x)
+;;                      (getbit 6 x)
+;;                      (getbit 7 x))))
+;;   :hints (("Goal" :in-theory (e/d (logcount-opener-8
+;;                                    x86isa::bitcount8-and-logcount)
+;;                                   (x86isa::bitcount8)))))
