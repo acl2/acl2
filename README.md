@@ -83,11 +83,7 @@ git clone https://github.com/acl2/acl2 .
 
 See the documentation for [how to contribute][how-to-contribute].
 
-Even though we have merged the Community Books (formerly acl2-books) and
-ACL2 System (formerly acl2-devel) repositories into one, changes should
-be made only to the `books/` subdirectory unless you are Matt Kaufmann
-or J Moore, since everything outside `books/` is part of the ACL2
-system.  An [automated testing mechanism][jenkins] vets user
+An [automated testing mechanism][jenkins] vets user
 contributions.
 
 [how-to-contribute]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____HOW-TO-CONTRIBUTE
