@@ -1303,13 +1303,21 @@
     x86isa::sib->index
     x86isa::sib->scale
 
-    ))
+    x86isa::bitcount8))
 
 (defconst *symbols-from-acl2-package*
   '(loghead
     loghead$inline
-    logapp
+    logtail
+    logtail$inline
+    logcar
+    logcar$inline
+    logcdr
+    logcdr$inline
+
+    logapp ; not inline
     logmask
+    logmask$inline
 
     expt2$inline ; from IHS
 
@@ -1337,7 +1345,6 @@
     sbvdiv
     bvmod
     sbvrem
-    logtail
     slice ;note that we don't get the slice from x86isa
     putbits
     putbit
@@ -1347,6 +1354,8 @@
 
     bool->bit$inline
     bool->bit
+    bit->bool$inline
+    bit->bool
     boolif
     boolor
     booland
