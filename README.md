@@ -83,11 +83,7 @@ git clone https://github.com/acl2/acl2 .
 
 See the documentation for [how to contribute][how-to-contribute].
 
-An [automated testing mechanism][jenkins] vets user
-contributions.
-
 [how-to-contribute]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____HOW-TO-CONTRIBUTE
-[jenkins]: ./books/build/jenkins/README.md
 
 ### Staying Informed
 
