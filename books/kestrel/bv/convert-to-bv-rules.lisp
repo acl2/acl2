@@ -28,7 +28,7 @@
 (local (include-book "logior-b"))
 (local (include-book "logand-b"))
 
-;; Step 1: These rules do Step 1 of the conversion by inserting calls of trim.  (Axe has
+;; Step 1: These rules begin the conversion by inserting calls of trim.  (Axe has
 ;; its own version of such rules, since they use complex syntaxp hyps.  See
 ;; books/kestrel/axe/bv-rules-axe.lisp.)
 
@@ -46,11 +46,43 @@
                   (bvplus size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthmd bvshr-convert-arg2-to-bv
   (implies (syntaxp (and (consp x)
                          (member-eq (ffn-symb x) *functions-convertible-to-bv*)))
            (equal (bvshr size x shift-amount)
                   (bvshr size (trim size x) shift-amount)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvcat-convert-arg2-to-bv
+  (implies (syntaxp (and (consp high)
+                         (member-eq (ffn-symb high) *functions-convertible-to-bv*)))
+           (equal (bvcat highsize high lowsize low)
+                  (bvcat highsize (trim highsize high) lowsize low)))
+  :hints (("Goal" :in-theory (enable trim bvcat))))
+
+(defthmd bvcat-convert-arg4-to-bv
+  (implies (and (syntaxp (and (consp low)
+                              (member-eq (ffn-symb low) *functions-convertible-to-bv*)))
+                (integerp lowsize))
+           (equal (bvcat highsize high lowsize low)
+                  (bvcat highsize high lowsize (trim lowsize low))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd slice-convert-arg3-to-bv
+  (implies (and (syntaxp (and (consp x)
+                              (member-eq (ffn-symb x) *functions-convertible-to-bv*)
+                              (quotep high)
+                              (quotep low)))
+                (natp high)
+                (natp low))
+           (equal (slice high low x)
+                  (slice high low (trim (+ 1 high) x))))
   :hints (("Goal" :in-theory (enable trim))))
 
 ;; TODO: Add more of these, baseed on axe/bv-rules-axe.lisp.
@@ -88,18 +120,18 @@
                   (bvplus size x y)))
   :hints (("Goal" :in-theory (enable trim bvplus))))
 
+(defthmd trim-of-unary---becomes-bvuminus
+  (implies (integerp x)
+           (equal (trim size (- x))
+                  (bvuminus size x)))
+  :hints (("Goal" :in-theory (enable trim bvuminus))))
+
 (defthmd trim-of-*-becomes-bvmult
   (implies (and (integerp x)
                 (integerp y))
            (equal (trim size (* x y))
                   (bvmult size x y)))
   :hints (("Goal" :in-theory (enable trim bvmult))))
-
-(defthmd trim-of-unary---becomes-bvuminus
-  (implies (integerp x)
-           (equal (trim size (- x))
-                  (bvuminus size x)))
-  :hints (("Goal" :in-theory (enable trim bvuminus))))
 
 ;; not needed because (- x y) translates to a call of +
 ;; (defthmd trim-of---becomes-bvminus
@@ -110,31 +142,3 @@
 ;;   :hints (("Goal" :in-theory (enable trim bvminus))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthmd bvcat-convert-arg2-to-bv
-  (implies (syntaxp (and (consp high)
-                         (member-eq (ffn-symb high) *functions-convertible-to-bv*)))
-           (equal (bvcat highsize high lowsize low)
-                  (bvcat highsize (trim highsize high) lowsize low)))
-  :hints (("Goal" :in-theory (enable trim bvcat))))
-
-(defthmd bvcat-convert-arg4-to-bv
-  (implies (and (syntaxp (and (consp low)
-                              (member-eq (ffn-symb low) *functions-convertible-to-bv*)))
-                (integerp lowsize))
-           (equal (bvcat highsize high lowsize low)
-                  (bvcat highsize high lowsize (trim lowsize low))))
-  :hints (("Goal" :in-theory (enable trim))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthmd slice-convert-arg3-to-bv
-  (implies (and (syntaxp (and (consp x)
-                              (member-eq (ffn-symb x) *functions-convertible-to-bv*)
-                              (quotep high)
-                              (quotep low)))
-                (natp high)
-                (natp low))
-           (equal (slice high low x)
-                  (slice high low (trim (+ 1 high) x))))
-  :hints (("Goal" :in-theory (enable trim))))
