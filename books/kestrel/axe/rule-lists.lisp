@@ -532,8 +532,9 @@
     bvplus-of-logext-arg3-convert-to-bv
     bvminus-of-logext-arg2-convert-to-bv
     bvminus-of-logext-arg3-convert-to-bv
-    bool->bit$inline ; todo: handle better?
-    acl2::logbitp-to-getbit-equal-1
+    bool->bit-becomes-bool-to-bit
+    bit->bool-becomes-bit-to-bool
+    acl2::logbitp-to-getbit-equal-1 ;rename
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
