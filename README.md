@@ -33,14 +33,10 @@ System.  As the name suggests, they are updated by the ACL2 community.
   is updated reasonably frequently and corresponds to the development
   version of ACL2 and its books.
 
-- Finally there is the more compact [ACL2-only manual][base-manual]
-  which only documents the ACL2 system itself and not any books.
-
 Each of these manuals can be downloaded for offline use by clicking the
 download button on the right hand side of the upper toolbar while
 browsing the manual.
 
-[base-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/manual/index.html
 [full-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html
 [dev-manual]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html
 
