@@ -370,13 +370,13 @@
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvdiv size x y)
                   (bvdiv size (trim size x) y)))
-  :hints (("Goal" :in-theory (enable trim))))
+  :hints (("Goal" :in-theory (enable bvdiv trim))))
 
 (defthmd bvdiv-convert-arg3-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvdiv size x y)
                   (bvdiv size x (trim size y))))
-  :hints (("Goal" :in-theory (enable trim))))
+  :hints (("Goal" :in-theory (enable bvdiv trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

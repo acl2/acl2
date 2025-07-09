@@ -74,7 +74,7 @@
 (defthm unsigned-byte-p-forced-of-bvdiv
   (equal (unsigned-byte-p-forced size (bvdiv size x y))
          (natp size))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
+  :hints (("Goal" :in-theory (enable bvdiv unsigned-byte-p-forced))))
 
 (defthm unsigned-byte-p-forced-of-bvmod
   (equal (unsigned-byte-p-forced size (bvmod size x y))
