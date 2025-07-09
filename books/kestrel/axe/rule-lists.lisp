@@ -508,6 +508,14 @@
     bvshl-convert-arg2-to-bv-axe
     bvshr-convert-arg2-to-bv-axe
     bvashr-convert-arg2-to-bv-axe
+    bvlt-convert-arg2-to-bv-axe
+    bvlt-convert-arg3-to-bv-axe
+    sbvlt-convert-arg2-to-bv-axe
+    sbvlt-convert-arg3-to-bv-axe
+    bvdiv-convert-arg2-to-bv-axe
+    bvdiv-convert-arg3-to-bv-axe
+    bvmod-convert-arg2-to-bv-axe
+    bvmod-convert-arg3-to-bv-axe
     ;bvcat-convert-arg2-to-bv-axe ; todo: these seemed to cause problems
     ;bvcat-convert-arg4-to-bv-axe ; todo: more!
     ;slice-convert-arg3-to-bv-axe caused-problems with increments to RSP
