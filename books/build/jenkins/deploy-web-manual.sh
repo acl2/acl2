@@ -115,6 +115,7 @@ echo "cd $destdir/manual"
 cd $destdir/manual
 
 perl "$destdir/manual/xdata2sql.pl"
+perl "$destdir/manual/xdata2sql4seo.pl"
 
 # Configure the XDATAGET parameter.
 printf "var XDATAGET = \"/cgi-bin/manuals/$destdirsub/xdataget.pl\";\nvar XDOCTITLE = \"XDOC\";\n" > "$destdir/manual/config.js"
