@@ -81,7 +81,7 @@ git clone https://github.com/acl2/acl2 .
 
 ### Contributing
 
-See the documentation for [how to contribute][git tips].
+See the documentation for [how to contribute][how-to-contribute].
 
 Even though we have merged the Community Books (formerly acl2-books) and
 ACL2 System (formerly acl2-devel) repositories into one, changes should
@@ -92,7 +92,7 @@ emailed to [Matt or J](mailto:kaufmann@cs.utexas.edu), as has been done
 in the past.)  An [automated testing mechanism][jenkins] vets user
 contributions.
 
-[git tips]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____GIT-QUICK-START
+[how-to-contribute]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____HOW-TO-CONTRIBUTE
 [jenkins]: ./books/build/jenkins/README.md
 
 ### Staying Informed
