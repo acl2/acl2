@@ -138,3 +138,6 @@
 
 ;; (depends-on "add-r32-m32.elf64")
 (test-file "add-r32-m32.elf64")
+
+;; (depends-on "add-imm.macho64")
+(test-file "add-imm.macho64")
