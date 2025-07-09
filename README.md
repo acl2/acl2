@@ -87,9 +87,7 @@ Even though we have merged the Community Books (formerly acl2-books) and
 ACL2 System (formerly acl2-devel) repositories into one, changes should
 be made only to the `books/` subdirectory unless you are Matt Kaufmann
 or J Moore, since everything outside `books/` is part of the ACL2
-system.  (If you have suggestions for system changes, they should be
-emailed to [Matt or J](mailto:kaufmann@cs.utexas.edu), as has been done
-in the past.)  An [automated testing mechanism][jenkins] vets user
+system.  An [automated testing mechanism][jenkins] vets user
 contributions.
 
 [how-to-contribute]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____HOW-TO-CONTRIBUTE
