@@ -35,9 +35,8 @@
 
 ;; TODO: allow the widths to differ
 (defthm bvshl-of-bvchop
-  (implies (natp k)
-           (equal (bvshl width (bvchop width x) k)
-                  (bvshl width x k)))
+  (equal (bvshl width (bvchop width x) k)
+         (bvshl width x k))
   :hints (("Goal" :in-theory (enable bvshl))))
 
 (defthm integerp-of-bvshl
