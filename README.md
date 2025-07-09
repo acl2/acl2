@@ -87,11 +87,11 @@ See the documentation for [how to contribute][how-to-contribute].
 
 ### Staying Informed
 
-We invite anyone who is using this repository to join the [acl2-books
-mailing list][acl2-books], which receives commit messages and other
-discussion related to ACL2 system- and book-related development.
+We encourage users of ACL2 to join our [mailing lists][mailing-lists]
+and take advantage of other [ACL2 Community resources][community].
 
-[acl2-books]: http://groups.google.com/group/acl2-books
+[mailing-lists]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____MAILING-LISTS
+[community]: http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html?topic=ACL2____COMMUNITY
 
 ### Contributors Wanted!
 
