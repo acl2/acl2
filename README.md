@@ -25,19 +25,17 @@ System.  As the name suggests, they are updated by the ACL2 community.
 
 ### Documentation
 
-- The [Combined ACL2 + Books Manual][full-manual] has extensive
-  documentation for the latest stable version of ACL2 and many of the
-  community books that come with it.
+- The [Combined ACL2 + Books Manual][dev-manual] is updated frequently
+  to track the latest changes to this repository.
 
-- There is also a [development version][dev-manual] of the manual which
-  is updated reasonably frequently and corresponds to the development
-  version of ACL2 and its books.
+- If you are instead using official, released Version 8.6 of ACL2, see
+  the [Version 8.6 Manual][release-manual] instead.
 
 Each of these manuals can be downloaded for offline use by clicking the
 download button on the right hand side of the upper toolbar while
 browsing the manual.
 
-[full-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html
+[release-manual]: http://www.cs.utexas.edu/users/moore/acl2/current/combined-manual/index.html
 [dev-manual]:  http://www.cs.utexas.edu/users/moore/acl2/manuals/latest/index.html
 
 ### Obtaining the Source Code
