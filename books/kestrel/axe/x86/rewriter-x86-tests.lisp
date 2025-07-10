@@ -28,6 +28,7 @@
                                               (count-hits 't)
                                               (print 't)
                                               (monitored-symbols 'nil)
+                                              (no-warn-ground-functions 'nil)
                                               (fns-to-elide 'nil))
   `(acl2::simplify-term-to-term-x86 ,term
                                     ,assumptions
@@ -40,6 +41,7 @@
                                     ,count-hits
                                     ,print
                                     ,monitored-symbols
+                                    ,no-warn-ground-functions
                                     ,fns-to-elide
                                     state))
 

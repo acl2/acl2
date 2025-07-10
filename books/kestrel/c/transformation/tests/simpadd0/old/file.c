@@ -83,6 +83,16 @@ void return_void() {
   return;
 }
 
+void asg_int(int x, int y) {
+  x = 5;
+  x = y + 0;
+}
+
+int stmt_null(int x) {
+  ; // null statement
+  return x;
+}
+
 int main() {
   return 0;
 }

@@ -60,6 +60,7 @@
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "../arithmetic-rules-axe")
+(include-book "../convert-to-bv-rules-axe")
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
 (include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
 (include-book "../evaluator") ; todo: this book has skip-proofs
@@ -84,6 +85,8 @@
 (include-book "kestrel/arithmetic-light/ash" :dir :system) ; for ash-of-0, mentioned in a rule-list
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/bv/bvif2" :dir :system)
+(include-book "kestrel/bv/ash" :dir :system)
+(include-book "kestrel/bv/std" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
@@ -142,11 +145,11 @@
   (declare (xargs :guard t))
   (if (atom alist)
       (null alist)
-      (let ((entry (first alist)))
-        (and (consp entry)
-             (symbolp (car entry))
-             (boolean-listp (cdr entry))
-             (elision-spec-alistp (rest alist))))))
+    (let ((entry (first alist)))
+      (and (consp entry)
+           (symbolp (car entry))
+           (boolean-listp (cdr entry))
+           (elision-spec-alistp (rest alist))))))
 
 (defthm elision-spec-alistp-forward-to-alistp
     (implies (elision-spec-alistp alist)
@@ -306,6 +309,8 @@
 (thm (equal (len (step-opener-rules32)) 1))
 (thm (equal (len (step-opener-rules64)) 1))
 
+(defconst *no-warn-ground-functions* '(feature-flag))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -390,6 +395,7 @@
                                   count-hits
                                   print
                                   rules-to-monitor
+                                  *no-warn-ground-functions*
                                   '(program-at) ; fns-to-elide
                                   state)
             ;)
@@ -512,6 +518,7 @@
                                           count-hits
                                           print
                                           rules-to-monitor
+                                          *no-warn-ground-functions*
                                           '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                           state)
                   (declare (ignore limits)) ; todo: use the limits?
@@ -618,6 +625,7 @@
           assumption-rule-alist
           (acl2::known-booleans (w state))
           nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
+          nil ; no-warn-ground-functions
           nil ; don't memoize (avoids time spent making empty-memoizations)
           count-hits
           t   ; todo: warn just once
@@ -740,7 +748,7 @@
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil nil nil state))
-       (- (if position-independentp (cw "Using position-independent lifting.~%") (cw "Using non-position-independent lifting.~%")))
+       (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
        (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
                                         ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
                                         (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
@@ -748,7 +756,7 @@
        (new-canonicalp (or new-style-elf-assumptionsp ; for now
                            (eq :mach-o-64 executable-type)
                            ))
-       (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw "Using new-style ELF64 assumptions.~%")  (cw "Not using new-style ELF64 assumptions.~%"))))
+       (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw " Using new-style ELF64 assumptions.~%")  (cw " Not using new-style ELF64 assumptions.~%"))))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
@@ -1218,7 +1226,7 @@
                   :stobjs state
                   :mode :program ; todo
                   ))
-  (b* (;; Check whether this call to the lifter if redundant:
+  (b* (;; Check whether this call to the lifter is redundant:
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))

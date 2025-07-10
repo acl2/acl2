@@ -128,7 +128,7 @@
         (atc-gen-appconds (cdr targets) wrld))
        ((when (not (irecursivep+ target wrld)))
         (atc-gen-appconds (cdr targets) wrld))
-       (meas (measure+ target wrld))
+       (meas (get-measure+ target wrld))
        (name (packn-pos (list 'natp-of-measure-of- target) :keyword))
        (formula `(natp ,meas))
        (appcond (make-evmac-appcond :name name :formula formula))

@@ -500,6 +500,7 @@
                                                           nil ; count-hits
                                                           nil ; print
                                                           nil ; monitored-symbols
+                                                          nil ; no-warn-ground-functions
                                                           nil ; fns-to-elide
                                                           ))
        ((when erp) (mv erp nil state))

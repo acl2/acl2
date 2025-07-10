@@ -463,6 +463,12 @@ bool ArrayType::isEqual(const Type *other) const {
 Sexpression *ArrayType::cast(Expression *rval) const {
 
   if (auto init = dynamic_cast<Initializer *>(rval)) {
+    // Array initializer must be a double initializer list (see comment in
+    // typing.cpp). "vals" is guarranted to have a single element: an
+    // Initializer list (checked during typing).
+    if (isSTDArray()) {
+      init = always_cast<Initializer *>(*init->vals.begin());
+    }
     return init->ACL2ArrayExpr(this);
   } else {
     return rval->ACL2Expr();

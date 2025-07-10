@@ -22,7 +22,6 @@
 (local (include-book "kestrel/fty/ubyte8-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte16-ihs-theorems" :dir :system))
 (local (include-book "kestrel/fty/ubyte32-ihs-theorems" :dir :system))
-(local (include-book "kestrel/utilities/nfix" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -46,11 +45,11 @@
    (xdoc::p
     "For some integer instructions, like @('SLT') and @('SLTU'),
      it is important whether the operands are read as signed or unsigned.
-     For other instructions, like @('ADD') it does not matter,
-     so long as they are both read signed or unsigned
-     (not one signed and the other unsigned);
-     for these instructions, we add theorem showing two definitions equivalent,
-     one that reads signed operands and one that reads unsigned operands.")
+     For other instructions, like @('ADD') it does not matter.
+     For the latter kinds of instructions,
+     we read unsigned operands in the semntic functions;
+     however, in @(see semantics-equivalences) we prove
+     equivalent definitions that read signed operands.")
    (xdoc::p
     "There is a fair amount of repetition in boilerplate in these functions.
      We could consider shortening them via suitable macros."))
@@ -88,67 +87,6 @@
   :hooks (:fix)
 
   ///
-
-  (defruled exec-addi-alt-def
-    (equal (exec-addi rd rs1 imm stat feat)
-           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-                (imm-operand (logext 12 (ubyte12-fix imm)))
-                (result (+ rs1-operand imm-operand))
-                (stat (write-xreg (ubyte5-fix rd) result stat feat))
-                (stat (inc4-pc stat feat)))
-             stat))
-    :enable (read-xreg-signed
-             write-xreg
-             inc4-pc
-             write-pc)
-    :use (:instance lemma
-                    (imm (ubyte12-fix imm))
-                    (rs1 (ubyte5-fix rs1)))
-    :prep-lemmas
-    ((defruled lemma
-       (equal (loghead (feat->xlen feat)
-                       (+ (logext 12 imm)
-                          (logext (feat->xlen feat)
-                                  (read-xreg-unsigned rs1 stat feat))))
-              (loghead (feat->xlen feat)
-                       (+ (loghead (feat->xlen feat)
-                                   (logext 12 imm))
-                          (read-xreg-unsigned rs1 stat feat))))
-       :use (lemma1 lemma2 lemma3)
-       :disable bitops::loghead-of-+-of-loghead-same
-       :cases ((feat-32p feat))
-       :prep-lemmas
-       ((defruled lemma1
-          (equal (loghead (feat->xlen feat)
-                          (+ (logext 12 imm)
-                             (logext (feat->xlen feat)
-                                     (read-xreg-unsigned rs1 stat feat))))
-                 (loghead (feat->xlen feat)
-                          (+ (logext (feat->xlen feat)
-                                     (logext 12 imm))
-                             (logext (feat->xlen feat)
-                                     (read-xreg-unsigned rs1 stat feat)))))
-          :cases ((feat-32p feat)))
-        (defruled lemma2
-          (equal (loghead (feat->xlen feat)
-                          (+ (logext (feat->xlen feat)
-                                     (logext 12 imm))
-                             (logext (feat->xlen feat)
-                                     (read-xreg-unsigned rs1 stat feat))))
-                 (loghead (feat->xlen feat)
-                          (+ (logext 12 imm)
-                             (read-xreg-unsigned rs1 stat feat))))
-          :enable (loghead-of-logext-plus-logext
-                   ifix))
-        (defruled lemma3
-          (equal (loghead (feat->xlen feat)
-                          (+ (logext 12 imm)
-                             (read-xreg-unsigned rs1 stat feat)))
-                 (loghead (feat->xlen feat)
-                          (+ (loghead (feat->xlen feat)
-                                      (logext 12 imm))
-                             (loghead (feat->xlen feat)
-                                      (read-xreg-unsigned rs1 stat feat))))))))))
 
   (defret stat-validp-of-exec-addi
     (stat-validp new-stat feat)
@@ -268,19 +206,6 @@
 
   ///
 
-  (defruled exec-andi-alt-def
-    (equal (exec-andi rd rs1 imm stat feat)
-           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-                (imm-operand (logext 12 (ubyte12-fix imm)))
-                (result (logand rs1-operand imm-operand))
-                (stat (write-xreg (ubyte5-fix rd) result stat feat))
-                (stat (inc4-pc stat feat)))
-             stat))
-    :enable (read-xreg-signed
-             write-xreg
-             inc4-pc
-             write-pc))
-
   (defret stat-validp-of-exec-andi
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
@@ -319,19 +244,6 @@
 
   ///
 
-  (defruled exec-ori-alt-def
-    (equal (exec-ori rd rs1 imm stat feat)
-           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-                (imm-operand (logext 12 (ubyte12-fix imm)))
-                (result (logior rs1-operand imm-operand))
-                (stat (write-xreg (ubyte5-fix rd) result stat feat))
-                (stat (inc4-pc stat feat)))
-             stat))
-    :enable (read-xreg-signed
-             write-xreg
-             inc4-pc
-             write-pc))
-
   (defret stat-validp-of-exec-ori
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
@@ -369,19 +281,6 @@
   :hooks (:fix)
 
   ///
-
-  (defruled exec-xori-alt-def
-    (equal (exec-xori rd rs1 imm stat feat)
-           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-                (imm-operand (logext 12 (ubyte12-fix imm)))
-                (result (logxor rs1-operand imm-operand))
-                (stat (write-xreg (ubyte5-fix rd) result stat feat))
-                (stat (inc4-pc stat feat)))
-             stat))
-    :enable (read-xreg-signed
-             write-xreg
-             inc4-pc
-             write-pc))
 
   (defret stat-validp-of-exec-xori
     (stat-validp new-stat feat)
@@ -974,13 +873,10 @@
 
 (define exec-auipc ((rd ubyte5p)
                     (imm ubyte20p)
-                    pc
+                    (pc (unsigned-byte-p (feat->xlen feat) pc))
                     (stat statp)
                     (feat featp))
   :guard (and (stat-validp stat feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (< (lnfix rd) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('AUIPC') instruction [ISA:2.4.1] [ISA:4.2.1]."
@@ -1048,21 +944,6 @@
 
   ///
 
-  (defruled exec-add-alt-def
-    (equal (exec-add rd rs1 rs2 stat feat)
-           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
-                (result (+ rs1-operand rs2-operand))
-                (stat (write-xreg (ubyte5-fix rd) result stat feat))
-                (stat (inc4-pc stat feat)))
-             stat))
-    :enable (read-xreg-signed
-             write-xreg
-             inc4-pc
-             write-pc
-             loghead-of-logext-plus-logext
-             ifix))
-
   (defret stat-validp-of-exec-add
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
@@ -1100,21 +981,6 @@
   :hooks (:fix)
 
   ///
-
-  (defruled exec-sub-alt-def
-    (equal (exec-sub rd rs1 rs2 stat feat)
-           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
-                (result (- rs1-operand rs2-operand))
-                (stat (write-xreg (ubyte5-fix rd) result stat feat))
-                (stat (inc4-pc stat feat)))
-             stat))
-    :enable (read-xreg-signed
-             write-xreg
-             inc4-pc
-             write-pc
-             loghead-of-logext-minus-logext
-             ifix))
 
   (defret stat-validp-of-exec-sub
     (stat-validp new-stat feat)
@@ -1233,17 +1099,6 @@
 
   ///
 
-  (defruled exec-and-alt-def
-    (equal (exec-and rd rs1 rs2 stat feat)
-           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
-                (result (logand rs1-operand rs2-operand))
-                (stat (write-xreg (ubyte5-fix rd) result stat feat))
-                (stat (inc4-pc stat feat)))
-             stat))
-    :enable (read-xreg-signed
-             write-xreg))
-
   (defret stat-validp-of-exec-and
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
@@ -1283,17 +1138,6 @@
 
   ///
 
-  (defruled exec-or-alt-def
-    (equal (exec-or rd rs1 rs2 stat feat)
-           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
-                (result (logior rs1-operand rs2-operand))
-                (stat (write-xreg (ubyte5-fix rd) result stat feat))
-                (stat (inc4-pc stat feat)))
-             stat))
-    :enable (read-xreg-signed
-             write-xreg))
-
   (defret stat-validp-of-exec-or
     (stat-validp new-stat feat)
     :hyp (and (stat-validp stat feat)
@@ -1332,17 +1176,6 @@
   :hooks (:fix)
 
   ///
-
-  (defruled exec-xor-alt-def
-    (equal (exec-xor rd rs1 rs2 stat feat)
-           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
-                (result (logxor rs1-operand rs2-operand))
-                (stat (write-xreg (ubyte5-fix rd) result stat feat))
-                (stat (inc4-pc stat feat)))
-             stat))
-    :enable (read-xreg-signed
-             write-xreg))
 
   (defret stat-validp-of-exec-xor
     (stat-validp new-stat feat)
@@ -1389,26 +1222,6 @@
   :hooks (:fix)
 
   ///
-
-  (defruled exec-sll-alt-def
-    (equal (exec-sll rd rs1 rs2 stat feat)
-           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
-                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
-                (shift-amount
-                 (cond ((feat-32p feat) (loghead 5 rs2-operand))
-                       ((feat-64p feat) (loghead 6 rs2-operand))
-                       (t (impossible))))
-                (result (ash rs1-operand shift-amount))
-                (stat (write-xreg (ubyte5-fix rd) result stat feat))
-                (stat (inc4-pc stat feat)))
-             stat))
-    :enable (read-xreg-signed
-             write-xreg
-             inc4-pc
-             write-pc
-             bitops::loghead-of-ash
-             loghead-upper-bound)
-    :disable acl2::ash-to-floor)
 
   (defret stat-validp-of-exec-sll
     (stat-validp new-stat feat)
@@ -2343,13 +2156,10 @@
 
 (define exec-jal ((rd ubyte5p)
                   (imm ubyte20p)
-                  pc
+                  (pc (unsigned-byte-p (feat->xlen feat) pc))
                   (stat statp)
                   (feat featp))
   :guard (and (stat-validp stat feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (< (lnfix rd) (feat->xnum feat)))
   :returns (new-stat statp)
   :short "Semantics of the @('JAL') instruction [ISA:2.5.1]."
@@ -2367,10 +2177,15 @@
      We write the address of the instruction just after this to @('rd');
      since instructions are 32-bit long,
      the address of the next instruction is obtained by adding 4 to @('pc').
-     We write the jump target to the program counter."))
+     We write the jump target to the program counter.")
+   (xdoc::p
+    "If the jump target is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the jump instruction,
+     not when trying to read the target instruction."))
   (b* ((offset
         (loghead (feat->xlen feat) (logext 21 (ash (ubyte20-fix imm) 1))))
        (target-pc (+ pc offset))
+       ((unless (= (mod target-pc 4) 0)) (error stat feat))
        (next-pc (+ pc 4))
        (stat (write-xreg (ubyte5-fix rd) next-pc stat feat))
        (stat (write-pc target-pc stat feat)))
@@ -2391,13 +2206,10 @@
 (define exec-jalr ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte12p)
-                   pc
+                   (pc (unsigned-byte-p (feat->xlen feat) pc))
                    (stat statp)
                    (feat featp))
   :guard (and (stat-validp stat feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
@@ -2422,6 +2234,7 @@
                    ((feat-64p feat) #xfffffffffffffffe)
                    (t (impossible))))
        (target-pc (logand mask (+ base offset)))
+       ((unless (= (mod target-pc 4) 0)) (error stat feat))
        (next-pc (+ pc 4))
        (stat (write-xreg (ubyte5-fix rd) next-pc stat feat))
        (stat (write-pc target-pc stat feat)))
@@ -2442,13 +2255,10 @@
 (define exec-beq ((rs1 ubyte5p)
                   (rs2 ubyte5p)
                   (imm ubyte12p)
-                  pc
+                  (pc (unsigned-byte-p (feat->xlen feat) pc))
                   (stat statp)
                   (feat featp))
   :guard (and (stat-validp stat feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
@@ -2468,14 +2278,20 @@
      We compare the two integers from the registers:
      if they are equal,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (= rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2492,13 +2308,10 @@
 (define exec-bne ((rs1 ubyte5p)
                   (rs2 ubyte5p)
                   (imm ubyte12p)
-                  pc
+                  (pc (unsigned-byte-p (feat->xlen feat) pc))
                   (stat statp)
                   (feat featp))
   :guard (and (stat-validp stat feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
@@ -2518,14 +2331,20 @@
      We compare the two integers from the registers:
      if they are not equal,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (/= rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2542,13 +2361,10 @@
 (define exec-blt ((rs1 ubyte5p)
                   (rs2 ubyte5p)
                   (imm ubyte12p)
-                  pc
+                  (pc (unsigned-byte-p (feat->xlen feat) pc))
                   (stat statp)
                   (feat featp))
   :guard (and (stat-validp stat feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
@@ -2568,14 +2384,20 @@
      We compare the two signed integers from the registers:
      if the first one is less than the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (< rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2592,13 +2414,10 @@
 (define exec-bltu ((rs1 ubyte5p)
                    (rs2 ubyte5p)
                    (imm ubyte12p)
-                   pc
+                   (pc (unsigned-byte-p (feat->xlen feat) pc))
                    (stat statp)
                    (feat featp))
   :guard (and (stat-validp stat feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
@@ -2618,14 +2437,20 @@
      We compare the two unsigned integers from the registers:
      if the first one is less than the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (< rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2642,13 +2467,10 @@
 (define exec-bge ((rs1 ubyte5p)
                   (rs2 ubyte5p)
                   (imm ubyte12p)
-                  pc
+                  (pc (unsigned-byte-p (feat->xlen feat) pc))
                   (stat statp)
                   (feat featp))
   :guard (and (stat-validp stat feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
@@ -2668,14 +2490,20 @@
      We compare the two signed integers from the registers:
      if the first one is greater than or equal to the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (>= rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2692,13 +2520,10 @@
 (define exec-bgeu ((rs1 ubyte5p)
                    (rs2 ubyte5p)
                    (imm ubyte12p)
-                   pc
+                   (pc (unsigned-byte-p (feat->xlen feat) pc))
                    (stat statp)
                    (feat featp))
   :guard (and (stat-validp stat feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
@@ -2718,14 +2543,20 @@
      We compare the two unsigned integers from the registers:
      if the first one is greater than or equal to the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (offset
         (loghead (feat->xlen feat) (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ pc offset))
        (stat (if (>= rs1-operand rs2-operand)
-                 (write-pc target-pc stat feat)
+                 (if (= (mod target-pc 4) 0)
+                     (write-pc target-pc stat feat)
+                   (error stat feat))
                (inc4-pc stat feat))))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -2743,13 +2574,10 @@
                      (rs1 ubyte5p)
                      (rs2 ubyte5p)
                      (imm ubyte12p)
-                     pc
+                     (pc (unsigned-byte-p (feat->xlen feat) pc))
                      (stat statp)
                      (feat featp))
   :guard (and (stat-validp stat feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
@@ -3256,13 +3084,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-instr ((instr instrp)
-                    pc
+                    (pc (unsigned-byte-p (feat->xlen feat) pc))
                     (stat statp)
                     (feat featp))
   :guard (and (instr-validp instr feat)
-              (cond ((feat-32p feat) (ubyte32p pc))
-                    ((feat-64p feat) (ubyte64p pc))
-                    (t (impossible)))
               (stat-validp stat feat))
   :returns (new-stat statp)
   :short "Semantics of instructions."

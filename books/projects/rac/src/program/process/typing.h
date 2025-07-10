@@ -81,6 +81,8 @@ public:
   // Check if all "fast arrray" are const.
   bool VisitArrayType(const ArrayType *t);
 
+  bool VisitStructType(const StructType *t);
+
 private:
   using base_t = RecursiveASTVisitor<TypingAction>;
 

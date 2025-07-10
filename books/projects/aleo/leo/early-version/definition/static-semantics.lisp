@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ static-semantics
-  :parents (language)
+  :parents (definition)
   :short "Static semantics of Leo."
   :long
   (xdoc::topstring

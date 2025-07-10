@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -268,9 +268,6 @@
                                        (msg "The ~n0 input" (list position))
                                        t nil))
        ((er &) (ensure-function/lambda-logic-mode$ fn/lambda description t nil))
-       ((er &) (ensure-function/lambda-no-stobjs$ stobjs-in
-                                                  stobjs-out
-                                                  description t nil))
        ((er &) (ensure-function/lambda-closed$ fn/lambda description t nil))
        ((unless guard-thms$) (value (list fn/lambda
                                           (len stobjs-in)

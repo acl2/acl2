@@ -32,7 +32,10 @@
     "We use the inversion theorems proved in
      @(see decoding-left-inverse) and @(see decoding-right-inverse)
      to show that the declarative definition of the decoder
-     is equivalent to the executable definition of the decoder."))
+     is equivalent to the executable definition of the decoder.")
+   (xdoc::p
+    "See @(see encoding-decoding-illustration)
+     for an illustration of encoding and decoding."))
   :order-subtopics t
   :default-parent t)
 

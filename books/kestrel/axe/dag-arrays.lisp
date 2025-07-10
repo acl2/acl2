@@ -2518,3 +2518,11 @@
                 (natp dag-len))
            (dag-and-array-agreep dag dag-array-name (make-into-array-with-len dag-array-name dag initial-array-size) dag-len))
   :hints (("Goal" :in-theory (enable dag-and-array-agreep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Just a wrapper with a more specific guard
+;; TODO: Use this more?
+(defund dag-array-to-alist (dag-array-name dag-array dag-len)
+  (declare (xargs :guard (pseudo-dag-arrayp dag-array-name dag-array dag-len)))
+  (array-to-alist dag-array-name dag-array dag-len))
