@@ -36,10 +36,10 @@
 
      acl2::byte-listp
      acl2::ubyte64p)
-   
+
    (union-eq *acl2-exports*
              acl2::*bitops-exports*
-             std::*std-exports*             
+             std::*std-exports*
              *common-lisp-symbols-from-main-lisp-package*)))
 
 #!EXLD
