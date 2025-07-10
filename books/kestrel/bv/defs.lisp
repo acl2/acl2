@@ -42,7 +42,7 @@
 
 ;divide and round toward 0
 ;fixme what should this do if y is 0?
-(defun bvdiv (n x y)
+(defund bvdiv (n x y)
   (declare (type (integer 1 *) n)
            (type integer x)
            (type integer y)

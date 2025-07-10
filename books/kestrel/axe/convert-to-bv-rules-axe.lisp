@@ -36,6 +36,8 @@
 (local (include-book "kestrel/bv/bitxor" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/bvif" :dir :system))
+(local (include-book "kestrel/bv/bvlt" :dir :system))
+(local (include-book "kestrel/bv/sbvlt" :dir :system))
 
 ;; These rules work together with TRIM rules such as trim-of-logand-becomes-bvand.
 
@@ -294,10 +296,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: left shift, etc.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defthmd bvsx-convert-arg3-to-bv-axe
   (implies (and (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
                 (natp new-size) ; todo
@@ -331,3 +329,65 @@
                   (bvif size test then (trim size else))))
   :hints (("Goal" :cases ((natp size))
            :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvlt-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvlt size x y)
+                  (bvlt size (trim size x) y)))
+  :hints (("Goal" :cases ((natp size))
+           :in-theory (enable trim))))
+
+(defthmd bvlt-convert-arg3-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+           (equal (bvlt size x y)
+                  (bvlt size x (trim size y))))
+  :hints (("Goal" :cases ((natp size))
+           :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd sbvlt-convert-arg2-to-bv-axe
+  (implies (and (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+                (posp size))
+           (equal (sbvlt size x y)
+                  (sbvlt size (trim size x) y)))
+  :hints (("Goal" :cases ((natp size))
+           :in-theory (enable trim))))
+
+(defthmd sbvlt-convert-arg3-to-bv-axe
+  (implies (and (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+                (posp size))
+           (equal (sbvlt size x y)
+                  (sbvlt size x (trim size y))))
+  :hints (("Goal" :cases ((natp size))
+           :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvdiv-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvdiv size x y)
+                  (bvdiv size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable bvdiv trim))))
+
+(defthmd bvdiv-convert-arg3-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+           (equal (bvdiv size x y)
+                  (bvdiv size x (trim size y))))
+  :hints (("Goal" :in-theory (enable bvdiv trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvmod-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvmod size x y)
+                  (bvmod size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim bvmod))))
+
+(defthmd bvmod-convert-arg3-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
+           (equal (bvmod size x y)
+                  (bvmod size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim bvmod))))
