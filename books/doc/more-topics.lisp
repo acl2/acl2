@@ -170,9 +170,14 @@ AIG to BDD Conversion Algorithm</a>.  In ITP 2010,LNCS 6172, Springer.  Pages
 
 (defxdoc macro-libraries
   :parents (top macros)
-  :short "Generally useful macros for writing more concise code, and frameworks
- for quickly introducing concepts like typed structures, typed lists, defining
- functions with type signatures, and automating other common tasks.")
+  :short "Libraries of useful macros"
+  :long "<p>See @(see macros) for documentation of macros that are built into
+ ACL2.</p>
+
+ <p>The subtopics below describe macros defined in the @(see community-books)
+ that support writing more concise code, including frameworks for quickly
+ introducing concepts like typed structures, typed lists, defining functions
+ with type signatures, and automating other common tasks.</p>")
 
 (defxdoc proof-automation
   :parents (top)
