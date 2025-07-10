@@ -38,6 +38,7 @@
                                     (count-hits 't)
                                     (print 't)
                                     (monitored-symbols 'nil)
+                                    (no-warn-ground-functions 'nil)
                                     (fns-to-elide 'nil))
   `(simplify-term-to-term-basic ,term
                     ,assumptions
@@ -50,6 +51,7 @@
                     ,count-hits
                     ,print
                     ,monitored-symbols
+                    ,no-warn-ground-functions
                     ,fns-to-elide))
 
 ;; A simple test that applies the rewrite rule CAR-CONS to simplify a term:
@@ -91,14 +93,14 @@
 ;; A test that returns a variable
 (assert!
  (mv-let (erp res)
-   (simplify-term-to-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil)
+   (simplify-term-to-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil nil)
    (and (not erp)
         (equal res 'x))))
 
 ;; A test that returns a constant
 (assert!
  (mv-let (erp res)
-   (simplify-term-to-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil)
+   (simplify-term-to-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil nil)
    (and (not erp)
         (equal res ''2))))
 
@@ -124,6 +126,7 @@
                         ,count-hits   ; count-hits
                         nil ; print
                         nil ; monitored-symbols
+                        nil ; no-warn-ground-functions
                         nil ; fns-to-elide
                         )
        (and (not erp)
@@ -235,6 +238,7 @@
                                        (count-hits 't)
                                        (print 't)
                                        (monitored-symbols 'nil)
+                                       (no-warn-ground-functions 'nil)
                                        (fns-to-elide 'nil))
   `(simplify-term-basic ,term
                         ,assumptions
@@ -247,6 +251,7 @@
                         ,count-hits
                         ,print
                         ,monitored-symbols
+                        ,no-warn-ground-functions
                         ,fns-to-elide))
 
 (assert!
@@ -579,95 +584,95 @@
 
 (assert!
  (mv-let (erp res limits)
-   (simplify-dag-basic (make-term-into-dag-simple! '(cons a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+   (simplify-dag-basic (make-term-into-dag-simple! '(cons a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! '(cons a b))))))
 
 ;; The test gets resolved:
 (assert!
   (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(if 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (simplify-dag-basic (make-term-into-dag-simple! '(if 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'a)))))
 
 ;; The test gets resolved:
 (assert!
   (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(if 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (simplify-dag-basic (make-term-into-dag-simple! '(if 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'b)))))
 
 ;; The test gets resolved:
 (assert!
   (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(myif 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (simplify-dag-basic (make-term-into-dag-simple! '(myif 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'a)))))
 
 ;; The test gets resolved:
 (assert!
   (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(myif 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (simplify-dag-basic (make-term-into-dag-simple! '(myif 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'b)))))
 
 ;; The test gets resolved:
 (assert!
   (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(boolif 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (simplify-dag-basic (make-term-into-dag-simple! '(boolif 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! '(bool-fix$inline a))))))
 
 ;; The test gets resolved:
 (assert!
   (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(boolif 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (simplify-dag-basic (make-term-into-dag-simple! '(boolif 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! '(bool-fix$inline b))))))
 
 ;; The test gets resolved:
 (assert!
   (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(bvif '32 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (simplify-dag-basic (make-term-into-dag-simple! '(bvif '32 't a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! '(bvchop '32 a))))))
 
 ;; The test gets resolved:
 (assert!
   (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(bvif '32 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (simplify-dag-basic (make-term-into-dag-simple! '(bvif '32 'nil a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! '(bvchop '32 b))))))
 
 ;; The test gets resolved, even when it's an assumption:
 (assert!
   (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(if (natp x) a b)) '((natp x)) (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (simplify-dag-basic (make-term-into-dag-simple! '(if (natp x) a b)) '((natp x)) (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'a)))))
 
 ;; The test gets resolved, even when it's an assumption and is non-boolean:
 (assert!
   (mv-let (erp res limits)
-    (simplify-dag-basic (make-term-into-dag-simple! '(if x a b)) '(x) (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+    (simplify-dag-basic (make-term-into-dag-simple! '(if x a b)) '(x) (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! 'a)))))
 
 (assert!
  (mv-let (erp res limits)
-   (simplify-dag-basic (make-term-into-dag-simple! '(not 't)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not 't)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
 (assert!
  (mv-let (erp res limits)
-   (simplify-dag-basic (make-term-into-dag-simple! '(not '3)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not '3)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
 (assert!
  (mv-let (erp res limits)
-   (simplify-dag-basic (make-term-into-dag-simple! '(not 'nil)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not 'nil)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! ''t)))))
 
@@ -675,7 +680,7 @@
  (mv-let (erp res limits)
    (simplify-dag-basic (make-term-into-dag-simple! '(not x))
                        '(x) ; assumptions
-                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
@@ -684,7 +689,7 @@
  (mv-let (erp res limits)
    (simplify-dag-basic (make-term-into-dag-simple! '(not (foo x)))
                        '((foo x)) ; assumptions
-                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
@@ -693,7 +698,7 @@
  (mv-let (erp res limits)
    (simplify-dag-basic (make-term-into-dag-simple! '(boolif test (foo x) 'nil))
                        '((foo x)) ; assumptions
-                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! '(boolif test 't 'nil))))))
 
@@ -702,7 +707,7 @@
  (mv-let (erp res limits)
    (simplify-dag-basic (make-term-into-dag-simple! '(boolif test 'nil (foo x)))
                        '((foo x)) ; assumptions
-                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
    (and (not erp) (null limits)
         (equal res (make-term-into-dag-simple! '(boolif test 'nil 't))))))
 
@@ -711,7 +716,7 @@
   (mv-let (erp res limits)
     (simplify-dag-basic (make-term-into-dag-simple! '(if (equal x '8) (binary-+ x '1) '0))
                         '() ; assumptions
-                        (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+                        (empty-rule-alist) nil nil nil nil nil nil nil nil nil nil)
     (and (not erp) (null limits)
          (equal res (make-term-into-dag-simple! '(if (equal x '8) '9 '0))))))
 
@@ -739,6 +744,7 @@
                     t       ; count-hits
                     t       ; print
                     nil     ; monitored-symbols
+                    nil ; no-warn-ground-functions
                     nil     ; fns-to-elide
                     )
    (and (not erp) ;no error
@@ -759,6 +765,7 @@
                     t       ; count-hits
                     t       ; print
                     nil     ; monitored-symbols
+                    nil ; no-warn-ground-functions
                     nil     ; fns-to-elide
                     )
    (and (not erp) ;no error

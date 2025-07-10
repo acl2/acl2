@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ dynamic-semantics
-  :parents (language)
+  :parents (definition)
   :short "Dynamic semantics of Leo."
   :long
   (xdoc::topstring

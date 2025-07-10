@@ -236,6 +236,7 @@
                              count-hits
                              print
                              monitor
+                             nil ; no-warn-ground-functions
                              nil ; fns-to-elide
                              ))
        ((when erp) (mv erp nil state))

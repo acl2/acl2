@@ -345,6 +345,7 @@
                              t ; count-hits ; todo: pass in
                              print
                              monitor
+                             nil ; no-warn-ground-functions
                              nil ; fns-to-elide
                              ))
        ((when erp) (mv *error* nil state))
@@ -605,6 +606,7 @@
                             nil ; count-hits
                             print
                             monitor ; monitored-symbols
+                            nil ; no-warn-ground-functions
                             nil ; fns-to-elide
                             ))
        ((when erp) (mv *error* nil state))
@@ -677,7 +679,9 @@
                   (prog2$ (and print (cw "STP tactic returned a possible counterexample.)~%")) ; balances "(Applying STP tactic"
                           (mv *no-change*
                               (append result ;; return the counterexample in the info
-                                      (list :dag dag-array :disjuncts disjunct-nodenums))
+                                      ;; todo: print the disjunction as a term if small:
+                                      (list :disjuncts disjunct-nodenums
+                                            :dag (dag-array-to-alist 'dag-array dag-array dag-len)))
                               state))
                 (prog2$ (er hard? 'apply-tactic-stp "Bad result: ~x0." result)
                         (mv *error* nil state))))))))))

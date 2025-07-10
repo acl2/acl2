@@ -297,6 +297,7 @@
                                                    (print-level-at-least-verbosep print) ; count-hits ; todo: pass in separately
                                                    (reduce-print-level print)
                                                    rules-to-monitor
+                                                   nil ; no-warn-ground-functions
                                                    '(program-at) ; fns-to-elide
                                                    ))
          ((when erp) (mv erp dag state))
@@ -672,6 +673,7 @@
           (remove-from-rule-alists '(unsigned-byte-p-when-array-refp) rule-alists) ; could use a separate rules for this assumption simplification
           (acl2::known-booleans (w state))
           nil ; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
+          nil ; no-warn-ground-functions
           nil ; don't memoize (avoids time spent making empty-memoizations)
           (print-level-at-least-tp print) ; count-hits ; todo: pass in
           t   ; todo: warn just once

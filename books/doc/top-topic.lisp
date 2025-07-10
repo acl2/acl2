@@ -59,8 +59,7 @@ connecting ACL2 to other systems, productivity tools for better proof
 automation and debugging, and specialty libraries for areas like @(see
 hardware-verification).</p>
 
-<p>This manual was generated on <b>@(`(:raw (oslib::date))`)</b>.  It covers
-both ACL2 and the Community Books.  It is derived by combining</p>
+<p>This manual was generated on <b>@(`(:raw (oslib::date))`)</b>.  It includes</p>
 
 <ul>
 
@@ -72,9 +71,8 @@ members of the ACL2 community</li>
 
 </ul>
 
-<p>Besides just importing the documentation, we also rearrange the topic
-hierarchy to try to provide a coherent organization.</p>
+<p>This manual is a work in progress.  If you would like to
+contribute to its development, please join the ACL2 @(see community).</p>")
 
-<p>This manual is very much a work in progress.  If you would like to
-contribute to its development, please join the <a
-href='https://github.com/acl2/'>acl2 project on GitHub</a>!</p>")
+;; <p>Besides just importing the documentation, we also rearrange the topic
+;; hierarchy to try to provide a coherent organization.</p>

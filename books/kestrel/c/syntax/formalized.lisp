@@ -620,9 +620,9 @@
      stmt
      :labeled nil
      :compound (block-item-list-formalp stmt.items)
-     :expr (and stmt.expr?
-                (or (expr-call-formalp stmt.expr?)
-                    (expr-asg-formalp stmt.expr?)))
+     :expr (or (not stmt.expr?)
+               (expr-call-formalp stmt.expr?)
+               (expr-asg-formalp stmt.expr?))
      :if (and (expr-pure-formalp stmt.test)
               (stmt-formalp stmt.then))
      :ifelse (and (expr-pure-formalp stmt.test)

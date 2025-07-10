@@ -20,8 +20,8 @@
 (include-book "kestrel/event-macros/screen-printing" :dir :system)
 (include-book "std/system/add-suffix-to-fn-lst" :dir :system)
 (include-book "std/system/genvar-dollar" :dir :system)
+(include-book "std/system/get-measure-plus" :dir :system)
 (include-book "std/system/install-not-normalized-event" :dir :system)
-(include-book "std/system/measure-plus" :dir :system)
 (include-book "std/system/one-way-unify-dollar" :dir :system)
 (include-book "std/system/termination-theorem-dollar" :dir :system)
 (include-book "std/system/ubody-plus" :dir :system)
@@ -3498,7 +3498,7 @@
        ((when (eq name 'quote))
         (raise "Internal error: name is QUOTE.")
         (mv '(_) nil nil nil))
-       (measure-term (measure+ fn wrld))
+       (measure-term (get-measure+ fn wrld))
        (measure-vars (all-vars measure-term))
        ((mv & event)
         (evmac-generate-defun

@@ -12,6 +12,7 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
+(include-book "../syntax/purity")
 (include-book "../syntax/validation-information")
 (include-book "../syntax/langdef-mapping")
 (include-book "../atc/symbolic-execution-rules/top")
@@ -343,6 +344,102 @@
     (mv thm-event thm-name thm-index))
   ///
   (fty::deffixequiv simpadd0-gen-expr-pure-thm
+    :args ((old exprp) (new exprp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-gen-expr-asg-thm ((old exprp)
+                                   (new exprp)
+                                   (vartys ident-type-mapp)
+                                   (const-new symbolp)
+                                   (thm-index posp)
+                                   (hints true-listp))
+  :guard (and (expr-unambp old)
+              (expr-unambp new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the transformation
+          of an assignment expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This only applies to simple assignments
+     whose left side is a variable expression @('var')
+     and whose old and new right sides are pure expressions.
+     The caller of this function checks that that is the case;
+     here we double-check these conditions,
+     and throw a hard error if they are not satisfied,
+     because that should never happen.")
+   (xdoc::p
+    "If the two expressions are syntactically equal,
+     we generate a dummy theorem.
+     At this point we do not seem to need any actual theorem for this case,
+     but we want proof generation to proceed after this expression,
+     so we generate a theorem for uniformity,
+     so that code for larger constructs can uniformly check
+     whether a theorem was generated for this construct.")
+   (xdoc::p
+    "If the two expressions are syntactically unequal,
+     the theorem says that
+     if the old assignment expression does not cause an error,
+     neither does the new assignment expression,
+     and the two return the same updated computation state."))
+  (b* ((old (expr-fix old))
+       (new (expr-fix new))
+       ((unless (expr-asg-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (expr-asg-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       ((unless (and (expr-case old :binary)
+                     (binop-case (expr-binary->op old) :asg)))
+        (raise "Internal error: ~x0 is not an assignment expression." old)
+        (mv '(_) nil 1))
+       (old-left (expr-binary->arg1 old))
+       (old-right (expr-binary->arg2 old))
+       ((unless (expr-case old-left :ident))
+        (raise "Internal error: ~x0 is not a variable." old-left)
+        (mv '(_) nil 1))
+       ((unless (expr-purep old-right))
+        (raise "Internal error: ~x0 is not a pure expression." old-right)
+        (mv '(_) nil 1))
+       ((unless (and (expr-case new :binary)
+                     (binop-case (expr-binary->op new) :asg)))
+        (raise "Internal error: ~x0 is not an assignment expression." new)
+        (mv '(_) nil 1))
+       (new-left (expr-binary->arg1 new))
+       (new-right (expr-binary->arg2 new))
+       ((unless (equal new-left old-left))
+        (raise "Internal error: ~x0 and ~x1 differ." old-left new-left)
+        (mv '(_) nil 1))
+       ((unless (expr-purep new-right))
+        (raise "Internal error: ~x0 is not a pure expression." new-right)
+        (mv '(_) nil 1))
+       (hyps (simpadd0-gen-var-hyps vartys))
+       (thm-name
+        (packn-pos (list const-new '-thm- thm-index) const-new))
+       (thm-index (1+ (pos-fix thm-index)))
+       (formula
+        `(b* ((old-expr (mv-nth 1 (ldm-expr ',old)))
+              (new-expr (mv-nth 1 (ldm-expr ',new)))
+              (old-compst (c::exec-expr-asg old-expr compst old-fenv limit))
+              (new-compst (c::exec-expr-asg new-expr compst new-fenv limit)))
+           (implies (and ,@hyps
+                         (not (c::errorp old-compst)))
+                    (and (not (c::errorp new-compst))
+                         (equal old-compst new-compst)))))
+       (thm-event (if (equal old-right new-right)
+                      `(defthm ,thm-name
+                         t
+                         :rule-classes nil)
+                    `(defthmd ,thm-name
+                       ,formula
+                       :hints ,hints))))
+    (mv thm-event thm-name thm-index))
+  ///
+  (fty::deffixequiv simpadd0-gen-expr-asg-thm
     :args ((old exprp) (new exprp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1542,12 +1639,13 @@
      in which case the resulting expression is just that expression.
      This is the core of this simple transformation.")
    (xdoc::p
-    "We generate a theorem iff
-     theorems were generated for both argument expressions,
-     and the binary operator is pure and non-strict.
-     The theorem is proved via three general ones that we prove below;
-     the third one is only needed if there is an actual simplification,
-     but we always use it in the proof for simplicity."))
+    "We generate a theorem only if
+     theorems were generated for both argument expressions.
+     We generate a theorem for pure strict operators.
+     We plan to add theorem generation for pure strict operators too.
+     We generate a theorem for simple assignment expressions
+     whose left side is a variable of integer type
+     and whose right side is a pure expression of the same integer type."))
   (b* (((simpadd0-gin gin) gin)
        (expr (make-expr-binary :op op :arg1 arg1 :arg2 arg2 :info info))
        (simpp (and (binop-case op :add)
@@ -1566,69 +1664,127 @@
         (mv (irr-expr) (irr-simpadd0-gout)))
        (vartys (omap::update* arg1-vartys arg2-vartys))
        (diffp (or arg1-diffp arg2-diffp simpp))
-       ((unless (and arg1-thm-name
-                     arg2-thm-name
-                     (member-eq (binop-kind op)
-                                '(:mul :div :rem :add :sub :shl :shr
-                                  :lt :gt :le :ge :eq :ne
-                                  :bitand :bitxor :bitior))))
-        (mv expr-new
-            (make-simpadd0-gout :events (append arg1-events arg2-events)
-                                :thm-name nil
-                                :thm-index gin.thm-index
-                                :names-to-avoid gin.names-to-avoid
-                                :vartys vartys
-                                :diffp diffp)))
-       (hints `(("Goal"
-                 :in-theory '((:e ldm-expr)
-                              (:e c::iconst-length-none)
-                              (:e c::iconst-base-oct)
-                              (:e c::iconst)
-                              (:e c::const-int)
-                              (:e c::expr-const)
-                              (:e c::binop-kind)
-                              (:e c::binop-add)
-                              (:e c::binop-purep)
-                              (:e c::binop-strictp)
-                              (:e c::expr-binary)
-                              (:e c::type-nonchar-integerp)
-                              (:e c::promote-type)
-                              (:e c::uaconvert-types)
-                              (:e c::type-sint)
-                              (:e member-equal))
-                 :use (,arg1-thm-name
-                       ,arg2-thm-name
-                       (:instance
-                        simpadd0-expr-binary-support-lemma
-                        (op ',(ldm-binop op))
-                        (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                        (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
-                        (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
-                        (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
-                       (:instance
-                        simpadd0-expr-binary-support-lemma-error
-                        (op ',(ldm-binop op))
-                        (arg1 (mv-nth 1 (ldm-expr ',arg1)))
-                        (arg2 (mv-nth 1 (ldm-expr ',arg2))))
-                       (:instance
-                        simpadd0-expr-binary-support-lemma-simp
-                        (expr (mv-nth 1 (ldm-expr ',arg1-new))))))))
-       ((mv thm-event thm-name thm-index)
-        (simpadd0-gen-expr-pure-thm expr
-                                    expr-new
-                                    vartys
-                                    gin.const-new
-                                    gin.thm-index
-                                    hints)))
-    (mv expr-new
-        (make-simpadd0-gout :events (append arg1-events
-                                            arg2-events
-                                            (list thm-event))
-                            :thm-name thm-name
-                            :thm-index thm-index
-                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+       (gout-no-thm
+        (make-simpadd0-gout :events (append arg1-events arg2-events)
+                            :thm-name nil
+                            :thm-index gin.thm-index
+                            :names-to-avoid gin.names-to-avoid
                             :vartys vartys
-                            :diffp diffp)))
+                            :diffp diffp))
+       ((unless (and arg1-thm-name
+                     arg2-thm-name))
+        (mv expr-new gout-no-thm)))
+    (cond
+     ((member-eq (binop-kind op)
+                 '(:mul :div :rem :add :sub :shl :shr
+                   :lt :gt :le :ge :eq :ne
+                   :bitand :bitxor :bitior))
+      (b* ((hints `(("Goal"
+                     :in-theory '((:e ldm-expr)
+                                  (:e c::iconst-length-none)
+                                  (:e c::iconst-base-oct)
+                                  (:e c::iconst)
+                                  (:e c::const-int)
+                                  (:e c::expr-const)
+                                  (:e c::binop-kind)
+                                  (:e c::binop-add)
+                                  (:e c::binop-purep)
+                                  (:e c::binop-strictp)
+                                  (:e c::expr-binary)
+                                  (:e c::type-nonchar-integerp)
+                                  (:e c::promote-type)
+                                  (:e c::uaconvert-types)
+                                  (:e c::type-sint)
+                                  (:e member-equal))
+                     :use (,arg1-thm-name
+                           ,arg2-thm-name
+                           (:instance
+                            simpadd0-expr-binary-pure-strict-support-lemma
+                            (op ',(ldm-binop op))
+                            (old-arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                            (old-arg2 (mv-nth 1 (ldm-expr ',arg2)))
+                            (new-arg1 (mv-nth 1 (ldm-expr ',arg1-new)))
+                            (new-arg2 (mv-nth 1 (ldm-expr ',arg2-new))))
+                           (:instance
+                            simpadd0-expr-binary-pure-strict-support-lemma-error
+                            (op ',(ldm-binop op))
+                            (arg1 (mv-nth 1 (ldm-expr ',arg1)))
+                            (arg2 (mv-nth 1 (ldm-expr ',arg2))))
+                           ,@(and simpp
+                                  `((:instance
+                                     simpadd0-expr-binary-support-lemma-simp
+                                     (expr (mv-nth 1 (ldm-expr
+                                                      ',arg1-new))))))))))
+           ((mv thm-event thm-name thm-index)
+            (simpadd0-gen-expr-pure-thm expr
+                                        expr-new
+                                        vartys
+                                        gin.const-new
+                                        gin.thm-index
+                                        hints)))
+        (mv expr-new
+            (make-simpadd0-gout :events (append arg1-events
+                                                arg2-events
+                                                (list thm-event))
+                                :thm-name thm-name
+                                :thm-index thm-index
+                                :names-to-avoid (cons thm-name
+                                                      gin.names-to-avoid)
+                                :vartys vartys
+                                :diffp diffp))))
+     ((member-eq (binop-kind op) '(:logand :logor))
+      (mv expr-new gout-no-thm))
+     ((eq (binop-kind op) :asg)
+      (b* (((unless (and (expr-case arg1 :ident)
+                         (expr-purep arg2)
+                         (equal (expr-type arg1)
+                                (expr-type arg2))
+                         (type-integerp (expr-type arg1))))
+            (mv expr-new gout-no-thm))
+           (hints `(("Goal"
+                     :in-theory '((:e ldm-expr)
+                                  (:e ldm-ident)
+                                  (:e ident)
+                                  (:e c::expr-kind)
+                                  (:e c::expr-ident)
+                                  (:e c::expr-binary)
+                                  (:e c::binop-asg)
+                                  (:e c::ident)
+                                  (:e c::type-nonchar-integerp)
+                                  c::valuep-of-read-object-of-objdesign-of-var
+                                  c::not-errorp-when-valuep)
+                     :use (,arg1-thm-name
+                           ,arg2-thm-name
+                           (:instance
+                            simpadd0-expr-binary-asg-support-lemma
+                            (old-arg (mv-nth 1 (ldm-expr ',arg2)))
+                            (new-arg (mv-nth 1 (ldm-expr ',arg2-new)))
+                            (var (mv-nth 1 (ldm-ident
+                                            ',(expr-ident->ident arg1)))))
+                           (:instance
+                            simpadd0-expr-binary-asg-support-lemma-error
+                            (var (mv-nth 1 (ldm-ident
+                                            ',(expr-ident->ident arg1))))
+                            (expr (mv-nth 1 (ldm-expr ',arg2)))
+                            (fenv old-fenv))))))
+           ((mv thm-event thm-name thm-index)
+            (simpadd0-gen-expr-asg-thm expr
+                                       expr-new
+                                       vartys
+                                       gin.const-new
+                                       gin.thm-index
+                                       hints)))
+        (mv expr-new
+            (make-simpadd0-gout :events (append arg1-events
+                                                arg2-events
+                                                (list thm-event))
+                                :thm-name thm-name
+                                :thm-index thm-index
+                                :names-to-avoid (cons thm-name
+                                                      gin.names-to-avoid)
+                                :vartys vartys
+                                :diffp diffp))))
+     (t (mv expr-new gout-no-thm))))
 
   ///
 
@@ -1638,7 +1794,7 @@
               (expr-unambp arg2-new))
     :hints (("Goal" :in-theory (enable irr-expr))))
 
-  (defruled simpadd0-expr-binary-support-lemma
+  (defruled simpadd0-expr-binary-pure-strict-support-lemma
     (b* ((old (c::expr-binary op old-arg1 old-arg2))
          (new (c::expr-binary op new-arg1 new-arg2))
          (old-arg1-result (c::exec-expr-pure old-arg1 compst))
@@ -1685,7 +1841,7 @@
              c::apconvert-expr-value-when-not-array
              c::value-kind-not-array-when-value-integerp))
 
-  (defruled simpadd0-expr-binary-support-lemma-error
+  (defruled simpadd0-expr-binary-pure-strict-support-lemma-error
     (implies (and (c::binop-strictp op)
                   (or (c::errorp (c::exec-expr-pure arg1 compst))
                       (c::errorp (c::exec-expr-pure arg2 compst))))
@@ -1734,7 +1890,65 @@
              c::eval-binary-strict-pure
              c::apconvert-expr-value-when-not-array
              c::add-values-of-sint-and-sint0
-             c::type-of-value)))
+             c::type-of-value))
+
+  (defruled simpadd0-expr-binary-asg-support-lemma
+    (b* ((old (c::expr-binary (c::binop-asg) (c::expr-ident var) old-arg))
+         (new (c::expr-binary (c::binop-asg) (c::expr-ident var) new-arg))
+         (old-arg-result (c::exec-expr-pure old-arg compst))
+         (new-arg-result (c::exec-expr-pure new-arg compst))
+         (old-arg-value (c::expr-value->value old-arg-result))
+         (new-arg-value (c::expr-value->value new-arg-result))
+         (old-compst (c::exec-expr-asg old compst old-fenv limit))
+         (new-compst (c::exec-expr-asg new compst new-fenv limit))
+         (val (c::read-object (c::objdesign-of-var var compst) compst))
+         (type (c::type-of-value val)))
+      (implies (and (not (equal (c::expr-kind old-arg) :call))
+                    (not (equal (c::expr-kind new-arg) :call))
+                    (not (c::errorp val))
+                    (c::type-nonchar-integerp type)
+                    (not (c::errorp old-compst))
+                    (not (c::errorp new-arg-result))
+                    (equal old-arg-value new-arg-value)
+                    (equal (c::type-of-value old-arg-value) type))
+               (and (not (c::errorp new-compst))
+                    (equal old-compst new-compst))))
+    :expand ((c::exec-expr-asg
+              (c::expr-binary '(:asg) (c::expr-ident var) old-arg)
+              compst old-fenv limit)
+             (c::exec-expr-asg
+              (c::expr-binary '(:asg) (c::expr-ident var) new-arg)
+              compst new-fenv limit))
+    :enable (c::exec-expr-call-or-pure
+             c::apconvert-expr-value-when-not-array
+             c::value-kind-not-array-when-value-integerp)
+    :use (:instance
+          lemma
+          (val1 (c::read-object (c::objdesign-of-var var compst) compst))
+          (val2 (c::expr-value->value (c::exec-expr-pure old-arg compst))))
+    :prep-lemmas
+    ((defruled lemma
+       (implies (equal (c::type-of-value val1)
+                       (c::type-of-value val2))
+                (equal (c::value-integerp val1)
+                       (c::value-integerp val2)))
+       :enable (c::type-of-value
+                c::value-integerp
+                c::value-unsigned-integerp
+                c::value-signed-integerp))))
+
+  (defruled simpadd0-expr-binary-asg-support-lemma-error
+    (implies (and (not (equal (c::expr-kind expr) :call))
+                  (or (c::errorp (c::exec-expr-pure (c::expr-ident var) compst))
+                      (c::errorp (c::exec-expr-pure expr compst))))
+             (c::errorp
+              (c::exec-expr-asg (c::expr-binary (c::binop-asg)
+                                                (c::expr-ident var)
+                                                expr)
+                                compst fenv limit)))
+    :expand (c::exec-expr-asg (c::expr-binary '(:asg) (c::expr-ident var) expr)
+                              compst fenv limit)
+    :enable c::exec-expr-call-or-pure))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1983,6 +2197,146 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define simpadd0-stmt-expr ((expr? expr-optionp)
+                            (expr?-new expr-optionp)
+                            (expr?-events pseudo-event-form-listp)
+                            (expr?-thm-name symbolp)
+                            (expr?-vartys ident-type-mapp)
+                            (expr?-diffp booleanp)
+                            (gin simpadd0-ginp))
+  :guard (and (expr-option-unambp expr?)
+              (expr-option-unambp expr?-new)
+              (iff expr? expr?-new))
+  :returns (mv (stmt stmtp) (gout simpadd0-goutp))
+  :short "Transform an expression statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We put the optional expression into an expression statement.")
+   (xdoc::p
+    "We generate a theorem if there is no expression
+     or if there is an assignment expression
+     for which a theorem was generated.
+     When instantiating the theorem for the assignment expression,
+     we use @(':extra-bindings-ok') because
+     that theorem may be a dummy @('t')
+     (see @(tsee simpadd0-gen-expr-asg-thm))."))
+  (b* (((simpadd0-gin gin) gin)
+       (stmt (stmt-expr expr?))
+       (stmt-new (stmt-expr expr?-new))
+       ((unless (iff expr? expr?-new))
+        (raise "Internal error: ~
+                return statement with optional expression ~x0 ~
+                is transformed into ~
+                return statement with optional expression ~x1."
+               expr? expr?-new)
+        (mv (irr-stmt) (irr-simpadd0-gout)))
+       ((when (and (not expr?)
+                   expr?-diffp))
+        (raise "Internal error: ~
+                unchanged return statement marked as changed.")
+        (mv (irr-stmt) (irr-simpadd0-gout)))
+       ((unless (or (not expr?)
+                    (and expr?-thm-name
+                         (not (expr-purep expr?)))))
+        (mv stmt-new
+            (make-simpadd0-gout
+             :events expr?-events
+             :thm-name nil
+             :thm-index gin.thm-index
+             :names-to-avoid gin.names-to-avoid
+             :vartys expr?-vartys
+             :diffp expr?-diffp)))
+       (hints
+        (if expr?
+            `(("Goal"
+               :in-theory '((:e ldm-stmt)
+                            (:e ldm-expr)
+                            (:e ident)
+                            (:e c::expr-kind)
+                            (:e c::stmt-expr))
+               :use ((:instance
+                      ,expr?-thm-name
+                      :extra-bindings-ok
+                      (limit (- limit 2)))
+                     (:instance
+                      simpadd0-stmt-expr-asg-support-lemma
+                      (old-expr (mv-nth 1 (ldm-expr ',expr?)))
+                      (new-expr (mv-nth 1 (ldm-expr ',expr?-new)))
+                      ,@(and (not expr?-diffp)
+                             '((old-fenv fenv)
+                               (new-fenv fenv))))
+                     (:instance
+                      simpadd0-stmt-expr-asg-support-lemma-error
+                      (expr (mv-nth 1 (ldm-expr ',expr?)))
+                      ,@(and expr?-diffp
+                             '((fenv old-fenv)))))))
+          `(("Goal"
+             :in-theory '((:e ldm-stmt)
+                          (:e c::stmt-null))
+             :use simpadd0-stmt-null-support-lemma))))
+       ((mv thm-event thm-name thm-index)
+        (simpadd0-gen-stmt-thm stmt
+                               stmt-new
+                               expr?-vartys
+                               gin.const-new
+                               gin.thm-index
+                               hints)))
+    (mv stmt-new
+        (make-simpadd0-gout :events (append expr?-events
+                                            (list thm-event))
+                            :thm-name thm-name
+                            :thm-index thm-index
+                            :names-to-avoid (cons thm-name gin.names-to-avoid)
+                            :vartys expr?-vartys
+                            :diffp expr?-diffp)))
+
+  ///
+
+  (defret stmt-unambp-of-simpadd0-stmt-expr
+    (stmt-unambp stmt)
+    :hyp (expr-option-unambp expr?-new)
+    :hints (("Goal" :in-theory (enable irr-stmt))))
+
+  (defruled simpadd0-stmt-null-support-lemma
+    (b* ((stmt (c::stmt-null))
+         ((mv result &) (c::exec-stmt stmt compst fenv limit)))
+      (implies (not (c::errorp result))
+               (not result)))
+    :enable c::exec-stmt)
+
+  (defruled simpadd0-stmt-expr-asg-support-lemma
+    (b* ((old (c::stmt-expr old-expr))
+         (new (c::stmt-expr new-expr))
+         (old-expr-compst (c::exec-expr-asg
+                           old-expr compst old-fenv (- limit 2)))
+         (new-expr-compst (c::exec-expr-asg
+                           new-expr compst new-fenv (- limit 2)))
+         ((mv old-result old-compst) (c::exec-stmt old compst old-fenv limit))
+         ((mv new-result new-compst) (c::exec-stmt new compst new-fenv limit)))
+      (implies (and (not (equal (c::expr-kind old-expr) :call))
+                    (not (equal (c::expr-kind new-expr) :call))
+                    (not (c::errorp old-result))
+                    (not (c::errorp new-expr-compst))
+                    (equal old-expr-compst new-expr-compst))
+               (and (not (c::errorp new-result))
+                    (equal old-result new-result)
+                    (equal old-compst new-compst)
+                    (not old-result))))
+    :expand ((c::exec-stmt (c::stmt-expr old-expr) compst old-fenv limit)
+             (c::exec-stmt (c::stmt-expr new-expr) compst new-fenv limit))
+    :enable (c::exec-expr-call-or-asg))
+
+  (defruled simpadd0-stmt-expr-asg-support-lemma-error
+    (implies (and (not (equal (c::expr-kind expr) :call))
+                  (c::errorp (c::exec-expr-asg expr compst fenv (- limit 2))))
+             (c::errorp
+              (mv-nth 0 (c::exec-stmt (c::stmt-expr expr) compst fenv limit))))
+    :expand (c::exec-stmt (c::stmt-expr expr) compst fenv limit)
+    :enable c::exec-expr-call-or-asg))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define simpadd0-stmt-return ((expr? expr-optionp)
                               (expr?-new expr-optionp)
                               (expr?-events pseudo-event-form-listp)
@@ -2044,7 +2398,6 @@
                                   (:e ident)
                                   (:e c::expr-kind)
                                   (:e c::stmt-return)
-                                  (:e c::type-sint)
                                   (:e c::type-nonchar-integerp))
                      :use (,expr?-thm-name
                            (:instance
@@ -2199,7 +2552,6 @@
                                 (:e ldm-ident)
                                 (:e ident)
                                 (:e c::block-item-stmt)
-                                (:e c::type-sint)
                                 (:e c::type-nonchar-integerp))
                    :use ((:instance ,stmt-thm-name (limit (1- limit)))
                          (:instance
@@ -2354,7 +2706,6 @@
                                 (:e ldm-block-item)
                                 (:e ldm-ident)
                                 (:e ident)
-                                (:e c::type-sint)
                                 (:e c::type-nonchar-integerp))
                    :use ((:instance ,item-thm-name (limit (1- limit)))
                          (:instance
@@ -4524,15 +4875,15 @@
                         :vartys gout-items.vartys
                         :diffp gout-items.diffp)))
        :expr (b* (((mv new-expr? (simpadd0-gout gout-expr?))
-                   (simpadd0-expr-option stmt.expr? gin state)))
-               (mv (stmt-expr new-expr?)
-                   (make-simpadd0-gout
-                    :events gout-expr?.events
-                    :thm-name nil
-                    :thm-index gout-expr?.thm-index
-                    :names-to-avoid gout-expr?.names-to-avoid
-                    :vartys gout-expr?.vartys
-                    :diffp gout-expr?.diffp)))
+                   (simpadd0-expr-option stmt.expr? gin state))
+                  (gin (simpadd0-gin-update gin gout-expr?)))
+               (simpadd0-stmt-expr stmt.expr?
+                                   new-expr?
+                                   gout-expr?.events
+                                   gout-expr?.thm-name
+                                   gout-expr?.vartys
+                                   gout-expr?.diffp
+                                   gin))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
                  (simpadd0-expr stmt.test gin state))
                 (gin (simpadd0-gin-update gin gout-test))
@@ -5214,7 +5565,6 @@
                         (:e ldm-type)
                         (:e ldm-block-item-list)
                         (:e c::tyname-to-type)
-                        (:e c::type-sint)
                         (:e c::block-item-list-nocallsp)
                         c::errorp-of-error))))
        (thm-event `(defruled ,thm-name

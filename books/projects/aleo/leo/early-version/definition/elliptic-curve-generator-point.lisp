@@ -22,7 +22,7 @@
 
 (define edwards-bls12-generator ()
   :returns (point ecurve::edwards-bls12-pointp)
-  :parents (elliptic-curves)
+  :parents (dynamic-semantics)
   :short "The point on the edwards-bls12 curve that is used as a generator point."
   :long
   (xdoc::topstring

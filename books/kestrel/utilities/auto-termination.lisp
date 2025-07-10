@@ -31,7 +31,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/system/world-queries" :dir :system) ; for measure
+(include-book "kestrel/utilities/system/world-queries" :dir :system) ; for get-measure
 (include-book "tools/remove-hyps" :dir :system) ; for event-steps
 (include-book "../auto-termination/injections")
 (include-book "xdoc/top" :dir :system)
@@ -480,7 +480,7 @@
   (let ((recursivep (getpropc old-fn 'recursivep nil wrld)))
     (and recursivep
          (null (cdr recursivep)) ; singly-recursive
-         (let ((measure (measure old-fn wrld))
+         (let ((measure (get-measure old-fn wrld))
                (subset (measured-subset old-fn wrld)))
            (assert$
             (and measure (nvariablep measure) (not (fquotep measure)))
@@ -499,7 +499,7 @@
                           `(declare
                             (xargs :measure
                                    ,(sublis-var unify-subst measure)
-                                   ,@(let ((wf-rel (well-founded-relation
+                                   ,@(let ((wf-rel (get-well-founded-relation
                                                     old-fn wrld)))
                                        (and
                                         (not (eq wf-rel default-wf-rel))

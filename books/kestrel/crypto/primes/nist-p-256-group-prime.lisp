@@ -78,7 +78,7 @@
                  (1 1 1 1 1)
                  (() () () () ()))))))))
 
-  :parents (crypto)
+  :parents (crypto::crypto)
 
   :short "The NIST P-256 group order prime."
 
@@ -86,7 +86,7 @@
   (xdoc::topstring
    (xdoc::p
     "The NIST P-256 group order prime is the order of
-     the Weierstrass elliptic curve @('NIST P-256'). This prime is used as the 
+     the Weierstrass elliptic curve @('NIST P-256'). This prime is used as the
      scalar field for ECDSA signature operations.")
    (xdoc::p
     "The curve @('NIST P-256') is also called @('secp256r1').")

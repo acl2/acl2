@@ -158,7 +158,7 @@
                 (declares (remove-xarg-in-declares :well-founded-relation declares))
                 (declares (if (not rec)
                               declares ; no well-founded-relation if non-recursive
-                            (let ((well-founded-relation (well-founded-relation fn wrld)))
+                            (let ((well-founded-relation (get-well-founded-relation fn wrld)))
                               (if (eq 'o< well-founded-relation)
                                   declares ; it's the default, so omit
                                 (replace-xarg-in-declares :well-founded-relation well-founded-relation declares)))))
