@@ -53,6 +53,7 @@
 (include-book "kestrel/bv/putbits" :dir :system)
 (include-book "kestrel/bv/leftrotate-rules" :dir :system)
 (include-book "kestrel/bv/if-becomes-bvif-rules" :dir :system)
+(include-book "kestrel/bv/std" :dir :system)
 (include-book "kestrel/lists-light/update-nth" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)
 (include-book "kestrel/lists-light/true-list-fix" :dir :system)

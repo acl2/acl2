@@ -484,7 +484,6 @@
     bvplus-convert-arg3-to-bv-axe-restricted
     bvmult-convert-arg2-to-bv-axe
     bvmult-convert-arg3-to-bv-axe
-    ;; logext-convert-arg2-to-bv-axe ; todo: try
     ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
     ;; bvminus-convert-arg3-to-bv-axe
     bvuminus-convert-arg2-to-bv-axe
@@ -508,6 +507,14 @@
     bvshl-convert-arg2-to-bv-axe
     bvshr-convert-arg2-to-bv-axe
     bvashr-convert-arg2-to-bv-axe
+    bvlt-convert-arg2-to-bv-axe
+    bvlt-convert-arg3-to-bv-axe
+    sbvlt-convert-arg2-to-bv-axe
+    sbvlt-convert-arg3-to-bv-axe
+    bvdiv-convert-arg2-to-bv-axe
+    bvdiv-convert-arg3-to-bv-axe
+    bvmod-convert-arg2-to-bv-axe
+    bvmod-convert-arg3-to-bv-axe
     ;bvcat-convert-arg2-to-bv-axe ; todo: these seemed to cause problems
     ;bvcat-convert-arg4-to-bv-axe ; todo: more!
     ;slice-convert-arg3-to-bv-axe caused-problems with increments to RSP
@@ -525,8 +532,9 @@
     bvplus-of-logext-arg3-convert-to-bv
     bvminus-of-logext-arg2-convert-to-bv
     bvminus-of-logext-arg3-convert-to-bv
-    bool->bit$inline ; todo: handle better?
-    acl2::logbitp-to-getbit-equal-1
+    bool->bit-becomes-bool-to-bit
+    bit->bool-becomes-bit-to-bool
+    acl2::logbitp-to-getbit-equal-1 ;rename
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?

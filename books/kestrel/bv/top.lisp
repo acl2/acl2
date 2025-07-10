@@ -195,6 +195,7 @@
 
 (include-book "intro")
 ;; (include-book "bitops") ; excluding this since it brings in bitops
+;; (include-book "std") ; excluding this since it brings in std
 
 (include-book "validation-stp")
 (include-book "validation-smt-lib")
