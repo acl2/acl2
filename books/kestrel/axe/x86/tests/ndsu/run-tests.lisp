@@ -141,3 +141,6 @@
 
 ;; (depends-on "add-imm.macho64")
 (test-file "add-imm.macho64")
+
+;; (depends-on "sub-imm.macho64")
+(test-file "sub-imm.macho64")

@@ -44,25 +44,12 @@
 
 (defttag :open-output-channel!)
 
-(defun remove-top-from-parents (topics acc)
-  (cond ((endp topics) (reverse acc))
-        (t (remove-top-from-parents
-            (cdr topics)
-            (cons (let ((parents (cdr (assoc-eq :parents (car topics)))))
-                    (cond
-                     ((member-eq 'acl2::top parents)
-                      (put-assoc-eq :parents
-                                    (remove1-eq 'acl2::top parents)
-                                    (car topics)))
-                     (t (car topics))))
-                  acc)))))
-
 (acl2::defconsts
  (& & state)
  (state-global-let*
   ((current-package "ACL2" set-current-package-state))
   (b* ((- (initialize-xdoc-errors t))
-       (all-topics (remove-top-from-parents (get-xdoc-table (w state)) nil))
+       (all-topics (get-xdoc-table (w state)))
        ((mv rendered state)
         (render-topics all-topics all-topics state))
        (rendered (split-acl2-topics rendered nil nil nil))

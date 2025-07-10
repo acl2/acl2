@@ -56,3 +56,4 @@ gcc add-r32-m32.c -o add-r32-m32.elf64
 ;; Done on MacBook Pro Intel Quad-Core Intel Core i5
 
 gcc -o add-imm.macho64 add-imm.c
+gcc -o sub-imm.macho64 sub-imm.c

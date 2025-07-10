@@ -59,16 +59,7 @@
 #!XDOC
 (table xdoc 'doc
        (remove-topics-by-name (get-xdoc-table world)
-                              '(acl2::acl2 acl2::broken-link)))
-
-(defxdoc acl2::acl2
-  :parents (top)
-  :short "Documentation for the <a
-  href=\"http://www.cs.utexas.edu/users/moore/acl2\">ACL2 Theorem Prover</a>."
-
-  :long "<p>This is a parent topic for ACL2 system @(see documentation).  (We
-take some liberties with the hierarchy present in the ACL2 User's Manual to
-integrate certain topics into more appropriate places.)</p>")
+                              '(acl2::top acl2::broken-link)))
 
 (defxdoc acl2::broken-link
   :parents (documentation)
