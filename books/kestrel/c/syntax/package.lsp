@@ -24,6 +24,7 @@
                                    read-char
                                    read-files
                                    schar
+                                   standardp
                                    type
                                    typep
                                    unread-char))

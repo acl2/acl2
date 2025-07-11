@@ -409,6 +409,9 @@
 (def-constant-opener disjoint-regions64p)
 (def-constant-opener unsigned-canonical-address-p)
 
+(acl2::def-constant-opener seg-regp)
+(acl2::def-constant-opener integer-range-p)
+
 (defopeners acl2::get-symbol-entry-mach-o)
 (defopeners acl2::get-all-sections-from-mach-o-load-commands)
 (defopeners acl2::get-section-number-mach-o-aux)
@@ -1031,3 +1034,15 @@
                 (canonical-address-p y))
            (equal (logext 64 (+ x y))
                   (+ x y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm integerp-of-!rflagsbits->af (integerp (!rflagsbits->af af rflags)))
+(defthm integerp-of-!rflagsbits->cf (integerp (!rflagsbits->cf cf rflags)))
+(defthm integerp-of-!rflagsbits->of (integerp (!rflagsbits->of of rflags)))
+(defthm integerp-of-!rflagsbits->pf (integerp (!rflagsbits->pf pf rflags)))
+(defthm integerp-of-!rflagsbits->sf (integerp (!rflagsbits->sf sf rflags)))
+(defthm integerp-of-!rflagsbits->zf (integerp (!rflagsbits->zf zf rflags)))
+(defthm integerp-of-!rflagsbits->res1 (integerp (!rflagsbits->res1 res1 rflags)))
+(defthm integerp-of-!rflagsbits->res2 (integerp (!rflagsbits->res2 res2 rflags)))
+(defthm integerp-of-!rflagsbits->res3 (integerp (!rflagsbits->res3 res3 rflags)))

@@ -238,7 +238,7 @@
 (defthm set-ebp-when-equal-ebp (implies (equal val (ebp x86)) (equal (set-ebp val x86) x86)) :hints (("Goal" :in-theory (enable rbp-high ebp set-ebp))))
 
 ;; todo: switch to traffic in 32-bit addresses only
-(defun set-eip (eip x86)
+(defund set-eip (eip x86)
   (declare (xargs :stobjs x86
                   :guard (signed-byte-p 48 eip))) ;todo: tighten?
   (!rip eip x86))
@@ -246,22 +246,26 @@
 ;; This introduces set-eip, if we want to.  We probably only want this for 32-bits!
 (defthmd xw-becomes-set-eip
   (equal (xw :rip nil eip x86)
-         (set-eip eip x86)))
+         (set-eip eip x86))
+  :hints (("Goal" :in-theory (enable set-eip))))
 
 (defthmd !rip-becomes-set-eip
   (equal (!rip eip x86)
-         (set-eip eip x86)))
+         (set-eip eip x86))
+  :hints (("Goal" :in-theory (enable set-eip))))
 
 (theory-invariant (incompatible (:rewrite !rip-becomes-set-eip) (:definition set-eip)))
 (theory-invariant (incompatible (:rewrite xw-becomes-set-eip) (:definition set-eip)))
 
 (defthm eip-of-set-eip
   (equal (eip (set-eip eip x86))
-         (bvchop 32 eip)))
+         (bvchop 32 eip))
+  :hints (("Goal" :in-theory (enable set-eip))))
 
 (defthm set-eip-of-set-eip
   (equal (set-eip eip1 (set-eip eip2 x86))
-         (set-eip eip1 x86)))
+         (set-eip eip1 x86))
+  :hints (("Goal" :in-theory (enable set-eip))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -419,7 +423,14 @@
 (defthm xr-of-set-eip-irrel
   (implies (not (equal fld :rip))
            (equal (xr fld index (set-eip eip x86))
-                  (xr fld index x86))))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable set-eip))))
+
+(defthm xw-of-set-eip-irrel
+  (implies (not (equal fld :rip))
+           (equal (xw fld index val (set-eip eip x86))
+                  (set-eip eip  (xw fld index val x86))))
+  :hints (("Goal" :in-theory (enable set-eip))))
 
 ;; ;; needed when fld is :seg-hidden-limit
 ;; (defthm xr-of-set-reg-high-irrel

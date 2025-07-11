@@ -69,14 +69,20 @@
 ; who are looking at an older version of ACL2 will see the corresponding
 ; ACL2+Books Manual at this link.
 
-  "http://www.cs.utexas.edu/users/moore/acl2/v8-6/")
+  "https://www.cs.utexas.edu/users/moore/acl2/v8-6/")
 
-(defconst *installation-url*
+(defun acl2-url-ref (path s)
 
 ; Warning: This event appears identically in acl2-doc.lisp and
 ; acl2-doc-wrap.lisp.  If you change one, then change the other the same way!
 
-  (concatenate 'string *acl2-url* "HTML/installation/installation.html"))
+  (concatenate
+   'string
+   "<a href='"
+   (concatenate 'string *acl2-url* path)
+   "'>"
+   s
+   "</a>"))
 
 (defun combined-manual-ref ()
 
@@ -100,7 +106,7 @@
                                   (stringp url))
                               (stringp title))))
   (concatenate 'string
-               "<a href='http://www.lispworks.com/documentation/HyperSpec/"
+               "<a href='https://www.lispworks.com/documentation/HyperSpec/"
                (or url "")
                "'>" title "</a>"))
 

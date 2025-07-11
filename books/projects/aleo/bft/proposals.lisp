@@ -17,8 +17,9 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
-(local (include-book "library-extensions/oset-nonemptyp"))
 (local (include-book "library-extensions/oset-theorems"))
+
+(local (include-book "std/osets/nonemptyp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -342,7 +343,7 @@
                  prop-set-unequivp-necc)
        :use (:instance prop-set-unequivp-necc
                        (prop1 prop)
-                       (prop2 (set::nonempty-witness
+                       (prop2 (set::nonemptyp-witness
                                (props-with-author+round (proposal->author prop)
                                                         (proposal->round prop)
                                                         props)))

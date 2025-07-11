@@ -36,7 +36,7 @@ ui3 Encode(ui3 slice) {
 
 ui3[17] Booth(ui35 x) {
   ui35 x35 = x << 1;
-  ui3 a[17] = {};
+  ui3 a[17] = {{}};
   for (int k = 0; k < 17; k++) {
     a[k] = Encode(x35[2 * k + 3 - 1:2 * k]);
   }
@@ -44,7 +44,7 @@ ui3[17] Booth(ui35 x) {
 }
 
 ui33[17] PartialProducts(ui3 m21[17], ui33 y) {
-  ui33 pp[17] = {};
+  ui33 pp[17] = {{}};
   for (int k = 0; k < 17; k++) {
     ui33 row = 0;
     switch (m21[k][1:0]) {
@@ -63,13 +63,13 @@ ui33[17] PartialProducts(ui3 m21[17], ui33 y) {
 }
 
 ui64[17] Align(ui3 bds[17], ui33 pps[17]) {
-  bool sb[17] = {};
-  bool psb[18] = {};
+  bool sb[17] = {{}};
+  bool psb[18] = {{}};
   for (int k = 0; k < 17; k++) {
     sb[k] = bds[k][2];
     psb[k + 1] = bds[k][2];
   }
-  ui64 tble[17] = {};
+  ui64 tble[17] = {{}};
   for (int k = 0; k < 17; k++) {
     ui67 tmp = 0;
     tmp[2 * k + 33 - 1:2 * k] = pps[k];
@@ -104,17 +104,17 @@ ui64[17] Align(ui3 bds[17], ui33 pps[17]) {
 }
 
 ui64 Sum(ui64 in[17]) {
-  ui64 A1[8] = {};
+  ui64 A1[8] = {{}};
   for (uint i = 0; i < 4; i++) {
     <A1[2 * i + 0], A1[2 * i + 1]> = Compress42(in[4 * i], in[4 * i + 1], in[4 * i + 2], in[4 * i + 3]);
   }
-  ui64 A2[4] = {};
+  ui64 A2[4] = {{}};
   for (uint i = 0; i < 2; i++) {
     <A2[2 * i + 0], A2[2 * i + 1]> = Compress42(A1[4 * i], A1[4 * i + 1], A1[4 * i + 2], A1[4 * i + 3]);
   }
-  ui64 A3[2] = {};
+  ui64 A3[2] = {{}};
   <A3[0], A3[1]> = Compress42(A2[0], A2[1], A2[2], A2[3]);
-  ui64 A4[2] = {};
+  ui64 A4[2] = {{}};
   <A4[0], A4[1]> = Compress32(A3[0], A3[1], in[16]);
   return A4[0] + A4[1];
 }

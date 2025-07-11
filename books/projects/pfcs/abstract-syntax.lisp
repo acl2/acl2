@@ -15,7 +15,6 @@
 (include-book "abstract-syntax-trees")
 (include-book "abstract-syntax-operations")
 (include-book "convenience-constructors")
-(include-book "indexed-names")
 (include-book "syntax-abstraction")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -47,5 +46,4 @@
   :order-subtopics (abstract-syntax-trees
                     abstract-syntax-operations
                     convenience-constructors
-                    indexed-names
                     syntax-abstraction))

@@ -407,7 +407,7 @@
 (define ushort-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
   :short "Check if a mathematical integer is
-          in the range of (i.e. representable in) type @('signed short')."
+          in the range of (i.e. representable in) type @('unsigned short')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ushort-max ienv)))
   :hooks (:fix))
@@ -427,7 +427,7 @@
 (define uint-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
   :short "Check if a mathematical integer is
-          in the range of (i.e. representable in) type @('signed int')."
+          in the range of (i.e. representable in) type @('unsigned int')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (uint-max ienv)))
   :hooks (:fix))
@@ -447,7 +447,7 @@
 (define ulong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
   :short "Check if a mathematical integer is
-          in the range of (i.e. representable in) type @('signed long')."
+          in the range of (i.e. representable in) type @('unsigned long')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ulong-max ienv)))
   :hooks (:fix))
@@ -457,7 +457,7 @@
 (define sllong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
   :short "Check if a mathematical integer is
-          in the range of (i.e. representable in) type @('signed llong')."
+          in the range of (i.e. representable in) type @('signed long long')."
   (and (<= (sllong-min ienv) (ifix val))
        (<= (ifix val) (sllong-max ienv)))
   :hooks (:fix))
@@ -467,7 +467,7 @@
 (define ullong-rangep ((val integerp) (ienv ienvp))
   :returns (yes/no booleanp)
   :short "Check if a mathematical integer is
-          in the range of (i.e. representable in) type @('signed llong')."
+          in the range of (i.e. representable in) type @('unsigned long long')."
   (and (<= 0 (ifix val))
        (<= (ifix val) (ullong-max ienv)))
   :hooks (:fix))

@@ -589,7 +589,7 @@
                                      dummy base case of ~
                                      direct abstract declarator."))
    (tyname (and (spec/qual-list-annop (tyname->specquals tyname))
-                (absdeclor-option-annop (tyname->decl? tyname))
+                (absdeclor-option-annop (tyname->declor? tyname))
                 (tyname-infop (tyname->info tyname))))
    (attrib t)
    (attrib-spec t)
@@ -697,8 +697,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is currently very limited.
-     If the statement is a return statement with an expression,
+    "This is currently very limited.")
+   (xdoc::p
+    "If the statement is an expression statement,
+     with or without an expression,
+     we return the @('void') type,
+     because even if there is an expression that returns a value,
+     the value is discarded.")
+   (xdoc::p
+    "If the statement is a return statement with an expression,
      the type of the expression is returned;
      if the return statement has no expression, @('void') is returned.
      For the other kinds of statement, the unknown type is returned.")
@@ -712,7 +719,7 @@
    stmt
    :labeled (stmt-type stmt.stmt)
    :compound (type-unknown)
-   :expr (type-unknown)
+   :expr (type-void)
    :if (type-unknown)
    :ifelse (type-unknown)
    :switch (type-unknown)
@@ -727,7 +734,7 @@
    :return (expr-option-case
             stmt.expr?
             :some (expr-type stmt.expr?.val)
-            :none (type-unknown))
+            :none (type-void))
    :asm (type-unknown))
   :measure (stmt-count stmt)
   :hints (("Goal" :in-theory (enable o< o-finp)))

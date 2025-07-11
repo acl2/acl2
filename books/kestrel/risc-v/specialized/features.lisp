@@ -26,7 +26,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define constants for various combinations of @(see features)."))
+    "We define constants (nullary functions)
+     for various combinations of @(see features).")
+   (xdoc::p
+    "We disable their executable counterparts, to maintain the abstraction.
+     We enable them only where needed in proofs."))
   :order-subtopics t
   :default-parent t)
 
@@ -37,7 +41,9 @@
   :short "Features for RV32I, with little endian memory."
   (make-feat :base (feat-base-rv32i)
              :endian (feat-endian-little)
-             :m nil))
+             :m nil)
+  ///
+  (in-theory (disable (:e feat-rv32i-le))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -46,7 +52,9 @@
   :short "Features for RV32I, with big endian memory."
   (make-feat :base (feat-base-rv32i)
              :endian (feat-endian-big)
-             :m nil))
+             :m nil)
+  ///
+  (in-theory (disable (:e feat-rv32i-be))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,7 +63,9 @@
   :short "Features for RV64I, with little endian memory."
   (make-feat :base (feat-base-rv64i)
              :endian (feat-endian-little)
-             :m nil))
+             :m nil)
+  ///
+  (in-theory (disable (:e feat-rv64i-le))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -64,7 +74,9 @@
   :short "Features for RV64I, with big endian memory."
   (make-feat :base (feat-base-rv64i)
              :endian (feat-endian-big)
-             :m nil))
+             :m nil)
+  ///
+  (in-theory (disable (:e feat-rv64i-be))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,7 +85,9 @@
   :short "Features for RV32E, with little endian memory."
   (make-feat :base (feat-base-rv32e)
              :endian (feat-endian-little)
-             :m nil))
+             :m nil)
+  ///
+  (in-theory (disable (:e feat-rv32e-le))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -82,7 +96,9 @@
   :short "Features for RV32E, with big endian memory."
   (make-feat :base (feat-base-rv32e)
              :endian (feat-endian-big)
-             :m nil))
+             :m nil)
+  ///
+  (in-theory (disable (:e feat-rv32e-be))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,7 +107,9 @@
   :short "Features for RV64E, with little endian memory."
   (make-feat :base (feat-base-rv64e)
              :endian (feat-endian-little)
-             :m nil))
+             :m nil)
+  ///
+  (in-theory (disable (:e feat-rv64e-le))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -100,7 +118,9 @@
   :short "Features for RV64E, with big endian memory."
   (make-feat :base (feat-base-rv64e)
              :endian (feat-endian-big)
-             :m nil))
+             :m nil)
+  ///
+  (in-theory (disable (:e feat-rv64e-be))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -109,7 +129,9 @@
   :short "Features for RV32IM, with little endian memory."
   (make-feat :base (feat-base-rv32i)
              :endian (feat-endian-little)
-             :m t))
+             :m t)
+  ///
+  (in-theory (disable (:e feat-rv32im-le))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +140,9 @@
   :short "Features for RV32IM, with big endian memory."
   (make-feat :base (feat-base-rv32i)
              :endian (feat-endian-big)
-             :m t))
+             :m t)
+  ///
+  (in-theory (disable (:e feat-rv32im-be))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,7 +151,9 @@
   :short "Features for RV64IM, with little endian memory."
   (make-feat :base (feat-base-rv64i)
              :endian (feat-endian-little)
-             :m t))
+             :m t)
+  ///
+  (in-theory (disable (:e feat-rv64im-le))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -136,7 +162,9 @@
   :short "Features for RV64IM, with big endian memory."
   (make-feat :base (feat-base-rv64i)
              :endian (feat-endian-big)
-             :m t))
+             :m t)
+  ///
+  (in-theory (disable (:e feat-rv64im-be))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -145,7 +173,9 @@
   :short "Features for RV32EM, with little endian memory."
   (make-feat :base (feat-base-rv32e)
              :endian (feat-endian-little)
-             :m t))
+             :m t)
+  ///
+  (in-theory (disable (:e feat-rv32em-le))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -154,7 +184,9 @@
   :short "Features for RV32EM, with big endian memory."
   (make-feat :base (feat-base-rv32e)
              :endian (feat-endian-big)
-             :m t))
+             :m t)
+  ///
+  (in-theory (disable (:e feat-rv32em-be))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -163,7 +195,9 @@
   :short "Features for RV64EM, with little endian memory."
   (make-feat :base (feat-base-rv64e)
              :endian (feat-endian-little)
-             :m t))
+             :m t)
+  ///
+  (in-theory (disable (:e feat-rv64em-le))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -172,4 +206,6 @@
   :short "Features for RV64EM, with big endian memory."
   (make-feat :base (feat-base-rv64e)
              :endian (feat-endian-big)
-             :m t))
+             :m t)
+  ///
+  (in-theory (disable (:e feat-rv64em-be))))

@@ -420,6 +420,7 @@
                                                    (subject '"It")
                                                    (1arg 'nil)
                                                    (1res 'nil)
+                                                   (stobjs 'nil)
                                                    (guard 'nil)
                                                    (dont-be-or-call 'nil)
                                                    (additional-function 'nil)
@@ -449,6 +450,10 @@
      "The @('1res') parameter must be a boolean
       that specifies whether the function or lambda expression
       must return a single (i.e. non-@(tsee mv)) result or not.")
+    (xdoc::li
+     "The @('stobjs') parameter must be a boolean
+      that specifies whether the function or lambda expression
+      can have input or output stobjs.")
     (xdoc::li
      "The @('guard') parameter must be one of the following:
       (i) XDOC text that describes the condition under which
@@ -492,12 +497,15 @@
      (xdoc::li
       "The name of a "
       ,(if 1arg "unary " "")
-      "logic-mode function.
-       This function must have no input or output "
-      (xdoc::seetopic "acl2::stobj" "stobjs")
-      "."
+      "logic-mode function."
+      ,(if stobjs
+           ""
+         '(xdoc::&&
+           " This function must have no input or output "
+           (xdoc::seetopic "acl2::stobj" "stobjs")
+           "."))
       ,(if 1res
-           `(xdoc::&&
+           '(xdoc::&&
              " This function must return
               a single (i.e. non-"
              (xdoc::seetopic "acl2::mv" "@('mv')")
@@ -521,12 +529,15 @@
       "A "
       ,(if 1arg "unary " "")
       "closed lambda expression
-       that only references logic-mode functions.
-       This lambda expression must have no input or output "
-      (xdoc::seetopic "acl2::stobj" "stobjs")
-      "."
+       that only references logic-mode functions."
+      ,(if stobjs
+           ""
+         '(xdoc::&&
+           " This lambda expression must have no input or output "
+           (xdoc::seetopic "acl2::stobj" "stobjs")
+           "."))
       ,(if 1res
-           `(xdoc::&&
+           '(xdoc::&&
              " This lambda expression must return
               a single (i.e. non-"
              (xdoc::seetopic "acl2::mv" "@('mv')")
@@ -575,6 +586,7 @@
                                   (subject 'nil)
                                   (free-vars 'nil)
                                   (1res 'nil)
+                                  (stobjs 'nil)
                                   (guard 'nil)
                                   (dont-call 'nil)
                                   (additional 'nil))
@@ -603,6 +615,10 @@
      "The @('1res') parameter must be a boolean
       that specifies whether the term
       must return a single (i.e. non-@(tsee mv)) value or not.")
+    (xdoc::li
+     "The @('stobjs') parameter must be a boolean
+      that specifies whether the term
+      can have input or output stobjs.")
     (xdoc::li
      "The @('guard') parameter must be one of the following:
       (i) XDOC text that describes the condition under which
@@ -636,9 +652,12 @@
            " and that includes no free variables other than "
            ,free-vars)
        "")
-    ". This term must have no output "
-    (xdoc::seetopic "acl2::stobj" "stobjs")
-    "."
+    ,(if stobjs
+         ""
+       '(xdoc::&&
+         ". This term must have no output "
+         (xdoc::seetopic "acl2::stobj" "stobjs")
+         "."))
     ,(if 1res
          `(xdoc::&&
            " This term must return

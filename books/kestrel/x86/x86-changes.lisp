@@ -103,37 +103,42 @@
 
 (acl2::def-constant-opener x::open-carry)
 
-(defthm x::open-carry-of-cf-spec8
-  (implies (unsigned-byte-p 9 x)
-           (equal (x::open-carry (cf-spec8 x))
-                  (acl2::getbit 8 x)))
-  :hints (("Goal" :in-theory (enable cf-spec8 x::open-carry))))
+;; (defthm x::open-carry-of-cf-spec8
+;;   (implies (unsigned-byte-p 9 x)
+;;            (equal (x::open-carry (cf-spec8 x))
+;;                   (acl2::getbit 8 x)))
+;;   :hints (("Goal" :in-theory (enable cf-spec8 x::open-carry))))
 
-(defthm x::open-carry-of-cf-spec16
-  (implies (unsigned-byte-p 17 x)
-           (equal (x::open-carry (cf-spec16 x))
-                  (acl2::getbit 16 x)))
-  :hints (("Goal" :in-theory (enable cf-spec16 x::open-carry))))
+;; (defthm x::open-carry-of-cf-spec16
+;;   (implies (unsigned-byte-p 17 x)
+;;            (equal (x::open-carry (cf-spec16 x))
+;;                   (acl2::getbit 16 x)))
+;;   :hints (("Goal" :in-theory (enable cf-spec16 x::open-carry))))
 
-(defthm x::open-carry-of-cf-spec32
-  (implies (unsigned-byte-p 33 x)
-           (equal (x::open-carry (cf-spec32 x))
-                  (acl2::getbit 32 x)))
-  :hints (("Goal" :in-theory (enable cf-spec32 x::open-carry))))
+;; (defthm x::open-carry-of-cf-spec32
+;;   (implies (unsigned-byte-p 33 x)
+;;            (equal (x::open-carry (cf-spec32 x))
+;;                   (acl2::getbit 32 x)))
+;;   :hints (("Goal" :in-theory (enable cf-spec32 x::open-carry))))
 
-;; todo: just put the result of this into the alt-def?
-;see cf-spec64-becomes-getbit
-(defthm x::open-carry-of-cf-spec64
-  (implies (unsigned-byte-p 65 x)
-           (equal (x::open-carry (cf-spec64 x))
-                  (acl2::getbit 64 x)))
-  :hints (("Goal" :in-theory (enable cf-spec64 x::open-carry))))
+;; ;; todo: just put the result of this into the alt-def?
+;; ;see cf-spec64-becomes-getbit
+;; (defthm x::open-carry-of-cf-spec64
+;;   (implies (unsigned-byte-p 65 x)
+;;            (equal (x::open-carry (cf-spec64 x))
+;;                   (acl2::getbit 64 x)))
+;;   :hints (("Goal" :in-theory (enable cf-spec64 x::open-carry))))
 
 ;; Only for Axe
 (defthmd x::integerp-of-open-carry
   (equal (integerp (x::open-carry x))
          (integerp x))
   :hints (("Goal" :in-theory (enable x::open-carry))))
+
+(defthmd open-carry-of-rflagsbits->cf
+  (equal (x::open-carry (rflagsbits->cf input-rflags))
+         (acl2::getbit 0 input-rflags))
+  :hints (("Goal" :in-theory (enable rflagsbits->cf x::open-carry rflagsbits-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

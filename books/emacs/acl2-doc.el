@@ -130,7 +130,7 @@
 (extend-acl2-doc-manual-alist
  'acl2-only
  (concat *acl2-sources-dir* "doc.lisp")
- 'ACL2
+ 'TOP
  "ACL2 User's Manual"
  nil
  nil
@@ -632,7 +632,7 @@ for confirmation."
                       (if (eq (nth 0 tuple) 'TOP)
                           ""
                         (format ":DOC source: %s\n" (nth 3 tuple)))
-                    (if (eq (acl2-doc-state-top-name) 'ACL2)
+                    (if (eq (acl2-doc-state-top-name) 'TOP)
                         ""
                       ":DOC source: ACL2 Sources\n"))
                   (nth 2 tuple)))

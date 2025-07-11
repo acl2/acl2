@@ -2452,3 +2452,113 @@
      (char+short+int+long+llong-format->llong
       (ienv->char+short+int+long+llong-format ienv)))))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-uchar-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('unsigned char')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->uchar-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-schar-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('signed char')."
+  (and (<= (ienv->schar-min ienv) (ifix val))
+       (<= (ifix val) (ienv->schar-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-char-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('char')."
+  (and (<= (ienv->char-min ienv) (ifix val))
+       (<= (ifix val) (ienv->char-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-ushort-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('unsigned short')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->ushort-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-sshort-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('signed short')."
+  (and (<= (ienv->sshort-min ienv) (ifix val))
+       (<= (ifix val) (ienv->sshort-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-uint-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('unsigned int')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->uint-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-sint-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('signed int')."
+  (and (<= (ienv->sint-min ienv) (ifix val))
+       (<= (ifix val) (ienv->sint-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-ulong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('unsigned long')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->ulong-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-slong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('signed long')."
+  (and (<= (ienv->slong-min ienv) (ifix val))
+       (<= (ifix val) (ienv->slong-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-ullong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('unsigned long long')."
+  (and (<= 0 (ifix val))
+       (<= (ifix val) (ienv->ullong-max ienv)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-sllong-rangep ((val integerp) (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Check if an ACl2 integer is
+          in the range of (i.e. representable in) type @('signed long long')."
+  (and (<= (ienv->sllong-min ienv) (ifix val))
+       (<= (ifix val) (ienv->sllong-max ienv)))
+  :hooks (:fix))

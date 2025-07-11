@@ -11,6 +11,7 @@
 
 (in-package "ALEOVM")
 
+(include-book "projects/pfcs/convenience-constructors" :dir :system)
 (include-book "projects/pfcs/lifting" :dir :system)
 (include-book "projects/pfcs/parser-interface" :dir :system)
 (include-book "projects/pfcs/r1cs-subset" :dir :system)
@@ -135,7 +136,7 @@
              boolean-nand-spec))
 
   (defruled boolean-nand-circuit-to-spec
-    (implies (and (equal (pfcs::lookup-definition "boolean_nand" defs)
+    (implies (and (equal (pfcs::lookup-definition (pfname "boolean_nand") defs)
                          (boolean-nand-circuit))
                   (primep prime)
                   (pfield::fep x prime)
@@ -144,8 +145,9 @@
                   (bitp x)
                   (bitp y))
              (equal (pfcs::definition-satp
-                      "boolean_nand" defs (list x y z) prime)
+                      (pfname "boolean_nand") defs (list x y z) prime)
                     (boolean-nand-spec x y z prime)))
     :in-theory '((:e boolean-nand-circuit)
+                 (:e name-simple)
                  definition-satp-to-boolean-nand-pred
                  boolean-nand-pred-to-spec)))

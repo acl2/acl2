@@ -111,8 +111,7 @@
         which must be in the current system path for executables.")
       (xdoc::li
        "@(':auto'),
-        which implicitly names the preprocessor @('\"cpp\"')
-        (a common default),
+        which implicitly names the preprocessor @('\"gcc\"'),
         which must be in the current system path for executables."))
      (xdoc::p
       "The preprocessing (if this input is not @('nil')),

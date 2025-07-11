@@ -124,11 +124,12 @@ suggested by this conjecture.  Subsumption reduces that number to two.
 However, one of these is flawed and so we are left with one viable
 candidate.  
 
-We will induct according to a scheme suggested by (PERM X X-EQUIV).
+We will induct according to a scheme suggested by (PERM X X-EQUIV),
+while accommodating (LEN X).
 
-This suggestion was produced using the :induction rules LEN and PERM.
-If we let (:P X X-EQUIV) denote *1 above then the induction scheme
-we'll use is
+These suggestions were produced using the :induction rules LEN and
+PERM.  If we let (:P X X-EQUIV) denote *1 above then the induction
+scheme we'll use is
 (AND (IMPLIES (NOT (CONSP X)) (:P X X-EQUIV))
      (IMPLIES (AND (CONSP X)
                    (NOT (MEMB (CAR X) X-EQUIV)))
@@ -268,7 +269,8 @@ suggested by this conjecture.  Subsumption reduces that number to five.
 These merge into one derived induction scheme.  
 
 We will induct according to a scheme suggested by (PAIRWISE-IFF X Z),
-but modified to accommodate (PAIRWISE-IFF Y Z) and (PAIRWISE-IFF Y X).
+while accommodating (PAIRWISE-IFF Y Z), (PAIRWISE-IFF Y X), 
+(PAIRWISE-IFF X X) and (PAIRWISE-IFF X Y).
 
 These suggestions were produced using the :induction rule PAIRWISE-IFF.
 If we let (:P X Y Z) denote *1 above then the induction scheme we'll
@@ -567,8 +569,8 @@ Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (LEN X-EQUIV), but
-modified to accommodate (LEN X) and (PAIRWISE-IFF X X-EQUIV).
+We will induct according to a scheme suggested by (LEN X-EQUIV), while
+accommodating (LEN X) and (PAIRWISE-IFF X X-EQUIV).
 
 These suggestions were produced using the :induction rules LEN and
 PAIRWISE-IFF.  If we let (:P X X-EQUIV) denote *1 above then the induction
@@ -782,7 +784,8 @@ suggested by this conjecture.  Subsumption reduces that number to five.
 These merge into one derived induction scheme.  
 
 We will induct according to a scheme suggested by (EQUAL-NAT-LIST X Z),
-but modified to accommodate (EQUAL-NAT-LIST Y Z) and (EQUAL-NAT-LIST Y X).
+while accommodating (EQUAL-NAT-LIST Y Z), (EQUAL-NAT-LIST Y X), 
+(EQUAL-NAT-LIST X X) and (EQUAL-NAT-LIST X Y).
 
 These suggestions were produced using the :induction rule EQUAL-NAT-LIST.
 If we let (:P X Y Z) denote *1 above then the induction scheme we'll
@@ -1881,8 +1884,8 @@ Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (LEN X-EQUIV), but
-modified to accommodate (LEN X) and (EQUAL-NAT-LIST X X-EQUIV).
+We will induct according to a scheme suggested by (LEN X-EQUIV), while
+accommodating (LEN X) and (EQUAL-NAT-LIST X X-EQUIV).
 
 These suggestions were produced using the :induction rules EQUAL-NAT-LIST
 and LEN.  If we let (:P X X-EQUIV) denote *1 above then the induction

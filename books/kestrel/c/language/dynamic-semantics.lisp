@@ -1133,9 +1133,6 @@
      (xdoc::p
       "For now we only support the execution of certain statements.")
      (xdoc::p
-      "We only allow, and in fact require,
-       assignment expressions in expression statements.")
-     (xdoc::p
       "For a compound statement (i.e. a block),
        we enter a new (empty) scope prior to executing the block items,
        and we exit that scope after executing the block items."))
@@ -1155,7 +1152,7 @@
                   ((when (errorp compst/error))
                    (mv compst/error (compustate-fix compst))))
                (mv nil compst/error))
-       :null (mv (error (list :exec-stmt s)) (compustate-fix compst))
+       :null (mv nil (compustate-fix compst))
        :if (b* ((test (exec-expr-pure s.test compst))
                 ((when (errorp test)) (mv test (compustate-fix compst)))
                 (test (apconvert-expr-value test))

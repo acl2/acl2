@@ -1,7 +1,7 @@
 ; Axe support for replacing bitops functions
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,7 @@
 (include-book "axe-syntax-functions-bv")
 (local (include-book "kestrel/bv/intro" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-(local (include-book "kestrel/bv/rules10" :dir :system)) ; for ash-negative-becomes-slice
+(local (include-book "kestrel/bv/ash" :dir :system)) ; for ash-negative-becomes-slice
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
 

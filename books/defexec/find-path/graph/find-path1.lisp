@@ -54,7 +54,7 @@
 ; Not to belabor this point, but the made-up script below suggests the
 ; following history with The Method:
 
-; command issued to ACL               result
+; command issued to ACL2              result
 
 ; (defthm THM ...)                    failed proof
 ; (defthm A ...)                      failed proof

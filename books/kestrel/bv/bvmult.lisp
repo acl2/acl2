@@ -1,7 +1,7 @@
 ; A function to multiply two bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,8 @@
 (include-book "bvmult-def")
 (local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/lg" :dir :system))
 
 (defthm integerp-of-bvmult
   (integerp (bvmult size x y)))
@@ -263,3 +265,40 @@
   :hints (("Goal" :in-theory (enable bvmult))))
 
 (theory-invariant (incompatible (:rewrite slice-of-*-becomes-slice-of-bvmult) (:definition bvmult)))
+
+(defthm bvmult-of-ifix-arg2
+  (equal (bvmult size (ifix x) y)
+         (bvmult size x y))
+  :hints (("Goal" :in-theory (enable bvmult))))
+
+(defthm bvmult-of-ifix-arg3
+  (equal (bvmult size x (ifix y))
+         (bvmult size x y))
+  :hints (("Goal" :in-theory (enable bvmult))))
+
+(defthm getbit-of-bvmult-of-expt
+  (implies (and (< n (+ 1 size))
+                (>= size2 (+ 1 size))
+                ;; (integerp x)
+                (natp size)
+                (natp size2)
+                (natp n))
+           (equal (getbit size (bvmult size2 (expt 2 n) x))
+                  (getbit (- size n) x)))
+  :hints (("Goal" :in-theory (enable bvmult getbit
+                                     natp ;yuck
+                                     ))))
+
+(defthm getbit-of-bvmult-of-expt-constant-version
+  (implies (and (syntaxp (quotep k))
+                (power-of-2p k)
+                (< (lg k) (+ 1 size))
+                (>= size2 (+ 1 size))
+                ;; (integerp x)
+                (natp size)
+                (natp size2)
+                (natp (lg k)))
+           (equal (getbit size (bvmult size2 k x))
+                  (getbit (- size (lg k)) x)))
+  :hints (("Goal" :use (:instance getbit-of-bvmult-of-expt (n (lg k)))
+           :in-theory (disable getbit-of-bvmult-of-expt))))

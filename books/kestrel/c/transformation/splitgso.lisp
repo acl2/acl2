@@ -295,17 +295,17 @@
                   (retok nil nil nil nil nil)))
               (type-spec-case
                 type-spec?
-                :struct (b* (((strunispec strunispec) type-spec?.spec)
-                             (match (equal strunispec.name original))
+                :struct (b* (((struni-spec struni-spec) type-spec?.spec)
+                             (match (equal struni-spec.name? original))
                              ((unless match)
                               (retok nil nil nil nil nil))
                              ((erp remanining-struct-decls split-struct-decls)
                               ;; TODO: also check that split-members are
                               ;;   all in the struct.
                               (split-structdecl-list split-members
-                                                     strunispec.members))
-                             (new1 (or new1 strunispec.name (ident "new_struct")))
-                             (new2 (or new2 strunispec.name (ident "new_struct")))
+                                                     struni-spec.members))
+                             (new1 (or new1 struni-spec.name? (ident "new_struct")))
+                             (new2 (or new2 struni-spec.name? (ident "new_struct")))
                              ((list new1 new2)
                               (fresh-idents (list new1 new2) blacklist)))
                           (retok t new1 new2 remanining-struct-decls split-struct-decls))
@@ -319,14 +319,14 @@
                      (c$::make-decl-decl
                        :specs (list (c$::decl-spec-typespec
                                       (c$::type-spec-struct
-                                        (c$::make-strunispec
-                                          :name new1
+                                        (c$::make-struni-spec
+                                          :name? new1
                                           :members remanining-struct-decls)))))
                      (c$::make-decl-decl
                        :specs (list (c$::decl-spec-typespec
                                       (c$::type-spec-struct
-                                        (c$::make-strunispec
-                                          :name new2
+                                        (c$::make-struni-spec
+                                          :name? new2
                                           :members split-struct-decls))))))))
       :statassert (retok nil nil (list (decl-fix decl)))))
   ///
@@ -693,13 +693,13 @@
            (decl-new1-type
              (c$::decl-spec-typespec
                (c$::type-spec-struct
-                 (c$::make-strunispec
-                   :name new1-type))))
+                 (c$::make-struni-spec
+                   :name? new1-type))))
            (decl-new2-type
              (c$::decl-spec-typespec
                (c$::type-spec-struct
-                 (c$::make-strunispec
-                   :name new2-type)))))
+                 (c$::make-struni-spec
+                   :name? new2-type)))))
         (retok
           t
           (list (c$::make-decl-decl

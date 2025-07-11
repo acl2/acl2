@@ -23,7 +23,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ abstract-syntax
-  :parents (language)
+  :parents (definition)
   :short "Abstract syntax of Leo."
   :long
   (xdoc::topstring
