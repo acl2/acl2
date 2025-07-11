@@ -5803,10 +5803,18 @@
             add-af-spec16-becomes-bvlt
             add-af-spec32-becomes-bvlt
             add-af-spec64-becomes-bvlt
+            adc-af-spec8-becomes-bvlt
+            adc-af-spec16-becomes-bvlt
+            adc-af-spec32-becomes-bvlt
+            adc-af-spec64-becomes-bvlt
             sub-af-spec8-becomes-bvlt
             sub-af-spec16-becomes-bvlt
             sub-af-spec32-becomes-bvlt
             sub-af-spec64-becomes-bvlt
+            sbb-af-spec8-becomes-bvlt
+            sbb-af-spec16-becomes-bvlt
+            sbb-af-spec32-becomes-bvlt
+            sbb-af-spec64-becomes-bvlt
             cf-spec8-becomes-getbit  ; cf-spec8$inline
             cf-spec16-becomes-getbit ; cf-spec16$inline
             cf-spec32-becomes-getbit ; cf-spec32$inline
