@@ -107,7 +107,13 @@
                sentence.")
     (xdoc::li (xdoc::seetopic "xdoc" "XDOC")
               " short forms should not span multiple paragraphs, or include
-               code blocks, tables, headers, etc."))
+               code blocks, tables, headers, etc.")
+    (xdoc::li "When making changes to "
+              (xdoc::seetopic "xdoc" "XDOC")
+              ", make sure the manual still builds successfully by invoking
+               @('make manual'). After building, open your local manual and
+               check that your topics don't appear under @(see
+               xdoc::missing-parents)."))
    (xdoc::h3 "Naming Conventions")
    (xdoc::ul
     (xdoc::li "Consider ending predicates with ``p'' (or ``-p,'' especially if
@@ -132,7 +138,12 @@
                configuration:"
               (xdoc::codeblock
                "(eval-after-load 'cl-indent"
-               "  '(put 'if 'common-lisp-indent-function 2))")))
+               "  '(put 'if 'common-lisp-indent-function 2))"))
+    (xdoc::li "Ensure that parentheses are balanced. Usually, books will fail
+               to certify if the are imbalanced, but some Lisps may be overly
+               forgiving in this respect. If you have the @(csee emacs) plugin
+               loaded, you can use @('M-x find-unbalanced-parentheses') to look
+               for such issues."))
    (xdoc::h3 "Packages")
    (xdoc::ul
     (xdoc::li "The use of packages is highly encouraged. This helps to avoid
@@ -157,6 +168,9 @@
                the book and are intended to be ``exported.'' This allows
                libraries to be more modular and avoids cluttering the
                end-user's world.")
+    (xdoc::li "Use relative paths in @('include-book') events only when
+               including books contained within the same library. Otherwise,
+               use @(':dir :system'). Never use absolute paths.")
     (xdoc::li "Most functions (especially non-recursive function) should be
                disabled by default, unless they are best understood as simple
                aliases/wrappers.")
@@ -183,6 +197,11 @@
                acl2s::set-defunc-timeout), etc.). If possible, avoid timeout
                windows altogether, or use step limits instead (e.g. @(tsee
                with-prover-step-limit))."))
+   (xdoc::h3 "The Build")
+   (xdoc::ul
+    (xdoc::li "Avoid introducing new Makefiles when possible, relying instead
+               on the existing top-level GNUMakefile. (See also @(see
+               books-certification).)"))
    (xdoc::h3 "Book Style Consistency")
    (xdoc::ul
     (xdoc::li "There are certain styles which are not universal across the
