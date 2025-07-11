@@ -2667,16 +2667,16 @@
                  (retok (type-spec-atomic new-type) type nil types table))
        :struct (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                     ((erp new-spec types table)
-                     (valid-strunispec tyspec.spec table ienv))
-                    ((strunispec tyspec.spec) tyspec.spec))
+                     (valid-struni-spec tyspec.spec table ienv))
+                    ((struni-spec tyspec.spec) tyspec.spec))
                  (retok (type-spec-struct new-spec)
-                        (type-struct tyspec.spec.name)
+                        (type-struct tyspec.spec.name?)
                         nil
                         types
                         table))
        :union (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                    ((erp new-spec types table)
-                    (valid-strunispec tyspec.spec table ienv)))
+                    (valid-struni-spec tyspec.spec table ienv)))
                 (retok (type-spec-union new-spec)
                        (type-union)
                        nil
@@ -3597,7 +3597,7 @@
        when this function is called
        to validate the declarator of a function definition,
        and only when the parameters of the function have not been validated yet.
-       Its new value @('fundef-params-p'), returned as result,
+       Its new value @('new-fundef-params-p'), returned as result,
        stays @('t') if the parameters of the function
        have still not been validated yet,
        because they are not found in this declarator;
@@ -3606,7 +3606,7 @@
        then @('new-fundef-params-p') is @('nil') as well.
        The exact handling of this flag,
        and the exact treatment of the parameters of function declarations,
-       are explained in the code that actually makes use of the flag.")
+       are explained in @(tsee valid-dirdeclor).")
      (xdoc::p
       "In our currently approximate type system,
        we do not validate type qualifiers, or attributes.
@@ -3661,7 +3661,7 @@
        Otherwise, we validate the declarator,
        using a separate validation function.")
      (xdoc::p
-      "This function does not take a return a @('fundef-params-p') flag
+      "This function does not take or return a @('fundef-params-p') flag
        because optional declarators are not used in function parameters."))
     (b* (((reterr) nil (irr-type) nil nil (irr-valid-table)))
       (declor-option-case
@@ -4395,12 +4395,12 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-strunispec ((strunispec strunispecp)
+  (define valid-struni-spec ((struni-spec struni-specp)
                             (table valid-tablep)
                             (ienv ienvp))
-    :guard (strunispec-unambp strunispec)
+    :guard (struni-spec-unambp struni-spec)
     :returns (mv erp
-                 (new-strunispec strunispecp)
+                 (new-struni-spec struni-specp)
                  (return-types type-setp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
@@ -4416,20 +4416,20 @@
        so we do not extend the validation table,
        if the structure or union specifier has a name.
        However, we validate the members, if present."))
-    (b* (((reterr) (irr-strunispec) nil (irr-valid-table))
-         ((strunispec strunispec) strunispec)
-         ((when (and (not strunispec.name)
-                     (endp strunispec.members)))
+    (b* (((reterr) (irr-struni-spec) nil (irr-valid-table))
+         ((struni-spec struni-spec) struni-spec)
+         ((when (and (not struni-spec.name?)
+                     (endp struni-spec.members)))
           (reterr (msg "The structure or union specifier ~x0 ~
                         has no name and no members."
-                       (strunispec-fix strunispec))))
+                       (struni-spec-fix struni-spec))))
          ((erp new-members types table)
-          (valid-structdecl-list strunispec.members nil table ienv)))
-      (retok (make-strunispec :name strunispec.name
-                              :members new-members)
+          (valid-structdecl-list struni-spec.members nil table ienv)))
+      (retok (make-struni-spec :name? struni-spec.name?
+                               :members new-members)
              types
              table))
-    :measure (strunispec-count strunispec))
+    :measure (struni-spec-count struni-spec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5697,11 +5697,11 @@
                (tyname-unambp new-tyname))
       :hyp (tyname-unambp tyname)
       :fn valid-tyname)
-    (defret strunispec-unambp-of-valid-strunispec
+    (defret struni-spec-unambp-of-valid-struni-spec
       (implies (not erp)
-               (strunispec-unambp new-strunispec))
-      :hyp (strunispec-unambp strunispec)
-      :fn valid-strunispec)
+               (struni-spec-unambp new-struni-spec))
+      :hyp (struni-spec-unambp struni-spec)
+      :fn valid-struni-spec)
     (defret structdecl-unambp-of-valid-structdecl
       (implies (not erp)
                (structdecl-unambp new-structdecl))
@@ -5837,7 +5837,7 @@
      If all the checks pass, we add the function to the table,
      which overwrites the previous entry,
      but the only information actually overwritten
-     is the definition status, from undefined to defiend,
+     is the definition status, from undefined to defined,
      which is appropriate.")
    (xdoc::p
     "The declarations between declarator and body should be present
@@ -5848,6 +5848,10 @@
      but we validate any declarations
      (ensuring they return no types),
      which will add entries to the block scope in the validation table.")
+   (xdoc::p
+    "We extend the validation table with the identifier @('__func__')
+     [C17:6.4.2.2].
+     In our currently approximate type system, this has array type.")
    (xdoc::p
     "We ensure that the body is a compound statement,
      and we validate directly the block items;
@@ -5935,6 +5939,12 @@
         (reterr (msg "The declarations of the function definition ~x0 ~
                       contain return statements."
                      (fundef-fix fundef))))
+       (table (valid-add-ord (ident "__func__")
+                             (make-valid-ord-info-objfun
+                              :type (type-array)
+                              :linkage (linkage-none)
+                              :defstatus (valid-defstatus-defined))
+                             table))
        ((unless (stmt-case fundef.body :compound))
         (reterr (msg "The function definition ~x0 ~
                       does not have a compound statement as body."

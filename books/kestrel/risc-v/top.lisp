@@ -13,13 +13,14 @@
 
 (include-book "specification/top")
 (include-book "executable/top")
+(include-book "optimized/top")
 (include-book "specialized/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ riscv
-  :parents (acl2::projects)
-  :short "A library for RISC-V."
+  :parents (acl2::projects acl2::kestrel-books)
+  :short "An ACL2 library for RISC-V."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -71,4 +72,5 @@
      as nouns or parenthentically."))
   :order-subtopics (specification
                     executable
+                    optimized
                     specialized))

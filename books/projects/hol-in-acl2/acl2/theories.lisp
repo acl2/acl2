@@ -54,9 +54,9 @@
 ; - :name is the name of the current HOL theory;
 ; - :prop is the zero-ary predicate that implies each axiom introduced by the
 ;   theory;
-; - :hta-term is a term denoting the hol type alist, which gives meaning to
-;   each type (atom <name>) by associating <name> with a term that denotes a
-;   set of HOL values of that type;
+; - :hta-term is a term denoting the hol type alist extending (hta0), which
+;   gives meaning to each type (atom <name>) by associating <name> with a term
+;   that denotes a set of HOL values of that type;
 ; - :typed-fns is a list of doublets (fn type), where fn is to be
 ;   introduced with the given polymorphic type (an :arrow type), in reverse
 ;   order from their appearance; and
@@ -80,7 +80,13 @@
   (let* ((world (w state))
          (tbl (table-alist :hol-theory world))
          (hta-name (and (symbolp name) ; for guard
-                        (hta-name name))))
+                        (hta-name name)))
+         (hta-thm-name (intern-in-package-of-symbol
+                        (concatenate 'string
+                                     "ALIST-SUBSETP-"
+                                     (symbol-name hta-name)
+                                     "-IMPLIES-ALIST-SUBSETP-HTA0")
+                        hta-name)))
     (cond ((table-alist :hol-theory world)
            (let ((old-name (cdr (hons-assoc-equal :name tbl))))
              (er soft ctx
@@ -94,6 +100,10 @@
            (value `(progn (defun ,hta-name ()
                             (declare (xargs :guard t))
                             ,hta-term)
+                          (defthm ,hta-thm-name
+                            (implies (alist-subsetp (,hta-name) hta)
+                                     (alist-subsetp (hta0) hta))
+                            :rule-classes :forward-chaining)
                           (table :hol-theory nil
                                  '((:name . ,name)
                                    (:prop . ,prop)
@@ -416,7 +426,8 @@
        ,@(close-theory-locals typed-fns)
        ,@(close-theory-prop-implies-props
           prop
-          '(zfc prod2$prop domain$prop inverse$prop finseqs$prop))
+          '(zfc prod2$prop domain$prop inverse$prop finseqs$prop diff$prop
+                restrict$prop fun-space$prop))
        ,@types
        ,@axioms
        ,@theorems

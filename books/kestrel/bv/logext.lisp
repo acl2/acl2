@@ -518,19 +518,39 @@
                                logext-of-bvchop-smaller
                                bvchop-of-logext))))
 
-(defthm logext-of-+-of-logext-arg1
+(defthm logext-of-+-of-logext-arg1-same
   (implies (and (integerp x)
                 (integerp y))
            (equal (logext size (+ (logext size x) y))
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
-(defthm logext-of-+-of-logext-arg2
+(defthm logext-of-+-of-logext-arg2-same
   (implies (and (integerp x)
                 (integerp y))
            (equal (logext size (+ x (logext size y)))
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
+
+(defthm logext-of-+-of-logext-arg1
+  (implies (and (<= smallsize bigsize)
+                (integerp smallsize)
+                (integerp bigsize)
+                (< 0 smallsize)
+                (force (integerp x))
+                (force (integerp y)))
+           (equal (logext smallsize (+ x (logext bigsize y)))
+                  (logext smallsize (+ x y)))))
+
+(defthm logext-of-+-of-logext-arg2
+  (implies (and (<= smallsize bigsize)
+                (integerp smallsize)
+                (integerp bigsize)
+                (< 0 smallsize)
+                (force (integerp x))
+                (force (integerp y)))
+           (equal (logext smallsize (+ (logext bigsize y) x))
+                  (logext smallsize (+ x y)))))
 
 ;; Normalizes the constant
 (defthm logext-of-+-of-constant
@@ -613,26 +633,6 @@
                   (and (unsigned-byte-p 32 k)
                        (equal (logext 32 k) x))))
   :hints (("Goal" :in-theory (enable apply-logext-32-to-both-sides-alt apply-logext-32-to-both-sides))))
-
-(defthm logext-of-plus-of-logext
-  (implies (and (<= smallsize bigsize)
-                (integerp smallsize)
-                (integerp bigsize)
-                (< 0 smallsize)
-                (force (integerp x))
-                (force (integerp y)))
-           (equal (LOGEXT smallsize (+ x (LOGEXT bigsize y)))
-                  (LOGEXT smallsize (+ x y)))))
-
-(defthm logext-of-plus-of-logext-alt
-  (implies (and (<= smallsize bigsize)
-                (integerp smallsize)
-                (integerp bigsize)
-                (< 0 smallsize)
-                (force (integerp x))
-                (force (integerp y)))
-           (equal (LOGEXT smallsize (+ (LOGEXT bigsize y) x))
-                  (LOGEXT smallsize (+ x y)))))
 
 ;gen
 (defthm bvchop-times-logext-32

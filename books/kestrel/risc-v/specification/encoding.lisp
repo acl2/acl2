@@ -13,8 +13,6 @@
 
 (include-book "instructions")
 
-(include-book "../library-extensions/logappn")
-
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "kestrel/fty/ubyte3" :dir :system)
@@ -60,7 +58,10 @@
      that are valid according to the @(see features).")
    (xdoc::p
     "We also provide a characterization of the valid encodings
-     as the image of the encoding function."))
+     as the image of the encoding function.")
+   (xdoc::p
+    "See @(see encoding-decoding-illustration)
+     for an illustration of encoding and decoding."))
   :order-subtopics t
   :default-parent t)
 
@@ -501,7 +502,7 @@
    (xdoc::p
     "The witness function decodes the valid encoding
      to the corresponding valid instruction.
-     Encoding if left inverse of the witness function,
+     Encoding is left inverse of the witness function,
      over valid encodings."))
   (exists (instr)
           (and (instrp instr)

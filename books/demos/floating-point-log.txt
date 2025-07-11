@@ -2459,10 +2459,11 @@ Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (NTH I AR).
+We will induct according to a scheme suggested by (NTH I AR), while
+accommodating (LEN AR) and (ARP AR).
 
-This suggestion was produced using the :induction rules ARP, LEN and
-NTH.  If we let (:P AR I) denote *1 above then the induction scheme
+These suggestions were produced using the :induction rules ARP, LEN
+and NTH.  If we let (:P AR I) denote *1 above then the induction scheme
 we'll use is
 (AND (IMPLIES (AND (NOT (ENDP AR))
                    (NOT (ZP I))
@@ -2709,10 +2710,11 @@ Perhaps we can prove *1 by induction.  Three induction schemes are
 suggested by this conjecture.  These merge into one derived induction
 scheme.  
 
-We will induct according to a scheme suggested by (UPDATE-NTH I VAL AR).
+We will induct according to a scheme suggested by (UPDATE-NTH I VAL AR),
+while accommodating (LEN AR) and (ARP AR).
 
-This suggestion was produced using the :induction rules ARP, LEN and
-UPDATE-NTH.  If we let (:P AR I VAL) denote *1 above then the induction
+These suggestions were produced using the :induction rules ARP, LEN
+and UPDATE-NTH.  If we let (:P AR I VAL) denote *1 above then the induction
 scheme we'll use is
 (AND (IMPLIES (AND (NOT (ZP I))
                    (:P (CDR AR) (+ -1 I) VAL))

@@ -33,13 +33,6 @@
      but we use a @(tsee defun-sk) and a ruleset for omaps,
      instead of the approach used for osets."))
 
-  (defrule omap::lookup-of-update
-    (equal (omap::lookup key (omap::update key1 val map))
-           (if (equal key key1)
-               val
-             (omap::lookup key map)))
-    :enable omap::lookup)
-
   (defruled omap::emptyp-of-keys-to-emptyp
     (equal (set::emptyp (omap::keys map))
            (omap::emptyp map))

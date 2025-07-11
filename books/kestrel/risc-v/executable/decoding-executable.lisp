@@ -13,8 +13,6 @@
 
 (include-book "../specification/instructions")
 
-(include-book "../library-extensions/logappn")
-
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/ubyte3" :dir :system)
 (include-book "kestrel/fty/ubyte7" :dir :system)
@@ -50,7 +48,10 @@
      the instructions defined in @(see instructions).
      We only handle the normal encodings,
      i.e. not the compressed ones in the C extension [ISA:27];
-     thus, our decoder operates on 32-bit encodings."))
+     thus, our decoder operates on 32-bit encodings.")
+   (xdoc::p
+    "See @(see encoding-decoding-illustration)
+     for an illustration of encoding and decoding."))
   :order-subtopics t
   :default-parent t)
 

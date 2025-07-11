@@ -1,6 +1,6 @@
 ; Standard System Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -19,6 +19,12 @@
 (include-book "formals-plus")
 (include-book "fundef-disabledp")
 (include-book "fundef-enabledp")
+(include-book "get-measure")
+(include-book "get-measure-plus")
+(include-book "get-ruler-extenders")
+(include-book "get-ruler-extenders-plus")
+(include-book "get-well-founded-relation")
+(include-book "get-well-founded-relation-plus")
 (include-book "guard-theorem-no-simplify")
 (include-book "guard-theorem-no-simplify-dollar")
 (include-book "guard-verified-p")
@@ -28,8 +34,6 @@
 (include-book "induction-machine-plus")
 (include-book "irecursivep")
 (include-book "irecursivep-plus")
-(include-book "measure")
-(include-book "measure-plus")
 (include-book "measured-subset")
 (include-book "measured-subset-plus")
 (include-book "no-stobjs-p")
@@ -43,8 +47,6 @@
 (include-book "pure-raw-p")
 (include-book "rawp")
 (include-book "recursive-calls")
-(include-book "ruler-extenders")
-(include-book "ruler-extenders-plus")
 (include-book "stobjs-in-plus")
 (include-book "stobjs-out-plus")
 (include-book "tail-recursive-p")
@@ -55,8 +57,6 @@
 (include-book "uguard-plus")
 (include-book "unwrapped-nonexec-body")
 (include-book "unwrapped-nonexec-body-plus")
-(include-book "well-founded-relation")
-(include-book "well-founded-relation-plus")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

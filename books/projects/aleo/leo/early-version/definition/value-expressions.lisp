@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ value-expressions
-  :parents (language)
+  :parents (dynamic-semantics)
   :short "Value expressions and their evaluation."
   :long
   (xdoc::topstring

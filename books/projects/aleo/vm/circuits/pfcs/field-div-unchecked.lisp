@@ -104,7 +104,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection field-div-checked-correctness
+(defsection field-div-unchecked-correctness
   :short "Correctness of the circuit."
   :long
   (xdoc::topstring

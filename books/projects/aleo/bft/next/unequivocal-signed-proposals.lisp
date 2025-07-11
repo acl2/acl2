@@ -141,7 +141,7 @@
              not-validator-has-author+round-p-when-propose-possiblep)
     :use (:instance validator-has-author+round-p-when-signed-in-signer-p
                     (signer (proposal->author prop))
-                    (prop (set::nonempty-witness
+                    (prop (set::nonemptyp-witness
                            (props-with-author+round
                             (proposal->author prop)
                             (proposal->round prop)
@@ -163,7 +163,7 @@
              in-of-props-with-author+round)
     :use ((:instance validator-has-author+round-p-when-signed-in-signer-p
                      (signer (address-fix endor))
-                     (prop (set::nonempty-witness
+                     (prop (set::nonemptyp-witness
                             (props-with-author+round
                              (proposal->author prop)
                              (proposal->round prop)

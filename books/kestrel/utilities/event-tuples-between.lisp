@@ -1,10 +1,10 @@
 ; Event Tuple Utilities
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -16,11 +16,11 @@
 (include-book "std/system/function-symbolp" :dir :system)
 (include-book "std/system/irecursivep-plus" :dir :system)
 (include-book "std/system/logical-name-listp" :dir :system)
-(include-book "std/system/measure-plus" :dir :system)
+(include-book "std/system/get-measure-plus" :dir :system)
 (include-book "std/system/pseudo-event-landmark-listp" :dir :system)
 (include-book "std/system/theorem-symbolp" :dir :system)
 (include-book "std/system/ubody" :dir :system)
-(include-book "std/system/well-founded-relation-plus" :dir :system)
+(include-book "std/system/get-well-founded-relation-plus" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 (include-book "system/pseudo-command-landmarkp" :dir :system)
 (include-book "system/pseudo-event-landmarkp" :dir :system)
@@ -92,8 +92,8 @@
     (union-eq (all-ffn-symbs (ubody fun wrld) nil)
               (if (and (logicp fun wrld)
                        (irecursivep+ fun wrld))
-                  (union-eq (all-ffn-symbs (measure+ fun wrld) nil)
-                            (list (well-founded-relation+ fun wrld)))
+                  (union-eq (all-ffn-symbs (get-measure+ fun wrld) nil)
+                            (list (get-well-founded-relation+ fun wrld)))
                 nil)
               (all-ffn-symbs (guard fun nil wrld) nil))))
 

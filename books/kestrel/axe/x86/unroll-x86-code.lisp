@@ -60,6 +60,7 @@
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "../arithmetic-rules-axe")
+(include-book "../convert-to-bv-rules-axe")
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
 (include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
 (include-book "../evaluator") ; todo: this book has skip-proofs
@@ -84,6 +85,8 @@
 (include-book "kestrel/arithmetic-light/ash" :dir :system) ; for ash-of-0, mentioned in a rule-list
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/bv/bvif2" :dir :system)
+(include-book "kestrel/bv/ash" :dir :system)
+(include-book "kestrel/bv/std" :dir :system)
 (include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
@@ -142,11 +145,11 @@
   (declare (xargs :guard t))
   (if (atom alist)
       (null alist)
-      (let ((entry (first alist)))
-        (and (consp entry)
-             (symbolp (car entry))
-             (boolean-listp (cdr entry))
-             (elision-spec-alistp (rest alist))))))
+    (let ((entry (first alist)))
+      (and (consp entry)
+           (symbolp (car entry))
+           (boolean-listp (cdr entry))
+           (elision-spec-alistp (rest alist))))))
 
 (defthm elision-spec-alistp-forward-to-alistp
     (implies (elision-spec-alistp alist)
@@ -154,14 +157,21 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable elision-spec-alistp alistp))))
 
-;; Replace with :elided any arg that corresponds with nil in the bools
+;; Replace with :elided any large constant list arg that corresponds with nil in the bools.
+;; todo: clarify the sense of t and nil (nil means maybe don't print)
 (defun apply-elision-spec (args bools)
   (declare (xargs :guard (and (true-listp args)
                               (boolean-listp bools))))
   (if (endp args)
       nil
-      (cons (if (first bools) (first args) :elided)
-            (apply-elision-spec (rest args) (rest bools)))))
+    (cons (if (and (not (first bools))
+                   (let ((arg (first args)))
+                     (and (myquotep arg)
+                          (consp (unquote arg)) ; checks for a fairly long list
+                          (<= 100 (len (unquote arg))))))
+              :elided
+            (first args))
+          (apply-elision-spec (rest args) (rest bools)))))
 
 (defund print-term-elided (term firstp elision-specs)
   (declare (xargs :guard (elision-spec-alistp elision-specs)))
@@ -171,16 +181,16 @@
         ;; eliding:
         (if (not (true-listp term))
             (er hard? 'print-term-elided "Bad term.")
-            (if (not (= (len (rest term)) (len elision-spec))) ; todo: optimize via same-lengthp
-                (er hard? 'print-term-elided "Length mismatch in elision spec, ~x0, for ~x1." elision-spec (car term))
-                (let ((elided-term (cons (car term) (apply-elision-spec (rest term) elision-spec))))
-                  (if firstp
-                      (cw "(~y0" elided-term)
-                      (cw " ~y0" elided-term)))))
-        ;; not eliding (todo: share code with the above):
-        (if firstp
-            (cw "(~y0" term)
-            (cw " ~y0" term)))))
+          (if (not (= (len (rest term)) (len elision-spec))) ; todo: optimize via same-lengthp
+              (er hard? 'print-term-elided "Length mismatch in elision spec, ~x0, for ~x1." elision-spec (car term))
+            (let ((elided-term (cons (car term) (apply-elision-spec (rest term) elision-spec))))
+              (if firstp
+                  (cw "(~y0" elided-term)
+                (cw " ~y0" elided-term)))))
+      ;; not eliding (todo: share code with the above):
+      (if firstp
+          (cw "(~y0" term)
+        (cw " ~y0" term)))))
 
 ;; Prints each of the TERMS, each starting with a space and ending with a newline.
 ;tail recursive, to support printing a large list
@@ -299,6 +309,8 @@
 (thm (equal (len (step-opener-rules32)) 1))
 (thm (equal (len (step-opener-rules64)) 1))
 
+(defconst *no-warn-ground-functions* '(feature-flag))
+
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
@@ -383,6 +395,7 @@
                                   count-hits
                                   print
                                   rules-to-monitor
+                                  *no-warn-ground-functions*
                                   '(program-at) ; fns-to-elide
                                   state)
             ;)
@@ -406,11 +419,11 @@
          (dag dag-or-constant) ; it wasn't a quotep
          ;; Prune the DAG quickly but possibly imprecisely (actually, I've seen this be quite slow!):
          ((mv erp dag-or-constant state) (acl2::maybe-prune-dag-approximately prune-approx
-                                                                            dag
-                                                                            (remove-assumptions-about *non-stp-assumption-functions* assumptions)
-                                                                            print
-                                                                            60000 ; todo: pass in
-                                                                            state))
+                                                                              dag
+                                                                              (remove-assumptions-about *non-stp-assumption-functions* assumptions)
+                                                                              print
+                                                                              60000 ; todo: pass in
+                                                                              state))
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-constant))
           (cw "Result is a constant!~%")
@@ -473,12 +486,12 @@
                                                  ;; new:
                                                  x86-fetch-decode-execute
                                                  )
-                                               dag-fns))) ;; stop if the run is done
-         (- (and run-completedp (cw " The run has completed.~%")))
-         )
+                                               dag-fns))))
       (if run-completedp
+          ;; stop if the run is done
           ;; Simplify one last time (since pruning may have done something -- todo: skip this if pruning did nothing):
-          (b* ((- (cw "(Doing final simplification:~%"))
+          (b* ((- (cw " The run has completed.~%"))
+               (- (cw "(Doing final simplification:~%"))
                ((mv erp dag-or-constant state) ; todo: check if it is a constant?
                 ;; (if (eq :legacy rewriter)
                 ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
@@ -505,15 +518,26 @@
                                           count-hits
                                           print
                                           rules-to-monitor
+                                          *no-warn-ground-functions*
                                           '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                           state)
                   (declare (ignore limits)) ; todo: use the limits?
                   (mv erp result state))
                   ;)
+                ;; todo: also prune here?
                 )
                ((when erp) (mv erp nil state))
                (- (cw " Done with final simplification.)~%")) ; balances "(Doing final simplification"
-               )
+               ;; Check for error branches:
+               (dag-fns (if (quotep dag-or-constant) nil (acl2::dag-fns dag-or-constant)))
+               (error-branch-functions (intersection-eq dag-fns
+                                                        ;; the presence of the indicates that we could not rule out an error branch
+                                                        '(set-ms
+                                                          set-fault)))
+               ((when error-branch-functions)
+                (cw "~X01" dag nil)
+                (er hard? 'repeatedly-run "Unresolved error branches occur (offending functions in the DAG above: ~x0)." error-branch-functions)
+                (mv :unresolved-error-branches nil state)))
             (mv (erp-nil) dag-or-constant state))
         ;; Continue the symbolic execution:
         (b* ((steps-done (+ steps-for-this-iteration steps-done))
@@ -601,6 +625,7 @@
           assumption-rule-alist
           (acl2::known-booleans (w state))
           nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
+          nil ; no-warn-ground-functions
           nil ; don't memoize (avoids time spent making empty-memoizations)
           count-hits
           t   ; todo: warn just once
@@ -723,7 +748,7 @@
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil nil nil state))
-       (- (if position-independentp (cw "Using position-independent lifting.~%") (cw "Using non-position-independent lifting.~%")))
+       (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
        (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
                                         ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
                                         (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
@@ -731,7 +756,7 @@
        (new-canonicalp (or new-style-elf-assumptionsp ; for now
                            (eq :mach-o-64 executable-type)
                            ))
-       (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw "Using new-style ELF64 assumptions.~%")  (cw "Not using new-style ELF64 assumptions.~%"))))
+       (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw " Using new-style ELF64 assumptions.~%")  (cw " Not using new-style ELF64 assumptions.~%"))))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
@@ -920,6 +945,7 @@
                                                                                              '(;(standard-assumptions-elf-64 t nil t t t t)
                                                                                                (standard-assumptions-mach-o-64 t nil t t t t)
                                                                                                ;(standard-assumptions-pe-64 t nil t t t t)
+                                                                                               (equal t nil)
                                                                                                )) ; todo: more?
                                                                          (cw ")~%"))))
                    ;; Next, we simplify the assumptions.  This allows us to state the
@@ -1026,6 +1052,7 @@
                                                                                            '((standard-assumptions-elf-64 t nil t t t t)
                                                                                              ;; (standard-assumptions-mach-o-64 t nil t t t t)
                                                                                              (standard-assumptions-pe-64 t nil t t t t)
+                                                                                             (equal t nil)
                                                                                              )) ; todo: more?
                                                                        (cw ")~%"))))
                  ;; Next, we simplify the assumptions.  This allows us to state the
@@ -1045,7 +1072,7 @@
                              (if (acl2::print-level-at-least-tp print)
                                  (acl2::print-list assumptions)
                                (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge
-                                                                )))
+                                                                 (equal t nil))))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
        (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
@@ -1070,11 +1097,16 @@
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
        (lifter-rules (append (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))       ;todo: only need some of these for 64-bits?
-                             (if new-canonicalp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use these more (e.g., for macho-64)
+                             (if new-canonicalp (append (unsigned-canonical-rules) (canonical-rules-bv)) (canonical-rules-non-bv)) ; todo: use new-canonicalp more
                              lifter-rules))
-       (lifter-rules (if stop-pcs
-                         (append (symbolic-execution-rules-with-stop-pcs) lifter-rules)
-                       lifter-rules))
+       (symbolic-execution-rules (if stop-pcs
+                                     (if 64-bitp
+                                         (symbolic-execution-rules-with-stop-pcs64)
+                                       (symbolic-execution-rules-with-stop-pcs32))
+                                   (if 64-bitp
+                                       (symbolic-execution-rules64)
+                                     (symbolic-execution-rules32))))
+       (lifter-rules (append symbolic-execution-rules lifter-rules))
        ;; Add any extra-rules:
        (- (let ((intersection (intersection-eq extra-rules lifter-rules))) ; todo: optimize (sort and then compare, and also use sorted lists below...)
             (and intersection
@@ -1194,7 +1226,7 @@
                   :stobjs state
                   :mode :program ; todo
                   ))
-  (b* (;; Check whether this call to the lifter if redundant:
+  (b* (;; Check whether this call to the lifter is redundant:
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
         (mv nil '(value-triple :redundant) state))

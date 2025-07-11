@@ -6076,7 +6076,7 @@
           ~#f~[~/We will choose arbitrarily among these.  ~]~
 
           ~|~%We will induct according to a scheme suggested by ~
-          ~#h~[~xg.~/~xg, but modified to accommodate ~*i~]~
+          ~#h~[~xg.~/~xg, while ac~-com~-mo~-dating ~*i~]~
 
           ~|~%~#w~[~/~#h~[This suggestion was~/These suggestions were~] ~
           produced using ~*x.~]  ~
@@ -6184,10 +6184,10 @@
                                                  :xinduction-term)
                                          nil
                                          wrld))
-                  (cons #\h (if (access candidate winning-candidate :xancestry)
+                  (cons #\h (if (access candidate winning-candidate :xother-terms)
                                 1 0))
                   (cons #\i (tilde-*-untranslate-lst-phrase
-                             (access candidate winning-candidate :xancestry)
+                             (access candidate winning-candidate :xother-terms)
                              #\. nil wrld))
                   (cons #\J (if (eq (ffn-symb (access candidate winning-candidate
                                                       :induction-term))

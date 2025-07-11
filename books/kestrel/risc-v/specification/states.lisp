@@ -13,8 +13,6 @@
 
 (include-book "features")
 
-(include-book "../library-extensions/logappn")
-
 (include-book "centaur/bitops/part-select" :dir :system)
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/sbyte64" :dir :system)
@@ -130,7 +128,12 @@
      to be either 32 or 64 bits.")
    (xdoc::p
     "The size of the memory is @('2^XLEN'),
-     so we constrain the length of the list to be that."))
+     so we constrain the length of the list to be that.")
+   (xdoc::p
+    "In our current model, the validity of a state depends on
+     only part of the features, namely the base:
+     if two feature instances have the same base,
+     their associated validity predicates coincide."))
   (b* (((stat stat) stat)
        (xlen (feat->xlen feat))
        (xnum (feat->xnum feat)))
@@ -141,6 +144,14 @@
   :hooks (:fix)
 
   ///
+
+  (defruled stat-validp-depends-only-features
+    (implies (equal (feat->base feat1)
+                    (feat->base feat2))
+             (equal (stat-validp stat feat1)
+                    (stat-validp stat feat2)))
+    :enable (feat->xlen
+             feat->xnum))
 
   (defrule true-listp-of-stat->xregs
     (implies (stat-validp stat feat)

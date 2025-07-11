@@ -92,7 +92,7 @@
 (include-book "rewrite-stobj")
 (include-book "rewrite-stobj2")
 (include-book "cars-increasing-by-1")
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -620,10 +620,10 @@
                                                   rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                   node-replacement-array node-replacement-count refined-assumption-alist
                                                   rewrite-stobj count))
-         (call-of-simplify-term `(,simplify-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state))
-         (call-of-simplify-dag `(,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state))
-         (call-of-simplify-dag-with-rule-alists `(,simplify-dag-with-rule-alists-name dag assumptions rule-alists interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state))
-         (call-of-simplify-dag-core `(,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state))
+         (call-of-simplify-term `(,simplify-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
+         (call-of-simplify-dag `(,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
+         (call-of-simplify-dag-with-rule-alists `(,simplify-dag-with-rule-alists-name dag assumptions rule-alists interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
+         (call-of-simplify-dag-core `(,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
          )
     `(progn
        (include-book "kestrel/utilities/rational-printing" :dir :system) ; for print-to-hundredths
@@ -641,6 +641,7 @@
          (local (include-book "kestrel/lists-light/last" :dir :system))
          (local (include-book "kestrel/lists-light/take" :dir :system))
          (local (include-book "kestrel/lists-light/append" :dir :system))
+         (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
          (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
          (local (include-book "kestrel/arithmetic-light/times" :dir :system))
          (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
@@ -5759,6 +5760,7 @@
                                           count-hits
                                           print
                                           monitored-symbols
+                                          no-warn-ground-functions
                                           fns-to-elide
                                           ,@maybe-state)
            (declare (xargs :guard (and (pseudo-dagp dag)
@@ -5778,6 +5780,7 @@
                                        (count-hits-argp count-hits)
                                        (print-levelp print)
                                        (symbol-listp monitored-symbols)
+                                       (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide)
                                        ;; Justifies how we use the context info (old nodes and new nodes agree):
                                        (if maybe-internal-context-array
@@ -5808,6 +5811,7 @@
                  (mv :unsound nil limits ,@maybe-state))
                 ;; Fix some values, so we don't need assumptions about them in later theorems (should have no runtime cost):
                 (monitored-symbols (if (mbt (symbol-listp monitored-symbols)) monitored-symbols nil))
+                (no-warn-ground-functions (if (mbt (symbol-listp no-warn-ground-functions)) no-warn-ground-functions nil))
                 (fns-to-elide (if (mbt (symbol-listp fns-to-elide)) fns-to-elide nil))
                 (known-booleans (if (mbt (symbol-listp known-booleans)) known-booleans nil))
                 (normalize-xors (if (mbt (normalize-xors-optionp normalize-xors)) normalize-xors nil))
@@ -5844,6 +5848,7 @@
                             renumbering-stobj rewrite-stobj rewrite-stobj2 ,@maybe-state)
                  (b* (;; Initialize rewrite-stobj:
                       (rewrite-stobj (put-monitored-symbols monitored-symbols rewrite-stobj))
+                      (rewrite-stobj (put-no-warn-ground-functions no-warn-ground-functions rewrite-stobj))
                       (rewrite-stobj (put-fns-to-elide fns-to-elide rewrite-stobj))
                       (rewrite-stobj (put-known-booleans known-booleans rewrite-stobj))
                       (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
@@ -5910,7 +5915,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -5948,7 +5952,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -5980,7 +5983,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -6007,6 +6009,7 @@
                                      count-hits
                                      print
                                      monitored-symbols
+                                     no-warn-ground-functions
                                      fns-to-elide
                                      ;; todo: add context array and other args?
                                      ,@maybe-state)
@@ -6021,6 +6024,7 @@
                                        (count-hits-argp count-hits)
                                        (print-levelp print)
                                        (symbol-listp monitored-symbols)
+                                       (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide))
                            ,@maybe-stobjs
                            :guard-hints (("Goal" ; :do-not '(generalize eliminate-destructors)
@@ -6053,7 +6057,7 @@
                         ((mv erp dag-or-quotep limits ,@maybe-state)
                          (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                                   nil ; no internal-context-array (but see below)
-                                                  rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state))
+                                                  rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
                         ((when erp) (mv erp nil limits ,@maybe-state))
                         (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with memoization ..."
                         )
@@ -6082,7 +6086,7 @@
                     ((mv erp dag-or-quotep limits ,@maybe-state)
                      (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits
                                               nil ;memoizep (would be unsound)
-                                              count-hits print monitored-symbols fns-to-elide ,@maybe-state))
+                                              count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
                     ((when erp) (mv erp nil limits ,@maybe-state))
                     (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with internal contexts ..."
                     )
@@ -6097,7 +6101,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -6136,7 +6139,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -6178,7 +6180,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -6200,7 +6201,6 @@
          ;;                 ;; (print-levelp print)
          ;;                 (interpreted-function-alistp interpreted-function-alist)
          ;;                 ;; (symbol-listp known-booleans)
-         ;;                 ;; (symbol-listp monitored-symbols)
          ;;                 ;; (normalize-xors-optionp normalize-xors)
          ;;                 (booleanp memoizep))
          ;;            (consp (mv-nth 1 ,call-of-simplify-dag))
@@ -6219,7 +6219,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -6241,7 +6240,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -6268,6 +6266,7 @@
                                                       count-hits
                                                       print
                                                       monitored-symbols
+                                                      no-warn-ground-functions
                                                       fns-to-elide
                                                       ,@maybe-state)
            (declare (xargs :guard (and (pseudo-dagp dag)
@@ -6281,19 +6280,20 @@
                                        (count-hits-argp count-hits)
                                        (print-levelp print)
                                        (symbol-listp monitored-symbols)
+                                       (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide))
                            ,@maybe-stobjs
                            :measure (len rule-alists)))
            (if (endp rule-alists)
                (mv (erp-nil) dag limits ,@maybe-state)
              (b* (((mv erp dag-or-quotep limits ,@maybe-state)
-                   (,simplify-dag-name dag assumptions (first rule-alists) interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state))
+                   (,simplify-dag-name dag assumptions (first rule-alists) interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
                   ((when erp) (mv erp dag limits ,@maybe-state))
                   ((when (quotep dag-or-quotep))
                    (mv (erp-nil) dag-or-quotep limits ,@maybe-state))
                   (dag dag-or-quotep) ; it's not a quotep
                   )
-               (,simplify-dag-with-rule-alists-name dag assumptions (rest rule-alists) interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state))))
+               (,simplify-dag-with-rule-alists-name dag assumptions (rest rule-alists) interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))))
 
          (defthm ,(pack$ simplify-dag-with-rule-alists-name '-return-type)
            (implies (and (pseudo-dagp dag)
@@ -6304,7 +6304,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -6336,7 +6335,6 @@
          ;;                 ;; (print-levelp print)
          ;;                 (interpreted-function-alistp interpreted-function-alist)
          ;;                 ;; (symbol-listp known-booleans)
-         ;;                 ;; (symbol-listp monitored-symbols)
          ;;                 ;; (symbol-listp fns-to-elide)
          ;;                 ;; (normalize-xors-optionp normalize-xors)
          ;;                 ;; (booleanp memoizep)
@@ -6359,7 +6357,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -6380,7 +6377,6 @@
                          ;; (print-levelp print)
                          (interpreted-function-alistp interpreted-function-alist)
                          ;; (symbol-listp known-booleans)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (normalize-xors-optionp normalize-xors)
                          ;; (booleanp memoizep)
@@ -6411,6 +6407,7 @@
                                       count-hits
                                       print
                                       monitored-symbols
+                                      no-warn-ground-functions
                                       fns-to-elide
                                       ;; todo: add context array and other args?
                                       ,@maybe-state)
@@ -6425,6 +6422,7 @@
                                        (count-hits-argp count-hits)
                                        (print-levelp print)
                                        (symbol-listp monitored-symbols)
+                                       (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide))
                            ,@maybe-stobjs
                            :guard-hints (("Goal" :in-theory (e/d (natp-when-dargp
@@ -6441,6 +6439,7 @@
                                                                   wf-rewrite-stobj2p-conjuncts))))))
            (b* (;; Fix some values, so we don't need assumptions about them in later theorems (should have no runtime cost):
                 (monitored-symbols (if (mbt (symbol-listp monitored-symbols)) monitored-symbols nil))
+                (no-warn-ground-functions (if (mbt (symbol-listp no-warn-ground-functions)) no-warn-ground-functions nil))
                 (fns-to-elide (if (mbt (symbol-listp fns-to-elide)) fns-to-elide nil))
                 (known-booleans (if (mbt (symbol-listp known-booleans)) known-booleans nil))
                 (normalize-xors (if (mbt (normalize-xors-optionp normalize-xors)) normalize-xors nil))
@@ -6484,6 +6483,7 @@
                                     (mv-let (erp new-nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist memoization hit-counts tries limits node-replacement-array rewrite-stobj rewrite-stobj2 ,@maybe-state)
                                       (let* (;; Initialize rewrite-stobj:
                                              (rewrite-stobj (put-monitored-symbols monitored-symbols rewrite-stobj))
+                                             (rewrite-stobj (put-no-warn-ground-functions no-warn-ground-functions rewrite-stobj))
                                              (rewrite-stobj (put-fns-to-elide fns-to-elide rewrite-stobj))
                                              (rewrite-stobj (put-known-booleans known-booleans ;skip if memoizing since we can't use contexts?
                                                                                 rewrite-stobj))
@@ -6542,7 +6542,6 @@
                          (pseudo-term-listp assumptions)
                          (rule-alistp rule-alist)
                          (interpreted-function-alistp interpreted-function-alist)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (booleanp memoizep)
                          ;; (print-levelp print)
@@ -6579,7 +6578,6 @@
          ;;                 (pseudo-term-listp assumptions)
          ;;                 (rule-alistp rule-alist)
          ;;                 (interpreted-function-alistp interpreted-function-alist)
-         ;;                 ;; (symbol-listp monitored-symbols)
          ;;                 ;; (symbol-listp fns-to-elide)
          ;;                 ;; (booleanp memoizep)
          ;;                 ;; (print-levelp print)
@@ -6598,7 +6596,6 @@
                          (pseudo-term-listp assumptions)
                          (rule-alistp rule-alist)
                          (interpreted-function-alistp interpreted-function-alist)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (booleanp memoizep)
                          ;; (print-levelp print)
@@ -6619,7 +6616,6 @@
                          (pseudo-term-listp assumptions)
                          (rule-alistp rule-alist)
                          (interpreted-function-alistp interpreted-function-alist)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (booleanp memoizep)
                          ;; (print-levelp print)
@@ -6639,7 +6635,6 @@
                          (pseudo-term-listp assumptions)
                          (rule-alistp rule-alist)
                          (interpreted-function-alistp interpreted-function-alist)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (booleanp memoizep)
                          ;; (print-levelp print)
@@ -6667,6 +6662,7 @@
                                               count-hits
                                               print ;; todo: add context array and other args?
                                               monitored-symbols
+                                              no-warn-ground-functions
                                               fns-to-elide
                                               ,@maybe-state)
            (declare (xargs :guard (and (pseudo-termp term)
@@ -6680,6 +6676,7 @@
                                        (count-hits-argp count-hits)
                                        (print-levelp print)
                                        (symbol-listp monitored-symbols)
+                                       (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide))
                            ,@maybe-stobjs))
            (b* (((mv erp dag ,@maybe-state) (,simplify-term-name term
@@ -6687,7 +6684,7 @@
                                                    rule-alist
                                                    interpreted-function-alist
                                                    known-booleans normalize-xors limits memoizep
-                                                   count-hits print monitored-symbols fns-to-elide ,@maybe-state))
+                                                   count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
                 ((when erp) (mv erp nil ,@maybe-state)))
              (mv (erp-nil)
                  (if (quotep dag)
@@ -6700,7 +6697,6 @@
                          (pseudo-term-listp assumptions)
                          (rule-alistp rule-alist)
                          (interpreted-function-alistp interpreted-function-alist)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (booleanp memoizep)
                          ;; (count-hits-argp count-hits)
@@ -6709,7 +6705,7 @@
                          ;; (symbol-listp known-booleans)
                          (rule-limitsp limits))
                     (mv-let (erp term ,@maybe-new-state)
-                      (,simplify-term-to-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state)
+                      (,simplify-term-to-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state)
                       (implies (not erp)
                                (and (pseudo-termp term)
                                     ,@maybe-w-unchanged))))
@@ -6735,6 +6731,7 @@
                                                count-hits
                                                print
                                                monitored-symbols
+                                               no-warn-ground-functions
                                                fns-to-elide
                                                ;; todo: add context array and other args?
                                                ,@maybe-state)
@@ -6749,6 +6746,7 @@
                                        (count-hits-argp count-hits)
                                        (print-levelp print)
                                        (symbol-listp monitored-symbols)
+                                       (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide))
                            ,@maybe-stobjs))
            (if (endp terms)
@@ -6756,12 +6754,12 @@
              (b* (((mv erp first-res ,@maybe-state)
                    (,simplify-term-to-term-name (first terms) assumptions rule-alist interpreted-function-alist
                                                 known-booleans normalize-xors limits memoizep
-                                                count-hits print monitored-symbols fns-to-elide ,@maybe-state))
+                                                count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
                   ((when erp) (mv erp nil ,@maybe-state))
                   ((mv erp rest-res ,@maybe-state)
                    (,simplify-terms-to-terms-name (rest terms) assumptions rule-alist interpreted-function-alist
                                                   known-booleans normalize-xors limits memoizep
-                                                  count-hits print monitored-symbols fns-to-elide ,@maybe-state))
+                                                  count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state))
                   ((when erp) (mv erp nil ,@maybe-state)))
                (mv (erp-nil)
                    (cons first-res rest-res)
@@ -6772,7 +6770,6 @@
                          (pseudo-term-listp assumptions)
                          (rule-alistp rule-alist)
                          (interpreted-function-alistp interpreted-function-alist)
-                         ;; (symbol-listp monitored-symbols)
                          ;; (symbol-listp fns-to-elide)
                          ;; (booleanp memoizep)
                          ;; (count-hits-argp count-hits)
@@ -6781,17 +6778,17 @@
                          ;; (symbol-listp known-booleans)
                          (rule-limitsp limits))
                     (mv-let (erp new-terms ,@maybe-new-state)
-                      (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state)
+                      (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state)
                       (implies (not erp)
                                (and (pseudo-term-listp new-terms)
                                     ,@maybe-w-unchanged))))
-           :hints (("Goal" :induct (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state)
+           :hints (("Goal" :induct (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state)
                     :in-theory (enable ,simplify-terms-to-terms-name))))
 
          (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- simplify-terms-to-terms-name)
-           (true-listp (mv-nth 1 (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state)))
+           (true-listp (mv-nth 1 (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state)))
            :rule-classes :type-prescription
-           :hints (("Goal" :induct (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide ,@maybe-state)
+           :hints (("Goal" :induct (,simplify-terms-to-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide ,@maybe-state)
                     :in-theory (enable ,simplify-terms-to-terms-name))))
 
          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6810,6 +6807,7 @@
                                                count-hits
                                                print
                                                monitored-symbols
+                                               no-warn-ground-functions
                                                fns-to-elide
                                                whole-form
                                                state ; This one always takes state, even in the non-smt variant
@@ -6826,6 +6824,7 @@
                                        (count-hits-argp count-hits)
                                        (print-levelp print)
                                        (symbol-listp monitored-symbols)
+                                       (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide)
                                        (ilks-plist-worldp (w state)))
                            :stobjs state
@@ -6856,6 +6855,7 @@
                                            count-hits
                                            print
                                            monitored-symbols
+                                           no-warn-ground-functions
                                            fns-to-elide
                                            ,@maybe-state)
                        (declare (ignore limits)) ; use somehow?
@@ -6873,6 +6873,7 @@
                                         count-hits
                                         print
                                         monitored-symbols
+                                        no-warn-ground-functions
                                         fns-to-elide
                                         ,@maybe-state)))
                 ((when erp) (mv erp nil state))
@@ -6911,6 +6912,7 @@
                                           count-hits
                                           print
                                           monitored-symbols
+                                          no-warn-ground-functions
                                           fns-to-elide
                                           whole-form
                                           state)
@@ -6925,6 +6927,7 @@
                                        (count-hits-argp count-hits)
                                        (print-levelp print)
                                        (symbol-listp monitored-symbols)
+                                       (symbol-listp no-warn-ground-functions)
                                        (symbol-listp fns-to-elide)
                                        (consp whole-form)
                                        (symbolp (car whole-form))
@@ -6942,7 +6945,7 @@
                       dag-or-term
                     ;; it's a term, so translate it:
                     (translate-term dag-or-term ',def-simplified-fn-name (w state)))))
-             (,def-simplified-fn-core-name defconst-name dag-or-term assumptions rules interpreted-function-alist normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide whole-form state)))
+             (,def-simplified-fn-core-name defconst-name dag-or-term assumptions rules interpreted-function-alist normalize-xors limits memoizep count-hits print monitored-symbols no-warn-ground-functions fns-to-elide whole-form state)))
 
          ;; A utility to simplify a DAG or term and create a constant to hold the resulting DAG.
          ;; Creates a constant named DEFCONST-NAME, whose value is a DAG representing the simplified form of DAG-OR-TERM.
@@ -6961,8 +6964,9 @@
                                                 (count-hits 'nil)
                                                 (print ':brief)
                                                 (monitor 'nil)
+                                                (no-warn-ground-functions 'nil)
                                                 (fns-to-elide 'nil))
-           `(make-event-quiet (,',def-simplified-fn-name ',defconst-name ,dag-or-term ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitor ,fns-to-elide ',whole-form state)))
+           `(make-event-quiet (,',def-simplified-fn-name ',defconst-name ,dag-or-term ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitor ,no-warn-ground-functions ,fns-to-elide ',whole-form state)))
          )) ; end generated encapsulate and progn
     ))
 

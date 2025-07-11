@@ -190,23 +190,185 @@ of proofs.")
 
 (defxdoc community
   :parents (top)
-  :short "How to join the ACL2 Community."
+  :short "The ACL2 Community."
   :long "<p>ACL2 has an active user community that welcomes new users.  There are several ways to get involved.</p>
 
-<h3>GitHub Project</h3>
-<p>ACL2 is developed via <a href=\"https://github.com/acl2/acl2\">the ACL2 GitHub project</a>, which also contains the ACL2 libraries maintained by the community (see @(see community-books)).  The GitHub repository is very active, with thousands of commits per year.  Users are invited to contribute new developments, usually in the form of new @(see books) (collections of definitions, proofs, etc.), so that the community can benefit from them.  Collaboration occurs via <a href=\"https://github.com/acl2/acl2/pulls\">Pull Requests</a> and <a href=\"https://github.com/acl2/acl2/issues\">GitHub Issues</a>.  See also @(see git-quick-start).</p>
+ <h3>GitHub Project</h3>
+ <p>ACL2 is developed via <a href=\"https://github.com/acl2/acl2\">the ACL2 GitHub project</a>, which also contains the ACL2 libraries maintained by the community (see @(see community-books)).  The GitHub repository is very active, with thousands of commits per year.  Users are invited to contribute new developments, in the form of new @(see books) (collections of definitions, proofs, etc.), so that the community can benefit from them.  See @(see how-to-contribute), and see @(see git-quick-start).  Problems with ACL2 or with books can be reported as <a href=\"https://github.com/acl2/acl2/issues\">GitHub Issues</a>.</p>
 
-<h3>Mailing Lists</h3>
-<p>We maintain several mailing lists for ACL2 announcements, discussions, and questions.  See <a href=\"https://www.cs.utexas.edu/~moore/acl2/current/HTML/installation/misc.html#Addresses\">this page</a>.</p>
+ <h3>Mailing Lists</h3>
+ <p>We maintain several mailing lists for ACL2 announcements, discussions, and questions (see @(see mailing-lists)).</p>
 
-<h3>Zulip Chat</h3>
-<p>Zulip is a chat application similar to Slack.  We use it to discuss many ACL2 topics and to help each other with ACL2 issues.   It is accessible at <a href=\"https://acl2.zulip.kestrel.institute\">this page</a> or via the Zulip desktop or mobile app.  Email Eric Smith at @('eric.smith@kestrel.edu') for an invitation.  As an anti-spam measure, please include in your email a sentence or two about how you heard about ACL2 and/or how you plan to use it.</p>
+ <h3>Zulip Chat</h3>
+ <p>Zulip is a chat application similar to Slack.  We use it to discuss many ACL2 topics and to help each other with ACL2 issues.   It is accessible at <a href=\"https://acl2.zulip.kestrel.institute\">this page</a> or via the Zulip desktop or mobile app.  Email Eric Smith at @('eric.smith@kestrel.edu') for an invitation.  As an anti-spam measure, please include in your email a sentence or two about how you heard about ACL2 and/or how you plan to use it.</p>
 
-<h3>ACL2 Workshops</h3>
-<p>ACL2 users gather to present their work at the ACL2 Workshops, which have taken place approximately every 18 months since 1999.  See <a href=\"https://www.cs.utexas.edu/~moore/acl2/workshops.html\">this page</a> for more information.</p>
+ <h3>ACL2 Workshops</h3>
+ <p>ACL2 users gather to present their work at the ACL2 Workshops, which have taken place approximately every 18 months since 1999.  See @(see workshops) for more information.</p>
 
-<h3>The 100 Theorems page</h3>
-<p>We maintain a list of the theorems from the <a href=\"https://www.cs.ru.nl/~freek/100/\">Formalizing 100 Theorems</a> page that have been proved in ACL2.  See @(see 100-theorems).  Users are invited to attempt to prove additional theorems from the list, though this may be challenging!</p>
+ <h3>The 100 Theorems page</h3>
+ <p>We maintain a list of the theorems from the <a href=\"https://www.cs.ru.nl/~freek/100/\">Formalizing 100 Theorems</a> page that have been proved in ACL2.  See @(see 100-theorems).  Users are invited to attempt to prove additional theorems from the list, though this may be challenging!</p>
 
-<h3>Stack Exchange</h3>
-<p>The <a href=\"https://proofassistants.stackexchange.com/questions/tagged/acl2\">Proof Assistants Stack Exchange</a> has some questions and answers about ACL2, but the ACL2 Zulip (see above) and @('acl2-help') mailing list (see above, under Mailing Lists) are more popular.</p>")
+ <h3>Stack Exchange</h3>
+ <p>The <a href=\"https://proofassistants.stackexchange.com/questions/tagged/acl2\">Proof Assistants Stack Exchange</a> has some questions and answers about ACL2, but the ACL2 Zulip (see above) and @('acl2-help') mailing list (see above, under Mailing Lists) are more popular.</p>")
+
+(defxdoc workshops
+  :parents (community)
+  :short "The ACL2 Workshop Series."
+  :long "<p>The ACL2 Workshop series consists of conferences that are held
+ regularly, as listed below.</p>
+
+ <p>In 2010, the ACL2 Workshop did a one-time merger with TPHOLs to form the
+ first International Conference on Interactive Theorem Proving (ITP).  Such a
+ merger may occur again, but whether or not that happens, the ACL2 community is
+ encouraged to participate in ITP.  Other conferences of particular interest to
+ the ACL2 community include CAV (Computer Aided Verification) and <a
+ href='http://www.cs.utexas.edu/users/hunt/FMCAD/'>FMCAD</a>
+ (Formal Methods in Computer Aided Design).</p>
+
+ <ul>
+
+ <li><a
+ href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2025/index.html'>ACL2
+ Workshop 2025</a>: May 12-13, 2025, Austin, Texas, USA and also online.</li>
+
+ <li><a
+ href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2023/index.html'>ACL2
+ Workshop 2023</a>: November 13-14, 2023, Austin, Texas, USA and also
+ online.</li>
+
+ <li><a
+ href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2022/index.html'>ACL2
+ Workshop 2022</a>: May 26-27, 2022, Austin, Texas, USA and also online.</li>
+
+ <li><a href='http://www.acl2-2020.info'>ACL2 Workshop 2020</a>: May 28-29,
+ 2020 (held online via video streaming).</li>
+
+ <li><a
+ href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2018/index.html'>ACL2
+ Workshop 2018</a>: November 5-6, 2018, Austin, Texas, USA.</li>
+
+ <li><a href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2017/index.html'>ACL2 Workshop 2017</a>: May 22 - 23, 2017, Austin, Texas, USA.</li>
+
+ <li><a
+href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2015/index.html'>ACL2
+Workshop 2015</a>: October 1-2, 2015, Austin, Texas, USA.  (Co-located with <a
+href='http://www.cs.utexas.edu/users/hunt/FMCAD/FMCAD15/index.shtml'>FMCAD
+2015</a>.)</li>
+
+ <li><a href='http://vsl2014.at/acl2/'>ACL2 Workshop 2014</a>: July 12-13,
+ 2014, Vienna, Austria, as an ITP-affiliated workshop of FLoC (part of the <a
+ href='http://vsl2014.at/'>Vienna Summer of Logic</a>).
+
+   <ul>
+   <li><a href='http://cs.ru.nl/~freekver/acl2_14_program.html'>Slides</a></li>
+   <li><a href='http://arxiv.org/html/1406.1238v1'>Proceedings</a></li>
+   </ul>
+ </li>
+
+ <li><a href='http://www.cs.uwyo.edu/~ruben/acl2-13'>ACL2 Workshop 2013</a>:
+ May 30-31, 2013, University of Wyoming, Laramie, Wyoming, USA.
+
+   <ul>
+   <li><a href='http://eptcs.web.cse.unsw.edu.au/content.cgi?ACL22013'>Proceedings</a></li>
+   </ul>
+ </li>
+
+ <li><a href='http://www.cs.utexas.edu/users/moore/acl2/acl2-11/Home.html'>ACL2
+ Workshop 2011</a>: November 3-4, 2011, Austin, Texas, USA.  (Co-located with
+ <a href='http://www.cs.utexas.edu/users/ragerdl/fmcad11/'>FMCAD 2011</a>.)
+
+   <ul>
+   <li><a href='http://eptcs.web.cse.unsw.edu.au/content.cgi?ACL22011'>Proceedings</a></li>
+   </ul>
+ </li>
+
+ <li><a href='http://www.cs.utexas.edu/users/kaufmann/itp-2010/'>ITP 2010:
+ Int'l Conference on Interactive Theorem Proving (ITP) 2010</a>: July 11-14,
+ 2010, Edinburgh, Scotland; part of <a href='http://floc-conference.org'>FLoC
+ 2010</a>.</li>
+
+ <li><a href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2009/'>ACL2
+ Workshop 2009</a>: May 11-12, 2009, Boston, Massachusetts, USA.  (<a
+ href='http://portal.acm.org/citation.cfm?id=1637837&amp;coll=GUIDE&amp;dl=GUIDE&amp;CFID=101915764&amp;CFTOKEN=26521015'>Proceedings
+ available from ACM Digital Library.</a>)</li>
+
+ <li><a href='http://www.cs.uwyo.edu/~ruben/acl2-07'>ACL2 Workshop 2007</a>:
+ November 15-16, 2007, Austin, Texas, USA.</li>
+
+ <li><a href='http://www.ccs.neu.edu/home/pete/acl206/'>ACL2 Workshop 2006</a>:
+ August 15-16, 2006, Seattle, Washington, USA. (<a
+ href='http://portal.acm.org/toc.cfm?id=1217975&amp;coll=portal&amp;dl=ACM&amp;type=proceeding&amp;idx=SERIES10714&amp;part=Proceedings&amp;WantType=Proceedings&amp;title=ACM%20International%20Conference%20Proceeding%20Series'>Proceedings
+ available from ACM Digital Library.</a>)</li>
+
+ <li><a href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2004'>ACL2
+ Workshop 2004</a>: November 18-19, 2004, Austin, Texas, USA.</li>
+
+ <li><a href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2003'>ACL2
+ Workshop 2003</a>: July 13-14, 2003, Boulder, Colorado, USA.</li>
+
+ <li><a href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2002'>ACL2
+ Workshop 2002</a>: April 8-9, 2002, Grenoble, France. </li>
+
+ <li><a href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2000'>ACL2
+ Workshop 2000</a>: October 30-31, 2000, Austin, Texas, USA.</li>
+
+ <li><a href='http://www.cs.utexas.edu/users/moore/acl2/workshop-1999'>ACL2
+ Workshop 1999</a>: March 29-31, 1999, Austin, Texas, USA.</li>
+
+ </ul>
+
+ <h3>List of past ACL2 Workshop slogans:</h3>
+
+
+ <ul>
+
+ <li><i>1999</i>: It ain't over til the last Q.E.D.</li>
+
+ <li><i>2000</i>: Just prove it.</li>
+
+ <li><i>2002</i>: Accumulated Persistence</li>
+
+ <li><i>2003</i>: No software too trivial. No error too obscure.</li>
+
+ <li><i>2004</i>: Defun starts here</li>
+
+ <li><i>2006</i>: ACM Software Systems Award Winner!</li>
+
+ <li><i>2007</i>: Save the world. Use make-event.</li>
+
+ <li><i>2009</i>: <i>None</i></li>
+
+ <li><i>2011</i>: We aim to prove</li>
+
+ <li><i>2013</i>: Pain is temporary; theorems are forever.</li>
+
+ <li><i>2014</i>: I love the smell of parentheses in the morning.</li>
+
+ <li><i>2015</i>: 25 years of rewriting history</li>
+
+ <li><i>2017</i>: In Proof We Trust</li>
+
+ <li><i>2018</i>: Sometimes you feel like alist, sometimes you don't</li>
+
+ <li><i>2020</i>: <tt>(defaxiom acl2-2020 'Damn nil. Full speed
+ ahead!' (not (lexorder 'acl2 'covid-19)))</tt></li>
+
+ <li><i>2022</i>: supporting (in-theory ...) local events</li>
+
+ <li><i>2023</i>: Certifiable</li>
+
+ <li><i>2025</i>: I'm sorry, Dave: I'm afraid I can't prove that.</li>
+
+ </ul>
+
+ <p>Jared Davis, Keshav Kini, and Andrew Walter have graciously supplied <a
+ href='https://github.com/acl2/acl2/tree/master/books/workshops/references'>a
+ listing of bibtex entries for the ACL2 workshops</a> through 2023 (would be
+ nice if extended past 2023; any volunteers?).</p>
+
+ <p>ACL2 input files (@(see certifiable) @(see books)) from the preceding
+ workshops are available in the <a
+ href='https://github.com/acl2/acl2/'>ACL2+Books GitHub repository</a>,
+ specifically, in its <a
+ href='https://github.com/acl2/acl2/tree/master/books/workshops/'>subdirectory
+ for workshop contributions</a>.</p>")
