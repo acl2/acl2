@@ -99,3 +99,33 @@
            (output-indicatorp-aux (desugar-nice-output-indicator x param-slot-to-name-alist parameter-types return-type)))
   :hints (("Goal" :in-theory (e/d (desugar-nice-output-indicator output-indicatorp-aux param-slot-to-name-alistp strip-cars nat-listp rassoc-equal)
                                   (natp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: but :auto is also a nice-output-indicatorp ?!
+(defund maybe-nice-output-indicatorp (x)
+  (declare (xargs :guard t))
+  (or (eq :auto x)
+      (nice-output-indicatorp x)))
+
+(defund desugar-maybe-nice-output-indicator (maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)
+  (declare (xargs :guard (and (maybe-nice-output-indicatorp maybe-nice-output-indicator)
+                              (param-slot-to-name-alistp param-slot-to-name-alist)
+                              (true-listp parameter-types)
+                              (jvm::all-typep parameter-types)
+                              (or (eq :void return-type)
+                                  (jvm::typep return-type)))))
+  (if (eq :auto maybe-nice-output-indicator)
+      (output-indicator-for-return-type return-type)
+    (desugar-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
+
+(defthm output-indicatorp-aux-of-desugar-maybe-nice-output-indicator
+  (implies (and (desugar-maybe-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)
+                (maybe-nice-output-indicatorp maybe-nice-output-indicator)
+                (param-slot-to-name-alistp param-slot-to-name-alist)
+                (true-listp parameter-types)
+                (jvm::all-typep parameter-types)
+                (or (eq :void return-type)
+                    (jvm::typep return-type)))
+           (output-indicatorp-aux (desugar-maybe-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
+  :hints (("Goal" :in-theory (enable desugar-maybe-nice-output-indicator))))

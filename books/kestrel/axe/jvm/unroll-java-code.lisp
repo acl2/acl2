@@ -444,6 +444,47 @@
     (implies (symbol-listp x)
              (eqlable-listp x))))
 
+;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-fn-aux.
+(defund classes-to-assume-initialized-optionp (classes-to-assume-initialized)
+  (declare (xargs :guard t))
+  (or (eq :all classes-to-assume-initialized)
+      (jvm::all-class-namesp classes-to-assume-initialized)))
+
+;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-fn-aux.
+(defund choose-classes-to-assume-initialized (classes-to-assume-initialized class-alist)
+  (declare (xargs :guard (and (classes-to-assume-initialized-optionp classes-to-assume-initialized)
+                              (class-table-alistp class-alist))))
+  (if (eq :all classes-to-assume-initialized)
+      (strip-cars class-alist)
+    classes-to-assume-initialized))
+
+(defund steps-optionp (steps)
+  (declare (xargs :guard t))
+  (or (eq :auto steps)
+      (natp steps)))
+
+(defund branches-optionp (branches)
+  (declare (xargs :guard t))
+  (or (eq :smart branches)
+      (eq :split branches)))
+
+(defund choose-symbolic-execution-rules (steps branches)
+  (declare (xargs :guard (and (steps-optionp steps)
+                              (or (eq :smart branches)
+                                  (eq :split branches)))))
+  (if (eq :auto steps)
+      (if (eq branches :smart)
+          (run-until-return-from-stack-height-rules-smart)
+        (if (eq branches :split)
+            (run-until-return-from-stack-height-rules-split)
+          (er hard? 'unroll-java-code-fn "Illegal value for :branches: ~x0.  Must be :smart or :split." branches)))
+    (symbolic-execution-rules-for-run-n-steps) ;todo: add a :smart analogue of this rule set
+    ))
+
+(defthm symbol-listp-of-choose-symbolic-execution-rules
+  (symbol-listp (choose-symbolic-execution-rules steps branches))
+  :hints (("Goal" :in-theory (enable choose-symbolic-execution-rules))))
+
 ;; Returns (mv erp dag all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state).
 ;; This uses all classes currently in the global-class-alist.
 ;; Why does this return the dag-fns?
@@ -477,8 +518,7 @@
                                 error-on-incomplete-runsp ;whether to throw a hard error (may be nil if further pruning can be done in the caller)
                                 state)
   (declare (xargs :guard (and (method-designator-stringp method-designator-string)
-                              (or (eq :auto maybe-nice-output-indicator)
-                                  (nice-output-indicatorp maybe-nice-output-indicator))
+                              (maybe-nice-output-indicatorp maybe-nice-output-indicator)
                               (array-length-alistp array-length-alist)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
@@ -486,8 +526,7 @@
                               (symbol-listp monitored-rules)
                               (pseudo-term-listp user-assumptions)
                               (booleanp normalize-xors)
-                              (or (eq :all classes-to-assume-initialized)
-                                  (jvm::all-class-namesp classes-to-assume-initialized))
+                              (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                               (booleanp ignore-exceptions)
                               (booleanp ignore-errors)
                               (print-levelp print)
@@ -497,10 +536,8 @@
                               (prune-precise-optionp prune-precise)
                               (prune-approx-optionp prune-approx)
                               (call-stp-optionp call-stp)
-                              (or (eq :auto steps)
-                                  (natp steps))
-                              (or (eq :smart branches)
-                                  (eq :split branches))
+                              (steps-optionp steps)
+                              (branches-optionp branches)
                               (or (eq :auto param-names)
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
@@ -509,7 +546,9 @@
                   :stobjs state
 ;                  :verify-guards nil ; todo: works but slow!
                   ;; :guard-simplify :limited
-                  :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-unroll-java-code-rules)
+                  :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-unroll-java-code-rules
+                                                         steps-optionp ; todo
+                                                         )
                                                         (quotep
                                                          myquotep
                                                          integerp-of-nth-when-all-natp))
@@ -529,7 +568,6 @@
        (class-alist (jvm::global-class-alist state))
        ((when (not (class-table-alistp class-alist)))
         (mv :bad-global-class-alist nil nil nil nil nil state))
-       (all-class-names (strip-cars class-alist))
        ((when (not (assoc-equal method-class class-alist)))
         (mv t
             (er hard? 'unroll-java-code-fn "Class ~x0 not found." method-class)
@@ -584,9 +622,7 @@
             nil nil nil nil
             state))
        (- (and print (cw "(Parameter assumptions: ~x0.)~%" parameter-assumptions)))
-       (classes-to-assume-initialized (if (eq :all classes-to-assume-initialized)
-                                          all-class-names
-                                        classes-to-assume-initialized))
+       (classes-to-assume-initialized (choose-classes-to-assume-initialized classes-to-assume-initialized class-alist))
        (- (and print (cw "(Assuming the following classes are initialized: ~x0.)~%" classes-to-assume-initialized)))
 
        ;; TODO: The term generated here could be improved by using a let:
@@ -624,22 +660,13 @@
         (mv :bad-return-type nil nil nil nil nil state))
        (parameter-types (lookup-eq :parameter-types method-info))
        ;; Handle an output-indicator of :auto:
-       (output-indicator (if (eq :auto maybe-nice-output-indicator)
-                             (output-indicator-for-return-type return-type)
-                           (desugar-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
+       (output-indicator (desugar-maybe-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type))
        ((when (not output-indicator))
         (mv :failed-to-resolve-output-indicator nil nil nil nil nil state))
        (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
        ;; Decide which symbolic execution rule to use:
-       (symbolic-execution-rules (if (eq :auto steps)
-                                     (if (eq branches :smart)
-                                         (run-until-return-from-stack-height-rules-smart)
-                                       (if (eq branches :split)
-                                           (run-until-return-from-stack-height-rules-split)
-                                         (er hard? 'unroll-java-code-fn "Illegal value for :branches: ~x0.  Must be :smart or :split." branches)))
-                                   (symbolic-execution-rules-for-run-n-steps) ;todo: add a :smart analogue of this rule set
-                                   ))
+       (symbolic-execution-rules (choose-symbolic-execution-rules steps branches))
        ;; todo: if rule-alists are applied, should we at least include the symbolic-execution-rules?
        ((mv erp rule-alists)
         (if rule-alists ;use user-supplied rule-alists, if any
