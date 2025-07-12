@@ -4559,9 +4559,9 @@
                            return-type
                            class-table-alist
                            state)
-  (declare (xargs :mode :program
-                  :guard (and (output-indicatorp output-indicator)
+  (declare (xargs :guard (and (output-indicatorp output-indicator)
                               (class-table-alistp class-table-alist))
+                  :mode :program
                   :stobjs state))
   (b* ((term (output-extraction-term output-indicator initial-locals-term return-type class-table-alist))
        ((mv erp dag2) (wrap-term-around-dag term 'replace-me dag))

@@ -407,7 +407,6 @@
 
 (local
   (in-theory (disable unroll-java-code-rules (:e unroll-java-code-rules)
-                      nice-output-indicatorp
                       natp
                       nat-listp
                       alistp
@@ -422,7 +421,6 @@
                       jvm::method-staticp
                       jvm::method-namep
                       method-designator-stringp
-                      output-indicatorp-aux
                       no-duplicatesp-equal ; why?
                       strip-cars-of-non-consp
                       assoc-equal-when-member-equal-of-strip-cars
@@ -660,10 +658,10 @@
         (mv :bad-return-type nil nil nil nil nil state))
        (parameter-types (lookup-eq :parameter-types method-info))
        ;; Handle an output-indicator of :auto:
-       (output-indicator (desugar-maybe-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type))
-       ((when (not output-indicator))
+       (simple-output-indicator (desugar-maybe-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type))
+       ((when (not simple-output-indicator))
         (mv :failed-to-resolve-output-indicator nil nil nil nil nil state))
-       (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
+       (term-to-run-with-output-extractor (wrap-term-with-output-extractor simple-output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
        ;; Decide which symbolic execution rule to use:
        (symbolic-execution-rules (choose-symbolic-execution-rules steps branches))

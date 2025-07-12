@@ -18,7 +18,7 @@
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 ;; todo: allow the param name to be deep in the structure, once the output-indicator stuff is cleaned up
-(defun nice-output-indicatorp (x)
+(defund nice-output-indicatorp (x)
   (declare (xargs :guard t))
   (or (output-indicatorp x) ; allows :auto -- should it? make a maybe-nice-output-indicatorp?
       (eq :rv x) ; "return value"
@@ -40,9 +40,10 @@
            (slot-to-parameter-type-alist-aux (+ slot (jvm::type-slot-count (first parameter-types)))
                                              (rest parameter-types)))))
 
-(defthm alistp-of-slot-to-parameter-type-alist-aux
-  (alistp (slot-to-parameter-type-alist-aux slot parameter-types))
-  :hints (("Goal" :in-theory (enable slot-to-parameter-type-alist-aux))))
+(local
+  (defthm alistp-of-slot-to-parameter-type-alist-aux
+    (alistp (slot-to-parameter-type-alist-aux slot parameter-types))
+    :hints (("Goal" :in-theory (enable slot-to-parameter-type-alist-aux)))))
 
 (verify-guards slot-to-parameter-type-alist-aux)
 
@@ -92,12 +93,12 @@
                     (er hard? 'desugar-nice-output-indicator "Output indicator is ~x0 but that param is not an array." x)
                   `(:array-local ,param-slot))))))))))
 
-(defthm output-indicatorp-aux-of-desugar-nice-output-indicator
+(defthm simple-output-indicatorp-of-desugar-nice-output-indicator
   (implies (and (desugar-nice-output-indicator x param-slot-to-name-alist parameter-types return-type) ; not nil
                 (not (eq :auto x)) ; would be passed through
                 (param-slot-to-name-alistp param-slot-to-name-alist))
-           (output-indicatorp-aux (desugar-nice-output-indicator x param-slot-to-name-alist parameter-types return-type)))
-  :hints (("Goal" :in-theory (e/d (desugar-nice-output-indicator output-indicatorp-aux param-slot-to-name-alistp strip-cars nat-listp rassoc-equal)
+           (simple-output-indicatorp (desugar-nice-output-indicator x param-slot-to-name-alist parameter-types return-type)))
+  :hints (("Goal" :in-theory (e/d (desugar-nice-output-indicator simple-output-indicatorp param-slot-to-name-alistp strip-cars nat-listp rassoc-equal)
                                   (natp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -119,7 +120,7 @@
       (output-indicator-for-return-type return-type)
     (desugar-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
 
-(defthm output-indicatorp-aux-of-desugar-maybe-nice-output-indicator
+(defthm simple-output-indicatorp-of-desugar-maybe-nice-output-indicator
   (implies (and (desugar-maybe-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)
                 (maybe-nice-output-indicatorp maybe-nice-output-indicator)
                 (param-slot-to-name-alistp param-slot-to-name-alist)
@@ -127,5 +128,5 @@
                 (jvm::all-typep parameter-types)
                 (or (eq :void return-type)
                     (jvm::typep return-type)))
-           (output-indicatorp-aux (desugar-maybe-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
+           (simple-output-indicatorp (desugar-maybe-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type)))
   :hints (("Goal" :in-theory (enable desugar-maybe-nice-output-indicator))))
