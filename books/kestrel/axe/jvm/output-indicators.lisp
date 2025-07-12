@@ -77,9 +77,7 @@
                  (class-field-ids (strip-cars class-fields)))
             (member-equal field-id class-field-ids))))))
 
-;;;
-;;; output-indicators
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This indicates what output to extract from the state when lifting.
 ;; :return-value means the value on top of the stack.
@@ -130,7 +128,7 @@
 (mutual-recursion
  ;; TODO: The lambdas here may be not be necessary, since we always create a DAG to contain the result of this.
  ;; TODO: Reorder args?
- (defund wrap-term-with-output-extractor (output-indicator ; :auto is handled in a wrapper
+ (defund wrap-term-with-output-extractor (output-indicator ; :rv is handled in a wrapper
                                           initial-locals-term
                                           state-term
                                           class-table-alist)
@@ -217,12 +215,12 @@
 ;; todo: rename to maybe-output-indicatorp?
 (defun output-indicatorp (x)
   (declare (xargs :guard t))
-  (or (eq :auto x)
+  (or (eq :rv x)
       (simple-output-indicatorp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; For use when the output-indicator is :auto; do something sensible using the
+;; For use when the output-indicator is :rv; do something sensible using the
 ;; return-type, if we can.  Returns an simple-output-indicatorp, or nil to
 ;; indicate failure.
 (defund output-indicator-for-return-type (return-type)
@@ -250,12 +248,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Handles an output-indicator that is :auto.  May throw an error (and logically return nil).
+;; Handles an output-indicator that is :rv  May throw an error (and logically return nil).
 (defund desugar-output-indicator (output-indicator return-type)
   (declare (xargs :guard (and (output-indicatorp output-indicator)
                               (or (eq :void return-type)
                                   (jvm::typep return-type)))))
-  (if (eq :auto output-indicator)
+  (if (eq :rv output-indicator)
       (output-indicator-for-return-type return-type)
     output-indicator))
 
@@ -271,7 +269,7 @@
 ;; the special symbol 'replace-me should be replaced with the DAG.
 (defund output-extraction-term (output-indicator
                                 initial-locals-term
-                                return-type ; used when output-indicator is :auto
+                                return-type ; used when output-indicator is :rv
                                 class-table-alist)
   (declare (xargs :guard (and (output-indicatorp output-indicator)
                               (pseudo-termp initial-locals-term)
@@ -279,7 +277,7 @@
                                   (jvm::typep return-type))
                               (class-table-alistp class-table-alist))
                   :guard-hints (("Goal" :in-theory (enable output-indicator-for-return-type))))) ; todo
-  (let ((output-indicator (desugar-output-indicator output-indicator return-type)))
-    (if (not output-indicator)
+  (let ((simple-output-indicator (desugar-output-indicator output-indicator return-type)))
+    (if (not simple-output-indicator)
         (er hard? 'output-extraction-term "Failed to resove output indicator.")
-      (wrap-term-with-output-extractor output-indicator initial-locals-term 'replace-me class-table-alist))))
+      (wrap-term-with-output-extractor simple-output-indicator initial-locals-term 'replace-me class-table-alist))))
