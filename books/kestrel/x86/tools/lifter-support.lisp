@@ -34,13 +34,36 @@
                     ))
     (if (symbolp output-indicator)
         (case output-indicator
+          ;; Extract a 64-bit register:
           (:rax `(rax ,term))
+          (:rbx `(rbx ,term))
+          (:rcx `(rcx ,term))
+          (:rdx `(rdx ,term))
+          (:rsi `(rsi ,term))
+          (:rdi `(rdi ,term))
+          (:r8 `(r8 ,term))
+          (:r9 `(r9 ,term))
+          (:r10 `(r10 ,term))
+          (:r11 `(r11 ,term))
+          (:r12 `(r12 ,term))
+          (:r13 `(r13 ,term))
+          (:r14 `(r14 ,term))
+          (:r15 `(r15 ,term))
+          (:rsp `(rsp ,term))
+          (:rbp `(rbp ,term))
           ;; todo: call eax or use choped rax here?
           (:eax `(bvchop '32 (xr ':rgf '0 ,term))) ; for now, or do something different depending on 32/64 bit mode since eax is not really well supported in 32-bit mode?
           ;; (:eax (rax ,term))
           (:xmm0 `(bvchop '128 (xr ':zmm '0 ,term)))
           (:ymm0 `(bvchop '256 (xr ':zmm '0 ,term)))
           (:zmm0 `(xr ':zmm '0 ,term)) ; seems to already be unsigned
+          ;; Extract a CPU flag: ; todo: more?
+          (:af `(get-flag ':af ,term)) ; todo: more
+          (:cf `(get-flag ':cf ,term))
+          (:of `(get-flag ':of ,term))
+          (:pf `(get-flag ':pf ,term))
+          (:sf `(get-flag ':sf ,term))
+          (:zf `(get-flag ':zf ,term))
           (t (er hard? 'wrap-in-normal-output-extractor "Unsupported output-indicator: ~x0." output-indicator)))
       (if (not (and (consp output-indicator)
                     (true-listp output-indicator)))
