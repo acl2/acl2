@@ -694,7 +694,7 @@
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
-                              ;; (output-indicatorp output-indicator)
+                              ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
@@ -1194,7 +1194,7 @@
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
-                              ;; (output-indicatorp output-indicator)
+                              ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
