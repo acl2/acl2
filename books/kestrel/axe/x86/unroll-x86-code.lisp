@@ -750,8 +750,10 @@
         (mv :bad-options nil nil nil nil nil nil state))
        (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
        (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
+
+                                        ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
                                         ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
-                                        (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
+                                        ;(acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
                                         ))
        (new-canonicalp (or new-style-elf-assumptionsp ; for now
                            (eq :mach-o-64 executable-type)

@@ -402,6 +402,7 @@
     in-region48p-cancel-1+-1+
     in-region48p-cancel-1-2
     in-region48p-cancel-2-1
+    in-region48p-cancel-2+-1
     in-region48p-cancel-1+-2
     in-region48p-cancel-2-1+
     in-region48p-cancel-2+-1
@@ -423,6 +424,7 @@
     disjoint-regions48p-cancel-1+-2
     disjoint-regions48p-cancel-2-1+
     disjoint-regions48p-cancel-2-2
+    disjoint-regions48p-cancel-2+-2
     disjoint-regions48p-of-bvplus-of-constant-and-constant
     subregion48p-cancel-1-1
     subregion48p-cancel-1+-1
@@ -2027,6 +2029,7 @@
     in-region64p-cancel-1+-1+
     in-region64p-cancel-1-2
     in-region64p-cancel-2-1
+    in-region64p-cancel-2+-1
     in-region64p-cancel-1+-2
     in-region64p-cancel-2-1+
     in-region64p-cancel-2+-1

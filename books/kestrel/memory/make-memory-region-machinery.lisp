@@ -200,7 +200,7 @@
            :hints (("Goal" :in-theory (enable ,in-regionp-name))))
 
          (defthm ,(acl2::pack-in-package "X" in-regionp-name '-cancel-1-2)
-           (equal (,in-regionp-name x len2 (bvplus ,num-address-bits y x))
+           (equal (,in-regionp-name x len2 (bvplus ,num-address-bits y x)) ; todo: why len2, here and below?
                   (,in-regionp-name 0 len2 y))
            :hints (("Goal" :in-theory (enable ,in-regionp-name))))
 
@@ -496,6 +496,11 @@
          (defthm ,(acl2::pack-in-package "X" disjoint-regionsp-name '-cancel-2-2)
            (equal (,disjoint-regionsp-name len1 (bvplus ,num-address-bits z x) len2 (bvplus ,num-address-bits y x))
                   (,disjoint-regionsp-name len1 z len2 y))
+           :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
+
+         (defthm ,(acl2::pack-in-package "X" disjoint-regionsp-name '-cancel-2+-2)
+           (equal (,disjoint-regionsp-name len1 (bvplus ,num-address-bits z (bvplus ,num-address-bits x w)) len2 (bvplus ,num-address-bits y x))
+                  (,disjoint-regionsp-name len1 (bvplus ,num-address-bits z w) len2 y))
            :hints (("Goal" :in-theory (enable ,disjoint-regionsp-name))))
 
          ;; todo: more like this?
