@@ -185,7 +185,7 @@ Software System Award</a>.<p>
 <a href=\"~sa\"><img src=\"HTML/door02.gif\" alt=\"door icon\" border=0></a>
 </td>
 <td>
-Start Here: <a href=\"~sj\">Applications</a>, <a href=\"~sv\">Talks</a>, <a href=\"~sa\">Tours</a>, and <a href=\"~sb\">Tutorials/Demos</a>
+<a href=\"~sw\">Start Here</a> (including <a href=\"~sj\">applications</a>, <a href=\"~sv\">talks</a>, <a href=\"~sa\">tours</a>, and <a href=\"~sb\">tutorials/demos</a>)
 </td>
 
 <td align=center valign=MIDDLE>

@@ -307,68 +307,6 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 (include-book "xdoc/alter" :dir :system)
 
-#!XDOC
-(defun fix-redundant-acl2-parents (all-topics)
-
-; Modification 7/19/2015 by Matt K.: The rebinding of topic just below caused
-; the removal of ACL2 as a parent for three topics, as indicated in the
-; following output in books/doc/top.cert.out:
-
-; Note: Removing 'redundant' ACL2 parent for PROOF-AUTOMATION.
-; Note: Removing 'redundant' ACL2 parent for INTERFACING-TOOLS.
-; Note: Removing 'redundant' ACL2 parent for DEBUGGING.
-
-; But I definitely want DEBUGGING to show up under ACL2.  One reason is that
-; otherwise, many ACL2 topics quite appropriately have DEBUGGING as their sole
-; parent, and thus are not included in the tree of topics under ACL2.  I'd
-; prefer that INTERFACING-TOOLS to show up under ACL2 as well (for example, so
-; that COMMAND-LINE is in the tree of topics under ACL2).  But I agree that
-; ther is no reason for PROOF-AUTOMATION to be under ACL2, so I have removed
-; ACL2 as a parent of PROOF-AUTOMATION in books/doc/more-topics.lisp.
-
-; (b* (((when (atom all-topics))
-;       nil)
-;      (topic (car all-topics))
-;      (parents (cdr (assoc :parents topic)))
-;      (topic (if (or (equal parents '(acl2::top acl2::acl2))
-;                     (equal parents '(acl2::acl2 acl2::top)))
-;                 (progn$
-;                  (cw "; Note: Removing 'redundant' ACL2 parent for ~x0.~%"
-;                      (cdr (assoc :name topic)))
-;                  (cons (cons :parents '(acl2::top))
-;                        (remove1-assoc-equal :parents topic)))
-;               topic)))
-;   (cons topic
-;         (fix-redundant-acl2-parents (cdr all-topics))))
-
-  all-topics)
-
-(defmacro xdoc::fix-the-hierarchy ()
-  ;; Semi-bozo.
-  ;;
-  ;; This is a place that Jared can put changes that are either experimental or
-  ;; under discussion.
-  ;;
-  ;; Later in this file, I call fix-the-hierarchy, but only LOCALLY, so that it
-  ;; only affects the web manual (not the Emacs manual), and not any other
-  ;; manuals that include doc/top
-  ;;
-  ;; I wrap these changes up in a non-local macro so that authors of other
-  ;; manuals (e.g., our internal manual at Centaur) can also choose to call
-  ;; fix-the-hierarchy if they wish.
-  `(progn
-
-     #!XDOC
-     (table xdoc 'doc (fix-redundant-acl2-parents
-                       (get-xdoc-table acl2::world)))
-
-     ;; These run afoul of the acl2-parents issue
-     (xdoc::change-parents documentation (top))
-     (xdoc::change-parents bdd (boolean-reasoning proof-automation))
-     (xdoc::change-parents books (top))
-
-     ))
-
 (local
 
 ; The TOP topic will be the first thing the user sees when they open the
@@ -379,7 +317,6 @@
 
 (comp t)
 
-(local (xdoc::fix-the-hierarchy))
 (local (deflabel doc-rebuild-label))
 
 (make-event
