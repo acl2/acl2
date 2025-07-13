@@ -2693,7 +2693,7 @@
      acl2::get-elf-section-address
      acl2::get-elf-section-bytes
      acl2::get-elf-code
-     acl2::get-elf-code-address
+     acl2::get-elf-text-section-address ; todo: use segments!
      acl2::get-elf-section-header-base-1
      acl2::get-elf-section-header-base-2
      acl2::get-elf-section-header-unroll

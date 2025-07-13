@@ -978,7 +978,7 @@
                             'text-offset ; todo: match what we do for other executable types
                           (if (or (eq :elf-32 executable-type)
                                   (eq :elf-64 executable-type))
-                              (if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable)) ; todo: think about the 32-bit case, esp wrt position independence
+                              (if position-independentp 'text-offset `,(acl2::get-elf-text-section-address parsed-executable)) ; todo: think about the 32-bit case, esp wrt position independence
                             (if (eq :mach-o-32 executable-type)
                                 nil ; todo
                               (if (eq :pe-32 executable-type)

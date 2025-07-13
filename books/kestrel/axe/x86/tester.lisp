@@ -159,7 +159,7 @@
 ;;         ;; (assumptions-for-elf64-sections '(".data" ".rodata"
 ;;         ;;                                   ;;  ".got" ; todo: consider putting this back (at least assume it disjoint from the stack)
 ;;         ;;                                   )
-;;         ;;                                 position-independentp stack-slots (acl2::get-elf-code-address parsed-executable) parsed-executable bvp)
+;;         ;;                                 position-independentp stack-slots (acl2::get-elf-text-section-address parsed-executable) parsed-executable bvp)
 ;;       (if (eq :elf-32 executable-type)
 ;;           (cw "WARNING: Architecture-specific assumptions are not yet supported for ELF32.~%")
 ;;         nil))))
