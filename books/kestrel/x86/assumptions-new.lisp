@@ -470,7 +470,7 @@
        ;; TODO: Consider implementing some sort of dynamic loading using the
        ;; sections (but calls may need to be fixed up):
        ((when (not (consp program-header-table)))
-        (er hard? 'assumptions-elf64-new "Program header table is empty. Please link the executable")
+        (er hard? 'assumptions-elf64-new "Program header table is empty. Please link the executable") ; todo: print the name
         (mv :empty-program-header-table nil nil))
        (base-var 'base-address) ; only used if position-independentp
        ;; Decide which memory regions to assume disjoint from the inputs:
@@ -487,7 +487,9 @@
                                                 (len (acl2::parsed-elf-bytes parsed-elf))
                                                 nil)
             ;; inputs-disjoint-from must be :code, so assume the inputs are disjoint from the code bytes only:
-            (b* ((code-address (acl2::get-elf-code-address parsed-elf)) ; todo: what if there are segments but no sections?!
+            ;; todo: what if there are segments but no sections?  could use the segment that contains the text section, if we can find it, or throw an error.
+            ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
+            (b* ((code-address (acl2::get-elf-text-section-address parsed-elf))
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
