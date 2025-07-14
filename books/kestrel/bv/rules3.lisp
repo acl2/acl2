@@ -1534,10 +1534,6 @@
                (bvplus size x b)))
   :hints (("Goal" :in-theory (enable myif))))
 
-;move or drop
-(defthmd acl2-numberp-of-sum
-  (acl2-numberp (+ x y)))
-
 (defthm <-from-<=-free
   (implies (and (equal (< free x) ; i think we have this rather than (not (< free x))
                        nil)
