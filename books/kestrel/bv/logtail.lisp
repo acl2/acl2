@@ -80,6 +80,15 @@
   :hints (("Goal" :in-theory (enable logtail
                                      floor-when-multiple))))
 
+(defthm logtail-of-sum2
+  (implies (and (integerp (/ b (expt 2 m)))
+                (integerp a)
+                (integerp b))
+           (equal (logtail m (+ a b))
+                  (+ (logtail m a) (logtail m b))))
+  :hints (("Goal" :use (:instance logtail-of-sum (a b) (b a))
+           :in-theory (disable logtail-of-sum))))
+
 ;; (defthm logtail-of-logtail-worse
 ;;   (implies (and (natp i)
 ;;                 (integerp x)
@@ -185,15 +194,6 @@
          (and (natp n)
               (unsigned-byte-p (+ n (nfix pos)) (ifix i))))
   :hints (("Goal" :cases ((integerp x)))))
-
-(defthm logtail-of-sum2
-  (implies (and (integerp (/ b (expt 2 m)))
-                (integerp a)
-                (integerp b))
-           (equal (logtail m (+ a b))
-                  (+ (logtail m a) (logtail m b))))
-  :hints (("Goal" :use (:instance logtail-of-sum (a b) (b a))
-           :in-theory (disable logtail-of-sum))))
 
 (defthm logtail-shift-gen2
   (implies (and (<= size n) ;this case

@@ -55,8 +55,7 @@
                                 carryin)
               (+ -1 n) (bvchop (+ -1 n) shorter-sum)))))
 
-(defthm ripple-carry-adder-of-zeros
-  (equal (ripple-carry-adder n 0 0 0)
+(defthm ripple-carry-adder-of-zeros(equal (ripple-carry-adder n 0 0 0)
          0)
   :hints (("Goal" :in-theory (enable ripple-carry-adder))))
 
@@ -301,9 +300,8 @@
                              bvplus
                              expt-hack)
                             (;EQUAL-OF-SUM-OF-LOW-BITS
-;full-adder-sum
+                             ;;full-adder-sum
                              ;full-adder-carry
-                             ;
                              ;;BVCAT-OF-+-LOW
                              BVCAT-EQUAL-REWRITE-ALT
                              BVCAT-EQUAL-REWRITE

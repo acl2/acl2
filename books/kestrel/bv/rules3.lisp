@@ -1293,7 +1293,6 @@
 ;;            (equal (bitxor (bitand x y) (bitxor 1 x))
 ;;                   (bitor (bitand x y) (bitxor 1 x))))
 ;;   :hints (("Goal"
-;;            :in-theory (disable)
 ;;            :cases ((and (equal 0 x) (equal 0 y))
 ;;                           (and (equal 0 x) (equal 1 y))
 ;;                           (and (equal 1 x) (equal 0 y))
