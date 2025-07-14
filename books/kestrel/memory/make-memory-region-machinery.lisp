@@ -209,14 +209,14 @@
                   (,in-regionp-name y len2 0))
            :hints (("Goal" :in-theory (enable ,in-regionp-name))))
 
-         (defthm ,(acl2::pack-in-package "X" in-regionp-name '-cancel-2+-1)
-           (equal (,in-regionp-name (bvplus ,num-address-bits y (bvplus ,num-address-bits x z)) len2 x)
-                  (,in-regionp-name (bvplus ,num-address-bits y z) len2 0))
-           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
-
          (defthm ,(acl2::pack-in-package "X" in-regionp-name '-cancel-2-1+)
            (equal (,in-regionp-name (bvplus ,num-address-bits y x) len2 (bvplus ,num-address-bits x z))
                   (,in-regionp-name y len2 z))
+           :hints (("Goal" :in-theory (enable ,in-regionp-name))))
+
+         (defthm ,(acl2::pack-in-package "X" in-regionp-name '-cancel-2+-1)
+           (equal (,in-regionp-name (bvplus ,num-address-bits y (bvplus ,num-address-bits x z)) len2 x)
+                  (,in-regionp-name (bvplus ,num-address-bits y z) len2 0))
            :hints (("Goal" :in-theory (enable ,in-regionp-name))))
 
          (defthm ,(acl2::pack-in-package "X" in-regionp-name '-cancel-1+-2)

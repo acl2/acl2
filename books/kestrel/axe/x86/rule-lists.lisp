@@ -402,9 +402,9 @@
     in-region48p-cancel-1+-1+
     in-region48p-cancel-1-2
     in-region48p-cancel-2-1
-    in-region48p-cancel-2+-1
     in-region48p-cancel-1+-2
     in-region48p-cancel-2-1+
+    in-region48p-cancel-2+-1
     in-region48p-cancel-1-3
     in-region48p-cancel-3-1
     in-region48p-cancel-2-2
@@ -2031,6 +2031,7 @@
     in-region64p-cancel-2+-1
     in-region64p-cancel-1+-2
     in-region64p-cancel-2-1+
+    in-region64p-cancel-2+-1
     in-region64p-cancel-1-3
     in-region64p-cancel-3-1
     in-region64p-cancel-2-2
