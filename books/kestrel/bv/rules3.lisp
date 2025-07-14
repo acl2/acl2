@@ -1534,12 +1534,8 @@
                (bvplus size x b)))
   :hints (("Goal" :in-theory (enable myif))))
 
-;expensive?
-(defthm integerp-implies-acl2-numberp
-  (implies (integerp x)
-           (acl2-numberp x)))
-
-(defthm acl2-numberp-of-sum
+;move or drop
+(defthmd acl2-numberp-of-sum
   (acl2-numberp (+ x y)))
 
 (defthm <-from-<=-free
