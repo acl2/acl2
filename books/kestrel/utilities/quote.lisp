@@ -1,7 +1,7 @@
 ; Utilities dealing with quoted objects
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,12 +16,20 @@
 
 ;; STATUS: IN-PROGRESS
 
+
+;; A variant of UNQUOTE with a more suitable guard.
+;; Note that quotep is not a strong enough guard for us to unquote here (that's
+;; why myquotep exists).
+(defun-inline unquote$ (x)
+  (declare (xargs :guard (myquotep x)))
+  (unquote x))
+
 ;use kwote?
 (defmacro enquote (val)
   `(list 'quote ,val))
 
 ;;;
-;;; all-myquotep
+;;; all-myquotep (TODO: Move to a new book, in typed-lists-light)
 ;;;
 
 (defund all-myquotep (items)
@@ -71,3 +79,5 @@
                 (member-equal item items))
            (myquotep item))
   :hints (("Goal" :in-theory (enable all-myquotep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

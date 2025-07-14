@@ -245,6 +245,13 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable axe-treep))))
 
+;;uses (equal 'quote (car tree)) as the normal form
+(defthm myquotep-when-axe-treep
+  (implies (and (syntaxp (want-to-weaken (myquotep x)))
+                (axe-treep x))
+           (equal (myquotep x)
+                  (equal 'quote (car x)))))
+
 (defthm symbol-of-nth-0-when-axe-treep
   (implies (axe-treep tree)
            (equal (symbolp (nth 0 tree))
@@ -300,12 +307,6 @@
   :hints (("Goal" :expand ((axe-treep tree)
                            ;;(bounded-axe-treep tree bound2)
                            ))))
-
-(defthm myquotep-when-axe-treep
-  (implies (and (syntaxp (want-to-weaken (myquotep x)))
-                (axe-treep x))
-           (equal (myquotep x)
-                  (equal 'quote (car x)))))
 
 (defthm axe-treep-of-cons-strong
   (equal (axe-treep (cons fn args))
