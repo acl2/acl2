@@ -493,6 +493,7 @@
   '(read-1-of-write-1-diff
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
+    read-of-write-within
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     ;; todo: more variants of these:
     ;; todo: uncomment:
@@ -6132,7 +6133,7 @@
 (set-axe-rule-priority read-of-set-rsi -2)
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
-(set-axe-rule-priority read-of-write-same -1)
+(set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
 (set-axe-rule-priority read-of-write-irrel -1)
 (set-axe-rule-priority read-of-write-irrel-bv-axe 1) ; try late, as this uses SMT, todo: add smt to name
 
