@@ -1,7 +1,7 @@
 ; Utilities about keyword-value-lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,13 @@
 (include-book "lookup-keyword")
 
 ;(in-theory (disable keywordp))
+
+(defthm keyword-value-listp-of-remove-keyword
+  (implies (keyword-value-listp l)
+           (keyword-value-listp (remove-keyword word l)))
+  :hints (("Goal" :in-theory (enable keyword-value-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Compare to remove-keyword
 (defun clear-key-in-keyword-value-list (key keyword-value-list)
