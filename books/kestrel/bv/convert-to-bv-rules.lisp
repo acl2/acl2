@@ -21,12 +21,16 @@
 (include-book "bvshr-def")
 (include-book "bvmult-def")
 (include-book "bvcat-def")
+(include-book "bvsx-def")
+(include-book "logext-def")
 (local (include-book "bvcat"))
 (local (include-book "slice"))
 (local (include-book "bvshr"))
+(local (include-book "bvsx"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "logand-b"))
+(local (include-book "logext"))
 
 ;; Step 1: These rules begin the conversion by inserting calls of trim.  (Axe has
 ;; its own version of such rules, since they use complex syntaxp hyps.  See
@@ -140,5 +144,15 @@
 ;;            (equal (trim size (- x y))
 ;;                   (bvminus size x y)))
 ;;   :hints (("Goal" :in-theory (enable trim bvminus))))
+
+(defthm trim-of-logext-becomes-bvsx
+  (implies (and (natp size)
+                (posp size2))
+           (equal (trim size (logext size2 x))
+                  (if (< size2 size)
+                      (bvsx size size2 x)
+                    ;; no sign extension needed in this case:
+                    (bvchop size x))))
+  :hints (("Goal" :in-theory (e/d (trim) (logext)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
