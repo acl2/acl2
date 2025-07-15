@@ -185,7 +185,13 @@
     (let ((width (unquote quoted-width)))
       (term-should-be-trimmed-helper width term operators))))
 
-;; TODO: Consider adding logext
 ;; WARNING: Keep this in sync with the rules in convert-to-bv-rules.lisp.
 (defconst *functions-convertible-to-bv*
-  '(binary-logand binary-logior binary-logxor lognot binary-+ unary-- binary-*))
+  '(binary-logand
+    binary-logior
+    binary-logxor
+    lognot
+    ;; logext ; todo: uncomment?
+    binary-+
+    unary--
+    binary-*))
