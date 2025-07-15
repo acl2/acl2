@@ -144,6 +144,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a natp.
+;; Smashes the array named 'size-array
 (defund dag-array-size (dag-array-name dag-array dag-len)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (posp dag-len))))
@@ -165,7 +166,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns the size of the tree represented by the DAG (may be a very large number).
-;; Smashes the array named 'size-array.
+;; Smashes the arrays named 'size-array and 'dag-array-for-size-computation.
 (defund dag-size (dag)
   (declare (xargs :guard (and (pseudo-dagp dag)
                               (<= (len dag) *max-1d-array-length*) ;weaken?
@@ -185,7 +186,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns the size of the tree represented by the DAG (may be a very large number).
 ;; This version avoids imposing invariant-risk on callers, because it has a guard of t.
+;; Smashes the arrays named 'size-array and 'dag-array-for-size-computation.
 (defund dag-size-unguarded (dag)
   (declare (xargs :guard t))
   (if (and (pseudo-dagp dag)
@@ -201,6 +204,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns the size of the tree represented by X (may be a very large number).
+;; A constant is reported as having size 1 (would use a single DAG node).
+;; Smashes the arrays named 'size-array and 'dag-array-for-size-computation.
 (defund dag-or-quotep-size (x)
   (declare (xargs :guard (or (and (pseudo-dagp x)
                                   (<= (len x) *max-1d-array-length*))
@@ -218,7 +224,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This one consider huge dags to not have size < n, without even looking at n!
+;; This one considers huge dags to not have size < n, without even looking at n!
 ;; This one does not require the DAG to be not too large.
 (defund dag-or-quotep-size-less-than (d n)
   (declare (xargs :guard (and (or (pseudo-dagp d)

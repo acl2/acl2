@@ -38,23 +38,10 @@
 
 (in-theory (disable mv-nth))
 
-(local (defthm integerp-when-unsigned-byte-p-32
-         (implies (unsigned-byte-p 32 x)
-                  (integerp x))))
-
-(local (in-theory (enable unsigned-byte-p-of-mv-nth-1-of-parse-u8
-                          unsigned-byte-p-of-mv-nth-1-of-parse-u16
-                          unsigned-byte-p-of-mv-nth-1-of-parse-u32
-                          unsigned-byte-p-of-mv-nth-1-of-parse-u64
-                          byte-listp-of-mv-nth-2-of-parse-u8
-                          byte-listp-of-mv-nth-2-of-parse-u16
-                          byte-listp-of-mv-nth-2-of-parse-u32
-                          byte-listp-of-mv-nth-2-of-parse-u64
-                          alistp-of-cdr-when-alist-listp-of-strip-cdrs
-                          acl2-numberp-when-integerp
-                          <=-of-0-when-natp)))
-
-(local (in-theory (disable natp)))
+(local
+  (defthm integerp-when-unsigned-byte-p-32
+    (implies (unsigned-byte-p 32 x)
+             (integerp x))))
 
 (local
   (defthm acl2-numberp-when-bytep
@@ -72,6 +59,22 @@
     (implies (symbol-listp (strip-cdrs alist))
              (symbolp (lookup-equal key alist)))
   :hints (("Goal" :in-theory (enable lookup-equal)))))
+
+(local (in-theory (enable unsigned-byte-p-of-mv-nth-1-of-parse-u8
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u16
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u32
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u64
+                          byte-listp-of-mv-nth-2-of-parse-u8
+                          byte-listp-of-mv-nth-2-of-parse-u16
+                          byte-listp-of-mv-nth-2-of-parse-u32
+                          byte-listp-of-mv-nth-2-of-parse-u64
+                          alistp-of-cdr-when-alist-listp-of-strip-cdrs
+                          acl2-numberp-when-integerp
+                          <=-of-0-when-natp)))
+
+(local (in-theory (disable natp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *elf-magic-number* #x464C457F) ; 7F"ELF" (but note the byte order)
 

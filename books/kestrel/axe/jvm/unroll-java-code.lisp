@@ -407,7 +407,6 @@
 
 (local
   (in-theory (disable unroll-java-code-rules (:e unroll-java-code-rules)
-                      nice-output-indicatorp
                       natp
                       nat-listp
                       alistp
@@ -422,7 +421,6 @@
                       jvm::method-staticp
                       jvm::method-namep
                       method-designator-stringp
-                      output-indicatorp-aux
                       no-duplicatesp-equal ; why?
                       strip-cars-of-non-consp
                       assoc-equal-when-member-equal-of-strip-cars
@@ -493,7 +491,7 @@
 ;;when working with this function.
 ;; Very slow guard proof
 (defun unroll-java-code-fn-aux (method-designator-string
-                                maybe-nice-output-indicator
+                                nice-output-indicator
                                 array-length-alist
                                 extra-rules  ;to add to default set
                                 remove-rules ;to remove from default set
@@ -518,7 +516,7 @@
                                 error-on-incomplete-runsp ;whether to throw a hard error (may be nil if further pruning can be done in the caller)
                                 state)
   (declare (xargs :guard (and (method-designator-stringp method-designator-string)
-                              (maybe-nice-output-indicatorp maybe-nice-output-indicator)
+                              (nice-output-indicatorp nice-output-indicator)
                               (array-length-alistp array-length-alist)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
@@ -659,11 +657,12 @@
                        (jvm::typep return-type))))
         (mv :bad-return-type nil nil nil nil nil state))
        (parameter-types (lookup-eq :parameter-types method-info))
-       ;; Handle an output-indicator of :auto:
-       (output-indicator (desugar-maybe-nice-output-indicator maybe-nice-output-indicator param-slot-to-name-alist parameter-types return-type))
-       ((when (not output-indicator))
+       ;; Handle an output-indicator of :rv or a param-name:
+       (simple-output-indicator (desugar-nice-output-indicator nice-output-indicator param-slot-to-name-alist parameter-types return-type))
+       ((when (not simple-output-indicator))
         (mv :failed-to-resolve-output-indicator nil nil nil nil nil state))
-       (term-to-run-with-output-extractor (wrap-term-with-output-extractor output-indicator ;return-type
+       ;;todo: can we call output-extraction-term here?
+       (term-to-run-with-output-extractor (wrap-term-with-output-extractor simple-output-indicator ;return-type
                                                                            locals-term term-to-run class-alist))
        ;; Decide which symbolic execution rule to use:
        (symbolic-execution-rules (choose-symbolic-execution-rules steps branches))
@@ -763,7 +762,7 @@
 ;; Returns (mv erp event state).
 (defun unroll-java-code-fn (defconst-name
                              method-indicator
-                             maybe-nice-output-indicator
+                             nice-output-indicator
                              array-length-alist
                              extra-rules ;to add to default set
                              remove-rules ;to remove from default set
@@ -789,8 +788,7 @@
                              chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                              whole-form
                              state)
-  (declare (xargs :guard (and (or (eq :auto maybe-nice-output-indicator)
-                                  (nice-output-indicatorp maybe-nice-output-indicator))
+  (declare (xargs :guard (and (nice-output-indicatorp nice-output-indicator)
                               (jvm::method-indicatorp method-indicator)
                               (or (eq :all classes-to-assume-initialized)
                                   (jvm::all-class-namesp classes-to-assume-initialized))
@@ -835,7 +833,7 @@
        (- (cw "(Unrolling ~x0.~%"  method-designator-string))
        ((mv erp dag-or-quotep all-assumptions term-to-run-with-output-extractor dag-fns parameter-names state)
         (unroll-java-code-fn-aux method-designator-string
-                                 maybe-nice-output-indicator
+                                 nice-output-indicator
                                  array-length-alist
                                  extra-rules ;to add to default set
                                  remove-rules ;to remove from default set
@@ -933,7 +931,7 @@
                                       (ignore-errors 'nil)
                                       (vars-for-array-elements 't) ;whether to introduce vars for individual array elements
                                       (param-names ':auto)
-                                      (output ':auto)
+                                      (output ':rv)
                                       (steps ':auto) ; todo: can this ever be less than the whole run, other than to debug a failed run?
                                       ;; Options affecting how the lifting goes:
                                       (rule-alists 'nil) ;to completely replace the usual sets of rules

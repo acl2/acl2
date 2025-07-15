@@ -404,6 +404,7 @@
     in-region48p-cancel-2-1
     in-region48p-cancel-1+-2
     in-region48p-cancel-2-1+
+    in-region48p-cancel-2+-1
     in-region48p-cancel-1-3
     in-region48p-cancel-3-1
     in-region48p-cancel-2-2
@@ -422,6 +423,7 @@
     disjoint-regions48p-cancel-1+-2
     disjoint-regions48p-cancel-2-1+
     disjoint-regions48p-cancel-2-2
+    disjoint-regions48p-cancel-2+-2
     disjoint-regions48p-of-bvplus-of-constant-and-constant
     subregion48p-cancel-1-1
     subregion48p-cancel-1+-1
@@ -491,6 +493,7 @@
   '(read-1-of-write-1-diff
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
+    read-of-write-within
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     ;; todo: more variants of these:
     ;; todo: uncomment:
@@ -2026,8 +2029,10 @@
     in-region64p-cancel-1+-1+
     in-region64p-cancel-1-2
     in-region64p-cancel-2-1
+    in-region64p-cancel-2+-1
     in-region64p-cancel-1+-2
     in-region64p-cancel-2-1+
+    in-region64p-cancel-2+-1
     in-region64p-cancel-1-3
     in-region64p-cancel-3-1
     in-region64p-cancel-2-2
@@ -2690,7 +2695,7 @@
      acl2::get-elf-section-address
      acl2::get-elf-section-bytes
      acl2::get-elf-code
-     acl2::get-elf-code-address
+     acl2::get-elf-text-section-address ; todo: use segments!
      acl2::get-elf-section-header-base-1
      acl2::get-elf-section-header-base-2
      acl2::get-elf-section-header-unroll
@@ -6128,7 +6133,7 @@
 (set-axe-rule-priority read-of-set-rsi -2)
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
-(set-axe-rule-priority read-of-write-same -1)
+(set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
 (set-axe-rule-priority read-of-write-irrel -1)
 (set-axe-rule-priority read-of-write-irrel-bv-axe 1) ; try late, as this uses SMT, todo: add smt to name
 
