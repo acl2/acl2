@@ -1825,17 +1825,18 @@
 
  <p>Now do a regression test.  The most complete regression is done using the
  @('regression-everything') target in the top-level ACL2 sources directory, or
- equivalently, the @('everything') target in the @('books/') directory.  Please
- install a SAT solver first; see @(see satlink::sat-solver-options).</p>
+ equivalently, the @('regression-everything') target in the @('books/')
+ directory.  Please install a SAT solver first; see @(see
+ satlink::sat-solver-options).</p>
 
- <p>Note that the ``@('everything')'' level of testing may only work for CCL
- and SBCL; for other Lisps, or for ACL2(p) or ACL2(r), just use the
+ <p>Note that the ``@('regression-everything')'' level of testing may only work
+ for CCL and SBCL; for other Lisps, or for ACL2(p) or ACL2(r), just use the
  @('regression') target in the top-level ACL2 sources directory or,
  equivalently, the @('all') target in the @('books/') directory.  This could
  take a few hours &mdash; perhaps more than 5 hours or even more than 8 hours,
- depending on the Lisp and the machine.  But feel free to do only an
- @('everything') regression for ACL2 using CCL or SBCL, ignoring ACL2(p) and
- ACL2(r).</p>
+ depending on the Lisp and the machine.  But feel free to do only a
+ @('regression-everything') regression for ACL2 using CCL or SBCL, ignoring
+ ACL2(p) and ACL2(r).</p>
 
  @({
  make clean-books ; \\
@@ -2146,13 +2147,14 @@
  Note that after the @('checkout') command just above, @('my-branch') will
  contain only your changes.  Matt will then install your source code
  changes (from the tarball) into the branch, @('my-branch'), possibly make some
- edits, and run an @('`everything'') regression.  When this passes, Matt will
- run the following two commands, where @('tmp.msg') says something about the
- changes, with credit to you.  Note that the @('commit') command will cause
- @('my-branch') to contain all changes, both under @('books/') and from the
- sources tarball, possibly after edits from Matt.  NOTE: Matt might instead
- decide not to make any edits or run a regression before doing this, in which
- case he will do those things after the merge below, as noted below.
+ edits, and run &lsquo;@('make regression-everything')&rsquo;.  When this
+ passes, Matt will run the following two commands, where @('tmp.msg') says
+ something about the changes, with credit to you.  Note that the @('commit')
+ command will cause @('my-branch') to contain all changes, both under
+ @('books/') and from the sources tarball, possibly after edits from Matt.
+ NOTE: Matt might instead decide not to make any edits or run a regression
+ before doing this, in which case he will do those things after the merge
+ below, as noted below.
 
  @({
  git commit -a -F tmp.msg
@@ -3331,8 +3333,8 @@
  using all of the supported Common Lisp implementations, and also tested on
  Mac.  Even GitHub releases should generally be tested using the
  ``@('regression-everything')'' target for `@('make')' in the top-level
- directory, or equivalently, the ``@('everything')'' target in the @('books/')
- directory.</p>
+ directory, or equivalently, the ``@('regression-everything')'' target in the
+ @('books/') directory.</p>
 
  <p>There are extensive instructions for doing numbered releases, which as of
  this writing have not been made public.  Anyone who cares to volunteer to make
