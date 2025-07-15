@@ -158,12 +158,17 @@ ifneq ($(ACL2_JOBS), )
 ${error Error: variable ACL2_JOBS is obsolete -- use -j instead -- see :DOC book-makefiles }
 endif # ifneq ($(ACL2_JOBS), )
 
-# The build of saved_acl2 may succeed even if the directory name has
-# spaces, but book certification will almost surely fail, so we
-# disallow such a build.  Comment out the three lines below if you
-# want to take your chances nonetheless!
+# The build system for books does not tolerate spaces in the books/
+# directory's full pathname, as of this writing (in July 2025).  The
+# message below provides a workaround, using a variable that is also
+# used in the parent directory's GNUmakefile.
+ifeq ($(ACL2_ALLOW_SPACES_IN_DIRECTORIES),)
 ifneq (,$(word 2, $(ACL2_SYSTEM_BOOKS)))
+$(info - Illegal ACL2 books directory (contains a space): $(ACL2_SYSTEM_BOOKS)/)
+$(info -   To avoid this error, you can set variable ACL2_ALLOW_SPACES_IN_DIRECTORIES)
+$(info -   to a non-empty value.  But that will likely result in other errors.)
 $(error Illegal ACL2 books directory (contains a space): $(ACL2_SYSTEM_BOOKS)/)
+endif
 endif
 
 BUILD_DIR := $(ACL2_SYSTEM_BOOKS)/build
