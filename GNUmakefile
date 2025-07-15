@@ -126,14 +126,6 @@ else
 ACL2_WD := $(shell pwd)
 endif
 
-# The build of saved_acl2 may succeed even if the directory name has
-# spaces, but book certification will almost surely fail, so we
-# disallow such a build.  Comment out the three lines below if you
-# want to take your chances nonetheless!
-ifneq (,$(word 2, $(ACL2_WD)))
-$(error Illegal ACL2 build directory (contains a space): $(ACL2_WD)/)
-endif
-
 # The variable ACL2_REAL should be defined for the non-standard
 # version and not for the standard version.  Non-standard ACL2 images
 # will include the suffix "r", for example saved_acl2r rather than
@@ -168,6 +160,26 @@ PREFIXsaved_acl2 := ${PREFIX}saved_acl2${ACL2_SUFFIX}
 PREFIXosaved_acl2 := ${PREFIX}osaved_acl2${ACL2_SUFFIX}
 
 ACL2 ?= $(ACL2_WD)/${PREFIXsaved_acl2}
+
+# The build of saved_acl2 may succeed even if the directory name
+# includes spaces; we have seen this success using each supported Lisp
+# except GCL (Version 2.7.1).  However, book certification with the
+# build system for books, such as with "make" or with
+# books/build/cert.pl, will fail (at least, as of this writing in July
+# 2025); so we disallow such a build by default.  The message below
+# provides a workaround for building saved_acl2 but not for the issue
+# with the build system for books.
+ifeq ($(ACL2_ALLOW_SPACES_IN_DIRECTORIES),)
+ifneq (,$(word 2, $(ACL2_WD)))
+$(info - Illegal ACL2 build directory (contains a space): $(ACL2_WD)/)
+$(info -   To avoid this error, try setting variable ACL2_ALLOW_SPACES_IN_DIRECTORIES)
+$(info -   to a non-empty value, e.g., (make ACL2_ALLOW_SPACES_IN_DIRECTORIES=t).)
+$(info -   But although that may allow you to build $(PREFIXsaved_acl2), there may be)
+$(info -   errors when attempting to certify books; so use this workaround at)
+$(info -   your own risk.)
+$(error Illegal ACL2 build directory (see message above): $(ACL2_WD)/)
+endif
+endif
 
 # One may define ACL2_SAFETY and/or (only useful for CCL) ACL2_STACK_ACCESS
 # to provide a safety or :stack-access setting.  We recommend
@@ -745,10 +757,12 @@ else
 	@$(MAKE) init >> "$(ACL2_MAKE_LOG)" 2>&1 || (echo "\n**ERROR**: See $(ACL2_MAKE_LOG)." ; exit 1)
 	@echo " done."
 	@echo "Successfully built $(ACL2_WD)/${PREFIXsaved_acl2}."
+ifeq ($(ACL2_ALLOW_SPACES_IN_DIRECTORIES),)
 	@echo "Updating books/build/."
 	@if [ -d books/build ] ; then \
 	$(MAKE) --no-print-directory update_books_build_info ;\
 	fi
+endif
 endif
 
 # The following target should be used with care, since it fails to
