@@ -128,13 +128,13 @@
   (let ((entry-count (len entries))
         (entries (generate-bibtex-entries-XDOC entries)))
     `(defxdoc acl2-workshops
-       :parents (pubs-papers)
+       :parents (pubs::pubs-papers)
        :short "ACL2 Workshop Papers and Publications"
        :long ,(concatenate 'string
                            "<p>This section contains documentation for papers and publications related to ACL2 workshops and conferences.</p>"
                            "<p><b>Total number of entries:</b> "(if (natp entry-count)
                                                                     (coerce (explode-atom entry-count 10) 'string)
-                                                                  "unkown")
+                                                                  "unknown")
                            "</p>"
                            "<ul>"
                            entries
