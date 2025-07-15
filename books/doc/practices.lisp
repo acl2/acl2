@@ -113,7 +113,11 @@
               ", make sure the manual still builds successfully by invoking
                @('make manual'). After building, open your local manual and
                check that your topics don't appear under @(see
-               xdoc::missing-parents)."))
+               xdoc::missing-parents).")
+    (xdoc::li "Avoid traditional Common Lisp documentation strings (AKA
+               ``docstrings''). Use "
+              (xdoc::seetopic "xdoc" "XDOC")
+              " instead."))
    (xdoc::h3 "Naming Conventions")
    (xdoc::ul
     (xdoc::li "Consider ending predicates with ``p'' (or ``-p,'' especially if

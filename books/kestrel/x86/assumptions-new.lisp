@@ -467,6 +467,11 @@
                               (acl2::parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((program-header-table (acl2::parsed-elf-program-header-table parsed-elf))
+       ;; TODO: Consider implementing some sort of dynamic loading using the
+       ;; sections (but calls may need to be fixed up):
+       ((when (not (consp program-header-table)))
+        (er hard? 'assumptions-elf64-new "Program header table is empty. Please link the executable") ; todo: print the name
+        (mv :empty-program-header-table nil nil))
        (base-var 'base-address) ; only used if position-independentp
        ;; Decide which memory regions to assume disjoint from the inputs:
        ((mv erp addresses-and-lens-of-chunks-disjoint-from-inputs) ; we will assume the inputs are disjoint from the chunks described by addresses-and-lens-of-chunks-disjoint-from-inputs
@@ -482,7 +487,9 @@
                                                 (len (acl2::parsed-elf-bytes parsed-elf))
                                                 nil)
             ;; inputs-disjoint-from must be :code, so assume the inputs are disjoint from the code bytes only:
-            (b* ((code-address (acl2::get-elf-code-address parsed-elf)) ; todo: what if there are segments but no sections?!
+            ;; todo: what if there are segments but no sections?  could use the segment that contains the text section, if we can find it, or throw an error.
+            ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
+            (b* ((code-address (acl2::get-elf-text-section-address parsed-elf))
                  ((when (not (natp code-address))) ; impossible?
                   (mv :bad-code-addres nil))
                  (text-offset-term (if position-independentp
@@ -516,12 +523,15 @@
        ;; Generate assumptions for the segments/sections (bytes are loaded, addresses are canonical, regions are disjoint from future stack words:
        (bytes (acl2::parsed-elf-bytes parsed-elf))
        ((mv erp segment-or-section-assumptions)
-        (if (null program-header-table)
-            ;; There are no segments, so we have to use the sections (TODO: WHICH ONES?):
-            (assumptions-for-elf64-sections-new '(".text" ".data" ".rodata") ; todo: .bss, etc
-                                                position-independentp stack-slots-needed state-var base-var parsed-elf bvp new-canonicalp nil)
+        ;; (if (null program-header-table) ; todo: simplify this:
+        ;;     (prog2$ (er hard? 'assumptions-elf64-new "No program-header-table.  Please link the executbable.")
+        ;;             ;; There are no segments, so we have to use the sections (TODO: WHICH ONES?):
+        ;;             (assumptions-for-elf64-sections-new '(".text" ".data" ".rodata") ; todo: .bss, etc
+        ;;                                                 position-independentp stack-slots-needed state-var base-var parsed-elf bvp new-canonicalp nil))
           ;;todo: check that there is at least one LOAD section:
-          (assumptions-for-elf64-segments program-header-table position-independentp state-var base-var stack-slots-needed bytes (len bytes) bvp new-canonicalp nil)))
+        (assumptions-for-elf64-segments program-header-table position-independentp state-var base-var stack-slots-needed bytes (len bytes) bvp new-canonicalp nil)
+        ;)
+        )
        ((when erp) (mv erp nil nil))
 
        ;; Generate assumptions for the inputs (introduce vars, canonical, disjointness from future stack space, disjointness from bytes loaded from the executable, disjointness from saved return address):

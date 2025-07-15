@@ -725,7 +725,7 @@
    (implies (good-mach-o-p mach-o)
             (natp (@mach-o :text-text-section-offset i mach-o)))
    :hints (("Goal"
-            :use ((:instance elem-p-of-@mach-o-text-text-section-offset                             
+            :use ((:instance elem-p-of-@mach-o-text-text-section-offset
                              (mach-o$a mach-o)))
             :in-theory (e/d (unsigned-byte-p)
                             (elem-p-of-@mach-o-text-text-section-offset

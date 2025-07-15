@@ -405,7 +405,7 @@
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                                  &key
                                  (param-names ':auto)
-;                                 (output ':auto) ;an output-indicatorp
+;                                 (output ':rv) ;an output-indicatorp
                                  (array-length-alist 'nil)
                                  (assumptions 'nil)
 ;                                 (classes-to-assume-initialized 'nil)

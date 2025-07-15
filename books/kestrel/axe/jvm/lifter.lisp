@@ -4552,6 +4552,7 @@
       (append assumptions (make-input-assumptions (rest input-source-alist) state-term)))))
 
 ; returns (mv erp result state)
+;; todo: use rewriter-jvm and put in :logic mode and verify-guards?
 (defun extract-output-dag (output-indicator
                            dag ;; a DAG giving the final state, in terms of s0
                            assumptions ;can be needed to show lack of aliasing (e.g., array inputs are already allocated, so they can't alias new-ads).  these also replace components of s0 with input vars?
@@ -4559,9 +4560,9 @@
                            return-type
                            class-table-alist
                            state)
-  (declare (xargs :mode :program
-                  :guard (and (output-indicatorp output-indicator)
+  (declare (xargs :guard (and (output-indicatorp output-indicator)
                               (class-table-alistp class-table-alist))
+                  :mode :program
                   :stobjs state))
   (b* ((term (output-extraction-term output-indicator initial-locals-term return-type class-table-alist))
        ((mv erp dag2) (wrap-term-around-dag term 'replace-me dag))
@@ -6602,7 +6603,7 @@
                                  program-name ; the name of the program to generate, a symbol which will be added onto the front of generated function names.
                                  &key
                                  (param-names ':auto)
-                                 (output ':auto) ;an output-indicatorp
+                                 (output ':rv) ;an output-indicatorp
                                  (array-length-alist 'nil)
                                  (assumptions 'nil)
                                  (classes-to-assume-initialized 'nil)
@@ -6851,8 +6852,8 @@
                                          method-indicator
                                          start-pc
                                          segment-pcs ;is there a nicer way to specify the segment (line numbers in the source)?
-                                         output-indicator ;an output-indicatorp (TODO: make this a keyword arg defaulting to :auto) ;todo: call this "output"
                                          &key
+                                         (output ':rv) ;an output-indicatorp
                                          (input-source-alist 'nil) ;an input-source-alistp
                                          (assumptions 'nil)
                                          (classes-to-assume-initialized 'nil)
@@ -6881,7 +6882,7 @@
                                           ,start-pc
                                           ,segment-pcs ;is there a nicer way to specify the segment?
                                           ,input-source-alist
-                                          ,output-indicator ; todo: don't evaluate this?
+                                          ,output ; todo: don't evaluate this?
                                           ,assumptions
                                           ,classes-to-assume-initialized
                                           ,print
@@ -6910,8 +6911,8 @@
                                               method-indicator
                                               start-pc
                                               segment-pcs
-                                              output-indicator ;an output-indicatorp
                                               &key
+                                              (output ':rv) ;an output-indicatorp
                                               (input-source-alist 'nil) ;an input-source-alistp
                                               (assumptions 'nil)
                                               (classes-to-assume-initialized 'nil)
@@ -6938,7 +6939,7 @@
                               ,start-pc
                               ,segment-pcs ;is there a nicer way to specify the segment?
                               ,input-source-alist
-                              ,output-indicator
+                              ,output
                               ,assumptions
                               ,classes-to-assume-initialized
                               ,print

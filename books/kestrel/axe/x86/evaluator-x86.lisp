@@ -20,7 +20,7 @@
 (include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (local (include-book "kestrel/bv/bitops" :dir :system))
-(local (include-book "kestrel/bv/logext" :dir :system))
+;(local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/logapp" :dir :system)) ; for loghead-becomes-bvchop
 
 ;; We avoid evaluating the undef-XXX functions, which have raw lisp code, since

@@ -694,7 +694,7 @@
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
-                              ;; (output-indicatorp output-indicator)
+                              ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)
@@ -750,8 +750,10 @@
         (mv :bad-options nil nil nil nil nil nil state))
        (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
        (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
+
                                         ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
-                                        (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
+                                        ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
+                                        ;(acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
                                         ))
        (new-canonicalp (or new-style-elf-assumptionsp ; for now
                            (eq :mach-o-64 executable-type)
@@ -978,7 +980,7 @@
                             'text-offset ; todo: match what we do for other executable types
                           (if (or (eq :elf-32 executable-type)
                                   (eq :elf-64 executable-type))
-                              (if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable)) ; todo: think about the 32-bit case, esp wrt position independence
+                              (if position-independentp 'text-offset `,(acl2::get-elf-text-section-address parsed-executable)) ; todo: think about the 32-bit case, esp wrt position independence
                             (if (eq :mach-o-32 executable-type)
                                 nil ; todo
                               (if (eq :pe-32 executable-type)
@@ -1194,7 +1196,7 @@
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (booleanp type-assumptions-for-array-varsp)
-                              ;; (output-indicatorp output-indicator)
+                              ;; (output-indicatorp output-indicator) ; no recognizer for this, we just call wrap-in-output-extractor and see if it returns an error
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune-precise)
                                   (eq t prune-precise)

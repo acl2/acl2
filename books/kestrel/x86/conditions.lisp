@@ -1927,6 +1927,12 @@
 (defthm add-af-spec32-becomes-bvlt (equal (add-af-spec32 dst src) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0) ) :hints (("Goal" :in-theory (enable add-af-spec32 bvlt bvplus))))
 (defthm add-af-spec64-becomes-bvlt (equal (add-af-spec64 dst src) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0) ) :hints (("Goal" :in-theory (enable add-af-spec64 bvlt bvplus))))
 
+;; drop the hyps?
+(defthm adc-af-spec8-becomes-bvlt (implies (bitp cf) (equal (adc-af-spec8 dst src cf) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvplus 5 (bvchop 4 src) cf))) 1 0))) :hints (("Goal" :in-theory (enable adc-af-spec8 bvlt bvplus))))
+(defthm adc-af-spec16-becomes-bvlt (implies (bitp cf) (equal (adc-af-spec16 dst src cf) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvplus 5 (bvchop 4 src) cf))) 1 0))) :hints (("Goal" :in-theory (enable adc-af-spec16 bvlt bvplus))))
+(defthm adc-af-spec32-becomes-bvlt (implies (bitp cf) (equal (adc-af-spec32 dst src cf) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvplus 5 (bvchop 4 src) cf))) 1 0))) :hints (("Goal" :in-theory (enable adc-af-spec32 bvlt bvplus))))
+(defthm adc-af-spec64-becomes-bvlt (implies (bitp cf) (equal (adc-af-spec64 dst src cf) (if (bvlt 5 15 (bvplus 5 (bvchop 4 dst) (bvplus 5 (bvchop 4 src) cf))) 1 0))) :hints (("Goal" :in-theory (enable adc-af-spec64 bvlt bvplus))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; maybe ok because it reduces the CF-SPEC call to a constant
@@ -1977,3 +1983,9 @@
 (defthm sub-af-spec16-becomes-bvlt (equal (sub-af-spec16 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec16 bvlt bvminus acl2::bvchop-of-sum-cases))))
 (defthm sub-af-spec32-becomes-bvlt (equal (sub-af-spec32 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec32 bvlt bvminus acl2::bvchop-of-sum-cases))))
 (defthm sub-af-spec64-becomes-bvlt (equal (sub-af-spec64 dst src) (if (bvlt 5 15 (bvminus 5 (bvchop 4 dst) (bvchop 4 src))) 1 0)) :hints (("Goal" :in-theory (enable sub-af-spec64 bvlt bvminus acl2::bvchop-of-sum-cases))))
+
+; drop the hyps?
+(defthm sbb-af-spec8-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec8 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec8 bvlt bvminus bvplus))))
+(defthm sbb-af-spec16-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec16 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec16 bvlt bvminus bvplus))))
+(defthm sbb-af-spec32-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec32 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec32 bvlt bvminus bvplus))))
+(defthm sbb-af-spec64-becomes-bvlt (implies (bitp cf) (equal (sbb-af-spec64 dst src cf) (if (bvlt 6 15 (bvplus 6 (bvuminus 6 cf) (bvminus 6 (bvchop 4 dst) (bvchop 4 src)))) 1 0))) :hints (("Goal" :in-theory (enable sbb-af-spec64 bvlt bvminus bvplus))))

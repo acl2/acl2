@@ -77,11 +77,9 @@
                  (class-field-ids (strip-cars class-fields)))
             (member-equal field-id class-field-ids))))))
 
-;;;
-;;; output-indicators
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This indicates what output to extract from the state during decompilation.
+;; This indicates what output to extract from the state when lifting.
 ;; :return-value means the value on top of the stack.
 ;; (:array-local <local-num>) means the final contents of the array that was initially referenced by local <local-num>.
 ;TODO: allow any chain of :field and :array-contents and bv-array-read bottoming out in :return-value or (:param n)...
@@ -89,7 +87,7 @@
 ;TODO: Should bottom out in a scalar or array, not an object...
 (mutual-recursion
  ;; todo: rename to output-indicatorp?
- (defun output-indicatorp-aux (x)
+ (defund simple-output-indicatorp (x)
    (declare (xargs :guard t
                    :measure (acl2-count x)
                    :ruler-extenders :all ;TODO: Why was this needed?
@@ -108,7 +106,7 @@
             (eql 2 (len (fargs x)))
             (eq :field (ffn-symb x))
             (jvm::class-name-field-id-pairp (farg1 x))
-            (output-indicatorp-aux (farg2 x)))
+            (simple-output-indicatorp (farg2 x)))
        (and (true-listp x) ; (:param-field <pair> <local-num>)
             (eql 2 (len (fargs x)))
             (eq :param-field (ffn-symb x))
@@ -117,59 +115,27 @@
        (and (true-listp x) ; (:tuple <indicator1> ... <indicatorn>)
             (<= 1 (len (fargs x))) ;disallow the empty tuple
             (eq :tuple (ffn-symb x))
-            (output-indicatorp-aux-lst (fargs x)))))
- (defun output-indicatorp-aux-lst (x)
+            (simple-output-indicatorp-lst (fargs x)))))
+ (defund simple-output-indicatorp-lst (x)
    (declare (xargs :measure (acl2-count x)))
    (if (atom x)
        (null x)
-     (and (output-indicatorp-aux (first x))
-          (output-indicatorp-aux-lst (rest x))))))
-
-;; todo: rename to maybe-output-indicatorp?
-(defun output-indicatorp (x)
-  (declare (xargs :guard t))
-  (or (eq :auto x)
-      (output-indicatorp-aux x)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; For use when the output-indicator is :auto; do something sensible using the
-;; return-type, if we can.  Returns an output-indicatorp-aux, or nil to
-;; indicate failure.
-(defund output-indicator-for-return-type (return-type)
-  (declare (xargs :guard (or (eq :void return-type)
-                             (jvm::typep return-type))))
-  (if (eq :void return-type)
-      ;; If it is void, throw an error for now (TODO: maybe take the last param that can return a value?  what if it's a field?)
-      (er hard? 'output-indicator-for-return-type "No output-indicator given and method is void.")
-    ;; If it's not void, we'll use the return type as the output:
-    (if (member-eq return-type jvm::*primitive-types*)
-        (if (member-eq return-type jvm::*two-slot-types*)
-            :return-value-long
-          :return-value)
-      ;;not a primitive type.  for now, the only reference we handle is a 1-D array
-      ;; TODO: Add support for 2-D arrays.
-      ;; for any other kind of object, it's not clear what field to return (we probably don't want just the address)
-      (if (jvm::is-one-dim-array-typep return-type)
-          :array-return-value
-        (er hard? 'output-indicator-for-return-type "Can't figure out which output to return: method returns a reference that is not a 1-D array.")))))
-
-(defthm output-indicatorp-aux-of-output-indicator-for-return-type
-  (implies (output-indicator-for-return-type return-type)
-           (output-indicatorp-aux (output-indicator-for-return-type return-type)))
-  :hints (("Goal" :in-theory (enable output-indicator-for-return-type))))
+     (and (simple-output-indicatorp (first x))
+          (simple-output-indicatorp-lst (rest x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
  ;; TODO: The lambdas here may be not be necessary, since we always create a DAG to contain the result of this.
  ;; TODO: Reorder args?
- (defund wrap-term-with-output-extractor (output-indicator ; :auto is handled in a wrapper
+ (defund wrap-term-with-output-extractor (output-indicator ; :rv is handled in a wrapper
                                           initial-locals-term
                                           state-term
                                           class-table-alist)
-   (declare (xargs :guard (and (output-indicatorp-aux output-indicator)
-                               (class-table-alistp class-table-alist))))
+   (declare (xargs :guard (and (simple-output-indicatorp output-indicator)
+                               (class-table-alistp class-table-alist))
+                   :guard-hints (("Goal" :in-theory (enable simple-output-indicatorp
+                                                            simple-output-indicatorp-lst)))))
    (if (eq :all output-indicator)
        state-term
      (if (eq :return-value output-indicator)
@@ -211,7 +177,7 @@
                    (er hard 'wrap-term-with-output-extractor "Unsupported case: ~x0" output-indicator))))))))))
 
  (defund wrap-term-with-output-extractors (output-indicators initial-locals-term state-term class-table-alist)
-   (declare (xargs :guard (and (output-indicatorp-aux-lst output-indicators)
+   (declare (xargs :guard (and (simple-output-indicatorp-lst output-indicators)
                                (class-table-alistp class-table-alist))))
    (if (endp output-indicators)
        *nil*
@@ -225,14 +191,14 @@
 
 (defthm-flag-wrap-term-with-output-extractor
   (defthm pseudo-termp-of-wrap-term-with-output-extractor
-    (implies (and (output-indicatorp-aux output-indicator)
+    (implies (and (simple-output-indicatorp output-indicator)
                   (class-table-alistp class-table-alist)
                   (pseudo-termp initial-locals-term)
                   (pseudo-termp state-term))
              (pseudo-termp (wrap-term-with-output-extractor output-indicator initial-locals-term state-term class-table-alist)))
     :flag wrap-term-with-output-extractor)
   (defthm pseudo-termp-of-wrap-term-with-output-extractors
-    (implies (and (output-indicatorp-aux-lst output-indicators)
+    (implies (and (simple-output-indicatorp-lst output-indicators)
                   (class-table-alistp class-table-alist)
                   (pseudo-termp initial-locals-term)
                   (pseudo-termp state-term))
@@ -240,15 +206,70 @@
     :flag wrap-term-with-output-extractors)
   :hints (("Goal" :in-theory (enable wrap-term-with-output-extractor
                                      wrap-term-with-output-extractors
+                                     simple-output-indicatorp
+                                     simple-output-indicatorp-lst
                                      len))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: rename to maybe-output-indicatorp?
+(defun output-indicatorp (x)
+  (declare (xargs :guard t))
+  (or (eq :rv x)
+      (simple-output-indicatorp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; For use when the output-indicator is :rv; do something sensible using the
+;; return-type, if we can.  Returns an simple-output-indicatorp, or nil to
+;; indicate failure.
+(defund output-indicator-for-return-type (return-type)
+  (declare (xargs :guard (or (eq :void return-type)
+                             (jvm::typep return-type))))
+  (if (eq :void return-type)
+      ;; If it is void, throw an error for now (TODO: maybe take the last param that can return a value?  what if it's a field?)
+      (er hard? 'output-indicator-for-return-type "No output-indicator given and method is void.")
+    ;; If it's not void, we'll use the return type as the output:
+    (if (member-eq return-type jvm::*primitive-types*)
+        (if (member-eq return-type jvm::*two-slot-types*)
+            :return-value-long
+          :return-value)
+      ;;not a primitive type.  for now, the only reference we handle is a 1-D array
+      ;; TODO: Add support for 2-D arrays.
+      ;; for any other kind of object, it's not clear what field to return (we probably don't want just the address)
+      (if (jvm::is-one-dim-array-typep return-type)
+          :array-return-value
+        (er hard? 'output-indicator-for-return-type "Can't figure out which output to return: method returns a reference that is not a 1-D array.")))))
+
+(defthm simple-output-indicatorp-of-output-indicator-for-return-type
+  (implies (output-indicator-for-return-type return-type)
+           (simple-output-indicatorp (output-indicator-for-return-type return-type)))
+  :hints (("Goal" :in-theory (enable output-indicator-for-return-type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Handles an output-indicator that is :rv  May throw an error (and logically return nil).
+(defund desugar-output-indicator (output-indicator return-type)
+  (declare (xargs :guard (and (output-indicatorp output-indicator)
+                              (or (eq :void return-type)
+                                  (jvm::typep return-type)))))
+  (if (eq :rv output-indicator)
+      (output-indicator-for-return-type return-type)
+    output-indicator))
+
+(defthm simple-output-indicatorp-of-desugar-output-indicator
+  (implies (and (desugar-output-indicator output-indicator return-type) ; no error
+                (output-indicatorp output-indicator)
+                (or (eq :void return-type)
+                    (jvm::typep return-type)))
+           (simple-output-indicatorp (desugar-output-indicator output-indicator return-type)))
+  :hints (("Goal" :in-theory (enable desugar-output-indicator))))
 
 ;; Returns a term to wrap around a dag to extract the output.  In the result,
 ;; the special symbol 'replace-me should be replaced with the DAG.
 (defund output-extraction-term (output-indicator
                                 initial-locals-term
-                                return-type ; used when output-indicator is :auto
+                                return-type ; used when output-indicator is :rv
                                 class-table-alist)
   (declare (xargs :guard (and (output-indicatorp output-indicator)
                               (pseudo-termp initial-locals-term)
@@ -256,9 +277,7 @@
                                   (jvm::typep return-type))
                               (class-table-alistp class-table-alist))
                   :guard-hints (("Goal" :in-theory (enable output-indicator-for-return-type))))) ; todo
-  (let ((output-indicator (if (eq :auto output-indicator)
-                              (output-indicator-for-return-type return-type)
-                            output-indicator)))
-    (if (not output-indicator)
+  (let ((simple-output-indicator (desugar-output-indicator output-indicator return-type)))
+    (if (not simple-output-indicator)
         (er hard? 'output-extraction-term "Failed to resove output indicator.")
-      (wrap-term-with-output-extractor output-indicator initial-locals-term 'replace-me class-table-alist))))
+      (wrap-term-with-output-extractor simple-output-indicator initial-locals-term 'replace-me class-table-alist))))

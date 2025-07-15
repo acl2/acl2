@@ -57,12 +57,12 @@
       (lookup-eq-safe :addr header))))
 
 ;; Returns the :addr field of the ".text" section, or :none.
-(defund get-elf-code-address (parsed-elf)
+(defund get-elf-text-section-address (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)
                   :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
   (let ((addr (get-elf-section-address ".text" parsed-elf)))
     (if (eq :none addr)
-        (er hard? 'get-elf-code-address "No .text section.") ;; todo: instead, return :none
+        (er hard? 'get-elf-text-section-address "No .text section.") ;; todo: instead, return :none
       addr)))
 
 ;; Throws an error if the symbol has multiple matches
