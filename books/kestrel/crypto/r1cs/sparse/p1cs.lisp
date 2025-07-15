@@ -13,7 +13,10 @@
 
 (include-book "std/util/add-io-pairs" :dir :system)
 
-(include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system)
+(acl2::merge-io-pairs
+ dm::primep
+ (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system))
+
 (acl2::merge-io-pairs
  dm::primep
  (include-book "projects/bls12-377-curves/primes/bls12-377-prime" :dir :system))
@@ -139,37 +142,54 @@
                             (str::cat "1-(1/2^" (str::int-to-dec-string exp-from) ")")))
                   (negative-powers-of-1/2-and-strings fp (+ 1 exp-from) exp-to addend))))))
 
+;;Calculate constants outside the function
+(defconst *nums-to-strings-fp1*
+  (append
+   ;; Display all numbers of the form 2^n, (2^n)+1, (2^n)-1, like that,
+   ;; for 11 <= n < 254.
+   (powers-of-2-and-strings (fp1) 11 254 0)
+   (powers-of-2-and-strings (fp1) 11 254 1)
+   (powers-of-2-and-strings (fp1) 11 254 -1)
+   ;; Similarly for -(2^n), -(2^n)+1, -(2^n)-1
+   (negative-powers-of-2-and-strings (fp1) 11 254 0)
+   (negative-powers-of-2-and-strings (fp1) 11 254 1)
+   (negative-powers-of-2-and-strings (fp1) 11 254 -1)
+   ;; Display 1/2, 3/2, -1/2, -3/2 like that.
+   (small-halves-and-strings (fp1))
+   ;; Display 1/2^n , -1/2^n , 1-(1/2^n) , 1+(1/2^n) like that for 2 <= n < 254
+   (powers-of-1/2-and-strings (fp1) 2 254 0)
+   (negative-powers-of-1/2-and-strings (fp1) 2 254 0)
+   (powers-of-1/2-and-strings (fp1) 2 254 1)
+   (negative-powers-of-1/2-and-strings (fp1) 2 254 1)))
+
+(defconst *nums-to-strings-fp2*
+  (append
+   ;; Display all numbers of the form 2^n, (2^n)+1, (2^n)-1, like that,
+   ;; for 11 <= n < 254.
+   (powers-of-2-and-strings (fp2) 11 254 0)
+   (powers-of-2-and-strings (fp2) 11 254 1)
+   (powers-of-2-and-strings (fp2) 11 254 -1)
+   ;; Similarly for -(2^n), -(2^n)+1, -(2^n)-1
+   (negative-powers-of-2-and-strings (fp2) 11 254 0)
+   (negative-powers-of-2-and-strings (fp2) 11 254 1)
+   (negative-powers-of-2-and-strings (fp2) 11 254 -1)
+   ;; Display 1/2, 3/2, -1/2, -3/2 like that.
+   (small-halves-and-strings (fp2))
+   ;; Display 1/2^n , -1/2^n , 1-(1/2^n) , 1+(1/2^n) like that for 2 <= n < 254
+   (powers-of-1/2-and-strings (fp2) 2 254 0)
+   (negative-powers-of-1/2-and-strings (fp2) 2 254 0)
+   (powers-of-1/2-and-strings (fp2) 2 254 1)
+   (negative-powers-of-1/2-and-strings (fp2) 2 254 1)))
+
 ;; Generate the nums-to-strings data structure for the given prime.
 ;; PRIME should be one of the supported primes (currently fp1 and fp2).
 (defund nums-to-strings (prime)
   (declare (xargs :guard (member prime (list (fp1) (fp2)))))
-  (macrolet ((nums-to-strings-for-prime (fp)
-               `(append
-                 ;; Display all numbers of the form 2^n, (2^n)+1, (2^n)-1, like that,
-                 ;; for 11 <= n < 254.
-                 (powers-of-2-and-strings ,fp 11 254 0)
-                 (powers-of-2-and-strings ,fp 11 254 1)
-                 (powers-of-2-and-strings ,fp 11 254 -1)
-                 ;; Similarly for -(2^n), -(2^n)+1, -(2^n)-1
-                 (negative-powers-of-2-and-strings ,fp 11 254 0)
-                 (negative-powers-of-2-and-strings ,fp 11 254 1)
-                 (negative-powers-of-2-and-strings ,fp 11 254 -1)
-                 ;; Display 1/2, 3/2, -1/2, -3/2 like that.
-                 (small-halves-and-strings ,fp)
-                 ;; Display 1/2^n , -1/2^n , 1-(1/2^n) , 1+(1/2^n) like that for 2 <= n < 254
-                 (powers-of-1/2-and-strings ,fp 2 254 0)
-                 (negative-powers-of-1/2-and-strings ,fp 2 254 0)
-                 (powers-of-1/2-and-strings ,fp 2 254 1)
-                 (negative-powers-of-1/2-and-strings ,fp 2 254 1))))
-    (cond ((equal prime (fp1)) (nums-to-strings-for-prime (fp1)))
-          ((equal prime (fp2)) (nums-to-strings-for-prime (fp2)))
-          (t (er hard 'nums-to-strings
-                 "Unsupported prime: ~x0. Currently supported primes are ~x1 and ~x2."
-                 prime (fp1) (fp2))))))
-
-;; Cache the results for the two current primes
-(ACL2::add-io-pairs (((nums-to-strings (fp1)) (nums-to-strings (fp1)))
-                     ((nums-to-strings (fp2)) (nums-to-strings (fp2)))))
+  (cond ((equal prime (fp1)) *nums-to-strings-fp1*)
+        ((equal prime (fp2)) *nums-to-strings-fp2*)
+        (t (er hard 'nums-to-strings
+               "Unsupported prime: ~x0. Currently supported primes are ~x1 and ~x2."
+               prime (fp1) (fp2)))))
 
 (in-theory (disable (:e nums-to-strings)))
 
@@ -203,7 +223,7 @@
   :hints (("Goal" :in-theory (enable assoc-equal))))
 
 ;;This shows there are no collisions:
-;;(assert-equal (len *nums-to-strings*) (len (remove-duplicates (strip-cars *nums-to-strings*))))
+;;(assert-equal (len (nums-to-strings fp1)) (len (remove-duplicates (strip-cars (nums-to-strings fp1)))))
 
 (defun p1cs-negative (fp x)
   (declare (xargs :guard (and (natp fp) (< 1 fp) (integerp x))))
