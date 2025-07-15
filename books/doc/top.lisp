@@ -70,7 +70,7 @@
   (include-book "practices")
   (include-book "publications")
 
-  (include-book "workshops/references/xdoc-generation" :dir :system)
+  (include-book "kestrel/bibtex/xdoc-generation" :dir :system)
 
   (include-book "100-theorems")
 

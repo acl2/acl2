@@ -156,4 +156,4 @@
     (generate-workshop-documentation ,bibtex-filename state)))
 
 ;Submit documentation for ACL2 workshops file
-(parsed-bibtex-to-defxdoc "workshops.bib")
+(parsed-bibtex-to-defxdoc "../../workshops/references/workshops.bib")
