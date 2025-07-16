@@ -14,16 +14,13 @@
 ;; The function CEILING-OF-LG computes the ceiling of the base-2 logarithm of
 ;; its argument.
 
+(include-book "ceiling-of-lg-def")
 (include-book "power-of-2p-def")
 (local (include-book "integer-length"))
 (local (include-book "expt"))
 (local (include-book "times"))
 
 ;; See also lg.lisp.
-
-(defund ceiling-of-lg (x)
-  (declare (type integer x))
-  (integer-length (+ -1 x)))
 
 (defthm integerp-of-ceiling-of-lg
   (integerp (ceiling-of-lg x)))
