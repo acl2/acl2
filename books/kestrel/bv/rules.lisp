@@ -1003,14 +1003,12 @@
 (defthm shift-compare-hack
    (< (logtail 8
                (BVCHOP 16 x))
-      256)
-   :hints (("Goal" :in-theory (disable))))
+      256))
 
 (defthm shift-compare-hack-24-16
    (< (logtail 16
                (BVCHOP 24 x))
-      256)
-      :hints (("Goal" :in-theory (disable))))
+      256))
 
 ;; ;deprecating in favor of power-of-2p
 ;; (defun pow2p (x)
@@ -1986,7 +1984,7 @@
                (integerp z))
           (equal (bvchop 32 (+ x (* 2 (logext 31 y))))
                  (bvchop 32 (+ x (* 2 y)))))
- :hints (("Goal" :in-theory (disable)
+ :hints (("Goal"; :in-theory (disable)
           :use (;(:instance BVCHOP-+-BVCHOP (J (* 2 Y)) (I X) (SIZE 32))
                 ))))
 
@@ -3647,9 +3645,7 @@
   (equal (bvplus size x (bvplus size y (bvuminus size x)))
          (bvchop size y))
   :hints (("Goal" :in-theory (e/d (bvuminus bvplus bvminus)
-                                  (bvminus-becomes-bvplus-of-bvuminus
-                                   ;
-                                   )))))
+                                  (bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;-alt version?
 ;disable?
@@ -3947,7 +3943,7 @@
                     (logtail n x))))
   :hints (("Goal"
            :use (:instance FLOOR-PEEL-OFF-CONSTANT (k (+ -1 (expt 2 n))) (n x) (y (expt 2 n)))
-           :in-theory (e/d (logtail bvchop) (FLOOR-PEEL-OFF-CONSTANT )))))
+           :in-theory (e/d (logtail bvchop) (floor-peel-off-constant)))))
 
 (defthm getbit-of-one-less
   (implies (and (integerp x)
@@ -3978,8 +3974,7 @@
                 (natp size2))
            (equal (bvminus size1 y (bvchop size2 x))
                   (bvminus size1 y x)))
-  :hints (("Goal"
-           :in-theory (enable bvminus bvplus))))
+  :hints (("Goal" :in-theory (enable bvminus bvplus))))
 
 (defthm bvchop-sum-minus-bvchop-arg1
   (implies (and (integerp x)
@@ -4028,8 +4023,7 @@
                 (INTEGERP X)
                 (INTEGERP Y))
            (EQUAL (BVCHOP N (+ (- X) Y))
-                  (BVCHOP N (+ (- FREE) Y))))
-  :hints (("Goal" :in-theory (disable ))))
+                  (BVCHOP N (+ (- FREE) Y)))))
 
 (defthmd bvchop-sum-subst
   (implies (and (equal (bvchop n x) (bvchop n free))
@@ -4116,9 +4110,7 @@
                                     )
                            (; ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
 ;                            bvminus
-                            equal-bvchop-bvchop-move-minus
-                            ;
-                            )))))
+                            equal-bvchop-bvchop-move-minus)))))
 
 
 ;bozo add bvplus solve rules like we have for bvminus...
@@ -4148,9 +4140,7 @@
                 (natp n))
            (equal (equal k1 (bvchop n (+ x k2)))
                   (and (unsigned-byte-p n k1)
-                       (equal (bvchop n x) (bvchop n (- k1 k2))))))
-  :hints (("Goal" :in-theory (disable ;
-                              ))))
+                       (equal (bvchop n x) (bvchop n (- k1 k2)))))))
 
 (defthm bvchop-of-sum-of-minus-of-bvchop-gen-arg2
   (implies (and (<= size size2)

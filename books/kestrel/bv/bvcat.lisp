@@ -797,7 +797,7 @@
 
 (defthm slice-of-bvcat-hack-gen-better
   (implies (and (natp lowsize)
-                ;(integerp highsize) ;
+                ;(integerp highsize)
                 (natp highsize)
                 (natp lowbit)
                 (natp highbit))

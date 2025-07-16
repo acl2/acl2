@@ -127,7 +127,7 @@
                                          getbit
                                          ;; EXPONENTS-ADD-FOR-NONNEG-EXPONENTS
                                          )
-                                   ( ; BVPLUS-OF-*-ARG2 ;
+                                   (; BVPLUS-OF-*-ARG2
                                     ;;BVCAT-OF-+-HIGH ;looped
 
 

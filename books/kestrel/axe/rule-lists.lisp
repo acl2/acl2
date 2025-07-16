@@ -2587,7 +2587,7 @@
      cdr-of-nthcdr-of-bvplus
 ;bv-array-write-equal-rewrite ;introduces bv-array-clear
 
-     integerp-implies-acl2-numberp
+     acl2-numberp-when-integerp
      bvlt-of-bvmod-hack
      bvplus-of-1-33-32
      unsigned-byte-p-of-bvmod-hack

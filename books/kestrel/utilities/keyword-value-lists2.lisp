@@ -25,25 +25,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Compare to remove-keyword
-(defun clear-key-in-keyword-value-list (key keyword-value-list)
-  (declare (xargs :guard (and (keywordp key)
-                              (keyword-value-listp keyword-value-list))))
-  (if (endp keyword-value-list)
-      nil
-    (let ((first-key (first keyword-value-list))
-          (first-val (second keyword-value-list)))
-      (if (eq key first-key)
-          (clear-key-in-keyword-value-list key (cddr keyword-value-list)) ;skip the key and its val
-        (cons first-key (cons first-val (clear-key-in-keyword-value-list key (cddr keyword-value-list))))))))
-
-(defthm keyword-value-listp-of-clear-key-in-keyword-value-list
-  (implies (keyword-value-listp lst)
-           (keyword-value-listp (clear-key-in-keyword-value-list key lst)))
-  :hints (("Goal" :in-theory (enable keyword-value-listp))))
-
-;;;;;;;;;;
-
 ;; Extract the keys of a keyword-value-list
 (defun keyword-value-list-keys (k)
   (declare (xargs :guard (keyword-value-listp k)))
