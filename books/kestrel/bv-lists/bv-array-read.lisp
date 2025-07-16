@@ -286,3 +286,29 @@
            (equal (bv-array-read arg1 arg2 arg3 arg4)
                   (bv-array-read arg1 arg2 0 arg4)))
   :hints (("Goal" :in-theory (e/d (bv-array-read) ()))))
+
+(defthmd bv-array-read-shorten-when-<
+  (implies (and (syntaxp (quotep data))
+                (< index k) ; k is a free var
+                (syntaxp (and (quotep k)
+                              (quotep len)))
+                (< k len) ; avoid loops
+                (natp index)
+                (natp k)
+                (natp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size k index (take k data))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+(defthmd bv-array-read-shorten-when-<=
+  (implies (and (syntaxp (quotep data))
+                (<= index k) ; k is a free var
+                (syntaxp (and (quotep k)
+                              (quotep len)))
+                (< (+ 1 k) len) ; avoid loops
+                (natp index)
+                (natp k)
+                (natp len))
+           (equal (bv-array-read element-size len index data)
+                  (bv-array-read element-size (+ 1 k) index (take (+ 1 k) data))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
