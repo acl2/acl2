@@ -356,8 +356,6 @@ book that depends on Glucose being installed.</p>")
 (include-book "kestrel/alists-light/top" :dir :system)
 (include-book "kestrel/top-doc" :dir :system) ; for now
 
-(include-book "kestrel/bibtex/xdoc-generation" :dir :system)
-
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
 
 ;; [Jared] keep these near the end to avoid expensive type prescription rules,
