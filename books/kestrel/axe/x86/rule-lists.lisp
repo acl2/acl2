@@ -2256,7 +2256,7 @@
             ;x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
-            ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
+            ;acl2::acl2-numberp-of-+
             ;; x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
             ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
             ;x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
