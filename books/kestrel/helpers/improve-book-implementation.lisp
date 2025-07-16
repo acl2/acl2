@@ -79,8 +79,8 @@
            (name (cadr event))
            (body (caddr event))
            (keyword-value-list (cdddr event)))
-       (let* ((keyword-value-list (clear-key-in-keyword-value-list :hints keyword-value-list))
-              (keyword-value-list (clear-key-in-keyword-value-list :instructions keyword-value-list)))
+       (let* ((keyword-value-list (remove-keyword :hints keyword-value-list))
+              (keyword-value-list (remove-keyword :instructions keyword-value-list)))
          `(,defthm-variant ,name ,body ,@keyword-value-list))))
     ;; fixme:
     ((defthm defthmd) ; (defun name args ...declares/doc-string... body)

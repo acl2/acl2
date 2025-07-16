@@ -308,6 +308,16 @@
                   (bvsx size size2 x)))
   :hints (("Goal" :in-theory (e/d (bvsx logtail-of-bvchop-becomes-slice) (logext)))))
 
+(defthmd bvchop-of-logext-becomes-bvsx-gen
+  (implies (and (natp size)
+                (posp size2))
+           (equal (bvchop size (logext size2 x))
+                  (if (< size2 size)
+                      (bvsx size size2 x)
+                    ;; no sign extension needed in this case:
+                    (bvchop size x)))))
+(theory-invariant (incompatible (:rewrite bvchop-of-logext-becomes-bvsx-gen) (:rewrite bvsx-rewrite)))
+
 ;add -becomes-bvsx to name
 (defthm slice-of-logext-middle
   (implies (and (< low n)

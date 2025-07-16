@@ -1368,7 +1368,7 @@
            (equal (slice highbit lowbit (bvxor size x y))
                   (slice highbit lowbit (bvxor (+ 1 highbit) x y))))
   :hints (("Goal" :cases ((<= lowbit highbit))
-          :in-theory (e/d (slice bvxor natp  bvchop-of-logtail) ( slice-becomes-bvchop)))))
+          :in-theory (e/d (slice bvxor natp  bvchop-of-logtail) (slice-becomes-bvchop)))))
 
 ;drop in favor of trim rules?
 (defthm slice-of-bvand-tighten
@@ -2026,7 +2026,7 @@
   (implies (integerp x)
            (equal (slice 31 7 (logext 8 x))
                   (bvsx 25 1 (getbit 7 x))))
-  :hints (("Goal" :in-theory (e/d (slice LOGEXT) ( BVCHOP-OF-LOGTAIL)))))
+  :hints (("Goal" :in-theory (e/d (slice LOGEXT) (BVCHOP-OF-LOGTAIL)))))
 
 ;; ;bozo gen
 (defthm bvplus-of-logext-arg1-32-8
@@ -3732,6 +3732,7 @@
                   (bvcat highsize (bvuminus highsize x) lowsize lowval)))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 
+;use a convert rule?
 (defthm bitxor-of-unary-minus-arg1
   (implies (integerp x)
            (equal (bitxor (- x) y)
@@ -3739,6 +3740,7 @@
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus
                                                       BVUMINUS-1)))))
 
+;use a convert rule?
 (defthm bitxor-of-unary-minus-arg2
   (implies (integerp y)
            (equal (bitxor x (- y))
@@ -3753,8 +3755,7 @@
                               (quotep high)
                               (quotep low)))
                 ;;gets computed:
-                (not (equal free (slice high low const)))
-                )
+                (not (equal free (slice high low const))))
            (not (equal const x))))
 
 ;version for bvchop?
@@ -3765,8 +3766,7 @@
                               (quotep high)
                               (quotep low)))
                 ;;gets computed:
-                (equal free (slice high low const))
-                )
+                (equal free (slice high low const)))
            (not (equal const x))))
 
 (defthm slice-when-not-bvlt-free
@@ -3814,8 +3814,7 @@
 (defthm bvdiv-and-bvmod-relationship-helper
   (implies (and (natp size)
 ;               (unsigned-byte-p size x)
-                (unsigned-byte-p size y)
-                )
+                (unsigned-byte-p size y))
            (equal (bvplus size (bvmult size y (bvdiv size x y)) (bvmod size x y))
                   (bvchop size x)))
   :hints (("Goal" :in-theory (enable mod bvdiv bvmod bvmult bvplus))))
@@ -3847,8 +3846,7 @@
 (defthmd rewrite-bv-equality-when-sizes-dont-match-core
   (implies (and (< x-size y-size)
                 (unsigned-byte-p x-size x)
-                (unsigned-byte-p y-size y)
-                )
+                (unsigned-byte-p y-size y))
            (equal (equal x y)
                   (and (equal x (bvchop x-size y))
                        (equal (slice (+ -1 y-size) x-size y)
@@ -3910,8 +3908,7 @@
                 (not (equal free (bvchop size x)))
                 (syntaxp (quotep free))
                 (equal (bvchop size free) (bvchop size k)) ;gets computed
-                (unsigned-byte-p size free)
-                )
+                (unsigned-byte-p size free))
            (not (equal k x))))
 
 ;move
@@ -3946,7 +3943,7 @@
                     (logtail n x))))
   :hints (("Goal"
            :use (:instance FLOOR-PEEL-OFF-CONSTANT (k (+ -1 (expt 2 n))) (n x) (y (expt 2 n)))
-           :in-theory (e/d (logtail bvchop) (FLOOR-PEEL-OFF-CONSTANT)))))
+           :in-theory (e/d (logtail bvchop) (floor-peel-off-constant)))))
 
 (defthm getbit-of-one-less
   (implies (and (integerp x)
@@ -4052,7 +4049,6 @@
   :hints (("Goal"
            :use ((:instance BVCHOP-SUM-SUBST (x x) (free (+ (- Y) Z)) (y y))
                  (:instance BVCHOP-SUM-SUBST (x z) (free (+ x y)) (y (- y))))
-
            :in-theory (e/d (bvminus)
                            (; ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
                             )))))
@@ -4067,7 +4063,6 @@
   :hints (("Goal"
            :use ((:instance BVCHOP-SUM-SUBST (x x) (free (+ (- Y) Z)) (y y))
                  (:instance BVCHOP-SUM-SUBST (x z) (free (+ x y)) (y (- y))))
-
            :in-theory (e/d (bvminus)
                            (; ;BVCHOP-SUM-MINUS-BVCHOP-ARG2-OF-2
                             )))))
@@ -4130,8 +4125,7 @@
                 (integerp x)
                 (integerp k1)
                 (integerp k2)
-                (natp n)
-                )
+                (natp n))
            (equal (equal k1 (bvchop n (+ k2 x)))
                   (and (unsigned-byte-p n k1)
                        (equal (bvchop n x) (bvchop n (- k1 k2)))))))
@@ -4143,8 +4137,7 @@
                 (integerp x)
                 (integerp k1)
                 (integerp k2)
-                (natp n)
-                )
+                (natp n))
            (equal (equal k1 (bvchop n (+ x k2)))
                   (and (unsigned-byte-p n k1)
                        (equal (bvchop n x) (bvchop n (- k1 k2)))))))
@@ -4154,20 +4147,18 @@
                 (natp size2)
 ;                (natp size)
                 (integerp x)
-                (integerp Y)
-                )
+                (integerp y))
            (equal (bvchop size (+ x (- (bvchop size2 y))))
                   (bvchop size (+ x (- y)))))
-  :hints (("Goal" :in-theory (disable EQUAL-BVCHOP-BVCHOP-MOVE-MINUS2))))
+  :hints (("Goal" :in-theory (disable equal-bvchop-bvchop-move-minus2))))
 
 ;no hyps about size
 (defthm bvchop-of-sum-of-minus-of-bvchop-same
   (implies (and (integerp x)
-                (integerp Y)
-                )
+                (integerp Y))
            (equal (bvchop size (+ x (- (bvchop size y))))
                   (bvchop size (+ x (- y)))))
-  :hints (("Goal" :in-theory (disable EQUAL-BVCHOP-BVCHOP-MOVE-MINUS2))))
+  :hints (("Goal" :in-theory (disable equal-bvchop-bvchop-move-minus2))))
 
 (defthm bvchop-of-sum-of-minus-of-bvchop-gen-arg3
   (implies (and (<= size size2)
@@ -4175,8 +4166,7 @@
 ;                (natp size)
                 (integerp x)
                 (integerp Y)
-                (integerp w)
-                )
+                (integerp w))
            (equal (bvchop size (+ w x (- (bvchop size2 y))))
                   (bvchop size (+ w x (- y))))))
 
@@ -4184,8 +4174,7 @@
 (defthm bvchop-of-sum-of-minus-of-bvchop-same-alt
   (implies (and (integerp x)
                 (integerp Y)
-                (integerp w)
-                )
+                (integerp w))
            (equal (bvchop size (+ w x (- (bvchop size y))))
                   (bvchop size (+ w x (- y)))))
   :hints (("Goal" :use (:instance bvchop-of-sum-of-minus-of-bvchop-same (x (+ w x))))))
@@ -4406,19 +4395,14 @@
                     0)))
   :hints (("Goal" :in-theory (enable getbit SLICE-OF-SUM-CASES))))
 
-
 ;gen
 (defthm slice-of-minus-of-expt
   (implies (posp size)
            (equal (SLICE (+ -1 SIZE) 1 (- (EXPT 2 SIZE)))
                   0))
-  :hints (("Goal" :in-theory (e/d (slice LOGTAIL bvchop
-                                         expt-of-+ ;;EXPONENTS-ADD-unrestricted
-                                         )
-                                  (
-                                   )))))
-
-
+  :hints (("Goal" :in-theory (enable slice LOGTAIL bvchop
+                                     expt-of-+ ;;EXPONENTS-ADD-unrestricted
+                                     ))))
 
 (defthm bvchop-of-times-of-expt-and-/-of-expt
   (implies (and (natp low)
@@ -6043,7 +6027,6 @@
            (not (bvlt size k x)))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd bvplus-of-bvuminus-tighten-gen
@@ -6090,9 +6073,7 @@
            (equal (bvlt size x y)
                   (bvlt (max xsize ysize) x y)))
   :hints (("Goal"
-
-           :in-theory (e/d (bvlt unsigned-byte-p) (
-                                                   <-of-expt-and-expt-same-base)))))
+           :in-theory (e/d (bvlt unsigned-byte-p) (<-of-expt-and-expt-same-base)))))
 
 (defthm not-bvlt-of-constant-when-usb
   (implies (and (syntaxp (quotep k))
