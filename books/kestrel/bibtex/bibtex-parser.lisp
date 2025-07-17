@@ -319,15 +319,76 @@
     (declare (ignore x))
     fields))
 
+;; (defun parse-single-bibtex-entry (str pos)
+;;   "Parse a single complete BibTeX entry starting at position pos"
+;;   (declare (xargs :guard (and (stringp str)
+;;                               (natp pos)
+;;                               (<= pos (length str)))
+;;                   :guard-hints (("Goal" :in-theory (disable find-char find-matching-brace parse-bibtex-key parse-bibtex-fields)))))
+;;                  ; :verify-guards nil))
+;;   (let ((at-pos (find-char str #\@ pos)))
+;;     (if  (or (not (natp pos))
+;;              (not (stringp str))
+;;              (>= pos (length str))
+;;              (not at-pos))
+;;         (mv nil nil nil)  ; No entry found
+;;       (mv-let (entry-type type-end-pos)
+;;           (parse-bibtex-entry-type str at-pos)
+;;         (if (and entry-type type-end-pos)
+;;             (mv-let (key key-end-pos)
+;;                 (parse-bibtex-key str type-end-pos)
+;;               (if (and key key-end-pos)
+;;                   (let ((closing-brace-pos (find-matching-brace str (1- type-end-pos))))
+;;                     (if closing-brace-pos
+;;                         (let* ((fields-str (subseq str key-end-pos closing-brace-pos))
+;;                                (fields (parse-bibtex-fields fields-str))
+;;                                (entry (list (cons "type" entry-type)
+;;                                           (cons "key" key)
+;;                                           (cons "fields" fields))))
+;;                           (mv key entry (1+ closing-brace-pos)))
+;;                       (mv nil nil nil)))
+;;                 (mv nil nil nil)))
+;;           (mv nil nil nil))))))
+
+(defthm find-char-plus-one-bound
+                (implies (and (stringp str)
+                              (characterp c)
+                              (natp start-pos)
+                              (<= start-pos (length str))
+                              (find-char str c start-pos))
+                         (<= (1+ (find-char str c start-pos))
+                             (length str))))
+
+(DEFTHM FIND-CHAR-RETURNS-CORRECT-CHAR
+                (IMPLIES (AND (STRINGP STR)
+                              (CHARACTERP C)
+                              (NATP START-POS)
+                              (<= START-POS (LENGTH STR))
+                              (FIND-CHAR STR C START-POS))
+                         (EQUAL (NTH (FIND-CHAR STR C START-POS)
+                                     (EXPLODE STR))
+                                C)))
+
+(DEFTHM FIND-CHAR-STRICT-UPPER-BOUND
+                (IMPLIES (AND (STRINGP STR)
+                              (CHARACTERP C)
+                              (NATP START-POS)
+                              (<= START-POS (LENGTH STR))
+                              (FIND-CHAR STR C START-POS))
+                         (< (FIND-CHAR STR C START-POS)
+                            (LENGTH STR))))
+
+
 (defun parse-single-bibtex-entry (str pos)
   "Parse a single complete BibTeX entry starting at position pos"
-  (declare (xargs :guard t
-                  :verify-guards nil))
+  (declare (xargs :guard (and (stringp str)
+                              (natp pos)
+                              (<= pos (length str)))))
   (let ((at-pos (find-char str #\@ pos)))
-    (if  (or (not (natp pos))
-             (not (stringp str))
-             (>= pos (length str))
-             (not at-pos))
+    (if (or (not (natp pos))
+            (not (stringp str))
+            (>= pos (length str))
+            (not at-pos))
         (mv nil nil nil)  ; No entry found
       (mv-let (entry-type type-end-pos)
           (parse-bibtex-entry-type str at-pos)
@@ -336,7 +397,10 @@
                 (parse-bibtex-key str type-end-pos)
               (if (and key key-end-pos)
                   (let ((closing-brace-pos (find-matching-brace str (1- type-end-pos))))
-                    (if closing-brace-pos
+                    (if (and closing-brace-pos
+                             (natp closing-brace-pos)
+                             (<= key-end-pos closing-brace-pos)  ; Explicit bounds check
+                             (<= closing-brace-pos (length str)))
                         (let* ((fields-str (subseq str key-end-pos closing-brace-pos))
                                (fields (parse-bibtex-fields fields-str))
                                (entry (list (cons "type" entry-type)
@@ -349,7 +413,10 @@
 
 (defun find-next-bibtex-entry (str pos)
   "Find the position of the next @ symbol that starts a BibTeX entry"
-  (declare (xargs :measure (nfix (- (length str) pos))))
+  (declare (xargs :guard (and (stringp str)
+                              (natp pos)
+                              (<= pos (length str)))
+                  :measure (nfix (- (length str) pos))))
   (let ((at-pos (find-char str #\@ pos)))
     (if (not at-pos)
         nil
@@ -364,21 +431,30 @@
               ;; Keep looking for the next @
               (find-next-bibtex-entry str (1+ at-pos)))))))))
 
+;this guard verification proof is very slow
 (defun parse-bibtex-entries-from-positions (str positions)
-  "Parse BibTeX entries from a list of @ positions"
+  "Parse BibTeX entries starting at the given positions"
+  (declare (xargs :guard (and (stringp str)
+                              (nat-listp positions))))
   (if (endp positions)
       nil
-    (mv-let (key entry next-pos)
-        (parse-single-bibtex-entry str (car positions))
-      (declare (ignore next-pos))
-      (if (and key entry)
-          (cons (cons key entry)
-                (parse-bibtex-entries-from-positions str (cdr positions)))
-        (parse-bibtex-entries-from-positions str (cdr positions))))))
+    (if (<= (car positions) (length str))  ; Explicit bounds check
+        (mv-let (key entry next-pos)
+                (parse-single-bibtex-entry str (car positions))
+          (declare (ignore next-pos))
+          (if (and key entry)
+              (cons (cons key entry)
+                    (parse-bibtex-entries-from-positions str (cdr positions)))
+            (parse-bibtex-entries-from-positions str (cdr positions))))
+        ; Skip out-of-bounds positions
+      (parse-bibtex-entries-from-positions str (cdr positions)))))
 
 (defun find-all-at-positions (str pos acc)
   "Find all positions of @ symbols in the string"
-  (declare (xargs :measure (nfix (- (length str) pos))))
+  (declare (xargs :measure (nfix (- (length str) pos))
+                  :guard (and (stringp str)
+                              (natp pos)
+                              (nat-listp acc))))
   (if (>= pos (length str))
       (reverse acc)
     (let ((at-pos (find-char str #\@ pos)))
@@ -386,15 +462,22 @@
           (find-all-at-positions str (1+ at-pos) (cons at-pos acc))
         (reverse acc)))))
 
+(defthm find-all-at-positions-returns-nat-listp
+  (implies (and (stringp str)
+                (natp pos)
+                (nat-listp acc))
+           (nat-listp (find-all-at-positions str pos acc)))
+  :hints (("Goal" :in-theory (enable rev))))
+
 (defun parse-bibtex-entries-simple (str)
   "Simpler version that finds all @ positions first, then parses each"
+  (declare (xargs :guard (stringp str)))
   (parse-bibtex-entries-from-positions str (find-all-at-positions str 0 nil)))
 
 (defun parse-bibtex-file (filename state)
   "Parse a BibTeX file and return an alist from citation keys to entries"
   (declare (xargs :guard (stringp filename)
-                  :stobjs state
-                  :verify-guards nil))
+                  :stobjs state))
   (mv-let (contents state)
     (read-file-as-string filename state)
     (if (stringp contents)
