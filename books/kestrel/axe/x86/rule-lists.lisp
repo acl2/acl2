@@ -1328,6 +1328,12 @@
     acl2::bvplus-of-bvplus-tighten-arg3 ; new
     acl2::bvsx-of-logext
     acl2::logext-of-+-of-logext-arg2
+
+    acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
+
+    ;; needed to shorten arrays by making the indices obviously smaller bvs:
+    acl2::bvchop-tighten-when-not-bvlt-of-constant
+    acl2::bvchop-tighten-when-bvlt-of-constant
     ))
 
 ;; ;not used?
@@ -2517,6 +2523,10 @@
             x86isa::!ms$a
 
             acl2::bv-array-read-shorten-axe
+            ;; these can discard bytes from large executable segments:
+            acl2::bv-array-read-shorten-when-bvlt
+            acl2::bv-array-read-shorten-when-not-bvlt
+
             acl2::integerp-of-if-strong
 
             x86isa::feature-flags-constant-opener  ; move

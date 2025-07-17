@@ -15,7 +15,9 @@
 (include-book "unsigned-byte-p")
 (include-book "bvplus") ;drop!
 (include-book "bvminus") ;drop! but is used below
-(local (include-book "slice"))
+(include-book "kestrel/arithmetic-light/ceiling-of-lg-def" :dir :system)
+(local (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system))
+(local (include-book "slice")) ; since we open getbit below
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -971,3 +973,56 @@
                 (integerp size))
            (bvlt size x y))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthmd bvchop-tighten-when-bvlt-of-constant-helper
+    (implies (and (bvlt size x k) ; k is a free var
+                  (syntaxp (and (quotep k)
+                                (quotep size)))
+                  (< (ceiling-of-lg k) size) ; avoids loops
+                  (unsigned-byte-p size x) ; dropped below
+                  (natp k))
+             (equal (bvchop size x)
+                    (bvchop (ceiling-of-lg k) x)))
+    :hints (("Goal" :in-theory (enable bvlt)))))
+
+(defthmd bvchop-tighten-when-bvlt-of-constant
+  (implies (and (bvlt size x k) ; k is a free var
+                (syntaxp (and (quotep k)
+                              (quotep size)))
+                (< (ceiling-of-lg k) size) ; avoids loops
+                ;; (unsigned-byte-p size x)
+                (natp k))
+           (equal (bvchop size x)
+                  (bvchop (ceiling-of-lg k) x)))
+  :hints (("Goal" :use (:instance bvchop-tighten-when-bvlt-of-constant-helper
+                                  (x (bvchop size x)))
+           :in-theory (disable bvchop-tighten-when-bvlt-of-constant-helper))))
+
+(local
+  (defthmd bvchop-tighten-when-not-bvlt-of-constant-helper
+    (implies (and (not (bvlt size k x)) ; k is a free var
+                  (syntaxp (and (quotep k)
+                                (quotep size)))
+                  (< (ceiling-of-lg (+ 1 k)) size) ; avoids loops
+                  (unsigned-byte-p size x) ; dropped below
+                  (natp k))
+             (equal (bvchop size x)
+                    (bvchop (ceiling-of-lg (+ 1 k)) x)))
+    :hints (("Goal" :in-theory (enable bvlt)))))
+
+(defthmd bvchop-tighten-when-not-bvlt-of-constant
+  (implies (and (not (bvlt size k x)) ; k is a free var
+                (syntaxp (and (quotep k)
+                              (quotep size)))
+                (< (ceiling-of-lg (+ 1 k)) size) ; avoids loops
+                ;; (unsigned-byte-p size x)
+                (integerp size)
+                (natp k))
+           (equal (bvchop size x)
+                  (bvchop (ceiling-of-lg (+ 1 k)) x)))
+:hints (("Goal" :use (:instance bvchop-tighten-when-not-bvlt-of-constant-helper
+                                (x (bvchop size x)))
+         :in-theory (disable bvchop-tighten-when-not-bvlt-of-constant-helper))))

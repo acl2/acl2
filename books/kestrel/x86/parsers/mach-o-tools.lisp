@@ -24,7 +24,7 @@
 
 (local (in-theory (disable strip-cars symbol-alistp))) ; prevent induction
 
-(defun mach-o-sectionp (sec)
+(defund mach-o-sectionp (sec)
   (declare (xargs :guard t))
   (symbol-alistp sec))
 
@@ -39,6 +39,11 @@
   (declare (xargs :guard t))
   (symbol-alistp cmd))
 
+(local
+  (defthm alistp-when-mach-o-commandp
+    (implies (mach-o-commandp cmd)
+             (alistp cmd))))
+
 (defund mach-o-command-listp (cmds)
   (declare (xargs :guard t))
   (if (atom cmds)
@@ -50,14 +55,16 @@
 (defund parsed-mach-o-p (parsed-mach-o)
   (declare (xargs :guard t))
   (and (symbol-alistp parsed-mach-o)
-       (equal (strip-cars parsed-mach-o) '(:magic :header :cmds))
+       (equal (strip-cars parsed-mach-o) '(:magic :header :cmds :bytes))
        (let ((magic (lookup-eq :magic parsed-mach-o))
              (header (lookup-eq :header parsed-mach-o))
-             (cmds (lookup-eq :cmds parsed-mach-o)))
+             (cmds (lookup-eq :cmds parsed-mach-o))
+             (bytes (lookup-eq :bytes parsed-mach-o)))
          (and (or (member-eq magic *32-bit-magic-numbers*)
                   (member-eq magic *64-bit-magic-numbers*))
               (symbol-alistp header) ; todo: strengthen
-              (mach-o-command-listp cmds)))))
+              (mach-o-command-listp cmds)
+              (byte-listp bytes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,6 +106,14 @@
 
 (defopeners get-mach-o-segment)
 
+(defthm mach-o-segmentp-of-get-mach-o-segment
+  (implies (mach-o-command-listp load-commands)
+           (mach-o-commandp (get-mach-o-segment sename load-commands)))
+  :hints (("Goal" :in-theory (enable mach-o-command-listp
+                                     get-mach-o-segment))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns a section, or throws an error.
 (defund get-mach-o-section (name sections)
   (declare (xargs :guard (and (stringp name)
@@ -114,11 +129,26 @@
 
 (defopeners get-mach-o-section)
 
+(defthm mach-o-sectionp-of-get-mach-o-section
+  (implies (mach-o-section-listp sections)
+           (mach-o-sectionp (get-mach-o-section name sections)))
+  :hints (("Goal" :in-theory (enable mach-o-section-listp
+                                     get-mach-o-section))))
+
+(local
+  (defthm alistp-when-mach-o-sectionp
+    (implies (mach-o-sectionp sec)
+             (alistp sec))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Get the code from the __TEXT,__text section
+;; todo: return an error?
 (defund get-mach-o-code (mach-o)
-  ;; (declare (xargs :guard (parsed-mach-o-p mach-o)
-  ;;                 :guard-hints (("Goal" :in-theory (enable parsed-mach-o-p)))
-  ;;                 ))
+  (declare (xargs :guard (parsed-mach-o-p mach-o)
+                  :guard-hints (("Goal" :in-theory (enable parsed-mach-o-p)))
+                  :verify-guards nil ; todo
+                  ))
   ;; todo: what if :contents is (:zero-fill ...)?
   (acl2::lookup-eq-safe :contents (get-mach-o-section "__text" (acl2::lookup-eq-safe :SECTIONS (get-mach-o-segment "__TEXT" (acl2::lookup-eq-safe :cmds mach-o))))))
 
