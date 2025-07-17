@@ -781,6 +781,115 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defun acl2::pe-sectionp (section)
+  (declare (xargs :guard t))
+  (and (consp section)
+       (let ((name (first section))
+             (info (rest section)))
+         (and (stringp name)
+              (symbol-alistp info)
+              (let ((header (lookup-eq :header info))
+                    (bytes (lookup-eq :raw-data info)))
+                (and (symbol-alistp header)
+                     (acl2::byte-listp bytes)))))))
+
+
+(defun acl2::pe-section-listp (sections)
+  (declare (xargs :guard t))
+  (if (not (consp sections))
+      (null sections)
+    (and (acl2::pe-sectionp (first sections))
+         (acl2::pe-section-listp (rest sections)))))
+
+;move
+(defun acl2::parsed-pe-p (pe)
+  (declare (xargs :guard t))
+  (and (symbol-alistp pe)
+       (acl2::pe-section-listp (lookup-eq :sections pe))))
+
+(defun pe64-regions-to-load-aux (sections acc)
+  (declare (xargs :guard (and (acl2::pe-section-listp sections)
+;                              (acl2::byte-listp all-bytes)
+;                              (equal all-bytes-len (len all-bytes))
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable acl2::pe-section-listp
+                                                           acl2::pe-sectionp)))))
+  (if (endp sections)
+      (mv nil (reverse acc))
+    (b* ((section (first sections)) ; todo: do all section types get loaded?
+         ;; (name (first section))
+         (info (rest section))
+         (header (lookup-eq :header info))
+         (vaddr (lookup-eq :virtual-address header)) ; var names here match what we do for ELF
+         (memsz (lookup-eq :virtual-size header))
+         ;; (offset (lookup-eq :pointer-to-raw-data section)) ; todo: this is rel to what?
+         ;; (filesz (lookup-eq :filesize section))
+         (bytes (lookup-eq :raw-data info))
+         (len-bytes (len bytes))
+         ((when (not (and ;; (natp offset)
+                       ;; (natp filesz)
+                       (natp vaddr)
+                       (natp memsz)
+                       ;; The data length can't be larger than the memory size:
+                       (<= len-bytes memsz) ;; the size of the raw data may be rounded up, but that should all be handled by the parser
+                       )))
+          (er hard? 'pe64-regions-to-load-aux "Bad section: vaddr=~x0, memsz=~x1, len-bytes=~x2." vaddr memsz len-bytes)
+          (mv :bad-load-section nil))
+         ((when (not (equal memsz len-bytes)))
+          (er hard? 'pe64-regions-to-load-aux "Bad section length: memsz=~x0, bytes=~x1." memsz bytes)
+          (mv :bad-load-section nil))
+         ;; ttodo: do we ever need to pad with zeros?
+         ;; (last-byte-num (+ -1 filesz))
+         ;; ((when (not (< last-byte-num len-bytes)))
+         ;;  (mv :not-enough-bytes nil))
+         ;; ;; If the file size is smaller than the memory size, we fill with zeros (todo: what if there are too many?):
+         ;; (numzeros (- memsz filesz))
+         ;; ((when (> numzeros 10000)) ; allows padding with zeros up a multiple of 4k
+         ;;  (cw "Too many zeros (~x0)!  Skipping this segment!~%" numzeros) ; ttodo!
+         ;;  (pe64-regions-to-load-aux (rest sections) all-bytes-len all-bytes acc))
+         ;; (bytes (take filesz (nthcdr offset all-bytes)))
+         ;; ;; Zero bytes at the end of the segment may not be stored in the file:
+         ;; (bytes (if (posp numzeros)
+         ;;            (append bytes (acl2::repeat numzeros 0)) ; optimize?
+         ;;          bytes))
+         )
+      (pe64-regions-to-load-aux (rest sections)
+                                ;all-bytes-len all-bytes
+                                (cons (list memsz vaddr bytes)
+                                      acc)))))
+
+(local
+  (defthm memory-regionsp-of-mv-nth-1-of-pe64-regions-to-load-aux
+    (implies (and ;(not (mv-nth 0 (pe64-regions-to-load-aux sections acc))) ; no error
+                  (acl2::pe-section-listp sections)
+                  (memory-regionsp acc)
+                  ;;(acl2::byte-listp all-bytes)
+                  ;;(equal all-bytes-len (len all-bytes))
+                  )
+             (memory-regionsp (mv-nth 1 (pe64-regions-to-load-aux sections acc))))
+    :hints (("Goal" :in-theory (enable pe64-regions-to-load-aux memory-regionsp memory-regionp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund pe64-regions-to-load (parsed-pe)
+  (declare (xargs :guard (acl2::parsed-pe-p parsed-pe)
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-pe-p)))))
+  (b* ((sections (lookup-eq :sections parsed-pe))
+       ;; (all-bytes (lookup-eq :bytes parsed-pe)) ; currently, each section stores its :raw-data
+       )
+    (pe64-regions-to-load-aux sections nil)))
+
+(local
+  (defthm memory-regionsp-of-mv-nth-1-of-pe64-regions-to-load
+    (implies (acl2::parsed-pe-p parsed-pe)
+             (memory-regionsp (mv-nth 1 (pe64-regions-to-load parsed-pe))))
+    :hints (("Goal" :in-theory (enable pe64-regions-to-load acl2::parsed-pe-p)))))
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Generate all the assumptions for an ELF64 file, whether relative or
 ;; absolute.  Returns (mv erp assumptions assumption-vars) where assumptions is
 ;; a list of (untranslated) terms and the assumption-vars are the variables
@@ -973,6 +1082,100 @@
 (defthm true-list-of-mv-nth-1-of-assumptions-macho64-new
   (true-listp (mv-nth 1 (assumptions-macho64-new target position-independentp stack-slots-needed state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from bvp new-canonicalp parsed-macho)))
   :hints (("Goal" :in-theory (enable assumptions-macho64-new))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund assumptions-pe64-new (target
+                              position-independentp
+                              stack-slots-needed
+                              state-var
+                              inputs
+                              type-assumptions-for-array-varsp
+                              inputs-disjoint-from
+                              bvp
+                              new-canonicalp
+                              parsed-pe)
+  (declare (xargs :guard (and (lifter-targetp target)
+                              (booleanp position-independentp)
+                              (natp stack-slots-needed)
+                              (symbolp state-var) ; todo: too strict?
+                              (names-and-typesp inputs)
+                              (booleanp type-assumptions-for-array-varsp)
+                              (member-eq inputs-disjoint-from '(nil :code :all))
+                              (booleanp bvp)
+                              (booleanp new-canonicalp)
+                              (acl2::parsed-pe-p parsed-pe))
+                  :verify-guards nil ; todo
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-pep acl2::true-listp-when-pseudo-term-listp-2)))))
+  (b* ((base-var 'base-address) ; arbitrary base address, only used if position-independentp
+       ;; Decide where to start lifting:
+       (target-offset (if (eq :entry-point target)
+                          (acl2::get-pe-entry-point parsed-pe)
+                        (if (natp target)
+                            target ; explicit address given (relative iff position-independentp)
+                          ;; target is the name of a function:
+                          (acl2::subroutine-address-pe-64 target parsed-pe))))
+       ((when (not (natp target-offset)))
+        (er hard? 'assumptions-pe64-new "Bad or missing lift target offset: ~x0." target-offset)
+        (mv :bad-or-missing-subroutine-address nil nil))
+       ;; Make the standard assumptions:
+       (standard-assumptions (make-standard-assumptions64-new stack-slots-needed state-var base-var target-offset position-independentp bvp new-canonicalp))
+       ;; Gather memory-regions to assume loaded:
+       ((mv erp regions-to-load) (pe64-regions-to-load parsed-pe)) ; these use absolute addresses
+       ((when erp) (mv erp nil nil))
+       ;; Checks that there is at least one section to be loaded:
+       ((when (not (consp regions-to-load)))
+        (mv :no-memory-regions-found-in-executable nil nil))
+       ;; Generate assumptions for the regions (bytes are loaded, addresses are canonical, regions are disjoint from future stack words):
+       ((mv erp memory-region-assumptions)
+        (assumptions-for-memory-regions regions-to-load base-var state-var stack-slots-needed bvp position-independentp new-canonicalp nil))
+       ((when erp) (mv erp nil nil))
+       ;; Decide which memory regions to assume disjoint from the inputs:
+       ((mv erp addresses-and-lens-of-chunks-disjoint-from-inputs)
+        (if (eq nil inputs-disjoint-from)
+            ;; Don't assume the inputs are disjoint from anything:
+            (mv nil nil)
+          (if (eq :all inputs-disjoint-from)
+              ;; Assume the inputs are disjoint from all the sections/segments in the executable::
+              ;; Warning: This is quite strong: an input to the function being lifted may very well be in a data section or in the stack!):
+              (mv nil (memory-region-addresses-and-lens regions-to-load nil))
+            ;; inputs-disjoint-from must be :code, so assume the inputs are disjoint from the code bytes only:
+            ;; todo: what if there are segments but no sections?  could use the segment that contains the text section, if we can find it, or throw an error.
+            ;; could allow the user to specify exactly which regions to assume disjoint from the assumptions.
+            (b* ((code-address (acl2::get-pe-section-rva ".text" parsed-pe))
+                 ((when (not (natp code-address))) ; impossible?
+                  (mv :bad-code-addres nil))
+                 (text-offset-term (if position-independentp
+                                       (if bvp
+                                           (symbolic-bvplus-constant 48 code-address base-var)
+                                         (symbolic-add-constant code-address base-var))
+                                     code-address)))
+              ; todo: could there be extra zeros?:
+              (mv nil (acons text-offset-term (len (acl2::get-pe-text-section-bytes parsed-pe)) nil))))))
+       ((when erp) (mv erp nil nil))
+       ;; Generate assumptions for the inputs (introduce vars, canonical, disjointness from future stack space, disjointness from bytes loaded from the executable, disjointness from saved return address):
+       ((mv input-assumptions input-assumption-vars)
+        (if (equal inputs :skip)
+            (mv nil nil)
+          (assumptions-and-vars-for-inputs inputs ; tttodo: do we assume inputs disjoint from the stack?
+                                           ;; todo: handle zmm regs and values passed on the stack?!:
+                                           ;; handle structs that fit in 2 registers?
+                                           ;; See the System V AMD64 ABI
+                                           '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
+                                           stack-slots-needed
+                                           addresses-and-lens-of-chunks-disjoint-from-inputs
+                                           type-assumptions-for-array-varsp
+                                           nil nil
+                                           new-canonicalp))))
+    (mv nil ; no error
+        (append standard-assumptions
+                memory-region-assumptions
+                input-assumptions)
+        input-assumption-vars)))
+
+(defthm true-list-of-mv-nth-1-of-assumptions-pe64-new
+  (true-listp (mv-nth 1 (assumptions-pe64-new target position-independentp stack-slots-needed state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from bvp new-canonicalp parsed-pe)))
+  :hints (("Goal" :in-theory (enable assumptions-pe64-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
