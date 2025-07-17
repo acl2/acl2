@@ -12,6 +12,9 @@
 
 ;; Simple test of the unrolling lifter
 
+;; May not be strictly needed for this example but will be in general:
+;; cert_param: (uses-stp)
+
 (include-book "kestrel/axe/x86/unroll-x86-code" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 
