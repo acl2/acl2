@@ -46,7 +46,7 @@
                s))
 
 (defxdoc publications
-  :parents (documentation)
+  :parents (about-acl2 documentation)
   :short "ACL2 Annotated Bibliography"
   :long "<p>This is the top-level topic for an annotated bibliography
   containing books and Papers about <a
