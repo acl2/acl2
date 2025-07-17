@@ -611,7 +611,10 @@
                                        ;; needed to match the normal forms used during lifting:
                                        (append (new-normal-form-rules64)
                                                (if bvp (read-and-write-rules-bv) (read-and-write-rules-non-bv))
-                                               (if new-style-elf-assumptionsp (canonical-rules-bv) (canonical-rules-non-bv)))
+                                               (if new-style-elf-assumptionsp
+                                                   (append (unsigned-canonical-rules)
+                                                           (canonical-rules-bv))
+                                                 (canonical-rules-non-bv)))
                                      nil ; todo: why not use (new-normal-form-rules32)?
                                      ))
                            remove-assumption-rules))
