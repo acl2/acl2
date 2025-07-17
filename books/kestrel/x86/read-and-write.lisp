@@ -935,12 +935,12 @@
                   ;; todo: consider what should happen here if ADDR is not a constant:
                   ;;(acl2::packbv-little n 8 (take n (nthcdr (- addr paddr) bytes)))
                   (bv-array-read-chunk-little n 8 (len bytes) (- addr paddr) bytes)))
-  :hints (("Goal" :in-theory (enable read
-                                     read-byte-when-program-at-gen
-                                     acl2::bv-array-read-chunk-little
-                                     ;acl2::packbv-little ; todo
-                                     bv-array-read
-                                     ))))
+  :hints (("Goal" :in-theory (e/d (read
+                                   read-byte-when-program-at-gen
+                                   acl2::bv-array-read-chunk-little
+                                   ;;acl2::packbv-little ; todo
+                                   bv-array-read)
+                                  (true-listp)))))
 
 ;(def-constant-opener acl2::packbv-little) ; move?
 

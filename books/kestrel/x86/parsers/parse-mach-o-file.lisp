@@ -810,7 +810,9 @@
     (mv nil
         (list (cons :magic magic)
               (cons :header header)
-              (cons :cmds cmds)))))
+              (cons :cmds cmds)
+              (cons :bytes all-bytes) ; todo: some bytes are replicated in the :contents fields of sections!  avoid that.
+              ))))
 
 ;; ;; Parse a file that is known to be a Mach-O executable.  Returns (mv
 ;; ;; erp contents state) where contents in an alist representing the

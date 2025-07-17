@@ -19,6 +19,7 @@
 (include-book "expt2")
 (include-book "integer-length")
 (include-book "integer-length2")
+(include-book "ceiling-of-lg-def")
 (include-book "ceiling-of-lg")
 (include-book "minus")
 (include-book "denominator")

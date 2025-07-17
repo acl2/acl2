@@ -2291,7 +2291,9 @@
                                    (read-and-write-rules-bv)
                                  (read-and-write-rules-non-bv))
                                (if nil ; for now
-                                   (canonical-rules-bv) (canonical-rules-non-bv))
+                                   (append (unsigned-canonical-rules)
+                                           (canonical-rules-bv))
+                                 (canonical-rules-non-bv))
                                (loop-lifter-rules64))))
        (32-bitp (member-eq executable-type *executable-types32*))
        (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
