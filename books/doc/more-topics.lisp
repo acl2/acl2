@@ -217,7 +217,7 @@ of proofs.")
  <p>The <a href=\"https://proofassistants.stackexchange.com/questions/tagged/acl2\">Proof Assistants Stack Exchange</a> has some questions and answers about ACL2, but the ACL2 Zulip (see above) and @('acl2-help') mailing list (see above, under Mailing Lists) are more popular.</p>")
 
 (defxdoc workshops
-  :parents (about-acl2 community)
+  :parents (community about-acl2)
   :short "The ACL2 Workshop Series."
   :long "<p>The ACL2 Workshop series consists of conferences that are held
  regularly, as listed below.</p>
