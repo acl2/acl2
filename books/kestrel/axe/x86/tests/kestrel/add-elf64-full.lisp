@@ -10,7 +10,8 @@
 
 (in-package "X")
 
-;; Simple test of the unrolling lifter
+;; Simple test of the unrolling lifter (in this file we return the full new
+;; state as the result of lifting).
 
 ;; May not be strictly needed for this example but will be in general:
 ;; cert_param: (uses-stp)
