@@ -9,9 +9,11 @@
 (in-package "ACL2")
 
 ; necessary books
-(include-book "std/strings/top" :dir :system)
-(include-book "std/io/top" :dir :system)
+(local
+  (include-book "std/strings/top" :dir :system)
+  )
 
+(include-book "std/io/read-file-characters" :dir :system)
 
 ; Helper functions for string processing
 
@@ -65,7 +67,7 @@
                 ((equal c #\})
                  (find-matching-brace-helper str (1+ pos) (1- brace-count)))
                 (t
-                 (find-matching-brace-helper str (1+ pos) brace-count)))))
+                  (find-matching-brace-helper str (1+ pos) brace-count)))))
     nil))
 
 (defun find-matching-brace (str start-pos)
@@ -87,9 +89,11 @@
   (implies (character-listp chars)
            (character-listp (trim-whitespace-left chars))))
 
-(defthm reverse-preserves-character-listp
-  (implies (character-listp chars)
-           (character-listp (reverse chars))))
+(local
+  (defthm reverse-preserves-character-listp
+    (implies (character-listp chars)
+             (character-listp (reverse chars))))
+  )
 
 (defun trim-string (str)
   "Remove leading and trailing whitespace"
@@ -98,8 +102,6 @@
          (trimmed-left (trim-whitespace-left chars))
          (trimmed-both (reverse (trim-whitespace-left (reverse trimmed-left)))))
     (coerce trimmed-both 'string)))
-
-
 
 ;lemmas
 (defthm find-char-upper-bound
@@ -119,11 +121,12 @@
                 (find-char str c start-pos))
            (<= start-pos (find-char str c start-pos))))
 
-(defthm len-of-explode-is-length
-  (implies (stringp str)
-           (equal (len (explode str)) (length str)))
-  :rule-classes (:forward-chaining))
-
+(local
+  (defthm len-of-explode-is-length
+    (implies (stringp str)
+             (equal (len (explode str)) (length str)))
+    :rule-classes (:forward-chaining))
+  )
 
 ; BibTeX entry parsing functions
 
@@ -235,6 +238,33 @@
                 (find-matching-brace-helper str pos brace-count))
            (<= pos (find-matching-brace-helper str pos brace-count))))
 
+(defthm find-char-plus-one-bound
+  (implies (and (stringp str)
+                (characterp c)
+                (natp start-pos)
+                (<= start-pos (length str))
+                (find-char str c start-pos))
+           (<= (1+ (find-char str c start-pos))
+               (length str))))
+
+(defthm find-char-returns-correct-char
+  (implies (and (stringp str)
+                (characterp c)
+                (natp start-pos)
+                (<= start-pos (length str))
+                (find-char str c start-pos))
+           (equal (nth (find-char str c start-pos)
+                       (explode str))
+                  c)))
+
+(defthm find-char-strict-upper-bound
+  (implies (and (stringp str)
+                (characterp c)
+                (natp start-pos)
+                (<= start-pos (length str))
+                (find-char str c start-pos))
+           (< (find-char str c start-pos)
+              (length str))))
 
 (defun parse-field-value (str pos)
   "Parse a field value (after the = sign)"
@@ -269,8 +299,8 @@
                        (mv value (1+ end-pos)))
                    (mv nil nil))))
               (t
-               ;; Unquoted value (until comma or closing brace)
-               (parse-unquoted-value str start-pos)))))))
+                ;; Unquoted value (until comma or closing brace)
+                (parse-unquoted-value str start-pos)))))))
 
 
 (defun end-of-fields? (str pos)
@@ -284,10 +314,10 @@
                               (natp pos)
                               (<= pos (length str)))))
   (mv-let (field-name name-end-pos)
-      (parse-field-name str pos)
+          (parse-field-name str pos)
     (if (and field-name name-end-pos)
         (mv-let (field-value value-end-pos)
-            (parse-field-value str name-end-pos)
+                (parse-field-value str name-end-pos)
           (mv field-name field-value value-end-pos))
       (mv nil nil nil))))
 
@@ -301,11 +331,11 @@
           (end-of-fields? str pos))
       (mv nil pos)
     (mv-let (field-name field-value next-pos)
-        (parse-one-field str pos)
+            (parse-one-field str pos)
       (if (and field-name field-value next-pos (natp next-pos) (< pos next-pos))
           ;; Successful parse - continue recursively
           (mv-let (rest-fields final-pos)
-              (parse-bibtex-fields-helper str next-pos)
+                  (parse-bibtex-fields-helper str next-pos)
             (mv (cons (cons field-name field-value) rest-fields)
                 final-pos))
         ;; Failed parse - skip one character and try again
@@ -315,69 +345,9 @@
   "Parse all fields in a BibTeX entry"
   (declare (xargs :guard (stringp str)))
   (mv-let (fields x)
-    (parse-bibtex-fields-helper str 0)
+          (parse-bibtex-fields-helper str 0)
     (declare (ignore x))
     fields))
-
-;; (defun parse-single-bibtex-entry (str pos)
-;;   "Parse a single complete BibTeX entry starting at position pos"
-;;   (declare (xargs :guard (and (stringp str)
-;;                               (natp pos)
-;;                               (<= pos (length str)))
-;;                   :guard-hints (("Goal" :in-theory (disable find-char find-matching-brace parse-bibtex-key parse-bibtex-fields)))))
-;;                  ; :verify-guards nil))
-;;   (let ((at-pos (find-char str #\@ pos)))
-;;     (if  (or (not (natp pos))
-;;              (not (stringp str))
-;;              (>= pos (length str))
-;;              (not at-pos))
-;;         (mv nil nil nil)  ; No entry found
-;;       (mv-let (entry-type type-end-pos)
-;;           (parse-bibtex-entry-type str at-pos)
-;;         (if (and entry-type type-end-pos)
-;;             (mv-let (key key-end-pos)
-;;                 (parse-bibtex-key str type-end-pos)
-;;               (if (and key key-end-pos)
-;;                   (let ((closing-brace-pos (find-matching-brace str (1- type-end-pos))))
-;;                     (if closing-brace-pos
-;;                         (let* ((fields-str (subseq str key-end-pos closing-brace-pos))
-;;                                (fields (parse-bibtex-fields fields-str))
-;;                                (entry (list (cons "type" entry-type)
-;;                                           (cons "key" key)
-;;                                           (cons "fields" fields))))
-;;                           (mv key entry (1+ closing-brace-pos)))
-;;                       (mv nil nil nil)))
-;;                 (mv nil nil nil)))
-;;           (mv nil nil nil))))))
-
-(defthm find-char-plus-one-bound
-                (implies (and (stringp str)
-                              (characterp c)
-                              (natp start-pos)
-                              (<= start-pos (length str))
-                              (find-char str c start-pos))
-                         (<= (1+ (find-char str c start-pos))
-                             (length str))))
-
-(DEFTHM FIND-CHAR-RETURNS-CORRECT-CHAR
-                (IMPLIES (AND (STRINGP STR)
-                              (CHARACTERP C)
-                              (NATP START-POS)
-                              (<= START-POS (LENGTH STR))
-                              (FIND-CHAR STR C START-POS))
-                         (EQUAL (NTH (FIND-CHAR STR C START-POS)
-                                     (EXPLODE STR))
-                                C)))
-
-(DEFTHM FIND-CHAR-STRICT-UPPER-BOUND
-                (IMPLIES (AND (STRINGP STR)
-                              (CHARACTERP C)
-                              (NATP START-POS)
-                              (<= START-POS (LENGTH STR))
-                              (FIND-CHAR STR C START-POS))
-                         (< (FIND-CHAR STR C START-POS)
-                            (LENGTH STR))))
-
 
 (defun parse-single-bibtex-entry (str pos)
   "Parse a single complete BibTeX entry starting at position pos"
@@ -391,10 +361,10 @@
             (not at-pos))
         (mv nil nil nil)  ; No entry found
       (mv-let (entry-type type-end-pos)
-          (parse-bibtex-entry-type str at-pos)
+              (parse-bibtex-entry-type str at-pos)
         (if (and entry-type type-end-pos)
             (mv-let (key key-end-pos)
-                (parse-bibtex-key str type-end-pos)
+                    (parse-bibtex-key str type-end-pos)
               (if (and key key-end-pos)
                   (let ((closing-brace-pos (find-matching-brace str (1- type-end-pos))))
                     (if (and closing-brace-pos
@@ -404,8 +374,8 @@
                         (let* ((fields-str (subseq str key-end-pos closing-brace-pos))
                                (fields (parse-bibtex-fields fields-str))
                                (entry (list (cons "type" entry-type)
-                                          (cons "key" key)
-                                          (cons "fields" fields))))
+                                            (cons "key" key)
+                                            (cons "fields" fields))))
                           (mv key entry (1+ closing-brace-pos)))
                       (mv nil nil nil)))
                 (mv nil nil nil)))
@@ -479,7 +449,7 @@
   (declare (xargs :guard (stringp filename)
                   :stobjs state))
   (mv-let (contents state)
-    (read-file-as-string filename state)
+          (read-file-as-string filename state)
     (if (stringp contents)
         (mv (parse-bibtex-entries-simple contents) state)
       (mv nil state))))
