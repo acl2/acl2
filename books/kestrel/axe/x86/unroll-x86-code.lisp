@@ -683,7 +683,7 @@
                              print
                              print-base
                              untranslatep
-                             bvp ; whether to use new-style assumptions
+                             bvp ; whether to use new-style, BV-friendly assumptions
                              state)
   (declare (xargs :guard (and (lifter-targetp target)
                               ;; parsed-executable ; todo: add a guard (even if it's weak for now)
@@ -749,16 +749,17 @@
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil nil nil state))
        (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
-       (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
+       ;; (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
 
-                                        ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
-                                        ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
-                                        ;(acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
-                                        ))
-       (new-canonicalp (or new-style-elf-assumptionsp ; for now
+       ;;                                  ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
+       ;;                                  ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
+       ;;                                  ;(acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
+       ;;                                  ))
+       (new-canonicalp (or (eq :elf-64 executable-type)
                            (eq :mach-o-64 executable-type)
+                           ;; (eq :pe-64 executable-type) ; todo, also need to change the assumptions
                            ))
-       (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw " Using new-style ELF64 assumptions.~%")  (cw " Not using new-style ELF64 assumptions.~%"))))
+       ;; (- (and (eq :elf-64 executable-type) (if new-style-elf-assumptionsp (cw " Using new-style ELF64 assumptions.~%")  (cw " Not using new-style ELF64 assumptions.~%"))))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
@@ -768,10 +769,9 @@
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
             input-assumption-vars
             state)
-        (if new-style-elf-assumptionsp
+        (if (eq :elf-64 executable-type)
             ;; New assumption generation behavior for ELF64:
-            (b* (;; (- (cw "Using new-style assumptions.~%"))
-                 ;; These are untranslated (in general):
+            (b* (;; These are untranslated (in general):
                  ((mv erp automatic-assumptions input-assumption-vars)
                   (if suppress-assumptions
                       (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
@@ -801,8 +801,7 @@
                   assumption-rules input-assumption-vars state))
           (if (eq :mach-o-64 executable-type) ; todo: combine with the case above?
               ;; New assumption generation behavior for MACHO64:
-              (b* (;; (- (cw "Using new-style assumptions.~%"))
-                   ;; These are untranslated (in general):
+              (b* (;; These are untranslated (in general):
                    ((mv erp automatic-assumptions input-assumption-vars)
                     (if suppress-assumptions
                         (mv nil nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
@@ -995,6 +994,7 @@
               ;;       assumption-rules input-assumption-vars state))
 
             ;; legacy case (generate some assumptions and then simplify them):
+            ;; Covers pe-64, pe-32, elf-32, and mach-o-32.
             ;; TODO: Why is assumptions-and-vars-for-inputs in this legacy case?
             (b* (;;todo: finish adding support for :entry-point!
                  ((when (and (eq :entry-point target)
@@ -1010,7 +1010,8 @@
                         (if (eq :pe-64 executable-type)
                             'text-offset ; todo: match what we do for other executable types
                           (if (or (eq :elf-32 executable-type)
-                                  (eq :elf-64 executable-type))
+                                  ;;(eq :elf-64 executable-type)
+                                  )
                               (if position-independentp 'text-offset `,(acl2::get-elf-text-section-address parsed-executable)) ; todo: think about the 32-bit case, esp wrt position independence
                             (if (eq :mach-o-32 executable-type)
                                 nil ; todo
@@ -1022,7 +1023,8 @@
                         (if (eq :pe-64 executable-type)
                             10000 ; fixme
                           (if (or (eq :elf-32 executable-type)
-                                  (eq :elf-64 executable-type))
+                                  ;;(eq :elf-64 executable-type)
+                                  )
                               (len (acl2::get-elf-code parsed-executable))
                             (if (eq :mach-o-32 executable-type)
                                 nil ; todo
@@ -1040,20 +1042,22 @@
                                                        text-offset
                                                        ',bvp
                                                        x86))
-                       (if (eq :elf-64 executable-type)
-                           `((standard-assumptions-elf-64 ',target
-                                                          ',parsed-executable
-                                                          ',stack-slots
-                                                          ,text-offset
-                                                          ',bvp
-                                                          x86))
+                       ;; (if (eq :elf-64 executable-type)
+                       ;;     `((standard-assumptions-elf-64 ',target
+                       ;;                                    ',parsed-executable
+                       ;;                                    ',stack-slots
+                       ;;                                    ,text-offset
+                       ;;                                    ',bvp
+                       ;;                                    x86))
                          (if (eq :mach-o-32 executable-type)
                              (gen-standard-assumptions-mach-o-32 target parsed-executable stack-slots)
                            (if (eq :pe-32 executable-type)
                                ;; todo: try without expanding this:
                                (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
                              ;;todo: add support for :elf-32
-                             (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))))))
+                             (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type)))
+                     ;  )
+                     )))
                  ;; Add 32-bit-specific assumptions:
                  (standard-assumptions (if 64-bitp
                                            standard-assumptions
@@ -1082,7 +1086,7 @@
                  (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
                  (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
                                                                        (print-terms-elided assumptions
-                                                                                           '((standard-assumptions-elf-64 t nil t t t t)
+                                                                                           '(;; (standard-assumptions-elf-64 t nil t t t t)
                                                                                              ;; (standard-assumptions-mach-o-64 t nil t t t t)
                                                                                              (standard-assumptions-pe-64 t nil t t t t)
                                                                                              (equal t nil)
