@@ -14,12 +14,12 @@
 (include-book "std/util/add-io-pairs" :dir :system)
 
 (acl2::merge-io-pairs
- dm::primep
- (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system))
+  dm::primep
+  (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system))
 
 (acl2::merge-io-pairs
- dm::primep
- (include-book "projects/bls12-377-curves/primes/bls12-377-prime" :dir :system))
+  dm::primep
+  (include-book "projects/bls12-377-curves/primes/bls12-377-prime" :dir :system))
 
 (include-book "std/strings/decimal" :dir :system)
 
@@ -27,20 +27,20 @@
 (include-book "std/strings/pretty" :dir :system)
 
 (local
- (include-book "kestrel/alists-light/assoc-equal" :dir :system)
- )
+  (include-book "kestrel/alists-light/assoc-equal" :dir :system)
+  )
 
 ; These should be in std/lists without a backchain limit
 (local
- (defthmd iff-consp-when-true-listp
-     (implies (true-listp x)
-              (iff (consp x) x)))
- )
+  (defthmd iff-consp-when-true-listp
+    (implies (true-listp x)
+             (iff (consp x) x)))
+  )
 (local
- (defthmd true-listp-of-cdr
-     (implies (true-listp l)
-              (true-listp (cdr l))))
- )
+  (defthmd true-listp-of-cdr
+    (implies (true-listp l)
+             (true-listp (cdr l))))
+  )
 
 (defmacro fp1 () '(primes::bn-254-group-prime))
 (defmacro fp2 () '(primes::bls12-377-scalar-field-prime))
@@ -56,14 +56,14 @@
   (declare (xargs :measure (nfix (- exp-to exp-from))))
   (if (or (not (natp exp-from)) (not (natp exp-to)) (>= exp-from exp-to))
       nil
-      (cons (list (pfield::add (pfield::pow 2 exp-from fp) (mod addend fp) fp)
-                  (if (zerop addend)
-                      (str::cat "2^" (str::int-to-dec-string exp-from))
-                      (str::cat "(2^" (str::int-to-dec-string exp-from) ")"
-                                (if (= addend 1) "+1"
-                                    (if (= addend -1) "-1"
-                                        "error")))))
-            (powers-of-2-and-strings fp (+ 1 exp-from) exp-to addend))))
+    (cons (list (pfield::add (pfield::pow 2 exp-from fp) (mod addend fp) fp)
+                (if (zerop addend)
+                    (str::cat "2^" (str::int-to-dec-string exp-from))
+                  (str::cat "(2^" (str::int-to-dec-string exp-from) ")"
+                            (if (= addend 1) "+1"
+                              (if (= addend -1) "-1"
+                                "error")))))
+          (powers-of-2-and-strings fp (+ 1 exp-from) exp-to addend))))
 
 ;; returns a list of pairs like
 ;; (21888242871839275222246405745257275088548364400416034343698204186575808495586 "-(2^5)+1")
@@ -77,14 +77,14 @@
   (declare (xargs :measure (nfix (- exp-to exp-from))))
   (if (or (not (natp exp-from)) (not (natp exp-to)) (>= exp-from exp-to))
       nil
-      (cons (list (pfield::add (pfield::neg (pfield::pow 2 exp-from fp) fp) (mod addend fp) fp)
-                  (if (zerop addend)
-                      (str::cat "-(2^" (str::int-to-dec-string exp-from) ")")
-                      (str::cat "-(2^" (str::int-to-dec-string exp-from) ")"
-                                (if (= addend 1) "+1"
-                                    (if (= addend -1) "-1"
-                                        "error")))))
-            (negative-powers-of-2-and-strings fp (+ 1 exp-from) exp-to addend))))
+    (cons (list (pfield::add (pfield::neg (pfield::pow 2 exp-from fp) fp) (mod addend fp) fp)
+                (if (zerop addend)
+                    (str::cat "-(2^" (str::int-to-dec-string exp-from) ")")
+                  (str::cat "-(2^" (str::int-to-dec-string exp-from) ")"
+                            (if (= addend 1) "+1"
+                              (if (= addend -1) "-1"
+                                "error")))))
+          (negative-powers-of-2-and-strings fp (+ 1 exp-from) exp-to addend))))
 
 (defun small-halves-and-strings (fp)
   (declare (xargs :guard (member fp (list (fp1) (fp2)))))
@@ -107,14 +107,14 @@
   (declare (xargs :measure (nfix (- exp-to exp-from))))
   (if (or (not (natp exp-from)) (not (natp exp-to)) (>= exp-from exp-to))
       nil
-      (let ((pow (pfield::pow 2 exp-from fp)))
-        ;; this can't happen, but the prover doesn't know that
-        (if (= pow 0) (list 0 "error")
-            (cons (list (pfield::add (pfield::inv pow fp) (mod addend fp) fp)
-                        (if (zerop addend)
-                            (str::cat "1/2^" (str::int-to-dec-string exp-from))
-                            (str::cat "1+(1/2^" (str::int-to-dec-string exp-from) ")")))
-                  (powers-of-1/2-and-strings fp (+ 1 exp-from) exp-to addend))))))
+    (let ((pow (pfield::pow 2 exp-from fp)))
+      ;; this can't happen, but the prover doesn't know that
+      (if (= pow 0) (list 0 "error")
+        (cons (list (pfield::add (pfield::inv pow fp) (mod addend fp) fp)
+                    (if (zerop addend)
+                        (str::cat "1/2^" (str::int-to-dec-string exp-from))
+                      (str::cat "1+(1/2^" (str::int-to-dec-string exp-from) ")")))
+              (powers-of-1/2-and-strings fp (+ 1 exp-from) exp-to addend))))))
 
 ;;
 ;; Returns a list of pairs like when addend is 0:
@@ -133,53 +133,53 @@
   (declare (xargs :measure (nfix (- exp-to exp-from))))
   (if (or (not (natp exp-from)) (not (natp exp-to)) (>= exp-from exp-to))
       nil
-      (let ((pow (pfield::pow 2 exp-from fp)))
-        ;; this can't happen, but the prover doesn't know that
-        (if (= pow 0) (list 0 "error")
-            (cons (list (pfield::sub (mod addend fp) (pfield::inv pow fp) fp)
-                        (if (zerop addend)
-                            (str::cat "-1/2^" (str::int-to-dec-string exp-from))
-                            (str::cat "1-(1/2^" (str::int-to-dec-string exp-from) ")")))
-                  (negative-powers-of-1/2-and-strings fp (+ 1 exp-from) exp-to addend))))))
+    (let ((pow (pfield::pow 2 exp-from fp)))
+      ;; this can't happen, but the prover doesn't know that
+      (if (= pow 0) (list 0 "error")
+        (cons (list (pfield::sub (mod addend fp) (pfield::inv pow fp) fp)
+                    (if (zerop addend)
+                        (str::cat "-1/2^" (str::int-to-dec-string exp-from))
+                      (str::cat "1-(1/2^" (str::int-to-dec-string exp-from) ")")))
+              (negative-powers-of-1/2-and-strings fp (+ 1 exp-from) exp-to addend))))))
 
 ;;Calculate constants outside the function
 (defconst *nums-to-strings-fp1*
   (append
-   ;; Display all numbers of the form 2^n, (2^n)+1, (2^n)-1, like that,
-   ;; for 11 <= n < 254.
-   (powers-of-2-and-strings (fp1) 11 254 0)
-   (powers-of-2-and-strings (fp1) 11 254 1)
-   (powers-of-2-and-strings (fp1) 11 254 -1)
-   ;; Similarly for -(2^n), -(2^n)+1, -(2^n)-1
-   (negative-powers-of-2-and-strings (fp1) 11 254 0)
-   (negative-powers-of-2-and-strings (fp1) 11 254 1)
-   (negative-powers-of-2-and-strings (fp1) 11 254 -1)
-   ;; Display 1/2, 3/2, -1/2, -3/2 like that.
-   (small-halves-and-strings (fp1))
-   ;; Display 1/2^n , -1/2^n , 1-(1/2^n) , 1+(1/2^n) like that for 2 <= n < 254
-   (powers-of-1/2-and-strings (fp1) 2 254 0)
-   (negative-powers-of-1/2-and-strings (fp1) 2 254 0)
-   (powers-of-1/2-and-strings (fp1) 2 254 1)
-   (negative-powers-of-1/2-and-strings (fp1) 2 254 1)))
+    ;; Display all numbers of the form 2^n, (2^n)+1, (2^n)-1, like that,
+    ;; for 11 <= n < 254.
+    (powers-of-2-and-strings (fp1) 11 254 0)
+    (powers-of-2-and-strings (fp1) 11 254 1)
+    (powers-of-2-and-strings (fp1) 11 254 -1)
+    ;; Similarly for -(2^n), -(2^n)+1, -(2^n)-1
+    (negative-powers-of-2-and-strings (fp1) 11 254 0)
+    (negative-powers-of-2-and-strings (fp1) 11 254 1)
+    (negative-powers-of-2-and-strings (fp1) 11 254 -1)
+    ;; Display 1/2, 3/2, -1/2, -3/2 like that.
+    (small-halves-and-strings (fp1))
+    ;; Display 1/2^n , -1/2^n , 1-(1/2^n) , 1+(1/2^n) like that for 2 <= n < 254
+    (powers-of-1/2-and-strings (fp1) 2 254 0)
+    (negative-powers-of-1/2-and-strings (fp1) 2 254 0)
+    (powers-of-1/2-and-strings (fp1) 2 254 1)
+    (negative-powers-of-1/2-and-strings (fp1) 2 254 1)))
 
 (defconst *nums-to-strings-fp2*
   (append
-   ;; Display all numbers of the form 2^n, (2^n)+1, (2^n)-1, like that,
-   ;; for 11 <= n < 254.
-   (powers-of-2-and-strings (fp2) 11 254 0)
-   (powers-of-2-and-strings (fp2) 11 254 1)
-   (powers-of-2-and-strings (fp2) 11 254 -1)
-   ;; Similarly for -(2^n), -(2^n)+1, -(2^n)-1
-   (negative-powers-of-2-and-strings (fp2) 11 254 0)
-   (negative-powers-of-2-and-strings (fp2) 11 254 1)
-   (negative-powers-of-2-and-strings (fp2) 11 254 -1)
-   ;; Display 1/2, 3/2, -1/2, -3/2 like that.
-   (small-halves-and-strings (fp2))
-   ;; Display 1/2^n , -1/2^n , 1-(1/2^n) , 1+(1/2^n) like that for 2 <= n < 254
-   (powers-of-1/2-and-strings (fp2) 2 254 0)
-   (negative-powers-of-1/2-and-strings (fp2) 2 254 0)
-   (powers-of-1/2-and-strings (fp2) 2 254 1)
-   (negative-powers-of-1/2-and-strings (fp2) 2 254 1)))
+    ;; Display all numbers of the form 2^n, (2^n)+1, (2^n)-1, like that,
+    ;; for 11 <= n < 254.
+    (powers-of-2-and-strings (fp2) 11 254 0)
+    (powers-of-2-and-strings (fp2) 11 254 1)
+    (powers-of-2-and-strings (fp2) 11 254 -1)
+    ;; Similarly for -(2^n), -(2^n)+1, -(2^n)-1
+    (negative-powers-of-2-and-strings (fp2) 11 254 0)
+    (negative-powers-of-2-and-strings (fp2) 11 254 1)
+    (negative-powers-of-2-and-strings (fp2) 11 254 -1)
+    ;; Display 1/2, 3/2, -1/2, -3/2 like that.
+    (small-halves-and-strings (fp2))
+    ;; Display 1/2^n , -1/2^n , 1-(1/2^n) , 1+(1/2^n) like that for 2 <= n < 254
+    (powers-of-1/2-and-strings (fp2) 2 254 0)
+    (negative-powers-of-1/2-and-strings (fp2) 2 254 0)
+    (powers-of-1/2-and-strings (fp2) 2 254 1)
+    (negative-powers-of-1/2-and-strings (fp2) 2 254 1)))
 
 ;; Generate the nums-to-strings data structure for the given prime.
 ;; PRIME should be one of the supported primes (currently fp1 and fp2).
@@ -194,11 +194,11 @@
 (in-theory (disable (:e nums-to-strings)))
 
 (defthm alistp-of-nums-to-strings-fp1
-    (alistp (nums-to-strings (fp1)))
+  (alistp (nums-to-strings (fp1)))
   :hints (("Goal" :in-theory (enable nums-to-strings))))
 
 (defthm alistp-of-nums-to-strings-fp2
-    (alistp (nums-to-strings (fp2)))
+  (alistp (nums-to-strings (fp2)))
   :hints (("Goal" :in-theory (enable nums-to-strings))))
 
 ;generalized predicate for alist format of nums-to-strings
@@ -229,7 +229,7 @@
   (declare (xargs :guard (and (natp fp) (< 1 fp) (integerp x))))
   (if (> x (/ fp 2))
       (str::int-to-dec-string (- x fp))
-      nil))
+    nil))
 
 (defun p1cs-coefficient (fp term)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
@@ -241,18 +241,17 @@
     (let ((pair (assoc (first term) nums-to-strings-for-prime)))
       (if pair
           (second pair)
-          ;; Next try p1cs-negative
-          (let ((possible-negative (p1cs-negative fp (first term))))
-            (or possible-negative
-                ;; Otherwise just print the integer normally
-                (str::int-to-dec-string (first term))))))))
+        ;; Next try p1cs-negative
+        (let ((possible-negative (p1cs-negative fp (first term))))
+          (or possible-negative
+              ;; Otherwise just print the integer normally
+              (str::int-to-dec-string (first term))))))))
 ;;  TODO: try Dave Greve's minimal fraction code (ACL2 Workshop 2020).
 ;;  Does it work for small negative fractions?
 
-
 (defthm p1cs-neg-string
-    (implies (p1cs-negative fp x)
-             (stringp (p1cs-negative fp x))))
+  (implies (p1cs-negative fp x)
+           (stringp (p1cs-negative fp x))))
 
 ;these theorems become much more efficient
 (defthm stringp-of-nums-to-strings-fp1-values
@@ -272,16 +271,16 @@
       ;; This would be unsafe if the vars were not aleady unique
       ;; or did not have print-read equivalence.
       (str::cat (symbol-name (second term)))
-      (if (not (equal (second term) 1) ) ; (equal term '(quote 1))))
-          "error"
-          "" ; we don't want to see 3.1 meaning "3 times 1", so leave off the var
-; named "1"
-          )))
+    (if (not (equal (second term) 1) ) ; (equal term '(quote 1))))
+        "error"
+      "" ; we don't want to see 3.1 meaning "3 times 1", so leave off the var
+         ; named "1"
+      )))
 
 (defthm p1cs-coefficient-returns-string
-    (implies (and (member fp (list (fp1) (fp2)))
-                  (sparse-vector-elementp term))
-             (stringp (p1cs-coefficient fp term)))
+  (implies (and (member fp (list (fp1) (fp2)))
+                (sparse-vector-elementp term))
+           (stringp (p1cs-coefficient fp term)))
   :hints (("Goal" :in-theory (e/d (nums-to-strings)
                                   (p1cs-negative assoc-equal)))))
 
@@ -293,33 +292,33 @@
   (let ((coeff-string (p1cs-coefficient fp term))
         (var-or-empty (p1cs-var term)))
     (str::cat
-     (if (equal "" var-or-empty)
-         ;; This means it is the pseudo-var 1,
-         ;; so we just print the coefficient, no dot or var
-         coeff-string
-         (if (equal coeff-string "1")
-             ""
-             (if (equal coeff-string "-1")
-                 "-"
-                 (str::cat coeff-string "."))))
-     var-or-empty)))
+      (if (equal "" var-or-empty)
+          ;; This means it is the pseudo-var 1,
+          ;; so we just print the coefficient, no dot or var
+          coeff-string
+        (if (equal coeff-string "1")
+            ""
+          (if (equal coeff-string "-1")
+              "-"
+            (str::cat coeff-string "."))))
+      var-or-empty)))
 
 ;; print the rest of an r1cs sparse vector
 (defun p1cs-sv-rest (fp sv)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
                               (sparse-vectorp sv))))
   (if (atom sv) ""
-      (let* ((term (first sv))
-             (printed-term (p1cs-term fp term))
-             (operator-and-printed-term
-              (if (and (< 0 (length printed-term))
-                       (equal #\- (char printed-term 0)))
-                  (str::cat " - "
-                            (subseq printed-term 1 (length printed-term)))
-                  (str::cat " + " printed-term))))
-        (str::cat
-         operator-and-printed-term
-         (p1cs-sv-rest fp (rest sv))))))
+    (let* ((term (first sv))
+           (printed-term (p1cs-term fp term))
+           (operator-and-printed-term
+             (if (and (< 0 (length printed-term))
+                      (equal #\- (char printed-term 0)))
+                 (str::cat " - "
+                           (subseq printed-term 1 (length printed-term)))
+               (str::cat " + " printed-term))))
+      (str::cat
+        operator-and-printed-term
+        (p1cs-sv-rest fp (rest sv))))))
 
 ;; print a r1cs sparse vector
 ;; (R1CS::A (coeff var) (coeff var) ..)
@@ -327,10 +326,10 @@
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
                               (sparse-vectorp sv))))
   (if (atom sv) ""
-      (let ((term (first sv)))
-        (str::cat
-         (p1cs-term fp term)
-         (p1cs-sv-rest fp (rest sv))))))
+    (let ((term (first sv)))
+      (str::cat
+        (p1cs-term fp term)
+        (p1cs-sv-rest fp (rest sv))))))
 
 ;; Note, changing the following margin using
 ;; !>:redef
@@ -360,28 +359,28 @@
         (c-string (let ((c-constraint (r1cs-constraint->c constraint)))
                     (if (null c-constraint)
                         "0"
-                        (str::cat "(" (p1cs-sv fp c-constraint) ")")))))
+                      (str::cat "(" (p1cs-sv fp c-constraint) ")")))))
     (if (> (+ (length a-string) 3 (length b-string))
            (p1cs1-right-margin))
         ;; If a+b overflow, put each of a,b,c on its own line
         (str::cat a-string (string #\Newline)
                   "  * " b-string (string #\Newline)
                   "  = " c-string)
-        (if (> (+ (length a-string) 3 (length b-string) 3 (length c-string))
-               (p1cs1-right-margin))
-            ;; If the whole thing overflows but not a+b, just put c on its own line
-            (str::cat a-string " * " b-string (string #\Newline)
-                      "  = " c-string)
-            ;; Otherwise just use one line
-            (str::cat a-string " * " b-string " = " c-string)))))
+      (if (> (+ (length a-string) 3 (length b-string) 3 (length c-string))
+             (p1cs1-right-margin))
+          ;; If the whole thing overflows but not a+b, just put c on its own line
+          (str::cat a-string " * " b-string (string #\Newline)
+                    "  = " c-string)
+        ;; Otherwise just use one line
+        (str::cat a-string " * " b-string " = " c-string)))))
 
 (defun p1csn (fp constraints)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
                               (r1cs-constraint-listp constraints))))
   (if (atom constraints)
       nil
-      (cons (p1cs1 fp (car constraints))
-            (p1csn fp (cdr constraints)))))
+    (cons (p1cs1 fp (car constraints))
+          (p1csn fp (cdr constraints)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -392,15 +391,15 @@
   (declare (xargs :guard (sparse-vectorp lc)))
   (if (atom lc)
       0
-      (let ((term (first lc)))
-        (if (equal (second term) 1)
-            ;; return coefficient
-            (first term)
-            (lc-constant-term (cdr lc))))))
+    (let ((term (first lc)))
+      (if (equal (second term) 1)
+          ;; return coefficient
+          (first term)
+        (lc-constant-term (cdr lc))))))
 
 (defthm lc-constant-term-result-is-integer
-    (implies (sparse-vectorp lc)
-             (integerp (lc-constant-term lc))))
+  (implies (sparse-vectorp lc)
+           (integerp (lc-constant-term lc))))
 
 ;; This should be moved to the ACL2 community books
 ;; in acl2/books/kestrel/crypto/r1cs/sparse/r1cs.lisp
@@ -417,22 +416,22 @@
   (declare (xargs :guard (sparse-vectorp lc)))
   (if (atom lc)
       nil
-      (let ((term (first lc)))
-        (if (symbolp (second term))
-            term
-            (lc-first-var-term (rest lc))))))
+    (let ((term (first lc)))
+      (if (symbolp (second term))
+          term
+        (lc-first-var-term (rest lc))))))
 
 (defthm lc-first-var-term-result-is-term-or-nil
-    (b* ((term  (lc-first-var-term lc)))
-      (implies (and (sparse-vectorp lc)
-                    term)
-               (lc-termp term)))
+  (b* ((term  (lc-first-var-term lc)))
+    (implies (and (sparse-vectorp lc)
+                  term)
+             (lc-termp term)))
   :hints (("Goal" :in-theory (enable lc-first-var-term lc-termp)))
   )
 
 (defthmd true-listp-of-lc-first-var-term
-    (implies (sparse-vectorp lc)
-             (true-listp (lc-first-var-term lc)))
+  (implies (sparse-vectorp lc)
+           (true-listp (lc-first-var-term lc)))
   :hints (("Goal" :in-theory (enable lc-first-var-term lc-termp)))
   )
 
@@ -508,12 +507,12 @@
            (if (and var1 var2
                     (equal var1 var2))
                var1
-               (let ((var1 (bit-1-lc-var fp lc-a))
-                     (var2 (bit-0-lc-var lc-b)))
-                 (if (and var1 var2
-                          (equal var1 var2))
-                     var1
-                     nil)))))))
+             (let ((var1 (bit-1-lc-var fp lc-a))
+                   (var2 (bit-0-lc-var lc-b)))
+               (if (and var1 var2
+                        (equal var1 var2))
+                   var1
+                 nil)))))))
 
 ; In case we need a T/NIL predicate
 (defun bit-constraint-p (fp constraint)
@@ -529,10 +528,10 @@
                               (r1cs-constraint-listp constraints))))
   (if (atom constraints)
       nil
-      (if (bit-constraint-p fp (car constraints))
-          (p1csn-less-bitconstraints fp (cdr constraints))
-          (cons (p1cs1 fp (car constraints))
-                (p1csn-less-bitconstraints fp (cdr constraints))))))
+    (if (bit-constraint-p fp (car constraints))
+        (p1csn-less-bitconstraints fp (cdr constraints))
+      (cons (p1cs1 fp (car constraints))
+            (p1csn-less-bitconstraints fp (cdr constraints))))))
 
 ; Mostly superseded by bit-vars-and-non-bit-constraints,
 ; but if you just want the vars without the constraints,
@@ -542,10 +541,10 @@
                               (r1cs-constraint-listp constraints))))
   (if (endp constraints)
       nil
-      (let ((var (bit-constraint-var fp (car constraints))))
-        (if (null var)
-            (vars-constrained-to-be-bits fp (cdr constraints))
-            (cons var (vars-constrained-to-be-bits fp (cdr constraints)))))))
+    (let ((var (bit-constraint-var fp (car constraints))))
+      (if (null var)
+          (vars-constrained-to-be-bits fp (cdr constraints))
+        (cons var (vars-constrained-to-be-bits fp (cdr constraints)))))))
 
 ; Separates list of constraints into list of bit vars and list of non-bit constraints.
 ; Will be:
@@ -563,7 +562,7 @@
         (bit-vars-and-non-bit-constraints fp (rest constraints))))
     (if (null maybe-bit-var)
         (mv rest-bit-vars (cons first-constraint rest-non-bit-constraints))
-        (mv (cons maybe-bit-var rest-bit-vars) rest-non-bit-constraints))))
+      (mv (cons maybe-bit-var rest-bit-vars) rest-non-bit-constraints))))
 
 ; Output all the constraints to the console, in order.
 (defun p1cs-all (fp constraints)
@@ -571,8 +570,8 @@
                               (r1cs-constraint-listp constraints))))
   (if (atom constraints)
       nil
-      (b* ((- (cw!+ "~s0~%" (p1cs1 fp (car constraints)))))
-        (p1cs-all fp (cdr constraints)))))
+    (b* ((- (cw!+ "~s0~%" (p1cs1 fp (car constraints)))))
+      (p1cs-all fp (cdr constraints)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -585,14 +584,14 @@
                               (natp next-pos))))
   (if (endp char-list)
       nil
-      (if (member (car char-list) *digits*)
-          next-pos
-          (position-if-digit (cdr char-list) (+ next-pos 1)))))
+    (if (member (car char-list) *digits*)
+        next-pos
+      (position-if-digit (cdr char-list) (+ next-pos 1)))))
 
 (defthm position-if-digit-bounds
-    (implies (position-if-digit char-list next-pos)
-             (<= (position-if-digit char-list next-pos)
-                 (+ next-pos (len char-list))))
+  (implies (position-if-digit char-list next-pos)
+           (<= (position-if-digit char-list next-pos)
+               (+ next-pos (len char-list))))
   :rule-classes ((:linear :trigger-terms ((position-if-digit char-list next-pos)))))
 
 (defun bit-var-base-and-num (bit-var)
@@ -602,15 +601,15 @@
   ;; Otherwise return nil.
   (if (or (null bit-var) (not (symbolp bit-var)))
       nil
-      (let* ((base-name (symbol-name bit-var))
-             (chars (acl2::explode base-name))
-             (first-digit-pos (position-if-digit chars 0)))
-        (and (natp first-digit-pos)
-             (> first-digit-pos 0)
-             (let ((num (str::strval (subseq base-name first-digit-pos (length base-name)))))
-               (if num
-                   (list (subseq base-name 0 first-digit-pos) num)
-                   nil))))))
+    (let* ((base-name (symbol-name bit-var))
+           (chars (acl2::explode base-name))
+           (first-digit-pos (position-if-digit chars 0)))
+      (and (natp first-digit-pos)
+           (> first-digit-pos 0)
+           (let ((num (str::strval (subseq base-name first-digit-pos (length base-name)))))
+             (if num
+                 (list (subseq base-name 0 first-digit-pos) num)
+               nil))))))
 
 (defun bit-var-range-starting-with (starting-base-and-num last-num bit-vars)
   (declare (xargs :guard (and (true-listp starting-base-and-num)
@@ -625,7 +624,7 @@
        ((acl2::when (endp bit-vars))
         (if (= start-num last-num)
             (mv (concatenate 'string base (str::nat-to-dec-string start-num)) nil) ; back to the original var
-            (mv (concatenate 'string base (str::nat-to-dec-string start-num) ".." base (str::nat-to-dec-string last-num)) nil)))
+          (mv (concatenate 'string base (str::nat-to-dec-string start-num) ".." base (str::nat-to-dec-string last-num)) nil)))
        (next-bit-var (car bit-vars))
        (next-base-and-num (bit-var-base-and-num next-bit-var))
        ((acl2::when (or (null next-base-and-num)
@@ -633,7 +632,7 @@
                         (not (equal (+ 1 last-num) (second next-base-and-num)))))
         (if (= start-num last-num)
             (mv (concatenate 'string base (str::nat-to-dec-string start-num)) bit-vars)
-            (mv (concatenate 'string base (str::nat-to-dec-string start-num) ".." base (str::nat-to-dec-string last-num)) bit-vars))))
+          (mv (concatenate 'string base (str::nat-to-dec-string start-num) ".." base (str::nat-to-dec-string last-num)) bit-vars))))
     (bit-var-range-starting-with starting-base-and-num (+ last-num 1) (cdr bit-vars))))
 
 ; TODO: move remaining code to logic mode
@@ -641,35 +640,35 @@
 
 ;lemmas
 (defthm len-of-bit-var-range-starting-with
-    (<= (len (mv-nth 1 (bit-var-range-starting-with x y bit-vars)))
-        (len bit-vars))
+  (<= (len (mv-nth 1 (bit-var-range-starting-with x y bit-vars)))
+      (len bit-vars))
   :rule-classes :linear)
 
 (defthm len-of-bit-var-base-and-num
-    (implies (bit-var-base-and-num bit-var)
-             (equal (len (bit-var-base-and-num bit-var)) 2)))
+  (implies (bit-var-base-and-num bit-var)
+           (equal (len (bit-var-base-and-num bit-var)) 2)))
 
 (defthm car-of-bit-var-base-and-num-is-string
-    (implies (bit-var-base-and-num bit-var)
-             (stringp (car (bit-var-base-and-num bit-var)))))
+  (implies (bit-var-base-and-num bit-var)
+           (stringp (car (bit-var-base-and-num bit-var)))))
 
 (defthm cadr-of-bit-var-base-and-num-is-natp
-    (implies (bit-var-base-and-num bit-var)
-             (natp (cadr (bit-var-base-and-num bit-var)))))
+  (implies (bit-var-base-and-num bit-var)
+           (natp (cadr (bit-var-base-and-num bit-var)))))
 
 (defthm mv-nth-1-of-bit-var-range-starting-with-is-true-listp
-    (implies (true-listp bit-vars)
-             (true-listp (mv-nth 1 (bit-var-range-starting-with starting-base-and-num last-num bit-vars)))))
+  (implies (true-listp bit-vars)
+           (true-listp (mv-nth 1 (bit-var-range-starting-with starting-base-and-num last-num bit-vars)))))
 
 (defun bit-var-ranges (bit-vars)
   (declare (xargs :guard (true-listp bit-vars)
                   :measure (len bit-vars)
                   :hints (("Goal" :in-theory (disable
-                                              bit-var-range-starting-with
-                                              bit-var-base-and-num)))
+                                               bit-var-range-starting-with
+                                               bit-var-base-and-num)))
                   :guard-hints (("Goal" :in-theory (disable
-                                                    bit-var-range-starting-with
-                                                    bit-var-base-and-num)))))
+                                                     bit-var-range-starting-with
+                                                     bit-var-base-and-num)))))
   (b* (((acl2::when (endp bit-vars)) nil)
        (base-and-num (bit-var-base-and-num (car bit-vars)))
        ((acl2::when (null base-and-num))
@@ -678,9 +677,9 @@
               (bit-var-ranges (cdr bit-vars))))
        ((mv range-string rest-bit-vars)
         (bit-var-range-starting-with
-         base-and-num
-         (second base-and-num) ; the last of the range so far
-         (cdr bit-vars))))
+          base-and-num
+          (second base-and-num) ; the last of the range so far
+          (cdr bit-vars))))
     (cons range-string
           (bit-var-ranges rest-bit-vars))))
 
@@ -695,7 +694,7 @@
          (comma-separated-ranges (concatenate-bit-var-ranges ranges)))
     (if (equal comma-separated-ranges "")
         "No bit constraints."
-        (concatenate 'string "These variables have bit constraints: " comma-separated-ranges))))
+      (concatenate 'string "These variables have bit constraints: " comma-separated-ranges))))
 
 ; A user-interface-level function that outputs to the console.
 ; Mention the variables that have bit constraints;
@@ -712,7 +711,6 @@
        (- (cw!+ "~s0~%" (bit-vars-message bit-vars)))
        (- (cw "Non-bit constraints:~%")))
     (p1cs-all fp non-bit-constraints)))
-
 
 ;;Possible test cases
 
