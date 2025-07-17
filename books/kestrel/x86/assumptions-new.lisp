@@ -703,10 +703,11 @@
     (elf64-regions-to-load-aux program-header-table (len all-bytes) all-bytes nil)))
 
 ;; Returns (mv erp regions).
-(defthm memory-regionsp-of-mv-nth-1-of-elf64-regions-to-load
-  (implies (acl2::parsed-elfp parsed-elf)
-           (memory-regionsp (mv-nth 1 (elf64-regions-to-load parsed-elf))))
-  :hints (("Goal" :in-theory (enable elf64-regions-to-load))))
+(local
+  (defthm memory-regionsp-of-mv-nth-1-of-elf64-regions-to-load
+    (implies (acl2::parsed-elfp parsed-elf)
+             (memory-regionsp (mv-nth 1 (elf64-regions-to-load parsed-elf))))
+    :hints (("Goal" :in-theory (enable elf64-regions-to-load)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
