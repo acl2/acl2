@@ -401,11 +401,11 @@
               ;; Keep looking for the next @
               (find-next-bibtex-entry str (1+ at-pos)))))))))
 
-;this guard verification proof is very slow
 (defun parse-bibtex-entries-from-positions (str positions)
   "Parse BibTeX entries starting at the given positions"
   (declare (xargs :guard (and (stringp str)
-                              (nat-listp positions))))
+                              (nat-listp positions))
+                  :guard-hints (("Goal" :in-theory (disable parse-single-bibtex-entry))))) ;make guard proof faster
   (if (endp positions)
       nil
     (if (<= (car positions) (length str))  ; Explicit bounds check
