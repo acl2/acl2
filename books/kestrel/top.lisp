@@ -23,6 +23,7 @@
 (include-book "bv/top")
 (in-theory (disable <-of-*-of-constant-and-constant <-of-constant-and-*-of-constant)) ; avoid theory-invariant errors in books that include this book
 (include-book "auto-termination/top") ; omits some books (see file for why)
+(include-book "bibtex/xdoc-generation")
 (include-book "bitcoin/top")
 (include-book "c/top")
 (merge-io-pairs
