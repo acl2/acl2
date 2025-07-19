@@ -144,7 +144,7 @@
                "(eval-after-load 'cl-indent"
                "  '(put 'if 'common-lisp-indent-function 2))"))
     (xdoc::li "Ensure that parentheses are balanced. Usually, books will fail
-               to certify if the are imbalanced, but some Lisps may be overly
+               to certify if they are imbalanced, but some Lisps may be overly
                forgiving in this respect. If you have the @(csee emacs) plugin
                loaded, you can use @('M-x find-unbalanced-parentheses') to look
                for such issues."))
