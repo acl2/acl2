@@ -16,6 +16,7 @@
 (include-book "simpadd0")
 (include-book "simpadd0-doc")
 (include-book "specialize")
+(include-book "specialize-doc")
 (include-book "split-fn")
 (include-book "split-fn-doc")
 (include-book "split-all-gso")

@@ -65,7 +65,7 @@
           for disambiguation of functions of the same name with internal
           linkage. Eventually, a @(':target-filepath') keyword argument will be
           introduced to accommodate this case. Until then, the transformation
-          will apply to all function of the specified name."))
+          will apply to all functions of the specified name."))
      (xdoc::desc
        "@(':new-fn')"
        (xdoc::p
