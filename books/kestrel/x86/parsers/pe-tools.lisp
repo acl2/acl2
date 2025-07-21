@@ -33,6 +33,10 @@
 (defund get-pe-section (section-name parsed-pe)
   (get-pe-section-aux section-name (get-pe-sections parsed-pe)))
 
+;; numbering starts at 1
+(defund get-numbered-pe-section (section-num parsed-pe)
+  (nth (+ -1 section-num) (get-pe-sections parsed-pe)))
+
 ;; Returns the section-info (an alist).
 (defund get-pe-text-section (parsed-pe)
   (get-pe-section ".text" parsed-pe))
@@ -45,6 +49,13 @@
 
 (defund get-pe-section-rva (section-name parsed-pe)
   (let* ((section-info (get-pe-section section-name parsed-pe))
+         (header (lookup-eq-safe :header section-info))
+         (section-rva (lookup-eq-safe :virtual-address header)))
+    section-rva))
+
+(defund get-numbered-pe-section-rva (section-num parsed-pe)
+  (let* ((section (get-numbered-pe-section section-num parsed-pe))
+         (section-info (cdr section))
          (header (lookup-eq-safe :header section-info))
          (section-rva (lookup-eq-safe :virtual-address header)))
     section-rva))
@@ -112,3 +123,30 @@
 
 (defun pe-cpu-type (parsed-pe)
   (lookup-eq-safe :machine (lookup-eq-safe :coff-file-header parsed-pe)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund subroutine-address-pe-64 (subroutine-name parsed-pe)
+  (b* ((symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe))
+       ((when (eq :none symbol-table))
+        (er hard? 'subroutine-address-pe-64 "No symbol table present."))
+       (symbol-record (acl2::lookup-pe-symbol subroutine-name symbol-table))
+       ((when (not symbol-record))
+        (er hard? 'subroutine-address-pe-64 "Can't find ~x0 in symbol table." subroutine-name))
+       (value (lookup-eq-safe :value symbol-record))
+       (section-number (lookup-eq-safe :section-number symbol-record))
+       (section-address (get-numbered-pe-section-rva section-number parsed-pe)))
+    (+ section-address value)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun get-all-symbols-from-pe-symbol-table (symbol-table acc)
+  (if (endp symbol-table)
+      (reverse acc)
+    (let ((entry (first symbol-table)))
+      (get-all-symbols-from-pe-symbol-table (rest symbol-table)
+                                            (cons (acl2::lookup-eq-safe :name entry)
+                                                  acc)))))
+
+(defun get-all-pe-symbols (parsed-pe)
+  (get-all-symbols-from-pe-symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe) nil))

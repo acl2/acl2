@@ -22,6 +22,7 @@
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/bv/getbit-def" :dir :system)
 (include-book "kestrel/bv/logext-def" :dir :system)
@@ -635,32 +636,41 @@
          ((when erp) (mv erp nil bytes)))
         (parse-pe-section-headers (+ -1 number-of-sections) file-type (cons section-header acc) bytes string-table-bytes))))
 
+;; Returns (mv erp new-acc).
 ;; todo: continue adding and verifying guards from this point
 (defun parse-section (section-header all-bytes len-all-bytes acc)
   ;; (declare (xargs :guard (and (alistp section-header)
   ;;                             (byte-listp all-bytes)
   ;;                             (equal len-all-bytes (len all-bytes))
   ;;                             (alistp acc))))
-  (let* ((name (lookup-eq-safe :name section-header))
-         (size-of-raw-data (lookup-eq-safe :size-of-raw-data section-header))
-         (pointer-to-raw-data (lookup-eq-safe :pointer-to-raw-data section-header))
-         (raw-data (if (> (+ size-of-raw-data pointer-to-raw-data) len-all-bytes)
-                       (prog2$ (cw "ERROR: Not enough bytes for the section ~x0 (start: ~x1, length: ~x2, total bytes: ~x3).~%"
-                                   name pointer-to-raw-data size-of-raw-data len-all-bytes)
-                               nil ;:not-enough-bytes
-                               )
-                     (take size-of-raw-data (nthcdr pointer-to-raw-data all-bytes))))
-         (section-info (acons :header section-header ;TODO: inline the fields here?
-                              (acons :raw-data raw-data
-                                     (acons :raw-data-as-string (bytes-to-printable-string raw-data)
-                                            nil)))))
-    (acons name section-info acc)))
+  (b* ((name (lookup-eq-safe :name section-header))
+       (size-of-raw-data (lookup-eq-safe :size-of-raw-data section-header))
+       (pointer-to-raw-data (lookup-eq-safe :pointer-to-raw-data section-header))
+       (virtual-size (lookup-eq-safe :virtual-size section-header))
+       ((when (> (+ size-of-raw-data pointer-to-raw-data) len-all-bytes))
+        (er hard? 'parse-section "Not enough bytes for the section ~x0 (start: ~x1, length: ~x2, total bytes: ~x3).~%"
+            name pointer-to-raw-data size-of-raw-data len-all-bytes)
+        (mv :not-enough-bytes nil))
+       (raw-data (if (<= virtual-size size-of-raw-data) ; size-of-raw-data may be greater since it is rounded up
+                     (take virtual-size (nthcdr pointer-to-raw-data all-bytes))
+                   ;; need to pad with zeros:
+                   (append (take size-of-raw-data (nthcdr pointer-to-raw-data all-bytes))
+                           (repeat (- virtual-size size-of-raw-data) 0))))
+       (section-info (acons :header section-header ;TODO: inline the fields here?
+                            (acons :raw-data raw-data
+                                   (acons :raw-data-as-string (bytes-to-printable-string raw-data)
+                                          nil)))))
+    (mv nil (acons name section-info acc))))
 
+;; Returns (mv erp sections).
 (defun parse-sections (section-headers acc all-bytes len-all-bytes)
   (if (endp section-headers)
-      (reverse acc)
-    (let ((acc (parse-section (first section-headers) all-bytes len-all-bytes acc)))
-      (parse-sections (rest section-headers) acc all-bytes len-all-bytes))))
+      (mv nil (reverse acc))
+    (mv-let (erp acc)
+      (parse-section (first section-headers) all-bytes len-all-bytes acc)
+      (if erp
+          (mv erp nil)
+        (parse-sections (rest section-headers) acc all-bytes len-all-bytes)))))
 
 ;; Returns (mv erp string)
 ;bytes has length 8
@@ -831,7 +841,8 @@
        (- (cw "~x0 bytes after section headers.~%" (len bytes)))
        ;; (pe (acons :section-headers section-headers pe)) ;; the header is now included in the parsed data for its section
        ;; Here we stop processing the bytes in order, instead looking up each section's start in all-bytes:
-       (sections (parse-sections section-headers nil all-bytes (len all-bytes)))
+       ((mv erp sections) (parse-sections section-headers nil all-bytes (len all-bytes)))
+       ((when erp) (mv erp nil))
        (pe (acons :sections sections pe))
        ;;TODO: What other data do we need to parse?
        ) ;todo: Can we somehow check that all bytes are used?

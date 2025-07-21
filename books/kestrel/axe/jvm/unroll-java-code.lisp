@@ -32,7 +32,7 @@
 (include-book "rewriter-jvm")
 (include-book "../make-evaluator") ; for make-acons-nest, todo
 (include-book "../supporting-functions")
-;(include-book "../rewriter") ; for simp-dag ; todo: use rewriter-jvm
+;(include-book "../rewriter") ; for simp-dag
 (include-book "../evaluator") ; for *axe-evaluator-functions* and dag-val-with-axe-evaluator
 (include-book "../prune-dag-approximately") ;brings in rewriter-basic
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
@@ -266,7 +266,6 @@
     (b* ((this-step-increment (this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
          (old-dag dag)
-         ;; todo: try using a function from rewriter-jvm here (see below) but need to support multiple rule-alists:
          (limits `((step-state-with-pc-and-call-stack-height-becomes-step-axe . ,steps-for-this-iteration)
                    (run-until-return-from-stack-height-opener-fast-axe . ,steps-for-this-iteration)))
          ;; ((mv erp dag-or-quotep state)
