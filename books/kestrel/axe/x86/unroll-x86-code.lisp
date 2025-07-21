@@ -628,7 +628,7 @@
           assumption-rule-alist
           (acl2::known-booleans (w state))
           nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
-          nil ; no-warn-ground-functions
+          *no-warn-ground-functions*
           nil ; don't memoize (avoids time spent making empty-memoizations)
           count-hits
           t   ; todo: warn just once
