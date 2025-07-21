@@ -790,7 +790,9 @@
                                               (acl2::parsed-elf-symbols parsed-executable)
                                             (if (eq :mach-o-64 executable-type)
                                                 (acl2::get-all-mach-o-symbols parsed-executable)
-                                              (er hard? 'test-functions-fn "Unsupported executable type: ~x0" executable-type)))))
+                                              (if (eq :pe-64 executable-type)
+                                                  (acl2::get-all-pe-symbols parsed-executable)
+                                                (er hard? 'test-functions-fn "Unsupported executable type: ~x0" executable-type))))))
                                     (append (acl2::strings-starting-with "test_" all-functions)
                                             (acl2::strings-starting-with "fail_test_" all-functions)))
                                 ;; The functions to test were given explicitly:
