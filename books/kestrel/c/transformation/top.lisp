@@ -19,6 +19,8 @@
 (include-book "specialize-doc")
 (include-book "split-fn")
 (include-book "split-fn-doc")
+(include-book "split-fn-when")
+(include-book "split-fn-when-doc")
 (include-book "split-all-gso")
 (include-book "split-all-gso-doc")
 (include-book "splitgso")

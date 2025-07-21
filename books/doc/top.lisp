@@ -378,7 +378,7 @@
 ;
 ; SETUP:
 ;
-;  (ld "doc.lisp")  ;; slow, takes a few minutes to get all the books loaded
+;  (ld "top.lisp")  ;; slow, takes a few minutes to get all the books loaded
 ;
 ; DEVELOPMENT LOOP: {
 ;
