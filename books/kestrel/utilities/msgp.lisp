@@ -1,6 +1,6 @@
 ; A book about the built-in function msgp
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
