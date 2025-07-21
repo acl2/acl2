@@ -36,26 +36,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ split-fn
-  :parents (transformation-tools)
-  :short "A C-to-C transformation to split a function in two."
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "This transformation takes the identifier of the function it is to split,
-       the name of the new function to be generated, and the location of the
-       split, represented as a natural number corresponding to the number of
-       block items in the function body before the split.")
-    (xdoc::p
-      "This transformation is a work in progress, and may fail in certain
-       cases. For instance, it may fail given variables which have been
-       declared but not yet initialized at the split point, or variables which
-       are passed by reference after the split point."))
-  :order-subtopics t
-  :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (std::make-define-config
   :no-function t)
 
@@ -75,13 +55,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (set-induction-depth-limit 1)
-
-  (fty::defomap ident-param-declon-map
-    :key-type ident
-    :val-type param-declon
-    :pred ident-param-declon-mapp))
+(fty::defomap ident-param-declon-map
+  :key-type ident
+  :val-type param-declon
+  :pred ident-param-declon-mapp)
 
 (defrulel ident-listp-of-keys-when-ident-param-declon-mapp
   (implies (ident-param-declon-mapp map)
