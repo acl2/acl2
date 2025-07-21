@@ -137,3 +137,16 @@
        (section-number (lookup-eq-safe :section-number symbol-record))
        (section-address (get-numbered-pe-section-rva section-number parsed-pe)))
     (+ section-address value)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun get-all-symbols-from-pe-symbol-table (symbol-table acc)
+  (if (endp symbol-table)
+      (reverse acc)
+    (let ((entry (first symbol-table)))
+      (get-all-symbols-from-pe-symbol-table (rest symbol-table)
+                                            (cons (acl2::lookup-eq-safe :name entry)
+                                                  acc)))))
+
+(defun get-all-pe-symbols (parsed-pe)
+  (get-all-symbols-from-pe-symbol-table (acl2::lookup-eq-safe :symbol-table parsed-pe) nil))
