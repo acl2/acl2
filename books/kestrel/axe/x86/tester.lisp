@@ -783,20 +783,25 @@
                                       ;; TODO: Think about this case:
                                       t))
                                 position-independent))
-       ;; We will test all functions whose names begin with test_ or fail_test_
        (function-name-strings (if (eq :all include-fns)
-                                  (if (eq :elf-64 executable-type)
-                                      (let ((all-functions (acl2::parsed-elf-symbols parsed-executable)))
-                                        (append (acl2::strings-starting-with "test_" all-functions)
-                                                (acl2::strings-starting-with "fail_test_" all-functions)))
-                                    (if (eq :mach-o-64 executable-type)
-                                        (let ((all-functions (acl2::get-all-mach-o-symbols parsed-executable)))
-                                          (append (acl2::strings-starting-with "_test_" all-functions)
-                                                  (acl2::strings-starting-with "_fail_test_" all-functions)))
-                                      (er hard? 'test-functions-fn "Unsupported executable type: ~x0" executable-type)))
+                                  ;; We will test all functions whose names begin with test_ or fail_test_ or _test_ or _fail_test_:
+                                  ;; Note that for MACH-O executables, the compiler prepends an underscore to function names.
+                                  (let ((all-functions
+                                          (if (eq :elf-64 executable-type)
+                                              (acl2::parsed-elf-symbols parsed-executable)
+                                            (if (eq :mach-o-64 executable-type)
+                                                (acl2::get-all-mach-o-symbols parsed-executable)
+                                              (if (eq :pe-64 executable-type)
+                                                  (acl2::get-all-pe-symbols parsed-executable)
+                                                (er hard? 'test-functions-fn "Unsupported executable type: ~x0" executable-type))))))
+                                    (append (acl2::strings-starting-with "test_" all-functions)
+                                            (acl2::strings-starting-with "fail_test_" all-functions)
+                                            (acl2::strings-starting-with "_test_" all-functions)
+                                            (acl2::strings-starting-with "_fail_test_" all-functions)))
                                 ;; The functions to test were given explicitly:
+                                ;; TODO: Should we require the underscore when referring to a mach-o function?
                                 (if (eq executable-type :mach-o-64)
-                                    ;; todo: why do we always have to add the underscore?
+                                    ;; todo: why do we have to add the underscore?
                                     (acl2::add-prefix-to-strings "_" include-fns)
                                   include-fns)))
        (assumption-alist (if (null assumptions)

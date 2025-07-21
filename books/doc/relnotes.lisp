@@ -2984,7 +2984,7 @@ specialization of @(tsee r1cs::verify-r1cs).")
    (xdoc::h4 (xdoc::seetopic "json::json" "JSON Library"))
 
    (xdoc::p
-    "This is a library about " (xdoc::ahref "json.org" "JSON") ".
+    "This is a library about " (xdoc::ahref "https://json.org" "JSON") ".
      It currently contains an initial abstract syntax of JSON,
      consisting of " (xdoc::seetopic "fty" "fixtypes") ";
      it also contains some initial operations on this abstract syntax,

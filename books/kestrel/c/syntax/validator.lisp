@@ -5199,8 +5199,8 @@
        the second piece of information is @('nil').
        The reason for having this second piece of information
        is to support the validation of "
-      (xdoc::ahref "GCC statement expressions"
-                   "https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html")
+      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html"
+                   "GCC statement expressions")
       ".")
      (xdoc::p
       "To validate a labeled statement,
