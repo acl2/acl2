@@ -348,23 +348,6 @@
                          (slice high1 mid1minus1 x)
                          (slice high2 mid2minus1 y)))))
 
-;only needed for axe
-(defthmd bvcat-equal-rewrite-constant-alt
-  (implies (and (syntaxp (and (quotep x)
-                              (quotep highsize)
-                              (quotep lowsize)))
-                (natp lowsize)
-                (natp highsize))
-           (equal (equal (bvcat highsize highval
-                                lowsize lowval)
-                         x)
-                  (and (unsigned-byte-p (+ lowsize highsize) x)
-                       (equal (bvchop lowsize x)
-                              (bvchop lowsize lowval))
-                       (equal (slice (+ -1 lowsize highsize)
-                                     lowsize x)
-                              (bvchop highsize highval))))))
-
 (defthmd bvcat-of-bvxor-and-bvxor-adjacent-bits-extra-left-assoc
   (implies (and (equal high1minus1 (+ -1 mid1))
                 (equal high2minus1 (+ -1 mid2))
