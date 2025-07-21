@@ -196,7 +196,7 @@ of proofs.")
 (defxdoc community
   :parents (top)
   :short "The ACL2 Community."
-  :long "<p>ACL2 has an active user community that welcomes new users.  There are several ways to get involved.</p>
+  :long "<p>ACL2 has an active user community that welcomes new users.  There are several ways to get involved and to get help with ACL2.</p>
 
  <h3>GitHub Project</h3>
  <p>ACL2 is developed via <a href=\"https://github.com/acl2/acl2\">the ACL2 GitHub project</a>, which also contains the ACL2 libraries maintained by the community (see @(see community-books)).  The GitHub repository is very active, with thousands of commits per year.  Users are invited to contribute new developments, in the form of new @(see books) (collections of definitions, proofs, etc.), so that the community can benefit from them.  See @(see how-to-contribute), and see @(see git-quick-start).  Problems with ACL2 or with books can be reported as <a href=\"https://github.com/acl2/acl2/issues\">GitHub Issues</a>.</p>
@@ -217,7 +217,7 @@ of proofs.")
  <p>The <a href=\"https://proofassistants.stackexchange.com/questions/tagged/acl2\">Proof Assistants Stack Exchange</a> has some questions and answers about ACL2, but the ACL2 Zulip (see above) and @('acl2-help') mailing list (see above, under Mailing Lists) are more popular.</p>")
 
 (defxdoc workshops
-  :parents (community)
+  :parents (community about-acl2)
   :short "The ACL2 Workshop Series."
   :long "<p>The ACL2 Workshop series consists of conferences that are held
  regularly, as listed below.</p>
