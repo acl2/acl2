@@ -25,10 +25,16 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (tau-system))))
 (set-induction-depth-limit 0)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/system/w" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::make-define-config
+  :no-function t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,6 +120,7 @@
              ((mv success new-params removed-param)
               (param-declon-list-remove-param-by-ident fundef.declor.direct.params target-param))
              ((unless success)
+              ;; TODO: use error-value-tuples
               (prog2$ (raise "Function ~x0 did not have a parameter ~x1"
                              target-fn
                              target-param)
@@ -140,7 +147,8 @@
         (mv nil (fundef-fix fundef)))
       :otherwise
       (prog2$ (raise "Function definition body is not a compound statement.")
-              (mv nil (fundef-fix fundef))))))
+              (mv nil (fundef-fix fundef)))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

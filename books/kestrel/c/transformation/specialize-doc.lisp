@@ -63,7 +63,7 @@
        (xdoc::p
          "This must be a symbol that is valid name for a new ACL2 constant."))
      (xdoc::desc
-       "@(:target)"
+       "@(':target')"
        (xdoc::p
          "A string denoting the identifier of the function which should be
           specialize.")
@@ -75,12 +75,12 @@
           introduced to accommodate this case. Until then, the transformation
           will apply to all functions of the specified name."))
      (xdoc::desc
-       "@(:param)"
+       "@(':param')"
        (xdoc::p
          "A string denoting the identifier of the function parameter which is
           to be specialized."))
      (xdoc::desc
-       "@(:const)"
+       "@(':const')"
        (xdoc::p
          "An @(tsee c$::exprp) which denotes the value that the @(':param')
           will be specialized to.")
