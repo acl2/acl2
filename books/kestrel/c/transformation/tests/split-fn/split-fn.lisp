@@ -25,15 +25,11 @@
   (c$::input-files :files ("test1.c")
                    :const *old*)
 
-  (defconst *new*
-    (b* (((mv er ensemble)
-          (split-fn-transunit-ensemble (c$::ident "foo")
-                                       (c$::ident "bar")
-                                       *old*
-                                       1)))
-      (if er
-          (cw "~@0" er)
-        ensemble)))
+  (split-fn *old*
+            *new*
+            :target "foo"
+            :new-fn "bar"
+            :split-point 1)
 
   (c$::output-files :const *new*
                     :path "new")
@@ -57,15 +53,11 @@ int foo(int y) {
   (c$::input-files :files ("test2.c")
                    :const *old*)
 
-  (defconst *new*
-    (b* (((mv er ensemble)
-          (split-fn-transunit-ensemble (c$::ident "add_and_sub_all")
-                                       (c$::ident "sub_all")
-                                       *old*
-                                       2)))
-      (if er
-          (cw "~@0" er)
-        ensemble)))
+  (split-fn *old*
+            *new*
+            :target "add_and_sub_all"
+            :new-fn "sub_all"
+            :split-point 2)
 
   (c$::output-files :const *new*
                     :path "new")
@@ -96,15 +88,11 @@ unsigned long add_and_sub_all(long arr[], unsigned int len) {
                    :process :parse
                    :const *old*)
 
-  (defconst *new*
-    (b* (((mv er ensemble)
-          (split-fn-transunit-ensemble (c$::ident "foo")
-                                       (c$::ident "baz")
-                                       *old*
-                                       1)))
-      (if er
-          (cw "~@0" er)
-        ensemble)))
+  (split-fn *old*
+            *new*
+            :target "foo"
+            :new-fn "baz"
+            :split-point 1)
 
   (c$::output-files :const *new*
                     :path "new")
@@ -131,15 +119,11 @@ int foo(int x) {
                    :process :parse
                    :const *old*)
 
-  (defconst *new*
-    (b* (((mv er ensemble)
-          (split-fn-transunit-ensemble (c$::ident "foo")
-                                       (c$::ident "baz")
-                                       *old*
-                                       1)))
-      (if er
-          (cw "~@0" er)
-        ensemble)))
+  (split-fn *old*
+            *new*
+            :target "foo"
+            :new-fn "baz"
+            :split-point 1)
 
   (c$::output-files :const *new*
                     :path "new")
@@ -166,15 +150,11 @@ int foo(int x) {
                    :process :parse
                    :const *old*)
 
-  (defconst *new*
-    (b* (((mv er ensemble)
-          (split-fn-transunit-ensemble (c$::ident "main")
-                                       (c$::ident "main_0")
-                                       *old*
-                                       2)))
-      (if er
-          (cw "~@0" er)
-        ensemble)))
+  (split-fn *old*
+            *new*
+            :target "main"
+            :new-fn "main_0"
+            :split-point 2)
 
   (c$::output-files :const *new*
                     :path "new")
