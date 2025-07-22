@@ -18,6 +18,7 @@
 
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -287,15 +288,13 @@
       for general equivalence. It may be sufficient to take an argument by
       reference when its address is taken in an expression of the new function
       body.)"))
-  :returns (mv er
-               (idents ident-listp
+  :returns (mv (idents ident-listp
                        "The identifiers appearing in argument @('decls')
                         corresponding to the function parameters (in the same
                         order).")
                (new-fn fundefp
                        "The new function definition."))
-  (b* (((reterr) nil (c$::irr-fundef))
-       ((mv idents -)
+  (b* (((mv idents -)
         (free-vars-block-item-list items nil))
        (decls (ident-param-declon-map-filter decls idents))
        (idents (omap::keys decls))
@@ -305,7 +304,7 @@
        (deref-subst (make-deref-subst idents))
        ((mv items -)
         (block-item-list-subst-free items deref-subst nil)))
-    (retok
+    (mv
       idents
       (make-fundef
         :spec spec
@@ -357,13 +356,13 @@
       parameters derived from this parameter declaration map. The previous
       function is truncated at this point, and a return statement added calling
       the newly split-out function."))
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (new-fn fundefp)
                (truncated-items block-item-listp))
   (b* ((items (block-item-list-fix items))
        ((reterr) (c$::irr-fundef) items)
        ((when (zp split-point))
-        (b* (((erp idents new-fn)
+        (b* (((mv idents new-fn)
               (abstract-fn new-fn-name spec pointers items decls)))
           (retok new-fn
                  (list
@@ -373,7 +372,7 @@
                          :fun (make-expr-ident :ident new-fn-name :info nil)
                          :args (map-address-ident-list idents))))))))
        ((when (endp items))
-        (reterr (msg "Bad split point specifier")))
+        (retmsg$ "Bad split point specifier"))
        (item (first items))
        (decls
         (block-item-case
@@ -403,7 +402,7 @@
    (split-point natp))
   :short "Transform a function definition, splitting it if matches the target
           identifier, or else leaving it untouched."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (fundef1 fundefp)
                (fundef2 fundef-optionp))
   (b* (((reterr) (c$::irr-fundef) nil)
@@ -443,7 +442,7 @@
    (extdecl extdeclp)
    (split-point natp))
   :short "Transform an external declaration."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (target-found booleanp)
                (extdecls extdecl-listp))
   (b* (((reterr) nil nil))
@@ -473,7 +472,7 @@
    (extdecls extdecl-listp)
    (split-point natp))
   :short "Transform a list of external declarations."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (new-extdecls extdecl-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
@@ -494,7 +493,7 @@
    (tunit transunitp)
    (split-point natp))
   :short "Transform a translation unit."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (new-tunit transunitp))
   (b* (((transunit tunit) tunit)
        ((mv er extdecls)
@@ -509,7 +508,7 @@
    (map filepath-transunit-mapp)
    (split-point natp))
   :short "Transform a filepath."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (new-map filepath-transunit-mapp
                         :hyp (filepath-transunit-mapp map)))
   (b* (((reterr) nil)
@@ -534,7 +533,7 @@
    (tunits transunit-ensemblep)
    (split-point natp))
   :short "Transform a translation unit ensemble."
-  :returns (mv er
+  :returns (mv (er? maybe-msgp)
                (new-tunits transunit-ensemblep))
   (b* (((transunit-ensemble tunits) tunits)
        ((mv er map)
@@ -557,7 +556,7 @@
    new-fn
    split-point
    (wrld plist-worldp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (tunits (transunit-ensemblep tunits))
                (const-new$ symbolp)
                (target$ identp)
@@ -567,20 +566,20 @@
   (b* (((reterr)
         (c$::irr-transunit-ensemble) nil (c$::irr-ident) (c$::irr-ident) 0)
        ((unless (symbolp const-old))
-        (reterr (msg "~x0 must be a symbol." const-old)))
+        (retmsg$ "~x0 must be a symbol." const-old))
        (tunits (acl2::constant-value const-old wrld))
        ((unless (transunit-ensemblep tunits))
-        (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
+        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
        ((unless (symbolp const-new))
-        (reterr (msg "~x0 must be a symbol." const-new)))
+        (retmsg$ "~x0 must be a symbol." const-new))
        ((unless (stringp target))
-        (reterr (msg "~x0 must be a string." target)))
+        (retmsg$ "~x0 must be a string." target))
        (target (ident target))
        ((unless (stringp new-fn))
-        (reterr (msg "~x0 must be a string." new-fn)))
+        (retmsg$ "~x0 must be a string." new-fn))
        (new-fn (ident new-fn))
        ((unless (natp split-point))
-        (reterr (msg "~x0 must be a natural number." split-point))))
+        (retmsg$ "~x0 must be a natural number." split-point)))
     (retok tunits const-new target new-fn split-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -595,7 +594,7 @@
    (target identp)
    (new-fn identp)
    (split-point natp))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
@@ -619,7 +618,7 @@
    new-fn
    split-point
    (wrld plist-worldp))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
@@ -640,7 +639,7 @@
    split-point
    (ctx ctxp)
    state)
-  :returns (mv er?
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (event pseudo-event-formp)
                state)
   :short "Event expansion of @(tsee split-fn)."
