@@ -25,11 +25,13 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (tau-system))))
 (set-induction-depth-limit 0)
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-(local (include-book "std/system/w" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/system/w" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -375,7 +377,11 @@
 
   (defret identp-of-dup-split-struct-type-extdecl.new2$
     (equal (identp new2$)
-           (identp new1$))))
+           (identp new1$)))
+
+  (defret dup-split-struct-type-extdecl.extdecls-type-prescription
+    (true-listp extdecls)
+    :rule-classes :type-prescription))
 
 (define dup-split-struct-type-extdecl-list
   ((original identp)
@@ -543,15 +549,12 @@
         (match-designors split-members desiniter.designors)))
     (if match
         (retok desiniters1 (cons desiniter desiniters2))
-      (retok (cons desiniter desiniters1) desiniters2))))
+      (retok (cons desiniter desiniters1) desiniters2)))
+  ///
 
-(defrulel split-desiniter-list.desiniter-list1-type-prescription
-  (true-listp (mv-nth 1 (split-desiniter-list split-members desiniters)))
-  :rule-classes :type-prescription)
-
-(defrulel split-desiniter-list.desiniter-list2-type-prescription
-  (true-listp (mv-nth 2 (split-desiniter-list split-members desiniters)))
-  :rule-classes :type-prescription)
+  (more-returns
+   (desiniter-list1 true-listp :rule-classes :type-prescription)
+   (desiniter-list2 true-listp :rule-classes :type-prescription)))
 
 (define split-struct-initer
   ((split-members ident-listp)
@@ -756,7 +759,11 @@
               (retok found
                      (decl-list-to-extdecl-list decls)))
       :empty (retok nil (list (extdecl-fix extdecl)))
-      :asm (retok nil (list (extdecl-fix extdecl))))))
+      :asm (retok nil (list (extdecl-fix extdecl)))))
+  ///
+
+  (more-returns
+   (extdecls true-listp :rule-classes :type-prescription)))
 
 (define split-gso-extdecl-list
   ((original identp)
@@ -869,88 +876,92 @@
 ;;   expressions are currently considered illegal. In the future, we should try
 ;;   to extract/resolve the left expression of the member access and handle it
 ;;   appropriately.
-(fty::deffold-map replace-field-access
-  :types #!c$(exprs/decls/stmts
-              fundef
-              extdecl
-              extdecl-list
-              transunit
-              filepath-transunit-map)
-  :extra-args
-  ((original identp)
-   (linkage c$::linkagep)
-   (new1 identp)
-   (new2 identp)
-   (split-members ident-listp))
-  :parents (splitgso-implementation)
-  :override
-  ((c$::expr
-     :ident
-     (b* ((original (ident-fix original))
-          (linkage (c$::linkage-fix linkage))
-          ((unless (equal expr.ident original))
-           (expr-fix c$::expr))
-          (ident-linkage
-            (c$::var-info->linkage
-              (c$::coerce-var-info expr.info)))
-          (- (and (equal linkage ident-linkage)
-                  (raise "Global struct object ~x0 occurs in illegal
-                          expression."
-                         original))))
-       (expr-fix c$::expr)))
-   (c$::expr
-     :member
-     (b* ((original (ident-fix original))
-          (linkage (c$::linkage-fix linkage))
-          (split-members (c$::ident-list-fix split-members))
-          (match
-            (expr-case
-              expr.arg
-              :ident (b* (((unless (equal expr.arg.ident original))
-                           nil)
-                          (ident-linkage
-                            (c$::var-info->linkage
-                              (c$::coerce-var-info expr.arg.info))))
-                       (equal linkage ident-linkage))
-              :otherwise nil))
-          ((unless match)
-           (make-expr-member
-             :arg (expr-replace-field-access
-                    expr.arg original linkage new1 new2 split-members)
-             :name expr.name)))
-       (make-expr-member
-         :arg (c$::make-expr-ident
-                :ident (if (member-equal expr.name split-members)
-                           new2
-                         new1)
-                :info nil)
-         :name expr.name)))
-   (c$::expr
-     ;; TODO: factor out member expr matching
-     :unary
-     (if (and (or (equal expr.op (c$::unop-address))
-                  (equal expr.op (c$::unop-sizeof)))
+(encapsulate ()
+  ;; TODO: something in deffold-map seems dependent on tau
+  (local (in-theory (enable (tau-system))))
+
+  (fty::deffold-map replace-field-access
+    :types #!c$(exprs/decls/stmts
+                fundef
+                extdecl
+                extdecl-list
+                transunit
+                filepath-transunit-map)
+    :extra-args
+    ((original identp)
+     (linkage c$::linkagep)
+     (new1 identp)
+     (new2 identp)
+     (split-members ident-listp))
+    :parents (splitgso-implementation)
+    :override
+    ((c$::expr
+       :ident
+       (b* ((original (ident-fix original))
+            (linkage (c$::linkage-fix linkage))
+            ((unless (equal expr.ident original))
+             (expr-fix c$::expr))
+            (ident-linkage
+              (c$::var-info->linkage
+                (c$::coerce-var-info expr.info)))
+            (- (and (equal linkage ident-linkage)
+                    (raise "Global struct object ~x0 occurs in illegal
+                            expression."
+                           original))))
+         (expr-fix c$::expr)))
+     (c$::expr
+       :member
+       (b* ((original (ident-fix original))
+            (linkage (c$::linkage-fix linkage))
+            (split-members (c$::ident-list-fix split-members))
+            (match
               (expr-case
                 expr.arg
-                :member (expr-case
-                          expr.arg
-                          :ident (b* ((original (ident-fix original))
-                                      (linkage (c$::linkage-fix linkage))
-                                      ((unless (equal expr.arg.ident original))
-                                       nil)
-                                      (ident-linkage
-                                        (c$::var-info->linkage
-                                          (c$::coerce-var-info expr.arg.info))))
-                                   (equal linkage ident-linkage))
-                          :otherwise nil)
+                :ident (b* (((unless (equal expr.arg.ident original))
+                             nil)
+                            (ident-linkage
+                              (c$::var-info->linkage
+                                (c$::coerce-var-info expr.arg.info))))
+                         (equal linkage ident-linkage))
                 :otherwise nil))
-         (raise "Global struct object ~x0 occurs in illegal expression."
-                original)
-       (make-expr-unary
-         :op expr.op
-         :arg (expr-replace-field-access
-                expr.arg original linkage new1 new2 split-members)
-         :info nil)))))
+            ((unless match)
+             (make-expr-member
+               :arg (expr-replace-field-access
+                      expr.arg original linkage new1 new2 split-members)
+               :name expr.name)))
+         (make-expr-member
+           :arg (c$::make-expr-ident
+                  :ident (if (member-equal expr.name split-members)
+                             new2
+                           new1)
+                  :info nil)
+           :name expr.name)))
+     (c$::expr
+       ;; TODO: factor out member expr matching
+       :unary
+       (if (and (or (equal expr.op (c$::unop-address))
+                    (equal expr.op (c$::unop-sizeof)))
+                (expr-case
+                  expr.arg
+                  :member (expr-case
+                            expr.arg
+                            :ident (b* ((original (ident-fix original))
+                                        (linkage (c$::linkage-fix linkage))
+                                        ((unless (equal expr.arg.ident original))
+                                         nil)
+                                        (ident-linkage
+                                          (c$::var-info->linkage
+                                            (c$::coerce-var-info expr.arg.info))))
+                                     (equal linkage ident-linkage))
+                            :otherwise nil)
+                  :otherwise nil))
+           (raise "Global struct object ~x0 occurs in illegal expression."
+                  original)
+         (make-expr-unary
+           :op expr.op
+           :arg (expr-replace-field-access
+                  expr.arg original linkage new1 new2 split-members)
+           :info nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

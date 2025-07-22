@@ -17,6 +17,8 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "centaur/fty/deftypes" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "std/system/constant-value" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
@@ -30,31 +32,17 @@
 (set-induction-depth-limit 0)
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ split-fn
-  :parents (transformation-tools)
-  :short "A C-to-C transformation to split a function in two."
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "This transformation takes the identifier of the function it is to split,
-       the name of the new function to be generated, and the location of the
-       split, represented as a natural number corresponding to the number of
-       block items in the function body before the split.")
-    (xdoc::p
-      "This transformation is a work in progress, and may fail in certain
-       cases. For instance, it may fail given variables which have been
-       declared but not yet initialized at the split point, or variables which
-       are passed by reference after the split point."))
-  :order-subtopics t
-  :default-parent t)
+(local (include-book "std/system/w" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::make-define-config
   :no-function t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-implementation split-fn
+  :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,13 +56,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(encapsulate ()
-  (set-induction-depth-limit 1)
-
-  (fty::defomap ident-param-declon-map
-    :key-type ident
-    :val-type param-declon
-    :pred ident-param-declon-mapp))
+(fty::defomap ident-param-declon-map
+  :key-type ident
+  :val-type param-declon
+  :pred ident-param-declon-mapp)
 
 (defrulel ident-listp-of-keys-when-ident-param-declon-mapp
   (implies (ident-param-declon-mapp map)
@@ -558,3 +543,128 @@
                                          tunits.unwrap
                                          split-point)))
     (mv er (transunit-ensemble map))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-input-processing split-fn)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-process-inputs
+  (const-old
+   const-new
+   target
+   new-fn
+   split-point
+   (wrld plist-worldp))
+  :returns (mv erp
+               (tunits (transunit-ensemblep tunits))
+               (const-new$ symbolp)
+               (target$ identp)
+               (new-fn$ identp)
+               (split-point natp))
+  :short "Process the inputs."
+  (b* (((reterr)
+        (c$::irr-transunit-ensemble) nil (c$::irr-ident) (c$::irr-ident) 0)
+       ((unless (symbolp const-old))
+        (reterr (msg "~x0 must be a symbol." const-old)))
+       (tunits (acl2::constant-value const-old wrld))
+       ((unless (transunit-ensemblep tunits))
+        (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
+       ((unless (symbolp const-new))
+        (reterr (msg "~x0 must be a symbol." const-new)))
+       ((unless (stringp target))
+        (reterr (msg "~x0 must be a string." target)))
+       (target (ident target))
+       ((unless (stringp new-fn))
+        (reterr (msg "~x0 must be a string." new-fn)))
+       (new-fn (ident new-fn))
+       ((unless (natp split-point))
+        (reterr (msg "~x0 must be a natural number." split-point))))
+    (retok tunits const-new target new-fn split-point)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-event-generation split-fn)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-gen-everything
+  ((tunits transunit-ensemblep)
+   (const-new symbolp)
+   (target identp)
+   (new-fn identp)
+   (split-point natp))
+  :returns (mv er?
+               (event pseudo-event-formp))
+  :short "Generate all the events."
+  (b* (((reterr) '(_))
+       ((erp tunits)
+        (split-fn-transunit-ensemble
+          target
+          new-fn
+          tunits
+          split-point))
+       (defconst-event
+         `(defconst ,const-new
+            ',tunits)))
+    (retok defconst-event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-process-inputs-and-gen-everything
+  (const-old
+   const-new
+   target
+   new-fn
+   split-point
+   (wrld plist-worldp))
+  :returns (mv er?
+               (event pseudo-event-formp))
+  :short "Process the inputs and generate the events."
+  (b* (((reterr) '(_))
+       ((erp tunits const-new target new-fn split-point)
+        (split-fn-process-inputs
+          const-old const-new target new-fn split-point wrld))
+       ((erp event)
+        (split-fn-gen-everything tunits const-new target new-fn split-point)))
+    (retok event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define split-fn-fn
+  (const-old
+   const-new
+   target
+   new-fn
+   split-point
+   (ctx ctxp)
+   state)
+  :returns (mv er?
+               (event pseudo-event-formp)
+               state)
+  :short "Event expansion of @(tsee split-fn)."
+  (b* (((mv erp event)
+        (split-fn-process-inputs-and-gen-everything
+          const-old const-new target new-fn split-point (w state)))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+    (value event)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection split-fn-macro-definition
+  :short "Definition of @(tsee split-fn)."
+  (defmacro split-fn
+    (const-old
+     const-new
+     &key
+     target
+     new-fn
+     split-point)
+    `(make-event (split-fn-fn ',const-old
+                              ',const-new
+                              ',target
+                              ',new-fn
+                              ',split-point
+                              'split-fn
+                              state))))

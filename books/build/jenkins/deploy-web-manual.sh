@@ -25,18 +25,13 @@ echo "NAGINATOR_BUILD_NUMBER is $NAGINATOR_BUILD_NUMBER" # The build number of t
 
 source $JENKINS_HOME/env.sh
 
-TARGET="regression-everything doc"
+TARGET="regression-everything"
 
 ACL2DIR=`pwd`
 
 if [ -z "$STARTJOB" ]; then
   echo "Setting STARTJOB to bash";
   STARTJOB='bash';
-fi
-
-if [ -z "$TARGET" ]; then
-  echo "Setting TARGET automatically";
-  TARGET='manual';
 fi
 
 if [ -z "$BOOK_PARALLELISM_LEVEL" ]; then
