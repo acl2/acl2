@@ -341,7 +341,7 @@
    (gcc booleanp)
    (ienv c$::ienvp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv er? ;; maybe-msgp
+  :returns (mv (er? maybe-msgp)
                (blacklist$ ident-setp)
                (tunits$ transunit-ensemblep))
   (transunit-ensemble-split-all-gso0 tunits
@@ -358,7 +358,7 @@
       (ienv c$::ienvp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-ensemble-annop tunits)
-     :returns (mv er? ;; maybe-msgp
+     :returns (mv (er? maybe-msgp)
                   (blacklist$ ident-setp)
                   ;; add annop
                   (tunits$ transunit-ensemblep))
@@ -442,7 +442,7 @@
    (gcc booleanp)
    (ienv c$::ienvp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv er? ;; maybe-msgp
+  :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
@@ -461,7 +461,7 @@
    gcc
    ienv
    (wrld plist-worldp))
-  :returns (mv erp ;; maybe-msgp
+  :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :parents (split-all-gso-implementation)
   :short "Process the inputs and generate the events."
