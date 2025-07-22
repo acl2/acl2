@@ -47,6 +47,8 @@
                 keyword-value-list-to-alist
                 lnfix
                 make-event-terse
+                maybe-msgp
+                msg$
                 nat
                 nat-list
                 nat-list-fix
@@ -57,6 +59,7 @@
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr
+                retmsg$
                 retok
                 string-optionp
                 table-alist+
