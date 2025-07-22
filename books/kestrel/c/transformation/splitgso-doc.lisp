@@ -16,7 +16,7 @@
 
 (defxdoc+ splitgso
   :parents (transformation-tools)
-  :short "A transformation to split a global struct object."
+  :short "A C-to-C transformation to split a global struct object."
   :long
   (xdoc::topstring
     (xdoc::evmac-section-intro

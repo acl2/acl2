@@ -136,6 +136,7 @@
                 (wrld (w state))
                 (formals (fn-formals fn wrld))
                 (non-executable (non-executablep fn wrld))
+                (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
                 ;; Chooses between defun, defund, defun-nx, etc.:
                 (defun-variant (defun-variant fn non-executable function-disabled state))
                 ;; TODO: Pull out the handling of declares into a utility:
@@ -191,6 +192,17 @@
                              declares)))
                 ;; Handle the :stobjs xarg:
                 (declares (set-stobjs-in-declares-to-match declares fn wrld))
+                ;; Handle the :type-prescription xarg:
+                (declares (mv-let (foundp type-prescription)
+                              (get-xarg-from-declares :type-prescription declares)
+                            (if (not foundp)
+                                declares
+                              (replace-xarg-in-declares
+                               :type-prescription
+                               (rename-functions-in-untranslated-term type-prescription
+                                                                      (acons fn new-fn nil) ; or use function-renaming?
+                                                                      state)
+                               declares))))
                 ;; TODO: What about irrelevant declares?  They need to be handled at a higher level, since they may depend on mut-rec partners.
                 ;; We should clear them out here and set them if needed in ,event-generator-name
                 ;; Here we actually make the change to the body:
@@ -207,7 +219,7 @@
                         (rename-functions-in-untranslated-term body
                                                                function-renaming
                                                                state)))
-                (new-fn (lookup-eq-safe fn function-renaming)) ;new name for this function
+
                 (defun `(,defun-variant ,new-fn ,formals
                           ,@declares
                           ,body))

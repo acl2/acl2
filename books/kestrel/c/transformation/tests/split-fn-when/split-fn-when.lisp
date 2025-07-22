@@ -10,12 +10,13 @@
 
 (in-package "C2C")
 
+(include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
 
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
 
-(include-book "../../specialize")
+(include-book "../../split-fn-when")
 (include-book "../utilities")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -24,24 +25,23 @@
   (c$::input-files :files ("test1.c")
                    :const *old*)
 
-  (specialize *old*
-              *new*
-              :target "foo"
-              :param "y"
-              :const (expr-const
-                       (c$::const-int
-                         (c$::make-iconst
-                           :core (c$::dec/oct/hex-const-dec 1)))))
+  (split-fn-when *old*
+                 *new*
+                 :triggers "bar")
 
   (c$::output-files :const *new*
                     :path "new")
 
   (assert-file-contents
     :file "new/test1.c"
-    :content "int foo(int z) {
-  int y = 1;
+    :content "void bar(int *);
+int foo_0(int *x, int *y) {
+  bar(&(*y));
+  return (*x) + (*y);
+}
+int foo(int y) {
   int x = 5;
-  return x + y - z;
+  return foo_0(&x, &y);
 }
 ")
 
@@ -53,25 +53,33 @@
   (c$::input-files :files ("test2.c")
                    :const *old*)
 
-  (specialize *old*
-              *new*
-              :target "foo"
-              :param "z"
-              :const (expr-const
-                       (c$::const-int
-                         (c$::make-iconst
-                           :core (c$::dec/oct/hex-const-dec 42)))))
+  (split-fn-when *old*
+                 *new*
+                 :triggers ("setuid" "fork"))
 
   (c$::output-files :const *new*
                     :path "new")
 
   (assert-file-contents
     :file "new/test2.c"
-    :content "int foo(int y) {
-  int z = 42;
+    :content "int setuid(int);
+int fork(void);
+int foo_0_0_0(int ***x, int ***y) {
+  setuid((*(*(*x))));
+  return (*(*(*x))) + (*(*(*y)));
+}
+int foo_0_0(int **x, int **y) {
+  fork();
+  return foo_0_0_0(&x, &y);
+}
+int foo_0(int *x, int *y) {
+  setuid((*y));
+  (*x) += 1;
+  return foo_0_0(&x, &y);
+}
+int foo(int y) {
   int x = 5;
-  z++;
-  return x + y - z;
+  return foo_0(&x, &y);
 }
 ")
 
