@@ -266,8 +266,8 @@ currently exist and has never been created by this function."
   (interactive)
   (setq latest-shell-number (+ 1 latest-shell-number))
   (while (get-buffer (concat "*shell-"
-			     (number-to-string latest-shell-number)
-			     "*"))
+                             (number-to-string latest-shell-number)
+                             "*"))
     (setq latest-shell-number (+ 1 latest-shell-number)))
   (shell (concat "*shell-"
                  (number-to-string latest-shell-number)
@@ -716,14 +716,14 @@ then also ignore case if that argument is positive, else do not ignore case."
 ; "meta-." on foo.
 (if (string< emacs-version "25")
     (fset 'compare-acl2-patch
-	  [?\C-x ?1 ?\C-n ?\C-e ?\C-\M-a ?\C-x ?2 ?\C-x ?o ?\C-f ?\C-\M-f ?\M-f
-		 ?\M-b ?\M-. return ?\C-x ?o ?\C-t ?w])
+          [?\C-x ?1 ?\C-n ?\C-e ?\C-\M-a ?\C-x ?2 ?\C-x ?o ?\C-f ?\C-\M-f ?\M-f
+                 ?\M-b ?\M-. return ?\C-x ?o ?\C-t ?w])
 ; The Meta-. command changed in Emacs 25.  The resulting Ctl-t p
 ; command can be a bit awkward when there is more than one definition,
 ; but it's very workable with a bit of persistence.
   (fset 'compare-acl2-patch
-	[?\C-x ?1 ?\C-n ?\C-e ?\C-\M-a ?\C-x ?2 ?\C-x ?o ?\C-f ?\C-\M-f ?\M-f
-	       ?\M-b ?\M-. ?\C-x ?o ?\C-t ?w]))
+        [?\C-x ?1 ?\C-n ?\C-e ?\C-\M-a ?\C-x ?2 ?\C-x ?o ?\C-f ?\C-\M-f ?\M-f
+               ?\M-b ?\M-. ?\C-x ?o ?\C-t ?w]))
 (define-key ctl-t-keymap "p" 'compare-acl2-patch)
 
 (defun my-lisp-mode-hook ()

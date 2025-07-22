@@ -70,6 +70,7 @@
     publications                        ;;; x
     mailing-lists                       ;;; y
     installation                        ;;; z
+    releases                            ;;; 0
   ))
 
 (defconst *home-page*
@@ -282,11 +283,11 @@ alt=\"FTP icon\" border=0></a>
 src=\"HTML/twarning.gif\" alt=\"tiny warning icon\"></a>
 </td>
 <td align=center valign=MIDDLE>
-<a href=\"HTML/other-releases.html\">
+<a href=\"~s0\">
 <img src=\"HTML/file04.gif\" alt=\"filing cabinet icon\" border=0></a>
 </td>
 <td>
-<a href=\"HTML/other-releases.html\">
+<a href=\"~s0\">
 Other Releases</a>
 </td>
 </tr>
