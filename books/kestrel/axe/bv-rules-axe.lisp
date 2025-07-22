@@ -2541,3 +2541,23 @@
            (equal (slice high low (bvor size x y))
                   (slice high low x)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced getbit-too-high))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;only needed for axe
+;rename
+(defthmd bvcat-equal-rewrite-constant-alt
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep highsize)
+                              (quotep lowsize)))
+                (natp lowsize)
+                (natp highsize))
+           (equal (equal (bvcat highsize highval
+                                lowsize lowval)
+                         x)
+                  (and (unsigned-byte-p (+ lowsize highsize) x)
+                       (equal (bvchop lowsize x)
+                              (bvchop lowsize lowval))
+                       (equal (slice (+ -1 lowsize highsize)
+                                     lowsize x)
+                              (bvchop highsize highval))))))
