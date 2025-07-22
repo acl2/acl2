@@ -112,9 +112,6 @@ cd $destdir/manual
 perl "$destdir/manual/xdata2sql.pl"
 perl "$destdir/manual/xdata2sql4seo.pl"
 
-# Configure the XDATAGET parameter.
-printf "var XDATAGET = \"/cgi-bin/manuals/$destdirsub/xdataget.pl\";\nvar XDOCTITLE = \"XDOC\";\n" > "$destdir/manual/config.js"
-
 # Copy books/system/doc/rendered-doc-combined.lsp
 echo "cp -p $books/system/doc/rendered-doc-combined.lsp $destdir/"
 cp -p $books/system/doc/rendered-doc-combined.lsp $destdir/
