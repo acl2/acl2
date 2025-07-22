@@ -15,6 +15,7 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 (include-book "kestrel/fty/deffold-map" :dir :system)
 (include-book "kestrel/fty/string-option" :dir :system)
+(include-book "kestrel/utilities/messages" :dir :system)
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
@@ -69,23 +70,22 @@
 (define get-gso-linkage-from-valid-table
   ((ident identp)
    (table c$::valid-tablep))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (linkage c$::linkagep)
                (tag? ident-optionp))
   (b* (((reterr) (c$::irr-linkage) nil)
        (scopes (c$::valid-table->scopes table))
        ((when (endp scopes))
-        (reterr (msg "Ill-formed validation table, no scope found")))
+        (retmsg$ "Ill-formed validation table, no scope found"))
        ((unless (endp (rest scopes)))
-        (reterr (msg "Ill-formed validation table, more than one scope found:
-                      ~x0"
-                     scopes)))
+        (retmsg$ "Ill-formed validation table, more than one scope found: ~x0"
+                 scopes))
        (scope (first scopes))
        (ord (c$::valid-scope->ord scope))
        (lookup (assoc-equal ident ord))
        ((unless lookup)
-        (reterr (msg "Global struct object ~x0 not in the validation table."
-                     ident)))
+        (retmsg$ "Global struct object ~x0 not in the validation table."
+                 ident))
        (ord-info (cdr lookup)))
     (c$::valid-ord-info-case
       ord-info
@@ -94,22 +94,22 @@
                 ord-info.type
                 :struct ;; TODO also check defstatus isn't undefined?
                         (retok ord-info.linkage ord-info.type.tag?)
-                :otherwise (reterr (msg "~x0 has type ~x1, not a struct type"
-                                        ident
-                                        ord-info.type)))
-      :otherwise (reterr (msg "~x0 is not an object." ident)))))
+                :otherwise (retmsg$ "~x0 has type ~x1, not a struct type"
+                                    ident
+                                    ord-info.type))
+      :otherwise (retmsg$ "~x0 is not an object." ident))))
 
 (define get-gso-filepath-linkage-search
   ((ident identp)
    (tunits filepath-transunit-mapp))
   :guard (c$::filepath-transunit-map-annop tunits)
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (filepath filepathp)
                (linkage c$::linkagep)
                (tag? ident-optionp))
   (b* (((reterr) (filepath "") (c$::irr-linkage) nil)
        ((when (omap::emptyp tunits))
-        (reterr (msg "Global struct object ~x0 does not exist." ident)))
+        (retmsg$ "Global struct object ~x0 does not exist." ident))
        (filepath (c$::filepath-fix (omap::head-key tunits)))
        (tunit (omap::head-val tunits))
        ((mv erp linkage tag?)
@@ -136,7 +136,7 @@
    (ident identp)
    (tunits transunit-ensemblep))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (filepath filepathp)
                (linkage c$::linkagep)
                (tag? ident-optionp))
@@ -147,9 +147,9 @@
        (lookup
          (omap::assoc filepath? unwrapped-tunits))
        ((unless lookup)
-        (reterr (msg "Provided filepath ~x0 does not exist in the translation
-                      unit ensemble."
-                     filepath?)))
+        (retmsg$ "Provided filepath ~x0 does not exist in the translation unit
+                  ensemble."
+                 filepath?))
        (tunit (cdr lookup))
        ((erp linkage tag?)
         (get-gso-linkage-from-valid-table
@@ -183,7 +183,7 @@
    (ident identp)
    (tunits transunit-ensemblep))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (struct-tag identp)
                (filepath filepathp)
                (linkage c$::linkagep))
@@ -191,7 +191,7 @@
        ((erp filepath linkage tag?)
         (get-gso-filepath-linkage filepath? ident tunits))
        ((unless tag?)
-        (reterr (msg "Tagless struct type is not supported."))))
+        (retmsg$ "Tagless struct type is not supported.")))
     (retok tag? filepath linkage)))
 
 (defruled assoc-of-get-gso-info.filepath?
@@ -210,30 +210,30 @@
 
 (define structdeclor-list-get-ident
   ((structdeclors structdeclor-listp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (ident identp))
   (b* (((reterr) (c$::irr-ident))
        ((when (endp structdeclors))
-        (reterr (msg "Syntax error: there should be at least one struct
-                      declarator in the struct declaration.")))
+        (retmsg$ "Syntax error: there should be at least one struct declarator
+                  in the struct declaration."))
        ((unless (endp (rest structdeclors)))
-        (reterr (msg "Multiple struct declarators in a single struct
-                      declaration are unsupported: ~x0"
-                     structdeclors)))
+        (retmsg$ "Multiple struct declarators in a single struct declaration
+                  are unsupported: ~x0"
+                 structdeclors))
        ((structdeclor structdeclor) (first structdeclors))
        ((when structdeclor.expr?)
-        (reterr (msg "Bit-field struct declarator is unsupported: ~x0"
-                     structdeclor.expr?)))
+        (retmsg$ "Bit-field struct declarator is unsupported: ~x0"
+                 structdeclor.expr?))
        ((unless structdeclor.declor?)
-        (reterr (msg "Syntax error: a non-bit-field struct declarator must have
-                      a declarator: ~x0"
-                     structdeclor))))
+        (retmsg$ "Syntax error: a non-bit-field struct declarator must have
+                  a declarator: ~x0"
+                 structdeclor)))
     (retok (declor->ident structdeclor.declor?))))
 
 (define structdecl-member-in-listp
   ((names ident-listp)
    (structdecl structdeclp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (yes/no booleanp
                        :rule-classes :type-prescription))
   (b* (((reterr) nil))
@@ -244,15 +244,15 @@
       :member (b* (((erp ident)
                     (structdeclor-list-get-ident structdecl.declor)))
                 (retok (and (member-equal ident names) t)))
-      :statassert (reterr (msg "Static assertion structure declaration
-                                unsupported: ~x0"
-                               structdecl.unwrap))
+      :statassert (retmsg$ "Static assertion structure declaration unsupported:
+                            ~x0"
+                           structdecl.unwrap)
       :empty (retok nil))))
 
 (define split-structdecl-list
   ((split-members ident-listp)
    (structdecls structdecl-listp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (structdecls1 structdecl-listp)
                (structdecls2 structdecl-listp))
   (b* (((reterr) nil nil)
@@ -281,7 +281,7 @@
    (blacklist ident-setp)
    (split-members ident-listp)
    (decl declp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
                (decls decl-listp))
@@ -352,7 +352,7 @@
    (blacklist ident-setp)
    (split-members ident-listp)
    (extdecl extdeclp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
                (extdecls extdecl-listp))
@@ -390,7 +390,7 @@
    (blacklist ident-setp)
    (split-members ident-listp)
    (extdecls extdecl-listp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
                (extdecls$ extdecl-listp))
@@ -435,7 +435,7 @@
    (blacklist ident-setp)
    (split-members ident-listp)
    (tunit transunitp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
                (tunit$ transunitp))
@@ -465,7 +465,7 @@
    (blacklist ident-setp)
    (split-members ident-listp)
    (map filepath-transunit-mapp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (new1$ ident-optionp)
                (new2$ ident-optionp)
                (map$ filepath-transunit-mapp))
@@ -512,31 +512,29 @@
 (define match-designors
   ((split-members ident-listp)
    (designors designor-listp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (match booleanp
                       :rule-classes :type-prescription))
   (b* (((reterr) nil)
        ((when (endp designors))
-        (reterr
-          (msg "Initializer elements without designations are unsupported.")))
+        (retmsg$ "Initializer elements without designations are unsupported."))
        ((unless (endp (rest designors)))
-        (reterr
-          (msg "Initializer element with mutiple designations is unuspported:
-                ~x0"
-               designors)))
+        (retmsg$ "Initializer element with mutiple designations is unsupported:
+                  ~x0"
+                 designors))
        (designor (first designors)))
     (designor-case
       designor
       ;; :sub case should be ill-typed, since this function should only be
       ;; called on objects with struct types (not array types).
-      :sub (reterr (msg "Array index initializer element is unsupported: ~x0"
-                        designor))
+      :sub (retmsg$ "Array index initializer element is unsupported: ~x0"
+                    designor)
       :dot (retok (and (member-equal designor.name split-members) t)))))
 
 (define split-desiniter-list
   ((split-members ident-listp)
    (desiniters desiniter-listp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (desiniter-list1 desiniter-listp)
                (desiniter-list2 desiniter-listp))
   (b* (((reterr) nil nil)
@@ -559,15 +557,15 @@
 (define split-struct-initer
   ((split-members ident-listp)
    (initer initerp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (initer-option1 initer-optionp)
                (initer-option2 initer-optionp))
   (b* (((reterr) nil nil))
     (initer-case
       initer
-      :single (reterr
-                (msg "Assignment expression initializers are unsupported: ~x0"
-                     initer.expr))
+      :single (retmsg$ "Assignment expression initializers are unsupported:
+                        ~x0"
+                       initer.expr)
       :list (b* (((erp elems1 elems2)
                   (split-desiniter-list split-members initer.elems))
                  (elems1 (desiniter-list-fix elems1))
@@ -626,7 +624,7 @@
   ((target identp)
    (split-members ident-listp)
    (initdeclor initdeclorp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                ;; TODO: is the generated type-prescription reasonable?
                (match booleanp
                       :rule-classes :type-prescription)
@@ -646,7 +644,7 @@
   ((target identp)
    (split-members ident-listp)
    (initdeclors initdeclor-listp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (match booleanp
                       :rule-classes :type-prescription)
                (initer-option1 initer-optionp)
@@ -657,9 +655,8 @@
        ((when (endp initdeclors))
         (retok nil nil nil))
        ((unless (endp (rest initdeclors)))
-        (reterr
-          (msg "Multiple initializer declarators are not supported: ~x0"
-               initdeclors))))
+        (retmsg$ "Multiple initializer declarators are not supported: ~x0"
+                 initdeclors)))
     (split-struct-initdeclor target
                              split-members
                              (first initdeclors))))
@@ -673,7 +670,7 @@
    (new2-type identp)
    (split-members ident-listp)
    (decl declp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (found booleanp
                       :rule-classes :type-prescription)
                (decls decl-listp))
@@ -738,7 +735,7 @@
    (new2-type identp)
    (split-members ident-listp)
    (extdecl extdeclp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (found booleanp
                       :rule-classes :type-prescription)
                (extdecls extdecl-listp))
@@ -774,7 +771,7 @@
    (new2-type identp)
    (split-members ident-listp)
    (extdecls extdecl-listp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (extdecls$ extdecl-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
@@ -813,7 +810,7 @@
    (new2-type identp)
    (split-members ident-listp)
    (tunit transunitp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (tunit$ transunitp))
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
@@ -838,7 +835,7 @@
    (new2-type identp)
    (split-members ident-listp)
    (map filepath-transunit-mapp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (map$ filepath-transunit-mapp))
   (b* (((reterr) nil)
        ((when (omap::emptyp map))
@@ -989,12 +986,12 @@
    (split-members ident-listp)
    (map filepath-transunit-mapp))
   :guard (omap::assoc filepath map)
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (map$ filepath-transunit-mapp))
   (b* (((reterr) nil)
        (map (c$::filepath-transunit-map-fix map))
        ((when (equal linkage (c$::linkage-none)))
-        (reterr (msg "Invalid struct object linkage: ~x0" linkage)))
+        (retmsg$ "Invalid struct object linkage: ~x0" linkage))
        (ident-blacklist (filepath-transunit-map-collect-idents map))
        (new-struct1 (or new-struct1 orig-struct))
        (new-struct2 (or new-struct2 orig-struct))
@@ -1011,7 +1008,7 @@
                         (not new-struct-tag2)))
               ;; Shouldn't happen; the AST is validated and the object is in
               ;; the validation table.
-              (reterr (msg "Could not find struct type.")))
+              (retmsg$ "Could not find struct type."))
              (ident-blacklist
                (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
              ((list new-struct1 new-struct2)
@@ -1050,7 +1047,7 @@
                   (not new-struct-tag2)))
         ;; Shouldn't happen; the AST is validated and the object is in
         ;; the validation table.
-        (reterr (msg "Could not find struct type.")))
+        (retmsg$ "Could not find struct type."))
        (ident-blacklist
          (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
        ((list new-struct1 new-struct2)
@@ -1089,7 +1086,7 @@
    (split-members ident-listp)
    (tunits transunit-ensemblep))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (tunits$ transunit-ensemblep))
   (b* (((reterr) (c$::transunit-ensemble-fix tunits))
        ((erp struct-tag filepath linkage)
@@ -1140,7 +1137,7 @@
                                  new-type2
                                  split-members
                                  (wrld plist-worldp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (tunits (and (transunit-ensemblep tunits)
                             (c$::transunit-ensemble-annop tunits)))
                (object-ident identp)
@@ -1163,42 +1160,43 @@
         nil
         nil)
        ((unless (symbolp const-old))
-        (reterr (msg "~x0 must be a symbol" const-old)))
+        (retmsg$ "~x0 must be a symbol" const-old))
        (tunits (acl2::constant-value const-old wrld))
        ((unless (transunit-ensemblep tunits))
-        (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
+        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
        ((unless (c$::transunit-ensemble-annop tunits))
-        (reterr (msg "~x0 must be an annotated with validation information." const-old)))
+        (retmsg$ "~x0 must be an annotated with validation information."
+                 const-old))
        ((unless (or (not object-filepath)
                     (stringp object-filepath)))
-        (reterr (msg "~x0 must be nil or a string" object-filepath)))
+        (retmsg$ "~x0 must be nil or a string" object-filepath))
        (object-filepath
          (and object-filepath
               (filepath object-filepath)))
        ((unless (stringp object-name))
-        (reterr (msg "~x0 must be a string" object-name)))
+        (retmsg$ "~x0 must be a string" object-name))
        (object-ident (c$::ident object-name))
        ((unless (or (stringp new-object1)
                     (not new-object1)))
-        (reterr (msg "~x0 must be a string or @('nil')" new-object1)))
+        (retmsg$ "~x0 must be a string or @('nil')" new-object1))
        (new-object1 (and new-object1 (c$::ident new-object1)))
        ((unless (or (stringp new-object2)
                     (not new-object2)))
-        (reterr (msg "~x0 must be a string or @('nil')" new-object2)))
+        (retmsg$ "~x0 must be a string or @('nil')" new-object2))
        (new-object2 (and new-object2 (c$::ident new-object2)))
        ((unless (or (stringp new-type1)
                     (not new-type1)))
-        (reterr (msg "~x0 must be a string or @('nil')" new-type1)))
+        (retmsg$ "~x0 must be a string or @('nil')" new-type1))
        (new-type1 (and new-type1 (c$::ident new-type1)))
        ((unless (or (stringp new-type2)
                     (not new-type2)))
-        (reterr (msg "~x0 must be a string or @('nil')" new-type2)))
+        (retmsg$ "~x0 must be a string or @('nil')" new-type2))
        (new-type2 (and new-type2 (c$::ident new-type2)))
        ((unless (string-listp split-members))
-        (reterr (msg "~x0 must be a string list" split-members)))
+        (retmsg$ "~x0 must be a string list" split-members))
        (split-members (ident-map split-members))
        ((unless (symbolp const-new))
-        (reterr (msg "~x0 must be a symbol" const-new))))
+        (retmsg$ "~x0 must be a symbol" const-new)))
     (retok tunits
            object-ident
            object-filepath
@@ -1226,7 +1224,8 @@
    (split-members ident-listp)
    (const-new symbolp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp (event pseudo-event-formp))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
        ((erp tunits)
@@ -1257,7 +1256,8 @@
    new-type2
    split-members
    (wrld plist-worldp))
-  :returns (mv erp (event pseudo-event-formp))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
   :parents (splitgso-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
@@ -1305,7 +1305,9 @@
                      split-members
                      (ctx ctxp)
                      state)
-  :returns (mv erp (event pseudo-event-formp) state)
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
+               (event pseudo-event-formp)
+               state)
   :parents (splitgso-implementation)
   :short "Event expansion of @(tsee splitgso)."
   (b* (((mv erp event)

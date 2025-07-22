@@ -17,6 +17,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
+(include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -252,7 +253,7 @@
    param
    const
    (wrld plist-worldp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (tunits (transunit-ensemblep tunits))
                (const-new$ symbolp)
                (target$ identp)
@@ -266,20 +267,20 @@
         (c$::irr-ident)
         (c$::irr-expr))
        ((unless (symbolp const-old))
-        (reterr (msg "~x0 must be a symbol." const-old)))
+        (retmsg$ "~x0 must be a symbol." const-old))
        (tunits (acl2::constant-value const-old wrld))
        ((unless (transunit-ensemblep tunits))
-        (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
+        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
        ((unless (symbolp const-new))
-        (reterr (msg "~x0 must be a symbol." const-new)))
+        (retmsg$ "~x0 must be a symbol." const-new))
        ((unless (stringp target))
-        (reterr (msg "~x0 must be a string." target)))
+        (retmsg$ "~x0 must be a string." target))
        (target (ident target))
        ((unless (stringp param))
-        (reterr (msg "~x0 must be a string." param)))
+        (retmsg$ "~x0 must be a string." param))
        (param (ident param))
        ((unless (exprp const))
-        (reterr (msg "~x0 must be a C expression." ))))
+        (retmsg$ "~x0 must be a C expression." const)))
     (retok tunits const-new target param const)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -311,7 +312,7 @@
    param
    const
    (wrld plist-worldp))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
@@ -331,7 +332,7 @@
    const
    (ctx ctxp)
    state)
-  :returns (mv er?
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (event pseudo-event-formp)
                state)
   :short "Event expansion of @(tsee specialize)."
