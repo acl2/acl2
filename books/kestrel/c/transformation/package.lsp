@@ -35,6 +35,7 @@
                  impossible
                  index-of
                  packn-pos
+                 maybe-msgp
                  maybe-pseudo-event-formp
                  pseudo-event-formp
                  pseudo-event-form-list
@@ -42,6 +43,7 @@
                  pos
                  pos-fix
                  reterr
+                 retmsg$
                  retok
                  symbol-list
                  std::defret-mutual)))
