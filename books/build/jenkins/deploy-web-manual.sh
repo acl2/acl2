@@ -3,7 +3,8 @@
 ################################################################################
 
 # Build the manual and deploy to the website.
-# Adapted from books/build/jenkins/build-single.sh and bin/make-fancy-manual.sh
+# Adapted from bin/make-fancy-manual.sh, with some segments from
+# books/build/jenkins/build-single.sh as well.
 #
 # Author: Grant Jurgensen (grant@kestrel.edu)
 
@@ -18,58 +19,7 @@ echo " -- Running in `pwd`"
 echo " -- Running on `hostname`"
 echo " -- PATH is $PATH"
 
-# Print some vars that should be set for retried builds:
-echo "NAGINATOR_COUNT is $NAGINATOR_COUNT" # How many times the build was rescheduled.
-echo "NAGINATOR_MAXCOUNT is $NAGINATOR_MAXCOUNT" # How many times the build can be rescheduled. This can be 0 if manually rescheduled.
-echo "NAGINATOR_BUILD_NUMBER is $NAGINATOR_BUILD_NUMBER" # The build number of the failed build causing the reschedule.
-
 source $JENKINS_HOME/env.sh
-
-TARGET="regression-everything"
-
-ACL2DIR=`pwd`
-
-if [ -z "$STARTJOB" ]; then
-  echo "Setting STARTJOB to bash";
-  STARTJOB='bash';
-fi
-
-if [ -z "$BOOK_PARALLELISM_LEVEL" ]; then
-  echo "Setting BOOK_PARALLELISM_LEVEL to 1";
-  BOOK_PARALLELISM_LEVEL='1';
-fi
-
-LISP=`which ccl`
-echo "Using LISP = $LISP"
-echo "Making TARGET = $TARGET"
-echo "Using STARTJOB = $STARTJOB"
-echo "Using MAKEOPTS = $MAKEOPTS"
-
-echo "Making ACL2"
-$STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP"
-
-
-echo "Building the manual."
-cd books
-
-
-# See https://serverfault.com/questions/786981/adjust-oom-score-at-process-launch
-# for OOM Killer discussion, which includes:
-# Because it's in parentheses, it launches a subshell, sets the OOM score for
-# the shell (in this case to 1000, to make it extremely likely to get killed in
-# an OOM situation), and then the exec replaces the subshell with the intended
-# program while leaving the new OOM score intact. It also won't affect the OOM
-# score of the parent process/shell, as everything is happening inside the
-# subshell.
-NICENESS=13
-OOM_KILLER_ADJUSTMENT=500 # medium value for the build-single case
-# We don't use --keep-going here, so that emails about failures get sent ASAP:
-CMD="nice -n $NICENESS make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLELISM_LEVEL -l $BOOK_PARALLELISM_LEVEL $MAKEOPTS USE_QUICKLISP=1"
-CMD_WITH_OOM_KILLER_ADJUSTMENT="(echo ${OOM_KILLER_ADJUSTMENT} > /proc/self/oom_score_adj && exec ${CMD})"
-$STARTJOB -c "${CMD_WITH_OOM_KILLER_ADJUSTMENT}"
-
-
-echo "Build was successful."
 
 ################################################################################
 
@@ -109,11 +59,9 @@ cp -pr $books/doc/manual $destdir/manual
 echo "cd $destdir/manual"
 cd $destdir/manual
 
+# General databases
 perl "$destdir/manual/xdata2sql.pl"
 perl "$destdir/manual/xdata2sql4seo.pl"
-
-# Configure the XDATAGET parameter.
-printf "var XDATAGET = \"/cgi-bin/manuals/$destdirsub/xdataget.pl\";\nvar XDOCTITLE = \"XDOC\";\n" > "$destdir/manual/config.js"
 
 # Copy books/system/doc/rendered-doc-combined.lsp
 echo "cp -p $books/system/doc/rendered-doc-combined.lsp $destdir/"
@@ -134,6 +82,8 @@ gzip $destdir/acl2-doc-search
 chmod ugo+r $destdir/acl2-doc-search.gz
 
 ################################################################################
+
+# Deploy manual
 
 scp -o BatchMode=yes \
     $SSH_EXTRA_ARGS \

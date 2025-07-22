@@ -1534,20 +1534,21 @@
 
 ;rename
 ;kill some others?
-(DEFTHMd BVCAT-EQual-rewrite-constant
-  (IMPLIES (AND (syntaxp (and (quotep x)
+;make a less-aggressive variant where each one of the vals is a constant?
+(defthmd bvcat-equal-rewrite-constant
+  (implies (and (syntaxp (and (quotep x)
                               (quotep highsize)
                               (quotep lowsize)))
-                (NATP LOWSIZE)
-                (NATP HIGHSIZE))
-           (EQUAL (EQUAL X
-                         (BVCAT HIGHSIZE HIGHVAL LOWSIZE LOWVAL))
-                  (AND (UNSIGNED-BYTE-P (+ LOWSIZE HIGHSIZE) X)
-                       (EQUAL (BVCHOP LOWSIZE X)
-                              (BVCHOP LOWSIZE LOWVAL))
-                       (EQUAL (SLICE (+ -1 LOWSIZE HIGHSIZE)
-                                     LOWSIZE X)
-                              (BVCHOP HIGHSIZE HIGHVAL))))))
+                (natp lowsize)
+                (natp highsize))
+           (equal (equal x
+                         (bvcat highsize highval lowsize lowval))
+                  (and (unsigned-byte-p (+ lowsize highsize) x)
+                       (equal (bvchop lowsize x)
+                              (bvchop lowsize lowval))
+                       (equal (slice (+ -1 lowsize highsize)
+                                     lowsize x)
+                              (bvchop highsize highval))))))
 
 (defthm bvcat-of-expt-same-high
   (implies (natp highsize)

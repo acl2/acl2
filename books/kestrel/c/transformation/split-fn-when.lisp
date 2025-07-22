@@ -16,6 +16,7 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/system/constant-value" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -111,7 +112,7 @@
    (triggers ident-setp)
    ;; To check for name freshness
    (transunits transunit-ensemblep))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (fundef1 fundefp)
                (fundef2 fundef-optionp))
   (b* (((reterr) (c$::irr-fundef) nil)
@@ -134,8 +135,8 @@
               (transunit-ensemble-fresh-ident fun-name transunits)
               fundef
               position?))
-          :otherwise (reterr (msg "Malformed syntax."))))
-      :otherwise (reterr (msg "Malformed syntax.")))))
+          :otherwise (retmsg$ "Malformed syntax.")))
+      :otherwise (retmsg$ "Malformed syntax."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,7 +144,7 @@
   ((extdecl extdeclp)
    (triggers ident-setp)
    (transunits transunit-ensemblep))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
                (extdecls extdecl-listp))
   (b* (((reterr) nil nil))
@@ -168,7 +169,7 @@
   ((extdecls extdecl-listp)
    (triggers ident-setp)
    (transunits transunit-ensemblep))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
                (extdecls$ extdecl-listp))
   (b* (((reterr) nil nil)
@@ -189,7 +190,7 @@
   ((tunit transunitp)
    (triggers ident-setp)
    (transunits transunit-ensemblep))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
                (tunit$ transunitp))
   (b* (((reterr) nil (c$::irr-transunit))
@@ -203,7 +204,7 @@
   ((map filepath-transunit-mapp)
    (triggers ident-setp)
    (transunits transunit-ensemblep))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
                (map$ filepath-transunit-mapp))
   (b* (((reterr) nil nil)
@@ -228,7 +229,7 @@
 (define transunit-ensemble-try-split-fn-when
   ((tunits transunit-ensemblep)
    (triggers ident-setp))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (found booleanp :rule-classes :type-prescription)
                (tunits$ transunit-ensemblep))
   (b* (((reterr) nil (irr-transunit-ensemble))
@@ -244,7 +245,7 @@
 (define transunit-ensemble-split-fn-when
   ((tunits transunit-ensemblep)
    (triggers ident-setp))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (tunits$ transunit-ensemblep))
   (transunit-ensemble-split-fn-when-loop
     tunits
@@ -256,12 +257,12 @@
      ((tunits transunit-ensemblep)
       (triggers ident-setp)
       (steps :type #.acl2::*fixnat-type*))
-     :returns (mv er?
+     :returns (mv (er? maybe-msgp)
                   (tunits$ transunit-ensemblep))
      (b* (((reterr) (irr-transunit-ensemble))
           ((when (= 0 (mbe :logic (nfix steps)
                            :exec (acl2::the-fixnat steps))))
-           (reterr (msg "Out of steps.")))
+           (retmsg$ "Out of steps."))
           ((erp found tunits$)
            (transunit-ensemble-try-split-fn-when tunits triggers))
           ((unless found)
@@ -284,7 +285,7 @@
    const-new
    triggers
    (wrld plist-worldp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (tunits (and (transunit-ensemblep tunits)
                             (c$::transunit-ensemble-annop tunits))
                        :hints (("Goal" :in-theory (enable c$::irr-transunit-ensemble))))
@@ -293,21 +294,21 @@
   :short "Process the inputs."
   (b* (((reterr) (c$::irr-transunit-ensemble) nil nil)
        ((unless (symbolp const-old))
-        (reterr (msg "~x0 must be a symbol" const-old)))
+        (retmsg$ "~x0 must be a symbol" const-old))
        (tunits (acl2::constant-value const-old wrld))
        ((unless (transunit-ensemblep tunits))
-        (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
+        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
        ((unless (c$::transunit-ensemble-annop tunits))
-        (reterr (msg "~x0 must be an annotated with validation information." const-old)))
+        (retmsg$ "~x0 must be an annotated with validation information." const-old))
        ((unless (symbolp const-new))
-        (reterr (msg "~x0 must be a symbol" const-new)))
+        (retmsg$ "~x0 must be a symbol" const-new))
        (triggers (if (stringp triggers)
                      (list triggers)
                    triggers))
        ((unless (string-listp triggers))
-        (reterr (msg "~x0 must be a string or string list" triggers)))
+        (retmsg$ "~x0 must be a string or string list" triggers))
        ((when (endp triggers))
-        (reterr (msg "~x0 must be a list with at least one element" triggers))))
+        (retmsg$ "~x0 must be a list with at least one element" triggers)))
     (retok tunits const-new triggers))
   :guard-hints (("Goal" :in-theory (enable string-listp))))
 
@@ -332,7 +333,7 @@
    (const-new symbolp)
    (triggers string-listp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
@@ -349,7 +350,7 @@
    const-new
    triggers
    (wrld plist-worldp))
-  :returns (mv er?
+  :returns (mv (er? maybe-msgp)
                (event pseudo-event-formp))
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
@@ -369,7 +370,7 @@
                           triggers
                           (ctx ctxp)
                           state)
-  :returns (mv er?
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (event pseudo-event-formp)
                state)
   :parents (split-fn-when-implementation)

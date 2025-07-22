@@ -13,6 +13,8 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(include-book "kestrel/utilities/messages" :dir :system)
+
 (include-book "../syntax/disambiguator")
 (include-book "../syntax/validator")
 (include-book "splitgso")
@@ -20,9 +22,11 @@
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(local (in-theory (disable (tau-system))))
 (set-induction-depth-limit 0)
 
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -202,7 +206,7 @@
   ((tunit transunitp)
    (blacklist ident-setp))
   :guard (c$::transunit-annop tunit)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (gso identp)
                (field-name identp)
                (internal booleanp :rule-classes :type-prescription))
@@ -217,7 +221,7 @@
       (blacklist ident-setp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-annop tunit)
-     :returns (mv erp
+     :returns (mv (erp booleanp :rule-classes :type-prescription)
                   (gso identp)
                   (field-name identp)
                   (internal booleanp :rule-classes :type-prescription))
@@ -251,7 +255,7 @@
   ((map filepath-transunit-mapp)
    (blacklist ident-setp))
   :guard (c$::filepath-transunit-map-annop map)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (filepath? c$::filepath-optionp)
                (gso identp)
                (field-name identp))
@@ -273,7 +277,7 @@
   ((tunits transunit-ensemblep)
    (blacklist ident-setp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (filepath? c$::filepath-optionp)
                (gso identp)
                (field-name identp))
@@ -287,7 +291,7 @@
   ((tunits transunit-ensemblep)
    (blacklist ident-setp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
                (blacklist$ ident-setp)
                (tunits$ transunit-ensemblep))
   (transunit-ensemble-split-any-gso0
@@ -301,7 +305,7 @@
       (blacklist ident-setp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-ensemble-annop tunits)
-     :returns (mv erp
+     :returns (mv (erp booleanp :rule-classes :type-prescription)
                   (blacklist$ ident-setp)
                   (tunits$ transunit-ensemblep))
      (b* (((reterr) nil (c$::transunit-ensemble-fix tunits))
@@ -337,7 +341,7 @@
    (gcc booleanp)
    (ienv c$::ienvp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (blacklist$ ident-setp)
                (tunits$ transunit-ensemblep))
   (transunit-ensemble-split-all-gso0 tunits
@@ -354,7 +358,7 @@
       (ienv c$::ienvp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::transunit-ensemble-annop tunits)
-     :returns (mv erp
+     :returns (mv (er? maybe-msgp)
                   (blacklist$ ident-setp)
                   ;; add annop
                   (tunits$ transunit-ensemblep))
@@ -363,7 +367,7 @@
           ((reterr) nil tunits)
           ((when (int= 0 (mbe :logic (nfix steps)
                               :exec (acl2::the-fixnat steps))))
-           (reterr t))
+           (retmsg$ "Out of steps."))
           ((mv erp blacklist tunits$)
            (transunit-ensemble-split-any-gso
              tunits
@@ -378,7 +382,7 @@
            (c$::valid-transunit-ensemble tunits$ gcc ienv))
           ;; TODO: c$::valid-transunit-ensemble should return an annop
           ((unless (c$::transunit-ensemble-annop tunits$))
-           (reterr t)))
+           (retmsg$ "Invalid translation unit ensemble.")))
        (transunit-ensemble-split-all-gso0 tunits$
                                           blacklist
                                           gcc
@@ -400,7 +404,7 @@
    gcc
    ienv
    (wrld plist-worldp))
-  :returns (mv erp
+  :returns (mv (er? maybe-msgp)
                (tunits (and (transunit-ensemblep tunits)
                             (c$::transunit-ensemble-annop tunits))
                        :hints (("Goal" :in-theory (enable c$::irr-transunit-ensemble))))
@@ -410,19 +414,19 @@
   :short "Process the inputs."
   (b* (((reterr) (c$::irr-transunit-ensemble) nil nil (c$::ienv-default))
        ((unless (symbolp const-old))
-        (reterr (msg "~x0 must be a symbol" const-old)))
+        (retmsg$ "~x0 must be a symbol" const-old))
        (tunits (acl2::constant-value const-old wrld))
        ((unless (transunit-ensemblep tunits))
-        (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
+        (retmsg$ "~x0 must be a translation unit ensemble." const-old))
        ((unless (c$::transunit-ensemble-annop tunits))
-        (reterr (msg "~x0 must be an annotated with validation information." const-old)))
+        (retmsg$ "~x0 must be an annotated with validation information." const-old))
        ((unless (symbolp const-new))
-        (reterr (msg "~x0 must be a symbol" const-new)))
+        (retmsg$ "~x0 must be a symbol" const-new))
        ((unless (booleanp gcc))
-        (reterr (msg "~x0 must be a boolean" gcc)))
+        (retmsg$ "~x0 must be a boolean" gcc))
        ((unless (or (c$::ienvp ienv)
                     (not ienv)))
-        (reterr (msg "~x0 must be an @(see c$::ienv) or @('nil')." ienv)))
+        (retmsg$ "~x0 must be an @(see c$::ienv) or @('nil')." ienv))
        (ienv (or ienv (c$::ienv-default))))
     (retok tunits const-new gcc ienv)))
 
@@ -438,7 +442,8 @@
    (gcc booleanp)
    (ienv c$::ienvp))
   :guard (c$::transunit-ensemble-annop tunits)
-  :returns (mv erp (event pseudo-event-formp))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
        ((erp - tunits)
@@ -456,7 +461,8 @@
    gcc
    ienv
    (wrld plist-worldp))
-  :returns (mv erp (event pseudo-event-formp))
+  :returns (mv (er? maybe-msgp)
+               (event pseudo-event-formp))
   :parents (split-all-gso-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
@@ -484,7 +490,9 @@
                           ienv
                           (ctx ctxp)
                           state)
-  :returns (mv erp (event pseudo-event-formp) state)
+  :returns (mv (erp booleanp :rule-classes :type-prescription)
+               (event pseudo-event-formp)
+               state)
   :parents (split-all-gso-implementation)
   :short "Event expansion of @(tsee split-all-gso)."
   (b* (((mv erp event)

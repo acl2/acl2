@@ -1193,8 +1193,9 @@
                                                        node-replacement-array node-replacement-count refined-assumption-alist
                                                        rewrite-stobj (+ -1 count))
                  ;; No rule fired, so no simplification can be done.  Add the expression to the dag, but perhaps normalize nests of certain functions:
-                 (b* ((- (and (all-consp dargs)
-                              (cw "Warning: Unevaluated ground application: ~x0.~%" (cons fn dargs)))) ; todo: add ability to suppress some functions
+                 (b* ((- (and (all-consp dargs) ; checks whether all args are constants
+                              (not (member-eq fn (get-no-warn-ground-functions rewrite-stobj)))
+                              (cw "Warning: Unevaluated ground application: ~x0.~%" (cons fn dargs))))
                       ((mv erp nodenum-or-quotep rewrite-stobj2)
                        (add-and-maybe-normalize-expr fn dargs rewrite-stobj rewrite-stobj2))
                       ((when erp) (mv erp nodenum-or-quotep rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array))
