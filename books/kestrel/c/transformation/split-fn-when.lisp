@@ -125,17 +125,21 @@
       (b* ((position?
              (block-item-list-try-split-fn-when fundef.body.items triggers))
            ((unless position?)
-            (retok fundef nil)))
-        (dirdeclor-case
-          fundef.declor.direct
-          :function-params
-          (let ((fun-name (c$::dirdeclor->ident fundef.declor.direct.declor)))
-            (split-fn-fundef
-              fun-name
-              (transunit-ensemble-fresh-ident fun-name transunits)
-              fundef
-              position?))
-          :otherwise (retmsg$ "Malformed syntax.")))
+            (retok fundef nil))
+           ((erp fun-name)
+            (b* (((reterr) nil))
+              (dirdeclor-case
+                fundef.declor.direct
+                :function-params
+                (retok (c$::dirdeclor->ident fundef.declor.direct.declor))
+                :function-names
+                (retok (c$::dirdeclor->ident fundef.declor.direct.declor))
+                :otherwise (retmsg$ "Malformed syntax.")))))
+        (split-fn-fundef
+          fun-name
+          (transunit-ensemble-fresh-ident fun-name transunits)
+          fundef
+          position?))
       :otherwise (retmsg$ "Malformed syntax."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
