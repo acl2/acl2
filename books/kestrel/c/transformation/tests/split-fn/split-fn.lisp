@@ -146,6 +146,35 @@ int foo(int x) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
+  (c$::input-files :files ("test5.c")
+                   :const *old*)
+
+  (split-fn *old*
+            *new*
+            :target "foo"
+            :new-fn "bar"
+            :split-point 1)
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  (assert-file-contents
+    :file "new/test5.c"
+    :content "int bar(int *x) {
+  int y = 0;
+  return (*x) + y;
+}
+int foo() {
+  int x = 5;
+  return bar(&x);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
   (c$::input-files :files ("alias.c")
                    :process :parse
                    :const *old*)
