@@ -46,7 +46,7 @@
 (defconst *home-page-references*
   '(tours                               ;;; a
     ACL2-Tutorial                       ;;; b
-    events                              ;;; c
+    releases                            ;;; c
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
@@ -282,11 +282,11 @@ alt=\"FTP icon\" border=0></a>
 src=\"HTML/twarning.gif\" alt=\"tiny warning icon\"></a>
 </td>
 <td align=center valign=MIDDLE>
-<a href=\"HTML/other-releases.html\">
+<a href=\"~sc\">
 <img src=\"HTML/file04.gif\" alt=\"filing cabinet icon\" border=0></a>
 </td>
 <td>
-<a href=\"HTML/other-releases.html\">
+<a href=\"~sc\">
 Other Releases</a>
 </td>
 </tr>
