@@ -84,3 +84,32 @@ int foo(int y) {
 ")
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("test3.c")
+                   :const *old*)
+
+  (split-fn-when *old*
+                 *new*
+                 :triggers "bar")
+
+  (c$::output-files :const *new*
+                    :path "new")
+
+  (assert-file-contents
+    :file "new/test3.c"
+    :content "void bar(int *);
+int foo_0(int *x, int *y) {
+  bar(&(*y));
+  return (*x) + (*y);
+}
+int foo() {
+  int x = 5;
+  int y = 0;
+  return foo_0(&x, &y);
+}
+")
+
+  :with-output-off nil)
