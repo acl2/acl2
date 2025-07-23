@@ -768,6 +768,7 @@
                   :mode :program
                   :stobjs state))
   (b* (((mv overall-start-real-time state) (get-real-time state))
+       (- (cw "(Testing functions in ~s0:~%" executable))
        ;; Parse the executable (TODO: Can we parse less than the whole thing?):
        ((mv erp parsed-executable state)
         (acl2::parse-executable executable state))
@@ -845,6 +846,7 @@
                                nil ; empty result-alist
                                bvp
                                state))
+       (- (cw " Done testing functions in ~s0.)~%" executable)) ;matches "(Testing functions in" above
        ((mv overall-time state) (acl2::real-time-since overall-start-real-time state))
        ((when erp) (mv erp nil state))
        (- (print-test-summary result-alist executable))
