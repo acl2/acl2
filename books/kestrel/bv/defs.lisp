@@ -37,6 +37,7 @@
 (include-book "bvcat2")
 
 (local (include-book "sbvdiv")) ;; the verifies the guard of sbvdiv
+(local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
