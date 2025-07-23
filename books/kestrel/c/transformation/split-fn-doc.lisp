@@ -79,8 +79,8 @@
        "@(':split-point')"
        (xdoc::p
          "A natural number indicating the position in the function body at
-          which to split. This is the number of top-level"
+          which to split. This is the number of top-level "
           (xdoc::seetopic "c$::block-item" "block items")
-         "in the function body before the split point. Splits within nested
+         " in the function body before the split point. Splits within nested
           statement blocks are not yet supported."))))
   :order-subtopics t)
